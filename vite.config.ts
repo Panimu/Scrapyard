@@ -60,6 +60,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
+    // The suites land with the invariants agent; until then `npm test` should report "0 tests",
+    // not fail, so a red result always means something actually broke.
+    passWithNoTests: true,
     // Determinism suites compare hashes across runs; parallel workers are fine but a stable
     // reporter ordering makes CI logs diffable.
     sequence: { shuffle: false },

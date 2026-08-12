@@ -1,0 +1,290 @@
+/**
+ * S4 - updateEnemyAI. Seek, separate, integrate. Three passes over the dense range, no branches
+ * on entity type, no per-frame allocation.
+ *
+ * It runs AFTER player movement (S3) so the horde steers toward the player's position this tick
+ * rather than last tick's - one tick fresher is the difference between a crowd that is chasing
+ * you and a crowd that is following where you were. It runs BEFORE the spatial hash rebuild (S5)
+ * so every query below it - targeting, collision, splash - sees exact post-integration positions.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE AI IS DELIBERATELY DUMB, AND THAT IS THE GENRE
+ * ---------------------------------------------------------------------------------------------
+ * Every enemy walks straight at the player at its own fixed speed. No pathfinding, no flocking,
+ * no state machine, no aggro table. The interesting behaviour is emergent and comes from exactly
+ * two things: enemies have different SPEEDS, and they PUSH EACH OTHER APART.
+ *
+ * Because speeds differ by archetype, a mixed wave sorts itself into a gradient in flight -
+ * swarmers arrive first, then grunts, with bruisers and elites trailing. That is the shape the
+ * Cannon's highest-HP targeting needs to be interesting: the thing it insists on shooting is
+ * reliably at the BACK, behind a wall of the things actually hurting you. The player's answers
+ * (pierce down the line of fire, splash, knockback) all only make sense against that geometry,
+ * and the geometry is a free consequence of "elites are slow", not a scripted formation.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * INVARIANT K - KITING MUST ALWAYS WORK
+ * ---------------------------------------------------------------------------------------------
+ * Nothing here caps enemy speed against the player's. It does not need to: the fastest enemy at
+ * any point in the run is 144.4 u/s (a plain swarmer at t=900) against 163.8 u/s for the slowest
+ * hero - a 1.13x margin, and >=1.08x for every hero at every t. That is a CONTENT property,
+ * enforced by the catalog (no `swift` swarmers, elites at 64 u/s) and asserted by the tests, not
+ * by a clamp in this file. A runtime clamp would hide the regression instead of failing it.
+ *
+ * Separation can transiently push an enemy above its own steering speed, which is fine and
+ * intended - the impulse points AWAY from the crowd, never at the player, so it cannot help
+ * anything catch you.
+ */
+
+import { DESPAWN_RADIUS } from '../constants.js';
+import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
+import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
+import { EV_ENEMY_KILLED, pushEvent } from '../events/ring.js';
+import { queryCircleInto } from '../spatial/hashGrid.js';
+import type { World } from '../types.js';
+
+/**
+ * `d` field of EV_ENEMY_KILLED. The renderer keys `spriteBySlot` off spawn/kill events, so a
+ * despawn MUST emit one or the sprite binding leaks - but it must not play a death puff for an
+ * enemy that simply walked off the edge of the world.
+ *
+ * CONTRACT WITH updateDamage (S9) AND THE RENDER LAYER: 0 = killed (play FX, drop a gem),
+ * 1 = despawned (free the sprite silently, no FX, no XP).
+ */
+export const KILL_REASON_KILLED = 0;
+export const KILL_REASON_DESPAWNED = 1;
+
+export function updateEnemyAI(world: World, dt: number): void {
+  seek(world);
+  separate(world, dt);
+  integrate(world, dt);
+}
+
+// -------------------------------------------------------------------------------------------
+// (a) Seek
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Velocity = unit vector to the player x this enemy's speed. Overwritten from scratch every tick
+ * rather than steered toward, so there is no turn-rate state to keep and an enemy can never
+ * orbit. Heavy things are heavy because they are SLOW, not because they turn badly - turn lag on
+ * a horde reads as bugged pathing, not weight.
+ */
+function seek(world: World): void {
+  const p = world.enemies;
+  const px = world.player.x;
+  const py = world.player.y;
+  const x = p.x;
+  const y = p.y;
+  const vx = p.vx;
+  const vy = p.vy;
+  const speed = p.speed;
+  const flags = p.flags;
+  const n = p.count;
+
+  for (let d = 0; d < n; d++) {
+    if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+    const dx = px - x[d];
+    const dy = py - y[d];
+    const l2 = dx * dx + dy * dy;
+    if (l2 === 0) {
+      // Exactly coincident with the player. No direction exists; separation will part them.
+      vx[d] = 0;
+      vy[d] = 0;
+      continue;
+    }
+    const s = speed[d] / Math.sqrt(l2);
+    vx[d] = dx * s;
+    vy[d] = dy * s;
+  }
+}
+
+// -------------------------------------------------------------------------------------------
+// (b) Separation
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Soft crowd repulsion, O(n x k) via the spatial hash - never O(n^2).
+ *
+ * WITHOUT THIS the whole horde converges to a single point: every enemy solves the same seek
+ * problem, so they stack into one pixel, the player fights a single sprite with 200x contact
+ * damage, and the cannon's splash hits everything at once. With it the horde spreads into a
+ * crescent and the player can see, and thread, gaps.
+ *
+ * The impulse is scaled by 1/mass, which is the same number knockback uses. Mass doing double
+ * duty is what makes bruisers act as MOVING WALLS: a 0.5-mass swarmer is shoved 6x harder than
+ * the 3.0-mass bruiser it walks into, so chaff visibly parts around the big things instead of
+ * clipping through them. That is the readable version of "heavy".
+ *
+ * THREE BOUNDS keep it cheap and stable:
+ *   - at most `separationMaxNeighbours` (8) neighbours contribute. A deep pile-up is already
+ *     saturated after eight; the ninth changes nothing a player could see.
+ *   - the accumulated direction is clamped to unit length before scaling, so the impulse is
+ *     bounded by `separationStrength / mass` no matter how many bodies overlap. Unbounded sums
+ *     are how crowd systems explode.
+ *   - the query is a fixed radius, so the cell walk is a 3x3 neighbourhood for ordinary enemies.
+ *
+ * STALENESS, stated exactly: this reads the PREVIOUS tick's hash (rebuilt at S5, before S12
+ * reaped), which avoids a second full rebuild for what is only a soft steering force. Two things
+ * follow, and both are handled here rather than assumed away:
+ *   - positions in the hash are up to `maxEnemySpeed * DT` = 2.41 u stale, so the query radius is
+ *     padded by exactly that;
+ *   - reaping swap-removes, so the hash can name dense indices at or beyond the CURRENT count,
+ *     and an index below the count may now hold a different enemy than the hash thought. Indices
+ *     past the end are skipped, and every candidate is re-checked against live positions - so a
+ *     stale entry can only ever cost a missed neighbour for one tick, never a wrong force.
+ */
+function separate(world: World, dt: number): void {
+  const p = world.enemies;
+  const tune = world.config.tuning.steering;
+  const hash = world.spatial;
+  const candidates = world.scratch.candidates;
+
+  const x = p.x;
+  const y = p.y;
+  const vx = p.vx;
+  const vy = p.vy;
+  const radius = p.radius;
+  const mass = p.mass;
+  const flags = p.flags;
+  const spawnId = p.spawnId;
+  const n = p.count;
+
+  const strength = tune.separationStrength;
+  const maxNeighbours = tune.separationMaxNeighbours;
+  // Radius of the largest possible neighbour plus one tick of movement: guarantees no overlapping
+  // pair is missed, whatever the pair.
+  const reach = MAX_ENEMY_RADIUS + tune.separationPadding;
+
+  for (let d = 0; d < n; d++) {
+    if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    const ri = radius[d];
+    const xi = x[d];
+    const yi = y[d];
+    const found = queryCircleInto(hash, xi, yi, ri + reach, candidates);
+    if (found === 0) continue;
+
+    let ax = 0;
+    let ay = 0;
+    let used = 0;
+
+    for (let i = 0; i < found; i++) {
+      const j = candidates[i];
+      if (j === d) continue;
+      if (j >= n) continue; // stale index from a pre-reap hash
+      if ((flags[j] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+      const dx = xi - x[j];
+      const dy = yi - y[j];
+      const contact = ri + radius[j];
+      const l2 = dx * dx + dy * dy;
+      if (l2 >= contact * contact) continue;
+
+      if (l2 === 0) {
+        // Exactly coincident. Deterministic split along x by spawn order - an arbitrary but
+        // stable choice, and the only case where separation has no direction to work with.
+        ax += spawnId[d] < spawnId[j] ? -1 : 1;
+      } else {
+        const l = Math.sqrt(l2);
+        // Linear falloff: 0 at first touch, 1 at full overlap. Divided by `l` to normalise the
+        // offset in the same operation.
+        const w = (contact - l) / (contact * l);
+        ax += dx * w;
+        ay += dy * w;
+      }
+
+      if (++used >= maxNeighbours) break;
+    }
+
+    if (used === 0) continue;
+
+    const al2 = ax * ax + ay * ay;
+    if (al2 === 0) continue;
+    // Clamp to unit length. Nothing below 1 is scaled up: a single light touch should be a light
+    // nudge, and only a real overlap should reach full strength.
+    const k = (strength * dt) / mass[d] / (al2 > 1 ? Math.sqrt(al2) : 1);
+    vx[d] += ax * k;
+    vy[d] += ay * k;
+  }
+}
+
+// -------------------------------------------------------------------------------------------
+// (c) Integrate + despawn
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Position += (steering velocity + knockback velocity) x dt, then decay the knockback.
+ *
+ * KNOCKBACK IS A SEPARATE CHANNEL from steering, deliberately. If a shell wrote into `vx/vy` the
+ * very next seek pass would overwrite it and the punt would be invisible; keeping it in
+ * `pushX/pushY` lets an enemy be thrown backwards while still walking forwards, which is what
+ * makes a heavy shell READ as heavy. It decays at 6/s (x0.9 per tick, ~10% left after 0.38 s) and
+ * snaps to zero below `pushEpsilon` so it cannot dribble forever and keep the pool's bytes - and
+ * therefore the world hash - churning after everything has settled.
+ *
+ * DESPAWN beyond 900 u recycles enemies the player has outrun. No XP, no gem, no death FX - a
+ * kill you did not make must not pay. It emits EV_ENEMY_KILLED with reason 1 purely so the render
+ * layer can release the sprite; see KILL_REASON_DESPAWNED. The boss is exempt: it is slower than
+ * every hero, so it would otherwise be trivially deletable by running in a straight line.
+ */
+function integrate(world: World, dt: number): void {
+  const p = world.enemies;
+  const tune = world.config.tuning.steering;
+
+  const x = p.x;
+  const y = p.y;
+  const vx = p.vx;
+  const vy = p.vy;
+  const pushX = p.pushX;
+  const pushY = p.pushY;
+  const flags = p.flags;
+  const n = p.count;
+
+  const px = world.player.x;
+  const py = world.player.y;
+  const despawn2 = DESPAWN_RADIUS * DESPAWN_RADIUS;
+
+  // Explicit Euler decay. Clamped at 0 so a hostile Tuning cannot make the factor negative and
+  // turn knockback into an oscillator.
+  const decay = Math.max(0, 1 - tune.pushDamping * dt);
+  const eps2 = tune.pushEpsilon * tune.pushEpsilon;
+
+  for (let d = 0; d < n; d++) {
+    if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    let kx = pushX[d];
+    let ky = pushY[d];
+
+    const nx = x[d] + (vx[d] + kx) * dt;
+    const ny = y[d] + (vy[d] + ky) * dt;
+    x[d] = nx;
+    y[d] = ny;
+
+    if (kx !== 0 || ky !== 0) {
+      kx *= decay;
+      ky *= decay;
+      if (kx * kx + ky * ky < eps2) {
+        kx = 0;
+        ky = 0;
+      }
+      pushX[d] = kx;
+      pushY[d] = ky;
+    }
+
+    if ((flags[d] & ENEMY_FLAG_BOSS) !== 0) continue;
+    const dx = nx - px;
+    const dy = ny - py;
+    if (dx * dx + dy * dy > despawn2) {
+      markEnemyDead(p, d);
+      pushEvent(
+        world.events,
+        EV_ENEMY_KILLED,
+        world.tick,
+        nx,
+        ny,
+        p.slot[d],
+        KILL_REASON_DESPAWNED,
+      );
+    }
+  }
+}
