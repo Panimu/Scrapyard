@@ -2,3 +2,13 @@
 node_modules/
 *.log
 .env
+
+# build output
+dist/
+.vite/
+*.tsbuildinfo
+
+# test / tooling artifacts
+coverage/
+test-results/
+playwright-report/

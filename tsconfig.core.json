@@ -1,0 +1,35 @@
+{
+  // PURITY ENFORCEMENT LAYER 1 (DESIGN.md §2.1).
+  //
+  // Compiles src/core ALONE with no DOM lib and no ambient @types. Every reference to
+  // `window`, `document`, `performance`, `fetch`, `localStorage`, `process`, `console`,
+  // `setTimeout`, `Buffer` ... becomes "Cannot find name 'x'" — a hard compile error, not a
+  // convention. This is what makes "src/core runs in plain Node" a checked property.
+  //
+  // Run by `npm run typecheck` (and `npm run typecheck:core`). If you add a file to src/core
+  // it is covered automatically; there is nothing to register.
+  //
+  // The banned-Math list (sin/cos/pow/random/...) cannot be expressed here — that is layers 2-4:
+  // eslint no-restricted-properties, tests/purity/core.purity.test.ts, and `npm run sim`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": [],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": false,
+
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/core"],
+  "exclude": ["node_modules", "dist"]
+}

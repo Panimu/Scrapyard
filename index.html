@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <!-- viewport-fit=cover is REQUIRED: without it every env(safe-area-inset-*) resolves to 0
+         and the HUD collides with the notch and the home indicator.
+         user-scalable=no is ignored by modern iOS Safari on purpose - it is shipped for other
+         browsers only. The mechanism that actually stops pinch/scroll on iOS is
+         `touch-action: none` plus preventDefault on touchstart/touchmove ({ passive: false }). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+
+    <title>Scrapyard</title>
+    <meta name="description" content="Pilot a mech. Outlast the scrapyard." />
+
+    <!-- Standalone mode. Formally superseded by the manifest's display:standalone, but on iOS
+         this tag is still the gate for apple-touch-startup-image. Do not drop it as "obsolete". -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- black-translucent: the canvas paints under the status bar; safe-area padding keeps UI clear. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- The label under the home-screen icon. The manifest's name is not reliably used on iOS. -->
+    <meta name="apple-mobile-web-app-title" content="Scrapyard" />
+    <meta name="theme-color" content="#0b0e13" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- The icon iOS actually uses. 180x180, square, opaque - iOS masks the corners itself. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+
+    <style>
+      /* Only the shell lives here. src/ui/styles.css owns everything else. */
+      :root {
+        color-scheme: dark;
+        --bg: #0b0e13;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        overscroll-behavior: none;
+        /* touch-action:none is the rule that actually suppresses pinch-zoom and the
+           pull-to-refresh gesture on iOS. */
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      }
+      /* position:fixed + 100svh: 100vh resolves to the toolbar-HIDDEN viewport on iOS and
+         overflows by the toolbar height. svh is the small (toolbar-visible) viewport.
+         JS still treats visualViewport as the source of truth for the canvas size. */
+      body {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100svh;
+        overflow: hidden;
+      }
+      #app {
+        position: absolute;
+        inset: 0;
+        /* The canvas may paint edge to edge; interactive UI stays inside the safe area. */
+      }
+      #app > canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #ui {
+        position: absolute;
+        inset: 0;
+        /* Overlay root for the DOM touch UI. Children opt back in to pointer events. */
+        pointer-events: none;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      /* Shown until the renderer boots; src/main.ts removes it. */
+      #boot {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #7f8c9b;
+        font-size: 14px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Pixi canvas host. app.canvas is appended here (v8: app.canvas, NOT app.view). -->
+    <div id="app"></div>
+    <!-- DOM overlay root: virtual stick, HUD, level-up cards, summary. -->
+    <div id="ui"></div>
+    <div id="boot">Spinning up reactor</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

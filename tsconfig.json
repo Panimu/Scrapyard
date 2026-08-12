@@ -1,0 +1,37 @@
+{
+  // Whole-project config: src/ (core + render + ui + sim) and tools/.
+  //
+  // PURITY: this config DOES include the DOM lib, because src/render and src/ui need it.
+  // It is therefore NOT what keeps src/core pure. That job belongs to tsconfig.core.json,
+  // which compiles src/core alone with `"lib": ["ES2022"]` and `"types": []`, turning every
+  // `window`/`document`/`performance`/`fetch` reference inside core into a compile error.
+  // `npm run typecheck` runs BOTH. Never "fix" a core purity error by widening this file.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"],
+
+    // Strictness. `strict` is the floor, not the ceiling.
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "useUnknownInCatchVariables": true,
+    // Deliberately OFF: typed-array reads in the hot loops would all become `number | undefined`
+    // and every sim system would need a non-null assertion per access.
+    "noUncheckedIndexedAccess": false,
+
+    // Vite/esbuild transpile file-by-file.
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "noEmit": true
+  },
+  "include": ["src", "tools", "tests", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "dev-dist"]
+}
