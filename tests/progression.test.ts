@@ -35,13 +35,14 @@ import { allocEnemy, markEnemyDead, enemyHandleAt } from '../src/core/entity/ene
 import { updateProgression } from '../src/core/systems/progression.js';
 import { reapDead } from '../src/core/systems/reap.js';
 import {
+  EMPTY_INPUT,
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_RUNNING,
   RUN_PHASE_VICTORY,
   type Catalogs,
   type World,
 } from '../src/core/types.js';
-import { createWorld } from '../src/core/world.js';
+import { createWorld, stepWorld } from '../src/core/world.js';
 
 // ---------------------------------------------------------------------------------------------
 // Fixtures
@@ -785,6 +786,57 @@ describe('stat resolution after a pick', () => {
     expect(w.player.stats.maxHp).toBe(145);
     expect(w.player.hp).toBe(65); // 40 + the 25 the card added
     expect(w.player.hp).toBeLessThanOrEqual(w.player.stats.maxHp);
+  });
+});
+
+describe('the level-up heal', () => {
+  const FRAC = DEFAULT_TUNING.player.levelUpHealFrac;
+
+  it('restores a fraction of MAX hp for each level gained', () => {
+    const w = makeWorld();
+    const max = w.player.stats.maxHp;
+    w.player.hp = max * 0.4;
+    const before = w.player.hp;
+
+    bank(w, 12); // exactly one level at the tier-1 base
+    expect(w.player.level).toBe(2);
+    expect(w.player.hp).toBeCloseTo(before + max * FRAC, 6);
+  });
+
+  it('pays out PER LEVEL, not per card', () => {
+    // A boss core crossing several thresholds at once earns several heals. The levels are what
+    // was earned; the cards are only how they get spent.
+    const w = makeWorld();
+    const max = w.player.stats.maxHp;
+    w.player.hp = max * 0.2;
+    const before = w.player.hp;
+
+    bank(w, 400);
+    const levels = w.player.level - 1;
+    expect(levels).toBeGreaterThan(1);
+    expect(w.player.hp).toBeCloseTo(Math.min(max, before + max * FRAC * levels), 6);
+  });
+
+  it('never overheals', () => {
+    const w = makeWorld();
+    const max = w.player.stats.maxHp;
+    w.player.hp = max;
+
+    bank(w, 400);
+    expect(w.player.level).toBeGreaterThan(2);
+    expect(w.player.hp).toBe(max);
+  });
+
+  it('is the only healing in the game - nothing else moves hp upward', () => {
+    // hpRegen is 0 and there is no other heal source, so this assertion is what keeps the run's
+    // whole attrition budget equal to "damage taken between level-ups". If a regen dial or a
+    // pickup ever arrives, this test is the one that should be updated deliberately.
+    expect(DEFAULT_TUNING.player.hpRegen).toBe(0);
+
+    const w = makeWorld();
+    w.player.hp = 30;
+    for (let i = 0; i < 120; i++) stepWorld(w, EMPTY_INPUT);
+    expect(w.player.hp).toBeLessThanOrEqual(30);
   });
 });
 

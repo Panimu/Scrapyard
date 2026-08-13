@@ -34,6 +34,7 @@ import {
   EV_ENEMY_DAMAGED,
   EV_ENEMY_KILLED,
   EV_GEM_COLLECTED,
+  EV_LEVEL_UP,
   EV_PLAYER_DAMAGED,
   EV_PROJECTILE_HIT,
   EV_WEAPON_FIRED,
@@ -83,6 +84,8 @@ const HP_BAR_GAP = 8;
 
 /** Player hit feedback, seconds. */
 const PLAYER_FLASH_SEC = 0.12;
+/** Level-up heal feedback, seconds. Longer than a hit flash - it is good news, not a warning. */
+const HEAL_FLASH_SEC = 0.45;
 
 /**
  * World units walked per leg-frame. Eight frames make a full cycle, so a stride is 8 x this =
@@ -136,6 +139,12 @@ export class GameRenderer {
   /** Wall-clock seconds since boot, for cosmetic cycles (gem bob). Never touches the sim. */
   private clock = 0;
   private playerFlash = 0;
+  /**
+   * Green tint while the level-up heal lands. The health bar moves too, but the card opens over
+   * it the same instant - so without a cue on the mech itself the only healing in the game
+   * happens entirely behind a menu.
+   */
+  private healFlash = 0;
   /**
    * GAIT PHASE, IN WORLD UNITS WALKED - not seconds.
    *
@@ -273,6 +282,7 @@ export class GameRenderer {
   draw(world: World, alpha: number, dtSec: number): void {
     this.clock += dtSec;
     if (this.playerFlash > 0) this.playerFlash -= dtSec;
+    if (this.healFlash > 0) this.healFlash -= dtSec;
     if (this.turretKick > 0) this.turretKick -= dtSec;
 
     this.drainEvents(world);
@@ -331,6 +341,10 @@ export class GameRenderer {
       const d = r.d[i];
 
       switch (r.kind[i]) {
+        case EV_LEVEL_UP:
+          this.healFlash = HEAL_FLASH_SEC;
+          break;
+
         case EV_WEAPON_FIRED:
           // Payload is muzzle position then the shell's unit direction - everything needed to
           // place and rotate the flash without recomputing anything.
@@ -592,7 +606,8 @@ export class GameRenderer {
     const facing = Math.atan2(pl.faceY, pl.faceX) + ROT_OFFSET.mech;
     const phase = (this.stride / (STRIDE_UNITS * cycleSteps)) * Math.PI * 2;
     const yaw = hero?.gait === 'hover' ? 0 : Math.sin(phase) * GAIT_YAW;
-    const tint = this.playerFlash > 0 ? 0xffb0a8 : 0xffffff;
+    // Damage wins over the heal: being hit is the more urgent fact.
+    const tint = this.playerFlash > 0 ? 0xffb0a8 : this.healFlash > 0 ? 0xb6f5c4 : 0xffffff;
 
     this.legs.position.set(px, py);
     this.legs.rotation = facing + yaw;
