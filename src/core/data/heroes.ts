@@ -40,6 +40,7 @@
 
 import type { WeaponId } from '../content/weaponCatalog.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
+import type { UpgradeId } from './upgrades.js';
 import type { World } from '../types.js';
 
 export type HeroId =
@@ -94,10 +95,24 @@ export interface HeroTrait {
   readonly onFireShell?: (world: World, shot: ShotCtx) => void;
 }
 
+/**
+ * A chassis' bonus to ONE named weapon.
+ *
+ * `add` joins the additive stage of resolution and `mul` the multiplicative one, exactly as an
+ * upgrade card's effects do (see data/stats.ts). Both are needed and neither substitutes for the
+ * other: "+1 pierce" has to be additive because the Cannon's base pierce is 0 and a multiplier on
+ * zero is nothing, and "50% better dispersion" has to be multiplicative or it would mean something
+ * different at every tier of the weapon.
+ */
+export interface HeroWeaponBonus {
+  readonly mul?: Readonly<Partial<Record<WeaponStatKey, number>>>;
+  readonly add?: Readonly<Partial<Record<WeaponStatKey, number>>>;
+}
+
 export interface HeroDef {
   readonly id: HeroId;
   readonly name: string;
-  /** One line for the select screen. Flavour only while every chassis performs identically. */
+  /** One line for the select screen. Says what the chassis is and what its bonus does. */
   readonly identity: string;
   /** Sprite key produced by tools/prepare_assets.mjs - see docs/ASSET_MANIFEST.md. */
   readonly sprite: string;
@@ -108,11 +123,40 @@ export interface HeroDef {
    * completely still has landed. Must match `legs` in tools/make-mechs.mjs.
    */
   readonly gait: 'walk' | 'hover';
-  readonly startingWeapon: WeaponId;
-  /** Multipliers on the tuning base. Absent key = x1. Empty for every hero today. */
+  /**
+   * The gun this chassis walks in holding, at tier 1 - or `null` for a chassis that walks in
+   * holding nothing.
+   *
+   * `null` is not a degenerate case to be defended against, it is Plum: a mech that opens with an
+   * Energy Shield and no weapon at all, and kills the first cycle by letting things break itself
+   * on the rim. Every consumer already guarded on "starting weapon not found in the catalog"
+   * because a fixture catalog may omit one, so the null path is the path that was already there.
+   */
+  readonly startingWeapon: WeaponId | null;
+  /**
+   * A non-weapon card this chassis walks in holding, at tier 1. Seeded exactly like the starting
+   * weapon: one stack taken, so the pool offers its TIER 2 next rather than offering the unlock of
+   * something already in your hands.
+   */
+  readonly startingUpgrade?: UpgradeId;
+  /** Multipliers on the tuning base. Absent key = x1. */
   readonly player: Readonly<Partial<Record<PlayerStatKey, number>>>;
-  /** Multipliers on the weapon's authored stats. Absent key = x1. Empty for every hero today. */
+  /**
+   * Multipliers on EVERY weapon's authored stats. Absent key = x1. Empty for every hero today, and
+   * deliberately so: a blanket "+8% damage" is the least interesting thing a chassis can be. See
+   * `weaponBonus` for the version that says something.
+   */
   readonly weapon: Readonly<Partial<Record<WeaponStatKey, number>>>;
+  /**
+   * THE CHASSIS' IDENTITY: a bonus to ONE named weapon, applied whenever that weapon is held -
+   * not only when it is the opener. Slate's dispersion bonus is a bonus to the Medium Laser, so a
+   * Slate that finds a second Medium Laser mid-run... has the same one gun, but a Slate that picks
+   * up the Medium Laser having opened with something else still gets it.
+   *
+   * Absent on a chassis with no bonus yet. The eight at the top of the catalog have one; the eight
+   * below them are still plain, and are the obvious place for the next pass.
+   */
+  readonly weaponBonus?: Readonly<Partial<Record<WeaponId, HeroWeaponBonus>>>;
 }
 
 /**
@@ -140,67 +184,132 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'slate',
     name: 'Slate',
-    identity: 'Light biped, twin gun pods. Opens with the Medium Laser.',
+    identity:
+      'Light biped, twin gun pods. Opens with the Medium Laser, and vents its heat 50% faster.',
     sprite: 'mech_slate',
     gait: 'walk',
     startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
+    // Dispersion, not capacity. Uptime is dispersion / (generation + dispersion) with no
+    // capacity term at all, so this is the one laser stat that actually buys sustained DPS -
+    // the Medium Laser's duty cycle goes from 28% to 37%.
+    weaponBonus: { 'laser-medium': { mul: { heatDispersion: 1.5 } } },
   },
   {
     id: 'moss',
     name: 'Moss',
-    identity: 'Light strider, rotary drums. Opens with the Short Laser.',
+    identity:
+      'Light strider, rotary drums. Opens with the Short Laser at double reach.',
     sprite: 'mech_moss',
     gait: 'walk',
     startingWeapon: 'laser-short',
     player: {},
     weapon: {},
+    // 150 u to 300 u, and it is a fix as much as a bonus: a 150 u beam on a 195 u/s mech has
+    // no target 95.8% of the time against anything the player is kiting. Doubling it puts the
+    // Short Laser inside its own wake.
+    weaponBonus: { 'laser-short': { mul: { range: 2 } } },
   },
   {
     id: 'ember',
     name: 'Ember',
-    identity: 'Light strider, one heavy cannon. Opens with the Long Laser.',
+    identity:
+      'Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.',
     sprite: 'mech_ember',
     gait: 'walk',
     startingWeapon: 'laser-long',
     player: {},
     weapon: {},
+    // Damage only. The Long Laser's heat generation is untouched, so this is 30% more damage
+    // per second of fire for exactly the same duty cycle - the cleanest bonus on the roster.
+    weaponBonus: { 'laser-long': { mul: { damage: 1.3 } } },
   },
   {
     id: 'amber',
     name: 'Amber',
-    identity: 'Heavy biped, one heavy cannon. Opens with the Cannon.',
+    identity:
+      'Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.',
     sprite: 'mech_amber',
     gait: 'walk',
     startingWeapon: 'cannon',
     player: {},
     weapon: {},
+    // ADDITIVE, and it has to be: the Cannon's base pierce is 0, so a multiplier would be
+    // worth precisely nothing. Amber's shells hit two bodies from tier 1, and the tier-7
+    // pierce rung stacks on top for three.
+    weaponBonus: { cannon: { add: { pierce: 1 } } },
   },
   {
     id: 'onyx',
     name: 'Onyx',
-    identity: 'Heavy quad, boxed missile racks. Opens with the Long Missiles.',
+    identity:
+      'Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.',
     sprite: 'mech_onyx',
     gait: 'walk',
     startingWeapon: 'missile-long',
     player: {},
     weapon: {},
+    // Additive for the same reason as Amber's pierce, and it compounds with the ladder: the
+    // long rack buys a fourth missile at T5 and a fifth at T7, so a finished Onyx throws six.
+    weaponBonus: { 'missile-long': { add: { projectileCount: 1 } } },
   },
   {
     id: 'ash',
     name: 'Ash',
-    identity: 'Light biped, boxed missile racks. Opens with the Short Missiles.',
+    identity:
+      'Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.',
     sprite: 'mech_ash',
     gait: 'walk',
     startingWeapon: 'missile-short',
     player: {},
     weapon: {},
+    // The short rack's limiter is its COOLDOWN - the rearm between volleys - so that is the
+    // stat here. 20% less time, 3.0 s to 2.4 s, and 2.1 s to 1.68 s once the ladder is spent.
+    weaponBonus: { 'missile-short': { mul: { cooldown: 0.8 } } },
+  },
+  {
+    id: 'bone',
+    name: 'Bone',
+    identity:
+      'Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.',
+    sprite: 'mech_bone',
+    gait: 'walk',
+    startingWeapon: 'machine-gun',
+    player: {},
+    weapon: {},
+    // Per ROUND, and the machine gun fires two at a time from a 200-round magazine, so the
+    // 30% lands on every one of them and on the whole magazine's worth of damage.
+    weaponBonus: { 'machine-gun': { mul: { damage: 1.3 } } },
+  },
+  {
+    id: 'plum',
+    name: 'Plum',
+    identity:
+      'Heavy biped, no gun. Picks its opener from the first card, behind an Energy Shield that recharges 60% faster.',
+    sprite: 'mech_plum',
+    gait: 'walk',
+    // NO GUN. The only chassis in the game that opens with nothing to shoot with, and the
+    // reason it is playable at all is the shield's backlash: 30 damage into whatever breaks
+    // the rim, against a first-cycle Rustling's 22 HP. Plum's opening minutes are spent
+    // killing things by letting them break themselves on it, one every 8 seconds, until the
+    // first level-up puts a real weapon in its hands.
+    //
+    // That is a genuinely harder start than any other chassis has, and it is meant to be.
+    startingWeapon: null,
+    startingUpgrade: 'p-shield',
+    // 60% less recharge time: 20 s to 8 s at tier 1, 9 s to 3.6 s with the ladder spent.
+    // This is a PLAYER multiplier on a stat whose base is 0 and whose whole value arrives
+    // from the card - which is exactly the case the resolution order had to move to support
+    // (see data/stats.ts).
+    player: { shieldRecharge: 0.4 },
+    weapon: {},
   },
   {
     id: 'jade',
     name: 'Jade',
-    identity: 'Heavy biped, forward claw arms. Opens with the Short Laser.',
+    identity:
+      'Heavy biped, forward claw arms. Opens with the Short Laser.',
     sprite: 'mech_jade',
     gait: 'walk',
     startingWeapon: 'laser-short',
@@ -210,7 +319,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'rust',
     name: 'Rust',
-    identity: 'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
+    identity:
+      'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
     sprite: 'mech_rust',
     gait: 'walk',
     startingWeapon: 'laser-long',
@@ -220,7 +330,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'brass',
     name: 'Brass',
-    identity: 'Light hover, one heavy cannon. Opens with the Cannon.',
+    identity:
+      'Light hover, one heavy cannon. Opens with the Cannon.',
     sprite: 'mech_brass',
     gait: 'hover',
     startingWeapon: 'cannon',
@@ -230,7 +341,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'cobalt',
     name: 'Cobalt',
-    identity: 'Heavy quad, twin gun pods. Opens with the Medium Laser.',
+    identity:
+      'Heavy quad, twin gun pods. Opens with the Medium Laser.',
     sprite: 'mech_cobalt',
     gait: 'walk',
     startingWeapon: 'laser-medium',
@@ -240,7 +352,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'vermilion',
     name: 'Vermilion',
-    identity: 'Light hover, rotary drums. Opens with the Long Missiles.',
+    identity:
+      'Light hover, rotary drums. Opens with the Long Missiles.',
     sprite: 'mech_vermilion',
     gait: 'hover',
     startingWeapon: 'missile-long',
@@ -250,7 +363,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'indigo',
     name: 'Indigo',
-    identity: 'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
+    identity:
+      'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
     sprite: 'mech_indigo',
     gait: 'walk',
     startingWeapon: 'missile-long',
@@ -258,19 +372,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weapon: {},
   },
   {
-    id: 'bone',
-    name: 'Bone',
-    identity: 'Light strider, twin gun pods. Opens with the Machine Gun.',
-    sprite: 'mech_bone',
-    gait: 'walk',
-    startingWeapon: 'machine-gun',
-    player: {},
-    weapon: {},
-  },
-  {
     id: 'copper',
     name: 'Copper',
-    identity: 'Heavy quad, rotary drums. Opens with the Machine Gun.',
+    identity:
+      'Heavy quad, rotary drums. Opens with the Machine Gun.',
     sprite: 'mech_copper',
     gait: 'walk',
     startingWeapon: 'machine-gun',
@@ -278,19 +383,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weapon: {},
   },
   {
-    id: 'plum',
-    name: 'Plum',
-    identity: 'Heavy biped, spine-slung artillery tube. Opens with the Heavy Artillery.',
-    sprite: 'mech_plum',
-    gait: 'walk',
-    startingWeapon: 'artillery',
-    player: {},
-    weapon: {},
-  },
-  {
     id: 'fern',
     name: 'Fern',
-    identity: 'Light hover, forward claw arms. Opens with the Heavy Artillery.',
+    identity:
+      'Light hover, forward claw arms. Opens with the Heavy Artillery.',
     sprite: 'mech_fern',
     gait: 'hover',
     startingWeapon: 'artillery',

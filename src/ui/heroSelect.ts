@@ -1,14 +1,15 @@
 /**
  * Mech select.
  *
- * THIS IS A SKIN PICKER, AND IT SAYS SO. Every chassis in HERO_CATALOG is mechanically
- * identical right now - empty stat-multiplier maps, no traits - so there are no stat bars here
- * and no copy implying the mechs play differently. Drawing comparison bars over eight identical
- * stat blocks would be inventing differences that do not exist, which is a worse lie than
- * admitting the choice is cosmetic. When hero variety lands, this file grows a stat block; the
- * catalog shape does not have to change.
+ * NO STAT BARS, DELIBERATELY, even now that eight of the sixteen carry a bonus. Every chassis
+ * still has the same hit points and the same top speed; what differs is one weapon-specific
+ * bonus, which is a SENTENCE and not a bar. Drawing sixteen identical bars with one outlier would
+ * be worse than the prose - it would imply a comparison the numbers do not support.
  *
- * The art is loaded as plain `<img>` from `public/sprites/`, not through Pixi. It is eight
+ * The identity line is therefore the whole UI for hero variety, and it is authored next to the
+ * bonus it describes (data/heroes.ts) so the two cannot drift.
+ *
+ * The art is loaded as plain `<img>` from `public/sprites/`, not through Pixi. It is sixteen
  * thumbnails on a screen where nothing is animating, and the browser's own image pipeline gets
  * decode-off-main-thread and caching for free.
  */
@@ -36,7 +37,7 @@ export class HeroSelect {
     head.className = 'heroes__head';
     head.innerHTML = `<div class="eyebrow">Scrapyard</div>
       <h1 class="heroes__title">Pick a mech</h1>
-      <div class="heroes__note">Sixteen chassis, eight openers. Identical pilots, for now.</div>`;
+      <div class="heroes__note">Sixteen chassis. Eight carry a bonus to one weapon.</div>`;
     el.appendChild(head);
 
     const grid = document.createElement('div');

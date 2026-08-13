@@ -426,13 +426,19 @@ function generateOffers(world: World): number {
   // Computed ONCE per card rather than per eligibility test: neither cap can move while a single
   // card is being built, and `isOfferable` is called about forty times to fill three slots.
   const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+  // UNARMED: every offer on this card is a gun.
+  //
+  // A player holding no weapon cannot kill, cannot earn XP and therefore cannot be offered a
+  // second card - so a card of three passives is not a bad draw, it is the end of the run. Only
+  // an unarmed chassis (Plum) can ever be in this state, and only until it takes its first card.
+  const unarmed = world.weaponCount === 0;
   const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
 
   for (let slot = 0; slot < UPGRADE_OFFER_COUNT; slot++) {
     let total = 0;
     let last = -1;
     for (let i = 0; i < catalog.length; i++) {
-      if (!isOfferable(world, i, filled, weaponsFull, passivesFull)) continue;
+      if (!isOfferable(world, i, filled, weaponsFull, passivesFull, unarmed)) continue;
       const w = catalog[i].weight;
       if (w > 0) total += w;
       last = i;
@@ -443,7 +449,7 @@ function generateOffers(world: World): number {
     if (total > 0) {
       let target = rng.nextFloat() * total;
       for (let i = 0; i < catalog.length; i++) {
-        if (!isOfferable(world, i, filled, weaponsFull, passivesFull)) continue;
+        if (!isOfferable(world, i, filled, weaponsFull, passivesFull, unarmed)) continue;
         const w = catalog[i].weight;
         if (w <= 0) continue;
         if (target < w) {
@@ -476,11 +482,18 @@ function isOfferable(
   filled: number,
   weaponsFull: boolean,
   passivesFull: boolean,
+  /** True while the loadout holds NO weapon: passives are withheld until one is taken. */
+  unarmed: boolean,
 ): boolean {
   const def = world.upgradeCatalog[index];
   if (def === undefined) return false;
   const stacks = world.levelUp.stacks[index];
   if (stacks >= def.maxStacks) return false;
+
+  // A card offered to a player with nothing to shoot with has to put something in their hands.
+  // Note this deliberately hides the Energy Shield's tier 2 from Plum's opening card - a shield
+  // tier is a fine pick, but not at the price of the only card an unarmed run is guaranteed.
+  if (unarmed && def.kind !== 'weapon') return false;
 
   if (def.kind === 'weapon') {
     // ONLY THE UNLOCK NEEDS A SLOT. A gun already in the loadout keeps offering tiers 2-7 with

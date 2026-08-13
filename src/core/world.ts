@@ -287,8 +287,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     upgradeCatalog: catalogs.upgrades,
   };
 
-  // The hero's starting weapon. weaponCount stays 0 if the catalog is missing it, which the
-  // harness reports loudly rather than crashing mid-run.
+  // The hero's starting weapon, or -1 for a chassis that opens with none. weaponCount then stays
+  // 0 - which is Plum walking in unarmed behind a shield, and is also what happens if a fixture
+  // catalog is missing the gun. The two cases share a code path deliberately: there is exactly one
+  // "no weapon in slot 0" branch to get right rather than two.
   const defId = world.weaponCatalog.findIndex((w) => w.id === hero.startingWeapon);
 
   // THE STARTING WEAPON IS THAT WEAPON'S TIER 1, so its card starts with one stack taken.
@@ -306,6 +308,31 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     for (let i = 0; i < world.upgradeCatalog.length; i++) {
       const card = world.upgradeCatalog[i];
       if (card.kind === 'weapon' && card.grantsWeapon === hero.startingWeapon) {
+        world.levelUp.stacks[i] = 1;
+        break;
+      }
+    }
+  }
+
+  // A CHASSIS THAT WALKS IN UNARMED PICKS ITS FIRST GUN BEFORE ANYTHING ELSE HAPPENS.
+  //
+  // This is a rule about unarmed chassis, not a special case for Plum, and it is not decoration:
+  // measured, a Plum with no weapon and no opening card dies in ELEVEN SECONDS standing still and
+  // manages one kill in ten minutes while kiting, because its only way to hurt anything is the
+  // shield's backlash and its only way to earn XP is kills. A chassis that cannot reach level 2
+  // is not a hard chassis, it is a broken one.
+  //
+  // Keyed on the AUTHORED `startingWeapon === null` rather than on `defId < 0`, so a fixture
+  // catalog that happens to be missing a gun does not silently acquire a free card.
+  if (hero.startingWeapon === null) world.levelUp.pending = 1;
+
+  // A STARTING NON-WEAPON CARD, seeded by exactly the same argument. Plum walks in behind an
+  // Energy Shield rather than a gun, and a shield that was not registered as tier 1 would be
+  // offered back as an unlock - taking which would mean tier 1 of a rim that has been up since
+  // t=0. Matched by card ID rather than by kind, so this stays one card and not "every passive".
+  if (hero.startingUpgrade !== undefined) {
+    for (let i = 0; i < world.upgradeCatalog.length; i++) {
+      if (world.upgradeCatalog[i].id === hero.startingUpgrade) {
         world.levelUp.stacks[i] = 1;
         break;
       }

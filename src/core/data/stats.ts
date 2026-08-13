@@ -6,11 +6,24 @@
  *
  * THE ORDER IS THE CONTRACT (DESIGN.md §8.2), and it is fixed for both stat families:
  *
- *     base  ->  hero multiplier  ->  additive upgrades  ->  multiplicative upgrades
+ *     base  ->  ALL additive terms  ->  ALL multiplicative terms
  *
  * Additive before multiplicative is the choice that makes stacking legible: +10 max HP then +20%
  * is 156 on a 120 base, and a player reading two cards can predict it. The reverse order makes
  * every card's value depend on the order it was drawn, which is unexplainable on a phone screen.
+ *
+ * THE HERO MULTIPLIER IS ONE OF THE MULTIPLICATIVE TERMS. It used to sit between the base and the
+ * additive terms, which made it silently INERT on any stat whose base is 0 - `armour`, and every
+ * Energy Shield number, all of which are 0 at base and arrive entirely as additive terms from a
+ * card. A chassis that is "60% faster at recharging its shield" has to scale the shield it ends up
+ * with rather than the nothing it started with, and the same argument covers a future armour
+ * chassis. Nothing regressed when it moved: the two orders differ only where a hero multiplier
+ * meets an additive term, and at that moment no hero had a multiplier at all.
+ *
+ * PER-WEAPON HERO BONUSES (HeroDef.weaponBonus) join the same two stages - `add` with the additive
+ * terms, `mul` with the multiplicative ones. They are what makes a chassis mean something specific
+ * ("50% better heat dispersion, on the Medium Laser") rather than something bland ("+8% damage");
+ * `HeroDef.weapon` is the blunt version and applies to whatever you happen to be holding.
  *
  * Both resolve functions WRITE INTO a caller-owned struct and return void. Nothing here allocates,
  * because `resolveWeaponStats` runs once per weapon per upgrade and the pools are already hot.
@@ -20,7 +33,7 @@ import { DT, HEAT_RESUME_FRAC } from '../constants.js';
 import type { Tuning } from '../config/tuning.js';
 import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
-import type { HeroDef } from './heroes.js';
+import type { HeroDef, HeroWeaponBonus } from './heroes.js';
 import type { UpgradeDef } from './upgrades.js';
 
 // -------------------------------------------------------------------------------------------
@@ -242,9 +255,13 @@ function resolveOne(
   catalog: readonly UpgradeDef[],
   target: 'player' | 'weapon',
   key: string,
+  /** HeroDef.weaponBonus for THIS weapon, or undefined. Ignored for player stats. */
+  bonus?: HeroWeaponBonus,
 ): number {
   accumulate(stacks, catalog, target, key, ACC);
-  return (base * heroMul + ACC.add) * ACC.mul;
+  const add = bonus?.add?.[key as WeaponStatKey] ?? 0;
+  const mul = bonus?.mul?.[key as WeaponStatKey] ?? 1;
+  return (base + add + ACC.add) * heroMul * mul * ACC.mul;
 }
 
 /**
@@ -357,6 +374,10 @@ export function resolveWeaponStats(
   out: WeaponStats,
 ): void {
   const h = hero.weapon;
+  // The chassis' bonus for THIS weapon, looked up once. `undefined` for every hero that
+  // has nothing to say about this gun, which is most of them - resolveOne then reads two
+  // optional chains that short-circuit on the first `?.`.
+  const bonus = hero.weaponBonus?.[def.id];
 
   // base + per-level deltas
   const lvl = (key: WeaponStatKey): number => {
@@ -369,9 +390,9 @@ export function resolveWeaponStats(
     return v;
   };
 
-  out.damage = resolveOne(lvl('damage'), h.damage ?? 1, stacks, upgrades, 'weapon', 'damage');
-  out.cooldown = resolveOne(lvl('cooldown'), h.cooldown ?? 1, stacks, upgrades, 'weapon', 'cooldown');
-  out.range = resolveOne(lvl('range'), h.range ?? 1, stacks, upgrades, 'weapon', 'range');
+  out.damage = resolveOne(lvl('damage'), h.damage ?? 1, stacks, upgrades, 'weapon', 'damage', bonus);
+  out.cooldown = resolveOne(lvl('cooldown'), h.cooldown ?? 1, stacks, upgrades, 'weapon', 'cooldown', bonus);
+  out.range = resolveOne(lvl('range'), h.range ?? 1, stacks, upgrades, 'weapon', 'range', bonus);
   out.projectileSpeed = resolveOne(
     lvl('projectileSpeed'),
     h.projectileSpeed ?? 1,
@@ -379,6 +400,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'projectileSpeed',
+    bonus,
   );
   out.projectileCount = resolveOne(
     lvl('projectileCount'),
@@ -387,8 +409,9 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'projectileCount',
+    bonus,
   );
-  out.pierce = resolveOne(lvl('pierce'), h.pierce ?? 1, stacks, upgrades, 'weapon', 'pierce');
+  out.pierce = resolveOne(lvl('pierce'), h.pierce ?? 1, stacks, upgrades, 'weapon', 'pierce', bonus);
   out.knockback = resolveOne(
     lvl('knockback'),
     h.knockback ?? 1,
@@ -396,6 +419,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'knockback',
+    bonus,
   );
   out.splashRadius = resolveOne(
     lvl('splashRadius'),
@@ -404,6 +428,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'splashRadius',
+    bonus,
   );
   out.splashFrac = resolveOne(
     lvl('splashFrac'),
@@ -412,6 +437,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'splashFrac',
+    bonus,
   );
   out.turretTraverse = resolveOne(
     lvl('turretTraverse'),
@@ -420,8 +446,9 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'turretTraverse',
+    bonus,
   );
-  out.fireArc = resolveOne(lvl('fireArc'), h.fireArc ?? 1, stacks, upgrades, 'weapon', 'fireArc');
+  out.fireArc = resolveOne(lvl('fireArc'), h.fireArc ?? 1, stacks, upgrades, 'weapon', 'fireArc', bonus);
   out.heatPerSec = resolveOne(
     lvl('heatPerSec'),
     h.heatPerSec ?? 1,
@@ -429,6 +456,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'heatPerSec',
+    bonus,
   );
   if (out.heatPerSec < 0) out.heatPerSec = 0;
   out.heatCapacity = resolveOne(
@@ -438,6 +466,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'heatCapacity',
+    bonus,
   );
   if (out.heatCapacity < 1) out.heatCapacity = 1;
   out.heatDispersion = resolveOne(
@@ -447,6 +476,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'heatDispersion',
+    bonus,
   );
   if (out.heatDispersion < 0) out.heatDispersion = 0;
   out.heatResume = out.heatCapacity * HEAT_RESUME_FRAC;
@@ -463,7 +493,7 @@ export function resolveWeaponStats(
   out.projectileCount = Math.max(1, Math.floor(out.projectileCount));
   out.pierce = Math.max(0, Math.floor(out.pierce));
 
-  out.turnRate = resolveOne(lvl('turnRate'), h.turnRate ?? 1, stacks, upgrades, 'weapon', 'turnRate');
+  out.turnRate = resolveOne(lvl('turnRate'), h.turnRate ?? 1, stacks, upgrades, 'weapon', 'turnRate', bonus);
   if (out.turnRate < 0) out.turnRate = 0;
   out.spreadAngle = resolveOne(
     lvl('spreadAngle'),
@@ -472,6 +502,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'spreadAngle',
+    bonus,
   );
   out.flightTime = resolveOne(
     lvl('flightTime'),
@@ -480,6 +511,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'flightTime',
+    bonus,
   );
   if (out.flightTime < 0) out.flightTime = 0;
 
@@ -489,7 +521,7 @@ export function resolveWeaponStats(
   out.projectileLifetime =
     out.flightTime > 0 ? out.flightTime : (out.range / out.projectileSpeed) * LIFETIME_MARGIN;
   out.ammoCapacity = Math.floor(
-    resolveOne(lvl('ammoCapacity'), h.ammoCapacity ?? 1, stacks, upgrades, 'weapon', 'ammoCapacity'),
+    resolveOne(lvl('ammoCapacity'), h.ammoCapacity ?? 1, stacks, upgrades, 'weapon', 'ammoCapacity', bonus),
   );
   if (out.ammoCapacity < 0) out.ammoCapacity = 0;
   out.reloadTime = resolveOne(
@@ -499,6 +531,7 @@ export function resolveWeaponStats(
     upgrades,
     'weapon',
     'reloadTime',
+    bonus,
   );
   // A reload that reached zero would make the magazine a cooldown wearing a different hat.
   if (out.ammoCapacity > 0 && out.reloadTime < 0.5) out.reloadTime = 0.5;

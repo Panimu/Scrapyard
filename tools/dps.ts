@@ -49,8 +49,18 @@ function blankStats(): WeaponStats {
   };
 }
 
-/** A hero with no multipliers at all, so the table shows the WEAPON and not a chassis. */
-const NEUTRAL = HERO_CATALOG.find((h) => Object.keys(h.player).length === 0) ?? HERO_CATALOG[0];
+/**
+ * A hero with no multipliers AND no per-weapon bonus, so the table shows the WEAPON and not a
+ * chassis. The `weaponBonus` clause is load-bearing now that Slate carries one: without it this
+ * would pick Slate and quietly print the Medium Laser's row 50% cooler than it ships.
+ */
+const NEUTRAL =
+  HERO_CATALOG.find(
+    (h) =>
+      Object.keys(h.player).length === 0 &&
+      Object.keys(h.weapon).length === 0 &&
+      h.weaponBonus === undefined,
+  ) ?? HERO_CATALOG[0];
 const NO_STACKS = new Uint8Array(UPGRADE_CATALOG.length);
 
 interface Row {

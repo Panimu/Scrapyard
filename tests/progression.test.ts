@@ -77,7 +77,12 @@ function bank(world: World, xp: number): void {
 function gainOneLevel(world: World): void {
   const deficit = world.player.xpToNext - world.player.xp;
   const gain = world.player.stats.xpGain || 1;
-  bank(world, deficit / gain);
+  // A HAIR MORE THAN THE DEFICIT, and the hair is load-bearing. `banked * gain` is not exactly
+  // `deficit` in binary - dividing by 5.6 and multiplying back lands an ulp short about as often
+  // as it lands on - and a level that silently does not happen turns a loop like `takeTier` into a
+  // helper that returns -1 for reasons that have nothing to do with what is being tested. The
+  // overshoot cannot grant TWO levels: the smallest gap between thresholds is 10 XP.
+  bank(world, (deficit + 1e-6) / gain);
 }
 
 /** One tick with `chooseIndex` set - the only way a pick can ever reach the simulation. */
@@ -478,9 +483,11 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   });
 
   it('gives the Cannon range, fire rate, damage and pierce on the tiers that claim them', () => {
-    // Amber opens with the Cannon. Every hero multiplier is 1 and no card in the shipping pool
-    // carries an effect, so these are the ladder's own numbers reaching the resolved stats.
-    const w = makeWorldForHero(heroIndex('amber'), 21, 'cannon');
+    // BRASS, not Amber, and the choice matters: both open with the Cannon, but Amber's chassis
+    // bonus is +1 pierce and this test is about the LADDER's numbers. A ladder test run on a
+    // chassis that bends the same weapon is testing two things and can only fail ambiguously.
+    // The chassis bonuses have their own suite in tests/heroes.test.ts.
+    const w = makeWorldForHero(heroIndex('brass'), 21, 'cannon');
     const card = 0; // solo catalog: the Cannon card is the only one in this world's pool
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
@@ -519,9 +526,11 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   });
 
   it('gives a laser damage AND heat together, then capacity, then dispersion', () => {
-    // Slate opens with the Medium Laser. Solo catalog, so its card is the only one and sits at
-    // index 0 - the shipping index would point past the end of this world's pool.
-    const w = makeWorldForHero(heroIndex('slate'), 33, 'laser-medium');
+    // COBALT, not Slate: both open with the Medium Laser, but Slate's chassis bonus is x1.5 on
+    // this weapon's dispersion - the exact stat the tiers below are about. Same argument as the
+    // Cannon test above. Solo catalog, so the card is the only one in the pool and sits at index
+    // 0; the shipping index would point past the end of this world's pool.
+    const w = makeWorldForHero(heroIndex('cobalt'), 33, 'laser-medium');
     const card = 0;
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
@@ -559,9 +568,11 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(s().heatPerSec).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * 1.4, 6);
   });
 
-  it('starts EVERY hero with exactly one weapon at tier 1, seeded to one stack', () => {
+  it('starts EVERY armed hero with exactly one weapon at tier 1, seeded to one stack', () => {
     for (let h = 0; h < HERO_CATALOG.length; h++) {
       const hero = HERO_CATALOG[h];
+      // Plum opens with no gun at all. Its own seeding is asserted below.
+      if (hero.startingWeapon === null) continue;
       const w = makeWorldForHero(h, 100 + h);
       const card = upgradeIndexForWeapon(hero.startingWeapon);
       const defId = weaponDefIndex(hero.startingWeapon);
@@ -576,22 +587,28 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
       for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
         if (i !== card) expect(w.levelUp.stacks[i]).toBe(0);
       }
-      // Tier 1 is the weapon's base: the seed must not have applied a rung of the ladder.
-      expect(w.weapons[0].stats.damage).toBe(WEAPON_CATALOG[defId].base.damage);
-      expect(w.weapons[0].stats.range).toBe(WEAPON_CATALOG[defId].base.range);
+      // Tier 1 is the weapon's base, times whatever this chassis does to that weapon: the seed
+      // must not have applied a rung of the LADDER, which is a different thing from the chassis
+      // bonus and is what this assertion is guarding.
+      const bonus = hero.weaponBonus?.[hero.startingWeapon];
+      const dmgMul = bonus?.mul?.damage ?? 1;
+      const rangeMul = bonus?.mul?.range ?? 1;
+      expect(w.weapons[0].stats.damage).toBeCloseTo(WEAPON_CATALOG[defId].base.damage * dmgMul, 9);
+      expect(w.weapons[0].stats.range).toBeCloseTo(WEAPON_CATALOG[defId].base.range * rangeMul, 9);
     }
   });
 
-  it('offers the hero gun at TIER 2 and never re-unlocks it, for every hero', () => {
+  it('offers the hero gun at TIER 2 and never re-unlocks it, for every armed hero', () => {
     for (let h = 0; h < HERO_CATALOG.length; h++) {
       const hero = HERO_CATALOG[h];
+      if (hero.startingWeapon === null) continue;
       const w = makeWorldForHero(h, 200 + h);
       const card = upgradeIndexForWeapon(hero.startingWeapon);
       const defId = weaponDefIndex(hero.startingWeapon);
 
       // The first time its card comes round it is the SECOND tier, and taking it levels the gun
       // in place: same slot count for that weapon, one level higher, no new install.
-      expect(takeTier(w, card)).toBe(2);
+      expect(takeTier(w, card), `hero ${hero.id}`).toBe(2);
       let held = 0;
       for (let i = 0; i < w.weaponCount; i++) {
         if (w.weapons[i].defId === defId) {
@@ -733,7 +750,11 @@ describe('stat resolution after a pick', () => {
     expect(w.player.stats.maxHp).not.toBeCloseTo(120 * 1.36 + 25, 6);
   });
 
-  it('puts the hero multiplier before the additive term', () => {
+  it('applies the hero multiplier AFTER the additive term, not before', () => {
+    // The order is (base + add) * heroMul, not base * heroMul + add. It has to be: `armour` and
+    // every Energy Shield stat have a base of 0 and arrive entirely as additive terms from a card,
+    // and under the old order a hero multiplier on any of them multiplied nothing and vanished.
+    // Plum's whole chassis bonus is exactly that case.
     const catalogs = fixtureCatalogs(HEAVY_HERO, FIXTURE_UPGRADES);
     const w = makeWorld(1, catalogs);
     expect(w.player.stats.maxHp).toBe(120 * 1.5);
@@ -743,7 +764,9 @@ describe('stat resolution after a pick', () => {
     expect(slot).toBeGreaterThanOrEqual(0);
     choose(w, slot);
 
-    expect(w.player.stats.maxHp).toBe(120 * 1.5 + 25);
+    expect(w.player.stats.maxHp).toBe((120 + 25) * 1.5);
+    // The old order, kept as the thing this test exists to catch.
+    expect(w.player.stats.maxHp).not.toBe(120 * 1.5 + 25);
   });
 
   it('re-resolves every live weapon: +18% weapon damage twice compounds linearly', () => {

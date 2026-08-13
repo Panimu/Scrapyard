@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T20:50Z',
+    title: 'Mechs stop being skins',
+    notes: [
+      'Eight chassis now carry a bonus to one weapon. Slate vents the Medium Laser 50% faster; Moss doubles the Short Laser’s reach; Ember hits 30% harder with the Long Laser; Amber’s Cannon shells punch through one extra body; Onyx fires a fourth Long Missile; Ash rearms the Short Missiles 20% faster; Bone hits 30% harder with the Machine Gun.',
+      'A bonus follows the weapon, not the opener: pick that gun up later in a run and you still get it.',
+      'Plum walks in with no gun at all, behind an Energy Shield that recharges 60% faster, and picks its opening weapon from the very first card.',
+      'Onyx, Ash, Bone and Plum now sit together, fifth through eighth on the select screen.',
+      'New app icon.',
+    ],
+  },
+  {
     at: '2026-08-13T20:35Z',
     title: 'Artillery aims, and the two missile racks look different',
     notes: [

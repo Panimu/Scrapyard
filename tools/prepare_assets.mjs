@@ -159,13 +159,21 @@ function copyAll() {
 // ---------------------------------------------------------------------------------------------
 
 const PALETTE = {
+  // The icon is painted from the GAME's own colours, not from a separate icon palette. `bg` is
+  // the dark the manifest and the theme-color meta tag already declare, so the launch splash and
+  // the tab chrome agree with the artwork; `floor` is the rust the arena is tiled with; `hull`,
+  // `trim` and `glass` are lifted verbatim from Slate's row in tools/make-mechs.mjs, which is the
+  // chassis the picker opens on.
   bg: [0x0b, 0x0e, 0x13],
-  panel: [0x16, 0x1c, 0x26],
-  tread: [0x39, 0x44, 0x52],
-  hull: [0x94, 0xa2, 0xb1],
-  head: [0x6e, 0x7c, 0x8c],
-  eye: [0xe8, 0xf2, 0xff],
-  barrel: [0xe7, 0xb9, 0x00],
+  floor: [0xa8, 0x54, 0x33],
+  floorDark: [0x8f, 0x45, 0x29],
+  hull: [0x8d, 0x99, 0xae],
+  trim: [0x5b, 0x67, 0x79],
+  metal: [0x39, 0x44, 0x52],
+  glass: [0x4f, 0xa8, 0xff],
+  // The Energy Shield's rim, the same 0x4fa8ff the renderer draws - and the reason the icon reads
+  // as THIS game rather than as a generic top-down shooter.
+  shield: [0x4f, 0xa8, 0xff],
 };
 
 class Raster {
@@ -286,60 +294,106 @@ function crc32(buf) {
 }
 
 /**
- * A top-down mech facing +x, matching the game's own facing convention, drawn entirely from
- * rectangles and circles so it stays legible at 180 px and at 32 px in a browser tab.
- * `inset` is the fraction of the canvas left empty around the art.
+ * THE APP ICON: Slate, seen from above inside its Energy Shield, on the arena floor.
+ *
+ * It is drawn rather than cropped from the sprites because there is no PNG DECODER here - the
+ * ~30 lines on top of node:zlib below only encode - and taking an image dependency to composite
+ * one 180 px square is a poor trade. Everything is rectangles and circles, which is also what
+ * keeps it legible at 32 px in a browser tab.
+ *
+ * WHAT IT HAS TO SAY, in order, because at 32 px only the first two survive:
+ *   1. a blue ring - the shield, and the one shape nothing else in this genre has;
+ *   2. a grey machine facing right, with a lit cockpit;
+ *   3. rust ground, so it is not another dark square on a home screen full of dark squares.
+ *
+ * `inset` is the fraction of the canvas left empty around the art. iOS masks the corners of
+ * apple-touch-icon itself, so the canvas stays SQUARE and FULLY OPAQUE and the art moves inward.
  */
 function drawIcon(size, inset) {
   const r = new Raster(size);
+  // Opaque to the very edge: iOS composites nothing behind a home-screen icon, and a transparent
+  // corner there is a black corner.
   r.clear(PALETTE.bg);
 
   const a = inset;
   const b = 1 - inset;
   const w = b - a;
   const at = (u, v) => [a + u * w, a + v * w];
+  const cx = a + 0.5 * w;
+  const cy = a + 0.5 * w;
 
-  // Backing plate, so the mech reads against the dark background at small sizes.
+  // --- ground -------------------------------------------------------------------------------
+  // A rounded rust plate rather than a full bleed, so the maskable variant (which insets much
+  // further) still shows the frame instead of one flat colour.
   {
     const [x0, y0] = at(0, 0);
     const [x1, y1] = at(1, 1);
-    r.rect(x0, y0, x1, y1, PALETTE.panel, 0.16 * w);
+    r.rect(x0, y0, x1, y1, PALETTE.floor, 0.16 * w);
   }
-  // Treads, top and bottom (the long axis is horizontal - the mech faces right).
-  for (const [ty0, ty1] of [
-    [0.13, 0.29],
-    [0.71, 0.87],
+  // Two darker flecks, the same trick the floor tile uses. Enough to stop the plate reading as a
+  // solid swatch; not enough to compete with the mech at 32 px.
+  {
+    const [x0, y0] = at(0.09, 0.13);
+    const [x1, y1] = at(0.2, 0.24);
+    r.rect(x0, y0, x1, y1, PALETTE.floorDark, 0.02 * w);
+    const [x2, y2] = at(0.76, 0.72);
+    const [x3, y3] = at(0.89, 0.85);
+    r.rect(x2, y2, x3, y3, PALETTE.floorDark, 0.02 * w);
+  }
+
+  // --- shield rim ---------------------------------------------------------------------------
+  // Drawn as an annulus: the blue disc, then the floor punched back out of its middle. The mech
+  // goes on top afterwards, so the punch never eats into it.
+  {
+    const outer = 0.42 * w;
+    r.circle(cx, cy, outer, PALETTE.shield);
+    r.circle(cx, cy, outer - 0.035 * w, PALETTE.floor);
+  }
+
+  // --- mech, facing +x ------------------------------------------------------------------------
+  // Legs first, splayed either side, then the hull over them: the same stacking order the renderer
+  // uses, and the reason the machine reads as standing on the ground rather than lying on it.
+  for (const [ly0, ly1] of [
+    [0.25, 0.35],
+    [0.65, 0.75],
   ]) {
-    const [x0, y0] = at(0.12, ty0);
-    const [x1, y1] = at(0.82, ty1);
-    r.rect(x0, y0, x1, y1, PALETTE.tread, 0.05 * w);
+    const [x0, y0] = at(0.34, ly0);
+    const [x1, y1] = at(0.6, ly1);
+    r.rect(x0, y0, x1, y1, PALETTE.metal, 0.03 * w);
+  }
+  // Shoulder pods, one either side of the hull - Slate's twin gun pods, and the silhouette detail
+  // that stops the chassis reading as a plain rounded rectangle.
+  for (const [py0, py1] of [
+    [0.29, 0.41],
+    [0.59, 0.71],
+  ]) {
+    const [x0, y0] = at(0.43, py0);
+    const [x1, y1] = at(0.65, py1);
+    r.rect(x0, y0, x1, y1, PALETTE.trim, 0.03 * w);
   }
   // Hull.
   {
-    const [x0, y0] = at(0.17, 0.25);
-    const [x1, y1] = at(0.74, 0.75);
-    r.rect(x0, y0, x1, y1, PALETTE.hull, 0.07 * w);
+    const [x0, y0] = at(0.37, 0.36);
+    const [x1, y1] = at(0.66, 0.64);
+    r.rect(x0, y0, x1, y1, PALETTE.hull, 0.06 * w);
   }
-  // Head panel at the front (+x), carrying the eyes.
+  // Cockpit, forward on the hull. The one lit thing in the icon, and it is the shield's blue -
+  // two uses of one colour reads as deliberate where three colours read as noise.
   {
-    const [x0, y0] = at(0.56, 0.29);
-    const [x1, y1] = at(0.74, 0.71);
-    r.rect(x0, y0, x1, y1, PALETTE.head, 0.05 * w);
+    const [x0, y0] = at(0.54, 0.43);
+    const [x1, y1] = at(0.65, 0.57);
+    r.rect(x0, y0, x1, y1, PALETTE.glass, 0.04 * w);
   }
-  {
-    const [ex, ey0] = at(0.65, 0.4);
-    const [, ey1] = at(0, 0.6);
-    r.circle(ex, ey0, 0.045 * w, PALETTE.eye);
-    r.circle(ex, a + 0.6 * w, 0.045 * w, PALETTE.eye);
-    void ey0;
-    void ey1;
+  // Barrels, pointing +x, breaking the rim - the machine is bigger than the field around it.
+  for (const [by0, by1] of [
+    [0.44, 0.475],
+    [0.525, 0.56],
+  ]) {
+    const [x0, y0] = at(0.66, by0);
+    const [x1, y1] = at(0.92, by1);
+    r.rect(x0, y0, x1, y1, PALETTE.metal, 0.015 * w);
   }
-  // Barrel, pointing +x. The one warm colour in the icon.
-  {
-    const [x0, y0] = at(0.72, 0.45);
-    const [x1, y1] = at(0.94, 0.55);
-    r.rect(x0, y0, x1, y1, PALETTE.barrel, 0.03 * w);
-  }
+
   return r.toPng();
 }
 
