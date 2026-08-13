@@ -269,16 +269,40 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     upgradeCatalog: catalogs.upgrades,
   };
 
-  // Stats are resolved exactly here and on each upgrade applied - never per tick.
+  // The hero's starting weapon. weaponCount stays 0 if the catalog is missing it, which the
+  // harness reports loudly rather than crashing mid-run.
+  const defId = world.weaponCatalog.findIndex((w) => w.id === hero.startingWeapon);
+
+  // THE STARTING WEAPON IS THAT WEAPON'S TIER 1, so its card starts with one stack taken.
+  //
+  // It arrives without a card being chosen, and `stacks` is what the whole upgrade system calls a
+  // weapon's tier: leaving it at 0 would offer the gun you are already holding back to you as an
+  // UNLOCK, and taking it would then mean tier 1 of a weapon that has been firing since t=0.
+  // Seeding 1 makes the next offer of that card its TIER 2 and makes the unlock branch in
+  // applyChoice unreachable for it.
+  //
+  // Driven off `hero.startingWeapon` and the INJECTED catalog, never a hard-coded id: each of the
+  // eight chassis opens with a different gun, and a fixture catalog may order or omit cards
+  // however it likes. A hero whose starting weapon has no card (or no weapon def) seeds nothing.
+  if (defId >= 0) {
+    for (let i = 0; i < world.upgradeCatalog.length; i++) {
+      const card = world.upgradeCatalog[i];
+      if (card.kind === 'weapon' && card.grantsWeapon === hero.startingWeapon) {
+        world.levelUp.stacks[i] = 1;
+        break;
+      }
+    }
+  }
+
+  // Stats are resolved exactly here and on each upgrade applied - never per tick. This runs AFTER
+  // the seed above: both resolvers read `stacks`, so seeding afterwards would leave the run's
+  // first tick resolved against a tier the player does not have.
   // config.tuning is passed explicitly: omitting it silently falls back to DEFAULT_TUNING, so a
   // swept tuning would apply from the first upgrade pick onward but NOT at run start - the run
   // would start on one set of numbers and quietly change to another.
   resolvePlayerStats(hero, world.levelUp.stacks, world.upgradeCatalog, player.stats, config.tuning);
   player.hp = player.stats.maxHp;
 
-  // The hero's starting weapon. weaponCount stays 0 if the catalog is missing it, which the
-  // harness reports loudly rather than crashing mid-run.
-  const defId = world.weaponCatalog.findIndex((w) => w.id === hero.startingWeapon);
   if (defId >= 0) {
     const inst = world.weapons[0];
     inst.defId = defId;

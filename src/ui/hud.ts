@@ -14,27 +14,38 @@
  * still invalidates layout, and this runs 60 times a second.
  */
 
-import { HEAT_MAX, HEAT_RESUME, MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
+import { MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
 
 /**
- * HEAT READOUT - one chip per beam weapon held.
+ * THE LOADOUT ROW - one chip per weapon held, carrying its TIER and, for a laser, its HEAT.
  *
  * The lasers are a DUTY CYCLE, so the bar is the weapon: a player who cannot see heat cannot play
- * them. Three things have to read at a glance, mid-horde, without thinking:
+ * them. Four things have to read at a glance, mid-horde, without thinking:
  *
  *   1. WHICH LASER. The fill is the weapon's own `beamColour`, so the bar on the HUD and the line
  *      on the battlefield are obviously the same gun. No labels are needed to make that link -
  *      the name under the bar is for learning it the first time.
- *   2. THE 50 LINE. Heat is HYSTERETIC: at 100 the weapon cuts out and does not come back until
- *      it has cooled to HEAT_RESUME. A bar that only showed "how full" would say a weapon at 99
- *      and a weapon at 51 are nearly the same, when one is about to die for two seconds and the
- *      other is about to be fine. The notch at 50 is the whole mechanic made visible, and the
- *      tinted band above it is the region where cutting out is a real cost.
+ *   2. THE RESUME LINE. Heat is HYSTERETIC: at `stats.heatCapacity` the weapon cuts out and does
+ *      not come back until it has cooled to `stats.heatResume`. A bar that only showed "how full"
+ *      would say a weapon just under its ceiling and one just over its resume line are nearly the
+ *      same, when one is about to die for two seconds and the other is about to be fine. The
+ *      notch is the whole mechanic made visible, and the tinted band above it is the region where
+ *      cutting out is a real cost.
  *   3. OFFLINE, AND FOR HOW LONG. Overheating is a hard cut, not a fade, so it gets a hard visual
  *      state - and a countdown, because "it will come back" is useless without "in 2.4 s".
+ *   4. WHAT TIER IT IS. Every card in the pool is a weapon tier, so "T4" beside the name is the
+ *      only place a player can see what a run has actually been spent on.
  *
- * Projectile weapons (the Cannon) get no chip: `heat` is 0 forever and a permanently empty bar is
- * noise that teaches the player to ignore the whole row.
+ * THE BAR IS SCALED TO THE WEAPON, NOT TO 100. Capacity is a per-weapon stat that tiers 3 and 6
+ * raise, so the fill is `heat / stats.heatCapacity` and the notch sits at
+ * `stats.heatResume / stats.heatCapacity` (injected as the `--resume` custom property). A
+ * capacity tier therefore makes the bar represent MORE HEAT - a longer burst at the same visual
+ * pace - rather than showing the same heat as a smaller fraction, which would read as the upgrade
+ * having made the weapon cooler when it has not.
+ *
+ * Projectile weapons (the Cannon) get a chip too, but a TRACKLESS one: `heat` is 0 forever and a
+ * permanently empty bar is noise that teaches the player to ignore the whole row, while the tier
+ * is exactly as worth seeing as a laser's.
  */
 
 
@@ -71,11 +82,12 @@ export class Hud {
   private readonly hurt: HTMLDivElement;
   private readonly debug: HTMLPreElement;
 
-  /** Heat chips: built once at MAX_WEAPONS, shown/hidden as beam weapons are acquired. */
+  /** Loadout chips: built once at MAX_WEAPONS, shown/hidden as weapons are acquired. */
   private readonly heatRow: HTMLDivElement;
   private readonly heatChips: HTMLDivElement[] = [];
   private readonly heatFills: HTMLDivElement[] = [];
   private readonly heatNames: HTMLSpanElement[] = [];
+  private readonly heatTiers: HTMLSpanElement[] = [];
   private readonly heatStatus: HTMLSpanElement[] = [];
   /** Catalog index currently bound to each chip, or -1. Rebinding is what rewrites name/colour. */
   private readonly heatDefId = new Int32Array(MAX_WEAPONS).fill(-1);
@@ -83,6 +95,9 @@ export class Hud {
   private readonly heatPct = new Int32Array(MAX_WEAPONS).fill(-1);
   private readonly heatOut = new Int32Array(MAX_WEAPONS).fill(-1);
   private readonly heatTenths = new Int32Array(MAX_WEAPONS).fill(-1);
+  /** Last written tier and resume-notch percent - both move only on a level-up. */
+  private readonly heatTier = new Int32Array(MAX_WEAPONS).fill(-1);
+  private readonly heatResumePct = new Int32Array(MAX_WEAPONS).fill(-1);
   private heatShown = -1;
 
   private lastHpText = '';
@@ -147,11 +162,13 @@ export class Hud {
       chip.innerHTML = `
         <div class="heat__track"><div class="heat__fill" data-fill></div></div>
         <div class="heat__foot"><span class="heat__name" data-name></span><span
+          class="heat__tier" data-tier></span><span
           class="heat__status" data-status></span></div>`;
       heatRow.appendChild(chip);
       this.heatChips.push(chip);
       this.heatFills.push(query(chip, '[data-fill]'));
       this.heatNames.push(query<HTMLSpanElement>(chip, '[data-name]'));
+      this.heatTiers.push(query<HTMLSpanElement>(chip, '[data-tier]'));
       this.heatStatus.push(query<HTMLSpanElement>(chip, '[data-status]'));
     }
 
@@ -234,7 +251,7 @@ export class Hud {
   }
 
   /**
-   * One chip per beam weapon held. Allocation-free in the steady state: every write is gated on a
+   * One chip per weapon held. Allocation-free in the steady state: every write is gated on a
    * QUANTISED value that has actually moved, so a laser sitting at 61.4% heat costs zero DOM work
    * and the countdown string is only built on the ten changes a second it really has.
    */
@@ -245,30 +262,59 @@ export class Hud {
       const inst = world.weapons[i];
       if (inst === undefined) continue;
       const def = world.weaponCatalog[inst.defId];
-      if (def === undefined || def.kind !== 'beam') continue;
+      if (def === undefined) continue;
+      const beam = def.kind === 'beam';
+      const stats = inst.stats;
 
       const chip = this.heatChips[n];
 
       // Rebind: only when this chip is showing a different weapon than it was, which happens
-      // once, on the level-up that granted the laser.
+      // once, on the level-up that granted the gun.
       if (this.heatDefId[n] !== inst.defId) {
         this.heatDefId[n] = inst.defId;
-        // The bar carries the beam's own colour, so bar and beam are visibly one weapon.
-        chip.style.setProperty('--beam', cssColour(def.beamColour));
+        // The bar carries the beam's own colour, so bar and beam are visibly one weapon. A
+        // projectile weapon has no beam colour at all (0x000000 would paint the chip black), so
+        // the property is removed and the stylesheet's neutral default applies.
+        if (beam) chip.style.setProperty('--beam', cssColour(def.beamColour));
+        else chip.style.removeProperty('--beam');
+        chip.classList.toggle('heat--dry', !beam);
         this.heatNames[n].textContent = shortWeaponName(def.name);
-        chip.setAttribute('aria-label', `${def.name} heat`);
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;
         this.heatOut[n] = -1;
         this.heatTenths[n] = -1;
+        this.heatTier[n] = -1;
+        this.heatResumePct[n] = -1;
       }
 
-      const heat = inst.heat < 0 ? 0 : inst.heat > HEAT_MAX ? HEAT_MAX : inst.heat;
+      // The tier the run has invested in this gun. Moves only on a level-up, and the aria label
+      // moves with it so the readout is not purely visual.
+      const tier = inst.level;
+      if (tier !== this.heatTier[n]) {
+        this.heatTier[n] = tier;
+        this.heatTiers[n].textContent = `T${tier}`;
+        chip.setAttribute('aria-label', `${def.name}, tier ${tier}${beam ? ' heat' : ''}`);
+      }
+
+      // CAPACITY IS THE WEAPON'S OWN, so the bar means "how close is this gun to cutting out"
+      // rather than "how many points of heat" - and a capacity tier lengthens the burst instead
+      // of shortening the bar.
+      const capacity = stats.heatCapacity > 0 ? stats.heatCapacity : 1;
+      const heat = inst.heat < 0 ? 0 : inst.heat > capacity ? capacity : inst.heat;
       // Quantised to whole percent: a sub-pixel move is invisible and still costs a style write.
-      const pct = Math.round((heat / HEAT_MAX) * 100);
+      const pct = Math.round((heat / capacity) * 100);
       if (pct !== this.heatPct[n]) {
         this.heatPct[n] = pct;
         this.heatFills[n].style.transform = `scaleX(${pct / 100})`;
+      }
+
+      // The resume notch and the tinted "cutting out costs you" band, both driven off the
+      // weapon's own threshold rather than a hardcoded half. It only moves when heatResume or
+      // heatCapacity does - i.e. on a capacity tier - so this is a per-level-up write.
+      const resumePct = Math.round((stats.heatResume / capacity) * 100);
+      if (resumePct !== this.heatResumePct[n]) {
+        this.heatResumePct[n] = resumePct;
+        chip.style.setProperty('--resume', `${resumePct}%`);
       }
 
       const out = inst.overheated ? 1 : 0;
@@ -277,13 +323,14 @@ export class Hud {
         chip.classList.toggle('heat--out', out === 1);
       }
 
-      // Time until the weapon comes back. Cooling runs at the weapon's own heat rate
-      // (constants.ts), so the wait is the slide from here down to HEAT_RESUME. Shown only while
-      // cut out: before that the number is a hypothetical and the bar already tells the story.
+      // Time until the weapon comes back: the slide from here down to its resume threshold at its
+      // own DISPERSION rate - not its generation rate, which is a different number the moment a
+      // tier is taken. Shown only while cut out: before that the number is a hypothetical and the
+      // bar already tells the story.
       let tenths = -1;
       if (out === 1) {
-        const rate = inst.stats.heatPerSec;
-        const sec = rate > 0 ? (heat - HEAT_RESUME) / rate : 0;
+        const rate = stats.heatDispersion;
+        const sec = rate > 0 ? (heat - stats.heatResume) / rate : 0;
         tenths = sec > 0 ? Math.ceil(sec * 10) : 0;
       }
       if (tenths !== this.heatTenths[n]) {

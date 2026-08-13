@@ -282,16 +282,25 @@ body {
 }
 
 /* ---------------------------------------------------------------------------------------------
- * Laser heat
+ * The loadout row: laser heat, and every weapon's tier
  *
- * One chip per beam weapon held. The fill is the weapon's OWN beam colour, injected per chip as
+ * One chip per weapon held. The fill is the weapon's OWN beam colour, injected per chip as
  * `--beam`, so the bar on the HUD and the line on the battlefield are unmistakably one weapon.
  *
- * Two things the track itself has to say, because heat is hysteretic (100 cuts out, 50 resumes):
- *   - the band above 50 is tinted, so "I am in the region where a cut-out will actually cost me"
- *     is a colour rather than a calculation;
- *   - the notch AT 50 is where the bar has to fall back to before the weapon is live again, which
- *     is the number a "how full is it" bar cannot express.
+ * Two things the track itself has to say, because heat is hysteretic (it cuts out at the weapon's
+ * capacity and resumes at a fraction of it):
+ *   - the band above the resume line is tinted, so "I am in the region where a cut-out will
+ *     actually cost me" is a colour rather than a calculation;
+ *   - the notch AT the resume line is where the bar has to fall back to before the weapon is live
+ *     again, which is the number a "how full is it" bar cannot express.
+ *
+ * BOTH ARE DRIVEN BY `--resume`, NOT BY A HARDCODED 50%. Capacity and the resume threshold are
+ * per-weapon stats now, and the HUD writes the ratio between them per chip (hud.ts). The default
+ * below is the untiered HEAT_RESUME_FRAC of 0.5 and exists only so a chip renders sanely before
+ * its first update.
+ *
+ * A projectile weapon gets `.heat--dry`: the same chip, carrying the name and tier, with no track
+ * at all - a permanently empty heat bar would teach the player to ignore the whole row.
  * ------------------------------------------------------------------------------------------- */
 
 /* No pause-button inset here, unlike .hud__top: this row sits BELOW the button (the top row is
@@ -310,6 +319,8 @@ body {
 
 .heat {
   --beam: var(--ink-dim);
+  /* Overwritten per chip with `heatResume / heatCapacity`; see hud.ts. */
+  --resume: 50%;
   flex: 1 1 0;
   min-width: 0;
   max-width: 128px;
@@ -319,26 +330,42 @@ body {
   display: none;
 }
 
+/* A weapon with no heat at all (the Cannon). The chip stays for the name and the tier; the empty
+   track goes. */
+.heat--dry .heat__track {
+  display: none;
+}
+
+.heat--dry .heat__foot {
+  /* Without a track above it the footer would sit a row higher than every other chip's. */
+  margin-top: 12px;
+}
+
 .heat__track {
   position: relative;
   height: 9px;
   border-radius: 5px;
   border: 1px solid var(--line);
   overflow: hidden;
-  /* Left of 50: cool. Right of 50: the zone where overheating is a real cost. The dark base is
-     painted under both halves - the HUD sits on a rust-orange floor, and a track that was merely
-     tinted let the ground show through and read as "already half hot". */
+  /* Below the resume line: cool. Above it: the zone where overheating is a real cost. The dark
+     base is painted under both halves - the HUD sits on a rust-orange floor, and a track that was
+     merely tinted let the ground show through and read as "already half hot". */
   background:
-    linear-gradient(90deg, transparent 0 50%, rgba(255, 120, 60, 0.3) 50% 100%),
+    linear-gradient(
+      90deg,
+      transparent 0 var(--resume),
+      rgba(255, 120, 60, 0.3) var(--resume) 100%
+    ),
     rgba(10, 14, 20, 0.8);
 }
 
-/* The HEAT_RESUME line. Drawn as a pseudo-element rather than a third div: it is decoration, and
-   this row is rebuilt never and repainted often. */
+/* The resume line - the level this weapon has to cool back down to before it fires again. Drawn
+   as a pseudo-element rather than a third div: it is decoration, and this row is rebuilt never
+   and repainted often. */
 .heat__track::after {
   content: '';
   position: absolute;
-  left: 50%;
+  left: var(--resume);
   top: -1px;
   bottom: -1px;
   width: 2px;
@@ -380,8 +407,24 @@ body {
   letter-spacing: 0.1em;
   color: var(--beam);
   opacity: 0.85;
+  /* A flex item's default min-width is `auto`, which refuses to shrink below the word's own
+     width and would push the tier badge out of the chip instead of ellipsising the name. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* THE TIER. Every card in the pool is a weapon tier, so this is the one place a player can read
+   back what the run has been spent on. It sits between the name and the countdown, never wraps,
+   and never shrinks the name away: `flex: 0 0 auto` on both means the NAME is what ellipsises. */
+.heat__tier {
+  flex: 0 0 auto;
+  margin-right: auto;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(230, 237, 245, 0.12);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* No letter-spacing and tabular figures: the countdown must fit beside the name inside a chip
@@ -601,7 +644,20 @@ body {
 .card__name {
   font-size: 17px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+/* WHICH RUNG OF THE LADDER. With four cards in the whole pool, the same three or four names come
+   round again and again; the tier line and the description under it are the only things that
+   distinguish this offer from the last one, so the tier is styled as a label rather than buried
+   in the body copy. */
+.card__tier {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 5px;
 }
 
 .card__desc {
@@ -615,6 +671,17 @@ body {
   font-size: 11px;
   color: var(--ink-faint);
   letter-spacing: 0.08em;
+}
+
+/* AN UNLOCK IS A NEW GUN, not a percentage on one you have. It is the most consequential pick in
+   the pool and it gets the only accent on the screen, so it never reads as one more tier. */
+.card--unlock {
+  border-color: var(--accent);
+}
+
+.card--unlock .card__stacks,
+.card--unlock .card__tier {
+  color: var(--accent);
 }
 
 /* ============================================================================================
