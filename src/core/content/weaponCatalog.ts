@@ -182,15 +182,19 @@ export const CANNON: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    damage: 30, // no variance, no crit
+    damage: 44, // no variance, no crit
     cooldown: 1.2, // 0.833 shots/s - the whole pace of the game is this number
     range: 260, // 59% of the visible width at VIEW_MINOR_UNITS 440
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
     pierce: 0,
     knockback: 190, // applied as impulse/mass: swarmer 380 u/s, elite 27, boss immune
-    splashRadius: 34,
-    splashFrac: 0.4, // 12 damage at base - kills nothing alone, FINISHES plenty
+    splashRadius: 54,
+    // 0.62 -> 27 splash damage, which EXCEEDS a 20 HP swarmer. That single threshold is what
+    // makes the highest-HP targeting rule a feature rather than a trap: aim at the bruiser in the
+    // middle of the crowd and the blast clears the crowd. Below the swarmer's HP, the same rule
+    // just pours your whole output into something you cannot kill while the swarm eats you.
+    splashFrac: 0.62,
     turretTraverse: CANNON_TURRET_TRAVERSE,
     fireArc: CANNON_FIRE_ARC,
   }),

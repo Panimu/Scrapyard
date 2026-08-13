@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DT, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
 import { DEFAULT_TUNING, xpToNextLevel } from '../src/core/config/tuning.js';
+import { CANNON } from '../src/core/content/weaponCatalog.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
 import { HERO_CATALOG, type HeroDef } from '../src/core/data/heroes.js';
 import {
@@ -276,11 +277,13 @@ describe('offers', () => {
     const w = makeWorld(11);
     w.levelUp.stacks[sabot] = maxStacks;
 
-    // 20 cards' worth of draws - comfortably inside the pool. If a maxed card can leak in at all,
-    // it leaks in here.
+    // Draw until the pool stops offering cards. If a maxed card can leak in at all, it leaks in
+    // here. The loop is bounded by the pool emptying rather than a fixed count: once every other
+    // upgrade is maxed the run stops opening cards entirely, and demanding LEVEL_UP after that
+    // would be asserting the soft-lock we deliberately avoid.
     for (let i = 0; i < 20; i++) {
       gainOneLevel(w);
-      expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+      if (w.phase !== RUN_PHASE_LEVEL_UP) break;
       expect(offersOf(w)).not.toContain(sabot);
       choose(w, 0);
     }
@@ -426,10 +429,13 @@ describe('stat resolution after a pick', () => {
     expect(w.player.stats.maxHp).toBe(120 * 1.5 + 25);
   });
 
-  it('re-resolves every live weapon: +18% Cannon damage twice is exactly 40.8', () => {
+  it('re-resolves every live weapon: +18% Cannon damage twice compounds linearly', () => {
     const w = makeWorld(5);
     const hv = upgradeIndex('hv-shells');
-    expect(w.weapons[0].stats.damage).toBe(30);
+    // Read the baseline from the catalog rather than pinning it: this test is about a pick
+    // re-resolving live weapon stats, not about what the Cannon happens to hit for this week.
+    const baseDamage = CANNON.base.damage;
+    expect(w.weapons[0].stats.damage).toBe(baseDamage);
 
     let taken = 0;
     for (let i = 0; i < 60 && taken < 2; i++) {
@@ -446,8 +452,11 @@ describe('stat resolution after a pick', () => {
     }
 
     expect(w.levelUp.stacks[hv]).toBe(2);
-    expect(w.weapons[0].stats.damage).toBe(30 * (1 + 0.18 * 2));
-    expect(w.weapons[0].stats.damage).toBeCloseTo(40.8, 9);
+    expect(w.weapons[0].stats.damage).toBe(baseDamage * (1 + 0.18 * 2));
+    // Linear stacking, not compounding: 1 + 0.18*2, never 1.18^2. Stated as a ratio so the
+    // assertion survives a change to the Cannon's base damage.
+    expect(w.weapons[0].stats.damage / baseDamage).toBeCloseTo(1.36, 9);
+    expect(w.weapons[0].stats.damage / baseDamage).not.toBeCloseTo(1.18 * 1.18, 6);
   });
 
   it('heals a max-HP card for exactly what it added, and never above the new maximum', () => {

@@ -146,7 +146,7 @@ const PLAYER_BASE: PlayerBaseTuning = {
   moveAccel: 700,
   moveMaxSpeed: 195, // tau = 195/700 = 0.279 s; releasing the stick coasts 54 u, about one mech length
   pickupRadius: 105,
-  xpGain: 3.2, // gems are sparse and often abandoned while kiting; the curve is paid here
+  xpGain: 5.6, // gems are sparse and often abandoned while kiting; the curve is paid here
   damageTakenMul: 1,
   radius: 26,
 };
@@ -172,16 +172,15 @@ const STEERING: SteeringTuning = {
  */
 const SPAWN_MIX: readonly SpawnMixRow[] = [
   { fromSec: 0, weights: [100, 0, 0, 0] }, // teaching beat: swarmers only
-  { fromSec: 60, weights: [88, 12, 0, 0] }, // grunts enter
-  { fromSec: 120, weights: [74, 24, 2, 0] }, // first bruiser ~2:10 - the turret visibly swings away
-  { fromSec: 180, weights: [68, 27, 5, 0] },
-  { fromSec: 240, weights: [62, 30, 8, 0] },
-  { fromSec: 300, weights: [60, 30, 10, 0] },
-  { fromSec: 360, weights: [58, 30, 11, 1] }, // elites join the ordinary mix
-  { fromSec: 420, weights: [56, 30, 12, 2] },
-  { fromSec: 480, weights: [55, 30, 13, 2] },
-  { fromSec: 540, weights: [54, 30, 14, 2] },
-  { fromSec: 660, weights: [52, 30, 15, 3] },
+  { fromSec: 35, weights: [86, 14, 0, 0] }, // grunts enter early - the first thing worth aiming at
+  { fromSec: 75, weights: [72, 24, 4, 0] }, // first bruiser ~1:20: the turret visibly swings away
+  { fromSec: 140, weights: [64, 28, 8, 0] },
+  { fromSec: 200, weights: [60, 28, 11, 1] }, // elites join by 3:20, not 6:00
+  { fromSec: 280, weights: [58, 28, 12, 2] },
+  { fromSec: 360, weights: [56, 29, 13, 2] },
+  { fromSec: 440, weights: [55, 29, 14, 2] },
+  { fromSec: 520, weights: [54, 29, 15, 2] },
+  { fromSec: 620, weights: [52, 30, 15, 3] },
   { fromSec: 720, weights: [51, 30, 16, 3] },
   { fromSec: 840, weights: [49, 30, 18, 3] },
 ];
@@ -198,9 +197,9 @@ const DIRECTOR: DirectorTuning = {
     { atSec: 810, durationSec: 30, swarmerShareMul: 3, targetThreatMul: 1.3 },
   ],
   eliteEvents: [
-    { atSec: 240, count: 1 }, // 564 HP against ~52 dps: a genuine 10.8 s commitment
-    { atSec: 480, count: 2 },
-    { atSec: 720, count: 3 },
+    { atSec: 150, count: 1 }, // 564 HP against ~52 dps: a genuine 10.8 s commitment
+    { atSec: 330, count: 2 },
+    { atSec: 560, count: 3 },
   ],
   bossAtSec: 900,
   bossSilenceSec: 4,
