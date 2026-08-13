@@ -37,11 +37,11 @@
  * stream, so adding a spawn roll or a loot roll elsewhere can never shift which cards you are
  * shown. Each draw is one `nextFloat` against the summed weights of everything still eligible
  * (stacks[i] < maxStacks[i], and not already on this card): weighted without replacement, no
- * allocation, no Set, no sort, and a linear walk over a 14-entry catalog by INDEX - never by key
+ * allocation, no Set, no sort, and a linear walk over a four-entry catalog by INDEX - never by key
  * order.
  *
- * DEGRADATION, in the order it happens as a run empties the pool (TOTAL_AVAILABLE_STACKS is 54
- * against ~25 picks, so only the first of these is reachable in a real run):
+ * DEGRADATION, in the order it happens as a run empties the pool (TOTAL_AVAILABLE_STACKS is 28
+ * against ~25 picks in a full run, so a long run genuinely reaches the bottom of this list):
  *   >= 3 eligible   three offers, as normal.
  *   1 or 2 left     `offerCount` is 1 or 2 and the unused `offers` slots hold -1. The card shows
  *                   what exists. The UI must read offerCount, not assume 3 - which is why
@@ -51,28 +51,34 @@
  *                   forever, since the only exit from LEVEL_UP is a valid chooseIndex.
  *
  * ---------------------------------------------------------------------------------------------
- * TWO KINDS OF CARD, TWO SEPARATE CAPS
+ * A WEAPON CARD IS UNLOCK-THEN-LEVEL. STACKS TAKEN IS THE WEAPON'S TIER.
  * ---------------------------------------------------------------------------------------------
- * `UpgradeDef.kind` splits the pool in two, and the two halves compete for DIFFERENT space:
- * MAX_WEAPONS (7) gun slots and MAX_PASSIVES (7) passive slots.
+ * There is no "you already have that gun, so the card is dead" any more. `stacks[i]` IS the tier
+ * of the weapon card i owns:
  *
- *   A WEAPON card puts `grantsWeapon` into the next free slot of world.weapons and increments
- *   weaponCount. It is not offerable when the slots are full, and it is not offerable when the
- *   run already carries that gun - including the hero's STARTING weapon, which arrived without a
- *   card and so has no `stacks` entry to notice. The check is against the loadout, not the
- *   catalog, which is the only version of it that cannot be fooled by a hero whose starting
- *   weapon also has a card.
+ *   stacks 0 -> 1     UNLOCK. The gun goes into the next free slot of world.weapons,
+ *                     weaponCount increments, and the instance sits at level 1.
+ *   stacks n -> n+1   LEVEL. The gun is already held; its WeaponInstance.level becomes the new
+ *                     stack count and resolveWeaponStats applies WeaponDef.perLevel[0..n-1].
+ *                     NO second copy is installed.
  *
- *   A PASSIVE card occupies a slot the first time it is taken and levels in place afterwards -
- *   the Vampire Survivors shape. So the cap gates NEW passives only: once MAX_PASSIVES distinct
- *   passives are held, the pool stops offering an eighth and keeps offering further stacks of
- *   the seven you chose. The alternative reading - no passive cards at all past the cap - would
- *   end a run's progression outright about two thirds of the way through the shipping pool,
- *   since the catalog holds fourteen passives against seven slots.
+ * The hero's STARTING weapon arrives without a card, so createWorld seeds its stacks entry to 1.
+ * That is what makes it tier 1 rather than tier 0: the card is next offered as its TIER 2, and
+ * the unlock branch above can never fire for a gun the run is already holding.
+ *
+ * `UpgradeDef.kind` still splits the pool, because the two halves compete for DIFFERENT space:
+ * MAX_WEAPONS (7) gun slots and MAX_PASSIVES (7) passive slots. Only the UNLOCK of a weapon needs
+ * a slot - tiers 2-7 need none - so the weapon cap gates `stacks === 0` alone, exactly the way
+ * the passive cap gates a NEW passive and keeps levelling the ones already held. (No passive
+ * exists today; the branch stays because the cap is structural, not content.)
  *
  * Both caps are enforced in `isOfferable`, so an ineligible card is never drawn rather than being
  * drawn and refused - a refusal inside `applyChoice` would hold the card open on a dead index
  * and soft-lock the run, which is exactly the failure this file is built to avoid.
+ *
+ * The whole pool is 4 cards x 7 tiers = 28 picks, minus the tier the hero started with. A run
+ * that takes all of them must keep running with no card at all rather than lock - see the
+ * degradation rules above, which are now reachable in a long run rather than theoretical.
  *
  * ---------------------------------------------------------------------------------------------
  * VICTORY
@@ -221,9 +227,16 @@ function applyChoice(world: World, choiceIndex: number): boolean {
 
   // BEFORE the resolve calls below, so the new gun is inside `weaponCount` and gets its stats
   // built by the same loop that re-resolves everything else. A weapon installed after it would
-  // spend its first tick with a zeroed WeaponStats - range 0, and a cosTraverseStep of 1.
+  // spend its first tick with a zeroed WeaponStats - range 0, and a cosTraverseStep of 1. The
+  // same argument covers the tier: `level` has to be written before the loop that reads it, or
+  // the weapon would spend a tick at the tier it just left.
   if (def.kind === 'weapon' && def.grantsWeapon !== undefined) {
+    // The new stack count IS the tier. `installWeapon` returns without doing anything when the
+    // gun is already held, so an unlock installs and a tier does not - and a tier taken on a gun
+    // that somehow is not held (unreachable through isOfferable) still installs it rather than
+    // levelling nothing.
     installWeapon(world, def.grantsWeapon);
+    setWeaponLevel(world, def.grantsWeapon, lu.stacks[idx]);
   }
 
   const player = world.player;
@@ -324,7 +337,31 @@ function installWeapon(world: World, id: WeaponId): void {
   world.weaponCount++;
 }
 
-/** Distinct passives held. One linear pass over a ~17-entry catalog, once per card generated. */
+/**
+ * Sets the held instance of `id` to `level`, which is the stack count of its card.
+ *
+ * The instance is found by defId rather than by slot, because the slot a gun landed in is a
+ * function of the order the run picked things up and nothing else. Returns false when the gun is
+ * not in the loadout - the caller installs first, so that is unreachable, and returning rather
+ * than throwing keeps a bad pick from holding the card open forever.
+ *
+ * The stats are NOT re-resolved here: applyChoice re-resolves every live weapon immediately
+ * afterwards, in one loop, and doing it twice for the levelled gun would be the only place in
+ * the file where resolution order could start to matter.
+ */
+function setWeaponLevel(world: World, id: WeaponId, level: number): boolean {
+  const defId = weaponIndexOf(world, id);
+  if (defId < 0) return false;
+  for (let i = 0; i < world.weaponCount; i++) {
+    const inst = world.weapons[i];
+    if (inst.defId !== defId) continue;
+    inst.level = level;
+    return true;
+  }
+  return false;
+}
+
+/** Distinct passives held. One linear pass over the catalog, once per card generated. */
 function passiveSlotsUsed(world: World): number {
   const catalog = world.upgradeCatalog;
   const stacks = world.levelUp.stacks;
@@ -344,7 +381,7 @@ function passiveSlotsUsed(world: World): number {
  * many were written (also stored in `offerCount`). Unused slots are -1.
  *
  * Weighted sampling WITHOUT REPLACEMENT, implemented as one weighted draw per slot over whatever
- * is still eligible. That is O(offers x catalog) = 42 iterations - cheaper than building a
+ * is still eligible. That is O(offers x catalog) = a dozen iterations - cheaper than building a
  * cumulative array, and it needs no scratch buffer, so it cannot collide with the candidate buffer
  * the collision and splash queries are using elsewhere in the tick.
  *
@@ -401,10 +438,11 @@ function generateOffers(world: World): number {
 }
 
 /**
- * Still has stacks left, fits the slot caps, and is not already on the card being built.
+ * Still has tiers left, fits the slot caps, and is not already on the card being built.
  *
  * The three conditions are independent and all three are load-bearing: maxStacks is the card's
- * own limit, the caps are the loadout's, and the distinctness check is the card's.
+ * own limit (tier 7 is the last one - there is no tier 8), the caps are the loadout's, and the
+ * distinctness check is the card's.
  */
 function isOfferable(
   world: World,
@@ -415,14 +453,16 @@ function isOfferable(
 ): boolean {
   const def = world.upgradeCatalog[index];
   if (def === undefined) return false;
-  if (world.levelUp.stacks[index] >= def.maxStacks) return false;
+  const stacks = world.levelUp.stacks[index];
+  if (stacks >= def.maxStacks) return false;
 
   if (def.kind === 'weapon') {
-    if (weaponsFull) return false;
-    // Owning the gun already is a separate question from having taken the card: the hero's
-    // starting weapon is in the loadout with `stacks` still at 0.
-    if (def.grantsWeapon !== undefined && ownsWeapon(world, def.grantsWeapon)) return false;
-  } else if (passivesFull && world.levelUp.stacks[index] === 0) {
+    // ONLY THE UNLOCK NEEDS A SLOT. A gun already in the loadout keeps offering tiers 2-7 with
+    // every slot full, which is the difference between "the pool is out of guns" and "the pool
+    // is out of upgrades". Refusing all weapon cards at the cap would end progression outright
+    // now that every card in the pool is a gun.
+    if (stacks === 0 && weaponsFull) return false;
+  } else if (passivesFull && stacks === 0) {
     // Slots are full, so no NEW passive - but the seven already in them still level up.
     return false;
   }
