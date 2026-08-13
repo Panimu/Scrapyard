@@ -12,7 +12,9 @@
  */
 
 import {
+  ENEMY_FLAG_BOSS,
   ENEMY_FLAG_DEAD,
+  ENEMY_FLAG_ELITE,
   RUN_PHASE_LEVEL_UP,
   quantiseAxis,
   type InputFrame,
@@ -32,8 +34,10 @@ const ORBIT_WEIGHT = 0.35;
 const GEM_SEEK_RADIUS = 260;
 const GEM_SEEK_RADIUS_SQ = GEM_SEEK_RADIUS * GEM_SEEK_RADIUS;
 
-/** Per-archetype flee weight. Bruisers and elites are slow, so they are less urgent than count. */
-const ARCHETYPE_PRESSURE = [1, 1.3, 1.7, 2.2, 3] as const;
+/** Per-RANK flee weight. A boss is one body but the reason you are moving, so it outweighs the
+ *  chaff around it - keyed off the flags rather than the chassis, because under the cycle ladder
+ *  a boss and the regular next to it share a chassis. */
+const RANK_FLEE_WEIGHT = [1, 2.2, 4] as const;
 
 export interface BotState {
   readonly frame: { moveX: number; moveY: number; buttons: number; chooseIndex: number };
@@ -75,7 +79,9 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
     const d2 = dx * dx + dy * dy;
     if (d2 > AWARENESS_RADIUS_SQ || d2 === 0) continue;
     const dist = Math.sqrt(d2);
-    const pressure = ARCHETYPE_PRESSURE[e.archetype[d]] ?? 1;
+    const ef = e.flags[d];
+    const pressure =
+      RANK_FLEE_WEIGHT[(ef & ENEMY_FLAG_BOSS) !== 0 ? 2 : (ef & ENEMY_FLAG_ELITE) !== 0 ? 1 : 0];
     const w = pressure / (dist + FLEE_SOFTENING);
     fleeX += (dx / dist) * w;
     fleeY += (dy / dist) * w;

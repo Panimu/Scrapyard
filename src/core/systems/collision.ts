@@ -66,7 +66,7 @@
  * an enemy that dies to a shell earlier in S9 has its contact dropped, and its timer untouched.
  */
 
-import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
+import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import {
   PROJECTILE_FLAG_DEAD,
   PROJECTILE_FLAG_NOCONTACT,

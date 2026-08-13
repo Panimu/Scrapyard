@@ -36,7 +36,7 @@
  */
 
 import { DESPAWN_RADIUS } from '../constants.js';
-import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
+import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
 import { EV_ENEMY_KILLED, pushEvent } from '../events/ring.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
@@ -271,7 +271,10 @@ function integrate(world: World, dt: number): void {
       pushY[d] = ky;
     }
 
-    if ((flags[d] & ENEMY_FLAG_BOSS) !== 0) continue;
+    // BOSSES DESPAWN TOO, unlike the old scripted Scraplord. One boss walks in every 120 s and
+    // nothing clears the field at a rollover, so exempting them would let seven simultaneous
+    // bosses trail the player forever - a run that becomes unwinnable from a rule the player
+    // cannot see. Outrunning a boss by 900 u IS the escape; that is what the ring is for.
     const dx = nx - px;
     const dy = ny - py;
     if (dx * dx + dy * dy > despawn2) {

@@ -264,12 +264,3 @@ export async function loadGameTextures(
   };
 }
 
-/**
- * Draw size for the boss, which reuses `enemy_46` (hull 10) at 112 u - the only sprite reuse in
- * the game. Exposed so the enemy draw path can special-case it off ENEMY_FLAG_BOSS without
- * reaching back into the catalog.
- */
-export function bossScale(): number {
-  const boss = ARCHETYPES[4];
-  return boss.drawSize / (HULL_CONTENT_PX[9] * ENEMY_RETINA_FACTOR);
-}

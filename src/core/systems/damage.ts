@@ -64,8 +64,11 @@
  */
 
 import { ARCHETYPES } from '../content/enemyCatalog.js';
+import { RANK_BOSS, RANK_ELITE, RANK_REGULAR } from '../content/cycles.js';
 import {
   ENEMY_FLAG_ANCHORED,
+  ENEMY_FLAG_BOSS,
+  ENEMY_FLAG_ELITE,
   ENEMY_FLAG_DEAD,
   markEnemyDead,
 } from '../entity/enemyPool.js';
@@ -321,6 +324,11 @@ function killEnemy(world: World, ed: number): void {
   const stats = world.stats;
   stats.kills++;
   stats.killsByArchetype[enemies.archetype[ed]]++;
+  // Rank comes off the flags the kill path already loaded - no second field in the pool.
+  const kf = enemies.flags[ed];
+  stats.killsByRank[
+    (kf & ENEMY_FLAG_BOSS) !== 0 ? RANK_BOSS : (kf & ENEMY_FLAG_ELITE) !== 0 ? RANK_ELITE : RANK_REGULAR
+  ]++;
 
   pushKill(
     world.kills,

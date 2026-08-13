@@ -123,19 +123,22 @@ export function hashWorld(world: World): number {
   }
 
   const d = world.director;
-  h = mixF64(h, d.localThreat);
-  h = mixF64(h, d.targetThreat);
+  h = mixF64(h, d.localPressure);
+  h = mixF64(h, d.targetPressure);
+  h = mixU32(h, d.liveElites);
   h = mixF64(h, d.spawnAccumulator);
   h = mixU32(h, d.nextSpawnId);
-  h = mixU32(h, d.tier);
-  h = mixU32(h, d.eliteEventsSpawned);
-  h = mixF64(h, d.surgeTimer);
+  // The resolved cycle is a pure function of cycleIndex, so hashing the index covers it.
+  h = mixU32(h, d.cycleIndex);
+  h = mixU32(h, d.cyclePhase);
+  h = mixF64(h, d.eliteTimer);
+  h = mixU32(h, d.bossCycle);
   h = mixU32(h, d.bossSpawned);
   h = mixU32(h, d.bossHandle);
 
   const diff = world.difficulty;
-  for (let i = 0; i < diff.hpScale.length; i++) h = mixF64(h, diff.hpScale[i]);
-  for (let i = 0; i < diff.speedScale.length; i++) h = mixF64(h, diff.speedScale[i]);
+  h = mixF64(h, diff.hpRamp);
+  h = mixF64(h, diff.speedRamp);
   h = mixU32(h, diff.lastWholeSecond);
 
   const lu = world.levelUp;

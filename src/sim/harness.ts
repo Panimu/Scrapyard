@@ -146,7 +146,7 @@ export function runHarness(options: HarnessOptions = DEFAULT_OPTIONS): World {
     }
     console.log('');
     console.log(
-      '  time   lvl  xp        dps    kills  live  thr/target   proj gems   hp        ' +
+      '  time   lvl  xp        dps    kills  live  cyc  press/tgt   proj gems   hp        ' +
         (options.hashes ? 'hash' : ''),
     );
   }
@@ -198,7 +198,8 @@ function printRow(world: World, dps: number, withHash: boolean): void {
     fixed(dps, 1).padStart(7),
     String(world.stats.kills).padStart(6),
     String(countLiveEnemies(world)).padStart(5),
-    `${fixed(d.localThreat, 0).padStart(4)}/${fixed(d.targetThreat, 0).padEnd(4)}`,
+    `${String(d.cycleIndex)}.${String(d.cyclePhase)}`.padStart(4),
+    `${fixed(d.localPressure, 0).padStart(4)}/${fixed(d.targetPressure, 0).padEnd(4)}`,
     String(world.projectiles.count).padStart(5),
     String(world.pickups.count).padStart(4),
     `${fixed(p.hp, 0).padStart(4)}/${fixed(p.stats.maxHp, 0).padEnd(4)}`,
@@ -225,7 +226,7 @@ function drainEvents(
 
     if (!quiet) {
       if (kind === EV_BOSS_SPAWNED) {
-        console.log(`  [${clock(world.runSec)}]  ** SCRAPLORD ** hp=${fixed(r.c[i], 0)}`);
+        console.log(`  [${clock(world.runSec)}]  ** BOSS ** ${world.director.cycle.name} hp=${fixed(r.d[i], 0)}`);
       } else if (kind === EV_PHASE_CHANGED) {
         const phase = RUN_PHASE_NAMES[r.a[i]] ?? String(r.a[i]);
         if (phase === 'DEAD' || phase === 'VICTORY' || phase === 'RUNNING') {
@@ -275,7 +276,7 @@ function printSummary(
     `  first level-up    ${firstLevelTick >= 0 ? `tick ${firstLevelTick} (${clock(firstLevelTick * DT)})` : 'never'}`,
   );
   console.log(
-    `  kills             ${s.kills}  [swarmer ${s.killsByArchetype[0]}, grunt ${s.killsByArchetype[1]}, bruiser ${s.killsByArchetype[2]}, elite ${s.killsByArchetype[3]}, boss ${s.killsByArchetype[4]}]`,
+    `  kills             ${s.kills}  [regular ${s.killsByRank[0]}, elite ${s.killsByRank[1]}, boss ${s.killsByRank[2]}]`,
   );
   console.log(
     `  damage            dealt ${fixed(s.damageDealt, 0)}   taken ${fixed(s.damageTaken, 0)}`,

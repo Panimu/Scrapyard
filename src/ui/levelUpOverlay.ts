@@ -152,8 +152,10 @@ export class LevelUpOverlay {
       card.classList.toggle('card--unlock', unlock);
       this.names[i].textContent = def.name;
       this.stacks[i].textContent = unlock ? 'NEW' : `TIER ${tier}`;
+      // "New weapon" only if it IS one. A passive announced as a weapon is the kind of small lie
+      // that teaches the player the card text cannot be trusted.
       this.tiers[i].textContent = unlock
-        ? `New weapon - Tier ${tier} of ${def.maxStacks}`
+        ? `New ${def.kind === 'weapon' ? 'weapon' : 'system'} - Tier ${tier} of ${def.maxStacks}`
         : `Tier ${tier} of ${def.maxStacks}`;
 
       // WHAT THIS TIER DOES, straight from the catalog - "the number on screen is the number".

@@ -26,7 +26,10 @@
 import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
 import {
   ARCHETYPES,
+  BOSS_OUTLINE_SCALE,
+  BOSS_OUTLINE_TINT,
   ENEMY_FLAG_BOSS,
+  ENEMY_FLAG_ELITE,
   EV_BOSS_SPAWNED,
   EV_ENEMY_DAMAGED,
   EV_ENEMY_KILLED,
@@ -35,6 +38,10 @@ import {
   EV_PROJECTILE_HIT,
   EV_WEAPON_FIRED,
   FLAVOURS,
+  RANKS,
+  RANK_BOSS,
+  RANK_ELITE,
+  RANK_REGULAR,
   type World,
 } from '../core/index.js';
 import { BeamLayer } from './beams.js';
@@ -50,7 +57,6 @@ import {
   MISSILE_SCALE,
   SLUG_SCALE,
   SHELL_SCALE,
-  bossScale,
   type GameTextures,
 } from './assets.js';
 
@@ -405,23 +411,47 @@ export class GameRenderer {
     bars.begin();
     glows.begin();
 
-    const bossBase = bossScale();
-
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
       const y = lerp(p.prevY[d], p.y[d], alpha);
       const radius = p.radius[d];
       if (!this.camera.isVisible(x, y, radius)) continue;
 
+      const typeId = p.typeId[d];
+      const flags = p.flags[d];
+      const isBoss = (flags & ENEMY_FLAG_BOSS) !== 0;
+      const isElite = (flags & ENEMY_FLAG_ELITE) !== 0;
+      const flavour = FLAVOURS[p.flavourId[d]];
+      const texture = tex.enemies[typeId] ?? tex.enemies[0];
+
+      // RANK IS A DRAW SIZE, NOT A SPRITE. Elite and boss are recolours of the SAME hull the
+      // regular uses (content/cycles.ts), so there is no boss texture and no boss scale table -
+      // the atlas frame's own scale, times the rank multiplier the sim already applied to the
+      // collision radius. The thing you see is exactly the thing you can hit.
+      const rank = isBoss ? RANK_BOSS : isElite ? RANK_ELITE : RANK_REGULAR;
+      const base = tex.enemyScale[typeId] * RANKS[rank].size * (flavour?.renderScale ?? 1);
+
+      // THE BOSS OUTLINE. A second, larger, blue copy of the same sprite parked one z below the
+      // body - the sprite has an alpha silhouette, so scaling it 14% and tinting it reads as a
+      // rim rather than as a shadow. It costs one quad out of the SAME pool and the SAME texture
+      // as the body, so it batches with every other enemy in the frame and adds no draw call.
+      if (isBoss) {
+        const o = pool.acquire();
+        if (o === undefined) break;
+        const ob = base * BOSS_OUTLINE_SCALE;
+        o.texture = texture;
+        o.rotation = 0;
+        o.scale.set(p.vx[d] < 0 ? -ob : ob, ob);
+        o.position.set(x, y);
+        o.zIndex = y - 1;
+        o.tint = BOSS_OUTLINE_TINT;
+        o.alpha = 0.95;
+      }
+
       const s = pool.acquire();
       if (s === undefined) break;
 
-      const typeId = p.typeId[d];
-      const isBoss = (p.flags[d] & ENEMY_FLAG_BOSS) !== 0;
-      const flavour = FLAVOURS[p.flavourId[d]];
-
-      s.texture = tex.enemies[typeId] ?? tex.enemies[0];
-      const base = (isBoss ? bossBase : tex.enemyScale[typeId]) * (flavour?.renderScale ?? 1);
+      s.texture = texture;
 
       // NEVER rotated. These are fixed 3/4-view RTS sprites with baked drop shadows and mutually
       // inconsistent headings; rotating them makes trucks drive on their side and swings the
@@ -434,9 +464,14 @@ export class GameRenderer {
       s.alpha = 1;
 
       // `spiky` carries +35% contact damage and NO extra HP, so the targeting rule ignores it -
-      // this additive rim is the only cue the player gets. It uses the same soft-flash texture
-      // as the impact FX so it batches with them instead of adding a texture bind.
-      if (flavour?.renderGlow === true) {
+      // this additive rim is the only cue the player gets. It uses the same soft-flash texture as
+      // the impact FX so it batches with them instead of adding a texture bind.
+      //
+      // THE BOSS DELIBERATELY GETS NO GLOW. An additive blue over the rust floor resolves to
+      // white, which reads as a hit flash and drowns the outline that is supposed to be the cue.
+      // The silhouette pass above is the whole tell, and it stays blue because it is a normal
+      // tinted sprite rather than an additive one.
+      if (!isBoss && flavour?.renderGlow === true) {
         const g = glows.acquire();
         if (g !== undefined) {
           g.position.set(x, y);
@@ -447,9 +482,13 @@ export class GameRenderer {
         }
       }
 
+      // Elites and bosses ALWAYS carry a bar regardless of what their chassis says: a rank is
+      // worth 6x and 34x a regular's HP, and a health bar is the only way that reads before the
+      // player has spent ten seconds failing to kill one.
       const arch = ARCHETYPES[p.archetype[d]];
-      if (arch?.showHpBar === true && p.hp[d] < p.maxHp[d]) {
-        this.drawHpBar(bars, x, y, radius, arch.drawSize, p.hp[d] / p.maxHp[d]);
+      const showBar = isBoss || isElite || arch?.showHpBar === true;
+      if (showBar && p.hp[d] < p.maxHp[d]) {
+        this.drawHpBar(bars, x, y, radius, (arch?.drawSize ?? 32) * RANKS[rank].size, p.hp[d] / p.maxHp[d]);
       }
     }
 

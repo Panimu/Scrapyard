@@ -800,24 +800,18 @@ describe('victory', () => {
     expect(w.phase).toBe(RUN_PHASE_VICTORY);
   });
 
-  it('waits for the scripted silence, then for the Scraplord to die', () => {
-    const t = DEFAULT_TUNING.director;
+  it('waits for the reigning boss to die, however far past runLengthSec that is', () => {
+    // A boss walks in every 120 s, so the clock running out mid-fight is the normal case rather
+    // than an edge case. The run is not over while the most recent one is standing.
     const w = makeWorld();
-
-    // The boss is scheduled but has not walked in yet: the run is emphatically not over.
-    w.runSec = t.bossAtSec + 1;
-    updateProgression(w, DT);
-    expect(w.phase).toBe(RUN_PHASE_RUNNING);
-
-    // It arrives.
     const e = w.enemies;
-    allocEnemy(e, 45, 0, 4, 0, 0, w.director.nextSpawnId++);
+    allocEnemy(e, 45, 0, 2, 0, 0, w.director.nextSpawnId++);
     const boss = e.count - 1;
     e.hp[boss] = 4000;
     w.director.bossSpawned = 1;
     w.director.bossHandle = enemyHandleAt(e, boss);
 
-    w.runSec = t.bossAtSec + 20;
+    w.runSec = w.config.runLengthSec + 20;
     updateProgression(w, DT);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
 

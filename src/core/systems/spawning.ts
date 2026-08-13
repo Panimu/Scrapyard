@@ -5,81 +5,85 @@
  * before reapDead (S12) so a slot can never be freed and re-allocated inside one tick.
  *
  * ---------------------------------------------------------------------------------------------
- * IT IS A THREAT CONTROLLER, NOT A SPAWN TABLE
+ * THE 120-SECOND CYCLE
  * ---------------------------------------------------------------------------------------------
- * Each tick it measures LOCAL THREAT - the sum of `ArchetypeDef.threat` over live enemies within
- * THREAT_RADIUS (560 u, equal to SPAWN_RADIUS so a new spawn counts immediately) - and spawns
- * only while that is under a target that rises with the clock:
+ * A cycle is one creature (content/cycles.ts) in three ranks, on a fixed schedule:
  *
- *      targetThreat(runSec) = 20 + 12.7 x (runSec / 60)        20 at 0:00 -> 210.5 at 15:00
+ *      0:00 - 1:00   REGULARS.                    One enemy. Nothing else. Learn it.
+ *      1:00 - 1:30   REGULARS + ELITES.           Recoloured, x6 HP, x8 XP, arriving on a timer.
+ *      1:30 - 2:00   REGULARS + ELITES + a BOSS.  Recoloured again, blue outline, x34 HP.
+ *      2:00          Rollover: a new, tougher creature. NOTHING IS CLEARED.
  *
- * Threat is weighted by archetype (swarmer 1, grunt 2, bruiser 5, elite 14), so the director
- * measures PRESSURE rather than headcount. Three consequences that a flat spawn rate does not
+ * EXACTLY ONE BOSS PER CYCLE, and it is not a finale - it is a tenant. Cycle 3's boss is still on
+ * the field in cycle 5 if you never killed it, because a rollover changes what this file SPAWNS
+ * and touches nothing already alive. Over a 15-minute run that is seven bosses, and the last four
+ * minutes are only survivable if you have been closing them out rather than running.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * PRESSURE, NOT HEADCOUNT
+ * ---------------------------------------------------------------------------------------------
+ * Regulars drip in while LOCAL PRESSURE - the sum of `RankDef.pressure` over live enemies within
+ * THREAT_RADIUS (900 u) - sits under a target that rises one step per cycle:
+ *
+ *      targetPressure(cycle) = 14 + 4.5 x cycle          14 in cycle 0 -> 45.5 in cycle 7
+ *
+ * A regular weighs 1, an elite 3, a boss 6. Three consequences that a flat spawn rate does not
  * give you:
  *
  *   - Killing things makes more things arrive, immediately. The horde refills toward the player's
  *     actual clear rate instead of toward a number someone typed in.
- *   - Running away thins the horde, because threat is LOCAL: the enemies you outran stop
- *     counting once they are past 560 u. Kiting is rewarded on its own terms.
- *   - AN ELITE SUPPRESSES ORDINARY SPAWNING WHILE IT LIVES. 14 threat is fourteen swarmers'
- *     worth of budget parked in one slow target. That is not a side effect - it is the design:
- *     the cannon commits to the elite whether the player likes it or not (highest-HP targeting),
- *     so the rule that makes the elite a problem is the same rule that clears the room to solve
- *     it. The set-piece creates its own space.
- *
- * Resulting density, verified by the harness: ~11 live at 0:00, ~40 at 4:00, ~69 at 8:00,
- * ~98 at 12:00, ~120 at 15:00.
+ *   - Running away thins the horde, because pressure is LOCAL: the enemies you outran stop
+ *     counting once they are past 900 u. Kiting is rewarded on its own terms.
+ *   - A BOSS SUPPRESSES SIX REGULARS' WORTH OF SPAWNING WHILE IT LIVES. That is not a side effect
+ *     - it is the design. The cannon commits to the boss whether the player likes it or not
+ *     (highest-HP targeting), so the rule that makes the boss a problem is the same rule that
+ *     clears the room to solve it. The set-piece creates its own space.
  *
  * ---------------------------------------------------------------------------------------------
  * CAPS, AND WHAT HAPPENS AT THEM
  * ---------------------------------------------------------------------------------------------
  *   maxSpawnsPerSec  12   Rate limit. The accumulator is CLAMPED TO 1 after the loop, so blocked
- *                         spawns are never banked. Without that clamp a minute spent under an
- *                         elite's threat shadow would bank 700 spawns and discharge them as one
- *                         instant wall the moment the elite died - a frame spike and an unfair
- *                         death from a system the player cannot see.
+ *                         spawns are never banked. Without that clamp a minute spent in a boss's
+ *                         pressure shadow would bank 700 spawns and discharge them as one instant
+ *                         wall the moment the boss died - a frame spike and an unfair death from
+ *                         a system the player cannot see. Blocked ELITES are dropped for the same
+ *                         reason: the timer resets to a full interval rather than to zero.
+ *   maxLiveElites     5   Elites stop arriving while five are already near the player, so a
+ *                         player who ignores them gets a wall of HP rather than an endless stream.
  *   MAX_LIVE_ENEMIES 300  Hard population cap for phone frame budget. AT THE CAP THE DIRECTOR
  *                         SIMPLY STOPS SPAWNING; nothing is culled, nothing is queued, and
- *                         spawning resumes the tick a slot frees. Deaths and the 900 u despawn
- *                         ring drain the pool continuously, so the cap is a ceiling on the render
- *                         and collision cost, never a stall. The shipping curve peaks at ~120, so
- *                         300 is ~2.5x headroom and is only reached by pathological play
- *                         (standing still in a corner) or a deliberately hostile Tuning.
+ *                         spawning resumes the tick a slot frees. THE BOSS IGNORES IT - a capped
+ *                         field must never be able to cancel a cycle's set-piece.
  *   ENEMY_CAP        512  Pool capacity, above the live cap so `allocEnemy` can never fail during
  *                         a normal run. It is still checked: silently overwriting a live entity
  *                         is the worst class of bug in this design.
  *
  * ---------------------------------------------------------------------------------------------
- * DETERMINISM - the exact `rng.spawn` draw order per ordinary spawn
+ * DETERMINISM - the exact `rng.spawn` draw order per spawn
  * ---------------------------------------------------------------------------------------------
- *   1  pickWeighted(archetype)                                        1 x nextFloat
- *   2  variant roll                                                   1 x nextFloat  (skipped
- *                                                                     when the archetype has one
- *                                                                     permitted flavour)
- *   3  which non-plain flavour, only if (2) passed                    1 x nextInt
- *   4  sprite within (archetype, tier)                                1 x nextInt
- *   5  ring direction, rejection sampled in the unit disc             2 x nextRange per attempt
- *   6  forward-bias redraw, only when moving > 20 u/s and (5) was
- *      behind the player                                              2 x nextRange per attempt
+ *   1  variant roll                                          1 x nextFloat  (REGULARS ONLY -
+ *                                                            elites and bosses are always plain)
+ *   2  which non-plain flavour, only if (1) passed           1 x nextInt
+ *   3  ring direction, rejection sampled in the unit disc    2 x nextRange per attempt
+ *   4  forward-bias redraw, only when moving > 20 u/s and
+ *      (3) was behind the player                             2 x nextRange per attempt
  *
+ * There is no sprite draw any more: rank picks the recolour arithmetically off the cycle's hull.
  * Changing this order changes every replay and every golden hash - which is intended, and is why
  * the order is written down here rather than left to be inferred from the code.
  */
 
 import { MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
-import { targetThreatAt, type DirectorTuning } from '../config/tuning.js';
+import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
+import { ARCHETYPES, FLAVOURS, FLAV_PLAIN, type Archetype } from '../content/enemyCatalog.js';
 import {
-  ARCH_BOSS,
-  ARCH_ELITE,
-  ARCHETYPES,
-  BOSS_TYPE_ID,
-  ENEMY_IDS_BY_ARCHETYPE_TIER,
-  FLAVOURS,
-  FLAV_PLAIN,
-  THREAT_BY_ARCHETYPE,
-  VARIANT_CHANCE_BY_TIER,
-  type Archetype,
-} from '../content/enemyCatalog.js';
+  RANKS,
+  RANK_BOSS,
+  RANK_ELITE,
+  RANK_REGULAR,
+  resolveCycle,
+  type Rank,
+} from '../content/cycles.js';
 import {
   ENEMY_FLAG_ANCHORED,
   ENEMY_FLAG_BOSS,
@@ -89,15 +93,10 @@ import {
   enemyHandleAt,
   enemyIndex,
 } from '../entity/enemyPool.js';
-import { NULL_HANDLE } from '../entity/handle.js';
 import { EV_BOSS_SPAWNED, EV_ENEMY_SPAWNED, pushEvent } from '../events/ring.js';
-import { clamp } from '../math/scalar.js';
 import type { Vec2 } from '../math/vec2.js';
 import type { Rng } from '../rng.js';
 import { RUN_PHASE_RUNNING, type World } from '../types.js';
-
-/** Highest visual tier index. Four faction recolours: blue / orange / green / grey. */
-const MAX_TIER = 3;
 
 /**
  * Rejection-sampling attempt limit for the unit-disc draw.
@@ -118,104 +117,96 @@ export function updateSpawning(world: World, dt: number): void {
   const t = world.config.tuning.director;
   const runSec = world.runSec;
 
-  // --- visual tier band ------------------------------------------------------------------
-  dir.tier = clamp(Math.floor(runSec / t.tierSeconds), 0, MAX_TIER) | 0;
+  // --- the cycle -------------------------------------------------------------------------
+  const index = cycleIndexAt(runSec, t);
+  if (dir.cycle.index !== index) {
+    // The ONLY thing a rollover does. No cull, no despawn, no state on the existing enemies -
+    // "unkilled enemies persevere" is the absence of code, not the presence of it.
+    resolveCycle(index, dir.cycle);
+    dir.cycleIndex = index;
+    // Zero, not `interval`: the elite phase opens with an arrival rather than with a wait.
+    dir.eliteTimer = 0;
+  }
+  const cycleTime = runSec - index * t.cycleSeconds;
+  dir.cyclePhase = cycleTime >= t.bossFromSec ? 2 : cycleTime >= t.eliteFromSec ? 1 : 0;
 
-  // --- scripted swarm surge --------------------------------------------------------------
-  // A surge triples the swarmer share and raises the target 30% for 30 s. It is deliberately the
-  // one event that makes the cannon's target choice feel WRONG: the screen fills with things it
-  // will not shoot. Splash, pierce and knockback are the answer, and a surge is where the player
-  // learns that.
-  let surgeTargetMul = 1;
-  let surgeSwarmerMul = 1;
-  dir.surgeTimer = 0;
-  for (let i = 0; i < t.surges.length; i++) {
-    const s = t.surges[i];
-    const left = s.atSec + s.durationSec - runSec;
-    if (runSec >= s.atSec && left > 0) {
-      dir.surgeTimer = left;
-      surgeTargetMul = s.targetThreatMul;
-      surgeSwarmerMul = s.swarmerShareMul;
-      break;
-    }
+  // --- local pressure ---------------------------------------------------------------------
+  dir.localPressure = measureLocalPressure(world);
+  dir.targetPressure = t.pressureBase + t.pressurePerCycle * index;
+
+  // --- the cycle's boss ---------------------------------------------------------------------
+  // `bossCycle` is set only on a SUCCESSFUL allocation, so a momentarily full pool retries next
+  // tick rather than costing the cycle its set-piece.
+  if (dir.cyclePhase === 2 && dir.bossCycle !== index) {
+    if (spawnRank(world, RANK_BOSS, t) >= 0) dir.bossCycle = index;
   }
 
-  // --- local pressure --------------------------------------------------------------------
-  dir.localThreat = measureLocalThreat(world);
-
-  // --- the Scraplord ---------------------------------------------------------------------
-  if (dir.bossSpawned === 0 && runSec >= t.bossAtSec) {
-    if (runSec < t.bossAtSec + t.bossSilenceSec) {
-      // Four seconds of scripted silence. Nothing spawns, the field drains, and the player is
-      // left alone with whatever is already chewing on them. Earned quiet before the set-piece.
-      dir.targetThreat = 0;
-      dir.spawnAccumulator = 0;
-      return;
+  // --- elites ------------------------------------------------------------------------------
+  if (dir.cyclePhase >= 1) {
+    dir.eliteTimer -= dt;
+    if (dir.eliteTimer <= 0) {
+      if (dir.liveElites < t.maxLiveElites && world.enemies.count < MAX_LIVE_ENEMIES) {
+        if (spawnRank(world, RANK_ELITE, t) >= 0) {
+          dir.localPressure += RANKS[RANK_ELITE].pressure;
+        }
+      }
+      // Reset to a FULL interval whether or not the spawn happened. A blocked elite is dropped,
+      // never banked - same rule as the spawn accumulator's clamp, and for the same reason.
+      dir.eliteTimer = eliteIntervalAt(index, t);
     }
-    spawnBoss(world);
+  } else {
+    dir.eliteTimer = 0;
   }
 
-  // --- the target ------------------------------------------------------------------------
-  let target = targetThreatAt(runSec, t) * surgeTargetMul;
-  // While the boss lives, ordinary pressure drops to 60%: the adds are there to deny the player
-  // free positioning, not to out-damage a 4000 HP target that already owns every shell.
-  if (dir.bossSpawned !== 0) target *= t.bossTargetMul;
-  dir.targetThreat = target;
-
-  // --- scripted elite drop-ins -----------------------------------------------------------
-  // These IGNORE the threat target (that is what makes them events) but respect the live cap.
-  // Each one immediately adds 14 to localThreat, which is what buys the player room to fight it.
-  while (
-    dir.eliteEventsSpawned < t.eliteEvents.length &&
-    runSec >= t.eliteEvents[dir.eliteEventsSpawned].atSec
-  ) {
-    const ev = t.eliteEvents[dir.eliteEventsSpawned];
-    for (let i = 0; i < ev.count; i++) {
-      if (world.enemies.count >= MAX_LIVE_ENEMIES) break;
-      if (spawnOrdinary(world, ARCH_ELITE as Archetype, t) < 0) break;
-      dir.localThreat += THREAT_BY_ARCHETYPE[ARCH_ELITE];
-    }
-    dir.eliteEventsSpawned++;
-  }
-
-  // --- the ordinary drip -----------------------------------------------------------------
+  // --- the ordinary drip --------------------------------------------------------------------
   dir.spawnAccumulator += t.maxSpawnsPerSec * dt;
-
-  ensureMixWeights(world, t, runSec, surgeSwarmerMul);
 
   while (
     dir.spawnAccumulator >= 1 &&
-    dir.localThreat < dir.targetThreat &&
+    dir.localPressure < dir.targetPressure &&
     world.enemies.count < MAX_LIVE_ENEMIES
   ) {
     dir.spawnAccumulator -= 1;
-    const archetype = rollArchetype(world);
-    if (spawnOrdinary(world, archetype, t) < 0) break; // pool exhausted - stop, do not spin
-    dir.localThreat += THREAT_BY_ARCHETYPE[archetype];
+    if (spawnRank(world, RANK_REGULAR, t) < 0) break; // pool exhausted - stop, do not spin
+    dir.localPressure += RANKS[RANK_REGULAR].pressure;
   }
 
   // Never bank more than one spawn's worth of credit. See the CAPS note at the top of the file:
-  // this single line is what stops a threat shadow from discharging as a wall.
+  // this single line is what stops a pressure shadow from discharging as a wall.
   if (dir.spawnAccumulator > 1) dir.spawnAccumulator = 1;
 }
 
+/** Seconds between elite drop-ins in `index`. 8.0 s in cycle 0, floored at 4.5 s. */
+function eliteIntervalAt(index: number, t: DirectorTuning): number {
+  const v = t.eliteIntervalBase - t.eliteIntervalPerCycle * index;
+  return v > t.eliteIntervalMin ? v : t.eliteIntervalMin;
+}
+
 // -------------------------------------------------------------------------------------------
-// Local threat
+// Local pressure
 // -------------------------------------------------------------------------------------------
 
 /**
- * Sum of archetype threat over live enemies within THREAT_RADIUS of the player.
+ * Sum of rank pressure over live enemies within THREAT_RADIUS of the player. Also writes the
+ * nearby elite count to `director.liveElites`, because it is the same scan and a second pass over
+ * 300 enemies to count one flag would be silly. It goes on the director rather than into a
+ * module-level variable for the usual reason: two worlds are stepped in the same process by the
+ * determinism suite, and module scratch would silently cross between them.
+ *
+ * RANK COMES FROM THE FLAGS, NOT FROM A POOL FIELD. Elite and boss are already single bits in
+ * `flags`, which this loop must load anyway to skip the dead - so pressure costs one extra test
+ * per enemy and the pool layout does not grow by a byte.
  *
  * A LINEAR SCAN, ON PURPOSE - this is the one place in the sim where the spatial hash is the
- * wrong tool. THREAT_RADIUS is 560 u against a 64 u cell, so a circle query would walk ~283
- * cells and do 283 bucket probes to filter at most 300 enemies that already sit contiguously in
- * two typed arrays. The scan is fewer operations, perfectly cache-linear, and exact.
+ * wrong tool. THREAT_RADIUS is 900 u against a 64 u cell, so a circle query would walk ~700 cells
+ * and do 700 bucket probes to filter at most 300 enemies that already sit contiguously in two
+ * typed arrays. The scan is fewer operations, perfectly cache-linear, and exact.
  *
  * It is also immune to the hash being one tick stale: S5 rebuilt it BEFORE S12 reaped, so at S2
  * the hash still holds dense indices for enemies that no longer exist. Reading the pool directly
  * cannot be wrong.
  */
-function measureLocalThreat(world: World): number {
+function measureLocalPressure(world: World): number {
   const p = world.enemies;
   const px = world.player.x;
   const py = world.player.y;
@@ -223,90 +214,55 @@ function measureLocalThreat(world: World): number {
   const x = p.x;
   const y = p.y;
   const flags = p.flags;
-  const arch = p.archetype;
   const n = p.count;
 
+  const wElite = RANKS[RANK_ELITE].pressure;
+  const wBoss = RANKS[RANK_BOSS].pressure;
+  const wRegular = RANKS[RANK_REGULAR].pressure;
+
   let sum = 0;
+  let elites = 0;
   for (let d = 0; d < n; d++) {
-    if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+    const f = flags[d];
+    if ((f & ENEMY_FLAG_DEAD) !== 0) continue;
     const dx = x[d] - px;
     const dy = y[d] - py;
     if (dx * dx + dy * dy > r2) continue;
-    sum += THREAT_BY_ARCHETYPE[arch[d]];
+    if ((f & ENEMY_FLAG_BOSS) !== 0) {
+      sum += wBoss;
+    } else if ((f & ENEMY_FLAG_ELITE) !== 0) {
+      sum += wElite;
+      elites++;
+    } else {
+      sum += wRegular;
+    }
   }
+  world.director.liveElites = elites;
   return sum;
 }
 
 // -------------------------------------------------------------------------------------------
-// Wave composition
+// Flavour
 // -------------------------------------------------------------------------------------------
 
 /**
- * Rebuilds `director.weightCum` when the effective mix changes.
- *
- * `director.mixRow` caches WHICH mix is prefix-summed, encoded as `rowIndex * 2 + surgeFlag`
- * because a surge changes the weights without changing the row. Encoding beats a second field:
- * the pair is only ever compared for equality, and one integer compare per tick is the whole
- * cost of not re-summing five weights sixty times a second.
- *
- * Zero-weight archetypes are dropped rather than prefix-summed as ties, so `weightCount` is the
- * number of things that can actually spawn right now - which is what makes the early game's
- * "swarmers only" row a fact the data states rather than an accident of a binary search.
- */
-function ensureMixWeights(
-  world: World,
-  t: DirectorTuning,
-  runSec: number,
-  surgeSwarmerMul: number,
-): void {
-  const rows = t.spawnMix;
-  let row = 0;
-  for (let i = rows.length - 1; i >= 0; i--) {
-    if (runSec >= rows[i].fromSec) {
-      row = i;
-      break;
-    }
-  }
-
-  const surging = surgeSwarmerMul !== 1;
-  const key = row * 2 + (surging ? 1 : 0);
-  const dir = world.director;
-  if (dir.mixRow === key) return;
-
-  const w = rows[row].weights;
-  let acc = 0;
-  let n = 0;
-  for (let a = 0; a < w.length; a++) {
-    const weight = a === 0 ? w[a] * surgeSwarmerMul : w[a];
-    if (weight <= 0) continue;
-    acc += weight;
-    dir.weightCum[n] = acc;
-    dir.weightArchetype[n] = a;
-    n++;
-  }
-  dir.weightCount = n;
-  dir.mixRow = key;
-}
-
-function rollArchetype(world: World): Archetype {
-  const dir = world.director;
-  const i = world.rng.spawn.pickWeighted(dir.weightCum, dir.weightCount);
-  return dir.weightArchetype[i] as Archetype;
-}
-
-/**
- * Plain, or one of the archetype's permitted variants.
+ * Plain, or one of the body class's permitted variants.
  *
  * Two draws rather than one weighted pick because the plain/variant split is the interesting
- * decision and the choice among variants is not: this way the tier dial (10% -> 34%) reads
+ * decision and the choice among variants is not: this way the cycle's dial (0% -> 34%) reads
  * directly as "how often is this enemy special", independent of how many specials exist.
  *
- * Relies on `flavours[0] === FLAV_PLAIN` for every archetype - asserted in the catalog tests.
+ * Cycle 0 authors `variantChance: 0`, which is what makes the opening minute exactly ONE enemy as
+ * specified - not "usually one enemy". The float is still drawn so the RNG stream advances
+ * identically whatever the dial says.
+ *
+ * Relies on `flavours[0] === FLAV_PLAIN` for every archetype.
  */
-function rollFlavour(rng: Rng, archetype: Archetype, tier: number): number {
+function rollFlavour(rng: Rng, archetype: Archetype, variantChance: number): number {
   const options = ARCHETYPES[archetype].flavours;
+  const roll = rng.nextFloat();
   if (options.length <= 1) return FLAV_PLAIN;
-  if (rng.nextFloat() >= VARIANT_CHANCE_BY_TIER[tier]) return FLAV_PLAIN;
+  if (roll >= variantChance) return FLAV_PLAIN;
   return options[1 + rng.nextInt(options.length - 1)];
 }
 
@@ -374,60 +330,37 @@ function rollRingPosition(world: World, t: DirectorTuning, out: Vec2): void {
 // -------------------------------------------------------------------------------------------
 
 /**
- * Rolls flavour, sprite and position for `archetype` and puts one enemy on the ring.
- * Returns its dense index, or -1 if the pool is full.
+ * THE SINGLE PLACE ENEMY STATS ARE WRITTEN. Puts one enemy of the current cycle, at `rank`, on
+ * the ring. Returns its dense index, or -1 if the pool is full.
+ *
+ *      hp     = cycle.hp     x rank.hp  x flavour.hp    x difficulty.hpRamp
+ *      speed  = cycle.speed  x rank.speed x flavour.speed x difficulty.speedRamp
+ *      dmg    = cycle.dmg    x rank.dmg x flavour.dmg    (NOT scaled by the ramp)
+ *      xp     = cycle.xp     x rank.xp
+ *      radius = archetype.radius x rank.size             (the hitbox never lies about the sprite)
+ *
+ * Contact damage deliberately does not take the within-cycle ramp: a cycle should get harder
+ * because its enemies are tougher and there are more of them, not because the same bite quietly
+ * started hurting more. That keeps the player's damage-taken intuition, learned in the first
+ * thirty seconds of a cycle, true for the whole cycle - and leaves `spiky` as the only thing that
+ * changes a contact number, which is exactly the tension the design wants (more dangerous, still
+ * invisible to the highest-HP targeting rule).
  */
-function spawnOrdinary(world: World, archetype: Archetype, t: DirectorTuning): number {
-  const rng = world.rng.spawn;
-  const tier = world.director.tier;
-  const flavour = rollFlavour(rng, archetype, tier);
+function spawnRank(world: World, rank: Rank, t: DirectorTuning): number {
+  const p = world.enemies;
+  const dir = world.director;
+  const c = dir.cycle;
+  const r = RANKS[rank];
+  const archetype = c.archetype;
 
-  const ids = ENEMY_IDS_BY_ARCHETYPE_TIER[archetype][tier];
-  const typeId = ids[rng.nextInt(ids.length)];
+  const flavourId =
+    rank === RANK_REGULAR ? rollFlavour(world.rng.spawn, archetype, c.variantChance) : FLAV_PLAIN;
 
   const pos = world.scratch.v0;
   rollRingPosition(world, t, pos);
 
-  return spawnAt(
-    world,
-    archetype,
-    flavour,
-    typeId,
-    pos.x,
-    pos.y,
-    archetype === ARCH_ELITE ? ENEMY_FLAG_ELITE : 0,
-  );
-}
-
-/**
- * The single place enemy stats are written. Everything else in the game rolls IDs and calls this.
- *
- *      hp    = archetype.hp    x flavour.hp    x difficulty.hpScale[archetype]
- *      speed = archetype.speed x flavour.speed x difficulty.speedScale[archetype]
- *      dmg   = archetype.contactDamage x flavour.dmg          (NOT scaled by time)
- *
- * Contact damage deliberately does not grow: minute 15 is dangerous because there are more
- * things and they have more HP, not because a swarmer bite quietly became a bruiser bite. That
- * keeps the player's damage-taken intuition, learned in minute 1, true for the whole run - and
- * leaves `spiky` as the only thing that changes a contact number, which is exactly the tension
- * the design wants (more dangerous, still invisible to the highest-HP targeting rule).
- *
- * XP does not scale either: gem value is archetype identity, and the XP curve is tuned against
- * the mix, not against the clock.
- */
-function spawnAt(
-  world: World,
-  archetype: Archetype,
-  flavour: number,
-  typeId: number,
-  x: number,
-  y: number,
-  flags: number,
-): number {
-  const p = world.enemies;
-  const dir = world.director;
-
-  const handle = allocEnemy(p, typeId, flavour, archetype, x, y, dir.nextSpawnId);
+  const typeId = c.typeByRank[rank];
+  const handle = allocEnemy(p, typeId, flavourId, archetype, pos.x, pos.y, dir.nextSpawnId);
   // enemyIndex is the only sanctioned way to dereference a handle, and it maps NULL_HANDLE (a
   // full pool) to -1 - so the exhaustion check and the deref are the same branch.
   const d = enemyIndex(p, handle);
@@ -438,56 +371,38 @@ function spawnAt(
   dir.nextSpawnId++;
 
   const a = ARCHETYPES[archetype];
-  const f = FLAVOURS[flavour];
+  const f = FLAVOURS[flavourId];
+  const diff = world.difficulty;
 
-  const hp = a.hp * f.hp * world.difficulty.hpScale[archetype];
+  const hp = c.hp * r.hp * f.hp * diff.hpRamp;
   p.hp[d] = hp;
   p.maxHp[d] = hp;
-  p.speed[d] = a.speed * f.speed * world.difficulty.speedScale[archetype];
-  p.radius[d] = a.radius;
-  p.mass[d] = a.mass;
-  p.contactDamage[d] = a.contactDamage * f.dmg;
+  p.speed[d] = c.speed * r.speed * f.speed * diff.speedRamp;
+  p.radius[d] = a.radius * r.size;
+  p.mass[d] = a.mass * r.mass;
+  p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
   p.contactTimer[d] = 0;
-  p.xpValue[d] = a.xp;
-  p.flags[d] = flags;
+  p.xpValue[d] = c.xp * r.xp;
+  p.flags[d] =
+    rank === RANK_BOSS
+      ? ENEMY_FLAG_BOSS | ENEMY_FLAG_ANCHORED
+      : rank === RANK_ELITE
+        ? ENEMY_FLAG_ELITE
+        : 0;
 
   // c carries the SLOT: that is how the renderer maintains spriteBySlot as an O(1) typed-array
   // load with no Map and no hashing. d carries typeId so it can pick the atlas frame without
   // touching the pool at all.
-  pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, x, y, p.slot[d], typeId);
+  pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, pos.x, pos.y, p.slot[d], typeId);
+
+  if (rank === RANK_BOSS) {
+    // Only the MOST RECENT boss is tracked. Earlier ones are still alive and still enormous, but
+    // they are ordinary enemies as far as the director and the HUD are concerned - there is one
+    // boss health bar, and it belongs to the boss that just walked in.
+    dir.bossHandle = enemyHandleAt(p, d);
+    dir.bossSpawned++;
+    pushEvent(world.events, EV_BOSS_SPAWNED, world.tick, pos.x, pos.y, p.slot[d], hp);
+  }
+
   return d;
-}
-
-/**
- * The Scraplord. 4000 HP, no growth, anchored against knockback, and drawn at 112 u.
- *
- * It is the payoff of the targeting rule rather than an exception to it: at 2.89x the toughest
- * elite it is unambiguously the highest-HP target for its entire life, so the cannon locks on and
- * never wavers and the player's whole job is to stay alive inside its range while the adds close.
- * The one weapon behaviour the player has been fighting all run is, for 45 seconds, exactly what
- * they want.
- *
- * Ignores MAX_LIVE_ENEMIES - a capped field must never be able to cancel the finale. ENEMY_CAP
- * (512) is well above the live cap, so there is always a slot.
- */
-function spawnBoss(world: World): void {
-  const t = world.config.tuning.director;
-  const pos = world.scratch.v0;
-  rollRingPosition(world, t, pos);
-
-  const d = spawnAt(
-    world,
-    ARCH_BOSS as Archetype,
-    FLAV_PLAIN,
-    BOSS_TYPE_ID,
-    pos.x,
-    pos.y,
-    ENEMY_FLAG_BOSS | ENEMY_FLAG_ANCHORED,
-  );
-  if (d < 0) return; // pool momentarily full: retried next tick rather than skipped
-
-  const p = world.enemies;
-  world.director.bossHandle = enemyHandleAt(p, d);
-  world.director.bossSpawned = 1;
-  pushEvent(world.events, EV_BOSS_SPAWNED, world.tick, p.x[d], p.y[d], p.slot[d], p.maxHp[d]);
 }

@@ -75,7 +75,7 @@
  */
 
 import { MAX_TARGETS, STRIKE_RADIUS_MAX, STRIKE_RADIUS_MIN } from '../constants.js';
-import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
+import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';

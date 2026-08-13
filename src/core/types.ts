@@ -18,6 +18,7 @@ import type { PickupPool } from './entity/pickupPool.js';
 import type { SpatialHash } from './spatial/hashGrid.js';
 import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
+import type { ResolvedCycle } from './content/cycles.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
 import type { HeroDef } from './data/heroes.js';
 import type { EnemyDef } from './data/enemies.js';
@@ -170,34 +171,49 @@ export interface WeaponInstance {
 }
 
 export interface SpawnDirector {
-  /** Sum of `threat` over live enemies within THREAT_RADIUS. Recomputed each tick. */
-  localThreat: number;
-  targetThreat: number;
+  /**
+   * Sum of `RankDef.pressure` over live enemies within THREAT_RADIUS. Recomputed each tick.
+   * A regular weighs 1, an elite 3, a boss 6 - so the director measures PRESSURE, not headcount,
+   * and a boss on the field thins the chaff around it by exactly as much as it is worth.
+   */
+  localPressure: number;
+  targetPressure: number;
+  /** Elites alive within THREAT_RADIUS. A by-product of the pressure scan; gates elite arrivals. */
+  liveElites: number;
   spawnAccumulator: number;
   /** Monotonic. The value written into EnemyPool.spawnId - the Cannon's final tie-break. */
   nextSpawnId: number;
-  /** 0..3, faction recolour band. Purely visual. */
-  tier: number;
-  eliteEventsSpawned: number;
-  surgeTimer: number;
-  bossSpawned: number; // 0/1
-  bossHandle: number; // EnemyHandle, or NULL_HANDLE
-  /** Prefix-summed archetype weights for the current mix row; rebuilt when the row changes. */
-  readonly weightCum: Float64Array;
-  weightCount: number;
-  readonly weightArchetype: Uint8Array;
-  /** Index of the mix row currently prefix-summed into weightCum, or -1. */
-  mixRow: number;
+
+  /** Which 120 s cycle is spawning. Enemies already on the field are unaffected by a rollover. */
+  cycleIndex: number;
+  /** 0 regulars / 1 + elites / 2 + boss. Derived from runSec; cached for the HUD and the hash. */
+  cyclePhase: number;
+  /** Seconds until the next elite drop-in. Reset at the start of each cycle's elite phase. */
+  eliteTimer: number;
+  /** Cycle index whose boss has already walked in, or -1. Exactly one boss per cycle. */
+  bossCycle: number;
+  /** How many bosses this run has produced. */
+  bossSpawned: number;
+  /** EnemyHandle of the MOST RECENT boss, or NULL_HANDLE. Older bosses are not tracked - they
+   *  are ordinary (very large) enemies once the next cycle's boss arrives. */
+  bossHandle: number;
+
+  /** The current cycle's creature, resolved once per rollover. Never reallocated. */
+  readonly cycle: ResolvedCycle;
 }
 
 export interface DifficultyState {
   /**
-   * Per-archetype multipliers, indexed by Archetype id. Advanced once per whole second by an
-   * exact literal multiplier - never `pow` (banned: implementation-defined), never a fractional
-   * running sum. 900 exact IEEE multiplies over a run, drift ~1e-13, identical on every engine.
+   * WITHIN-CYCLE hardening, applied to every enemy spawned this cycle and RESET TO 1 at each
+   * rollover. Advanced once per whole second by an exact literal multiplier - never `pow`
+   * (banned: implementation-defined), never a fractional running sum.
+   *
+   * A sawtooth inside the cycle ladder's staircase. The reset is what makes the ladder readable:
+   * the HP you author in CYCLE_LADDER is the HP the player meets at the start of that cycle.
    */
-  readonly hpScale: Float64Array;
-  readonly speedScale: Float64Array;
+  hpRamp: number;
+  speedRamp: number;
+  /** Whole second the ramp has been advanced to. Rewound to the cycle start on a rollover. */
   lastWholeSecond: number;
 }
 
@@ -215,8 +231,11 @@ export interface LevelUpState {
 
 export interface RunStats {
   kills: number;
-  /** Length 5, indexed by Archetype. */
+  /** Length 5, indexed by Archetype - the enemy's BODY CLASS. Elite and boss rows stay 0: the
+   *  ladder only spawns swarmer/grunt/bruiser chassis, and rank is a separate axis. */
   readonly killsByArchetype: Uint32Array;
+  /** Length 3, indexed by Rank. THE breakdown that means something under the cycle ladder. */
+  readonly killsByRank: Uint32Array;
   damageDealt: number;
   damageTaken: number;
   gemsCollected: number;

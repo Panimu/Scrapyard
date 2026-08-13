@@ -11,29 +11,6 @@
  * make something work and is expected to be moved by playtest.
  */
 
-/** Per-minute spawn mix. `weights` are relative shares of [swarmer, grunt, bruiser, elite]. */
-export interface SpawnMixRow {
-  /** Applies from this runSec until the next row's fromSec. */
-  readonly fromSec: number;
-  readonly weights: readonly [number, number, number, number];
-}
-
-/** A scripted swarm surge: the director's target and swarmer share both spike. */
-export interface SurgeEvent {
-  readonly atSec: number;
-  readonly durationSec: number;
-  readonly swarmerShareMul: number;
-  readonly targetThreatMul: number;
-}
-
-/** A scripted elite drop-in. Elites add 14 threat each, which suppresses ordinary spawning
- *  while they live - the rule that makes the elite a problem is the rule that gives you room
- *  to solve it. */
-export interface EliteEvent {
-  readonly atSec: number;
-  readonly count: number;
-}
-
 export interface PlayerBaseTuning {
   readonly maxHp: number;
   readonly hpRegen: number;
@@ -78,28 +55,56 @@ export interface SteeringTuning {
   readonly pushEpsilon: number;
 }
 
+/**
+ * THE CYCLE SCHEDULE. Every number the director consults, and nothing about WHICH creature -
+ * that is content/cycles.ts. See spawning.ts for how the two meet.
+ */
 export interface DirectorTuning {
-  /** targetThreat(runSec) = base + perMinute * (runSec / 60). 20 -> 210.5 over 15 minutes. */
-  readonly targetThreatBase: number;
-  readonly targetThreatPerMinute: number;
-  /** Hard rate limit on spawns, per second. */
+  /** Seconds per cycle. The entire schedule is phrased as offsets into this. */
+  readonly cycleSeconds: number;
+  /** Seconds into a cycle at which elites begin arriving, alongside the regulars. */
+  readonly eliteFromSec: number;
+  /** Seconds into a cycle at which that cycle's single boss walks in. */
+  readonly bossFromSec: number;
+
+  /**
+   * Live PRESSURE the director tries to hold near the player: `base + perCycle * cycleIndex`.
+   *
+   * Pressure, not headcount: a regular weighs 1, an elite 3, a boss 6 (RankDef.pressure). So a
+   * boss on the field displaces six regulars' worth of spawning for as long as it lives, which is
+   * what buys the player room to actually fight it. 14 -> 45.5 across the eight authored cycles.
+   */
+  readonly pressureBase: number;
+  readonly pressurePerCycle: number;
+
+  /** Seconds between elite drop-ins: `max(min, base - perCycle * cycleIndex)`. */
+  readonly eliteIntervalBase: number;
+  readonly eliteIntervalPerCycle: number;
+  readonly eliteIntervalMin: number;
+  /** Elites stop arriving while this many are already alive near the player. */
+  readonly maxLiveElites: number;
+
+  /** Hard rate limit on regular spawns, per second. */
   readonly maxSpawnsPerSec: number;
-  /** Visual faction band: tier = clamp(floor(runSec / tierSeconds), 0, 3). */
-  readonly tierSeconds: number;
   /**
    * Forward bias: if the player is moving faster than this and the drawn spawn direction is
    * behind them, ONE replacement vector is drawn and used unconditionally - P(forward) = 0.75.
    * Running forward is not free.
    */
   readonly forwardBiasMinSpeed: number;
-  readonly spawnMix: readonly SpawnMixRow[];
-  readonly surges: readonly SurgeEvent[];
-  readonly eliteEvents: readonly EliteEvent[];
-  /** The Scraplord walks in at this runSec, after a scripted pause. */
-  readonly bossAtSec: number;
-  readonly bossSilenceSec: number;
-  /** While the boss lives, ordinary spawning targets this fraction of the normal curve. */
-  readonly bossTargetMul: number;
+
+  /**
+   * Within-cycle hardening, per WHOLE SECOND, applied by repeated multiplication and RESET TO 1
+   * at every cycle rollover (systems/difficulty.ts).
+   *
+   * These are `total ** (1/cycleSeconds)` computed once, offline, and frozen here: `Math.pow` is
+   * banned in core because it is implementation-defined, and one differing ulp of enemy HP is a
+   * different kill tick and a divergent replay. Over a 120 s cycle they reach x1.30 HP and
+   * x1.06 speed - enough that a cycle visibly hardens, small enough that the ladder still owns
+   * the difficulty curve.
+   */
+  readonly hpRampPerSec: number;
+  readonly speedRampPerSec: number;
 }
 
 export interface XpTuning {
@@ -165,45 +170,20 @@ const STEERING: SteeringTuning = {
   pushEpsilon: 1.5,
 };
 
-/**
- * DESIGN.md §8.4. Swarmer share never drops below ~49%: late difficulty must come from the
- * DENSITY OF THINGS THE CANNON IGNORES. If the mix drifted toward bruisers the game would become
- * "shoot one bruiser for six seconds while nothing else happens".
- */
-const SPAWN_MIX: readonly SpawnMixRow[] = [
-  { fromSec: 0, weights: [100, 0, 0, 0] }, // teaching beat: swarmers only
-  { fromSec: 35, weights: [86, 14, 0, 0] }, // grunts enter early - the first thing worth aiming at
-  { fromSec: 75, weights: [72, 24, 4, 0] }, // first bruiser ~1:20: the turret visibly swings away
-  { fromSec: 140, weights: [64, 28, 8, 0] },
-  { fromSec: 200, weights: [60, 28, 11, 1] }, // elites join by 3:20, not 6:00
-  { fromSec: 280, weights: [58, 28, 12, 2] },
-  { fromSec: 360, weights: [56, 29, 13, 2] },
-  { fromSec: 440, weights: [55, 29, 14, 2] },
-  { fromSec: 520, weights: [54, 29, 15, 2] },
-  { fromSec: 620, weights: [52, 30, 15, 3] },
-  { fromSec: 720, weights: [51, 30, 16, 3] },
-  { fromSec: 840, weights: [49, 30, 18, 3] },
-];
-
 const DIRECTOR: DirectorTuning = {
-  targetThreatBase: 8,
-  targetThreatPerMinute: 8.2, // ~8 live at 0:00, ~25 at 4:00, ~131 at 15:00
+  cycleSeconds: 120,
+  eliteFromSec: 60,
+  bossFromSec: 90,
+  pressureBase: 14,
+  pressurePerCycle: 4.5,
+  eliteIntervalBase: 8,
+  eliteIntervalPerCycle: 0.4,
+  eliteIntervalMin: 4.5,
+  maxLiveElites: 5,
   maxSpawnsPerSec: 12,
-  tierSeconds: 225,
   forwardBiasMinSpeed: 20,
-  spawnMix: SPAWN_MIX,
-  surges: [
-    { atSec: 450, durationSec: 30, swarmerShareMul: 3, targetThreatMul: 1.3 },
-    { atSec: 810, durationSec: 30, swarmerShareMul: 3, targetThreatMul: 1.3 },
-  ],
-  eliteEvents: [
-    { atSec: 150, count: 1 }, // 564 HP against ~52 dps: a genuine 10.8 s commitment
-    { atSec: 330, count: 2 },
-    { atSec: 560, count: 3 },
-  ],
-  bossAtSec: 900,
-  bossSilenceSec: 4,
-  bossTargetMul: 0.6,
+  hpRampPerSec: 1.00218876, // 1.30 ** (1/120)
+  speedRampPerSec: 1.00048569, // 1.06 ** (1/120)
 };
 
 const XP: XpTuning = {
@@ -257,9 +237,26 @@ export function gemTierForValue(value: number, t: PickupTuning = DEFAULT_TUNING.
   return 0;
 }
 
-/** Director target threat at a given runSec. Pure function of time - no accumulator. */
-export function targetThreatAt(runSec: number, d: DirectorTuning = DEFAULT_TUNING.director): number {
-  return d.targetThreatBase + d.targetThreatPerMinute * (runSec / 60);
+/** Which cycle `runSec` falls in. Pure function of time - no accumulator, no state. */
+export function cycleIndexAt(runSec: number, d: DirectorTuning = DEFAULT_TUNING.director): number {
+  const i = Math.floor(runSec / d.cycleSeconds);
+  return i > 0 ? i : 0;
+}
+
+/** Seconds elapsed within the current cycle, 0 .. cycleSeconds. */
+export function cycleTimeAt(runSec: number, d: DirectorTuning = DEFAULT_TUNING.director): number {
+  return runSec - cycleIndexAt(runSec, d) * d.cycleSeconds;
+}
+
+/**
+ * 0 regulars only / 1 regulars + elites / 2 regulars + elites + boss.
+ * The one place the three-phase shape is decided; the director and the HUD both read it here.
+ */
+export function cyclePhaseAt(runSec: number, d: DirectorTuning = DEFAULT_TUNING.director): number {
+  const c = cycleTimeAt(runSec, d);
+  if (c >= d.bossFromSec) return 2;
+  if (c >= d.eliteFromSec) return 1;
+  return 0;
 }
 
 // -------------------------------------------------------------------------------------------

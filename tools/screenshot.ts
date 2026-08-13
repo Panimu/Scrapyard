@@ -24,6 +24,9 @@ async function main(): Promise<void> {
   const url = argValue(args, '--url') ?? DEFAULT_URL;
   const out = resolve(argValue(args, '--out') ?? DEFAULT_OUT);
   const waitMs = Number.parseInt(argValue(args, '--wait') ?? '3000', 10);
+  // `--deploy` clicks through the hero picker before waiting, so `--wait 95000` lands inside a
+  // cycle's boss phase. The game clock is real time - there is no way to fast-forward the DOM.
+  const deploy = args.includes('--deploy');
 
   const { chromium } = await import('@playwright/test');
 
@@ -50,6 +53,11 @@ async function main(): Promise<void> {
   });
 
   await page.goto(url, { waitUntil: 'load', timeout: 30_000 });
+  if (deploy) {
+    const button = page.getByRole('button', { name: /deploy/i });
+    await button.waitFor({ state: 'visible', timeout: 30_000 });
+    await button.click();
+  }
   await page.waitForTimeout(waitMs);
 
   await mkdir(dirname(out), { recursive: true });

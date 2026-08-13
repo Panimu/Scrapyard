@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
-import { maxEnemySpeedAt } from '../src/core/content/enemyCatalog.js';
+import { CYCLE_LADDER, maxEnemySpeedAt } from '../src/core/content/cycles.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { updatePlayerMovement } from '../src/core/systems/playerMovement.js';
 import { quantiseAxis, type World } from '../src/core/types.js';
@@ -66,11 +66,21 @@ describe('terminal velocity - the kiting invariant', () => {
     }
   });
 
-  it('holds moveMaxSpeed >= 1.08x the fastest enemy at t=900, for every hero', () => {
-    // Trivially true while every chassis is a skin. It is kept, and kept looping over the WHOLE
-    // catalog, because it is exactly the assertion that must fail loudly the day someone gives a
-    // hero a moveMaxSpeed multiplier of 0.7.
-    const worst = maxEnemySpeedAt(900);
+  it('holds moveMaxSpeed >= 1.08x the fastest enemy in EVERY cycle, for every hero', () => {
+    // INVARIANT K. Swept over the whole ladder rather than at one t, because the ladder is a
+    // staircase now: cycle 6 is faster than cycle 7, so checking the last entry would miss it.
+    // The ramp is the within-cycle maximum (DirectorTuning.speedRampPerSec ** cycleSeconds), so
+    // this is the fastest any enemy is ever allowed to move.
+    const d = DEFAULT_TUNING.director;
+    let ramp = 1;
+    for (let s = 0; s < d.cycleSeconds; s++) ramp *= d.speedRampPerSec;
+
+    let worst = 0;
+    for (let c = 0; c < CYCLE_LADDER.length; c++) {
+      const v = maxEnemySpeedAt(c, ramp);
+      if (v > worst) worst = v;
+    }
+
     for (let heroId = 0; heroId < HERO_CATALOG.length; heroId++) {
       const w = makeWorld(heroId);
       expect(w.player.stats.moveMaxSpeed).toBeGreaterThanOrEqual(1.08 * worst);

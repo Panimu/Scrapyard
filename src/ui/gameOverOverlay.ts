@@ -10,7 +10,7 @@
  */
 
 import {
-  ARCHETYPE_NAMES,
+  RANKS,
   HERO_CATALOG,
   RUN_PHASE_VICTORY,
   type World,
@@ -88,10 +88,12 @@ export class GameOverOverlay {
       if (n > 0) upgrades.push(`${world.upgradeCatalog[i].name}|x${n}`);
     }
 
+    // BY RANK, not by chassis: under the cycle ladder every enemy in a cycle shares one body
+    // class, so a swarmer/grunt/bruiser split says nothing the clock did not already say.
     const byArchetype: string[] = [];
-    for (let a = 0; a < s.killsByArchetype.length; a++) {
-      const n = s.killsByArchetype[a];
-      if (n > 0) byArchetype.push(`${ARCHETYPE_NAMES[a] ?? `type ${a}`}|${n}`);
+    for (let r = 0; r < s.killsByRank.length; r++) {
+      const n = s.killsByRank[r];
+      if (n > 0) byArchetype.push(`${RANKS[r]?.name ?? `rank ${r}`}|${n}`);
     }
 
     this.body.innerHTML = `

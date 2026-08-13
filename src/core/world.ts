@@ -30,6 +30,7 @@ import {
   WEAPON_SCRATCH_LEN,
 } from './constants.js';
 import { xpToNextLevel } from './config/tuning.js';
+import { RANKS, createResolvedCycle } from './content/cycles.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
@@ -160,20 +161,20 @@ function createWeaponInstance(): WeaponInstance {
 
 function createDirector(): SpawnDirector {
   return {
-    localThreat: 0,
-    targetThreat: 0,
+    localPressure: 0,
+    targetPressure: 0,
+    liveElites: 0,
     spawnAccumulator: 0,
     // spawnId 0 is reserved as "none", so the projectile hit ring can use 0 for "empty".
     nextSpawnId: 1,
-    tier: 0,
-    eliteEventsSpawned: 0,
-    surgeTimer: 0,
+    cycleIndex: 0,
+    cyclePhase: 0,
+    eliteTimer: 0,
+    // -1, not 0: cycle 0's boss has not spawned yet, and 0 is a real cycle index.
+    bossCycle: -1,
     bossSpawned: 0,
     bossHandle: NULL_HANDLE,
-    weightCum: new Float64Array(ARCHETYPE_COUNT),
-    weightCount: 0,
-    weightArchetype: new Uint8Array(ARCHETYPE_COUNT),
-    mixRow: -1,
+    cycle: createResolvedCycle(),
   };
 }
 
@@ -234,8 +235,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
     director: createDirector(),
     difficulty: {
-      hpScale: new Float64Array(ARCHETYPE_COUNT).fill(1),
-      speedScale: new Float64Array(ARCHETYPE_COUNT).fill(1),
+      hpRamp: 1,
+      speedRamp: 1,
       lastWholeSecond: 0,
     },
     levelUp: {
@@ -248,6 +249,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     stats: {
       kills: 0,
       killsByArchetype: new Uint32Array(ARCHETYPE_COUNT),
+      killsByRank: new Uint32Array(RANKS.length),
       damageDealt: 0,
       damageTaken: 0,
       gemsCollected: 0,

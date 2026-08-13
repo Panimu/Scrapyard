@@ -482,15 +482,17 @@ function checkVictory(world: World): boolean {
   if (world.runSec < world.config.runLengthSec) return false;
 
   const director = world.director;
-  const t = world.config.tuning.director;
 
+  // THE REIGNING BOSS GETS THE LAST WORD. A boss walks in every 120 s, so the clock running out
+  // mid-fight is the normal case, not an edge case: the run does not end while the most recent
+  // one is still standing. `isEnemyAlive` goes through the handle, so a reaped boss - and a
+  // recycled slot - both read as dead, which is the only safe way to ask this question.
+  //
+  // Only the most recent boss counts. An earlier one you ran away from is still out there and
+  // still enormous, but holding the run open for a boss the player abandoned four minutes ago
+  // would turn victory into a scavenger hunt across an unbounded map.
   if (director.bossSpawned !== 0) {
-    // The finale is running. `isEnemyAlive` goes through the handle, so a reaped boss - and a
-    // recycled slot - both read as dead, which is the only safe way to ask this question.
     if (isEnemyAlive(world.enemies, director.bossHandle as EnemyHandle)) return false;
-  } else if (world.runSec >= t.bossAtSec && world.runSec < t.bossAtSec + t.bossSilenceSec) {
-    // The scripted quiet before the Scraplord walks in. The run is emphatically not over.
-    return false;
   }
 
   world.phase = RUN_PHASE_VICTORY;
