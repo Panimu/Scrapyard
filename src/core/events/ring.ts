@@ -32,6 +32,14 @@ export const EV_WEAPON_RELOADING = 15;
 export const EV_WEAPON_RELOADED = 16;
 /** A laser cooled to its own heatResume and is live again. */
 export const EV_WEAPON_COOLED = 14;
+/**
+ * An Energy Shield layer absorbed a hit. Payload: (x, y, damage PREVENTED, layers still up).
+ * The prevented amount is the fully-resolved number the player would have taken - armour and
+ * damageTakenMul already applied - so the harness can total what the shield is actually worth.
+ */
+export const EV_PLAYER_SHIELD_BROKEN = 17;
+/** A layer finished recharging. Payload: (x, y, layers now up, capacity). */
+export const EV_PLAYER_SHIELD_RESTORED = 18;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -48,6 +56,12 @@ export const EVENT_NAMES: readonly string[] = [
   'UPGRADE_TAKEN',
   'PHASE_CHANGED',
   'BOSS_SPAWNED',
+  'WEAPON_OVERHEATED',
+  'WEAPON_COOLED',
+  'WEAPON_RELOADING',
+  'WEAPON_RELOADED',
+  'SHIELD_BROKEN',
+  'SHIELD_RESTORED',
 ];
 
 export interface EventRing {

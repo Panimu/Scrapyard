@@ -1,5 +1,5 @@
 /**
- * S3 - updatePlayerMovement. The chassis: stick decode, acceleration, drag, facing, regen.
+ * S3 - updatePlayerMovement. The chassis: stick decode, acceleration, drag, facing, regen, shield.
  *
  * ---------------------------------------------------------------------------------------------
  * WHY THIS IS NOT `position += stick * speed * dt`
@@ -54,6 +54,7 @@
  * gate is 20 u/s.
  */
 
+import { EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
 
@@ -105,4 +106,67 @@ export function updatePlayerMovement(world: World, dt: number): void {
     const hp = p.hp + regen * dt;
     p.hp = hp > s.maxHp ? s.maxHp : hp;
   }
+
+  updateShield(world, dt);
+}
+
+/**
+ * ENERGY SHIELD: the two clocks. Both live here for the same reason regeneration does - they are
+ * per-tick RATES on the chassis, and S9 is the stage that applies discrete events.
+ *
+ * THE WINDOW IS EXACT, and it is exact BECAUSE this runs before S9 rather than after it. A break
+ * on tick N happens six stages downstream of here, so the window is written after this tick's
+ * decrement and spends none of itself on the tick that opened it. It is then decremented once per
+ * tick from N+1 onward and tested while still positive. A window of W seconds therefore covers W
+ * ROUNDED UP to whole ticks, never down - the card's number is a floor, not an average.
+ * Decrementing after S9 instead would consume the first tick twice and quietly make every window
+ * one tick shorter than the number printed on the card.
+ *
+ * THE RECHARGE TIMER RESTARTS IMMEDIATELY while the shield is below capacity, rather than idling
+ * until the shield is empty or waiting to be re-armed by a hit. That is what "stacking recharge"
+ * means on the tier-7 card: lose both rims and you get one back after one period and the second
+ * after two, instead of the shield refilling wholesale or stalling at one.
+ *
+ * A layer NEVER returns while the player is dead. `updateShield` is only reached through the
+ * running pipeline, which stepWorld skips entirely in RUN_PHASE_DEAD - so this needs no guard of
+ * its own, and must not grow one that could disagree with stepWorld's.
+ */
+function updateShield(world: World, dt: number): void {
+  const p = world.player;
+
+  if (p.invulnLeft > 0) {
+    p.invulnLeft -= dt;
+    if (p.invulnLeft < 0) p.invulnLeft = 0;
+  }
+
+  const capacity = p.stats.shieldLayers;
+  // Clamped rather than merely compared: nothing removes a shield card today, but a tuning sweep
+  // that lowers capacity mid-run must not leave a rim standing above it.
+  if (p.shieldLayers > capacity) p.shieldLayers = capacity;
+
+  if (capacity === 0 || p.shieldLayers >= capacity) {
+    // Full (or absent): the timer is parked at 0 so the NEXT break starts a clean period rather
+    // than inheriting whatever fraction was left over from the last one.
+    p.shieldTimer = 0;
+    return;
+  }
+
+  // Below capacity and not counting: a layer was just spent, or a card just raised the ceiling.
+  if (p.shieldTimer <= 0) p.shieldTimer = p.stats.shieldRecharge;
+
+  p.shieldTimer -= dt;
+  if (p.shieldTimer > 0) return;
+
+  p.shieldLayers++;
+  // Restart straight away when there is still a rim missing; park at 0 when the shield is whole.
+  p.shieldTimer = p.shieldLayers < capacity ? p.stats.shieldRecharge : 0;
+  pushEvent(
+    world.events,
+    EV_PLAYER_SHIELD_RESTORED,
+    world.tick,
+    p.x,
+    p.y,
+    p.shieldLayers,
+    capacity,
+  );
 }

@@ -126,6 +126,24 @@ export interface PlayerState {
   heroId: number;
   /** Resolved stats. Recomputed ONLY on run start and on each upgrade applied. Never per tick. */
   readonly stats: PlayerStats;
+
+  /**
+   * ENERGY SHIELD, live state. Capacity is in `stats`; this is what is actually up right now.
+   *
+   *   shieldLayers  rims currently standing, 0..stats.shieldLayers. S9 spends one per hit taken;
+   *                 S3 puts them back. The renderer draws exactly this many rings.
+   *   shieldTimer   seconds until the next layer returns, or 0 when the shield is full. It
+   *                 restarts the moment a layer lands while still below capacity, which is what
+   *                 makes two lost layers cost two full recharge periods rather than one.
+   *   invulnLeft    seconds of total immunity remaining. Opened by a layer breaking and by
+   *                 nothing else. While it is positive the player takes no contact damage at all,
+   *                 and the biters spend their contact cooldown for nothing - that is deliberate,
+   *                 and it is what makes the immunity tiers worth taking: the window absorbs a
+   *                 whole crowd's simultaneous bite, not just the one that broke the layer.
+   */
+  shieldLayers: number;
+  shieldTimer: number;
+  invulnLeft: number;
   /**
    * Trait-local counters and timers; meaning is documented per trait in data/traits.ts.
    * Generic so hero-specific state never leaks into PlayerState's shape.
@@ -245,6 +263,17 @@ export interface RunStats {
   readonly killsByRank: Uint32Array;
   damageDealt: number;
   damageTaken: number;
+  /**
+   * Damage an Energy Shield layer stopped, fully resolved (armour and damageTakenMul already
+   * applied). Counted separately from `damageTaken` rather than netted out of it: the whole
+   * question the harness has to answer about this passive is "how much HP is a rim worth", and
+   * that number is invisible if a prevented hit simply never appears anywhere.
+   *
+   * Hits eaten by the IMMUNITY WINDOW are not counted here. They were never billed to anything -
+   * counting them would let a single break claim credit for an arbitrary number of bites and turn
+   * this into a measure of how crowded the player was.
+   */
+  damagePrevented: number;
   gemsCollected: number;
   shotsFired: number;
   shotsHit: number;

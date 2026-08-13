@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T20:05Z',
+    title: 'New passive: Energy Shield',
+    notes: [
+      'A blue rim around the mech absorbs one hit outright, whatever its size, then breaks and recharges after 20s.',
+      'Breaking a rim also makes you immune for a moment, so a crowd that all reach you at once spends its whole bite on the one layer.',
+      'Seven tiers: three cut the recharge to 9s, two extend the immunity to 0.2s, and the last adds a second rim that recharges in its own right.',
+      'It is the opposite trade to Ablative Plate - armour is worth the same against a nibble and a boss slam, a rim is worth the whole hit - and there are now six passives competing for five slots.',
+    ],
+  },
+  {
     at: '2026-08-13T19:15Z',
     title: 'Changelog in the pause menu',
     notes: [

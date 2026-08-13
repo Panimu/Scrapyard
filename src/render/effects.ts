@@ -55,6 +55,8 @@ const EMBER_LIFE = 0.36;
 const SCORCH_LIFE = 0.42;
 const BEAM_START_LIFE = 0.14;
 const OVERHEAT_LIFE = 0.26;
+/** Shield break/restore. Longer than a hit flash: it is a state change, not a tick of damage. */
+const SHIELD_BREAK_LIFE = 0.3;
 
 /** Ember velocity, world units/s, and the per-second drag that pulls it back down. */
 const EMBER_SPEED_MIN = 55;
@@ -235,6 +237,40 @@ export class Effects {
       const a = (k / 6) * Math.PI * 2 + Math.random() * 0.6;
       this.beamEmber(x, y, Math.cos(a), Math.sin(a), whitenTint(tint));
     }
+  }
+
+  /**
+   * An Energy Shield layer failing. A ring COLLAPSING INWARD, which is the opposite gesture to an
+   * impact flash and to the overheat burst - both of those bloom outward. The distinction is the
+   * whole job of this effect: the player has to read "the field went down" and not "you were hit",
+   * and they are reading it in a fraction of a second on a phone, out of the corner of their eye.
+   *
+   * Eight embers, thrown OUTWARD along the rim while the flash pulls in, so the shell of the field
+   * scatters as the field itself fails.
+   */
+  shieldBreak(x: number, y: number, tint: number): void {
+    const f = this.alloc(KIND_FLASH, x, y, SHIELD_BREAK_LIFE);
+    if (f >= 0) {
+      this.size0[f] = 96;
+      this.size1[f] = 20;
+      this.tint[f] = whitenTint(tint);
+    }
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2 + Math.random() * 0.5;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), tint);
+    }
+  }
+
+  /**
+   * A layer coming back. The same ring, run the other way - a soft bloom out to the rim radius
+   * and gone. No embers: nothing broke.
+   */
+  shieldRestore(x: number, y: number, tint: number): void {
+    const i = this.alloc(KIND_FLASH, x, y, SHIELD_BREAK_LIFE);
+    if (i < 0) return;
+    this.size0[i] = 14;
+    this.size1[i] = 88;
+    this.tint[i] = tint;
   }
 
   sparkle(x: number, y: number, tint: number): void {

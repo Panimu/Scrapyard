@@ -40,6 +40,10 @@ export const EVENT_RING_CAPACITY = 1024;
  * collection: by the fifth gun the pool stops offering new ones and every later card deepens what
  * you already hold. Two runs on the same mech can end up genuinely different builds.
  *
+ * SIX passives exist against those five slots, for the same reason, and it bites hardest on the
+ * two defensive ones: Ablative Plate and Energy Shield cover opposite halves of the same problem
+ * (see the shield card in data/upgrades.ts), and taking both costs 40% of the passive budget.
+ *
  * `isOfferable` enforces both caps independently - it gates the UNLOCK on the cap while continuing
  * to offer tiers for anything already held, so hitting five weapons narrows the pool instead of
  * ending progression.

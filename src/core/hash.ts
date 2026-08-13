@@ -100,6 +100,12 @@ export function hashWorld(world: World): number {
   h = mixF64(h, pl.xp);
   h = mixF64(h, pl.xpToNext);
   h = mixU32(h, pl.heroId);
+  // Shield state gates whether the NEXT hit lands at all, so two runs can differ in it alone -
+  // one rim up, one down - and hash identically right until something finally bites. Same
+  // argument as weapon heat below.
+  h = mixU32(h, pl.shieldLayers);
+  h = mixF64(h, pl.shieldTimer);
+  h = mixF64(h, pl.invulnLeft);
   for (let i = 0; i < pl.traitScratch.length; i++) h = mixF64(h, pl.traitScratch[i]);
 
   h = mixU32(h, world.weaponCount);

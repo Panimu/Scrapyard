@@ -105,6 +105,9 @@ function createPlayerStats(): PlayerStats {
     xpGain: 0,
     damageTakenMul: 0,
     radius: 0,
+    shieldLayers: 0,
+    shieldRecharge: 0,
+    shieldImmune: 0,
   };
 }
 
@@ -206,6 +209,9 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     xpToNext: xpToNextLevel(1, config.tuning.xp),
     heroId: config.heroId,
     stats: createPlayerStats(),
+    shieldLayers: 0,
+    shieldTimer: 0,
+    invulnLeft: 0,
     traitScratch: new Float32Array(TRAIT_SCRATCH_LEN),
   };
 
@@ -252,6 +258,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       killsByRank: new Uint32Array(RANKS.length),
       damageDealt: 0,
       damageTaken: 0,
+      damagePrevented: 0,
       gemsCollected: 0,
       shotsFired: 0,
       shotsHit: 0,
@@ -313,6 +320,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   // would start on one set of numbers and quietly change to another.
   resolvePlayerStats(hero, world.levelUp.stacks, world.upgradeCatalog, player.stats, config.tuning);
   player.hp = player.stats.maxHp;
+  // A shield starts UP, the same way hp starts full. No shipping hero carries one at tier 0, so
+  // this is normally 0 - but a hero that did would otherwise spend its first 20 seconds charging
+  // a shield it is supposed to have walked in with.
+  player.shieldLayers = player.stats.shieldLayers;
 
   if (defId >= 0) {
     const inst = world.weapons[0];

@@ -279,7 +279,11 @@ function printSummary(
     `  kills             ${s.kills}  [regular ${s.killsByRank[0]}, elite ${s.killsByRank[1]}, boss ${s.killsByRank[2]}]`,
   );
   console.log(
-    `  damage            dealt ${fixed(s.damageDealt, 0)}   taken ${fixed(s.damageTaken, 0)}`,
+    `  damage            dealt ${fixed(s.damageDealt, 0)}   taken ${fixed(s.damageTaken, 0)}` +
+      // Only when a shield was actually carried. A permanent "shielded 0" on every line teaches
+      // the eye to skip the row, and this is the one number that says whether the card is worth
+      // a passive slot.
+      (s.damagePrevented > 0 ? `   shielded ${fixed(s.damagePrevented, 0)}` : ''),
   );
   console.log(
     `  shots             ${s.shotsFired} fired, ${s.shotsHit} hit (${fixed(s.shotsFired > 0 ? (100 * s.shotsHit) / s.shotsFired : 0, 1)}%)`,

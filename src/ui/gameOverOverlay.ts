@@ -106,6 +106,7 @@ export class GameOverOverlay {
         ${stat('Damage taken', compact(s.damageTaken))}
         ${stat('Accuracy', `${accuracy}%`)}
         ${stat('Gems', String(s.gemsCollected))}
+        ${s.damagePrevented > 0 ? stat('Shielded', compact(s.damagePrevented)) : ''}
       </div>
       <div class="list">
         <div class="eyebrow">Kills by type</div>

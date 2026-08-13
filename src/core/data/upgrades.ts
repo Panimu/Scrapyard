@@ -1,10 +1,10 @@
 /**
  * THE UPGRADE POOL.
  *
- * FOUR CARDS. NOTHING ELSE. Every card is a weapon, and every weapon has SEVEN TIERS: tier 1 puts
- * it in your hands, tiers 2-7 change what it does. Passives will exist later and are deliberately
- * absent rather than stubbed - a placeholder passive would show up on cards and dilute a pool whose
- * whole point right now is that every choice is a gun.
+ * FOURTEEN CARDS: eight weapons and six passives, every one of them SEVEN TIERS deep. Tier 1 puts
+ * the thing in your hands; tiers 2-7 change what it does. A run has five weapon slots and five
+ * passive slots, so nothing here is a collection to complete - 98 tiers exist and a long run takes
+ * perhaps 30 of them.
  *
  * WHAT A TIER DOES lives in WEAPON_CATALOG's `perLevel` arrays, not here. This file says WHICH
  * weapon a card belongs to and what to print on it; the weapon's own file says what tier 4 is
@@ -37,7 +37,8 @@ export type UpgradeId =
   | 'p-damage'
   | 'p-rate'
   | 'p-speed'
-  | 'p-armour';
+  | 'p-armour'
+  | 'p-shield';
 
 /** Tiers per weapon, including the unlock. */
 export const WEAPON_MAX_TIER = 7;
@@ -124,7 +125,13 @@ function laserTierText(
 // ---------------------------------------------------------------------------------------------
 // PASSIVES
 //
-// Five cards, seven tiers each, BACK-LOADED: 5 / 5 / 6 / 7 / 8 / 9 / 10 percent. That sums to
+// SIX cards for FIVE slots (MAX_PASSIVES), so a finished build has deliberately left one behind.
+//
+// Five of the six are percentage cards on the shared ramp below. The sixth, Energy Shield, is not
+// a percentage of anything - it installs a mechanism - and is authored at the bottom of the
+// catalog with its own reasoning.
+//
+// The five ramp cards run seven tiers each, BACK-LOADED: 5 / 5 / 6 / 7 / 8 / 9 / 10 percent. That sums to
 // exactly 50% and the seventh rung is worth exactly twice the first, so finishing a passive is a
 // real decision rather than a rounding error - the last two tiers alone are worth as much as the
 // first four.
@@ -161,7 +168,10 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     kind: 'weapon',
     grantsWeapon: 'cannon',
     name: 'Cannon',
-    description: 'Lobs a heavy shell at the highest-HP enemy in range. Splash finishes the rest.',
+    // No mention of splash: the Cannon lost its blast radius, and Heavy Artillery is the only
+    // area weapon in the game. A card that still promised splash would be the exact drift this
+    // file's header is about.
+    description: 'Lobs a heavy shell at the highest-HP enemy in range. One target, hit hard.',
     tiers: Object.freeze([
       'Unlock.',
       'Range +65.',
@@ -374,6 +384,64 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     weight: 9,
     effects: [],
   },
+  {
+    id: 'p-shield',
+    kind: 'passive',
+    name: 'Energy Shield',
+    // The UNLOCK card shows this instead of tiers[0], so it has to carry the whole mechanism -
+    // "Unlock." on its own would put the three numbers that define the card nowhere the player
+    // can read them before spending the pick.
+    description:
+      'A blue rim absorbs one hit outright, whatever its size. 0.1s immunity, back in 20s.',
+    // NOT a percentage card, and not on the shared ramp: there is nothing here to take a
+    // percentage OF. All three numbers are 0 at base (tuning.ts), so the unlock tier carries the
+    // whole mechanism and the six after it move three separate dials.
+    //
+    // WHY IT IS NOT REDUNDANT WITH ABLATIVE PLATE. Armour subtracts a flat amount from every hit,
+    // so it is worth 22 HP against a swarmer nibble and 22 HP against a boss slam - which means
+    // it is worth EVERYTHING against the swarm and almost nothing against the big thing. A shield
+    // layer prevents one hit whatever its size, so it is worth 5 HP against a nibble and 42
+    // against a slam. They are the same slot cost and opposite shapes, which is the point.
+    //
+    // THE RECHARGE LADDER, in the only terms that matter - layers per minute, not seconds:
+    //   T1  20.0 s   3.0 /min
+    //   T2  17.0 s   3.5 /min   +18%
+    //   T4  13.5 s   4.4 /min   +26%
+    //   T6   9.0 s   6.7 /min   +50%
+    // Back-loaded like every other passive: the last cooldown tier is worth nearly three times the
+    // first. Authored as time (that is what the player reads on the card) but SHAPED as rate.
+    //
+    // THE IMMUNITY WINDOW IS WHY TIERS 3 AND 5 ARE NOT FILLER. Without it a break would buy one
+    // bite, and in a crowd of six the other five would land on the very next tick - the shield
+    // would be worth about a sixth of a hit and the card would be a trap. The window makes a break
+    // eat everything touching you for 0.1 s, and 0.2 s at tier 5 is long enough to cover a full
+    // contact cycle's worth of a surrounding pile-on.
+    tiers: Object.freeze([
+      'Unlock.',
+      'Recharge 3s faster: 17s.',
+      'Immunity 0.15s.',
+      'Recharge 3.5s faster: 13.5s.',
+      'Immunity 0.2s.',
+      'Recharge 4.5s faster: 9s.',
+      'A second rim. Each recharges in turn.',
+    ]),
+    tierEffects: Object.freeze([
+      [
+        { target: 'player' as const, key: 'shieldLayers' as const, mode: 'add' as const, amount: 1 },
+        { target: 'player' as const, key: 'shieldRecharge' as const, mode: 'add' as const, amount: 20 },
+        { target: 'player' as const, key: 'shieldImmune' as const, mode: 'add' as const, amount: 0.1 },
+      ],
+      [{ target: 'player' as const, key: 'shieldRecharge' as const, mode: 'add' as const, amount: -3 }],
+      [{ target: 'player' as const, key: 'shieldImmune' as const, mode: 'add' as const, amount: 0.05 }],
+      [{ target: 'player' as const, key: 'shieldRecharge' as const, mode: 'add' as const, amount: -3.5 }],
+      [{ target: 'player' as const, key: 'shieldImmune' as const, mode: 'add' as const, amount: 0.05 }],
+      [{ target: 'player' as const, key: 'shieldRecharge' as const, mode: 'add' as const, amount: -4.5 }],
+      [{ target: 'player' as const, key: 'shieldLayers' as const, mode: 'add' as const, amount: 1 }],
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+  },
 ] as const) as readonly UpgradeDef[];
 
 /** Catalog index for an upgrade id, or -1. */
@@ -393,7 +461,7 @@ export function upgradeIndexForWeapon(weapon: WeaponId): number {
 }
 
 /**
- * Total tiers in the pool: 4 weapons x 7 = 28 picks to exhaust everything.
+ * Total tiers in the pool: 14 cards x 7 = 98 picks to exhaust everything.
  *
  * A run reaching this has nothing left to be offered, and updateProgression must degrade
  * gracefully rather than hunt forever for a third distinct card.

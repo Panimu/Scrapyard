@@ -36,6 +36,8 @@ import {
   EV_GEM_COLLECTED,
   EV_LEVEL_UP,
   EV_PLAYER_DAMAGED,
+  EV_PLAYER_SHIELD_BROKEN,
+  EV_PLAYER_SHIELD_RESTORED,
   EV_PROJECTILE_HIT,
   EV_WEAPON_FIRED,
   FLAVOURS,
@@ -100,6 +102,31 @@ const HOVER_IDLE_SPEED = 34;
 const TURRET_KICK_UNITS = 5;
 const TURRET_KICK_SEC = 0.08;
 
+/**
+ * ENERGY SHIELD RIMS.
+ *
+ * One Graphics holding every rim rather than one per layer: the ring is redrawn only when the
+ * layer count actually changes, and the whole shield - one rim or two - is a single draw call
+ * sitting inside the player layer.
+ *
+ * Radii are measured from the 26 u collision circle outward. The first rim sits just outside the
+ * drawn hull; the second is far enough out to be countable at a glance on a phone, which is the
+ * only thing the second rim has to communicate.
+ */
+const SHIELD_RIM_RADIUS = 38;
+const SHIELD_RIM_STEP = 7;
+const SHIELD_RIM_WIDTH = 2.5;
+const SHIELD_RIM_TINT = 0x4fa8ff;
+/**
+ * The rim breathes between these two alphas. A static ring reads as part of the chassis art; a
+ * moving one reads as a field that is running, which is the difference between the player noticing
+ * it is gone and not.
+ */
+const SHIELD_ALPHA_MIN = 0.45;
+const SHIELD_ALPHA_MAX = 0.8;
+/** Breaths per second. Slow: this is ambient state, not an alarm. */
+const SHIELD_PULSE_HZ = 0.7;
+
 export interface RenderStats {
   enemySprites: number;
   pickupSprites: number;
@@ -130,6 +157,9 @@ export class GameRenderer {
   private readonly barrel: Sprite;
   private readonly mech: Sprite;
   private readonly legs: Sprite;
+  private readonly shieldRim: Graphics;
+  /** Layer count currently DRAWN into `shieldRim`. -1 forces a redraw on the first frame. */
+  private shieldRimDrawn = -1;
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
   private readonly glows: SpritePool;
@@ -196,9 +226,13 @@ export class GameRenderer {
     this.legs = new Sprite({ texture: tex.mechLegs[0][0], roundPixels: true });
     this.legs.anchor.set(0.5, 0.5);
     this.legs.scale.set(MECH_SCALE);
+    // The rim goes ABOVE the turret so it is never half-hidden behind a barrel swinging through
+    // it. It is a field around the whole machine, and a field that the gun occludes reads as a
+    // decal painted on the floor.
+    this.shieldRim = new Graphics({ label: 'shield-rim' });
     // Turret ON TOP of the chassis: the mech walks one way and shoots another, and the turret is
     // the only thing on screen that says where the shot is going before it arrives.
-    this.playerLayer.addChild(this.legs, this.mech, this.barrel);
+    this.playerLayer.addChild(this.legs, this.mech, this.barrel, this.shieldRim);
 
     this.trails = new SpritePool({
       capacity: PROJECTILE_SPRITES,
@@ -267,6 +301,10 @@ export class GameRenderer {
     this.beams.clear();
     this.effects.clear();
     this.playerFlash = 0;
+    // -1, not 0: the new run may start with the same layer count the last one ended on, and a
+    // cleared Graphics that believes it is already drawn would leave the rim missing all run.
+    this.shieldRimDrawn = -1;
+    this.shieldRim.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
     this.camera.snapTo(world.player.x, world.player.y);
     // Drop anything the previous run left in the ring so its explosions do not play now.
@@ -367,6 +405,17 @@ export class GameRenderer {
 
         case EV_PLAYER_DAMAGED:
           this.playerFlash = PLAYER_FLASH_SEC;
+          break;
+
+        // A rim went down. Blue burst, and DELIBERATELY NO `playerFlash` - the red hit tint means
+        // "that cost you HP", and firing it here would teach the player to read a blocked hit as
+        // a taken one, which is the exact opposite of what the shield is telling them.
+        case EV_PLAYER_SHIELD_BROKEN:
+          this.effects.shieldBreak(a, b, SHIELD_RIM_TINT);
+          break;
+
+        case EV_PLAYER_SHIELD_RESTORED:
+          this.effects.shieldRestore(a, b, SHIELD_RIM_TINT);
           break;
 
         case EV_GEM_COLLECTED: {
@@ -636,6 +685,44 @@ export class GameRenderer {
     this.barrel.position.set(px - tx * kick, py - ty * kick);
     this.barrel.rotation = aim;
     this.barrel.tint = tint;
+
+    this.drawShieldRim(pl.shieldLayers, px, py);
+  }
+
+  /**
+   * The Energy Shield's rims: one blue ring per layer still standing.
+   *
+   * THE GEOMETRY IS REDRAWN ONLY WHEN THE COUNT CHANGES. A Graphics rebuilt every frame throws
+   * away its geometry and re-tessellates two circles sixty times a second for a shape that changes
+   * perhaps twice a minute; position and alpha are transform and tint, which cost nothing.
+   *
+   * It does NOT rotate with the chassis and does NOT yaw with the gait - it is a field, not a part
+   * of the machine, and a ring that walked with the legs would read as painted on.
+   */
+  private drawShieldRim(layers: number, px: number, py: number): void {
+    if (layers <= 0) {
+      // `visible` rather than `clear()`: the geometry is worth keeping for the next recharge, and
+      // shieldRimDrawn is left alone so coming back to the same count is free.
+      this.shieldRim.visible = false;
+      return;
+    }
+
+    if (layers !== this.shieldRimDrawn) {
+      this.shieldRim.clear();
+      for (let i = 0; i < layers; i++) {
+        this.shieldRim
+          .circle(0, 0, SHIELD_RIM_RADIUS + i * SHIELD_RIM_STEP)
+          .stroke({ width: SHIELD_RIM_WIDTH, color: SHIELD_RIM_TINT, alpha: 1 });
+      }
+      this.shieldRimDrawn = layers;
+    }
+
+    this.shieldRim.visible = true;
+    this.shieldRim.position.set(px, py);
+    // Cosmetic clock, not sim time: the pulse must keep breathing through a level-up freeze, when
+    // the whole simulation is stopped and the rim is one of the few things still moving.
+    const pulse = (Math.sin(this.clock * SHIELD_PULSE_HZ * Math.PI * 2) + 1) * 0.5;
+    this.shieldRim.alpha = SHIELD_ALPHA_MIN + (SHIELD_ALPHA_MAX - SHIELD_ALPHA_MIN) * pulse;
   }
 
   private drawProjectiles(world: World, alpha: number): void {

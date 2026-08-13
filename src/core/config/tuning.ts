@@ -33,6 +33,22 @@ export interface PlayerBaseTuning {
   readonly damageTakenMul: number;
   /** Collision radius. Constant 26 u (drawn 52 u); lives here so systems have one place to read it. */
   readonly radius: number;
+
+  /**
+   * ENERGY SHIELD - all three are 0 at base, exactly like `armour`, and the numbers arrive on the
+   * card that grants them (data/upgrades.ts, `p-shield`). A mech with no shield card has zero
+   * layers, and the whole mechanism costs one `if` in S3 and one in S9.
+   *
+   *   shieldLayers    how many hits are banked. Each is one blue rim on the chassis.
+   *   shieldRecharge  seconds to bring ONE layer back. The timer restarts immediately while the
+   *                   shield is below full, so two lost layers cost two full periods.
+   *   shieldImmune    seconds of total immunity bought by breaking a layer. This is what makes the
+   *                   shield worth more than 1 HP in a crowd: it eats the whole simultaneous
+   *                   pile-on, not just the one bite that broke it.
+   */
+  readonly shieldLayers: number;
+  readonly shieldRecharge: number;
+  readonly shieldImmune: number;
 }
 
 export interface CombatTuning {
@@ -45,7 +61,11 @@ export interface CombatTuning {
   readonly armourMinFrac: number;
   /** Damage multiplier applied to each pass after a piercing shell's first. */
   readonly pierceFalloff: number;
-  /** Player i-frames do not exist; contact is gated per-enemy by ArchetypeDef.contactInterval. */
+  /**
+   * Contact is gated per-enemy by ArchetypeDef.contactInterval. The player has no i-frames of
+   * their own EXCEPT the window an Energy Shield layer buys when it breaks (player.invulnLeft);
+   * with no shield card taken, that window is never opened and hits land back to back.
+   */
   readonly playerHitFlashSec: number;
 }
 
@@ -166,6 +186,9 @@ const PLAYER_BASE: PlayerBaseTuning = {
   xpGain: 5.6, // gems are sparse and often abandoned while kiting; the curve is paid here
   damageTakenMul: 1,
   radius: 26,
+  shieldLayers: 0,
+  shieldRecharge: 0,
+  shieldImmune: 0,
 };
 
 const COMBAT: CombatTuning = {

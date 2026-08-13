@@ -5,6 +5,7 @@
  *   - enemy hp changes, knockback, splash;
  *   - the KillFeed, which S10 turns into gems THIS SAME TICK;
  *   - player hp changes, and the transition to RUN_PHASE_DEAD;
+ *   - Energy Shield layers spent, and the immunity window a break opens;
  *   - RunStats and the event ring for the renderer.
  *
  * `dt` is part of the mandated system signature and is deliberately unused: everything here is a
@@ -50,6 +51,17 @@
  * thing - which is exactly the shape of problem a flat-armour build should have.
  *
  * ---------------------------------------------------------------------------------------------
+ * THE ENERGY SHIELD - the other half of that trade
+ * ---------------------------------------------------------------------------------------------
+ * A shield layer prevents ONE hit outright, whatever its size, so it is worth most against exactly
+ * the big thing armour is worst against: a boss slam and a swarmer nibble cost the same one rim.
+ * The two defensive passives are deliberately not interchangeable, and a build that wants to
+ * survive both has to spend two of its five passive slots.
+ *
+ * It is applied AFTER the armour formula so the amount it reports preventing is the amount the
+ * player would really have lost. See applyContacts.
+ *
+ * ---------------------------------------------------------------------------------------------
  * PIERCE FALLOFF, carried on the shell
  * ---------------------------------------------------------------------------------------------
  * Each pass multiplies the shell's OWN carried damage by `pierceFalloff`, rather than computing a
@@ -81,6 +93,7 @@ import {
   EV_ENEMY_KILLED,
   EV_PHASE_CHANGED,
   EV_PLAYER_DAMAGED,
+  EV_PLAYER_SHIELD_BROKEN,
   EV_PROJECTILE_HIT,
   NO_BEAM_TARGET,
   pushEvent,
@@ -379,6 +392,40 @@ function applyContacts(world: World): void {
     const floor = raw * combat.armourMinFrac;
     const subtracted = raw - armour;
     const taken = (subtracted > floor ? subtracted : floor) * takenMul;
+
+    // ENERGY SHIELD, applied AFTER armour and the damage multiplier, so the number the shield
+    // reports having prevented is the number the player would actually have lost. Nothing about
+    // the ordering changes the outcome - a prevented hit is prevented whatever its size - but it
+    // makes EV_PLAYER_SHIELD_BROKEN's payload comparable with `damageTaken`.
+    //
+    // IMMUNITY FIRST. While the window from the last break is open the bite is eaten whole: no
+    // damage, no second layer spent, and no event. The biter's cooldown is still rearmed above,
+    // which is the whole point of the window - a crowd that all reach you on the same tick spend
+    // their bites against 0.2 s of immunity instead of queueing up to land the instant it ends.
+    if (player.invulnLeft > 0) continue;
+
+    if (player.shieldLayers > 0) {
+      player.shieldLayers--;
+      // The window opens even at 0 immunity (an unreachable state today - the unlock tier carries
+      // 0.1 s - but a tuning sweep to 0 must degrade to "blocks exactly one hit", not to a
+      // negative timer that S3 would then have to defend against).
+      const window = player.stats.shieldImmune;
+      if (window > player.invulnLeft) player.invulnLeft = window;
+      // The recharge period starts NOW rather than at the next tick's S3, so a break is worth
+      // exactly `shieldRecharge` seconds however late in the tick it happened.
+      player.shieldTimer = player.stats.shieldRecharge;
+      world.stats.damagePrevented += taken;
+      pushEvent(
+        world.events,
+        EV_PLAYER_SHIELD_BROKEN,
+        world.tick,
+        player.x,
+        player.y,
+        taken,
+        player.shieldLayers,
+      );
+      continue;
+    }
 
     player.hp -= taken;
     world.stats.damageTaken += taken;

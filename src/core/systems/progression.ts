@@ -257,7 +257,17 @@ function applyChoice(world: World, choiceIndex: number): boolean {
 
   const player = world.player;
   const maxHpBefore = player.stats.maxHp;
+  const shieldCapBefore = player.stats.shieldLayers;
   resolvePlayerStats(hero, lu.stacks, world.upgradeCatalog, player.stats, world.config.tuning);
+
+  // A card that adds a shield layer RAISES IT IMMEDIATELY, for the same reason a card that adds
+  // max HP heals for what it added: the player took the card to have the thing, and a rim that
+  // only appeared 20 seconds later would read as the card having done nothing. Existing rims are
+  // untouched, so taking tier 7 with your one rim already broken gives you the new one and leaves
+  // the old one still charging.
+  const layersGained = player.stats.shieldLayers - shieldCapBefore;
+  if (layersGained > 0) player.shieldLayers += layersGained;
+  if (player.shieldLayers > player.stats.shieldLayers) player.shieldLayers = player.stats.shieldLayers;
 
   // A card that raises max HP heals for exactly what it added ("+25 max HP, and heal for the
   // same"). Derived from the resolved delta rather than from the card's `amount`, so it stays

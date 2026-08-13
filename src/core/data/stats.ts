@@ -43,7 +43,10 @@ export type PlayerStatKey =
   | 'moveMaxSpeed'
   | 'pickupRadius'
   | 'xpGain'
-  | 'damageTakenMul';
+  | 'damageTakenMul'
+  | 'shieldLayers'
+  | 'shieldRecharge'
+  | 'shieldImmune';
 
 /** Mutable: world.ts allocates one of these per run and resolve* writes into it. */
 export interface PlayerStats {
@@ -59,6 +62,18 @@ export interface PlayerStats {
   damageTakenMul: number;
   /** Constant from tuning; carried here so movement/collision read one struct. */
   radius: number;
+
+  /**
+   * ENERGY SHIELD, resolved. These are the CAPACITY; the live state (how many layers are actually
+   * up, and how long until the next one returns) is on PlayerState, because it changes every tick
+   * and this struct is rebuilt only when a card is taken.
+   *
+   * `shieldLayers` is floored to a whole number here so nothing downstream has to think about
+   * half a rim.
+   */
+  shieldLayers: number;
+  shieldRecharge: number;
+  shieldImmune: number;
 }
 
 // -------------------------------------------------------------------------------------------
@@ -281,6 +296,37 @@ export function resolvePlayerStats(
     'damageTakenMul',
   );
   out.damageTakenMul = dtm < 0.25 ? 0.25 : dtm;
+
+  out.shieldLayers = resolveOne(
+    b.shieldLayers,
+    h.shieldLayers ?? 1,
+    stacks,
+    upgrades,
+    'player',
+    'shieldLayers',
+  );
+  out.shieldRecharge = resolveOne(
+    b.shieldRecharge,
+    h.shieldRecharge ?? 1,
+    stacks,
+    upgrades,
+    'player',
+    'shieldRecharge',
+  );
+  out.shieldImmune = resolveOne(
+    b.shieldImmune,
+    h.shieldImmune ?? 1,
+    stacks,
+    upgrades,
+    'player',
+    'shieldImmune',
+  );
+  // Layers are a COUNT of rims: floor it so a fractional card can never produce two-and-a-bit.
+  out.shieldLayers = Math.max(0, Math.floor(out.shieldLayers));
+  // A zero recharge would restore a layer every tick and make the shield total immunity. The
+  // floor is deliberately generous rather than tight - it is a guard rail, not a balance number.
+  if (out.shieldRecharge < 0.5) out.shieldRecharge = 0.5;
+  if (out.shieldImmune < 0) out.shieldImmune = 0;
 
   // Guard rails. A hero multiplier or a stack of cards must never produce a non-positive speed
   // (the movement integrator divides by moveMaxSpeed) or a zero max HP.
