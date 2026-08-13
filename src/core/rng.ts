@@ -17,6 +17,14 @@
 export const RNG_SALT_SPAWN = 0x5f356495;
 export const RNG_SALT_LOOT = 0x1b873593;
 export const RNG_SALT_UPGRADE = 0x27d4eb2f;
+/**
+ * Weapon randomness - currently only the artillery's strike scatter.
+ *
+ * ITS OWN STREAM ON PURPOSE. Drawing artillery scatter from the spawn stream would make every
+ * enemy in the run depend on how many artillery shells had been fired, so taking one weapon card
+ * would silently reshuffle the entire spawn sequence and make two runs incomparable.
+ */
+export const RNG_SALT_WEAPON = 0x9e3779b1;
 
 /**
  * splitmix32: seeds the four sfc32 words from one 32-bit seed. Its job is avalanche - seeds 1
@@ -160,6 +168,8 @@ export interface RngStreams {
   readonly loot: Rng;
   /** Level-up offer generation. */
   readonly upgrade: Rng;
+  /** Weapon-side randomness. Isolated so a weapon cannot perturb spawns or loot. */
+  readonly weapon: Rng;
 }
 
 export function createRngStreams(seed: number): RngStreams {
@@ -167,6 +177,7 @@ export function createRngStreams(seed: number): RngStreams {
     spawn: new Rng((seed ^ RNG_SALT_SPAWN) | 0),
     loot: new Rng((seed ^ RNG_SALT_LOOT) | 0),
     upgrade: new Rng((seed ^ RNG_SALT_UPGRADE) | 0),
+    weapon: new Rng((seed ^ RNG_SALT_WEAPON) | 0),
   };
 }
 

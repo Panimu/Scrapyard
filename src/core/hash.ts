@@ -149,6 +149,7 @@ export function hashWorld(world: World): number {
   h = mixRng(h, world.rng.spawn);
   h = mixRng(h, world.rng.loot);
   h = mixRng(h, world.rng.upgrade);
+  h = mixRng(h, world.rng.weapon);
 
   return h >>> 0;
 }

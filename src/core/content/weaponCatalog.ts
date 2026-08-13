@@ -18,7 +18,7 @@
  * way is `import type` and therefore erased, so there is no import cycle at runtime.
  */
 
-import { HEAT_CAPACITY_BASE } from '../constants.js';
+import { HEAT_CAPACITY_BASE, STRIKE_RADIUS_MAX } from '../constants.js';
 import { degToRad } from '../math/trig.js';
 import type { WeaponStatKey } from '../data/stats.js';
 import type { World, WeaponInstance } from '../types.js';
@@ -34,7 +34,8 @@ export type WeaponId =
   | 'laser-long'
   | 'missile-short'
   | 'missile-long'
-  | 'machine-gun';
+  | 'machine-gun'
+  | 'artillery';
 
 /**
  * Target-selection strategies.
@@ -45,7 +46,7 @@ export type WeaponId =
  */
 export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp'; // grows: | 'densest'
 
-export type FirePatternId = 'battery' | 'beam' | 'spread'; // grows: | 'burst'
+export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage';
 
 export type BehaviourId = 'straight' | 'homing'; // grows: | 'arc'
 
@@ -598,6 +599,77 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
   detonateOnExpiry: false,
 });
 
+// ---------------------------------------------------------------------------------------------
+// Heavy Artillery
+//
+// The only weapon in the game that does not care where anything is. Three shells fall on random
+// spots near the mech - not on enemies, not ahead of the player, not where you are looking. It is
+// weather, and you learn to fight underneath it.
+//
+// WHAT "RANDOM VISIBLE SPOTS" MEANS HERE. The simulation is not allowed to know the viewport (the
+// camera rule: iOS cannot lock orientation, so screen shape must never change what the game does),
+// so "visible" is resolved the same way SPAWN_RADIUS resolves it from the other side - with a
+// radius that is correct on EVERY supported device. The short axis always shows 440 units, so
+// anything within 210 u of the mech is on screen for everybody, in either orientation. Strikes
+// land in a 60-210 u annulus: never on your own feet, always where you can see them.
+//
+//   3 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload
+//
+// The fuse is the weapon. Shells are inert while they fall - flagged NOCONTACT so nothing can set
+// one off early - which gives the player two thirds of a second to read the markers and decide
+// whether to walk into that ground or away from it.
+// ---------------------------------------------------------------------------------------------
+
+export const ARTILLERY: WeaponDef = Object.freeze({
+  id: 'artillery',
+  name: 'Heavy Artillery',
+  kind: 'projectile',
+  // Never consulted: `barrage` picks ground, not bodies. Declared to satisfy the def.
+  targeting: 'nearest',
+  pattern: 'barrage',
+  behaviour: 'straight',
+  // Fires into an empty field quite happily. It is not shooting AT anything.
+  requiresTarget: false,
+  base: Object.freeze({
+    damage: 58,
+    cooldown: 3.6, // slow: this is a rhythm you plan around, not a gun you aim
+    range: STRIKE_RADIUS_MAX,
+    projectileSpeed: 0, // shells do not travel - they arrive
+    projectileCount: 3,
+    pierce: 0,
+    knockback: 120,
+    splashRadius: 75, // the damage IS the blast; there is no direct hit
+    splashFrac: 1,
+    turretTraverse: degToRad(720),
+    fireArc: degToRad(180),
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: 0,
+    flightTime: 0.7, // the telegraph
+    ammoCapacity: 0,
+    reloadTime: 0,
+  }),
+  perLevel: Object.freeze([
+    { splashRadius: 18 }, // T2  75 -> 93
+    { cooldown: -0.6 }, // T3  3.6 -> 3.0 s
+    { damage: 22 }, // T4  58 -> 80
+    { splashRadius: 18 }, // T5  93 -> 111
+    { cooldown: -0.6 }, // T6  3.0 -> 2.4 s
+    { projectileCount: 1 }, // T7  a fourth shell
+  ]),
+  reengageMul: 1,
+  visualId: 3,
+  muzzleOffset: 0,
+  shellRadius: 0,
+  beamColour: 0,
+  beamWidth: 0,
+  requiresClearLine: false,
+  fireAlongFacing: false,
+  detonateOnExpiry: true,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -606,6 +678,7 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   MISSILE_SHORT,
   MISSILE_LONG,
   MACHINE_GUN,
+  ARTILLERY,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */

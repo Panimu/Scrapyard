@@ -45,6 +45,29 @@ import type { World } from '../types.js';
 const HOMING_SEEK_RADIUS = 240;
 
 /**
+ * Ends a projectile whose fuse has run out, detonating it if its weapon says so.
+ *
+ * SHARED BY EVERY BEHAVIOUR ON PURPOSE. Fuse detonation was first written inside `homing`, which
+ * silently meant the artillery - a `straight` projectile with `detonateOnExpiry` - landed three
+ * shells a volley and dealt exactly zero damage. The behaviour a projectile flies with and whether
+ * it explodes at the end are independent properties, so the code that ends a life belongs in one
+ * place that all of them call.
+ */
+function expireProjectile(world: World, d: number): void {
+  const p = world.projectiles;
+  markProjectileDead(p, d);
+
+  const inst = world.weapons[p.ownerWeapon[d]];
+  const def =
+    inst === undefined ? undefined : (world.weaponCatalog[inst.defId] as WeaponDef | undefined);
+  if (def?.detonateOnExpiry === true && p.splashRadius[d] > 0) {
+    // Splash only - there is no struck body. updateDamage applies it, so S7 never touches hp.
+    pushHit(world.hits, d, NO_DIRECT_HIT, p.x[d], p.y[d]);
+  }
+  pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, p.x[d], p.y[d], 0, d);
+}
+
+/**
  * `straight` - constant velocity, no steering, no drag, no gravity.
  *
  * The Cannon's whole feel lives in the numbers rather than the curve: 520 u/s is 8.67 u per tick,
@@ -82,10 +105,7 @@ export const behaviourStraight: ProjectileBehaviour = (world, behaviourId, dt): 
 
     const left = lifeSec[d] - dt;
     lifeSec[d] = left;
-    if (left <= 0) {
-      markProjectileDead(p, d);
-      pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, x[d], y[d], 0, d);
-    }
+    if (left <= 0) expireProjectile(world, d);
   }
 };
 
@@ -181,20 +201,7 @@ export const behaviourHoming: ProjectileBehaviour = (world, behaviourId, dt): vo
 
     const left = p.lifeSec[d] - dt;
     p.lifeSec[d] = left;
-    if (left <= 0) {
-      markProjectileDead(p, d);
-      // FUSE DETONATION. A missile that ran out of flight time explodes where it is, for splash
-      // only - there is no body to take a direct hit. It goes through the HitBuffer rather than
-      // touching enemies here, so every point of damage in the game is still applied by S9 and
-      // the detection/application split holds.
-      const def = world.weaponCatalog[world.weapons[p.ownerWeapon[d]]?.defId ?? -1] as
-        | WeaponDef
-        | undefined;
-      if (def?.detonateOnExpiry === true && p.splashRadius[d] > 0) {
-        pushHit(world.hits, d, NO_DIRECT_HIT, p.x[d], p.y[d]);
-      }
-      pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, p.x[d], p.y[d], 0, d);
-    }
+    if (left <= 0) expireProjectile(world, d);
   }
 };
 

@@ -74,10 +74,10 @@
  * a dispersion tier shortens the silence alone and is the only thing that moves the uptime.
  */
 
-import { MAX_TARGETS } from '../constants.js';
+import { MAX_TARGETS, STRIKE_RADIUS_MAX, STRIKE_RADIUS_MIN } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
-import { allocProjectile } from '../entity/projectilePool.js';
+import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import {
   EV_WEAPON_COOLED,
@@ -758,8 +758,80 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
   }
 };
 
+
+/**
+ * `barrage` - Heavy Artillery. Shells fall on random ground near the mech.
+ *
+ * NOTHING IS AIMED AT. No target is selected, the player's facing is ignored, and enemy positions
+ * are never consulted - the strike points are drawn from the weapon RNG stream and land in a fixed
+ * annulus about the player. That is the entire character of the weapon: it is weather, and the
+ * player's job is to fight underneath it rather than with it.
+ *
+ * "VISIBLE" WITHOUT KNOWING THE SCREEN. STRIKE_RADIUS_MAX is 210 because the short axis of every
+ * supported viewport shows 440 units, so that circle is on screen on any device in any orientation.
+ * The simulation therefore never learns the viewport and the camera fairness rule holds - see
+ * constants.ts.
+ *
+ * Shells are spawned AT the impact point with zero velocity, flagged NOCONTACT, and left to their
+ * fuse. That reuses the missiles' fuse-detonation path exactly, and it means nothing can set a
+ * shell off early: the blast lands where the barrage chose, when the barrage chose.
+ *
+ * The draw is `sqrt(u)` scaled between the radii rather than a plain uniform, because a uniform
+ * radius clusters shells toward the middle - area grows with r^2, so the outer ring is bigger than
+ * it looks. Without the sqrt an "even scatter" visibly bunches around the player.
+ */
+export const fireBarrage: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const rng = world.rng.weapon;
+  const player = world.player;
+
+  const shells = stats.projectileCount >= 1 ? stats.projectileCount : 1;
+  const behaviour = BEHAVIOUR_ID[def.behaviour];
+  const rMin = STRIKE_RADIUS_MIN;
+  const rSpan = STRIKE_RADIUS_MAX - STRIKE_RADIUS_MIN;
+
+  for (let i = 0; i < shells; i++) {
+    const ang = rng.nextFloat() * Math.PI * 2;
+    const r = rMin + Math.sqrt(rng.nextFloat()) * rSpan;
+    const sx = player.x + Math.cos(ang) * r;
+    const sy = player.y + Math.sin(ang) * r;
+
+    const spawnId = ++world.stats.shotsFired;
+    const handle = allocProjectile(
+      projectiles,
+      sx,
+      sy,
+      0,
+      0,
+      stats.flightTime > 0 ? stats.flightTime : 0.7,
+      weaponIdx,
+      behaviour,
+      spawnId,
+    );
+    if (handle === NULL_HANDLE) break;
+
+    const d = projectiles.count - 1;
+    projectiles.damage[d] = stats.damage;
+    projectiles.knockback[d] = stats.knockback;
+    projectiles.splashRadius[d] = stats.splashRadius;
+    projectiles.splashFrac[d] = stats.splashFrac;
+    projectiles.radius[d] = def.shellRadius;
+    projectiles.pierceLeft[d] = 0;
+    projectiles.visualId[d] = def.visualId;
+    // Inert while it falls. Only the fuse can end it.
+    projectiles.flags[d] |= PROJECTILE_FLAG_NOCONTACT;
+
+    // Payload is the impact point; direction is meaningless for a shell that does not travel, so
+    // the renderer gets (0,0) and draws a falling marker rather than a rotated sprite.
+    pushEvent(world.events, EV_WEAPON_FIRED, world.tick, sx, sy, 0, 0);
+  }
+};
+
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
   spread: fireSpread,
+  barrage: fireBarrage,
   beam: fireBeam,
 });

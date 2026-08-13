@@ -34,10 +34,19 @@ export const MAX_QUERY_CANDIDATES = 2048;
 export const EVENT_RING_CAPACITY = 1024;
 
 /**
- * Seven weapon slots and seven passive slots - the Vampire Survivors shape we are building toward.
- * Four weapons exist today (Cannon + three lasers); the slot count is the target, not the content.
+ * EIGHT weapon slots, seven passive.
+ *
+ * The stated target was seven and seven; the weapon set then landed at eight - Cannon, three
+ * lasers, two missile racks, the machine gun and the artillery. Slots are set to eight so every
+ * specced weapon is actually obtainable, rather than leaving one permanently unreachable once a
+ * run fills up.
+ *
+ * If the intent is instead that a run must CHOOSE - eight weapons competing for seven slots is a
+ * real and interesting constraint - this is the one number to change, and the offer logic already
+ * handles it: `isOfferable` gates unlocks on the cap while still offering tiers for guns already
+ * held.
  */
-export const MAX_WEAPONS = 7;
+export const MAX_WEAPONS = 8;
 export const MAX_PASSIVES = 7;
 
 /**
@@ -77,6 +86,23 @@ export const WEAPON_SCRATCH_LEN = 4;
 // so enemies always appear off-screen without the sim knowing anything about the screen.
 // ---------------------------------------------------------------------------------------------
 export const SPAWN_RADIUS = 560;
+
+/**
+ * ARTILLERY STRIKE ANNULUS - where a barrage is allowed to land.
+ *
+ * "Random VISIBLE spots" is a render concept, and the simulation is forbidden from knowing the
+ * viewport (the camera rule exists because iOS cannot lock orientation, so screen shape must never
+ * change what the game does). The resolution is the same one SPAWN_RADIUS uses from the other
+ * direction: pick a fixed radius that is correct on EVERY supported device rather than asking what
+ * this device can see.
+ *
+ * The short axis always shows VIEW_MINOR_UNITS (440), so a circle of radius 220 about the player is
+ * on screen for everyone, in either orientation, on every phone. 210 keeps a margin. The inner
+ * bound stops a barrage from simply landing on the player, which would make it a self-centred nuke
+ * rather than the area denial it is meant to be.
+ */
+export const STRIKE_RADIUS_MIN = 60;
+export const STRIKE_RADIUS_MAX = 210;
 export const DESPAWN_RADIUS = 900;
 /** Equal to DESPAWN_RADIUS, NOT to SPAWN_RADIUS. At 560 the director could not see enemies
  *  trailing behind a kiting player, read the field as empty and spawn more ahead of them - actual

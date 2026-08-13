@@ -18,6 +18,14 @@ import {
 import { PoolLayout, type NumericArray } from './layout.js';
 
 export const PROJECTILE_FLAG_DEAD = 1 << 0;
+/**
+ * Never collides with a body; only its fuse can end it.
+ *
+ * Artillery shells land where the barrage aimed, not where something happened to be standing. A
+ * shell that detonated on contact would fire early and off-centre the moment it clipped a swarmer
+ * on the way in, which would quietly turn an area-denial weapon into a very slow homing one.
+ */
+export const PROJECTILE_FLAG_NOCONTACT = 1 << 1;
 
 /** Stride of the per-projectile hit ring: the last 4 enemy spawnIds this shell has damaged. */
 export const HIT_RING_STRIDE = 4;

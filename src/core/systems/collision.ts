@@ -69,6 +69,7 @@
 import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
 import {
   PROJECTILE_FLAG_DEAD,
+  PROJECTILE_FLAG_NOCONTACT,
   projectileHasHit,
   projectileRecordHit,
 } from '../entity/projectilePool.js';
@@ -128,7 +129,7 @@ function collideProjectilesWithEnemies(world: World): void {
 
   for (let pd = 0; pd < n; pd++) {
     // A shell that expired in S7 is still in the pool until S12. It must not land.
-    if ((proj.flags[pd] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+    if ((proj.flags[pd] & (PROJECTILE_FLAG_DEAD | PROJECTILE_FLAG_NOCONTACT)) !== 0) continue;
 
     // pierceLeft is "bodies AFTER this one", so a fresh pierce-0 shell has exactly one pass.
     const passes = proj.pierceLeft[pd] + 1;

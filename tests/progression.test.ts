@@ -118,7 +118,10 @@ function pickHarmlessSlot(world: World, avoid: number): number {
  * filler to take instead, and every other card only touches ITS OWN weapon, so a blind pick can
  * never perturb the weapon under test.
  */
-function takeTier(world: World, idx: number, tries = 300): number {
+// With eight cards in the pool a specific one surfaces roughly three times in eight, so walking a
+// single weapon to tier 7 needs far more level-ups than it did with four cards. The bound is
+// generous rather than tuned: it only exists so a genuine soft-lock fails fast instead of hanging.
+function takeTier(world: World, idx: number, tries = 2000): number {
   for (let i = 0; i < tries; i++) {
     if (world.phase !== RUN_PHASE_LEVEL_UP) gainOneLevel(world);
     if (world.phase !== RUN_PHASE_LEVEL_UP) return -1;
@@ -404,8 +407,28 @@ describe('offers', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
-  function makeWorldForHero(heroId: number, seed = 1): World {
-    const w = createWorld({ seed, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING });
+  /**
+   * ONE CARD IN THE POOL, on purpose.
+   *
+   * Walking a single weapon to tier 7 against the full eight-card pool is a lottery: every
+   * level-up that offers something else has to be spent, and 55 tiers of other weapons run out
+   * before the wanted card has surfaced seven times. That made this test fail for a reason that
+   * has nothing to do with what it checks.
+   *
+   * These suites are the contract between the card, the ladder and WeaponInstance.level. Pool
+   * competition is a different property, tested separately in the offer suites.
+   */
+  function soloCatalog(weapon: string): Catalogs {
+    const card = UPGRADE_CATALOG.find((u) => u.grantsWeapon === weapon);
+    if (card === undefined) throw new Error(`no card grants ${weapon}`);
+    return { heroes: HERO_CATALOG, enemies: [], weapons: WEAPON_CATALOG, upgrades: [card] };
+  }
+
+  function makeWorldForHero(heroId: number, seed = 1, solo?: string): World {
+    const w =
+      solo === undefined
+        ? createWorld({ seed, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING })
+        : createWorld({ seed, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING }, soloCatalog(solo));
     w.phase = RUN_PHASE_RUNNING;
     w.player.stats.xpGain = 1;
     return w;
@@ -413,8 +436,8 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
 
   it('takes one card seven times, walking tier 1 -> 7, and never offers an eighth', () => {
     // Ember opens with the Long Laser, so its card is seeded at tier 1 and has six tiers left.
-    const w = makeWorldForHero(heroIndex('ember'), 17);
-    const card = upgradeIndexForWeapon('laser-long');
+    const w = makeWorldForHero(heroIndex('ember'), 17, 'laser-long');
+    const card = 0; // the solo catalog holds exactly the Long Laser card
     const defId = weaponDefIndex('laser-long');
 
     expect(w.levelUp.stacks[card]).toBe(1);

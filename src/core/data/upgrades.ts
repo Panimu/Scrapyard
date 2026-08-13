@@ -31,7 +31,8 @@ export type UpgradeId =
   | 'w-laser-long'
   | 'w-missile-short'
   | 'w-missile-long'
-  | 'w-machine-gun';
+  | 'w-machine-gun'
+  | 'w-artillery';
 
 /** Tiers per weapon, including the unlock. */
 export const WEAPON_MAX_TIER = 7;
@@ -176,6 +177,26 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'Range +25.',
       'Damage +3 per round.',
       'Reload 4.5s faster.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-artillery',
+    kind: 'weapon',
+    grantsWeapon: 'artillery',
+    name: 'Heavy Artillery',
+    description:
+      'Three shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Blast radius +18.',
+      'Rate of fire: reload -0.6s.',
+      'Damage +22 per shell.',
+      'Blast radius +18.',
+      'Rate of fire: reload -0.6s.',
+      'A fourth shell.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
