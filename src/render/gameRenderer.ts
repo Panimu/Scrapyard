@@ -526,12 +526,16 @@ export class GameRenderer {
         }
       }
 
-      // Elites and bosses ALWAYS carry a bar regardless of what their chassis says: a rank is
-      // worth 6x and 34x a regular's HP, and a health bar is the only way that reads before the
-      // player has spent ten seconds failing to kill one.
+      // RANK DECIDES THE BAR, AND NOTHING ELSE DOES. Elites and bosses always carry one; a
+      // regular never does, whatever chassis it happens to be built on.
+      //
+      // The chassis used to get a vote (`ArchetypeDef.showHpBar`), which produced the exact
+      // inconsistency the rule now forbids: a 125 HP Breaker regular showed a bar because its
+      // body class is a bruiser, while a 160 HP Warden regular did not because its body class is
+      // a grunt. A bar has to mean "this one is a rank above you", not "this one happens to be
+      // drawn on a wide hull".
       const arch = ARCHETYPES[p.archetype[d]];
-      const showBar = isBoss || isElite || arch?.showHpBar === true;
-      if (showBar && p.hp[d] < p.maxHp[d]) {
+      if ((isBoss || isElite) && p.hp[d] < p.maxHp[d]) {
         this.drawHpBar(bars, x, y, radius, (arch?.drawSize ?? 32) * RANKS[rank].size, p.hp[d] / p.maxHp[d]);
       }
     }

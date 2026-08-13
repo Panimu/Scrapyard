@@ -32,10 +32,13 @@
  * ---------------------------------------------------------------------------------------------
  * ARCHETYPE IS NOW A BODY CLASS, NOT A ROSTER SLOT
  * ---------------------------------------------------------------------------------------------
- * `ArchetypeDef` still supplies radius, mass, contact interval, HP-bar policy and draw size - the
- * PHYSICAL facts of a chassis. It no longer supplies HP, speed, contact damage or XP: those are
- * authored per cycle below, because "how tough is minute 7" is a pacing question and reading it
- * off a swarmer/grunt/bruiser table made it one.
+ * `ArchetypeDef` still supplies radius, mass, contact interval and draw size - the PHYSICAL facts
+ * of a chassis. It no longer supplies HP, speed, contact damage or XP: those are authored per
+ * cycle below, because "how tough is minute 7" is a pacing question and reading it off a
+ * swarmer/grunt/bruiser table made it one.
+ *
+ * It does not decide the HP BAR either. Rank does, alone - a bar means "a rank above you" and
+ * never "drawn on a wide hull".
  *
  * ARCH_ELITE and ARCH_BOSS survive in the archetype table (they size `killsByArchetype` and the
  * difficulty arrays, and removing them would renumber five typed arrays for no gain) but nothing

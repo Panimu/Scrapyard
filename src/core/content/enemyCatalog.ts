@@ -5,8 +5,10 @@
  * a weighted table, each carrying its own HP and speed. It is now a 120-second CYCLE LADDER
  * (content/cycles.ts): one authored creature per cycle, in three ranks. So:
  *
- *   ARCHETYPE  is a BODY CLASS - radius, mass, contact interval, HP-bar policy, draw size, and
- *              which flavours are permitted. The PHYSICAL facts of a chassis.
+ *   ARCHETYPE  is a BODY CLASS - radius, mass, contact interval, draw size, and which flavours are
+ *              permitted. The PHYSICAL facts of a chassis. NOT the HP bar: that is decided by
+ *              RANK alone (content/cycles.ts), because a bar must mean "a rank above you" rather
+ *              than "drawn on a wide hull".
  *   TIER       decides the faction recolour   blue -> orange -> green -> grey. PURELY VISUAL, and
  *              now load-bearing: rank is a recolour of the same hull (cycles.ts).
  *   FLAVOUR    per-enemy variation            plain / swift / tough / spiky
@@ -100,7 +102,6 @@ export interface ArchetypeDef {
    *  moving walls that part the chaff around them. */
   readonly mass: number;
   readonly xp: number;
-  readonly showHpBar: boolean;
   /**
    * Permitted flavours. INDEX 0 IS ALWAYS `FLAV_PLAIN` - the spawner relies on it (it rolls
    * "plain or not", then picks uniformly from indices 1..n-1).
@@ -129,7 +130,6 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     radius: 13,
     mass: 0.5,
     xp: 1,
-    showHpBar: false,
     // NO `swift` - Invariant K. A swift swarmer outruns BULWARK by t=900.
     flavours: Object.freeze([FLAV_PLAIN, FLAV_TOUGH, FLAV_SPIKY]) as readonly Flavour[],
     drawSize: 26,
@@ -144,7 +144,6 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     radius: 18,
     mass: 1.2,
     xp: 3,
-    showHpBar: false,
     // `swift` is safe here: 98 x 1.18 x growth peaks at 124.6 u/s, well under every hero.
     flavours: Object.freeze([FLAV_PLAIN, FLAV_SWIFT, FLAV_SPIKY]) as readonly Flavour[],
     drawSize: 34,
@@ -159,7 +158,6 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     radius: 26,
     mass: 3,
     xp: 9,
-    showHpBar: true,
     // NO `tough` - Law 1. A 1.30x bruiser is a 700 HP decoy that eats the whole run's output.
     flavours: Object.freeze([FLAV_PLAIN, FLAV_SPIKY]) as readonly Flavour[],
     drawSize: 42,
@@ -174,7 +172,6 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     radius: 34,
     mass: 7,
     xp: 45,
-    showHpBar: true,
     // PLAIN ONLY. An elite is already the top target for ~11 s; flavour on top of that is noise.
     flavours: Object.freeze([FLAV_PLAIN]) as readonly Flavour[],
     drawSize: 52,
@@ -191,7 +188,6 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     // forever. 1e9 is exactly representable in float32 and makes 1/mass a hard zero in practice.
     mass: 1e9,
     xp: 500,
-    showHpBar: true,
     flavours: Object.freeze([FLAV_PLAIN]) as readonly Flavour[],
     drawSize: 112,
   }),
