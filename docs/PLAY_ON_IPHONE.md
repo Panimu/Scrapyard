@@ -3,8 +3,10 @@
 Two things this document covers, in order:
 
 1. **Getting the game onto a phone and playing it.**
-2. **Developing it from the phone** — commit, auto-deploy, reload — including the part where
-   GitHub Pages does not work for a private repo on a free plan, and what to use instead.
+2. **Developing it from the phone** — commit, auto-deploy, reload.
+
+**The playtest link is https://panimu.github.io/Scrapyard/** — public, no account needed, and
+always the latest build. Send that to anyone. Everything below is for working on the game.
 
 ---
 
@@ -76,65 +78,42 @@ misleading.
 
 ---
 
-## 3. Hosting — the honest version
+## 3. Hosting
 
-**This repo is intended to be private, and that rules out GitHub Pages on a free plan.**
+**https://panimu.github.io/Scrapyard/**
 
-> GitHub Pages is available in public repositories with GitHub Free, and in **public and private
-> repositories with GitHub Pro, GitHub Team, GitHub Enterprise Cloud and GitHub Enterprise
-> Server.**
+Public, free, no account, and always the latest build. `.github/workflows/deploy.yml` runs on
+every push to the default branch: typecheck (app and core purity), unit tests, the headless
+simulation, then the build, then it replaces what that URL serves. The link is stable — nothing
+needs re-sharing when the game changes.
 
-So, plainly:
+The site **enables itself** on first run via `actions/configure-pages` with `enablement: true`,
+so there is no switch in Settings that someone has to remember to flip.
 
-- **Private repo + GitHub Free = no Pages.** You must either make the repo public or pay for
-  **GitHub Pro** (~$4/month).
-- And it would not give you what "private" suggests anyway: outside GitHub Enterprise Cloud, **a
-  Pages site is publicly reachable on the internet even when its source repo is private.** Private
-  repo ≠ private site.
+`vite.config.ts` uses `base: './'`, so the build works from the `/Scrapyard/` subpath a project
+page serves from without any extra configuration.
 
-Three free hosts do support private repos:
+### If the repo ever goes private
 
-| Host | Private repo on the free tier | Notes |
-|---|---|---|
-| **Cloudflare Pages** | **Yes** — private and public repos, on any plan | Unlimited sites and bandwidth, 500 builds/month. **Recommended.** |
-| **Netlify** | Yes | 100 GB bandwidth, 300 build minutes/month. Billing moved to credits in Sept 2025 — check the current free allowance. |
-| **Vercel** | Yes (Hobby) | 100 GB bandwidth. Hobby terms are personal / non-commercial only. |
-| GitHub Pages | **No** (needs Pro) | …and the site is public regardless |
+GitHub Pages needs GitHub Pro or better for private repositories, and — worth knowing before you
+reach for it as a privacy measure — outside GitHub Enterprise Cloud **a Pages site is publicly
+reachable even when its source repo is private**. Private repo ≠ private site.
 
-**Recommendation: Cloudflare Pages.** It is the only one with no private-repo caveat, no
-commercial-use clause and unmetered bandwidth. It is also the only one that can put a real auth
-gate in front of the site for free (Cloudflare Access), if you later want the game itself to be
-private and not just the source.
+If that day comes, **Cloudflare Pages** is the replacement: private repos on any plan, unlimited
+bandwidth, no commercial-use clause, and it can put a real auth gate in front of the site for free
+(Cloudflare Access) if you want the *game* private and not just the source. Connect the repo in
+Workers & Pages → Create → Pages, build command `npm run build`, output directory `dist`,
+`NODE_VERSION=22`. It builds from the repo directly and needs nothing in `.github/workflows/`.
 
-### Cloudflare Pages setup (one time, ~3 minutes)
+Netlify and Vercel Hobby also support private repos; Vercel Hobby is personal / non-commercial
+only, which is worth reading before relying on it.
 
-Do this from a desktop or an agent session — it involves OAuth screens that are miserable on a
-phone.
+### The other artefact
 
-1. Push the repo to GitHub (private is fine).
-2. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
-3. Install the *Cloudflare Workers and Pages* GitHub App and **scope it to this repo only**.
-4. Build settings:
-   - Framework preset: **None**
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Environment variable: `NODE_VERSION` = `22`
-5. Deploy. Note the `https://<project>.pages.dev` URL.
-6. Open it on the phone and **Add to Home Screen**.
-
-Every push to `main` rebuilds. Every other branch gets its own preview URL, so you can test a
-change without touching the home-screen app.
-
-Nothing in `.github/workflows/` is needed for this — Cloudflare builds from the repo directly.
-The included `deploy.yml` runs typecheck, tests, the headless sim and the build on every push
-(which is worth having regardless), and contains an **opt-in** GitHub Pages job that stays off
-unless you set the repository variable `ENABLE_PAGES=true`.
-
-### If you decide to make the repo public
-
-GitHub Pages then works on the free plan. Set **Settings → Pages → Source: GitHub Actions**, add
-the repository variable `ENABLE_PAGES=true`, and push. `vite.config.ts` already uses
-`base: './'`, so the build works from a subpath like `/scrapyard/` without further configuration.
+`npm run share` produces a single self-contained `.html` (`SINGLEFILE=1` plus
+`tools/inline_build.mjs`) for sandboxed hosts whose CSP blocks every external request. That is a
+SHARING format. The Pages deploy is the shipping one, and it keeps the split chunks and the
+service worker — which is what makes reloads on cellular cheap.
 
 ---
 

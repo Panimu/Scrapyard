@@ -1,26 +1,36 @@
-# Build, verify, and (optionally) publish Scrapyard.
+# Build, verify and publish Scrapyard to GitHub Pages.
 #
-# READ THIS BEFORE WIRING UP HOSTING
-# ----------------------------------
-# This repo is intended to be PRIVATE, and GitHub Pages does not serve private repositories on
-# the free plan - it needs GitHub Pro or better. Worse for the instinct behind "private": outside
-# GitHub Enterprise Cloud a Pages site is publicly reachable on the internet even when its source
-# repo is private, so Pages would not give you a private game either way.
+# THE PLAYTEST LINK IS  https://panimu.github.io/Scrapyard/
 #
-# The `pages` job below is therefore OPT-IN and disabled by default. The recommended host is
-# Cloudflare Pages, which supports private repos on the free plan, has no commercial-use clause,
-# and builds on push with no workflow file at all - see docs/PLAY_ON_IPHONE.md.
+# It is public, it needs no account, and it is ALWAYS THE LATEST BUILD: every push to the default
+# branch runs this workflow, and the last step replaces what the URL serves. Nothing has to be
+# re-shared when the game changes - the link is stable and the contents move under it.
 #
-# To enable GitHub Pages anyway (public repo, or a paid plan):
-#   Settings -> Pages -> Source: GitHub Actions
-#   Settings -> Secrets and variables -> Actions -> Variables -> New variable
-#     ENABLE_PAGES = true
+# WHY PAGES AND NOT SOMETHING ELSE. An earlier version of this file assumed the repo would be
+# private and refused to use Pages, on the grounds that Pages needs a paid plan for private repos
+# and publishes a public site regardless. The repo is public, so both objections are moot and
+# Pages is the cheapest thing that can possibly work: no third-party account, no build minutes to
+# manage, no second place for the deploy to drift out of sync with the code.
+#
+# THE SITE ENABLES ITSELF. `actions/configure-pages` with `enablement: true` creates the Pages
+# site through the API on first run, so there is no "go and flip a switch in Settings" step that
+# someone has to remember six months from now.
+#
+# TWO ARTEFACTS, TWO PURPOSES, DO NOT CONFUSE THEM:
+#   this workflow      the normal split build with a service worker. Cheap reloads on cellular,
+#                      which is what a playtester on a phone actually experiences.
+#   `npm run share`    SINGLEFILE=1 plus tools/inline_build.mjs - one self-contained .html for
+#                      sandboxed hosts under a CSP that blocks every external request. A SHARING
+#                      format, not the shipping one.
 
 name: deploy
 
 on:
   push:
-    branches: [main]
+    # The default branch is what gets published; the others are here so CI still guards a branch
+    # that has not been merged yet. The deploy job checks the default branch explicitly, so
+    # adding a name here can never publish the wrong thing.
+    branches: [main, master, 'claude/**']
   pull_request:
   workflow_dispatch:
 
@@ -28,12 +38,18 @@ permissions:
   contents: read
 
 concurrency:
+  # Never let two deploys race. `cancel-in-progress` is right here because the newest push is
+  # always the one the playtester should get.
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write # configure-pages creates the site on first run
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -46,8 +62,9 @@ jobs:
         run: npm ci
 
       - name: Prepare sprites and icons
-        # Copies the ~71 sprites the game actually uses out of assets/kenney/** and regenerates
-        # the PWA icons. Idempotent, so it is safe even though public/ is committed.
+        # Copies the sprites the game uses out of assets/kenney/** and regenerates the PWA icons.
+        # Idempotent, so it is safe even though public/ is committed. It does NOT generate the
+        # player mechs - those are drawn by `npm run mechs`, need Chromium, and are checked in.
         run: node tools/prepare_assets.mjs
 
       - name: Typecheck (app + core purity)
@@ -60,8 +77,16 @@ jobs:
 
       - name: Headless simulation
         # The fastest feedback loop this project has: balance changes are validated by reading
-        # this log on a phone, with no device, no rendering and no deploy.
+        # this log, with no device, no rendering and no deploy. It is also a real smoke test -
+        # a crash in any system fails the build before it can reach a playtester.
         run: npm run sim
+
+      - name: Configure Pages
+        # Only on the branch that publishes: a PR has no business creating a Pages site.
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Build
         run: npm run build
@@ -74,14 +99,13 @@ jobs:
           retention-days: 7
 
       - name: Upload Pages artifact
-        if: vars.ENABLE_PAGES == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   pages:
-    # Opt-in only. See the header: a private repo on the free plan cannot use Pages at all.
-    if: vars.ENABLE_PAGES == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     permissions:

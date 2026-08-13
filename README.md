@@ -3,6 +3,11 @@
 A deliberate, heavy mech survivors game for **mobile Safari on an iPhone**. One thumb, one gun,
 fifteen minutes, a horde that never stops.
 
+### ▶ Play it: **https://panimu.github.io/Scrapyard/**
+
+Public, no account, and always the latest build — every push to the default branch redeploys it.
+On a phone, use Share → **Add to Home Screen** and it runs fullscreen and offline as a PWA.
+
 It is a **web game on purpose**. There is no Mac and no Xcode anywhere in this project, so a
 native iOS app was never an option — and it turns out not to be a compromise: the whole thing
 installs to the Home Screen as a PWA, runs fullscreen and offline, and the edit-to-play loop is
@@ -125,10 +130,16 @@ No attribution is required; this section exists because the work deserves it.
 
 | Pack | Used for |
 |---|---|
-| `robot-pack` | The 8 player mechs (top view, 148×154, art faces +x) |
+| `robot-pack` | *(no longer used — see below)* |
 | `sci-fi-rts` | All 48 enemies (Retina units) and the seamless ground tile |
 | `space-shooter-extension` | Cannon shell, XP gem, the 7-frame death puff |
 | `particle-pack` | Muzzle flash, impact flash, burst, sparkle, shell trail |
+
+**The 16 player mechs are not Kenney art — they are generated** by `npm run mechs`
+(`tools/make-mechs.mjs`), which draws each chassis, its four walk frames and the turret through
+headless Chromium's canvas. Kenney's 192-pack catalogue has exactly one robot pack and no mech or
+walker pack at all: from directly above, `robot-pack` is a slab flanked by two tread blocks, which
+is a top-down tank. The generated art is CC0 as well — do what you like with it.
 
 `tools/prepare_assets.mjs` copies exactly the 71 files the game draws — out of the 1090 in the
 packs — into `public/sprites/` under flat, URL-safe names. The source paths contain spaces and
