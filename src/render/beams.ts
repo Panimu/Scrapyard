@@ -144,8 +144,8 @@ export class BeamLayer {
       const inst = world.weapons[b.weaponIdx[i]];
       if (inst === undefined) continue;
       const def = world.weaponCatalog[inst.defId];
-      // A projectile weapon has beamWidth 0; if one ever lands in this buffer, drawing it would
-      // be a zero-width invisible line rather than a visible bug, so skip it loudly-ish.
+      // A projectile weapon has beamWidth 0. If one ever lands in this buffer, drawing it would
+      // produce an invisible zero-width line - which is a bug that hides itself - so skip it.
       if (def === undefined || def.beamWidth <= 0) continue;
 
       const x0 = b.x0[i];
@@ -153,8 +153,9 @@ export class BeamLayer {
       const dx = b.x1[i] - x0;
       const dy = b.y1[i] - y0;
       const len = Math.sqrt(dx * dx + dy * dy);
-      // A beam shorter than the mech's own muzzle offset is a target standing on top of us; it
-      // has no readable direction, so draw only the flare rather than a one-pixel smear.
+      // A sub-unit beam is a target standing inside the muzzle. It has no readable direction and
+      // scaling the quad by ~0 leaves a smear of a pixel, so it is dropped entirely - the sim's
+      // damage still lands, and the enemy's own hit spark is what shows it.
       if (len < 1) continue;
 
       const angle = Math.atan2(dy, dx);
