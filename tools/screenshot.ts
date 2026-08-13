@@ -11,7 +11,8 @@
  */
 
 import { mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 
 const DEFAULT_URL = 'http://localhost:4173/';
 const DEFAULT_OUT = 'artifacts/screenshot.png';
@@ -26,11 +27,13 @@ async function main(): Promise<void> {
 
   const { chromium } = await import('@playwright/test');
 
-  // executablePath is the documented fallback for when the bundled browser lookup fails.
+  // The preinstalled browsers are a different build number than the @playwright/test version
+  // expects, so Playwright's own lookup misses them and tells us to run `npx playwright install`
+  // - which is forbidden here. Point it straight at the binary instead. Prefer full chrome over
+  // headless_shell: both expose WebGL 2.0, but full chrome is the closer match to mobile Safari.
   const launchOptions: { executablePath?: string } = {};
-  if (process.env.PLAYWRIGHT_BROWSERS_PATH === undefined) {
-    launchOptions.executablePath = '/opt/pw-browsers/chromium';
-  }
+  const found = resolveChromium();
+  if (found !== undefined) launchOptions.executablePath = found;
 
   const browser = await chromium.launch(launchOptions);
   const page = await browser.newPage({
@@ -59,6 +62,28 @@ async function main(): Promise<void> {
     for (const e of errors.slice(0, 20)) console.error(`  ${e}`);
     process.exitCode = 1;
   }
+}
+
+/**
+ * Locate a usable Chromium under PLAYWRIGHT_BROWSERS_PATH. Globs the build-numbered directories
+ * rather than hardcoding one, so a browser image bump does not silently break screenshots.
+ * Returns undefined if nothing is found, letting Playwright's own lookup have the last word.
+ */
+function resolveChromium(): string | undefined {
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers';
+  if (!existsSync(root)) return undefined;
+
+  const candidates: string[] = [];
+  for (const entry of readdirSync(root)) {
+    // Full chrome first, then the lighter headless shell.
+    if (entry.startsWith('chromium-')) candidates.push(join(root, entry, 'chrome-linux', 'chrome'));
+  }
+  for (const entry of readdirSync(root)) {
+    if (entry.startsWith('chromium_headless_shell-')) {
+      candidates.push(join(root, entry, 'chrome-linux', 'headless_shell'));
+    }
+  }
+  return candidates.find((p) => existsSync(p));
 }
 
 function argValue(args: readonly string[], key: string): string | undefined {
