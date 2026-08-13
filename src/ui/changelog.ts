@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T22:15Z',
+    title: 'Plum starts with the shield and nothing else',
+    notes: [
+      'Plum no longer gets a free opening card. It walks in with the Energy Shield, no weapon, and has to earn its first upgrade like every other chassis - out of kills made by things breaking themselves on the rim.',
+    ],
+  },
+  {
     at: '2026-08-13T22:10Z',
     title: 'Missiles steer, lasers reach further',
     notes: [

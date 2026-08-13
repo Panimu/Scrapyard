@@ -287,16 +287,17 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     id: 'plum',
     name: 'Plum',
     identity:
-      'Heavy biped, no gun. Picks its opener from the first card, behind an Energy Shield that recharges 60% faster.',
+      'Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.',
     sprite: 'mech_plum',
     gait: 'walk',
-    // NO GUN. The only chassis in the game that opens with nothing to shoot with, and the
-    // reason it is playable at all is the shield's backlash: 30 damage into whatever breaks
-    // the rim, against a first-cycle Rustling's 22 HP. Plum's opening minutes are spent
-    // killing things by letting them break themselves on it, one every 8 seconds, until the
-    // first level-up puts a real weapon in its hands.
+    // NO GUN, AND NO FREE CARD EITHER. The only chassis in the game that opens with nothing to
+    // shoot with, and its only way to hurt anything is the shield's backlash: 30 damage into
+    // whatever breaks the rim, against a first-cycle Rustling's 22 HP. Every one of Plum's early
+    // kills is something that killed itself on the field, one per recharge, and the first level
+    // has to be earned out of those before it holds a weapon at all.
     //
-    // That is a genuinely harder start than any other chassis has, and it is meant to be.
+    // That is a far harder start than any other chassis has, and it is meant to be. See world.ts
+    // for what it measures at.
     startingWeapon: null,
     startingUpgrade: 'p-shield',
     // 60% less recharge time: 20 s to 8 s at tier 1, 9 s to 3.6 s with the ladder spent.

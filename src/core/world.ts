@@ -314,17 +314,19 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     }
   }
 
-  // A CHASSIS THAT WALKS IN UNARMED PICKS ITS FIRST GUN BEFORE ANYTHING ELSE HAPPENS.
+  // AN UNARMED CHASSIS GETS NO FREE CARD. Plum starts with the shield and nothing else, and its
+  // first upgrade has to be EARNED like everyone else's - out of XP, out of kills, out of the
+  // shield's backlash into whatever breaks the rim.
   //
-  // This is a rule about unarmed chassis, not a special case for Plum, and it is not decoration:
-  // measured, a Plum with no weapon and no opening card dies in ELEVEN SECONDS standing still and
-  // manages one kill in ten minutes while kiting, because its only way to hurt anything is the
-  // shield's backlash and its only way to earn XP is kills. A chassis that cannot reach level 2
-  // is not a hard chassis, it is a broken one.
+  // This was a free opening card for one build. It is gone by request, and the measurement that
+  // argued for it is recorded here rather than deleted, because it is what the design has to
+  // answer: unarmed and unassisted, Plum lasts about eleven seconds standing still, and manages
+  // roughly one kill in ten minutes while kiting. The lever that changes that is the shield -
+  // its recharge, its backlash, or a rim count - not a card handed out at t=0.
   //
-  // Keyed on the AUTHORED `startingWeapon === null` rather than on `defId < 0`, so a fixture
-  // catalog that happens to be missing a gun does not silently acquire a free card.
-  if (hero.startingWeapon === null) world.levelUp.pending = 1;
+  // The companion rule in progression.ts stays: while the loadout holds NO weapon, every offer on
+  // the card is a gun. That one gives nothing away - it only stops the single card Plum earns
+  // from being three passives it cannot use.
 
   // A STARTING NON-WEAPON CARD, seeded by exactly the same argument. Plum walks in behind an
   // Energy Shield rather than a gun, and a shield that was not registered as tier 1 would be
