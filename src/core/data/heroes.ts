@@ -1,21 +1,25 @@
 /**
  * THE EIGHT MECHS.
  *
- * Eight because the art gives exactly eight top-down chassis in robot-pack, and inventing a ninth
- * would mean shipping a hero with someone else's silhouette. Identity comes from numbers and one
- * optional trait hook, not from new sprites.
+ * Eight because the art gives exactly eight top-down chassis in robot-pack.
  *
- * DESIGNING HEROES WHEN THERE IS ONLY ONE WEAPON is the real constraint here. With a full arsenal
- * you differentiate by what a hero unlocks; with just the Cannon, every hero shoots the same gun,
- * so the axes available are: how hard it hits, how often, how far, how well you survive being
- * reached, and how fast you scale. Each mech below owns one of those and pays for it somewhere.
+ * HERO VARIETY IS DEFERRED. Every mech in this catalog is mechanically IDENTICAL - same stats,
+ * same gun, no traits. They are skins. Picking one changes what you look at and nothing else.
  *
- * NO HERO IS STRICTLY DOMINATED - each is the outright best in the catalog at something, which
- * `heroes.test.ts` asserts rather than trusting this comment.
+ * That is a scope decision, not an oversight: differentiated heroes are a balance surface that
+ * needs playtesting to be worth anything, and none of it is required to answer the only question
+ * that matters right now, which is whether the core loop is fun. Shipping eight heroes that are
+ * secretly the same is honest; shipping eight untested stat blocks and calling them designed is
+ * not.
  *
- * KITING INVARIANT: the slowest mech here is x0.86 of a 195 u/s base = 167.7 u/s, against a
- * worst-case late-game swarmer at 144.4 u/s (tuning.ts §maxEnemySpeedAt). Every hero can outrun
- * the horde at t=900. Lowering any moveMaxSpeed multiplier below ~0.75 breaks the genre.
+ * WHEN VARIETY RETURNS, nothing structural has to change:
+ *   - `player` and `weapon` are already multiplier maps consumed by resolvePlayerStats /
+ *     resolveWeaponStats. Fill them in and the difference is live.
+ *   - `HeroTrait` and the HERO_TRAITS registry in data/traits.ts are already wired into
+ *     updateWeapons. Register a trait and the hook fires.
+ * The two things to preserve at that point: no hero may be strictly dominated by another, and
+ * every hero's resolved moveMaxSpeed must stay above the worst-case late-game swarmer speed
+ * (~144.4 u/s at t=900, see tuning.ts) or kiting - the whole genre - quietly breaks.
  */
 
 import type { WeaponId } from '../content/weaponCatalog.js';
@@ -23,19 +27,21 @@ import type { PlayerStatKey, WeaponStatKey } from './stats.js';
 import type { World } from '../types.js';
 
 export type HeroId =
-  | 'lancer'
-  | 'forager'
-  | 'kiln'
-  | 'ticker'
-  | 'longbarrow'
-  | 'bulwark'
-  | 'breaker'
-  | 'harrier';
+  | 'slate'
+  | 'moss'
+  | 'ember'
+  | 'amber'
+  | 'cobalt'
+  | 'jade'
+  | 'rust'
+  | 'brass';
 
 /**
  * The mutable per-shell context handed to `HeroTrait.onFireShell`, owned by updateWeapons.
- * A trait may retarget the shell (dirX/dirY), or change what it carries (damage/knockback).
+ * A trait may retarget the shell (dirX/dirY) or change what it carries (damage/knockback).
  * `shellIndex` is 0-based within this volley, so a trait can treat the first shell specially.
+ *
+ * Unused while variety is deferred, but the type is part of updateWeapons' contract.
  */
 export interface ShotCtx {
   dirX: number;
@@ -52,7 +58,7 @@ export interface ShotCtx {
  * implementation must not allocate.
  *
  * The hooks exist so a hero can bend the Cannon without the Cannon knowing about heroes - the
- * same separation that lets weapons 2..12 arrive as pure data.
+ * same separation that lets weapons 2..12 arrive as pure data. No hero registers one today.
  */
 export interface HeroTrait {
   /**
@@ -67,110 +73,96 @@ export interface HeroTrait {
 export interface HeroDef {
   readonly id: HeroId;
   readonly name: string;
-  /** One line, shown on the select screen. What this mech is FOR. */
+  /** One line for the select screen. Flavour only while every chassis performs identically. */
   readonly identity: string;
   /** Sprite key produced by tools/prepare_assets.mjs - see docs/ASSET_MANIFEST.md. */
   readonly sprite: string;
   readonly startingWeapon: WeaponId;
-  /** Multipliers on the tuning base. Absent key = x1. */
+  /** Multipliers on the tuning base. Absent key = x1. Empty for every hero today. */
   readonly player: Readonly<Partial<Record<PlayerStatKey, number>>>;
-  /** Multipliers on the weapon's authored stats. Absent key = x1. */
+  /** Multipliers on the weapon's authored stats. Absent key = x1. Empty for every hero today. */
   readonly weapon: Readonly<Partial<Record<WeaponStatKey, number>>>;
 }
 
 /**
  * Index in this array is `WorldConfig.heroId` and is written into every replay. APPEND ONLY -
  * reordering invalidates saved runs.
+ *
+ * Named after their paint, deliberately: a name like "Bulwark" would promise a behaviour these
+ * chassis do not yet have.
  */
 export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
-    id: 'lancer',
-    name: 'Lancer',
-    identity: 'The standard chassis. Every number is the baseline.',
+    id: 'slate',
+    name: 'Slate',
+    identity: 'Standard chassis, grey plate.',
     sprite: 'mech_blue',
     startingWeapon: 'cannon',
     player: {},
     weapon: {},
   },
   {
-    id: 'forager',
-    name: 'Forager',
-    identity: 'Collects wider and levels faster. Weakest gun in the yard.',
+    id: 'moss',
+    name: 'Moss',
+    identity: 'Standard chassis, green plate.',
     sprite: 'mech_green',
     startingWeapon: 'cannon',
-    // Best pickupRadius and best xpGain in the catalog. Pays in raw damage: it wins by having
-    // more upgrades than you at the same minute, not by hitting harder.
-    player: { pickupRadius: 1.65, xpGain: 1.3, maxHp: 0.92 },
-    weapon: { damage: 0.85 },
+    player: {},
+    weapon: {},
   },
   {
-    id: 'kiln',
-    name: 'Kiln',
-    identity: 'Hits hardest. Made of paper.',
+    id: 'ember',
+    name: 'Ember',
+    identity: 'Standard chassis, red plate.',
     sprite: 'mech_red',
     startingWeapon: 'cannon',
-    // Best damage in the catalog by a clear margin, and the lowest HP. The Cannon already targets
-    // the biggest thing in range, so Kiln is the hero that most wants that rule - and the one
-    // punished worst by the swarmers it ignores.
-    player: { maxHp: 0.75 },
-    weapon: { damage: 1.4 },
+    player: {},
+    weapon: {},
   },
   {
-    id: 'ticker',
-    name: 'Ticker',
-    identity: 'Fires half again as often. Each shell lands lighter.',
+    id: 'amber',
+    name: 'Amber',
+    identity: 'Standard chassis, yellow plate.',
     sprite: 'mech_yellow',
     startingWeapon: 'cannon',
-    // Best cooldown. Roughly damage-neutral against a single target, but far better at cleaning
-    // up a spread-out field because it re-targets more often.
     player: {},
-    weapon: { cooldown: 0.66, damage: 0.76, knockback: 0.8 },
+    weapon: {},
   },
   {
-    id: 'longbarrow',
-    name: 'Longbarrow',
-    identity: 'Reaches furthest and shoots flattest. Slow to reposition.',
+    id: 'cobalt',
+    name: 'Cobalt',
+    identity: 'Shaded chassis, blue plate.',
     sprite: 'mech_3dblue',
     startingWeapon: 'cannon',
-    // Best range and best projectile speed: kills things before they are a problem, provided you
-    // never have to leave in a hurry. Slowest chassis in the catalog (still 167.7 u/s - above the
-    // 144.4 u/s worst-case swarmer, so kiting survives).
-    player: { moveMaxSpeed: 0.86, moveAccel: 0.9 },
-    weapon: { range: 1.45, projectileSpeed: 1.3, cooldown: 1.12 },
+    player: {},
+    weapon: {},
   },
   {
-    id: 'bulwark',
-    name: 'Bulwark',
-    identity: 'Soaks a beating and mends. Never in a hurry.',
+    id: 'jade',
+    name: 'Jade',
+    identity: 'Shaded chassis, green plate.',
     sprite: 'mech_3dgreen',
     startingWeapon: 'cannon',
-    // Best maxHp, and the only hero with base regen and base armour. Flat armour is deliberately
-    // strong against the swarm and weak against elites (tuning.ts §CombatTuning), which is exactly
-    // the shape of Bulwark's problem: it survives being surrounded, not being hit by the big one.
-    player: { maxHp: 1.5, hpRegen: 1, armour: 1, moveMaxSpeed: 0.88 },
-    weapon: { cooldown: 1.1 },
+    player: {},
+    weapon: {},
   },
   {
-    id: 'breaker',
-    name: 'Breaker',
-    identity: 'Every shell is a shove. Clears space rather than bodies.',
+    id: 'rust',
+    name: 'Rust',
+    identity: 'Shaded chassis, red plate.',
     sprite: 'mech_3dred',
     startingWeapon: 'cannon',
-    // Best knockback and best splash. Solves the Cannon's blind spot - the swarm it refuses to
-    // target - by punting whatever it does hit into the crowd behind it.
     player: {},
-    weapon: { knockback: 2.1, splashRadius: 1.5, splashFrac: 1.4, damage: 0.9 },
+    weapon: {},
   },
   {
-    id: 'harrier',
-    name: 'Harrier',
-    identity: 'Fastest thing on the field. Thin armour, short reach.',
+    id: 'brass',
+    name: 'Brass',
+    identity: 'Shaded chassis, yellow plate.',
     sprite: 'mech_3dyellow',
     startingWeapon: 'cannon',
-    // Best moveMaxSpeed and best moveAccel: the purest kiting hero, and the one that can actually
-    // outrun a surge. Pays with range and HP, so a mistake is not recoverable.
-    player: { moveMaxSpeed: 1.22, moveAccel: 1.35, maxHp: 0.85 },
-    weapon: { range: 0.85 },
+    player: {},
+    weapon: {},
   },
 ] as const) as readonly HeroDef[];
 
