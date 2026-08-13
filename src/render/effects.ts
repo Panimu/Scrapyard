@@ -52,7 +52,7 @@ const BURST_LIFE = 0.2;
 const SPARK_LIFE = 0.1;
 const SPARKLE_LIFE = 0.18;
 const EMBER_LIFE = 0.36;
-const SCORCH_LIFE = 0.5;
+const SCORCH_LIFE = 0.42;
 const BEAM_START_LIFE = 0.14;
 const OVERHEAT_LIFE = 0.26;
 
@@ -64,7 +64,7 @@ const EMBER_DRAG = 3.4;
 const EMBER_SPREAD = 1.0;
 
 /** Peak opacity of a burn mark. Deliberately low - a scorch is a stain, not a hole. */
-const SCORCH_ALPHA = 0.42;
+const SCORCH_ALPHA = 0.34;
 const SCORCH_TINT = 0x21100c;
 
 export class Effects {
@@ -294,7 +294,10 @@ export class Effects {
         // before the whole additive run, so a burn mark can never brighten what it sits on.
         const s: Sprite | undefined = this.normalPool.acquire();
         if (s === undefined) continue;
-        s.texture = tex.fxFlash;
+        // fx_burst, not fx_flash: the flash texture is a clean ringed disc, and tinted dark it
+        // reads as a pebble lying on the floor. The burst is stippled, so the same tint reads as
+        // soot thrown off the cut.
+        s.texture = tex.fxBurst;
         s.anchor.set(0.5, 0.5);
         s.position.set(this.x[i], this.y[i]);
         s.rotation = this.rot[i];

@@ -18,8 +18,8 @@
  * a visual that fed the simulation would break determinism and stop phone sessions reproducing
  * in Node.
  *
- * NO GEOMETRY IS REBUILT PER FRAME. Every Graphics in this file shares ONE GraphicsContext holding
- * a single unit quad - `rect(0, -0.5, 1, 1)` - and a beam is drawn by moving that quad:
+ * NO GEOMETRY IS REBUILT PER FRAME. Every Graphics in this file shares one of TWO GraphicsContexts,
+ * each holding a single unit quad, and a beam is drawn by moving that quad:
  *
  *     position = start,  rotation = beam angle,  scale = (length, width)
  *
@@ -67,11 +67,14 @@ import type { Effects } from './effects.js';
 
 /**
  * Drawn width of each layer, as a multiple of `WeaponDef.beamWidth` (which is a HALF-width, so
- * x2 is the weapon's nominal drawn width). The core is a bright filament inside a soft envelope;
- * the halo is deliberately narrower than it once was, because a wide dim additive band over rust
- * is exactly the thing that turns a blue laser salmon.
+ * x2 is the weapon's nominal drawn width).
+ *
+ * The multipliers are large and the alphas small because every layer except the core is drawn
+ * with the GRADIENT quad: its edges are transparent, so a layer's stated width is where it has
+ * faded to nothing, not where it stops. The old flat quads had to be narrow to avoid a visible
+ * step, and narrow-and-flat is what read as a plastic tube.
  */
-const SHEATH_MUL = 5;
+const SHEATH_MUL = 3.4;
 const CORE_MUL = 1.5;
 const PULSE_MUL = 5.4;
 const INNER_MUL = 4.2;
@@ -93,7 +96,7 @@ const SHEATH_TINT = 0x2a1410;
  */
 const CORE_WHITEN = 0.16;
 const INNER_WHITEN = 0.1;
-const PULSE_WHITEN = 0.5;
+const PULSE_WHITEN = 0.34;
 
 /** How far the additive layers are pushed towards a pure hue. See `purify`. */
 const OUTER_PURITY = 0.8;
@@ -109,11 +112,21 @@ const FADE_OUT_SEC = 0.11;
 
 /**
  * Travelling energy. TWO pulses per beam, evenly spaced along the axis and sliding towards the
- * impact at a constant WORLD speed, so a long laser shows a longer flight and every laser shows
- * the same rate of energy delivery. Phase is per weapon slot so two lasers never march in step.
+ * impact at a constant WORLD speed (up to PULSE_MAX_RATE), so a long laser shows a longer flight
+ * and every laser shows the same rate of energy delivery. Phase is per weapon slot so two lasers
+ * never march in step.
  */
 const PULSES_PER_BEAM = 2;
 const PULSE_SPEED = 700;
+/**
+ * Ceiling on how often a pulse may cross, in crossings per second.
+ *
+ * Constant world speed alone is wrong at the short end: an enemy standing 20 units away turns
+ * `speed / length` into 35 crossings a second, which is a strobe, not a beam. The cap binds only
+ * where the beam is too short for its speed to be readable anyway, so long lasers keep the true
+ * constant speed and point-blank ones stay calm.
+ */
+const PULSE_MAX_RATE = 3.2;
 /** Pulse length as a fraction of the beam, clamped so a point-blank shot is not one long pulse. */
 const PULSE_FRAC = 0.34;
 const PULSE_MAX_LEN = 70;
@@ -121,11 +134,15 @@ const PULSE_MAX_LEN = 70;
 /**
  * Breathing and flicker, both shallow. A beam that strobes reads as a fault, not as power, and
  * the travelling pulses now carry most of the life that the flicker used to have to fake.
+ *
+ * RADIANS PER SECOND, not Hz - they are fed straight to `Math.sin`. 27 is ~4.3 cycles a second.
  */
-const FLICKER_HZ = 27;
+const FLICKER_RATE = 27;
 const FLICKER_DEPTH = 0.08;
-const BREATHE_HZ = 9;
+const BREATHE_RATE = 9;
 const BREATHE_DEPTH = 0.07;
+/** Impact bloom throb, also radians per second. */
+const IMPACT_BEAT_RATE = 21;
 
 /** Flare diameters, world units, scaled by the weapon's own width so a long laser hits harder. */
 const IMPACT_UNITS = 10;
@@ -207,8 +224,15 @@ export class BeamLayer {
     //         quad at a different scale, so the falloff is baked into the geometry at boot and
     //         costs nothing per frame. Stacking more and more flat quads to fake a gradient was
     //         what made the beam read as a plastic tube: hard-edged whatever the layer count.
-    const hard = new GraphicsContext().rect(0, -0.5, 1, 1).fill(0xffffff);
-    const soft = new GraphicsContext().rect(0, -0.5, 1, 1).fill(
+    // NOTE THE `rect(0, 0, 1, 1)` AND THE PIVOT IN `addQuad`. The quad used to be drawn centred
+    // on its own axis, `rect(0, -0.5, 1, 1)`, and it cannot be here: a v8 gradient with
+    // `textureSpace: 'local'` composes the shape's bounds with the gradient's own 0..1 transform,
+    // and against a rect whose y runs -0.5..0.5 the result put the entire falloff on ONE SIDE of
+    // the beam - a hard edge above, all the glow below. Verified on a screenshot, not deduced.
+    // Keeping the rect in 0..1 makes that mapping unambiguous, and the centring is done with a
+    // pivot instead, which is applied before scale and so costs nothing per frame.
+    const hard = new GraphicsContext().rect(0, 0, 1, 1).fill(0xffffff);
+    const soft = new GraphicsContext().rect(0, 0, 1, 1).fill(
       new FillGradient({
         type: 'linear',
         start: { x: 0, y: 0 },
@@ -390,32 +414,50 @@ export class BeamLayer {
       const y0 = this.ly0[w];
       const angle = this.lang[w];
 
-      // Width follows a smoothstep of the envelope and alpha follows it linearly, so a beam
-      // strikes out thin-then-full and collapses back into its own line as it dies.
-      const wide = 0.3 + 0.7 * smooth(env);
+      // THE CORE COLLAPSES, IT DOES NOT DISSOLVE. Fading an opaque coloured core by alpha alone
+      // leaves a translucent hue lying over rust orange, and a half-transparent green line on an
+      // orange floor is khaki - the dying beam went muddy rather than dark. So the core narrows
+      // to nothing on the envelope and only starts losing opacity at the very end, while the
+      // additive layers fade the ordinary way. A laser that powers down should pinch out.
+      const wideGlow = 0.35 + 0.65 * smooth(env);
+      const wideCore = smooth(env);
+      const coreFade = env >= 0.45 ? 1 : env / 0.45;
       const ph = this.phase[w] * 6.2832;
-      const flicker = 1 - FLICKER_DEPTH * (0.5 + 0.5 * Math.sin(clockSec * FLICKER_HZ + ph));
-      const breathe = 1 + BREATHE_DEPTH * Math.sin(clockSec * BREATHE_HZ + ph * 1.7);
-      const wmul = wide * breathe;
+      const flicker = 1 - FLICKER_DEPTH * (0.5 + 0.5 * Math.sin(clockSec * FLICKER_RATE + ph));
+      const breathe = 1 + BREATHE_DEPTH * Math.sin(clockSec * BREATHE_RATE + ph * 1.7);
+      const wmul = wideGlow * breathe;
       const amul = env * flicker;
 
       const ux = Math.cos(angle);
       const uy = Math.sin(angle);
 
-      place(this.sheath[n], x0, y0, angle, len, half * SHEATH_MUL * wmul, SHEATH_TINT,
-        SHEATH_ALPHA * env);
-      place(this.outer[n], x0, y0, angle, len, half * OUTER_MUL * wmul,
-        purify(colour, OUTER_PURITY), OUTER_ALPHA * amul);
-      place(this.inner[n], x0, y0, angle, len, half * INNER_MUL * wmul,
-        whiten(purify(colour, INNER_PURITY), INNER_WHITEN), INNER_ALPHA * amul);
-      place(this.core[n], x0, y0, angle, len, half * CORE_MUL * wmul, whiten(colour, CORE_WHITEN),
-        CORE_ALPHA * amul);
+      // The sheath fades on the SQUARE of the envelope so the dark band is always gone before
+      // the light is - it exists to make a bright beam readable, never to outlive one.
+      const sheathW = half * SHEATH_MUL * wmul;
+      place(this.sheath[n], x0, y0, angle, len, sheathW, SHEATH_TINT, SHEATH_ALPHA * env * env);
+      const halo = purify(colour, OUTER_PURITY);
+      place(this.outer[n], x0, y0, angle, len, half * OUTER_MUL * wmul, halo, OUTER_ALPHA * amul);
+      // One `purify` for the two mid layers; the pulse is the same light, just whiter.
+      const pure = purify(colour, INNER_PURITY);
+      const mid = whiten(pure, INNER_WHITEN);
+      place(this.inner[n], x0, y0, angle, len, half * INNER_MUL * wmul, mid, INNER_ALPHA * amul);
+      place(
+        this.core[n],
+        x0,
+        y0,
+        angle,
+        len,
+        half * CORE_MUL * wideCore * breathe,
+        whiten(colour, CORE_WHITEN),
+        CORE_ALPHA * coreFade * flicker,
+      );
 
       // ---- travelling energy ----------------------------------------------------------
       // Head position slides at a constant world speed; `u` is where it is along this beam, so
       // the pulses are evenly spread whatever the beam's length.
       const pulseLen = Math.min(len * PULSE_FRAC, PULSE_MAX_LEN);
-      const travel = (clockSec * PULSE_SPEED) / len + this.phase[w];
+      const rate = Math.min(PULSE_SPEED / len, PULSE_MAX_RATE);
+      const travel = clockSec * rate + this.phase[w];
       for (let k = 0; k < PULSES_PER_BEAM; k++) {
         const u = fract(travel + k / PULSES_PER_BEAM);
         const head = u * len;
@@ -433,7 +475,7 @@ export class BeamLayer {
           angle,
           segLen,
           half * PULSE_MUL * wmul,
-          whiten(purify(colour, INNER_PURITY), PULSE_WHITEN),
+          whiten(pure, PULSE_WHITEN),
           PULSE_ALPHA * amul * rise,
         );
       }
@@ -447,10 +489,11 @@ export class BeamLayer {
       if (this.lhit[w] === 1) {
         const x1 = x0 + ux * len;
         const y1 = y0 + uy * len;
-        const beat = 0.88 + 0.24 * (0.5 + 0.5 * Math.sin(clockSec * 21 + ph));
+        const beat = 0.88 + 0.24 * (0.5 + 0.5 * Math.sin(clockSec * IMPACT_BEAT_RATE + ph));
         // Two flares: a wide bloom in the weapon's hue, and a small near-white contact point.
-        flare(flares, x1, y1, half * IMPACT_UNITS * beat * wide, whiten(colour, 0.45), 0.85 * amul);
-        flare(flares, x1, y1, half * IMPACT_HOT_UNITS * beat * wide, 0xfff2e0, 0.9 * amul);
+        const bloom = beat * wideGlow;
+        flare(flares, x1, y1, half * IMPACT_UNITS * bloom, whiten(colour, 0.45), 0.85 * amul);
+        flare(flares, x1, y1, half * IMPACT_HOT_UNITS * bloom, 0xfff2e0, 0.9 * amul);
 
         // Debris and scorch are spawned ONLY while the sim is actually publishing the beam, on
         // a real-seconds throttle so the rate does not change with frame rate.
@@ -490,15 +533,13 @@ export class BeamLayer {
 
     flares.end();
     this.live = n;
-    // TEMP-DEBUG-HOOK
-    (globalThis as unknown as Record<string, unknown>).__beamLive = n;
-    (globalThis as unknown as Record<string, unknown>).__world = world;
   }
 }
 
-/** One shared-context quad, parented and hidden. */
+/** One shared-context quad, centred on its own long axis by pivot, parented and hidden. */
 function addQuad(context: GraphicsContext, parent: Container): Graphics {
   const g = new Graphics({ context });
+  g.pivot.set(0, 0.5);
   g.visible = false;
   parent.addChild(g);
   return g;
