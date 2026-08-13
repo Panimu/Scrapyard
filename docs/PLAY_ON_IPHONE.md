@@ -87,8 +87,12 @@ every push to the default branch: typecheck (app and core purity), unit tests, t
 simulation, then the build, then it replaces what that URL serves. The link is stable — nothing
 needs re-sharing when the game changes.
 
-The site **enables itself** on first run via `actions/configure-pages` with `enablement: true`,
-so there is no switch in Settings that someone has to remember to flip.
+**One manual step, once, ever:** *Settings → Pages → Build and deployment → Source: **GitHub
+Actions***. That cannot be automated — creating a Pages *site* needs admin credentials, and a
+workflow's `GITHUB_TOKEN` is not admin however many permissions it is granted
+(`actions/configure-pages@v5` with `enablement: true` returns *"Resource not accessible by
+integration"*). Until it is flipped, `build` still passes and only the `pages` job fails; the
+moment it is flipped, the next push deploys.
 
 `vite.config.ts` uses `base: './'`, so the build works from the `/Scrapyard/` subpath a project
 page serves from without any extra configuration.

@@ -12,9 +12,19 @@
 # Pages is the cheapest thing that can possibly work: no third-party account, no build minutes to
 # manage, no second place for the deploy to drift out of sync with the code.
 #
-# THE SITE ENABLES ITSELF. `actions/configure-pages` with `enablement: true` creates the Pages
-# site through the API on first run, so there is no "go and flip a switch in Settings" step that
-# someone has to remember six months from now.
+# ONE MANUAL STEP, ONCE, EVER:
+#
+#     Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+#
+# That is the whole setup. It cannot be automated from here: creating a Pages SITE needs admin
+# credentials, and a workflow's GITHUB_TOKEN is not admin however many permissions it is granted -
+# `actions/configure-pages@v5` with `enablement: true` was tried and returns "Resource not
+# accessible by integration". Rather than leave a step in this file that always fails, the
+# workflow assumes the site exists.
+#
+# Until that switch is flipped the `build` job still passes - typecheck, tests, sim and build all
+# run - and only `pages` fails. The moment it is flipped, the next push deploys with no further
+# changes here.
 #
 # TWO ARTEFACTS, TWO PURPOSES, DO NOT CONFUSE THEM:
 #   this workflow      the normal split build with a service worker. Cheap reloads on cellular,
@@ -48,8 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pages: write # configure-pages creates the site on first run
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -80,13 +88,6 @@ jobs:
         # this log, with no device, no rendering and no deploy. It is also a real smoke test -
         # a crash in any system fails the build before it can reach a playtester.
         run: npm run sim
-
-      - name: Configure Pages
-        # Only on the branch that publishes: a PR has no business creating a Pages site.
-        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Build
         run: npm run build
