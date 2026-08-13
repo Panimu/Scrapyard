@@ -16,7 +16,7 @@
  * because `resolveWeaponStats` runs once per weapon per upgrade and the pools are already hot.
  */
 
-import { DT } from '../constants.js';
+import { DT, HEAT_RESUME_FRAC } from '../constants.js';
 import type { Tuning } from '../config/tuning.js';
 import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
@@ -78,15 +78,12 @@ export type WeaponStatKey =
   | 'splashFrac'
   | 'turretTraverse'
   | 'fireArc'
-  /**
-   * Heat gained per second of continuous fire, and - deliberately the same number - heat shed per
-   * second while not firing. Beam weapons only; 0 on a projectile weapon, which never heats.
-   * One number rather than two because equal rates are what make every laser share the same
-   * SHAPE regardless of tempo: a long opening burst from cold, then an even on/off rhythm at half
-   * uptime. See constants.ts for the arithmetic - the sustained figure is 1/2, not the 2/3 the
-   * opening burst suggests.
-   */
-  | 'heatPerSec';
+  /** Heat GAINED per second of fire. Rises with damage tiers: more gun costs more heat. */
+  | 'heatPerSec'
+  /** Ceiling before the weapon cuts out. Capacity tiers buy longer bursts. */
+  | 'heatCapacity'
+  /** Heat SHED per second while not firing. Dispersion tiers buy shorter silences. */
+  | 'heatDispersion';
 
 /**
  * Authored stats plus the four precomputed trigonometric/squared forms the hot loops want.
@@ -106,8 +103,14 @@ export interface WeaponStats {
   turretTraverse: number;
   /** Radians, half-angle permission gate. */
   fireArc: number;
-  /** Heat per second of fire, and per second of cooling. 0 for projectile weapons. */
+  /** Heat gained per second of fire. 0 for projectile weapons. */
   heatPerSec: number;
+  /** Ceiling before cut-out. */
+  heatCapacity: number;
+  /** Heat shed per second while not firing. */
+  heatDispersion: number;
+  /** DERIVED: heatCapacity * HEAT_RESUME_FRAC - the level firing resumes at. */
+  heatResume: number;
 
   // ---- derived ----
   /** range / projectileSpeed, plus a margin so a shell never expires exactly at max range. */
@@ -325,6 +328,25 @@ export function resolveWeaponStats(
     'heatPerSec',
   );
   if (out.heatPerSec < 0) out.heatPerSec = 0;
+  out.heatCapacity = resolveOne(
+    lvl('heatCapacity'),
+    h.heatCapacity ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'heatCapacity',
+  );
+  if (out.heatCapacity < 1) out.heatCapacity = 1;
+  out.heatDispersion = resolveOne(
+    lvl('heatDispersion'),
+    h.heatDispersion ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'heatDispersion',
+  );
+  if (out.heatDispersion < 0) out.heatDispersion = 0;
+  out.heatResume = out.heatCapacity * HEAT_RESUME_FRAC;
 
   // Guard rails before anything derived is computed from these.
   if (out.cooldown < 0.05) out.cooldown = 0.05; // 20 shots/s ceiling; the pace can bend, not break

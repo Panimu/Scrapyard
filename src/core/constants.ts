@@ -43,26 +43,25 @@ export const MAX_PASSIVES = 7;
 /**
  * HEAT - the lasers' limiter, in place of a cooldown.
  *
- * A laser fires CONTINUOUSLY and gains heat while it does; at HEAT_MAX it cuts out and cannot fire
- * again until it has cooled to HEAT_RESUME. Cooling runs at the same rate as heating.
+ * A laser fires CONTINUOUSLY and gains heat while it does; at its CAPACITY it cuts out and cannot
+ * fire again until it has cooled to HEAT_RESUME_FRAC of that capacity.
  *
- * THE OPENING BURST IS TWICE THE LENGTH OF EVERY LATER ONE, and that is worth understanding
- * before tuning either number. The first burst climbs 0 -> 100; every burst after it starts from
- * HEAT_RESUME and climbs only 50 -> 100. So:
+ * Capacity, generation and dispersion are all PER-WEAPON STATS, not constants, because the tier
+ * ladder upgrades them independently: a tier raises damage AND heat generation together (a real
+ * tradeoff), later tiers buy capacity (longer bursts) or dispersion (shorter silences). Splitting
+ * generation from dispersion is what makes those three different upgrades rather than one.
  *
- *              first burst   later bursts   gap      duty (cold)   duty (sustained)
- *   any laser    100/rate       50/rate     50/rate      2/3             1/2
- *
- * A laser therefore opens with a long salvo and then settles into an even on/off rhythm at half
- * uptime. All three share those ratios exactly; what differs is TEMPO - the short laser's cycle
- * is 10 s then 5 s on / 5 s off, the long laser's is 3.3 s then 1.7 s on / 1.7 s off. Same
- * rhythm, very different pulse, which is what makes them read as different guns rather than one
- * gun at three scales.
+ * THE OPENING BURST IS LONGER THAN EVERY LATER ONE. The first climbs from cold (0 -> capacity);
+ * every later one restarts at the resume threshold. At the default half-capacity resume that makes
+ * the opening burst exactly twice the length of the rest, and sustained uptime
+ * dispersion / (generation + dispersion) - which is 1/2 only while the two rates are equal, and
+ * rises as dispersion tiers are taken.
  */
-export const HEAT_MAX = 100;
-export const HEAT_RESUME = 50;
+export const HEAT_RESUME_FRAC = 0.5;
 
-/** One beam per weapon per tick, at most. */
+/** Default capacity, and the value every weapon's `heatCapacity` base starts from. */
+export const HEAT_CAPACITY_BASE = 100;
+
 export const MAX_BEAMS_PER_TICK = MAX_WEAPONS;
 export const UPGRADE_OFFER_COUNT = 3;
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */

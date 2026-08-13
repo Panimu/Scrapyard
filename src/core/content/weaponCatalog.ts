@@ -18,6 +18,7 @@
  * way is `import type` and therefore erased, so there is no import cycle at runtime.
  */
 
+import { HEAT_CAPACITY_BASE } from '../constants.js';
 import { degToRad } from '../math/trig.js';
 import type { WeaponStatKey } from '../data/stats.js';
 import type { World, WeaponInstance } from '../types.js';
@@ -230,10 +231,26 @@ export const CANNON: WeaponDef = Object.freeze({
     turretTraverse: CANNON_TURRET_TRAVERSE,
     fireArc: CANNON_FIRE_ARC,
     heatPerSec: 0, // projectile weapons never heat
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
   }),
-  // Weapon levels are not in this iteration (there is no weapon-level-up path yet); the array is
-  // present and empty so `resolveWeaponStats` has nothing to special-case when they arrive.
-  perLevel: Object.freeze([]),
+  /**
+   * TIERS 2-7. Index i applies at tier i+2, cumulatively. Deltas are ADDITIVE.
+   *
+   *   2 range   3 rate of fire   4 damage   5 range   6 rate of fire   7 pierce
+   *
+   * Range first because it is the tier you feel without aiming differently, and pierce last
+   * because it changes what the gun IS - one shell through two bodies rewrites the Cannon's
+   * relationship with the swarm it otherwise ignores.
+   */
+  perLevel: Object.freeze([
+    { range: 65 }, // T2  260 -> 325
+    { cooldown: -0.18 }, // T3  1.20 -> 1.02 s
+    { damage: 18 }, // T4  44 -> 62
+    { range: 65 }, // T5  325 -> 390
+    { cooldown: -0.18 }, // T6  1.02 -> 0.84 s
+    { pierce: 1 }, // T7  punches through one body
+  ]),
   reengageMul: 0.55,
   visualId: 0,
   muzzleOffset: 30, // barrel tip, not chassis centre
@@ -276,6 +293,35 @@ export const CANNON: WeaponDef = Object.freeze({
 const LASER_TRAVERSE = degToRad(720);
 const LASER_FIRE_ARC = degToRad(30);
 
+/**
+ * TIERS 2-7 for every laser, the same shape for all three:
+ *
+ *   2 damage + heat    3 capacity    4 dispersion    5 damage + heat    6 capacity    7 dispersion
+ *
+ * Damage tiers RAISE HEAT GENERATION as well: a harder-hitting laser runs hotter, so raw power
+ * shortens your bursts and you buy the burst back with capacity and dispersion. That is the whole
+ * ladder - it alternates "hits harder" against "runs longer", and a laser that only ever took
+ * damage tiers would fire in shorter and shorter bursts.
+ *
+ * Deltas scale with the weapon's own base so all three ladders feel proportionally identical.
+ */
+function laserTiers(
+  damagePerSec: number,
+  heatPerSec: number,
+): readonly Readonly<Partial<Record<WeaponStatKey, number>>>[] {
+  const dmgStep = damagePerSec * 0.4;
+  const heatStep = heatPerSec * 0.4;
+  const dispStep = heatPerSec * 0.5;
+  return Object.freeze([
+    { damage: dmgStep, heatPerSec: heatStep }, // T2
+    { heatCapacity: 40 }, // T3
+    { heatDispersion: dispStep }, // T4
+    { damage: dmgStep, heatPerSec: heatStep }, // T5
+    { heatCapacity: 40 }, // T6
+    { heatDispersion: dispStep }, // T7
+  ]);
+}
+
 function laser(
   id: WeaponId,
   name: string,
@@ -308,8 +354,12 @@ function laser(
       turretTraverse: LASER_TRAVERSE,
       fireArc: LASER_FIRE_ARC,
       heatPerSec,
+      heatCapacity: HEAT_CAPACITY_BASE,
+      // Dispersion STARTS equal to generation, which is what gives an untiered laser its even
+      // half-uptime rhythm. Every dispersion tier tilts that in the player's favour.
+      heatDispersion: heatPerSec,
     }),
-    perLevel: Object.freeze([]),
+    perLevel: laserTiers(damagePerSec, heatPerSec),
     reengageMul: 1,
     visualId: 0,
     muzzleOffset: 22,

@@ -1,48 +1,38 @@
 /**
- * THE UPGRADE POOL - what a level-up can offer.
+ * THE UPGRADE POOL.
  *
- * THE CONSTRAINT THAT SHAPED THIS FILE: there is exactly one weapon. In Vampire Survivors half of
- * every level-up pool is "here is a new gun", and that carries the progression on its own. With
- * only the Cannon, every card has to make the SAME gun or the SAME chassis feel different, so the
- * pool is built along five deliberately distinct axes:
+ * FOUR CARDS. NOTHING ELSE. Every card is a weapon, and every weapon has SEVEN TIERS: tier 1 puts
+ * it in your hands, tiers 2-7 change what it does. Passives will exist later and are deliberately
+ * absent rather than stubbed - a placeholder passive would show up on cards and dilute a pool whose
+ * whole point right now is that every choice is a gun.
  *
- *   1. more damage per shell        (Shells, Shaped Charge)
- *   2. more shells                  (Autoloader, Twin Mount, Sabot)
- *   3. more reach                   (Long Barrel, Propellant)
- *   4. survive being reached        (Hull, Plate, Reactor, Ablative)
- *   5. scale faster                 (Servos, Magnet, Siphon)
+ * WHAT A TIER DOES lives in WEAPON_CATALOG's `perLevel` arrays, not here. This file says WHICH
+ * weapon a card belongs to and what to print on it; the weapon's own file says what tier 4 is
+ * worth. That split is what stops the card text and the actual numbers from drifting apart, which
+ * is the failure mode of every upgrade system that stores its effects twice.
  *
- * A run that takes only from one axis should feel lopsided and eventually lose - that is the
- * choice being offered. Nothing here is a strict upgrade over anything else here.
+ * The ladders, from WEAPON_CATALOG:
  *
- * STACKING is linear per stack and resolved in data/stats.ts: two stacks of a +18% card is +36%,
- * never +39%. See that file for why compounding is a trap on a phone screen.
+ *   Lasers   1 unlock  2 damage+heat  3 capacity  4 dispersion  5 damage+heat  6 capacity  7 dispersion
+ *   Cannon   1 unlock  2 range        3 fire rate 4 damage      5 range        6 fire rate 7 pierce
+ *
+ * The laser ladder alternates "hits harder" against "runs longer" on purpose: damage tiers also
+ * raise heat generation, so raw power shortens your bursts and capacity/dispersion buy them back.
+ * A laser fed nothing but damage tiers ends up firing in shorter and shorter stabs.
  */
 
 import type { WeaponId } from '../content/weaponCatalog.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
 
-export type UpgradeId =
-  | 'w-laser-short'
-  | 'w-laser-medium'
-  | 'w-laser-long'
-  | 'hv-shells'
-  | 'autoloader'
-  | 'long-barrel'
-  | 'twin-mount'
-  | 'sabot'
-  | 'propellant'
-  | 'shaped-charge'
-  | 'hull-extension'
-  | 'armour-plate'
-  | 'reactor-patch'
-  | 'ablative-layer'
-  | 'servo-tuning'
-  | 'magnet-coil'
-  | 'data-siphon';
+export type UpgradeId = 'w-cannon' | 'w-laser-short' | 'w-laser-medium' | 'w-laser-long';
+
+/** Tiers per weapon, including the unlock. */
+export const WEAPON_MAX_TIER = 7;
 
 /**
- * One stat change. `mode` is the half of the resolution order this lands in:
+ * One stat change. Retained for passives, which will use it; no weapon card carries effects,
+ * because a weapon's numbers come from its own `perLevel` ladder.
+ *
  *   'add' - summed into the additive term, applied BEFORE multipliers
  *   'mul' - a fractional multiplier, e.g. 0.18 means +18%; summed linearly per stack
  */
@@ -54,48 +44,87 @@ export interface UpgradeEffect {
 }
 
 /**
- * WEAPON cards add a gun to the loadout; PASSIVE cards change your numbers.
+ * WEAPON cards put a gun in a slot and then level it. PASSIVE cards change your numbers.
  *
- * They are separated because they compete for DIFFERENT SPACE - MAX_WEAPONS slots and
- * MAX_PASSIVES slots - and the level-up card has to respect both independently. Folding weapons
- * into the same pool as passives would let a run fill every slot with stat cards and never be
- * offered a second gun, which is the failure mode this split exists to prevent.
- *
- * Target shape is the Vampire Survivors one: seven weapons, seven passives. Four weapons exist
- * today.
+ * The distinction stays even though no passive exists yet: they compete for separate space
+ * (MAX_WEAPONS and MAX_PASSIVES), and the card has to respect both independently. Folding them
+ * into one pool would let a run fill every slot with stat cards and never be offered a gun.
  */
 export type UpgradeKind = 'weapon' | 'passive';
 
 export interface UpgradeDef {
   readonly id: UpgradeId;
   readonly kind: UpgradeKind;
-  /** Set only on `kind: 'weapon'` cards: the weapon this card puts in a slot. */
+  /** Set only on `kind: 'weapon'`: the weapon this card unlocks at tier 1 and levels thereafter. */
   readonly grantsWeapon?: WeaponId;
   readonly name: string;
-  /** Shown on the card. Must state the actual number - "the number on screen is the number". */
+  /** Shown when the card is the UNLOCK - what the weapon is. */
   readonly description: string;
+  /**
+   * What each tier does, indexed from 0 = tier 1. The card shows the entry for the tier being
+   * OFFERED, so a player about to take tier 4 reads "Heat dispersion +5/s" rather than a generic
+   * "Level up Short Laser". Length must equal maxStacks.
+   */
+  readonly tiers: readonly string[];
+  /** Equals WEAPON_MAX_TIER for weapon cards: stacks taken IS the weapon's tier. */
   readonly maxStacks: number;
-  /** Relative draw weight while the upgrade still has stacks left. */
+  /** Relative draw weight while the card still has tiers left. */
   readonly weight: number;
   readonly effects: readonly UpgradeEffect[];
+}
+
+/**
+ * Every laser upgrades on the same ladder, so the card text is generated the same way. The numbers
+ * quoted are computed from the weapon's own base in weaponCatalog.laserTiers, and repeated here as
+ * text only - which is why the multipliers below must match that function.
+ */
+function laserTierText(damagePerSec: number, heatPerSec: number): readonly string[] {
+  const dmg = Math.round(damagePerSec * 0.4);
+  const heat = Math.round(heatPerSec * 0.4 * 10) / 10;
+  const disp = Math.round(heatPerSec * 0.5 * 10) / 10;
+  return [
+    'Unlock.',
+    `Damage +${dmg}/s, but heat +${heat}/s.`,
+    'Heat capacity +40.',
+    `Heat dispersion +${disp}/s.`,
+    `Damage +${dmg}/s, but heat +${heat}/s.`,
+    'Heat capacity +40.',
+    `Heat dispersion +${disp}/s.`,
+  ];
 }
 
 /**
  * Index in this array indexes LevelUpState.stacks and appears in every replay. APPEND ONLY.
  */
 export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
-  // ---- weapons -----------------------------------------------------------------------------
-  // Weapon cards carry no `effects`: they hand you a gun, and the gun's own numbers live in
-  // WEAPON_CATALOG. maxStacks is 1 because weapon LEVELS do not exist yet - when they do, this
-  // becomes the level cap and resolveWeaponStats already knows how to apply perLevel.
+  {
+    id: 'w-cannon',
+    kind: 'weapon',
+    grantsWeapon: 'cannon',
+    name: 'Cannon',
+    description: 'Lobs a heavy shell at the highest-HP enemy in range. Splash finishes the rest.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Range +65.',
+      'Fire rate: cooldown -0.18s.',
+      'Damage +18 per shell.',
+      'Range +65.',
+      'Fire rate: cooldown -0.18s.',
+      'Shells pierce one extra enemy.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
   {
     id: 'w-laser-short',
     kind: 'weapon',
     grantsWeapon: 'laser-short',
     name: 'Short Laser',
-    description: 'Green beam. Burns the weakest enemy in close range. Needs a clear line.',
-    maxStacks: 1,
-    weight: 12,
+    description: 'Green beam. Burns the weakest enemy at close range. Needs a clear line.',
+    tiers: laserTierText(30, 10),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
     effects: [],
   },
   {
@@ -103,8 +132,9 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     kind: 'weapon',
     grantsWeapon: 'laser-medium',
     name: 'Medium Laser',
-    description: 'Blue beam. Moderate damage at middling range. Heats twice as fast.',
-    maxStacks: 1,
+    description: 'Blue beam. Moderate damage at middling range, and it runs hot.',
+    tiers: laserTierText(55, 20),
+    maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
   },
@@ -114,156 +144,10 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-long',
     name: 'Long Laser',
     description: 'Red beam. Heavy damage at long range, in short bursts.',
-    maxStacks: 1,
-    weight: 8,
+    tiers: laserTierText(85, 30),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
     effects: [],
-  },
-
-  // ---- passives ----------------------------------------------------------------------------
-  // ---- 1. damage per shell -----------------------------------------------------------------
-  {
-    id: 'hv-shells',
-    kind: 'passive',
-    name: 'High-Velocity Shells',
-    description: '+18% Cannon damage.',
-    maxStacks: 5,
-    weight: 10,
-    effects: [{ target: 'weapon', key: 'damage', mode: 'mul', amount: 0.18 }],
-  },
-  {
-    id: 'shaped-charge',
-    kind: 'passive',
-    name: 'Shaped Charge',
-    description: '+30% splash radius, +25% splash damage.',
-    maxStacks: 4,
-    weight: 7,
-    effects: [
-      { target: 'weapon', key: 'splashRadius', mode: 'mul', amount: 0.3 },
-      { target: 'weapon', key: 'splashFrac', mode: 'mul', amount: 0.25 },
-    ],
-  },
-
-  // ---- 2. more shells ----------------------------------------------------------------------
-  {
-    id: 'autoloader',
-    kind: 'passive',
-    name: 'Autoloader',
-    description: '-12% Cannon cooldown.',
-    maxStacks: 5,
-    weight: 10,
-    effects: [{ target: 'weapon', key: 'cooldown', mode: 'mul', amount: -0.12 }],
-  },
-  {
-    id: 'twin-mount',
-    kind: 'passive',
-    name: 'Twin Mount',
-    description: '+1 shell per volley.',
-    // Capped at 2: the Cannon fires at ONE target, so extra shells are extra damage on the
-    // biggest thing in range. A third stack would make the swarm blind spot unrecoverable.
-    maxStacks: 2,
-    weight: 4,
-    effects: [{ target: 'weapon', key: 'projectileCount', mode: 'add', amount: 1 }],
-  },
-  {
-    id: 'sabot',
-    kind: 'passive',
-    name: 'Sabot Rounds',
-    description: '+1 pierce. Shells punch through one more body.',
-    maxStacks: 3,
-    weight: 6,
-    effects: [{ target: 'weapon', key: 'pierce', mode: 'add', amount: 1 }],
-  },
-
-  // ---- 3. reach ----------------------------------------------------------------------------
-  {
-    id: 'long-barrel',
-    kind: 'passive',
-    name: 'Long Barrel',
-    description: '+15% Cannon range.',
-    maxStacks: 4,
-    weight: 8,
-    effects: [{ target: 'weapon', key: 'range', mode: 'mul', amount: 0.15 }],
-  },
-  {
-    id: 'propellant',
-    kind: 'passive',
-    name: 'Hot Propellant',
-    description: '+22% shell speed. Less lead time, fewer misses on movers.',
-    maxStacks: 3,
-    weight: 6,
-    effects: [{ target: 'weapon', key: 'projectileSpeed', mode: 'mul', amount: 0.22 }],
-  },
-
-  // ---- 4. survive being reached ------------------------------------------------------------
-  {
-    id: 'hull-extension',
-    kind: 'passive',
-    name: 'Hull Extension',
-    description: '+25 max HP, and heal for the same.',
-    maxStacks: 5,
-    weight: 9,
-    effects: [{ target: 'player', key: 'maxHp', mode: 'add', amount: 25 }],
-  },
-  {
-    id: 'armour-plate',
-    kind: 'passive',
-    name: 'Armour Plate',
-    description: '+3 armour. Subtracted from every hit, to a floor of 25%.',
-    // Flat armour is strong against swarmers and weak against elites by design - it buys
-    // tolerance for being SURROUNDED, never for being hit by the big thing.
-    maxStacks: 5,
-    weight: 8,
-    effects: [{ target: 'player', key: 'armour', mode: 'add', amount: 3 }],
-  },
-  {
-    id: 'reactor-patch',
-    kind: 'passive',
-    name: 'Reactor Patch',
-    description: '+0.8 HP regenerated per second.',
-    maxStacks: 5,
-    weight: 7,
-    effects: [{ target: 'player', key: 'hpRegen', mode: 'add', amount: 0.8 }],
-  },
-  {
-    id: 'ablative-layer',
-    kind: 'passive',
-    name: 'Ablative Layer',
-    description: '-8% damage taken from all sources.',
-    maxStacks: 4,
-    weight: 6,
-    effects: [{ target: 'player', key: 'damageTakenMul', mode: 'add', amount: -0.08 }],
-  },
-
-  // ---- 5. scale faster ---------------------------------------------------------------------
-  {
-    id: 'servo-tuning',
-    kind: 'passive',
-    name: 'Servo Tuning',
-    description: '+8% top speed, +12% acceleration.',
-    maxStacks: 4,
-    weight: 8,
-    effects: [
-      { target: 'player', key: 'moveMaxSpeed', mode: 'mul', amount: 0.08 },
-      { target: 'player', key: 'moveAccel', mode: 'mul', amount: 0.12 },
-    ],
-  },
-  {
-    id: 'magnet-coil',
-    kind: 'passive',
-    name: 'Magnet Coil',
-    description: '+30% pickup radius.',
-    maxStacks: 4,
-    weight: 7,
-    effects: [{ target: 'player', key: 'pickupRadius', mode: 'mul', amount: 0.3 }],
-  },
-  {
-    id: 'data-siphon',
-    kind: 'passive',
-    name: 'Data Siphon',
-    description: '+15% XP from every gem.',
-    maxStacks: 4,
-    weight: 6,
-    effects: [{ target: 'player', key: 'xpGain', mode: 'mul', amount: 0.15 }],
   },
 ] as const) as readonly UpgradeDef[];
 
@@ -275,9 +159,18 @@ export function upgradeIndex(id: UpgradeId): number {
   return -1;
 }
 
+/** Catalog index of the card that owns a weapon, or -1. */
+export function upgradeIndexForWeapon(weapon: WeaponId): number {
+  for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+    if (UPGRADE_CATALOG[i].grantsWeapon === weapon) return i;
+  }
+  return -1;
+}
+
 /**
- * Total stacks available across the whole pool. If a run ever takes this many picks there is
- * nothing left to offer, and updateProgression must degrade gracefully rather than loop forever
- * looking for a third distinct card.
+ * Total tiers in the pool: 4 weapons x 7 = 28 picks to exhaust everything.
+ *
+ * A run reaching this has nothing left to be offered, and updateProgression must degrade
+ * gracefully rather than hunt forever for a third distinct card.
  */
 export const TOTAL_AVAILABLE_STACKS: number = UPGRADE_CATALOG.reduce((n, u) => n + u.maxStacks, 0);
