@@ -343,10 +343,14 @@ const LASER_FIRE_ARC = degToRad(30);
 function laserTiers(
   damagePerSec: number,
   heatPerSec: number,
+  heatDispersion: number,
 ): readonly Readonly<Partial<Record<WeaponStatKey, number>>>[] {
   const dmgStep = damagePerSec * 0.4;
   const heatStep = heatPerSec * 0.4;
-  const dispStep = heatPerSec * 0.5;
+  // Scaled off DISPERSION, not generation. Off generation, a dispersion tier on the Long Laser
+  // (34/s generation against 8/s dispersion) tripled its uptime in one card while the same tier on
+  // the Short Laser barely moved it - the same card meaning wildly different things per weapon.
+  const dispStep = heatDispersion * 0.5;
   return Object.freeze([
     { damage: dmgStep, heatPerSec: heatStep }, // T2
     { heatCapacity: 40 }, // T3
@@ -363,6 +367,7 @@ function laser(
   range: number,
   damagePerSec: number,
   heatPerSec: number,
+  heatDispersion: number,
   beamColour: number,
   beamWidth: number,
 ): WeaponDef {
@@ -390,16 +395,17 @@ function laser(
       fireArc: LASER_FIRE_ARC,
       heatPerSec,
       heatCapacity: HEAT_CAPACITY_BASE,
-      // Dispersion STARTS equal to generation, which is what gives an untiered laser its even
-      // half-uptime rhythm. Every dispersion tier tilts that in the player's favour.
-      heatDispersion: heatPerSec,
+      // Dispersion is AUTHORED PER LASER and is well below generation on all three, so every
+      // laser spends most of a fight cooling. It is the single number that decides uptime -
+      // dispersion / (generation + dispersion) - and therefore the whole ranking below.
+      heatDispersion,
       turnRate: 0,
       spreadAngle: 0,
       flightTime: 0,
       ammoCapacity: 0,
       reloadTime: 0,
     }),
-    perLevel: laserTiers(damagePerSec, heatPerSec),
+    perLevel: laserTiers(damagePerSec, heatPerSec, heatDispersion),
     reengageMul: 1,
     visualId: 0,
     muzzleOffset: 22,
@@ -412,9 +418,9 @@ function laser(
   }) as WeaponDef;
 }
 
-export const LASER_SHORT = laser('laser-short', 'Short Laser', 150, 30, 10, 0x3be86b, 1.6);
-export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 275, 55, 20, 0x4fa8ff, 2.1);
-export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 85, 30, 0xff4d4d, 2.7);
+export const LASER_SHORT = laser('laser-short', 'Short Laser', 150, 46, 10, 8.5, 0x3be86b, 1.6);
+export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 275, 66, 22, 8.6, 0x4fa8ff, 2.1);
+export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 92, 34, 8.0, 0xff4d4d, 2.7);
 
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.

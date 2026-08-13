@@ -521,11 +521,11 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(s().heatPerSec).toBe(LASER_MEDIUM.base.heatPerSec);
     expect(s().heatCapacity).toBe(LASER_MEDIUM.base.heatCapacity);
     // Generation and dispersion start equal, and the ladder is what pulls them apart.
-    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatPerSec);
+    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatDispersion);
 
     expect(takeTier(w, card)).toBe(2); // DAMAGE **AND** HEAT - the tradeoff, in one tier
-    expect(s().damage).toBeCloseTo(77, 9);
-    expect(s().heatPerSec).toBeCloseTo(28, 9);
+    expect(s().damage).toBeCloseTo(LASER_MEDIUM.base.damage * 1.4, 6);
+    expect(s().heatPerSec).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * 1.4, 6);
     expect(s().damage).toBeGreaterThan(LASER_MEDIUM.base.damage);
     expect(s().heatPerSec).toBeGreaterThan(LASER_MEDIUM.base.heatPerSec);
     // A harder-hitting laser is a hotter one: the burst it can sustain got SHORTER.
@@ -533,22 +533,22 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
       LASER_MEDIUM.base.heatCapacity / LASER_MEDIUM.base.heatPerSec,
     );
     expect(s().heatCapacity).toBe(LASER_MEDIUM.base.heatCapacity);
-    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatPerSec);
+    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatDispersion);
 
     expect(takeTier(w, card)).toBe(3); // CAPACITY
     expect(s().heatCapacity).toBe(140);
     // The resume line is derived from capacity, so it moves with it - and the burst is bought
     // back without the weapon running any cooler.
     expect(s().heatResume).toBe(70);
-    expect(s().heatPerSec).toBeCloseTo(28, 9);
-    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatPerSec);
+    expect(s().heatPerSec).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * 1.4, 6);
+    expect(s().heatDispersion).toBe(LASER_MEDIUM.base.heatDispersion);
 
     expect(takeTier(w, card)).toBe(4); // DISPERSION
-    expect(s().heatDispersion).toBe(30);
+    expect(s().heatDispersion).toBeCloseTo(LASER_MEDIUM.base.heatDispersion * 1.5, 6);
     expect(s().heatDispersion).toBeGreaterThan(s().heatPerSec === 0 ? 1 : 0);
     // Capacity and generation are untouched: this tier buys a shorter silence, nothing else.
     expect(s().heatCapacity).toBe(140);
-    expect(s().heatPerSec).toBeCloseTo(28, 9);
+    expect(s().heatPerSec).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * 1.4, 6);
   });
 
   it('starts EVERY hero with exactly one weapon at tier 1, seeded to one stack', () => {

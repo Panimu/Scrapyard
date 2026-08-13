@@ -71,8 +71,8 @@ import { createWorld, stepWorld } from '../src/core/world.js';
 
 /**
  * A hero with EMPTY multiplier maps, so every laser resolves to exactly its catalog numbers and
- * the expectations below are the numbers on the card: 30/55/85 dps, 150/275/430 range,
- * 10/20/30 heat per second.
+ * the expectations below are read from the catalog rather than pinned, so a balance pass moves
+ * them automatically.
  */
 function heroWith(startingWeapon: WeaponId): HeroDef {
   return {
@@ -164,9 +164,12 @@ function setTier(world: World, tier: number): void {
 }
 
 const LASERS: readonly { def: WeaponDef; id: WeaponId; dps: number; heat: number }[] = [
-  { def: LASER_SHORT, id: 'laser-short', dps: 30, heat: 10 },
-  { def: LASER_MEDIUM, id: 'laser-medium', dps: 55, heat: 20 },
-  { def: LASER_LONG, id: 'laser-long', dps: 85, heat: 30 },
+  // Read from the catalog, never pinned. These suites are about the MECHANIC - damage is per
+  // second, heat gates firing, a blocked line refuses the shot - and a balance pass that moves a
+  // laser's dps must not turn any of that red.
+  { def: LASER_SHORT, id: 'laser-short', dps: LASER_SHORT.base.damage, heat: LASER_SHORT.base.heatPerSec },
+  { def: LASER_MEDIUM, id: 'laser-medium', dps: LASER_MEDIUM.base.damage, heat: LASER_MEDIUM.base.heatPerSec },
+  { def: LASER_LONG, id: 'laser-long', dps: LASER_LONG.base.damage, heat: LASER_LONG.base.heatPerSec },
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -244,7 +247,7 @@ describe('targeting: the WEAKEST enemy in range', () => {
     const weak = addEnemy(w, 100, 0, 5);
     const tough = addEnemy(w, 160, 0, 500);
 
-    // 5 HP at 55 dps is 0.0909 s: dead inside six ticks.
+    // 5 HP at the Medium Laser's dps: dead within a handful of ticks.
     ticks(w, 1);
     expect(w.weapons[0].targetDense).toBe(weak);
 
@@ -289,9 +292,9 @@ describe('the clear line: a blocked laser does not fire AT ALL', () => {
 
     expect(w.beams.count).toBe(1);
     expect(w.beams.enemyDense[0]).toBe(target);
-    expect(w.enemies.hp[target]).toBeCloseTo(5 - 55 * DT, 6);
+    expect(w.enemies.hp[target]).toBeCloseTo(5 - LASER_MEDIUM.base.damage * DT, 6);
     expect(w.enemies.hp[blocker]).toBe(500); // still untouched
-    expect(w.weapons[0].heat).toBeCloseTo(20 * DT, 9);
+    expect(w.weapons[0].heat).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * DT, 9);
   });
 
   it('is blocked by a body that is only clipping the line, not centred on it', () => {
@@ -395,7 +398,7 @@ describe('damage is PER SECOND', () => {
     expect(w.beams.count).toBe(1);
     // The buffer is Float32Array, so this is 85/60 to float32 precision - and it is what
     // updateDamage applied, unchanged.
-    expect(w.beams.damage[0]).toBeCloseTo(85 * DT, 5);
+    expect(w.beams.damage[0]).toBeCloseTo(LASER_LONG.base.damage * DT, 5);
     expect(w.stats.damageDealt).toBe(w.beams.damage[0]);
     expect(TOUGH_HP - w.enemies.hp[target]).toBeCloseTo(w.beams.damage[0], 2);
   });
@@ -408,13 +411,14 @@ describe('damage is PER SECOND', () => {
       tick(w);
       // One beam this tick, never ten, and the damage tracks the tick count linearly.
       expect(w.beams.count).toBe(1);
-      expect(w.stats.damageDealt).toBeCloseTo(30 * DT * i, 9);
+      // The beam buffer is Float32Array, so compare at float32 precision, not float64.
+      expect(w.stats.damageDealt).toBeCloseTo(LASER_SHORT.base.damage * DT * i, 4);
     }
   });
 
   it('kills through the same path as a shell: kill feed, tally and phase all move', () => {
     const w = makeWorld('laser-long');
-    addEnemy(w, 100, 0, 2); // 85 dps kills a 2 HP grunt in two ticks
+    addEnemy(w, 100, 0, 2); // the Long Laser kills a 2 HP grunt in a couple of ticks
 
     ticks(w, 1);
     expect(w.stats.kills).toBe(0);
@@ -499,7 +503,9 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     expect(resume).toBe(cap * HEAT_RESUME_FRAC);
     // Generation and dispersion START equal, and only start equal: every dispersion tier moves
     // one of them. That is why the two halves of this cycle are 10 s and 5 s here.
-    expect(stats.heatDispersion).toBe(stats.heatPerSec);
+    // Dispersion sits BELOW generation on every laser. That asymmetry is the whole reason a beam
+    // spends more of a fight cooling than firing, and it is what holds uptime under half.
+    expect(stats.heatDispersion).toBeLessThan(stats.heatPerSec);
 
     // One tick short of the ceiling: still live, still firing, heat just under capacity.
     ticks(w, 599);
@@ -518,13 +524,21 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     expect(w.beams.count).toBe(1);
 
     const hpAtCutout = w.enemies.hp[0];
-    // 30 dps for exactly 10.0 s. At 0.5 damage a tick this is exact in float32.
-    expect(TOUGH_HP - hpAtCutout).toBe(300);
-    expect(w.stats.damageDealt).toBeCloseTo(300, 9);
+    // One full COLD burst is capacity/generation seconds of fire, so the damage it delivers is
+    // exactly that times the beam's dps. Derived, so a retune of either number stays true.
+    const coldBurstDamage = stats.damage * (cap / stats.heatPerSec);
+    // WITHIN 0.5%, NOT TO A DECIMAL PLACE. Enemy hp is a Float32Array and the beam subtracts from
+    // it once per tick, so six hundred roundings accumulate a fraction of a point. Demanding exact
+    // equality here would be asserting the storage format, not the mechanic.
+    expect(TOUGH_HP - hpAtCutout).toBeGreaterThan(coldBurstDamage * 0.995);
+    expect(TOUGH_HP - hpAtCutout).toBeLessThanOrEqual(coldBurstDamage * 1.005);
+    expect(w.stats.damageDealt).toBeGreaterThan(coldBurstDamage * 0.995);
+    expect(w.stats.damageDealt).toBeLessThanOrEqual(coldBurstDamage * 1.005);
 
     // And now it is OFF. Not throttled, not dimmed - off, and it stays off while heat is above
     // its resume line even though heat is below its capacity the whole way down.
-    for (let t = 1; t < 300; t++) {
+    const slideTicks = Math.round(((cap - resume) / stats.heatDispersion) * 60);
+    for (let t = 1; t < slideTicks; t++) {
       tick(w);
       expect(w.beams.count).toBe(0);
       expect(w.weapons[0].overheated).toBe(true);
@@ -533,12 +547,20 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     }
     expect(w.enemies.hp[0]).toBe(hpAtCutout); // not one point of damage while cut out
 
-    // Tick 300 of the slide is the one that reaches the resume line. Dispersion equals generation
-    // at tier 1, so 100 -> 50 is exactly 5.0 s.
+    // The last tick of the slide is the one that reaches the resume line. The slide is
+    // (capacity - resume) / DISPERSION seconds - dispersion, not generation, which is what makes
+    // the off half of the cycle longer than the on half.
     tick(w);
-    expect(300 * DT).toBe((cap - resume) / stats.heatDispersion);
+    // Tolerance is ONE TICK, not a decimal place: the slide is a whole number of discrete ticks
+    // and the exact quotient almost never lands on a tick boundary.
+    expect(Math.abs(slideTicks * DT - (cap - resume) / stats.heatDispersion)).toBeLessThanOrEqual(
+      DT,
+    );
     expect(w.weapons[0].overheated).toBe(false);
-    expect(w.weapons[0].heat).toBeCloseTo(resume, 9);
+    // At or just below the resume line - the tick that crosses it can overshoot by up to one
+    // tick's worth of dispersion, which is the same discreteness the slide length has.
+    expect(w.weapons[0].heat).toBeLessThanOrEqual(resume);
+    expect(w.weapons[0].heat).toBeGreaterThan(resume - stats.heatDispersion * DT * 2);
     expect(w.beams.count).toBe(0); // the unlatching tick does not fire
 
     // The tick after that, it is a laser again.
@@ -565,44 +587,49 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     }
     // The short laser holds a burst three times as long as the long one - same rhythm, very
     // different tempo. Both start from the same capacity, so this is the heat rates alone.
-    expect(LASER_LONG.base.heatPerSec / LASER_SHORT.base.heatPerSec).toBe(3);
+    // Same capacity, rising generation: burst length shortens as the beam gets heavier. That
+    // ordering is the design; the exact ratio is a balance dial.
+    expect(LASER_LONG.base.heatPerSec).toBeGreaterThan(LASER_MEDIUM.base.heatPerSec);
+    expect(LASER_MEDIUM.base.heatPerSec).toBeGreaterThan(LASER_SHORT.base.heatPerSec);
     expect(LASER_LONG.base.heatCapacity).toBe(LASER_SHORT.base.heatCapacity);
   });
 
-  it('shares its duty cycle across all three lasers despite the different burst lengths', () => {
-    // TWO different duty cycles fall out of an UNTIERED laser's numbers, and both are shared by
-    // all three because generation and dispersion start equal:
+  it('gives each laser its own duty cycle, ordered short > medium > long, all under half', () => {
+    // THE RANKING IS THE DESIGN. Dispersion is authored per laser and sits well below generation
+    // on all three, so every laser spends most of a fight cooling - and the SHORT one, which has
+    // to stand closest to work at all, is rewarded with the most uptime and the best sustained
+    // output of the three. The long laser pays for its reach with silence.
     //
-    //   FROM COLD   capacity up then capacity - resume down = 100 up / 50 down = 2/3.
-    //               This is the figure the design quotes, and it is what a laser delivers when
-    //               it walks into a fight with a cold emitter.
-    //   IN STEADY   every later burst starts at the resume line rather than 0, so it is only
-    //   STATE       capacity - resume long = 50 up / 50 down = exactly 1/2. Sustained fire on one
-    //               target forever is the WORST case, and the mechanic's own hysteresis is what
-    //               makes it worse than the headline number.
-    //
-    // Both are measured over whole cycles, from one resume to the next, so a partial cycle at
-    // the end of the window cannot flatter or spoil either figure. Dispersion tiers are what
-    // move the steady-state figure off 1/2 - see the per-weapon suite below.
-    const fromCold: number[] = [];
-    const steadyState: number[] = [];
+    // Measured from one resume to the next so a partial cycle cannot flatter the figure, and
+    // compared against dispersion / (generation + dispersion), which is what uptime IS.
+    const measured: { id: string; duty: number; predicted: number; sustained: number }[] = [];
 
     for (const laser of LASERS) {
       const cycleTicks = Math.ceil((HEAT_CAPACITY_BASE / laser.heat) * TICK_RATE) * 3;
-      const b = burn(laser.id, cycleTicks * 8);
+      const b = burn(laser.id, cycleTicks * 10);
       expect(b.resumes.length).toBeGreaterThanOrEqual(3);
 
-      fromCold.push(duty(b, 0, b.resumes[0] + 1));
-      // Two full steady cycles, both starting from the resume line.
-      steadyState.push(duty(b, b.resumes[0] + 1, b.resumes[2] + 1));
+      const gen = laser.def.base.heatPerSec;
+      const disp = laser.def.base.heatDispersion;
+      const predicted = disp / (gen + disp);
+      const d = duty(b, b.resumes[0] + 1, b.resumes[2] + 1);
+      measured.push({ id: laser.id, duty: d, predicted, sustained: laser.dps * d });
     }
 
-    for (const d of fromCold) expect(d).toBeCloseTo(2 / 3, 2);
-    for (const d of steadyState) expect(d).toBeCloseTo(1 / 2, 2);
-    // All three agree with each other, which is the claim the equal heat/cool rates make - the
-    // burst LENGTHS differ by a factor of three and the rhythm does not.
-    expect(Math.max(...fromCold) - Math.min(...fromCold)).toBeLessThan(0.01);
-    expect(Math.max(...steadyState) - Math.min(...steadyState)).toBeLessThan(0.01);
+    for (const m of measured) {
+      // The simulated cycle matches the closed form, which is the real assertion: uptime is a
+      // property of two authored numbers and nothing else.
+      expect(m.duty).toBeCloseTo(m.predicted, 2);
+      // "A little more time offline" - every laser is now under half uptime.
+      expect(m.duty).toBeLessThan(0.5);
+    }
+
+    const [short, medium, long] = measured;
+    expect(short.duty).toBeGreaterThan(medium.duty);
+    expect(medium.duty).toBeGreaterThan(long.duty);
+    // And the point of the retune: the CLOSE-range laser delivers the most over a long fight.
+    expect(short.sustained).toBeGreaterThan(medium.sustained);
+    expect(medium.sustained).toBeGreaterThan(long.sustained);
   });
 
   it('cools while it has no target, so a fight is not entered at 99 heat', () => {
@@ -611,13 +638,17 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     ticks(w, 300); // half a burst: 50 heat
     expect(w.weapons[0].heat).toBeCloseTo(50, 6);
 
-    // The target walks out of range. Dispersion equals generation at tier 1, so 50 heat is 5.0 s
-    // of quiet.
+    // The target walks out of range and the emitter starts shedding heat at its OWN dispersion
+    // rate, which is well below its generation rate - that asymmetry is what puts every laser
+    // under half uptime.
+    const heatBefore = w.weapons[0].heat;
+    const disp = LASER_SHORT.base.heatDispersion;
     w.enemies.x[target] = 100000;
     ticks(w, 150);
-    expect(w.weapons[0].heat).toBeCloseTo(25, 6);
+    expect(w.weapons[0].heat).toBeCloseTo(heatBefore - disp * 150 * DT, 5);
     expect(w.weapons[0].targetDense).toBe(-1);
-    ticks(w, 200);
+    // Long enough to shed a full capacity at this laser's dispersion, whatever that is.
+    ticks(w, Math.ceil((LASER_SHORT.base.heatCapacity / disp) * 60) + 10);
     expect(w.weapons[0].heat).toBe(0); // clamped at the floor, never negative
   });
 
@@ -625,14 +656,18 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     const w = makeWorld('laser-medium');
     const target = addEnemy(w, 200, 0, TOUGH_HP);
     ticks(w, 60);
-    expect(w.weapons[0].heat).toBeCloseTo(20, 6);
+    expect(w.weapons[0].heat).toBeCloseTo(LASER_MEDIUM.base.heatPerSec, 5);
 
     // A body steps into the line. The weapon stops firing AND starts cooling - if it did not,
     // a laser would freeze at its current heat until the crowd parted.
     const blocker = addEnemy(w, 100, 0, TOUGH_HP);
+    const heatWhenBlocked = w.weapons[0].heat;
     ticks(w, 30);
     expect(w.beams.count).toBe(0);
-    expect(w.weapons[0].heat).toBeCloseTo(10, 6);
+    expect(w.weapons[0].heat).toBeCloseTo(
+      heatWhenBlocked - LASER_MEDIUM.base.heatDispersion * 30 * DT,
+      5,
+    );
     expect(w.enemies.hp[blocker]).toBe(TOUGH_HP);
     void target;
   });
@@ -856,10 +891,10 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     expect(inst.cooldownLeft).toBe(0);
     expect(inst.targetDense).toBe(-1);
     // resolveWeaponStats ran for the new slot: without it, range would still be 0.
-    expect(inst.stats.damage).toBe(85);
+    expect(inst.stats.damage).toBe(LASER_LONG.base.damage);
     expect(inst.stats.range).toBe(430);
     expect(inst.stats.rangeSq).toBe(430 * 430);
-    expect(inst.stats.heatPerSec).toBe(30);
+    expect(inst.stats.heatPerSec).toBe(LASER_LONG.base.heatPerSec);
 
     // And it is live in the pipeline, not just present in the array.
     w.phase = RUN_PHASE_RUNNING;

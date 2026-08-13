@@ -86,10 +86,14 @@ export interface UpgradeDef {
  * quoted are computed from the weapon's own base in weaponCatalog.laserTiers, and repeated here as
  * text only - which is why the multipliers below must match that function.
  */
-function laserTierText(damagePerSec: number, heatPerSec: number): readonly string[] {
+function laserTierText(
+  damagePerSec: number,
+  heatPerSec: number,
+  heatDispersion: number,
+): readonly string[] {
   const dmg = Math.round(damagePerSec * 0.4);
   const heat = Math.round(heatPerSec * 0.4 * 10) / 10;
-  const disp = Math.round(heatPerSec * 0.5 * 10) / 10;
+  const disp = Math.round(heatDispersion * 0.5 * 10) / 10;
   return [
     'Unlock.',
     `Damage +${dmg}/s, but heat +${heat}/s.`,
@@ -208,7 +212,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-short',
     name: 'Short Laser',
     description: 'Green beam. Burns the weakest enemy at close range. Needs a clear line.',
-    tiers: laserTierText(30, 10),
+    tiers: laserTierText(46, 10, 8.5),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
@@ -219,7 +223,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-medium',
     name: 'Medium Laser',
     description: 'Blue beam. Moderate damage at middling range, and it runs hot.',
-    tiers: laserTierText(55, 20),
+    tiers: laserTierText(66, 22, 8.6),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
@@ -230,7 +234,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-long',
     name: 'Long Laser',
     description: 'Red beam. Heavy damage at long range, in short bursts.',
-    tiers: laserTierText(85, 30),
+    tiers: laserTierText(92, 34, 8.0),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
