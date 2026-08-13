@@ -60,8 +60,12 @@
  * every rank multiplies HP UP and speed DOWN, so the thing your cannon commits to is always the
  * thing least able to reach you.
  *
- * Cycle 0 is `speed 84` against a 195 u/s mech - well under half your pace, "one simple slow enemy" as
- * specified, and slow enough that the first minute teaches the controls rather than the horde.
+ * SPEED HAS A FLOOR, AND IT IS NOT ZERO. Cycle 0 is `speed 74` against a 195 u/s mech - well
+ * under half your pace, "one simple slow enemy" as specified, and slow enough that the first
+ * minute teaches the controls rather than the horde. It started at 58 and that was too slow to
+ * be a game: the horde took 9.6 s to cross the spawn ring, never reached weapon range against a
+ * moving player, and a measured run produced 2.2 dps and seven kills in two minutes. Anything
+ * below ~70 stops being "slow" and starts being "absent".
  */
 
 import {
@@ -156,14 +160,14 @@ export interface CycleDef {
  */
 export const CYCLE_LADDER: readonly CycleDef[] = Object.freeze([
   // hull 1,2,3 = infantry (swarmer) | 6,8 = trucks (grunt) | 7,11 = rigs (bruiser)
-  Object.freeze({ name: 'Rustling', hull: 1, tier: 0 as const, hp: 22, speed: 84, contactDamage: 5, xp: 1, variantChance: 0 }),
-  Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 92, contactDamage: 6, xp: 2, variantChance: 0.1 }),
-  Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 50, speed: 86, contactDamage: 8, xp: 3, variantChance: 0.16 }),
-  Object.freeze({ name: 'Prowler', hull: 3, tier: 2 as const, hp: 70, speed: 100, contactDamage: 8, xp: 4, variantChance: 0.22 }),
-  Object.freeze({ name: 'Dozer', hull: 8, tier: 1 as const, hp: 95, speed: 94, contactDamage: 11, xp: 6, variantChance: 0.26 }),
+  Object.freeze({ name: 'Rustling', hull: 1, tier: 0 as const, hp: 22, speed: 74, contactDamage: 5, xp: 1, variantChance: 0 }),
+  Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 81, contactDamage: 6, xp: 2, variantChance: 0.1 }),
+  Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 50, speed: 76, contactDamage: 8, xp: 3, variantChance: 0.16 }),
+  Object.freeze({ name: 'Prowler', hull: 3, tier: 2 as const, hp: 70, speed: 78, contactDamage: 8, xp: 4, variantChance: 0.22 }),
+  Object.freeze({ name: 'Dozer', hull: 8, tier: 1 as const, hp: 95, speed: 83, contactDamage: 11, xp: 6, variantChance: 0.26 }),
   Object.freeze({ name: 'Breaker', hull: 7, tier: 0 as const, hp: 125, speed: 88, contactDamage: 15, xp: 8, variantChance: 0.3 }),
-  Object.freeze({ name: 'Warden', hull: 6, tier: 3 as const, hp: 160, speed: 104, contactDamage: 14, xp: 11, variantChance: 0.32 }),
-  Object.freeze({ name: 'Colossus', hull: 11, tier: 2 as const, hp: 205, speed: 96, contactDamage: 19, xp: 15, variantChance: 0.34 }),
+  Object.freeze({ name: 'Warden', hull: 6, tier: 3 as const, hp: 160, speed: 91, contactDamage: 14, xp: 11, variantChance: 0.32 }),
+  Object.freeze({ name: 'Colossus', hull: 11, tier: 2 as const, hp: 205, speed: 85, contactDamage: 19, xp: 15, variantChance: 0.34 }),
 ] as const) as readonly CycleDef[];
 
 /** Body class per ladder entry, read off the atlas rather than authored. See `CycleDef.hull`. */
