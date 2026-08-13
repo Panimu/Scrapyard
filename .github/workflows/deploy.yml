@@ -12,19 +12,16 @@
 # Pages is the cheapest thing that can possibly work: no third-party account, no build minutes to
 # manage, no second place for the deploy to drift out of sync with the code.
 #
-# ONE MANUAL STEP, ONCE, EVER:
+# ONE MANUAL STEP, ALREADY DONE, RECORDED HERE SO IT IS NOT UNDONE:
 #
 #     Settings -> Pages -> Build and deployment -> Source: GitHub Actions
 #
-# That is the whole setup. It cannot be automated from here: creating a Pages SITE needs admin
+# That is the whole setup, and it cannot be automated from here: creating a Pages SITE needs admin
 # credentials, and a workflow's GITHUB_TOKEN is not admin however many permissions it is granted -
 # `actions/configure-pages@v5` with `enablement: true` was tried and returns "Resource not
 # accessible by integration". Rather than leave a step in this file that always fails, the
-# workflow assumes the site exists.
-#
-# Until that switch is flipped the `build` job still passes - typecheck, tests, sim and build all
-# run - and only `pages` fails. The moment it is flipped, the next push deploys with no further
-# changes here.
+# workflow assumes the site exists. If Source is ever set back to a branch, `build` keeps passing
+# and only `pages` fails, which is the intended failure mode: CI still guards the code.
 #
 # TWO ARTEFACTS, TWO PURPOSES, DO NOT CONFUSE THEM:
 #   this workflow      the normal split build with a service worker. Cheap reloads on cellular,
@@ -100,13 +97,17 @@ jobs:
           retention-days: 7
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   pages:
-    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    # `!= 'pull_request'` rather than `== 'push'` so a manual run from the Actions tab can
+    # re-publish the current default branch without inventing a commit - useful when the site
+    # needs a redeploy but the code has not changed. A PR must never publish, hence the exclusion
+    # rather than a blanket allow, and the branch check still decides what is allowed to ship.
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     permissions:
