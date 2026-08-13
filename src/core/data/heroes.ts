@@ -1,22 +1,32 @@
 /**
- * THE EIGHT MECHS.
+ * THE SIXTEEN MECHS.
  *
- * Eight because the art gives exactly eight top-down chassis in robot-pack.
+ * STATS ARE STILL IDENTICAL ACROSS ALL SIXTEEN. The one thing that differs is the WEAPON each
+ * starts with, unlocked at tier 1 - which makes picking a mech a loadout decision rather than a
+ * cosmetic one, without opening the balance surface that sixteen distinct stat blocks would.
  *
- * STATS ARE STILL IDENTICAL ACROSS ALL EIGHT. The one thing that differs is the WEAPON each starts
- * with, unlocked at tier 1 - which makes picking a mech a loadout decision rather than a cosmetic
- * one, without opening the balance surface that eight distinct stat blocks would.
- *
- * THE PAINT TELLS YOU WHAT YOU ARE HOLDING. Beam colours and chassis colours are matched:
+ * THE PAINT TELLS YOU WHAT YOU ARE HOLDING, for the four weapons that have a colour to match:
  *
  *     green chassis  -> Short Laser   (green beam)
  *     blue chassis   -> Medium Laser  (blue beam)
  *     red chassis    -> Long Laser    (red beam)
  *     yellow chassis -> Cannon        (no laser is yellow, and the Cannon is the odd one out)
  *
- * Four weapons across eight chassis means each weapon is offered by two mechs - the plain finish
- * and the shaded one. That pairing is memorable in a way an arbitrary assignment would not be: a
- * player who has used the green mech once knows what the other green mech does.
+ * WHO OPENS WITH WHAT, and it is NOT an even split any more:
+ *
+ *     Short Laser     moss, jade
+ *     Medium Laser    slate, cobalt
+ *     Long Laser      ember, rust
+ *     Cannon          amber, brass
+ *     Short Missiles  ash                            <- one
+ *     Long Missiles   onyx, vermilion, indigo        <- three
+ *     Machine Gun     bone, copper
+ *     Heavy Artillery plum, fern
+ *
+ * Two-per-weapon was a real property and it is worth naming what replaced it: a player who has
+ * used one green mech knows what the other green mech does, and that no longer holds for the
+ * missile racks. Onyx was moved to the long rack deliberately; rebalancing to 2/2 means moving
+ * vermilion or indigo to the short rack, which is a one-line change if the split starts to grate.
  *
  * WHEN FULLER VARIETY RETURNS, nothing structural has to change:
  *   - `player` and `weapon` are already multiplier maps consumed by resolvePlayerStats /
@@ -106,9 +116,15 @@ export interface HeroDef {
 }
 
 /**
- * Index in this array is `WorldConfig.heroId` and is written into every replay. APPEND ONLY -
- * reordering invalidates saved runs. The eight added in the second pass are therefore appended
- * after `brass` rather than interleaved with the chassis they pair with.
+ * Index in this array is `WorldConfig.heroId`, and THE ORDER HERE IS THE ORDER ON THE SELECT
+ * SCREEN - the picker walks this array. That makes it a presentation decision as much as a data
+ * one, so it is reordered when the roster wants reordering.
+ *
+ * WHAT THAT COSTS, exactly. The index is written into a run's config and into its hash, so a
+ * reorder means an OLD RECORDED RUN would replay on a different mech. Nothing persists a run
+ * today - `scrapyard.settings.v1` stores `lastHeroId` and nothing else, so the entire blast
+ * radius is that the picker may open on a different chassis once after an update. The moment
+ * replays are saved anywhere, this array is frozen and new chassis go on the end.
  *
  * SIXTEEN CHASSIS, TWO PER WEAPON, ONE LIGHT AND ONE HEAVY. Every one of the eight weapons is
  * somebody's opener, and each has a light frame and a heavy frame that look nothing alike -
@@ -162,12 +178,22 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weapon: {},
   },
   {
-    id: 'cobalt',
-    name: 'Cobalt',
-    identity: 'Heavy quad, twin gun pods. Opens with the Medium Laser.',
-    sprite: 'mech_cobalt',
+    id: 'onyx',
+    name: 'Onyx',
+    identity: 'Heavy quad, boxed missile racks. Opens with the Long Missiles.',
+    sprite: 'mech_onyx',
     gait: 'walk',
-    startingWeapon: 'laser-medium',
+    startingWeapon: 'missile-long',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'ash',
+    name: 'Ash',
+    identity: 'Light biped, boxed missile racks. Opens with the Short Missiles.',
+    sprite: 'mech_ash',
+    gait: 'walk',
+    startingWeapon: 'missile-short',
     player: {},
     weapon: {},
   },
@@ -201,24 +227,13 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     player: {},
     weapon: {},
   },
-  // ---- second pass: the missiles, the machine gun and the artillery get openers -------
   {
-    id: 'onyx',
-    name: 'Onyx',
-    identity: 'Heavy quad, boxed missile racks. Opens with the Short Missiles.',
-    sprite: 'mech_onyx',
+    id: 'cobalt',
+    name: 'Cobalt',
+    identity: 'Heavy quad, twin gun pods. Opens with the Medium Laser.',
+    sprite: 'mech_cobalt',
     gait: 'walk',
-    startingWeapon: 'missile-short',
-    player: {},
-    weapon: {},
-  },
-  {
-    id: 'ash',
-    name: 'Ash',
-    identity: 'Light biped, boxed missile racks. Opens with the Short Missiles.',
-    sprite: 'mech_ash',
-    gait: 'walk',
-    startingWeapon: 'missile-short',
+    startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
   },

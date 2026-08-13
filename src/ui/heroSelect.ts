@@ -36,7 +36,7 @@ export class HeroSelect {
     head.className = 'heroes__head';
     head.innerHTML = `<div class="eyebrow">Scrapyard</div>
       <h1 class="heroes__title">Pick a mech</h1>
-      <div class="heroes__note">Sixteen chassis, two per weapon. Identical pilots, for now.</div>`;
+      <div class="heroes__note">Sixteen chassis, eight openers. Identical pilots, for now.</div>`;
     el.appendChild(head);
 
     const grid = document.createElement('div');

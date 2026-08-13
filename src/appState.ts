@@ -13,6 +13,8 @@
  * Everything here therefore degrades to a default rather than erroring.
  */
 
+import { HERO_CATALOG } from './core/data/heroes.js';
+
 export type AppPhase = 'boot' | 'heroSelect' | 'running' | 'paused' | 'summary';
 
 export interface Settings {
@@ -34,7 +36,10 @@ function loadSettings(): Settings {
     if (raw === null) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<Settings>;
     return {
-      lastHeroId: clampInt(parsed.lastHeroId, 0, 7, DEFAULTS.lastHeroId),
+      // Bounded by the CATALOG, not by a literal. This read 0..7 while sixteen chassis shipped,
+      // so choosing any of the last eight silently came back as Brass on the next launch - the
+      // clamp was quietly overwriting the preference it exists to restore.
+      lastHeroId: clampInt(parsed.lastHeroId, 0, HERO_CATALOG.length - 1, DEFAULTS.lastHeroId),
       dprCap: parsed.dprCap === 1 ? 1 : 2,
       debug: parsed.debug === true,
     };

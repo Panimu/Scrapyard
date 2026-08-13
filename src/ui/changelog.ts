@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T20:20Z',
+    title: 'Onyx takes the Long Missiles',
+    notes: [
+      'Onyx now opens with the Long Missiles instead of the Short.',
+      'Onyx and Ash have moved up the select screen to fifth and sixth; Cobalt takes the slot they left.',
+      'Fixed the mech picker forgetting your choice whenever you picked one of the last eight chassis - it always reopened on Brass.',
+    ],
+  },
+  {
     at: '2026-08-13T20:05Z',
     title: 'New passive: Energy Shield',
     notes: [
