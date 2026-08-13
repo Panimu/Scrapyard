@@ -107,8 +107,8 @@ function seek(world: World): void {
  *
  * WITHOUT THIS the whole horde converges to a single point: every enemy solves the same seek
  * problem, so they stack into one pixel, the player fights a single sprite with 200x contact
- * damage, and the cannon's splash hits everything at once. With it the horde spreads into a
- * crescent and the player can see, and thread, gaps.
+ * damage, and every area weapon in the game hits the whole horde at once. With it the horde
+ * spreads into a crescent and the player can see, and thread, gaps.
  *
  * The impulse is scaled by 1/mass, which is the same number knockback uses. Mass doing double
  * duty is what makes bruisers act as MOVING WALLS: a 0.5-mass swarmer is shoved 6x harder than

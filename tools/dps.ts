@@ -96,9 +96,10 @@ function measure(def: WeaponDef, tier: number): Row {
       maxHit = s.damage; // one round
       note = `${s.ammoCapacity} rounds = ${fireTime.toFixed(1)}s, reload ${s.reloadTime.toFixed(1)}s`;
     } else {
-      // Missiles: the whole volley CAN converge on one body, so that is the max hit.
+      // Missiles: the whole volley CAN converge on one body, so that is the max hit - and it is
+      // the volley's FULL damage now that they carry no splash to pass on a fraction of.
       burst = perVolley / s.cooldown;
-      maxHit = perVolley * s.splashFrac;
+      maxHit = perVolley;
       note = `${s.projectileCount} missiles/volley, ${s.cooldown.toFixed(2)}s rearm`;
     }
   } else {

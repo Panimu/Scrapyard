@@ -134,7 +134,12 @@ export interface WeaponDef {
    * is firing backwards.
    */
   readonly fireAlongFacing: boolean;
-  /** Detonate for splash when the fuse runs out, not only on contact. */
+  /**
+   * Detonate for splash when the fuse runs out, not only on contact. Only the artillery sets it:
+   * its shells are spawned NOCONTACT with no velocity, so the fuse is the ONLY way they can ever
+   * do anything. `expireProjectile` additionally requires `splashRadius > 0`, so a weapon with no
+   * blast cannot detonate a blast of nothing.
+   */
   readonly detonateOnExpiry: boolean;
 }
 
@@ -235,12 +240,16 @@ export const CANNON: WeaponDef = Object.freeze({
     projectileCount: 1,
     pierce: 0,
     knockback: 190, // applied as impulse/mass: swarmer 380 u/s, elite 27, boss immune
-    splashRadius: 54,
-    // 0.62 -> 27 splash damage, which EXCEEDS a 20 HP swarmer. That single threshold is what
-    // makes the highest-HP targeting rule a feature rather than a trap: aim at the bruiser in the
-    // middle of the crowd and the blast clears the crowd. Below the swarmer's HP, the same rule
-    // just pours your whole output into something you cannot kill while the swarm eats you.
-    splashFrac: 0.62,
+    // NO SPLASH. The Cannon is a single heavy shell into a single body, and that is the whole
+    // weapon: it commits to the highest-HP enemy in range and pays for that commitment by
+    // ignoring everything else on the field. It used to carry a 54 u blast at 0.62, sized so 27
+    // splash exceeded a 20 HP swarmer - which quietly made the "shoots the biggest thing" rule
+    // free, because the chaff died anyway. Without it the rule has teeth, and the answer to a
+    // crowd is a different weapon rather than a bigger number on this one.
+    //
+    // Its ONLY multi-target tool is the pierce tier at T7, which is earned rather than baseline.
+    splashRadius: 0,
+    splashFrac: 0,
     turretTraverse: CANNON_TURRET_TRAVERSE,
     fireArc: CANNON_FIRE_ARC,
     heatPerSec: 0, // projectile weapons never heat
@@ -457,6 +466,12 @@ function missile(
   speed: number,
   flightTime: number,
   turnRate: number,
+  /**
+   * BOTH ZERO ON EVERY MISSILE TODAY. The parameters stay because the rack is the natural place
+   * for a warhead to come back, and `splashRadius`/`splashFrac` are the only two numbers that
+   * would need to move - but a missile currently deals its damage to exactly the body it strikes.
+   * A missile that misses, misses.
+   */
   splashRadius: number,
   splashFrac: number,
   knockback: number,
@@ -504,13 +519,17 @@ function missile(
     beamColour: 0,
     beamWidth: 0,
     fireAlongFacing: true,
-    detonateOnExpiry: true,
+    // FALSE now that missiles carry no warhead splash: a fuse that detonates a zero-radius blast
+    // is a no-op with a puff on it. `expireProjectile` already guards on `splashRadius > 0`, so
+    // this is belt and braces - but a flag set true while meaning nothing is exactly the kind of
+    // config that gets read as an intention later.
+    detonateOnExpiry: false,
   }) as WeaponDef;
 }
 
 export const MISSILE_SHORT = missile(
   'missile-short', 'Short Missiles',
-  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 52, 0.55, 210,
+  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 0, 0, 210,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
@@ -523,7 +542,7 @@ export const MISSILE_SHORT = missile(
 
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
-  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 44, 0.5, 160,
+  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 0, 0, 160,
   Object.freeze([
     { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
     { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s

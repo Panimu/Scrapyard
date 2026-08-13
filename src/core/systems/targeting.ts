@@ -262,9 +262,10 @@ export const targetNearest: TargetingFn = (
 /**
  * The lasers' rule: the WEAKEST thing in range. See `betterLowestHp` for the full order.
  *
- * Pairing it with the beam's clear-line requirement is what gives the lasers their job: they
- * finish the chaff that the Cannon's splash left standing, and they go quiet the moment that
- * chaff piles up thickly enough to block the line.
+ * It is the exact complement of the Cannon's rule. The Cannon commits to the single biggest
+ * threat and, with no splash of its own, leaves every other body untouched; the lasers sweep the
+ * weakest and burn whatever is standing in the way. Between them the field gets cleared from both
+ * ends, and neither weapon does the other's job.
  */
 export const targetLowestHp: TargetingFn = (
   world,
