@@ -136,10 +136,16 @@ export type FirePattern = (
  */
 export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number) => void;
 
-// The three tables. Implementations live beside their hot loops; see the file header.
-export { TARGETING } from '../systems/targeting.js';
-export { FIRE_PATTERNS } from '../systems/weapons.js';
-export { PROJECTILE_BEHAVIOURS } from '../systems/projectiles.js';
+// The three strategy tables (TARGETING, FIRE_PATTERNS, PROJECTILE_BEHAVIOURS) live beside their
+// hot loops in systems/. They are deliberately NOT re-exported from here.
+//
+// They used to be, as a convenience, and it deadlocked module initialisation: this file is data,
+// systems/projectiles.ts imports BEHAVIOUR_STRAIGHT from it, and re-exporting projectiles.ts back
+// out closed the cycle. Under ESM that is a temporal dead zone, not a warning - the sim crashed on
+// boot with "Cannot access 'BEHAVIOUR_STRAIGHT' before initialization" while typechecking clean.
+//
+// The rule that prevents a repeat: content/ and data/ describe WHAT things are and may never
+// import from systems/, which decides what things DO. Import the tables from their own modules.
 
 // ---------------------------------------------------------------------------------------------
 // The Cannon (DESIGN.md §7.3)
