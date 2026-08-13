@@ -40,6 +40,16 @@ export const EV_WEAPON_COOLED = 14;
 export const EV_PLAYER_SHIELD_BROKEN = 17;
 /** A layer finished recharging. Payload: (x, y, layers now up, capacity). */
 export const EV_PLAYER_SHIELD_RESTORED = 18;
+/**
+ * A fused shell reached the end of its flight time and blew up in open air, hitting no body
+ * directly. Payload: (x, y, splash RADIUS, visualId).
+ *
+ * Distinct from EV_PROJECTILE_HIT, which fires when something is actually struck, because the two
+ * want different pictures: a hit is a spark on a body, and this is a crater whose size the
+ * renderer cannot otherwise know - the blast radius is a per-projectile number and there is
+ * nowhere else the render layer could read it once the shell has been reaped.
+ */
+export const EV_PROJECTILE_DETONATED = 19;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -62,6 +72,7 @@ export const EVENT_NAMES: readonly string[] = [
   'WEAPON_RELOADED',
   'SHIELD_BROKEN',
   'SHIELD_RESTORED',
+  'PROJECTILE_DETONATED',
 ];
 
 export interface EventRing {

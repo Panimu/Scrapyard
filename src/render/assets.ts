@@ -101,6 +101,24 @@ const MISSILE_SRC_H = 40;
 const MISSILE_DRAW_LEN = 22;
 export const MISSILE_SCALE = MISSILE_DRAW_LEN / MISSILE_SRC_H;
 
+/**
+ * THE TWO RACKS, drawn from the one missile texture at different proportions.
+ *
+ * Short is SQUAT AND FAT, long is LONGER AND THINNER, and the pair is deliberately modest: about
+ * 20 u x 10 u against 25 u x 7.5 u. Enough that a screen carrying both volleys reads as two
+ * weapons rather than one, small enough that neither stops looking like a missile - the source
+ * art is a single body with a nose and fins, and pushing the aspect much further turns one of
+ * them into a dart and the other into a barrel.
+ *
+ * Non-uniform scale rather than two textures, because the alternative is a second 16x40 PNG that
+ * differs from the first only in how wide it was drawn. That is a texture bind and a file to keep
+ * in sync for a difference the GPU can make for free.
+ */
+export const MISSILE_SHORT_SCALE_X = MISSILE_SCALE * 1.15;
+export const MISSILE_SHORT_SCALE_Y = MISSILE_SCALE * 0.9;
+export const MISSILE_LONG_SCALE_X = MISSILE_SCALE * 0.85;
+export const MISSILE_LONG_SCALE_Y = MISSILE_SCALE * 1.15;
+
 /** Machine gun slug: drawn ~9 u long - small enough that a stream of them reads as a stream. */
 const SLUG_SRC_H = 26;
 const SLUG_DRAW_LEN = 9;

@@ -94,6 +94,7 @@ import {
   EV_PHASE_CHANGED,
   EV_PLAYER_DAMAGED,
   EV_PLAYER_SHIELD_BROKEN,
+  EV_PROJECTILE_DETONATED,
   EV_PROJECTILE_HIT,
   NO_BEAM_TARGET,
   pushEvent,
@@ -195,7 +196,18 @@ function applyHits(world: World): void {
       const r = proj.splashRadius[pd];
       const f = proj.splashFrac[pd];
       if (r > 0 && f > 0) applySplash(world, hits.x[i], hits.y[i], r, proj.damage[pd] * f, -1);
-      pushEvent(world.events, EV_PROJECTILE_HIT, world.tick, hits.x[i], hits.y[i], 0, pd);
+      // The RADIUS, not the dense index. The renderer draws a crater the size of the blast, and
+      // by the time it looks the shell has been reaped - this event is the only place that number
+      // survives the tick.
+      pushEvent(
+        world.events,
+        EV_PROJECTILE_DETONATED,
+        world.tick,
+        hits.x[i],
+        hits.y[i],
+        r,
+        proj.visualId[pd],
+      );
       continue;
     }
 

@@ -38,6 +38,25 @@ export type WeaponId =
   | 'artillery';
 
 /**
+ * WHAT A PROJECTILE LOOKS LIKE. Named rather than numbered at the use site, because a bare `3` in
+ * a weapon def says nothing and these are read far more often than they are written.
+ *
+ * They are stable IDENTIFIERS, not indices into anything: `visualId` is copied onto every
+ * projectile and lands in the replay, so the numbers must not be reshuffled to keep them tidy.
+ *
+ * The two missile racks are separate entries even though they share one source texture. The
+ * renderer draws that texture at different proportions for each - short squat and fat, long
+ * longer and thinner - which is a render decision, but WHICH rack fired is sim data and has to
+ * travel on the projectile to survive a rack levelling behind a volley already in the air.
+ */
+export const VIS_SHELL = 0;
+export const VIS_MISSILE_SHORT = 1;
+export const VIS_SLUG = 2;
+/** Artillery: no shell at all. A red targeting ring on the ground, counting its own fuse down. */
+export const VIS_STRIKE_MARKER = 3;
+export const VIS_MISSILE_LONG = 4;
+
+/**
  * Target-selection strategies.
  *
  * `'highest-hp'` is the Cannon's specced rule and the identity of this iteration.
@@ -102,9 +121,9 @@ export interface WeaponDef {
    */
   readonly reengageMul: number;
   /**
-   * Render-side shell sprite selector. 0 is the atlas frame `shell`
-   * (space-shooter-extension spaceMissiles_012, 16x22, grey body / red nose).
-   * Sim-owned rather than render-owned so it lands in the replay and the harness can print it.
+   * Render-side shell selector - one of the VIS_* constants below. Sim-owned rather than
+   * render-owned so it lands in the replay and the harness can print it, and copied onto each
+   * projectile at spawn so a round already in flight keeps its look if the gun behind it levels.
    */
   readonly visualId: number;
   /** Muzzle offset along the shell's own direction, world units. */
@@ -279,7 +298,7 @@ export const CANNON: WeaponDef = Object.freeze({
     { pierce: 1 }, // T7  punches through one body
   ]),
   reengageMul: 0.55,
-  visualId: 0,
+  visualId: VIS_SHELL,
   muzzleOffset: 30, // barrel tip, not chassis centre
   shellRadius: 9, // drawn ~18 u
   beamColour: 0,
@@ -416,7 +435,7 @@ function laser(
     }),
     perLevel: laserTiers(damagePerSec, heatPerSec, heatDispersion),
     reengageMul: 1,
-    visualId: 0,
+    visualId: VIS_SHELL,
     muzzleOffset: 22,
     shellRadius: 0,
     beamColour,
@@ -475,6 +494,12 @@ function missile(
   splashRadius: number,
   splashFrac: number,
   knockback: number,
+  /**
+   * VIS_MISSILE_SHORT or VIS_MISSILE_LONG. The two racks draw the same source art at different
+   * proportions - the short body squat and fat, the long one longer and thinner - so a screen
+   * carrying both volleys says which is which without a colour or a label.
+   */
+  visualId: number,
   perLevel: readonly Readonly<Partial<Record<WeaponStatKey, number>>>[],
 ): WeaponDef {
   return Object.freeze({
@@ -513,7 +538,7 @@ function missile(
     }),
     perLevel,
     reengageMul: 1,
-    visualId: 1, // the missile sprite, not the cannon shell
+    visualId,
     muzzleOffset: 26,
     shellRadius: 8,
     beamColour: 0,
@@ -529,7 +554,7 @@ function missile(
 
 export const MISSILE_SHORT = missile(
   'missile-short', 'Short Missiles',
-  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 0, 0, 210,
+  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
@@ -542,7 +567,7 @@ export const MISSILE_SHORT = missile(
 
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
-  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 0, 0, 160,
+  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 0, 0, 160, VIS_MISSILE_LONG,
   Object.freeze([
     { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
     { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s
@@ -612,7 +637,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     { reloadTime: -4.5 }, // T7  15.0 -> 10.5 s
   ]),
   reengageMul: 1,
-  visualId: 2,
+  visualId: VIS_SLUG,
   muzzleOffset: 28,
   shellRadius: 5,
   beamColour: 0,
@@ -680,7 +705,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     { projectileCount: 1 }, // T7  a fourth shell
   ]),
   reengageMul: 1,
-  visualId: 3,
+  visualId: VIS_STRIKE_MARKER,
   muzzleOffset: 0,
   shellRadius: 0,
   beamColour: 0,

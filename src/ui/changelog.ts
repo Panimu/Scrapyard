@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T20:35Z',
+    title: 'Artillery aims, and the two missile racks look different',
+    notes: [
+      'Heavy Artillery no longer throws a stray missile sprite. A red targeting ring lands on the ground, sized to the blast that is coming, with a second ring closing inward as the fuse burns down - then it explodes.',
+      'The ring is the real blast radius, so it visibly widens as the weapon tiers up from 75u to 111u, and the crater matches the circle you were shown.',
+      'Short and Long Missiles are now told apart in the air: the short rack is squat and fat, the long rack longer and thinner.',
+    ],
+  },
+  {
     at: '2026-08-13T20:20Z',
     title: 'Onyx takes the Long Missiles',
     notes: [

@@ -57,6 +57,8 @@ const BEAM_START_LIFE = 0.14;
 const OVERHEAT_LIFE = 0.26;
 /** Shield break/restore. Longer than a hit flash: it is a state change, not a tick of damage. */
 const SHIELD_BREAK_LIFE = 0.3;
+/** Artillery landing. Slower than a shell impact because the thing that arrived is much bigger. */
+const ARTILLERY_BLAST_LIFE = 0.34;
 
 /** Ember velocity, world units/s, and the per-second drag that pulls it back down. */
 const EMBER_SPEED_MIN = 55;
@@ -152,6 +154,38 @@ export class Effects {
       this.size0[b] = 22 * scale;
       this.size1[b] = 52 * scale;
       this.tint[b] = 0xff8030;
+    }
+  }
+
+  /**
+   * An artillery shell landing. `radius` is the blast's own radius, so the crater the player sees
+   * is the ground that was actually damaged - the same circle the strike marker was drawing a
+   * moment ago, which is what makes the marker trustworthy rather than decorative.
+   *
+   * Built from the same three primitives an `impact` uses, at four times the size and with a ring
+   * of embers thrown outward along the ground. It is deliberately not just `impact(x, y, 4)`: a
+   * scaled-up shell hit reads as a bigger bullet, and this has to read as something arriving from
+   * above.
+   */
+  artilleryBlast(x: number, y: number, radius: number): void {
+    const f = this.alloc(KIND_FLASH, x, y, ARTILLERY_BLAST_LIFE);
+    if (f >= 0) {
+      this.size0[f] = radius * 0.5;
+      this.size1[f] = radius * 2.4;
+      this.tint[f] = 0xffd0a0;
+    }
+    const b = this.alloc(KIND_BURST, x, y, ARTILLERY_BLAST_LIFE);
+    if (b >= 0) {
+      this.rot[b] = Math.random() * Math.PI * 2;
+      this.size0[b] = radius * 0.8;
+      this.size1[b] = radius * 2.2;
+      this.tint[b] = 0xff6a28;
+    }
+    // A scorch the size of the blast, left behind on the floor.
+    this.scorch(x, y, radius * 1.6);
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2 + Math.random() * 0.5;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), 0xffb060);
     }
   }
 

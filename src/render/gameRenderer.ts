@@ -38,6 +38,7 @@ import {
   EV_PLAYER_DAMAGED,
   EV_PLAYER_SHIELD_BROKEN,
   EV_PLAYER_SHIELD_RESTORED,
+  EV_PROJECTILE_DETONATED,
   EV_PROJECTILE_HIT,
   EV_WEAPON_FIRED,
   FLAVOURS,
@@ -45,6 +46,10 @@ import {
   RANK_BOSS,
   RANK_ELITE,
   RANK_REGULAR,
+  VIS_MISSILE_LONG,
+  VIS_MISSILE_SHORT,
+  VIS_SLUG,
+  VIS_STRIKE_MARKER,
   type World,
 } from '../core/index.js';
 import { BeamLayer } from './beams.js';
@@ -57,9 +62,12 @@ import {
   MECH_SCALE,
   PARTICLE_SRC,
   ROT_OFFSET,
-  MISSILE_SCALE,
   SLUG_SCALE,
   MECH_WALK_FRAMES,
+  MISSILE_LONG_SCALE_X,
+  MISSILE_LONG_SCALE_Y,
+  MISSILE_SHORT_SCALE_X,
+  MISSILE_SHORT_SCALE_Y,
   SHELL_SCALE,
   TURRET_SCALE,
   type GameTextures,
@@ -127,6 +135,32 @@ const SHIELD_ALPHA_MAX = 0.8;
 /** Breaths per second. Slow: this is ambient state, not an alarm. */
 const SHIELD_PULSE_HZ = 0.7;
 
+/**
+ * ARTILLERY STRIKE MARKERS.
+ *
+ * The artillery does not fire a shell at anything - three rounds arrive on ground near the mech
+ * after a 0.7 s fuse, and the fuse IS the weapon: it is the time the player has to read the ground
+ * and decide whether to walk into it. So the projectile is not drawn as a projectile at all. It is
+ * a red targeting ring lying on the floor, exactly the size of the blast that is coming, with a
+ * second ring closing inward as the fuse burns down.
+ *
+ * Sizing it from the projectile's own `splashRadius` rather than from a constant is what makes the
+ * marker honest: the circle you are looking at is the circle that will be damaged, and it grows by
+ * itself as the weapon tiers up from 75 u to 111 u.
+ *
+ * It is drawn BENEATH everything in the world - under the gems, under the horde, under the mech -
+ * because it is paint on the ground. A marker over the top of the crowd would hide the bodies the
+ * player is trying to decide about.
+ */
+const STRIKE_TINT = 0xff3b30;
+const STRIKE_RING_WIDTH = 2;
+const STRIKE_FILL_ALPHA = 0.1;
+const STRIKE_RING_ALPHA = 0.75;
+/** Length of the four crosshair ticks, as a fraction of the blast radius. */
+const STRIKE_TICK_FRAC = 0.22;
+/** The closing ring stops here rather than at zero - a dot that vanishes reads as a glitch. */
+const STRIKE_MIN_FRAC = 0.12;
+
 export interface RenderStats {
   enemySprites: number;
   pickupSprites: number;
@@ -160,6 +194,13 @@ export class GameRenderer {
   private readonly shieldRim: Graphics;
   /** Layer count currently DRAWN into `shieldRim`. -1 forces a redraw on the first frame. */
   private shieldRimDrawn = -1;
+  /**
+   * Artillery markers, all of them in ONE Graphics. Unlike the shield rim this genuinely is
+   * redrawn every frame - the closing ring is an animation - but there are at most four markers
+   * on screen at once (a tier-7 barrage), and one Graphics is one draw call however many circles
+   * are inside it.
+   */
+  private readonly strikeMarkers: Graphics;
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
   private readonly glows: SpritePool;
@@ -258,8 +299,12 @@ export class GameRenderer {
     this.beams = new BeamLayer(tex, this.effects);
 
     this.letterbox = new Graphics({ label: 'letterbox' });
+    this.strikeMarkers = new Graphics({ label: 'strike-markers' });
 
     this.world.addChild(
+      // FIRST, so it is under every other thing in the world. It is paint on the floor, and a
+      // marker drawn over the crowd would hide the bodies the player is deciding about.
+      this.strikeMarkers,
       this.pickups.container,
       this.enemies.container,
       this.hpBars.container,
@@ -305,6 +350,7 @@ export class GameRenderer {
     // cleared Graphics that believes it is already drawn would leave the rim missing all run.
     this.shieldRimDrawn = -1;
     this.shieldRim.clear();
+    this.strikeMarkers.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
     this.camera.snapTo(world.player.x, world.player.y);
     // Drop anything the previous run left in the ring so its explosions do not play now.
@@ -397,6 +443,14 @@ export class GameRenderer {
 
         case EV_PROJECTILE_HIT:
           this.effects.impact(a, b);
+          break;
+
+        // A fused shell blew up in open air - today, always an artillery round landing. `c` is the
+        // blast RADIUS, so the crater drawn is the ground actually damaged and matches the ring
+        // the marker was showing a moment before.
+        case EV_PROJECTILE_DETONATED:
+          if (c > 0) this.effects.artilleryBlast(a, b, c);
+          else this.effects.impact(a, b);
           break;
 
         case EV_ENEMY_KILLED:
@@ -732,10 +786,21 @@ export class GameRenderer {
 
     shells.begin();
     trails.begin();
+    this.strikeMarkers.clear();
 
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
       const y = lerp(p.prevY[d], p.y[d], alpha);
+
+      // ARTILLERY: no shell, no trail, no rotation. A ring on the ground, and it is culled against
+      // its own blast radius rather than a fixed margin - a 111 u marker whose centre is just off
+      // screen still covers ground the player can see and has to be drawn.
+      if (p.visualId[d] === VIS_STRIKE_MARKER) {
+        const radius = p.splashRadius[d];
+        if (this.camera.isVisible(x, y, radius + 8)) this.drawStrikeMarker(world, d, x, y, radius);
+        continue;
+      }
+
       if (!this.camera.isVisible(x, y, 24)) continue;
 
       const angle = Math.atan2(p.vy[d], p.vx[d]);
@@ -754,14 +819,21 @@ export class GameRenderer {
       if (s === undefined) break;
       s.position.set(x, y);
       s.rotation = angle + ROT_OFFSET.shell;
-      // visualId is sim-owned data, copied onto each projectile at spawn: 0 is the Cannon's shell,
-      // 1 the missile racks' body. Read per projectile rather than per weapon slot, so a round
-      // already in flight keeps its own look if the rack that fired it is upgraded behind it.
+      // visualId is sim-owned data, copied onto each projectile at spawn. Read per projectile
+      // rather than per weapon slot, so a round already in flight keeps its own look if the rack
+      // that fired it is upgraded behind it.
+      //
+      // THE TWO RACKS SHARE ONE TEXTURE and differ only in proportion: the art points up, so the
+      // sprite's local Y is the missile's LENGTH and its local X is the width. Short comes out
+      // squat and fat, long comes out longer and thinner.
       const vis = p.visualId[d];
-      if (vis === 1) {
+      if (vis === VIS_MISSILE_SHORT) {
         s.texture = this.tex.missile;
-        s.scale.set(MISSILE_SCALE);
-      } else if (vis === 2) {
+        s.scale.set(MISSILE_SHORT_SCALE_X, MISSILE_SHORT_SCALE_Y);
+      } else if (vis === VIS_MISSILE_LONG) {
+        s.texture = this.tex.missile;
+        s.scale.set(MISSILE_LONG_SCALE_X, MISSILE_LONG_SCALE_Y);
+      } else if (vis === VIS_SLUG) {
         s.texture = this.tex.slug;
         s.scale.set(SLUG_SCALE);
       } else {
@@ -774,6 +846,49 @@ export class GameRenderer {
 
     shells.end();
     trails.end();
+  }
+
+  /**
+   * One artillery strike marker: a static ring at the blast radius, a ring closing inward on the
+   * fuse, four crosshair ticks, and a faint wash of red over the ground between them.
+   *
+   * THE FUSE COMES FROM THE WEAPON THAT FIRED IT, through `ownerWeapon` - the same route
+   * updateProjectiles uses to read a missile's turn rate. Not from a constant: the whole point of
+   * the closing ring is that it reaches the centre exactly when the shell lands, and a hardcoded
+   * 0.7 would silently desynchronise the instant a tier or a tuning sweep moved the fuse.
+   */
+  private drawStrikeMarker(world: World, d: number, x: number, y: number, radius: number): void {
+    if (radius <= 0) return;
+    const g = this.strikeMarkers;
+    const p = world.projectiles;
+
+    // Fraction of the fuse still to burn, 1 at launch down to 0 on impact. Guarded rather than
+    // trusted: a weapon slot that has since been overwritten would give a 0 flight time, and the
+    // marker degrades to a full ring instead of dividing by zero.
+    const fuse = world.weapons[p.ownerWeapon[d]]?.stats.flightTime ?? 0;
+    const left = fuse > 0 ? p.lifeSec[d] / fuse : 1;
+    const t = left < 0 ? 0 : left > 1 ? 1 : left;
+
+    g.circle(x, y, radius).fill({ color: STRIKE_TINT, alpha: STRIKE_FILL_ALPHA });
+    g.circle(x, y, radius).stroke({
+      width: STRIKE_RING_WIDTH,
+      color: STRIKE_TINT,
+      alpha: STRIKE_RING_ALPHA,
+    });
+
+    // The closing ring. It stops short of zero because a ring that shrinks to a point spends its
+    // last frames as a dot, which reads as a rendering artefact rather than as an impact.
+    const inner = radius * (STRIKE_MIN_FRAC + (1 - STRIKE_MIN_FRAC) * t);
+    g.circle(x, y, inner).stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: 0.95 });
+
+    // Crosshair ticks, outward from the ring. Four short strokes are the whole difference between
+    // "a red circle" and "something is aimed here".
+    const tick = radius * STRIKE_TICK_FRAC;
+    g.moveTo(x - radius - tick, y).lineTo(x - radius + tick, y);
+    g.moveTo(x + radius - tick, y).lineTo(x + radius + tick, y);
+    g.moveTo(x, y - radius - tick).lineTo(x, y - radius + tick);
+    g.moveTo(x, y + radius - tick).lineTo(x, y + radius + tick);
+    g.stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: STRIKE_RING_ALPHA });
   }
 }
 
