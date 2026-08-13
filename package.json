@@ -14,7 +14,8 @@
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
     "sim": "tsx tools/sim.ts",
     "assets": "node tools/pack-assets.mjs",
-    "screenshot": "tsx tools/screenshot.ts"
+    "screenshot": "tsx tools/screenshot.ts",
+    "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html"
   },
   "dependencies": {
     "pixi.js": "8.19.0"

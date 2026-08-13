@@ -81,8 +81,10 @@ export type WeaponStatKey =
   /**
    * Heat gained per second of continuous fire, and - deliberately the same number - heat shed per
    * second while not firing. Beam weapons only; 0 on a projectile weapon, which never heats.
-   * One number rather than two because equal rates are what fix the duty cycle at 2/3 for every
-   * laser regardless of its tempo.
+   * One number rather than two because equal rates are what make every laser share the same
+   * SHAPE regardless of tempo: a long opening burst from cold, then an even on/off rhythm at half
+   * uptime. See constants.ts for the arithmetic - the sustained figure is 1/2, not the 2/3 the
+   * opening burst suggests.
    */
   | 'heatPerSec';
 
