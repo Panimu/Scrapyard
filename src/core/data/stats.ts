@@ -83,7 +83,21 @@ export type WeaponStatKey =
   /** Ceiling before the weapon cuts out. Capacity tiers buy longer bursts. */
   | 'heatCapacity'
   /** Heat SHED per second while not firing. Dispersion tiers buy shorter silences. */
-  | 'heatDispersion';
+  | 'heatDispersion'
+  /**
+   * Homing strength, radians per second of turn. A MISSILE steers toward whatever enemy is
+   * nearest to ITSELF, re-evaluated as it flies - so turn rate, not target choice, is what
+   * decides whether it connects. "Weak homing" is a low number here, and it is the difference
+   * between a missile that curves onto a straggler and one that sails past the whole crowd.
+   */
+  | 'turnRate'
+  /** Angle BETWEEN adjacent projectiles in a spread volley, radians. */
+  | 'spreadAngle'
+  /**
+   * Authored flight time in seconds, for weapons whose reach is a fuse rather than a range.
+   * 0 means "derive it from range / projectileSpeed" as a gun would.
+   */
+  | 'flightTime';
 
 /**
  * Authored stats plus the four precomputed trigonometric/squared forms the hot loops want.
@@ -111,6 +125,15 @@ export interface WeaponStats {
   heatDispersion: number;
   /** DERIVED: heatCapacity * HEAT_RESUME_FRAC - the level firing resumes at. */
   heatResume: number;
+  /** Homing turn rate, rad/s. 0 for anything that flies straight. */
+  turnRate: number;
+  /** Angle between adjacent projectiles in a spread, radians. */
+  spreadAngle: number;
+  /** Authored flight time, seconds. 0 = derive from range / speed. */
+  flightTime: number;
+  /** DERIVED per tick: cos/sin of one tick of homing turn. */
+  cosTurnStep: number;
+  sinTurnStep: number;
 
   // ---- derived ----
   /** range / projectileSpeed, plus a margin so a shell never expires exactly at max range. */
@@ -360,8 +383,34 @@ export function resolveWeaponStats(
   out.projectileCount = Math.max(1, Math.floor(out.projectileCount));
   out.pierce = Math.max(0, Math.floor(out.pierce));
 
+  out.turnRate = resolveOne(lvl('turnRate'), h.turnRate ?? 1, stacks, upgrades, 'weapon', 'turnRate');
+  if (out.turnRate < 0) out.turnRate = 0;
+  out.spreadAngle = resolveOne(
+    lvl('spreadAngle'),
+    h.spreadAngle ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'spreadAngle',
+  );
+  out.flightTime = resolveOne(
+    lvl('flightTime'),
+    h.flightTime ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'flightTime',
+  );
+  if (out.flightTime < 0) out.flightTime = 0;
+
   // ---- derived ----
-  out.projectileLifetime = (out.range / out.projectileSpeed) * LIFETIME_MARGIN;
+  // A fused weapon's reach is its flight time; a gun's is its range. Authored flight time wins
+  // when present, which is what lets a missile outrange its own nominal `range`.
+  out.projectileLifetime =
+    out.flightTime > 0 ? out.flightTime : (out.range / out.projectileSpeed) * LIFETIME_MARGIN;
+  const turnStep = out.turnRate * DT;
+  out.cosTurnStep = Math.cos(turnStep);
+  out.sinTurnStep = Math.sin(turnStep);
   out.rangeSq = out.range * out.range;
 
   const step = out.turretTraverse * DT;

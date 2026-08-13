@@ -27,7 +27,13 @@ import type { World, WeaponInstance } from '../types.js';
 // Id unions. Every one of these grows; none of them is a `string`.
 // ---------------------------------------------------------------------------------------------
 
-export type WeaponId = 'cannon' | 'laser-short' | 'laser-medium' | 'laser-long';
+export type WeaponId =
+  | 'cannon'
+  | 'laser-short'
+  | 'laser-medium'
+  | 'laser-long'
+  | 'missile-short'
+  | 'missile-long';
 
 /**
  * Target-selection strategies.
@@ -38,9 +44,9 @@ export type WeaponId = 'cannon' | 'laser-short' | 'laser-medium' | 'laser-long';
  */
 export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp'; // grows: | 'densest'
 
-export type FirePatternId = 'battery' | 'beam'; // grows: | 'spread' | 'burst'
+export type FirePatternId = 'battery' | 'beam' | 'spread'; // grows: | 'burst'
 
-export type BehaviourId = 'straight'; // grows: | 'homing' | 'arc'
+export type BehaviourId = 'straight' | 'homing'; // grows: | 'arc'
 
 /**
  * BehaviourId -> index into PROJECTILE_BEHAVIOURS, which is what the pool stores (a Uint8Array).
@@ -48,9 +54,11 @@ export type BehaviourId = 'straight'; // grows: | 'homing' | 'arc'
  * therefore into every replay hash. APPEND ONLY - never renumber.
  */
 export const BEHAVIOUR_STRAIGHT = 0;
+export const BEHAVIOUR_HOMING = 1;
 
 export const BEHAVIOUR_ID: Readonly<Record<BehaviourId, number>> = Object.freeze({
   straight: BEHAVIOUR_STRAIGHT,
+  homing: BEHAVIOUR_HOMING,
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -123,6 +131,20 @@ export interface WeaponDef {
    * you standing in different places, which is the whole point of having both.
    */
   readonly requiresClearLine: boolean;
+
+  // ---- fused weapons (missiles) ----
+  /**
+   * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
+   *
+   * This is the missiles' defining property and it inverts how the weapon plays. Every other gun
+   * here aims itself while you concentrate on not dying; a missile rack fires where you are
+   * FACING, so the direction you run becomes an aiming decision. It also means the weapon works
+   * with no enemy in range at all - `requiresTarget` is false - and that a player kiting backwards
+   * is firing backwards.
+   */
+  readonly fireAlongFacing: boolean;
+  /** Detonate for splash when the fuse runs out, not only on contact. */
+  readonly detonateOnExpiry: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -233,6 +255,9 @@ export const CANNON: WeaponDef = Object.freeze({
     heatPerSec: 0, // projectile weapons never heat
     heatCapacity: HEAT_CAPACITY_BASE,
     heatDispersion: 0,
+    turnRate: 0, // flies straight
+    spreadAngle: 0,
+    flightTime: 0, // reach is range / speed, not a fuse
   }),
   /**
    * TIERS 2-7. Index i applies at tier i+2, cumulatively. Deltas are ADDITIVE.
@@ -258,6 +283,8 @@ export const CANNON: WeaponDef = Object.freeze({
   beamColour: 0,
   beamWidth: 0,
   requiresClearLine: false,
+  fireAlongFacing: false,
+  detonateOnExpiry: false,
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -362,6 +389,9 @@ function laser(
       // Dispersion STARTS equal to generation, which is what gives an untiered laser its even
       // half-uptime rhythm. Every dispersion tier tilts that in the player's favour.
       heatDispersion: heatPerSec,
+      turnRate: 0,
+      spreadAngle: 0,
+      flightTime: 0,
     }),
     perLevel: laserTiers(damagePerSec, heatPerSec),
     reengageMul: 1,
@@ -371,6 +401,8 @@ function laser(
     beamColour,
     beamWidth,
     requiresClearLine: true,
+    fireAlongFacing: false,
+    detonateOnExpiry: false,
   }) as WeaponDef;
 }
 
@@ -381,11 +413,122 @@ export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 85, 30, 0xff4d4
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.
  */
+// ---------------------------------------------------------------------------------------------
+// The missiles
+//
+// Two racks that break the rule every other weapon here follows: THEY DO NOT AIM. A volley leaves
+// along the direction the player last MOVED, spread evenly about it, and each missile then steers
+// weakly toward whatever enemy is nearest to ITSELF - re-evaluated every tick, never a locked
+// target. So the missiles connect because of where you were running, not because the gun found
+// something; the direction you flee becomes an aiming decision, and kiting backwards means firing
+// backwards.
+//
+// Turn rate, not target choice, decides whether a volley lands. "Weak homing" is a low turn rate:
+// a missile curves onto a straggler it was already pointed near and sails straight past a crowd
+// off to one side. That is why the tier ladders spend two rungs on turn radius.
+//
+//                  volley   spread   rearm   damage   flight   turn      reach
+//   SRM              2       15 deg   3.0 s     62     1.15 s  2.4 rad/s  ~345
+//   LRM              3       10 deg   4.2 s     42     2.00 s  1.3 rad/s  ~660
+//
+// SRM is the panic button: a slow, heavy, close-in double tap. LRM is a commitment - a wider,
+// slower, longer-reaching salvo that has to be aimed a second in advance.
+// ---------------------------------------------------------------------------------------------
+
+function missile(
+  id: WeaponId,
+  name: string,
+  volley: number,
+  spreadDeg: number,
+  cooldown: number,
+  damage: number,
+  range: number,
+  speed: number,
+  flightTime: number,
+  turnRate: number,
+  splashRadius: number,
+  splashFrac: number,
+  knockback: number,
+  perLevel: readonly Readonly<Partial<Record<WeaponStatKey, number>>>[],
+): WeaponDef {
+  return Object.freeze({
+    id,
+    name,
+    kind: 'projectile' as WeaponKind,
+    // Unused: `fireAlongFacing` means no target is ever selected. Declared as 'nearest' rather
+    // than inventing a 'none' strategy, because a fourth entry in the targeting table that is
+    // never called would be a lie about what that table is for.
+    targeting: 'nearest' as TargetingId,
+    pattern: 'spread' as FirePatternId,
+    behaviour: 'homing' as BehaviourId,
+    // The rack fires whether or not anything is in range. It is aimed by your feet.
+    requiresTarget: false,
+    base: Object.freeze({
+      damage,
+      cooldown,
+      range,
+      projectileSpeed: speed,
+      projectileCount: volley,
+      pierce: 0,
+      knockback,
+      splashRadius,
+      splashFrac,
+      // No turret: the rack points where the chassis points.
+      turretTraverse: degToRad(720),
+      fireArc: degToRad(180),
+      heatPerSec: 0,
+      heatCapacity: HEAT_CAPACITY_BASE,
+      heatDispersion: 0,
+      turnRate,
+      spreadAngle: degToRad(spreadDeg),
+      flightTime,
+    }),
+    perLevel,
+    reengageMul: 1,
+    visualId: 1, // the missile sprite, not the cannon shell
+    muzzleOffset: 26,
+    shellRadius: 8,
+    beamColour: 0,
+    beamWidth: 0,
+    requiresClearLine: false,
+    fireAlongFacing: true,
+    detonateOnExpiry: true,
+  }) as WeaponDef;
+}
+
+export const MISSILE_SHORT = missile(
+  'missile-short', 'Short Missiles',
+  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 52, 0.55, 210,
+  Object.freeze([
+    { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
+    { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
+    { damage: 22 }, // T4  62 -> 84
+    { cooldown: -0.45 }, // T5  2.55 -> 2.10 s
+    { turnRate: 0.7 }, // T6  3.1 -> 3.8 rad/s
+    { projectileCount: 1 }, // T7  a third missile
+  ]),
+);
+
+export const MISSILE_LONG = missile(
+  'missile-long', 'Long Missiles',
+  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 44, 0.5, 160,
+  Object.freeze([
+    { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
+    { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s
+    { damage: 15 }, // T4  42 -> 57
+    { projectileCount: 1 }, // T5  a fourth missile
+    { flightTime: 0.6 }, // T6  2.0 -> 2.6 s, reach ~860
+    { projectileCount: 1 }, // T7  a fifth missile
+  ]),
+);
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
   LASER_MEDIUM,
   LASER_LONG,
+  MISSILE_SHORT,
+  MISSILE_LONG,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */

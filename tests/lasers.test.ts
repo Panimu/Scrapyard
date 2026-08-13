@@ -839,8 +839,16 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     const card = upgradeIndex('w-laser-long');
     expect(takeCard(w, card)).toBe(true);
 
-    expect(w.weaponCount).toBe(2);
-    const inst = w.weapons[1];
+    // takeCard blind-picks whatever else is offered on the way, so the slot INDEX depends on how
+    // many other weapon cards happened to come up first. Find the gun rather than assuming where
+    // it landed - the contract is "it is installed and live", not "it is at index 1".
+    expect(w.weaponCount).toBeGreaterThanOrEqual(2);
+    let slotIdx = -1;
+    for (let i = 0; i < w.weaponCount; i++) {
+      if (w.weapons[i].defId === weaponDefIndex('laser-long')) slotIdx = i;
+    }
+    expect(slotIdx).toBeGreaterThan(0);
+    const inst = w.weapons[slotIdx];
     expect(inst.defId).toBe(weaponDefIndex('laser-long'));
     expect(inst.level).toBe(1);
     expect(inst.heat).toBe(0);
@@ -857,10 +865,15 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     w.phase = RUN_PHASE_RUNNING;
     const target = addEnemy(w, 300, 0, TOUGH_HP); // past the Cannon's 260, inside the laser's 430
     ticks(w, 30);
-    expect(w.beams.count).toBe(1);
-    expect(w.beams.weaponIdx[0]).toBe(1);
+    // Other guns picked up on the way may also be firing, so assert THIS laser produced a beam
+    // rather than that it was the only thing on the field.
+    let sawBeam = false;
+    for (let i = 0; i < w.beams.count; i++) {
+      if (w.beams.weaponIdx[i] === slotIdx) sawBeam = true;
+    }
+    expect(sawBeam).toBe(true);
     expect(w.enemies.hp[target]).toBeLessThan(TOUGH_HP);
-    expect(w.weapons[1].heat).toBeGreaterThan(0);
+    expect(w.weapons[slotIdx].heat).toBeGreaterThan(0);
   });
 
   it('starts the hero gun at tier 1 and offers its card as TIER 2, never as an unlock', () => {

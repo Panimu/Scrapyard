@@ -636,7 +636,83 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
 /**
  * THE FIRE-PATTERN TABLE. Adding a pattern is one entry here plus one pure function above.
  */
+
+/**
+ * `spread` - the missile racks. N projectiles leaving along the player's LAST MOVEMENT DIRECTION,
+ * evenly fanned about it at `spreadAngle` between neighbours.
+ *
+ * NO TARGET IS CONSULTED. `targets`/`targetCount` are ignored entirely, which is why these weapons
+ * declare `requiresTarget: false` and fire into an empty field quite happily. The volley is aimed
+ * by the player's feet: the direction you were last moving is the direction the rack points, so
+ * running away fires backwards and the choice of where to run becomes the choice of where to shoot.
+ *
+ * `player.faceX/faceY` is the sim's own unit facing, derived from velocity and HELD when the
+ * player stops - so a stationary mech fires the way it last ran rather than the way it happens to
+ * be pointing at frame zero.
+ *
+ * Fan layout is symmetric about the facing: offsets are (i - (n-1)/2) * spreadAngle, so an even
+ * volley straddles the centre line and an odd one puts a missile straight down it. Trig runs once
+ * per missile per VOLLEY - a few times a second at most - not per tick, so it is not worth
+ * precomputing.
+ */
+export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const player = world.player;
+
+  const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
+  const behaviour = BEHAVIOUR_ID[def.behaviour];
+
+  const baseX = player.faceX;
+  const baseY = player.faceY;
+  const half = (count - 1) * 0.5;
+
+  for (let i = 0; i < count; i++) {
+    const a = (i - half) * stats.spreadAngle;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    // Rotate the facing by the fan offset. Unit in, unit out - no renormalisation needed.
+    const dirX = baseX * c - baseY * sn;
+    const dirY = baseX * sn + baseY * c;
+
+    const spawnId = ++world.stats.shotsFired;
+    const handle = allocProjectile(
+      projectiles,
+      player.x + dirX * def.muzzleOffset,
+      player.y + dirY * def.muzzleOffset,
+      dirX * stats.projectileSpeed,
+      dirY * stats.projectileSpeed,
+      stats.projectileLifetime,
+      weaponIdx,
+      behaviour,
+      spawnId,
+    );
+    if (handle === NULL_HANDLE) break;
+
+    const d = projectiles.count - 1;
+    projectiles.damage[d] = stats.damage;
+    projectiles.knockback[d] = stats.knockback;
+    projectiles.splashRadius[d] = stats.splashRadius;
+    projectiles.splashFrac[d] = stats.splashFrac;
+    projectiles.radius[d] = def.shellRadius;
+    projectiles.pierceLeft[d] = stats.pierce;
+    projectiles.visualId[d] = def.visualId;
+
+    pushEvent(
+      world.events,
+      EV_WEAPON_FIRED,
+      world.tick,
+      projectiles.x[d],
+      projectiles.y[d],
+      dirX,
+      dirY,
+    );
+  }
+};
+
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
+  spread: fireSpread,
   beam: fireBeam,
 });

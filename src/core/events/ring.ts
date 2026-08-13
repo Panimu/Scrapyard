@@ -146,6 +146,15 @@ export function createHitBuffer(capacity: number): HitBuffer {
   };
 }
 
+/**
+ * `enemyDense` sentinel: this hit has no directly-struck body.
+ *
+ * A missile that detonates on its fuse explodes in open air - splash only. Routing that through
+ * the HitBuffer with a sentinel keeps ALL damage application in S9 rather than letting S7 reach
+ * into enemy hp, which is the property that makes damage order testable.
+ */
+export const NO_DIRECT_HIT = 0xffff;
+
 export function pushHit(
   h: HitBuffer,
   projectileDense: number,

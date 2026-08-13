@@ -24,7 +24,13 @@
 import type { WeaponId } from '../content/weaponCatalog.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
 
-export type UpgradeId = 'w-cannon' | 'w-laser-short' | 'w-laser-medium' | 'w-laser-long';
+export type UpgradeId =
+  | 'w-cannon'
+  | 'w-laser-short'
+  | 'w-laser-medium'
+  | 'w-laser-long'
+  | 'w-missile-short'
+  | 'w-missile-long';
 
 /** Tiers per weapon, including the unlock. */
 export const WEAPON_MAX_TIER = 7;
@@ -111,6 +117,44 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'Range +65.',
       'Fire rate: cooldown -0.18s.',
       'Shells pierce one extra enemy.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-missile-short',
+    kind: 'weapon',
+    grantsWeapon: 'missile-short',
+    name: 'Short Missiles',
+    description: 'Two homing missiles fired where you last moved. Slow to rearm, hits hard.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Rearm 0.45s faster.',
+      'Turn radius: +0.7 rad/s homing.',
+      'Damage +22 per missile.',
+      'Rearm 0.45s faster.',
+      'Turn radius: +0.7 rad/s homing.',
+      'A third missile.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-missile-long',
+    kind: 'weapon',
+    grantsWeapon: 'missile-long',
+    name: 'Long Missiles',
+    description: 'Three missiles on a long fuse, fired where you last moved. Weak homing, wide reach.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Rearm 0.6s faster.',
+      'Turn radius: +0.45 rad/s homing.',
+      'Damage +15 per missile.',
+      'A fourth missile.',
+      'Flight time +0.6s.',
+      'A fifth missile.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,

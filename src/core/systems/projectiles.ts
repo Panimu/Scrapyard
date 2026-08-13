@@ -23,10 +23,26 @@
  * until S12).
  */
 
-import { EV_PROJECTILE_EXPIRED, pushEvent } from '../events/ring.js';
+import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
 import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
-import { BEHAVIOUR_STRAIGHT, type ProjectileBehaviour } from '../content/weaponCatalog.js';
+import {
+  BEHAVIOUR_HOMING,
+  BEHAVIOUR_STRAIGHT,
+  type ProjectileBehaviour,
+  type WeaponDef,
+} from '../content/weaponCatalog.js';
+import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { World } from '../types.js';
+
+/**
+ * How far a missile looks for something to steer toward.
+ *
+ * Deliberately finite and fairly short. An infinite seek would make "weak homing" meaningless -
+ * every missile would eventually curve onto SOMETHING, and the spread pattern would stop mattering
+ * because the fan would collapse toward whatever was nearest the player. A short leash keeps the
+ * volley's shape: a missile commits to the neighbourhood it was fired into.
+ */
+const HOMING_SEEK_RADIUS = 240;
 
 /**
  * `straight` - constant velocity, no steering, no drag, no gravity.
@@ -73,6 +89,115 @@ export const behaviourStraight: ProjectileBehaviour = (world, behaviourId, dt): 
   }
 };
 
+
+/**
+ * `homing` - the missile racks. Steers weakly toward whatever enemy is nearest to THE MISSILE, and
+ * detonates when its fuse runs out.
+ *
+ * NEAREST TO ITSELF, RE-EVALUATED EVERY TICK, AND NEVER STORED. This is what the file header
+ * predicted: homing needs no target handle, so the "target died mid-flight and the shell chased a
+ * recycled entity" bug remains structurally impossible. A missile whose quarry dies simply picks
+ * the next nearest thing on the following tick, which also happens to be exactly the behaviour a
+ * player expects from a swarm of missiles crossing a crowded field.
+ *
+ * The turn is a ROTATION AT A CAPPED RATE, not a steering force: velocity keeps its magnitude and
+ * only its direction moves, by at most `turnRate * dt` per tick. Missiles therefore never
+ * accelerate, never stall, and never spiral - a missile that cannot out-turn its quarry sails past
+ * and detonates on its fuse, which is precisely what "weak homing" should feel like.
+ */
+export const behaviourHoming: ProjectileBehaviour = (world, behaviourId, dt): void => {
+  const p = world.projectiles;
+  const n = p.count;
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+
+  for (let d = 0; d < n; d++) {
+    if (p.behaviour[d] !== behaviourId) continue;
+    if ((p.flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+
+    const px = p.x[d];
+    const py = p.y[d];
+
+    // Turn rate belongs to the weapon that fired this missile, read through ownerWeapon rather
+    // than copied onto every projectile: a rack upgraded mid-flight steers its airborne missiles
+    // better immediately, and the pool stays one byte lighter per shell.
+    const inst = world.weapons[p.ownerWeapon[d]];
+    const turnRate = inst === undefined ? 0 : inst.stats.turnRate;
+
+    if (turnRate > 0) {
+      const m = queryCircleLiveInto(world.spatial, enemies, px, py, HOMING_SEEK_RADIUS, candidates);
+      let bestD = -1;
+      let bestDist2 = Infinity;
+      let bestSpawn = 0xffffffff;
+      for (let i = 0; i < m; i++) {
+        const e = candidates[i];
+        const ex = enemies.x[e] - px;
+        const ey = enemies.y[e] - py;
+        const dist2 = ex * ex + ey * ey;
+        // Strict total order: nearest, then lowest spawnId. Without the tie-break two missiles at
+        // identical distance could resolve differently on different engines.
+        const sid = enemies.spawnId[e];
+        if (dist2 < bestDist2 || (dist2 === bestDist2 && sid < bestSpawn)) {
+          bestDist2 = dist2;
+          bestSpawn = sid;
+          bestD = e;
+        }
+      }
+
+      if (bestD >= 0) {
+        const vx = p.vx[d];
+        const vy = p.vy[d];
+        const speed = Math.sqrt(vx * vx + vy * vy);
+        if (speed > 0) {
+          const tx = enemies.x[bestD] - px;
+          const ty = enemies.y[bestD] - py;
+          const tlen = Math.sqrt(tx * tx + ty * ty);
+          if (tlen > 0) {
+            const dx = tx / tlen;
+            const dy = ty / tlen;
+            const cx = vx / speed;
+            const cy = vy / speed;
+            // Signed angle from current heading to the desired one, clamped to this tick's budget.
+            const cross = cx * dy - cy * dx;
+            const dot = cx * dx + cy * dy;
+            let ang = Math.atan2(cross, dot);
+            const maxStep = turnRate * dt;
+            if (ang > maxStep) ang = maxStep;
+            else if (ang < -maxStep) ang = -maxStep;
+            const c = Math.cos(ang);
+            const sn = Math.sin(ang);
+            p.vx[d] = (cx * c - cy * sn) * speed;
+            p.vy[d] = (cx * sn + cy * c) * speed;
+          }
+        }
+      }
+    }
+
+    const mx = p.vx[d] * dt;
+    const my = p.vy[d] * dt;
+    p.x[d] += mx;
+    p.y[d] += my;
+    p.travelled[d] += Math.sqrt(mx * mx + my * my);
+
+    const left = p.lifeSec[d] - dt;
+    p.lifeSec[d] = left;
+    if (left <= 0) {
+      markProjectileDead(p, d);
+      // FUSE DETONATION. A missile that ran out of flight time explodes where it is, for splash
+      // only - there is no body to take a direct hit. It goes through the HitBuffer rather than
+      // touching enemies here, so every point of damage in the game is still applied by S9 and
+      // the detection/application split holds.
+      const def = world.weaponCatalog[world.weapons[p.ownerWeapon[d]]?.defId ?? -1] as
+        | WeaponDef
+        | undefined;
+      if (def?.detonateOnExpiry === true && p.splashRadius[d] > 0) {
+        pushHit(world.hits, d, NO_DIRECT_HIT, p.x[d], p.y[d]);
+      }
+      pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, p.x[d], p.y[d], 0, d);
+    }
+  }
+};
+
 /**
  * THE BEHAVIOUR TABLE. Index === the value stored in ProjectilePool.behaviour === the BEHAVIOUR_*
  * constant in weaponCatalog.ts. Those indices are written into every replay hash, so this array
@@ -80,6 +205,7 @@ export const behaviourStraight: ProjectileBehaviour = (world, behaviourId, dt): 
  */
 export const PROJECTILE_BEHAVIOURS: readonly ProjectileBehaviour[] = Object.freeze([
   behaviourStraight, // BEHAVIOUR_STRAIGHT === 0
+  behaviourHoming, // BEHAVIOUR_HOMING === 1
 ]);
 
 export function updateProjectiles(world: World, dt: number): void {

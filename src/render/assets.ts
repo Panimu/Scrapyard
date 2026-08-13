@@ -75,6 +75,12 @@ const SHELL_SRC_H = 22;
 const SHELL_DRAW_LEN = 16;
 export const SHELL_SCALE = SHELL_DRAW_LEN / SHELL_SRC_H;
 
+/** Missile `spaceMissiles_001` is 16x40 and points up; drawn ~22 u long - visibly longer than
+ *  the Cannon's 16 u shell, so a screen carrying both reads as two weapons. */
+const MISSILE_SRC_H = 40;
+const MISSILE_DRAW_LEN = 22;
+export const MISSILE_SCALE = MISSILE_DRAW_LEN / MISSILE_SRC_H;
+
 /** Gem `spaceParts_035` is 32x63; drawn ~18 u tall. */
 const GEM_SRC_H = 63;
 const GEM_DRAW_H = 18;
@@ -125,6 +131,8 @@ export interface GameTextures {
   readonly fxBurst: Texture;
   readonly fxSparkle: Texture;
   readonly fxTrail: Texture;
+  /** Missile body, indexed by WeaponDef.visualId === 1. */
+  readonly missile: Texture;
 }
 
 /**
@@ -188,7 +196,7 @@ export async function loadGameTextures(
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
-  keys.push('floor', 'shell', 'gem');
+  keys.push('floor', 'shell', 'missile', 'gem');
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
 
@@ -237,6 +245,7 @@ export async function loadGameTextures(
     enemyScale,
     floor,
     shell: get('shell'),
+    missile: get('missile'),
     gem: get('gem'),
     puff,
     fxMuzzle: get('fx_muzzle'),

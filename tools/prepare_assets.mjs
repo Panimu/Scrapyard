@@ -71,6 +71,9 @@ COPIES.push(['sci-fi-rts/PNG/Default size/Tile/scifiTile_42.png', 'floor.png']);
 
 // -- 4. Shell and gem. ASSET_MANIFEST §3.2 / §3.5 ----------------------------------------------
 COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_012.png', 'shell.png']);
+// The missile racks draw a different projectile from the Cannon's shell - a longer finned body,
+// so a screen carrying both reads as two weapons rather than one firing oddly.
+COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_001.png', 'missile.png']);
 COPIES.push(['space-shooter-extension/PNG/Sprites/Parts/spaceParts_035.png', 'gem.png']);
 
 // -- 5. Death puff, 7 frames. Strictly size-monotonic subset: 011 and 014 are deliberately

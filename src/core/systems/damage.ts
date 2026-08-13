@@ -82,6 +82,7 @@ import {
   NO_BEAM_TARGET,
   pushEvent,
   pushKill,
+  NO_DIRECT_HIT,
 } from '../events/ring.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
@@ -169,6 +170,18 @@ function applyHits(world: World): void {
   for (let i = 0; i < hits.count; i++) {
     const pd = hits.projectileDense[i];
     const ed = hits.enemyDense[i];
+
+    // FUSE DETONATION: a missile that ran out of flight time explodes in open air. There is no
+    // struck body, so there is no direct damage, no knockback and no pierce pass to spend - only
+    // splash, at full strength rather than the fraction a contact hit passes on. The shell is
+    // already flagged dead by S7; the PROJECTILE_FLAG_DEAD guard below would otherwise drop this.
+    if (ed === NO_DIRECT_HIT) {
+      const r = proj.splashRadius[pd];
+      const f = proj.splashFrac[pd];
+      if (r > 0 && f > 0) applySplash(world, hits.x[i], hits.y[i], r, proj.damage[pd] * f, -1);
+      pushEvent(world.events, EV_PROJECTILE_HIT, world.tick, hits.x[i], hits.y[i], 0, pd);
+      continue;
+    }
 
     // A body killed by an earlier hit THIS TICK absorbs nothing more - and, deliberately, does not
     // consume the shell's pass either. Overkill is not charged to the player: the shell carries on
