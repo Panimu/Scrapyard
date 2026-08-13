@@ -265,53 +265,56 @@ describe('targeting: the WEAKEST enemy in range', () => {
 
 // ---------------------------------------------------------------------------------------------
 
-describe('the clear line: a blocked laser does not fire AT ALL', () => {
-  it('refuses the shot rather than burning the blocker, then fires once the line opens', () => {
+describe('the line: a beam burns whatever is in the way', () => {
+  it('AIMS at the weakest and DAMAGES the body in front of it', () => {
+    // Aim and impact are two different things. The weakest enemy decides where the beam points;
+    // whatever the ray touches first takes the burn.
     const w = makeWorld('laser-medium'); // range 275
     const blocker = addEnemy(w, 100, 0, 500);
     const target = addEnemy(w, 200, 0, 5);
 
     ticks(w, 60);
 
-    // The weakest enemy is the chosen target, so the weapon is TRYING to fire...
+    // Still aiming at the weakest...
     expect(w.weapons[0].targetDense).toBe(target);
-    // ...and nothing at all happened. Not to the target, and - the point of the test - not to
-    // the body in the way either.
+    // ...and the body in the way is the one being melted. The target has not been touched.
+    expect(w.beams.count).toBe(1);
+    expect(w.beams.enemyDense[0]).toBe(blocker);
     expect(w.enemies.hp[target]).toBe(5);
-    expect(w.enemies.hp[blocker]).toBe(500);
-    expect(w.beams.count).toBe(0);
-    expect(w.stats.damageDealt).toBe(0);
-    expect(w.stats.kills).toBe(0);
-    // A refused shot costs nothing: heat is still on the floor, so the next clear line gets a
-    // full burst.
-    expect(w.weapons[0].heat).toBe(0);
-    expect(w.weapons[0].overheated).toBe(false);
+    expect(w.enemies.hp[blocker]).toBeLessThan(500);
+    expect(w.stats.damageDealt).toBeGreaterThan(0);
+    // And it PAID for the shot: a blocked line used to be free, which is what made a laser go
+    // quiet exactly when the horde closed up.
+    expect(w.weapons[0].heat).toBeGreaterThan(0);
 
-    // Step aside. Same enemies, same hp, same target - only the geometry changed.
+    // Step the blocker aside. Same enemies, same target - now the target itself takes it.
+    const blockerHp = w.enemies.hp[blocker];
     w.enemies.y[blocker] = 100;
     ticks(w, 1);
 
-    expect(w.beams.count).toBe(1);
     expect(w.beams.enemyDense[0]).toBe(target);
     expect(w.enemies.hp[target]).toBeCloseTo(5 - LASER_MEDIUM.base.damage * DT, 6);
-    expect(w.enemies.hp[blocker]).toBe(500); // still untouched
-    expect(w.weapons[0].heat).toBeCloseTo(LASER_MEDIUM.base.heatPerSec * DT, 9);
+    expect(w.enemies.hp[blocker]).toBe(blockerHp); // out of the line, out of the fight
   });
 
-  it('is blocked by a body that is only clipping the line, not centred on it', () => {
+  it('stops on a body that only CLIPS the line, not just one centred on it', () => {
     const w = makeWorld('laser-medium');
     // 17 u off the axis with an 18 u radius: the circle overlaps the line by one unit.
-    const blocker = addEnemy(w, 100, 17, 500, 18);
-    addEnemy(w, 200, 0, 5);
+    const clipper = addEnemy(w, 100, 17, 500, 18);
+    const target = addEnemy(w, 200, 0, 5);
 
     ticks(w, 30);
-    expect(w.beams.count).toBe(0);
-    expect(w.enemies.hp[blocker]).toBe(500);
+    expect(w.beams.enemyDense[0]).toBe(clipper);
+    expect(w.enemies.hp[clipper]).toBeLessThan(500);
+    expect(w.enemies.hp[target]).toBe(5);
 
-    // 19 u off the axis with the same radius: it clears the line by a unit and the shot is on.
-    w.enemies.y[blocker] = 19;
+    // 19 u off the axis with the same radius: it clears the line by a unit and the beam goes
+    // through to the target it was aiming at all along.
+    const clipperHp = w.enemies.hp[clipper];
+    w.enemies.y[clipper] = 19;
     ticks(w, 1);
-    expect(w.beams.count).toBe(1);
+    expect(w.beams.enemyDense[0]).toBe(target);
+    expect(w.enemies.hp[clipper]).toBe(clipperHp);
   });
 
   it('is not blocked by a CORPSE - a body killed this tick shields nothing', () => {
@@ -653,24 +656,25 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     expect(w.weapons[0].heat).toBe(0); // clamped at the floor, never negative
   });
 
-  it('cools while its line is blocked - refusing a shot buys the next burst', () => {
+  it('keeps heating when a body steps into the line - a blocked shot is still a shot', () => {
     const w = makeWorld('laser-medium');
     const target = addEnemy(w, 200, 0, TOUGH_HP);
     ticks(w, 60);
     expect(w.weapons[0].heat).toBeCloseTo(LASER_MEDIUM.base.heatPerSec, 5);
 
-    // A body steps into the line. The weapon stops firing AND starts cooling - if it did not,
-    // a laser would freeze at its current heat until the crowd parted.
+    // A body steps into the line. Nothing about the weapon's tempo changes: it keeps firing at
+    // the same rate and keeps heating at the same rate - only the recipient of the damage moves.
     const blocker = addEnemy(w, 100, 0, TOUGH_HP);
-    const heatWhenBlocked = w.weapons[0].heat;
+    const heatBefore = w.weapons[0].heat;
+    const targetHp = w.enemies.hp[target]; // it has been burning for a second already
     ticks(w, 30);
-    expect(w.beams.count).toBe(0);
+    expect(w.beams.enemyDense[0]).toBe(blocker);
     expect(w.weapons[0].heat).toBeCloseTo(
-      heatWhenBlocked - LASER_MEDIUM.base.heatDispersion * 30 * DT,
+      heatBefore + LASER_MEDIUM.base.heatPerSec * 30 * DT,
       5,
     );
-    expect(w.enemies.hp[blocker]).toBe(TOUGH_HP);
-    void target;
+    expect(w.enemies.hp[blocker]).toBeLessThan(TOUGH_HP);
+    expect(w.enemies.hp[target]).toBe(targetHp); // not one more point once it is screened
   });
 
   // -------------------------------------------------------------------------------------------

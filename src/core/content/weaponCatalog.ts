@@ -123,17 +123,6 @@ export interface WeaponDef {
   readonly beamColour: number;
   /** Drawn beam half-width, world units. Purely cosmetic; the beam's HIT test is a ray. */
   readonly beamWidth: number;
-  /**
-   * When true the weapon fires ONLY if its chosen target is the first thing the ray touches.
-   * A body in the way means no shot at all - not a shot into the body.
-   *
-   * This is what gives the lasers their character. The Cannon lobs a shell at the biggest thing
-   * on the field and does not care what is between; a laser needs a CLEAN LINE to the weakest
-   * thing on the field, so it goes quiet exactly when the horde closes up. The two weapons want
-   * you standing in different places, which is the whole point of having both.
-   */
-  readonly requiresClearLine: boolean;
-
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -286,7 +275,6 @@ export const CANNON: WeaponDef = Object.freeze({
   shellRadius: 9, // drawn ~18 u
   beamColour: 0,
   beamWidth: 0,
-  requiresClearLine: false,
   fireAlongFacing: false,
   detonateOnExpiry: false,
 });
@@ -294,8 +282,16 @@ export const CANNON: WeaponDef = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 // The lasers
 //
-// Three weapons, one mechanic, three tempos. Each targets the WEAKEST enemy in range, draws a line
-// that stops on the first body it touches, and will not fire at all unless that body is the target.
+// Three weapons, one mechanic, three tempos. Each AIMS at the weakest enemy in range and draws a
+// line that stops on - and burns - the first body it touches. Aim and impact are therefore two
+// different things: the weakest enemy decides where the beam points, and whatever is standing in
+// front of it takes the damage.
+//
+// THE BEAM USED TO REFUSE A BLOCKED SHOT ENTIRELY. That read well on paper and measured terribly:
+// lowest-HP targeting over a 430 u disc almost always picks something buried behind another body,
+// so a stationary Long Laser fired 1.8% of the time and delivered 1.6 dps against a table figure
+// of 17.5. A weapon that goes quiet exactly when the horde closes up is not a trade-off when the
+// horde is the game.
 //
 // HEAT replaces the cooldown. All three share one mechanic and differ in TEMPO. Every figure
 // here is TIER 1, and every one of them is derived from the four numbers in the constructor
@@ -318,16 +314,16 @@ export const CANNON: WeaponDef = Object.freeze({
 // cooling. All three are the weakest sustained weapons in the game, and they pay for it with
 // range and with a max hit of one tick's damage.
 //
-// WHAT THE TABLE CANNOT TELL YOU is that measured output is far below it - the short laser
-// managed 1.6 dps against a kiting player because 150 u is inside a 195 u/s mech's wake, and the
-// long laser managed 1.8 dps standing still because lowest-HP targeting over a 430 u disc almost
-// always picks something buried behind another body. See the beam path in systems/weapons.ts.
+// WHAT THE TABLE STILL CANNOT TELL YOU is that a laser only earns these figures with something in
+// front of it. The short laser measured 1.6 dps against a kiting player for a reason no beam
+// mechanic can fix: 150 u sits inside a 195 u/s mech's wake, so it has no target 96% of the time.
+// Range, not uptime, is that weapon's problem.
 // ---------------------------------------------------------------------------------------------
 
 /**
  * Lasers slew fast and fire wide. They are emitters on a gimbal, not a turret with a barrel to
- * heave around: the interesting gate on a laser is the CLEAR LINE, so making you also wait on
- * traverse would be two gates doing one job and would read as unresponsiveness.
+ * heave around: heat is the gate that matters, so making you also wait on traverse would be two
+ * gates doing one job and would read as unresponsiveness.
  */
 const LASER_TRAVERSE = degToRad(720);
 const LASER_FIRE_ARC = degToRad(30);
@@ -416,7 +412,6 @@ function laser(
     shellRadius: 0,
     beamColour,
     beamWidth,
-    requiresClearLine: true,
     fireAlongFacing: false,
     detonateOnExpiry: false,
   }) as WeaponDef;
@@ -508,7 +503,6 @@ function missile(
     shellRadius: 8,
     beamColour: 0,
     beamWidth: 0,
-    requiresClearLine: false,
     fireAlongFacing: true,
     detonateOnExpiry: true,
   }) as WeaponDef;
@@ -604,7 +598,6 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
   shellRadius: 5,
   beamColour: 0,
   beamWidth: 0,
-  requiresClearLine: false,
   fireAlongFacing: false,
   detonateOnExpiry: false,
 });
@@ -673,7 +666,6 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   shellRadius: 0,
   beamColour: 0,
   beamWidth: 0,
-  requiresClearLine: false,
   fireAlongFacing: false,
   detonateOnExpiry: true,
 });

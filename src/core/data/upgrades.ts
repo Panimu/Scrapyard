@@ -258,7 +258,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     kind: 'weapon',
     grantsWeapon: 'laser-short',
     name: 'Short Laser',
-    description: 'Green beam. Burns the weakest enemy at close range. Needs a clear line.',
+    description: 'Green beam. Burns whatever stands between you and the weakest enemy.',
     tiers: laserTierText(46, 10, 8.5),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,

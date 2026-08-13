@@ -595,19 +595,25 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
 };
 
 /**
- * `beam` - steps 4 to 6 of a beam weapon's tick: raycast, refuse or fire, heat.
+ * `beam` - steps 4 to 6 of a beam weapon's tick: raycast, fire, heat.
  *
- * THE RAY IS AIMED AT THE TARGET, NOT DOWN THE TURRET. The turret facing has already been
- * gated to within `fireArc` of the target by updateWeapons; using the exact line to the target
- * is what makes "is anything in the way?" the question it is supposed to be. Aiming down the
- * (very slightly off) turret vector instead would make the clear-line test depend on traverse
- * lag, so a laser would refuse shots for a fraction of a second after every retarget for no
- * reason a player could see.
+ * AIM AND IMPACT ARE DIFFERENT THINGS. The ray is aimed at the CHOSEN TARGET - the weakest enemy
+ * in range - but it stops on, and damages, THE FIRST BODY IT TOUCHES. So the target decides where
+ * the beam points and whatever is standing in the way takes the burn. A laser pointed into a
+ * crowd melts the front rank while nominally aiming at the wounded thing behind it, which is what
+ * a beam weapon should do.
  *
- * THE REFUSAL IS THE WEAPON. `requiresClearLine` means a body between the emitter and the chosen
- * target cancels the shot outright - the beam does not fire into the blocker, does not partially
- * damage it, and does not pick a different target this tick. It cools instead, which is why a
- * laser walks out of a bad position with a full charge rather than an empty one.
+ * IT USED TO REFUSE THE SHOT INSTEAD. `requiresClearLine` cancelled the tick outright unless the
+ * chosen target was the first thing on the line. Measured, that was close to a non-weapon: with
+ * lowest-HP targeting over a 430 u disc the chosen target is almost always buried, so a
+ * stationary Long Laser fired 1.8% of ticks for 1.6 dps against a table figure of 17.5. The flag
+ * is gone rather than set to false - no weapon wants it, and a config nobody sets is a config
+ * that rots.
+ *
+ * THE RAY IS AIMED AT THE TARGET, NOT DOWN THE TURRET. updateWeapons has already gated the turret
+ * to within `fireArc`, and using the exact line keeps the drawn beam and the damaged body in
+ * agreement to the pixel; aiming down the slightly-off turret vector would let them disagree for
+ * a few ticks after every retarget.
  *
  * NO KNOCKBACK, EVER. A continuous beam applying an impulse sixty times a second would launch a
  * swarmer into orbit; the buffer carries no knockback field at all, so this is structural rather
@@ -622,25 +628,50 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   const target = targetCount > 0 ? targets[0] : -1;
   aimInto(world, target, inst.turretX, inst.turretY, aim);
 
-  // The emitter head, offset along the firing line exactly as a shell leaves the barrel.
-  const x0 = world.player.x + aim.x * def.muzzleOffset;
-  const y0 = world.player.y + aim.y * def.muzzleOffset;
+  const px = world.player.x;
+  const py = world.player.y;
+  // The emitter head, offset along the firing line exactly as a shell leaves the barrel. This is
+  // where the beam is DRAWN from, and that is all it is.
+  const x0 = px + aim.x * def.muzzleOffset;
+  const y0 = py + aim.y * def.muzzleOffset;
 
-  const hit = raycastNearestEnemy(world, x0, y0, aim.x, aim.y, stats.range);
+  // THE RAY STARTS AT THE PLAYER CENTRE, NOT AT THE MUZZLE, and this is not a detail.
+  //
+  // Casting from the muzzle makes the weapon blind at point-blank range: the ray only looks
+  // forward, so any body whose centre is nearer than `muzzleOffset - radius` sits entirely BEHIND
+  // the origin and is skipped. At a 22 u offset against a 13 u swarmer that is everything inside
+  // 9 u - which is to say, everything actually pressed against the mech. Measured standing in a
+  // crowd, 84.7% of the Short Laser's beams hit nothing at all and 100% of those had their target
+  // inside that blind spot: it fired over the top of the bodies touching it, into open ground,
+  // and paid full heat for the privilege.
+  //
+  // Casting from the centre also makes the ray's reach exactly the targeting radius, since
+  // targeting measures `rangeSq` from the centre too. The muzzle version silently reached
+  // `range + muzzleOffset`.
+  const hit = raycastNearestEnemy(world, px, py, aim.x, aim.y, stats.range);
 
-  // Step 5. `target < 0` is unreachable for a laser (all three set `requiresTarget`), and is
-  // refused rather than waved through: "fire only if the chosen target is the first thing the
-  // ray touches" cannot be satisfied by a weapon that has not chosen one.
-  if (def.requiresClearLine && (target < 0 || hit !== target)) {
-    coolBeam(world, weaponIdx, inst, dt); // blocked, or the target slipped off the line
+  // Step 5. No target, no shot - and no heat either. Unreachable for the three lasers (all set
+  // `requiresTarget`, so updateWeapons has already skipped them), but a beam must never pay heat
+  // for firing at nothing, and this is the only place that can guarantee it.
+  if (target < 0) {
+    coolBeam(world, weaponIdx, inst, dt);
     return;
   }
 
-  // A weapon with `requiresClearLine: false` and nothing on the line draws its full length into
-  // empty space and deals nothing. No laser does that today; the branch is what keeps the
-  // NO_BEAM_TARGET sentinel in the buffer meaningful rather than unreachable.
+  // `hit` is whatever the ray touched FIRST, which may not be `target` - that is the design, not
+  // a fallback. A beam aimed at a wounded enemy across a crowd burns the crowd.
+  //
+  // `hit < 0` means the ray reached its full length touching nothing, which needs a live target
+  // sitting beyond the ray's own reach to happen at all. The beam draws to full length and bills
+  // nobody; the NO_BEAM_TARGET sentinel is what tells updateDamage there is nothing to charge.
   const reach = hit >= 0 ? BEAM.hitT : stats.range;
   const damage = hit >= 0 ? stats.damage * dt : 0;
+
+  // `reach` is measured from the CENTRE while the line is drawn from the MUZZLE, so a contact
+  // inside the muzzle offset would otherwise draw a beam pointing backwards out of the emitter.
+  // Clamped to the muzzle, a point-blank burn is a stub of light at the barrel - which is exactly
+  // what it should look like.
+  const endT = reach > def.muzzleOffset ? reach : def.muzzleOffset;
 
   pushBeam(
     world.beams,
@@ -649,8 +680,8 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     damage,
     x0,
     y0,
-    x0 + aim.x * reach,
-    y0 + aim.y * reach,
+    px + aim.x * endT,
+    py + aim.y * endT,
   );
 
   // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
