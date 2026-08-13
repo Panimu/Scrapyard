@@ -140,6 +140,42 @@ export function betterNearest(
   return e.spawnId[a] < e.spawnId[b];
 }
 
+/**
+ * The lasers' order: LOWER hp, then nearer, then lower spawnId.
+ *
+ * The exact mirror of `betterHighestHp` in key 1 and identical in keys 2 and 3, which is the
+ * point: the Cannon and a laser standing in the same crowd pick OPPOSITE ends of the same
+ * ordering, so a loadout carrying both is genuinely covering two problems rather than
+ * double-tapping one.
+ *
+ * Keys 2 and 3 are not decoration. Swarmers spawn at identical hp by the dozen, so key 1 ties
+ * constantly - far more often than it does for the Cannon, where the interesting target is
+ * usually the unique big one. Without a total order the beam would flicker between equal-hp
+ * enemies in spatial-hash visit order, which is deterministic but arbitrary, would make the
+ * drawn line jitter, and would put a replay at the mercy of the hash's bucket layout.
+ */
+export function betterLowestHp(
+  e: EnemyPool,
+  a: number,
+  b: number,
+  originX: number,
+  originY: number,
+): boolean {
+  const ha = e.hp[a];
+  const hb = e.hp[b];
+  if (ha !== hb) return ha < hb;
+
+  const ax = e.x[a] - originX;
+  const ay = e.y[a] - originY;
+  const bx = e.x[b] - originX;
+  const by = e.y[b] - originY;
+  const da = ax * ax + ay * ay;
+  const db = bx * bx + by * by;
+  if (da !== db) return da < db;
+
+  return e.spawnId[a] < e.spawnId[b];
+}
+
 type BetterFn = (e: EnemyPool, a: number, b: number, originX: number, originY: number) => boolean;
 
 /**
@@ -224,10 +260,27 @@ export const targetNearest: TargetingFn = (
 ): number => selectTopK(world, originX, originY, rangeSq, wantCount, out, betterNearest);
 
 /**
+ * The lasers' rule: the WEAKEST thing in range. See `betterLowestHp` for the full order.
+ *
+ * Pairing it with the beam's clear-line requirement is what gives the lasers their job: they
+ * finish the chaff that the Cannon's splash left standing, and they go quiet the moment that
+ * chaff piles up thickly enough to block the line.
+ */
+export const targetLowestHp: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+): number => selectTopK(world, originX, originY, rangeSq, wantCount, out, betterLowestHp);
+
+/**
  * THE STRATEGY TABLE. Adding a targeting rule is one entry here plus one pure function above -
  * `updateWeapons` never learns the rule exists.
  */
 export const TARGETING: Readonly<Record<TargetingId, TargetingFn>> = Object.freeze({
   'highest-hp': targetHighestHp,
   nearest: targetNearest,
+  'lowest-hp': targetLowestHp,
 });

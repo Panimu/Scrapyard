@@ -14,6 +14,11 @@
  * LAYER ORDER, and why: floor -> pickups -> enemies (y-sorted) -> HP bars -> player ->
  * projectiles -> normal FX -> additive FX. Additive last because a blend-mode change always
  * flushes the batch, so we pay for exactly one.
+ *
+ * BEAMS live inside that trailing additive run - above the enemies and the player (a laser is in
+ * front of the thing it is burning), below the DOM HUD (which is a separate compositing layer and
+ * is always on top). They are additive themselves, so putting them anywhere else would cost a
+ * second blend-state flush for nothing.
  */
 
 import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
@@ -30,6 +35,7 @@ import {
   FLAVOURS,
   type World,
 } from '../core/index.js';
+import { BeamLayer } from './beams.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
@@ -79,6 +85,8 @@ export interface RenderStats {
   pickupSprites: number;
   projectileSprites: number;
   effects: number;
+  /** Beams drawn on the last frame. 0..MAX_WEAPONS. */
+  beams: number;
 }
 
 export class GameRenderer {
@@ -88,6 +96,7 @@ export class GameRenderer {
     pickupSprites: 0,
     projectileSprites: 0,
     effects: 0,
+    beams: 0,
   };
 
   private readonly floor: TilingSprite;
@@ -103,6 +112,7 @@ export class GameRenderer {
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
   private readonly glows: SpritePool;
+  private readonly beams: BeamLayer;
   private readonly effects: Effects;
 
   /** Wall-clock seconds since boot, for cosmetic cycles (gem bob). Never touches the sim. */
@@ -161,6 +171,7 @@ export class GameRenderer {
       blendMode: 'add',
       label: 'glows',
     });
+    this.beams = new BeamLayer(tex);
     this.effects = new Effects(tex);
 
     this.letterbox = new Graphics({ label: 'letterbox' });
@@ -176,6 +187,9 @@ export class GameRenderer {
       this.trails.container,
       this.glows.container,
       this.effects.addPool.container,
+      // The beam layer goes after them because its own halo is additive too - it extends that
+      // single run - and only its opaque cores flip the blend state back, once, at the very end.
+      this.beams.container,
     );
 
     this.app.stage.addChild(this.floor, this.world, this.letterbox);
@@ -197,6 +211,7 @@ export class GameRenderer {
     this.trails.clear();
     this.projectiles.clear();
     this.glows.clear();
+    this.beams.clear();
     this.effects.clear();
     this.playerFlash = 0;
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
@@ -228,6 +243,9 @@ export class GameRenderer {
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py);
     this.drawProjectiles(world, alpha);
+    // NOT interpolated, unlike everything above it: the endpoints are the ones the simulation
+    // published this tick, so the line and the damage can never disagree.
+    this.beams.draw(world, this.clock);
     this.effects.draw();
 
     this.world.position.set(this.camera.originX, this.camera.originY);
@@ -237,6 +255,7 @@ export class GameRenderer {
     this.stats.pickupSprites = this.pickups.inUse;
     this.stats.projectileSprites = this.projectiles.inUse;
     this.stats.effects = this.effects.liveCount;
+    this.stats.beams = this.beams.liveCount;
 
     this.app.render();
   }

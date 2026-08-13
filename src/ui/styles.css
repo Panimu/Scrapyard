@@ -281,6 +281,153 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------------------------------------------------------------------------------------------
+ * Laser heat
+ *
+ * One chip per beam weapon held. The fill is the weapon's OWN beam colour, injected per chip as
+ * `--beam`, so the bar on the HUD and the line on the battlefield are unmistakably one weapon.
+ *
+ * Two things the track itself has to say, because heat is hysteretic (100 cuts out, 50 resumes):
+ *   - the band above 50 is tinted, so "I am in the region where a cut-out will actually cost me"
+ *     is a colour rather than a calculation;
+ *   - the notch AT 50 is where the bar has to fall back to before the weapon is live again, which
+ *     is the number a "how full is it" bar cannot express.
+ * ------------------------------------------------------------------------------------------- */
+
+/* No pause-button inset here, unlike .hud__top: this row sits BELOW the button (the top row is
+   40 px tall against the button's 44 px, so the button's bottom edge clears it), and the 54 px it
+   would give up is a fifth of every chip's width on a 393 px screen. */
+.hud__heat {
+  display: flex;
+  gap: 8px;
+}
+
+/* The row is hidden outright while no beam weapon is held, so the flex gap above it does not
+   leave a band of dead space under the XP bar during a Cannon-only run. */
+.hud__heat[hidden] {
+  display: none;
+}
+
+.heat {
+  --beam: var(--ink-dim);
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 128px;
+}
+
+.heat[hidden] {
+  display: none;
+}
+
+.heat__track {
+  position: relative;
+  height: 9px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  /* Left of 50: cool. Right of 50: the zone where overheating is a real cost. The dark base is
+     painted under both halves - the HUD sits on a rust-orange floor, and a track that was merely
+     tinted let the ground show through and read as "already half hot". */
+  background:
+    linear-gradient(90deg, transparent 0 50%, rgba(255, 120, 60, 0.3) 50% 100%),
+    rgba(10, 14, 20, 0.8);
+}
+
+/* The HEAT_RESUME line. Drawn as a pseudo-element rather than a third div: it is decoration, and
+   this row is rebuilt never and repainted often. */
+.heat__track::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(230, 237, 245, 0.75);
+}
+
+.heat__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: var(--beam);
+  /* Just enough bloom that a lit bar reads as the same energy as the beam it draws. */
+  box-shadow: 0 0 6px var(--beam);
+  /* Shorter than the HP bar's 90 ms: heat moves continuously and a long ease would lag the
+     weapon it is describing. */
+  transition: transform 60ms linear;
+}
+
+.heat__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  /* The label sits directly on the battlefield, not on a panel. Without this the red laser's own
+     name is unreadable against the rust floor. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.heat__name {
+  letter-spacing: 0.1em;
+  color: var(--beam);
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* No letter-spacing and tabular figures: the countdown must fit beside the name inside a chip
+   that is a third of a 393 px screen, and it must not reflow as the digits tick down. */
+.heat__status {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* OVERHEATED. A hard cut-out gets a hard state: the fill goes hazard-striped and stops being the
+   weapon's colour, the track outlines in warning red, and the whole chip pulses. The countdown in
+   the footer is the part that answers "when do I get it back". */
+.heat--out .heat__track {
+  border-color: #ff6a4a;
+  box-shadow: 0 0 8px rgba(255, 106, 74, 0.45);
+}
+
+.heat--out .heat__fill {
+  background: repeating-linear-gradient(
+    -45deg,
+    #ff6a4a 0 5px,
+    #7a1b0e 5px 10px
+  );
+  box-shadow: none;
+  animation: heat-pulse 620ms ease-in-out infinite;
+}
+
+.heat--out .heat__status {
+  color: #ff8a6a;
+}
+
+.heat--out .heat__name {
+  color: #ff8a6a;
+  opacity: 1;
+}
+
+@keyframes heat-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .hud__stats {
   display: flex;
   align-items: baseline;
@@ -746,8 +893,15 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .bar__fill,
+  .heat__fill,
   .stick,
   .hud__hurt {
     transition-duration: 0ms;
+  }
+
+  /* The overheat state must still be unmistakable without the pulse, which the stripes and the
+     red outline already carry on their own. */
+  .heat--out .heat__fill {
+    animation: none;
   }
 }

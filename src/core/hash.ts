@@ -111,6 +111,12 @@ export function hashWorld(world: World): number {
     h = mixF64(h, w.turretX);
     h = mixF64(h, w.turretY);
     h = mixU32(h, w.targetDense);
+    // Heat is simulation state that gates firing, so it belongs in the determinism key. Enemy hp
+    // catches a beam divergence only indirectly and only once it has already changed the world;
+    // two runs could differ in LATCH STATE alone - one laser cut out, one not - and hash
+    // identically right up until that difference finally produces a shot.
+    h = mixF64(h, w.heat);
+    h = mixU32(h, w.overheated ? 1 : 0);
     for (let k = 0; k < w.scratch.length; k++) h = mixF64(h, w.scratch[k]);
   }
 

@@ -232,9 +232,12 @@ function drainEvents(
           console.log(`  [${clock(world.runSec)}]  -- ${phase} --`);
         }
       } else if (kind === EV_UPGRADE_TAKEN) {
-        const def = world.upgradeCatalog[r.c[i]];
+        // Field `a` is the catalog index; `c` is picksTaken. Reading `c` here printed whichever
+        // upgrade happened to sit at "number of picks so far", so every name in every timeline
+        // this harness has ever produced was wrong - and wrong in a plausible-looking way.
+        const def = world.upgradeCatalog[r.a[i]];
         console.log(
-          `  [${clock(world.runSec)}]  + ${def?.name ?? `upgrade ${r.c[i]}`} (lvl ${world.player.level})`,
+          `  [${clock(world.runSec)}]  + ${def?.name ?? `upgrade ${r.a[i]}`} (lvl ${world.player.level})`,
         );
       }
     }

@@ -24,12 +24,46 @@
  *
  *   The same rule covers HOLD FIRE: when the turret is not yet laid on, the loop `continue`s
  *   WITHOUT resetting the cooldown, so a shot is only ever DELAYED, never lost.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * BEAM WEAPONS - the second modality, and the ONE branch in the loop
+ * ---------------------------------------------------------------------------------------------
+ * `WeaponDef.kind` is the only thing the loop below branches on, and it branches for one reason:
+ * a shell is an OBJECT and a beam is an EVENT. A projectile weapon spends a COOLDOWN and leaves
+ * something behind that the sim integrates for the next half second; a beam spends HEAT and
+ * exists only for the tick that produced it. Nothing else about them differs - they share the
+ * targeting table, the traverse, the fire arc and the muzzle offset - so the branch is three
+ * `if`s guarding the cooldown, not a second copy of the loop.
+ *
+ * A BEAM WEAPON'S TICK, in order (and every early exit COOLS, which is what makes the duty cycle
+ * a property of the mechanic rather than of how often you happen to have a target):
+ *
+ *   1. overheated?          cool; resume at HEAT_RESUME. Never fires.
+ *   2. no target in range?  cool.
+ *   3. turret not laid on?  cool.
+ *   4. raycast from the muzzle for the NEAREST enemy the line touches.
+ *   5. `requiresClearLine` and that enemy is not the target?  cool. NO SHOT AT ALL - the beam
+ *      does not fire into the blocker, which is the whole character of the weapon.
+ *   6. otherwise fire: damage x dt into the beam buffer, heat up, maybe cut out.
+ *
+ * DAMAGE IS PER SECOND for a beam. `stats.damage * dt` goes into the buffer already scaled, and
+ * updateDamage applies it verbatim - so a 30 dps laser deals exactly 30 over a second of contact
+ * no matter what the tick rate is, and there is exactly one place that knows about the scaling.
  */
 
-import { MAX_TARGETS } from '../constants.js';
+import { HEAT_MAX, HEAT_RESUME, MAX_TARGETS } from '../constants.js';
+import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
+import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
-import { EV_WEAPON_FIRED, pushEvent } from '../events/ring.js';
+import {
+  EV_WEAPON_COOLED,
+  EV_WEAPON_FIRED,
+  EV_WEAPON_OVERHEATED,
+  NO_BEAM_TARGET,
+  pushBeam,
+  pushEvent,
+} from '../events/ring.js';
 import { dot, normalizeInto, rotateTowardsInto } from '../math/vec2.js';
 import type { Vec2 } from '../math/vec2.js';
 import { HERO_TRAITS } from '../data/traits.js';
@@ -59,6 +93,24 @@ const SHOT: ShotCtx = {
   knockback: 0,
   targetDense: -1,
   shellIndex: 0,
+};
+
+/**
+ * The beam path's tick-local context.
+ *
+ * MODULE-LEVEL FOR EXACTLY THE SAME REASON AS `SHOT`, and with the same safety argument: every
+ * field is written immediately before it is read, inside one synchronous call chain, and nothing
+ * is carried between weapons or between ticks. It exists because `FirePattern` is a fixed
+ * five-argument signature shared with `battery` - it carries no `dt`, and it has nowhere to put
+ * the ray result - and widening that signature for one pattern would push a beam-shaped
+ * parameter into the Cannon's call site, which is the coupling the table exists to avoid.
+ *
+ * `hitT` is the distance along the ray at which the beam stopped, so the drawn line ends exactly
+ * where the simulation says it ended rather than at the target's centre.
+ */
+const BEAM = {
+  dt: 0,
+  hitT: 0,
 };
 
 /** The hero's trait record, or undefined for a fixture hero with no traits registered. */
@@ -99,14 +151,35 @@ export function updateWeapons(world: World, dt: number): void {
   const turned = world.scratch.v1;
   const trait = traitOf(world);
 
+  // The beam buffer's per-tick reset. It belongs HERE rather than in beginTick, next to
+  // hits/contacts/kills, for one reason: the renderer reads the beams AFTER stepWorld returns,
+  // to draw the lines the sim just fired. Clearing it at the top of its only writer means the
+  // buffer holds this tick's beams for every consumer downstream of S6 - updateDamage at S9 and
+  // the render layer after S13 - and is empty again before anything can write a second set.
+  // (beginTick would work identically for the sim; it would just also blank the geometry the
+  // renderer has not drawn yet on any tick where the pipeline exits early.)
+  world.beams.count = 0;
+
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
     const def = world.weaponCatalog[inst.defId];
     if (def === undefined) continue;
     const stats = inst.stats;
+    const beam = def.kind === 'beam';
 
     // Runs down to <= 0 and stops there: exactly one banked shot. See the file header.
-    if (inst.cooldownLeft > 0) inst.cooldownLeft -= dt;
+    // A beam has no cooldown at all - heat is its limiter, and `stats.cooldown` is floored at
+    // 0.05 by resolveWeaponStats, so letting a beam through this gate would silently throttle it
+    // to 20 ticks per second of fire.
+    if (!beam && inst.cooldownLeft > 0) inst.cooldownLeft -= dt;
+
+    // Step 1: a laser that has cut out is not engaging anything. It cools, it holds no target,
+    // and it does not traverse - an emitter with the breaker tripped is not tracking you.
+    if (beam && inst.overheated) {
+      coolBeam(world, i, inst, dt);
+      inst.targetDense = -1;
+      continue;
+    }
 
     // TARGET SELECTION RUNS EVERY TICK, not only when the cooldown is ready. That is what lets
     // the turret track smoothly across the 1.2 s between shots - and the visible traverse IS the
@@ -118,7 +191,11 @@ export function updateWeapons(world: World, dt: number): void {
     }
     inst.targetDense = n > 0 ? targets[0] : -1;
 
-    if (n === 0 && def.requiresTarget) continue; // idle: no shot, and NO cooldown reset
+    if (n === 0 && def.requiresTarget) {
+      // idle: no shot, and NO cooldown reset
+      if (beam) coolBeam(world, i, inst, dt); // step 2
+      continue;
+    }
 
     // Traverse toward the primary target. No trigonometry: rotateTowardsInto rotates a unit
     // vector by the precomputed cos/sin of one step, which is the only way this stays
@@ -136,13 +213,210 @@ export function updateWeapons(world: World, dt: number): void {
     inst.turretX = turned.x;
     inst.turretY = turned.y;
 
-    if (inst.cooldownLeft > 0) continue;
+    if (!beam && inst.cooldownLeft > 0) continue;
     // Hold fire until laid on. Not a cooldown reset - only a delay.
-    if (dot(inst.turretX, inst.turretY, aim.x, aim.y) < stats.cosFireArc) continue;
+    if (dot(inst.turretX, inst.turretY, aim.x, aim.y) < stats.cosFireArc) {
+      if (beam) coolBeam(world, i, inst, dt); // step 3
+      continue;
+    }
 
+    // Steps 4-6 for a beam live in `fireBeam`, which owns the raycast, the clear-line refusal
+    // (and its cooling) and the heat. A projectile weapon's volley is unchanged.
+    BEAM.dt = dt;
     FIRE_PATTERNS[def.pattern](world, i, inst, targets, n);
-    inst.cooldownLeft = stats.cooldown;
+    if (!beam) inst.cooldownLeft = stats.cooldown;
   }
+}
+
+// -------------------------------------------------------------------------------------------
+// Heat
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Sheds `heatPerSec * dt` and, once at or below HEAT_RESUME, unlatches the weapon.
+ *
+ * Called from EVERY path that does not fire - overheated, no target, not laid on, blocked line -
+ * because "cools while not firing" has to mean exactly that. If cooling only ran while the
+ * weapon had a target and a clear line, a laser would freeze at 99 heat the moment the horde
+ * closed up and stay dead until the crowd parted, which is the opposite of the intended
+ * behaviour: refusing a blocked shot is supposed to BUY you the next burst.
+ *
+ * The unlatch tick does not fire. That is deliberate and it is what `overheated` being a latched
+ * flag rather than `heat >= HEAT_MAX` buys: the weapon stays out for the whole 100 -> 50 slide,
+ * then comes back on the following tick with 50 points of headroom.
+ */
+function coolBeam(world: World, weaponIdx: number, inst: WeaponInstance, dt: number): void {
+  const heat = inst.heat - inst.stats.heatPerSec * dt;
+  inst.heat = heat > 0 ? heat : 0;
+  if (inst.overheated && inst.heat <= HEAT_RESUME) {
+    inst.overheated = false;
+    pushEvent(world.events, EV_WEAPON_COOLED, world.tick, weaponIdx, inst.heat, 0, 0);
+  }
+}
+
+// -------------------------------------------------------------------------------------------
+// The beam raycast
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Nearest live enemy whose CIRCLE the ray (origin + dir * t, 0 <= t <= maxDist) touches.
+ * Returns its dense index, or -1, and leaves the contact distance in `BEAM.hitT`.
+ *
+ * THIS QUERIES THE SPATIAL HASH, NEVER THE POOL. At 300 live enemies, three lasers and 60 Hz, a
+ * linear scan would be 54 000 circle tests per second before the Cannon's targeting query has
+ * done anything at all. What this walks instead is the band of CELLS the segment crosses:
+ *
+ *   - the cell rectangle of the segment's bounding box, dilated by MAX_ENEMY_RADIUS, is the only
+ *     region that can contain the CENTRE of an enemy whose body touches the line;
+ *   - each candidate cell is then rejected exactly, by clipping the segment's parameter range
+ *     against that cell's dilated rectangle (the slab test below). A cell the segment does not
+ *     cross costs about ten flops and is never opened.
+ *
+ * For the long laser (430 u) that is at most a 7x7 rectangle of which ~9 cells survive the slab
+ * test - roughly a twentieth of the cells its own targeting query already walked. A DDA march
+ * would visit a similar number of cells and then need the same one-cell dilation to catch bodies
+ * whose centre sits in a neighbouring cell, so this form is chosen for being the one whose
+ * correctness is obvious.
+ *
+ * BUCKET ALIASING IS NOT FILTERED HERE, deliberately. `itemKey` exists so that a circle query
+ * does not PAY for enemies from a distant cell that merely hashed into the same bucket; but the
+ * exact ray-circle test below is the authority on what the beam touches, and it accepts an
+ * aliased entry only when that enemy genuinely intersects the segment - in which case finding it
+ * is correct. So the filter would change the cost by one circle test per alias and change the
+ * result by nothing, at the price of duplicating the hash's private cell encoding in this file.
+ */
+function raycastNearestEnemy(
+  world: World,
+  originX: number,
+  originY: number,
+  dirX: number,
+  dirY: number,
+  maxDist: number,
+): number {
+  const h = world.spatial;
+  const enemies = world.enemies;
+  const ex = enemies.x;
+  const ey = enemies.y;
+  const er = enemies.radius;
+  const flags = enemies.flags;
+  const spawnId = enemies.spawnId;
+
+  const endX = originX + dirX * maxDist;
+  const endY = originY + dirY * maxDist;
+
+  // Dilation: an enemy whose body touches the segment has its CENTRE within its own radius of
+  // the segment, and no enemy in the roster is larger than MAX_ENEMY_RADIUS.
+  const pad = MAX_ENEMY_RADIUS;
+  const inv = h.invCellSize;
+  const cell = h.cellSize;
+
+  const minX = (originX < endX ? originX : endX) - pad;
+  const maxX = (originX > endX ? originX : endX) + pad;
+  const minY = (originY < endY ? originY : endY) - pad;
+  const maxY = (originY > endY ? originY : endY) + pad;
+
+  const cx0 = Math.floor(minX * inv);
+  const cx1 = Math.floor(maxX * inv);
+  const cy0 = Math.floor(minY * inv);
+  const cy1 = Math.floor(maxY * inv);
+
+  // Division is hoisted out of the cell loop. The zero branches keep the slab test off the
+  // Infinity path entirely for an axis-aligned beam, which is the common case when the player
+  // is standing still.
+  const dirXZero = dirX === 0;
+  const dirYZero = dirY === 0;
+  const invDirX = dirXZero ? 0 : 1 / dirX;
+  const invDirY = dirYZero ? 0 : 1 / dirY;
+
+  const bucketStart = h.bucketStart;
+  const items = h.items;
+  const mask = h.bucketMask;
+
+  let bestDense = -1;
+  let bestT = 0;
+
+  for (let cy = cy0; cy <= cy1; cy++) {
+    const ry0 = cy * cell - pad;
+    const ry1 = ry0 + cell + pad + pad;
+    if (dirYZero && (originY < ry0 || originY > ry1)) continue;
+
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const rx0 = cx * cell - pad;
+      const rx1 = rx0 + cell + pad + pad;
+
+      // Slab clip of t in [0, maxDist] against the dilated cell rectangle. Conservative by
+      // construction (it is the segment-vs-AABB overlap test), so it can reject a cell but can
+      // never reject an enemy the exact test below would have accepted.
+      let tmin = 0;
+      let tmax = maxDist;
+      if (dirXZero) {
+        if (originX < rx0 || originX > rx1) continue;
+      } else {
+        let ta = (rx0 - originX) * invDirX;
+        let tb = (rx1 - originX) * invDirX;
+        if (ta > tb) {
+          const swap = ta;
+          ta = tb;
+          tb = swap;
+        }
+        if (ta > tmin) tmin = ta;
+        if (tb < tmax) tmax = tb;
+      }
+      if (!dirYZero) {
+        let ta = (ry0 - originY) * invDirY;
+        let tb = (ry1 - originY) * invDirY;
+        if (ta > tb) {
+          const swap = ta;
+          ta = tb;
+          tb = swap;
+        }
+        if (ta > tmin) tmin = ta;
+        if (tb < tmax) tmax = tb;
+      }
+      if (tmin > tmax) continue;
+
+      // Cell coordinates are hashed with the grid's own function, so this cannot drift from the
+      // layout rebuildSpatialHash wrote.
+      const b = (Math.imul(cx, 0x05891c1b) ^ Math.imul(cy, 0x29193f5b)) & mask;
+      const end = bucketStart[b + 1];
+      for (let i = bucketStart[b]; i < end; i++) {
+        const d = items[i];
+        // Deferred reaping leaves corpses in the hash until S12. A beam must not stop on one -
+        // that would let a body you killed this tick shield the enemy behind it for one tick.
+        if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+        const ox = ex[d] - originX;
+        const oy = ey[d] - originY;
+        const tca = ox * dirX + oy * dirY; // projection onto the ray; dir is unit
+        const r = er[d];
+        const r2 = r * r;
+        const perp2 = ox * ox + oy * oy - tca * tca; // squared distance from centre to the line
+        if (perp2 > r2) continue;
+
+        // Entry point: where the ray first TOUCHES the circle, which is where the drawn line
+        // has to stop. (Not tca - that is the point of closest approach, inside the body.)
+        const half = Math.sqrt(r2 - perp2 > 0 ? r2 - perp2 : 0);
+        let t = tca - half;
+        if (t > maxDist) continue;
+        if (t < 0) {
+          // The muzzle is already inside this body, or the body is entirely behind it.
+          if (tca + half < 0) continue;
+          t = 0;
+        }
+
+        // Strict total order: nearer wins, then lower spawnId. The tie-break can only matter for
+        // two bodies contacted at bit-identical distance, but without it the winner would be
+        // decided by bucket layout and a replay could drift on a rebuild.
+        if (bestDense < 0 || t < bestT || (t === bestT && spawnId[d] < spawnId[bestDense])) {
+          bestDense = d;
+          bestT = t;
+        }
+      }
+    }
+  }
+
+  BEAM.hitT = bestT;
+  return bestDense;
 }
 
 /**
@@ -254,8 +528,81 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
 };
 
 /**
+ * `beam` - steps 4 to 6 of a beam weapon's tick: raycast, refuse or fire, heat.
+ *
+ * THE RAY IS AIMED AT THE TARGET, NOT DOWN THE TURRET. The turret facing has already been
+ * gated to within `fireArc` of the target by updateWeapons; using the exact line to the target
+ * is what makes "is anything in the way?" the question it is supposed to be. Aiming down the
+ * (very slightly off) turret vector instead would make the clear-line test depend on traverse
+ * lag, so a laser would refuse shots for a fraction of a second after every retarget for no
+ * reason a player could see.
+ *
+ * THE REFUSAL IS THE WEAPON. `requiresClearLine` means a body between the emitter and the chosen
+ * target cancels the shot outright - the beam does not fire into the blocker, does not partially
+ * damage it, and does not pick a different target this tick. It cools instead, which is why a
+ * laser walks out of a bad position with a full charge rather than an empty one.
+ *
+ * NO KNOCKBACK, EVER. A continuous beam applying an impulse sixty times a second would launch a
+ * swarmer into orbit; the buffer carries no knockback field at all, so this is structural rather
+ * than a number set to zero.
+ */
+export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const dt = BEAM.dt;
+  const aim = world.scratch.v2;
+
+  const target = targetCount > 0 ? targets[0] : -1;
+  aimInto(world, target, inst.turretX, inst.turretY, aim);
+
+  // The emitter head, offset along the firing line exactly as a shell leaves the barrel.
+  const x0 = world.player.x + aim.x * def.muzzleOffset;
+  const y0 = world.player.y + aim.y * def.muzzleOffset;
+
+  const hit = raycastNearestEnemy(world, x0, y0, aim.x, aim.y, stats.range);
+
+  // Step 5. `target < 0` is unreachable for a laser (all three set `requiresTarget`), and is
+  // refused rather than waved through: "fire only if the chosen target is the first thing the
+  // ray touches" cannot be satisfied by a weapon that has not chosen one.
+  if (def.requiresClearLine && (target < 0 || hit !== target)) {
+    coolBeam(world, weaponIdx, inst, dt); // blocked, or the target slipped off the line
+    return;
+  }
+
+  // A weapon with `requiresClearLine: false` and nothing on the line draws its full length into
+  // empty space and deals nothing. No laser does that today; the branch is what keeps the
+  // NO_BEAM_TARGET sentinel in the buffer meaningful rather than unreachable.
+  const reach = hit >= 0 ? BEAM.hitT : stats.range;
+  const damage = hit >= 0 ? stats.damage * dt : 0;
+
+  pushBeam(
+    world.beams,
+    weaponIdx,
+    hit >= 0 ? hit : NO_BEAM_TARGET,
+    damage,
+    x0,
+    y0,
+    x0 + aim.x * reach,
+    y0 + aim.y * reach,
+  );
+
+  // Step 6. The tick that reaches HEAT_MAX still fires - the weapon cuts out AFTER delivering
+  // the shot that overloaded it, so a full burst is exactly HEAT_MAX / heatPerSec seconds of
+  // damage and not one tick less.
+  const heat = inst.heat + stats.heatPerSec * dt;
+  if (heat >= HEAT_MAX) {
+    inst.heat = HEAT_MAX;
+    inst.overheated = true;
+    pushEvent(world.events, EV_WEAPON_OVERHEATED, world.tick, weaponIdx, HEAT_MAX, 0, 0);
+  } else {
+    inst.heat = heat;
+  }
+};
+
+/**
  * THE FIRE-PATTERN TABLE. Adding a pattern is one entry here plus one pure function above.
  */
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
+  beam: fireBeam,
 });

@@ -250,17 +250,22 @@ export const CANNON: WeaponDef = Object.freeze({
 // that stops on the first body it touches, and will not fire at all unless that body is the target.
 //
 // HEAT replaces the cooldown. Every laser heats and cools at the same rate as itself, so all three
-// share a 2/3 duty cycle - but the burst length differs by a factor of three:
+// share identical RATIOS and differ only in tempo:
 //
-//              heat/s   full burst    cool 100->50   damage/s   range
-//   short        10        10.0 s         5.0 s          30       150
-//   medium       20         5.0 s         2.5 s          55       275
-//   long         30         3.3 s         1.7 s          85       430
+//              heat/s   opening burst   later bursts   gap      damage/s   range
+//   short        10         10.0 s          5.0 s      5.0 s        30       150
+//   medium       20          5.0 s          2.5 s      2.5 s        55       275
+//   long         30          3.3 s          1.7 s      1.7 s        85       430
 //
-// So the short laser is a floodlight you leave on, and the long one is a held breath. Effective
-// sustained damage is 2/3 of the listed figure - 20 / 37 / 57 - against the Cannon's 36.7 single
-// target. The lasers beat it on paper and lose on the field, because they refuse blocked shots and
-// pick the weakest thing rather than the most dangerous one.
+// The opening burst is twice as long as the rest because it climbs from cold (0 -> 100) while
+// every later one restarts at HEAT_RESUME (50 -> 100). Sustained uptime is therefore 1/2, not the
+// 2/3 the first burst suggests - see constants.ts. Effective sustained damage is half the listed
+// figure - 15 / 27.5 / 42.5 - against the Cannon's 36.7 single target.
+//
+// So the short laser is a floodlight you leave on, and the long one is a held breath. Only the
+// long laser out-damages the Cannon on sustained single-target numbers, and it pays for that by
+// refusing blocked shots and by picking the WEAKEST thing on the field rather than the most
+// dangerous one.
 // ---------------------------------------------------------------------------------------------
 
 /**

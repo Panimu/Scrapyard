@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { DT, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
+import { DT, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
 import { DEFAULT_TUNING, xpToNextLevel } from '../src/core/config/tuning.js';
 import { CANNON } from '../src/core/content/weaponCatalog.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
@@ -139,6 +139,7 @@ const PLAIN_HERO: HeroDef = { ...HEAVY_HERO, player: {}, weapon: {} };
 const FIXTURE_UPGRADES: readonly UpgradeDef[] = [
   {
     id: 'hv-shells',
+    kind: 'passive',
     name: 'Percent Card',
     description: '+18% max HP.',
     maxStacks: 2,
@@ -147,6 +148,7 @@ const FIXTURE_UPGRADES: readonly UpgradeDef[] = [
   },
   {
     id: 'hull-extension',
+    kind: 'passive',
     name: 'Flat Card',
     description: '+25 max HP.',
     maxStacks: 1,
@@ -295,6 +297,13 @@ describe('offers', () => {
     const target = upgradeIndex('twin-mount'); // maxStacks 2 - reached quickly
     const maxStacks = UPGRADE_CATALOG[target].maxStacks;
 
+    // Seeded as already held, so twin-mount occupies one of the MAX_PASSIVES slots from the
+    // start. Without this the loop below can spend all seven slots on whatever landed in slot 0
+    // before twin-mount ever appears, and the passive cap then correctly refuses to offer an
+    // eighth DISTINCT passive - which would make this test fail for a reason that has nothing to
+    // do with the maxStacks rule it exists to check.
+    w.levelUp.stacks[target] = 1;
+
     for (let i = 0; i < 60 && w.levelUp.stacks[target] < maxStacks; i++) {
       gainOneLevel(w);
       const slot = slotOf(w, target);
@@ -369,7 +378,16 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     expect(w.player.level).toBeGreaterThan(1); // the levels were still granted
   });
 
-  it('drains the entire shipping pool in TOTAL_AVAILABLE_STACKS picks and then stops offering', () => {
+  /**
+   * WAS: "drains the entire shipping pool in TOTAL_AVAILABLE_STACKS picks".
+   *
+   * That is no longer reachable, and deliberately so. The catalog carries FOURTEEN passives
+   * against MAX_PASSIVES (7) slots, so a run can max at most seven of them - which is the whole
+   * point of the slot cap: the pool is bigger than the build, and what you leave behind is the
+   * choice. The property being asserted is the one that always mattered - the pool empties, the
+   * card stops opening, and the run does not lock - now stated against the caps.
+   */
+  it('drains everything the slot caps allow, then stops offering', () => {
     const w = makeWorld(99);
     let picks = 0;
     for (let i = 0; i < 400 && picks < TOTAL_AVAILABLE_STACKS + 5; i++) {
@@ -378,14 +396,41 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
       picks += clearAllCards(w);
     }
 
-    expect(picks).toBe(TOTAL_AVAILABLE_STACKS);
+    expect(picks).toBeGreaterThan(0);
+    expect(picks).toBeLessThan(TOTAL_AVAILABLE_STACKS);
+
+    // Every card taken is maxed out, and nothing untouched was reachable.
+    let distinctPassives = 0;
+    let weaponCards = 0;
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
-      expect(w.levelUp.stacks[i]).toBe(UPGRADE_CATALOG[i].maxStacks);
+      const def = UPGRADE_CATALOG[i];
+      const stacks = w.levelUp.stacks[i];
+      if (stacks === 0) {
+        // Only a passive can be left untouched, and only because the slots filled first.
+        expect(def.kind).toBe('passive');
+        continue;
+      }
+      expect(stacks).toBe(def.maxStacks);
+      if (def.kind === 'weapon') weaponCards++;
+      else distinctPassives++;
     }
+
+    // Both caps did their job: seven passive slots filled, and every gun in the catalog taken
+    // (four weapons in total, which is still under MAX_WEAPONS).
+    expect(distinctPassives).toBe(MAX_PASSIVES);
+    expect(weaponCards).toBe(3);
+    expect(w.weaponCount).toBe(4);
+    expect(w.weaponCount).toBeLessThanOrEqual(MAX_WEAPONS);
+    // The stacks actually taken account for every pick - no pick vanished.
+    let stacked = 0;
+    for (let i = 0; i < w.levelUp.stacks.length; i++) stacked += w.levelUp.stacks[i];
+    expect(stacked).toBe(picks);
+
     // And the run keeps going: more XP, more levels, no card, no lock.
     const level = w.player.level;
     bank(w, 100000);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
+    expect(w.levelUp.offerCount).toBe(0);
     expect(w.player.level).toBeGreaterThan(level);
   });
 });

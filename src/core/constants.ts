@@ -44,11 +44,20 @@ export const MAX_PASSIVES = 7;
  * HEAT - the lasers' limiter, in place of a cooldown.
  *
  * A laser fires CONTINUOUSLY and gains heat while it does; at HEAT_MAX it cuts out and cannot fire
- * again until it has cooled to HEAT_RESUME. Cooling runs at the same rate as heating, so the duty
- * cycle is identical for all three lasers - 100 up, 50 down = fire 2/3 of the time - while the
- * BURST LENGTH differs sharply: the short laser sustains for 10 s, the long one for 3.3 s.
- * Same rhythm, very different tempo, which is what makes them feel like different guns rather
- * than one gun at three scales.
+ * again until it has cooled to HEAT_RESUME. Cooling runs at the same rate as heating.
+ *
+ * THE OPENING BURST IS TWICE THE LENGTH OF EVERY LATER ONE, and that is worth understanding
+ * before tuning either number. The first burst climbs 0 -> 100; every burst after it starts from
+ * HEAT_RESUME and climbs only 50 -> 100. So:
+ *
+ *              first burst   later bursts   gap      duty (cold)   duty (sustained)
+ *   any laser    100/rate       50/rate     50/rate      2/3             1/2
+ *
+ * A laser therefore opens with a long salvo and then settles into an even on/off rhythm at half
+ * uptime. All three share those ratios exactly; what differs is TEMPO - the short laser's cycle
+ * is 10 s then 5 s on / 5 s off, the long laser's is 3.3 s then 1.7 s on / 1.7 s off. Same
+ * rhythm, very different pulse, which is what makes them read as different guns rather than one
+ * gun at three scales.
  */
 export const HEAT_MAX = 100;
 export const HEAT_RESUME = 50;

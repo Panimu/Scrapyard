@@ -51,6 +51,30 @@
  *                   forever, since the only exit from LEVEL_UP is a valid chooseIndex.
  *
  * ---------------------------------------------------------------------------------------------
+ * TWO KINDS OF CARD, TWO SEPARATE CAPS
+ * ---------------------------------------------------------------------------------------------
+ * `UpgradeDef.kind` splits the pool in two, and the two halves compete for DIFFERENT space:
+ * MAX_WEAPONS (7) gun slots and MAX_PASSIVES (7) passive slots.
+ *
+ *   A WEAPON card puts `grantsWeapon` into the next free slot of world.weapons and increments
+ *   weaponCount. It is not offerable when the slots are full, and it is not offerable when the
+ *   run already carries that gun - including the hero's STARTING weapon, which arrived without a
+ *   card and so has no `stacks` entry to notice. The check is against the loadout, not the
+ *   catalog, which is the only version of it that cannot be fooled by a hero whose starting
+ *   weapon also has a card.
+ *
+ *   A PASSIVE card occupies a slot the first time it is taken and levels in place afterwards -
+ *   the Vampire Survivors shape. So the cap gates NEW passives only: once MAX_PASSIVES distinct
+ *   passives are held, the pool stops offering an eighth and keeps offering further stacks of
+ *   the seven you chose. The alternative reading - no passive cards at all past the cap - would
+ *   end a run's progression outright about two thirds of the way through the shipping pool,
+ *   since the catalog holds fourteen passives against seven slots.
+ *
+ * Both caps are enforced in `isOfferable`, so an ineligible card is never drawn rather than being
+ * drawn and refused - a refusal inside `applyChoice` would hold the card open on a dead index
+ * and soft-lock the run, which is exactly the failure this file is built to avoid.
+ *
+ * ---------------------------------------------------------------------------------------------
  * VICTORY
  * ---------------------------------------------------------------------------------------------
  * The run ends at `config.runLengthSec` - EXCEPT that the Scraplord postpones it. With the
@@ -61,8 +85,9 @@
  * clock alone ends it.
  */
 
-import { UPGRADE_OFFER_COUNT } from '../constants.js';
+import { MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../constants.js';
 import { xpToNextLevel } from '../config/tuning.js';
+import type { WeaponId } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveWeaponStats } from '../data/stats.js';
 import { isEnemyAlive } from '../entity/enemyPool.js';
 import type { EnemyHandle } from '../entity/handle.js';
@@ -194,6 +219,13 @@ function applyChoice(world: World, choiceIndex: number): boolean {
   lu.stacks[idx]++;
   lu.picksTaken++;
 
+  // BEFORE the resolve calls below, so the new gun is inside `weaponCount` and gets its stats
+  // built by the same loop that re-resolves everything else. A weapon installed after it would
+  // spend its first tick with a zeroed WeaponStats - range 0, and a cosTraverseStep of 1.
+  if (def.kind === 'weapon' && def.grantsWeapon !== undefined) {
+    installWeapon(world, def.grantsWeapon);
+  }
+
   const player = world.player;
   const maxHpBefore = player.stats.maxHp;
   resolvePlayerStats(hero, lu.stacks, world.upgradeCatalog, player.stats, world.config.tuning);
@@ -232,6 +264,78 @@ function applyChoice(world: World, choiceIndex: number): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
+// Weapon slots
+// -------------------------------------------------------------------------------------------
+
+/** Catalog index of a weapon id in the INJECTED catalog, or -1. */
+function weaponIndexOf(world: World, id: WeaponId): number {
+  const catalog = world.weaponCatalog;
+  for (let i = 0; i < catalog.length; i++) {
+    if (catalog[i].id === id) return i;
+  }
+  return -1;
+}
+
+/** True when the weapon is already in the loadout - starting weapon included. */
+function ownsWeapon(world: World, id: WeaponId): boolean {
+  const defId = weaponIndexOf(world, id);
+  if (defId < 0) return false;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if (world.weapons[i].defId === defId) return true;
+  }
+  return false;
+}
+
+/**
+ * Puts a gun in the next free slot, fully reset.
+ *
+ * NOTHING IS ALLOCATED: all MAX_WEAPONS instances exist from createWorld, so this claims one
+ * rather than making one - which is what keeps the loadout a fixed-shape object that hashWorld
+ * can walk and the JIT can keep monomorphic.
+ *
+ * The reset is exhaustive on purpose. Slots past `weaponCount` are never stepped, so in practice
+ * the instance is still factory-fresh; writing every field anyway means the state of a slot is a
+ * function of the pick that filled it and not of the pool's history, which is the same principle
+ * that made `spawnId` rather than the slot index the Cannon's tie-break.
+ *
+ * Both guards below are unreachable through `isOfferable`, and both return WITHOUT refusing the
+ * pick: the level is still spent, the card still closes, and the run continues. A refusal here
+ * would leave `applyChoice` returning false forever on a live offer.
+ */
+function installWeapon(world: World, id: WeaponId): void {
+  if (world.weaponCount >= MAX_WEAPONS) return;
+  const defId = weaponIndexOf(world, id);
+  if (defId < 0) return;
+  if (ownsWeapon(world, id)) return;
+
+  const inst = world.weapons[world.weaponCount];
+  inst.defId = defId;
+  inst.level = 1;
+  inst.cooldownLeft = 0;
+  inst.targetDense = -1;
+  // Facing +x, matching a fresh chassis and every other slot at createWorld. A laser traverses
+  // 720 deg/s, so the worst case is a quarter of a second of slew before its first beam.
+  inst.turretX = 1;
+  inst.turretY = 0;
+  inst.heat = 0;
+  inst.overheated = false;
+  inst.scratch.fill(0);
+
+  world.weaponCount++;
+}
+
+/** Distinct passives held. One linear pass over a ~17-entry catalog, once per card generated. */
+function passiveSlotsUsed(world: World): number {
+  const catalog = world.upgradeCatalog;
+  const stacks = world.levelUp.stacks;
+  let used = 0;
+  for (let i = 0; i < catalog.length; i++) {
+    if (stacks[i] > 0 && catalog[i].kind !== 'weapon') used++;
+  }
+  return used;
+}
+
+// -------------------------------------------------------------------------------------------
 // Offer generation
 // -------------------------------------------------------------------------------------------
 
@@ -256,11 +360,16 @@ function generateOffers(world: World): number {
   lu.offers.fill(-1);
   let filled = 0;
 
+  // Computed ONCE per card rather than per eligibility test: neither cap can move while a single
+  // card is being built, and `isOfferable` is called about forty times to fill three slots.
+  const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+  const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
+
   for (let slot = 0; slot < UPGRADE_OFFER_COUNT; slot++) {
     let total = 0;
     let last = -1;
     for (let i = 0; i < catalog.length; i++) {
-      if (!isOfferable(world, i, filled)) continue;
+      if (!isOfferable(world, i, filled, weaponsFull, passivesFull)) continue;
       const w = catalog[i].weight;
       if (w > 0) total += w;
       last = i;
@@ -271,7 +380,7 @@ function generateOffers(world: World): number {
     if (total > 0) {
       let target = rng.nextFloat() * total;
       for (let i = 0; i < catalog.length; i++) {
-        if (!isOfferable(world, i, filled)) continue;
+        if (!isOfferable(world, i, filled, weaponsFull, passivesFull)) continue;
         const w = catalog[i].weight;
         if (w <= 0) continue;
         if (target < w) {
@@ -291,11 +400,33 @@ function generateOffers(world: World): number {
   return filled;
 }
 
-/** Still has stacks left, and is not already on the card being built. */
-function isOfferable(world: World, index: number, filled: number): boolean {
+/**
+ * Still has stacks left, fits the slot caps, and is not already on the card being built.
+ *
+ * The three conditions are independent and all three are load-bearing: maxStacks is the card's
+ * own limit, the caps are the loadout's, and the distinctness check is the card's.
+ */
+function isOfferable(
+  world: World,
+  index: number,
+  filled: number,
+  weaponsFull: boolean,
+  passivesFull: boolean,
+): boolean {
   const def = world.upgradeCatalog[index];
   if (def === undefined) return false;
   if (world.levelUp.stacks[index] >= def.maxStacks) return false;
+
+  if (def.kind === 'weapon') {
+    if (weaponsFull) return false;
+    // Owning the gun already is a separate question from having taken the card: the hero's
+    // starting weapon is in the loadout with `stacks` still at 0.
+    if (def.grantsWeapon !== undefined && ownsWeapon(world, def.grantsWeapon)) return false;
+  } else if (passivesFull && world.levelUp.stacks[index] === 0) {
+    // Slots are full, so no NEW passive - but the seven already in them still level up.
+    return false;
+  }
+
   const offers = world.levelUp.offers;
   for (let j = 0; j < filled; j++) {
     if (offers[j] === index) return false;

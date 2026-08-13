@@ -25,6 +25,20 @@
  * enemy your shell killed this tick does not also get to bite you. It is dead at the moment the
  * contact would land, and the contact is dropped without arming its cooldown.
  *
+ * BEAMS ARE APPLIED FIRST, before hits, because that is when they happened: a beam is decided at
+ * S6 and a projectile impact at S8, so beam-then-hit-then-contact is simply chronological order.
+ * It matters for exactly one observable - which kill reaches the KillFeed first when a beam and a
+ * shell finish two different enemies on the same tick, and therefore which gem gets the lower
+ * spawnId - and that has to be decided by a stated rule rather than by whichever loop happened to
+ * be written first.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * BEAM DAMAGE IS ALREADY SCALED
+ * ---------------------------------------------------------------------------------------------
+ * `beams.damage[i]` is dps x dt, computed by the one system that knows a beam is continuous.
+ * Nothing here rescales it, and `dt` stays unused in this file - which is what keeps a beam
+ * dealing exactly its listed damage per second regardless of anything below this comment.
+ *
  * ---------------------------------------------------------------------------------------------
  * ARMOUR - the exact formula, quoted from CombatTuning
  * ---------------------------------------------------------------------------------------------
@@ -65,6 +79,7 @@ import {
   EV_PHASE_CHANGED,
   EV_PLAYER_DAMAGED,
   EV_PROJECTILE_HIT,
+  NO_BEAM_TARGET,
   pushEvent,
   pushKill,
 } from '../events/ring.js';
@@ -73,8 +88,69 @@ import { RUN_PHASE_DEAD, type World } from '../types.js';
 import { KILL_REASON_KILLED } from './enemyAI.js';
 
 export function updateDamage(world: World, dt: number): void {
+  applyBeams(world);
   applyHits(world);
   applyContacts(world);
+}
+
+// -------------------------------------------------------------------------------------------
+// Beams
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Applies the beams S6 fired, through the SAME kill path as a shell: hp down, effective damage
+ * into RunStats, EV_ENEMY_DAMAGED for the renderer, and `killEnemy` on the way through zero - so
+ * a laser kill produces a gem, a kill-feed entry and an archetype tally identical to a Cannon
+ * kill, and S10 cannot tell them apart.
+ *
+ * WHAT IT DELIBERATELY DOES NOT DO:
+ *   - no knockback. There is no field for it in the buffer; see fireBeam.
+ *   - no splash. A beam is a line, and every splash number on a laser is 0 anyway.
+ *   - no `shotsFired` / `shotsHit`. Those two are a matched pair whose ratio the harness prints
+ *     as accuracy; a beam has no discrete shot, and counting sixty "hits" a second against zero
+ *     shots fired would print an accuracy above 100% and quietly destroy the only number that
+ *     tells you whether the Cannon is missing.
+ *   - no EV_PROJECTILE_HIT. There is no projectile; the beam's own geometry is in world.beams,
+ *     which is what the renderer draws.
+ */
+function applyBeams(world: World): void {
+  const beams = world.beams;
+  if (beams.count === 0) return;
+
+  const enemies = world.enemies;
+  const stats = world.stats;
+
+  for (let i = 0; i < beams.count; i++) {
+    const ed = beams.enemyDense[i];
+    // The beam reached its full length without touching anything. Geometry only - the renderer
+    // still draws it; there is nothing to bill.
+    if (ed === NO_BEAM_TARGET) continue;
+
+    // Killed by an earlier beam this tick (two lasers finishing the same swarmer), or by
+    // anything else that ran before S9. Overkill is not charged.
+    if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    const raw = beams.damage[i];
+    if (raw <= 0) continue;
+
+    const hpBefore = enemies.hp[ed];
+    enemies.hp[ed] = hpBefore - raw;
+    // Effective, not raw: the last tick of a burn that overkills a 0.3 HP swarmer must not
+    // inflate the dps the harness prints.
+    stats.damageDealt += raw < hpBefore ? raw : hpBefore;
+
+    pushEvent(
+      world.events,
+      EV_ENEMY_DAMAGED,
+      world.tick,
+      enemies.x[ed],
+      enemies.y[ed],
+      raw,
+      enemies.slot[ed],
+    );
+
+    if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+  }
 }
 
 // -------------------------------------------------------------------------------------------
