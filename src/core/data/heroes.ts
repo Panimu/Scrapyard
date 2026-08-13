@@ -206,9 +206,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     startingWeapon: 'laser-short',
     player: {},
     weapon: {},
-    // 150 u to 300 u, and it is a fix as much as a bonus: a 150 u beam on a 195 u/s mech has
-    // no target 95.8% of the time against anything the player is kiting. Doubling it puts the
-    // Short Laser inside its own wake.
+    // 165 u to 330 u, and it is a fix as much as a bonus: measured against the real horde, the
+    // Short Laser reaches 9% of its arithmetic ceiling at tier 7 because it has nothing inside it
+    // most of the time. Doubling the reach is the only lever the weapon's own ladder does not
+    // sell - no laser tier buys range.
     weaponBonus: { 'laser-short': { mul: { range: 2 } } },
   },
   {

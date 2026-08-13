@@ -326,9 +326,9 @@ export const CANNON: WeaponDef = Object.freeze({
 // calls below - if you edit those, `npm run dps` recomputes this table and this comment does not.
 //
 //            range  dmg/s  heat/s  disp/s   burst from cold   steady burst   gap    uptime  sustained
-//   short     150     46     10     8.5          10.0 s           5.0 s     5.9 s    45.9%    21.1
-//   medium    275     66     22     8.6           4.5 s           2.3 s     5.8 s    28.1%    18.5
-//   long      430     92     34     8.0           2.9 s           1.5 s     6.3 s    19.0%    17.5
+//   short     165     46     10     8.5          10.0 s           5.0 s     5.9 s    45.9%    21.1
+//   medium   302.5    66     22     8.6           4.5 s           2.3 s     5.8 s    28.1%    18.5
+//   long      473     92     34     8.0           2.9 s           1.5 s     6.3 s    19.0%    17.5
 //
 // The opening burst is twice the steady one because it climbs from cold (0 -> capacity) while
 // every later burst restarts at the resume line (half capacity -> capacity). Sustained uptime is
@@ -343,9 +343,10 @@ export const CANNON: WeaponDef = Object.freeze({
 // range and with a max hit of one tick's damage.
 //
 // WHAT THE TABLE STILL CANNOT TELL YOU is that a laser only earns these figures with something in
-// front of it. The short laser measured 1.6 dps against a kiting player for a reason no beam
-// mechanic can fix: 150 u sits inside a 195 u/s mech's wake, so it has no target 96% of the time.
-// Range, not uptime, is that weapon's problem.
+// front of it, and measured, it usually does not have it. `npm run dps` runs each of these
+// against the real horde for four minutes: the short laser reached 9% of its sustained figure at
+// tier 7 and gained almost nothing from six tiers of upgrades, because the thing it is short of
+// is REACH and no rung of the ladder sells any. All three bases carry +10% for that reason.
 // ---------------------------------------------------------------------------------------------
 
 /**
@@ -445,9 +446,14 @@ function laser(
   }) as WeaponDef;
 }
 
-export const LASER_SHORT = laser('laser-short', 'Short Laser', 150, 46, 10, 8.5, 0x3be86b, 1.6);
-export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 275, 66, 22, 8.6, 0x4fa8ff, 2.1);
-export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 92, 34, 8.0, 0xff4d4d, 2.7);
+// Base ranges are all +10% over the numbers this file shipped with (150 / 275 / 430). Measured,
+// a beam spends most of a fight with NOTHING INSIDE IT - the Short Laser reached 9% of its
+// arithmetic ceiling at tier 7 and gained almost nothing across six tiers, because reach, not
+// damage, was what it was short of. Range tiers do not exist on the laser ladder, so the base is
+// the only place this can be bought. `npm run dps` is where to check whether it was enough.
+export const LASER_SHORT = laser('laser-short', 'Short Laser', 165, 46, 10, 8.5, 0x3be86b, 1.6);
+export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 302.5, 66, 22, 8.6, 0x4fa8ff, 2.1);
+export const LASER_LONG = laser('laser-long', 'Long Laser', 473, 92, 34, 8.0, 0xff4d4d, 2.7);
 
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.
@@ -467,11 +473,18 @@ export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 92, 34, 8.0, 0x
 // off to one side. That is why the tier ladders spend two rungs on turn radius.
 //
 //                  volley   spread   rearm   damage   flight   turn      reach
-//   SRM              2       15 deg   3.0 s     62     1.15 s  2.4 rad/s  ~345
-//   LRM              3       10 deg   4.2 s     42     2.00 s  1.3 rad/s  ~660
+//   SRM              2       15 deg   3.0 s     62     1.15 s  4.8 rad/s  ~345
+//   LRM              3       10 deg   4.2 s     42     2.00 s  1.95 rad/s ~660
 //
 // SRM is the panic button: a slow, heavy, close-in double tap. LRM is a commitment - a wider,
 // slower, longer-reaching salvo that has to be aimed a second in advance.
+//
+// BASE TURN RATES ARE DOUBLE (SRM) AND HALF AGAIN (LRM) what this file shipped with - 2.4 and
+// 1.3. Measured over four minutes of real fighting, both racks were landing about ONE MISSILE IN
+// SIX: 0.17 hits per shot on the short rack and 0.13 on the long, against a Cannon's 1.00. "Weak
+// homing" had stopped being a characterful drawback and become a weapon that mostly misses. The
+// two turn-rate rungs on each ladder still exist and still matter; they now start from a rate
+// that can actually curve onto something.
 // ---------------------------------------------------------------------------------------------
 
 function missile(
@@ -554,7 +567,7 @@ function missile(
 
 export const MISSILE_SHORT = missile(
   'missile-short', 'Short Missiles',
-  2, 15, 3.0, 62, 280, 300, 1.15, 2.4, 0, 0, 210, VIS_MISSILE_SHORT,
+  2, 15, 3.0, 62, 280, 300, 1.15, 4.8, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
@@ -567,7 +580,7 @@ export const MISSILE_SHORT = missile(
 
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
-  3, 10, 4.2, 42, 430, 330, 2.0, 1.3, 0, 0, 160, VIS_MISSILE_LONG,
+  3, 10, 4.2, 42, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
   Object.freeze([
     { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
     { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s
@@ -610,7 +623,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
   base: Object.freeze({
     damage: 5.5, // the smallest number in the catalog, fired more often than anything else
     cooldown: 0.09, // ~11 bursts/s = 22 rounds/s
-    range: 130, // shorter than the Short Laser's 150 - you must be inside the crowd
+    range: 130, // shorter than the Short Laser's 165 - you must be inside the crowd
     projectileSpeed: 900, // near-hitscan; at this range travel time is not the point
     projectileCount: 2,
     pierce: 0,

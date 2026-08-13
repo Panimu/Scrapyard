@@ -224,6 +224,12 @@ describe('the schedule, as simulated', () => {
 
   it('leaves the previous cycle\'s enemies alone at a rollover', () => {
     const w = makeWorld(11);
+    // DISARMED. This is a claim about the DIRECTOR - that a rollover does not cull or restyle the
+    // enemies already standing - and the player's gun is only noise in it. With a weapon fitted
+    // the test silently depends on the chassis killing slowly enough to leave survivors, which is
+    // a balance number: a 10% range increase on the Medium Laser was enough to clear the field
+    // and fail it.
+    w.weaponCount = 0;
     run(w, T.cycleSeconds - 2);
 
     // Snapshot every live enemy's identity. A rollover must not cull, retint or restat one.

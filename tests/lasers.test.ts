@@ -189,9 +189,17 @@ describe('the catalog numbers reach the resolved weapon', () => {
       expect(inst.heat).toBe(0);
       expect(inst.overheated).toBe(false);
     }
-    expect(LASER_SHORT.base.range).toBe(150);
-    expect(LASER_MEDIUM.base.range).toBe(275);
-    expect(LASER_LONG.base.range).toBe(430);
+    // The three reaches are pinned as ORDERED and SEPARATED rather than as three literals: the
+    // absolute numbers are a balance dial that has already moved once, and a test that has to be
+    // edited every time one does is a test that gets edited without being read.
+    expect(LASER_SHORT.base.range).toBeLessThan(LASER_MEDIUM.base.range);
+    expect(LASER_MEDIUM.base.range).toBeLessThan(LASER_LONG.base.range);
+    // Each is at least half again the one below it, which is what makes them three weapons rather
+    // than one weapon at three prices.
+    expect(LASER_MEDIUM.base.range).toBeGreaterThan(LASER_SHORT.base.range * 1.5);
+    expect(LASER_LONG.base.range).toBeGreaterThan(LASER_MEDIUM.base.range * 1.5);
+    // And the shortest still outreaches the Machine Gun, the one weapon meant to be closer in.
+    expect(LASER_SHORT.base.range).toBeGreaterThan(130);
   });
 });
 
@@ -211,9 +219,13 @@ describe('targeting: the WEAKEST enemy in range', () => {
   });
 
   it('never reaches past its own range', () => {
-    const w = makeWorld('laser-short'); // range 150
-    const inRange = addEnemy(w, 140, 0, 90);
-    addEnemy(w, 160, 0, 1); // weaker, and 10 u too far
+    const w = makeWorld('laser-short');
+    // Placed RELATIVE to the weapon's own resolved range rather than at literal distances: the
+    // three laser reaches are a balance dial and this test is about the range CHECK, not about
+    // any particular number. Hardcoding 140 and 160 made it fail the moment the base moved 10%.
+    const range = w.weapons[0].stats.range;
+    const inRange = addEnemy(w, range - 10, 0, 90);
+    addEnemy(w, range + 10, 0, 1); // weaker, and just too far
     sync(w);
 
     const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets);
@@ -897,8 +909,8 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     expect(inst.targetDense).toBe(-1);
     // resolveWeaponStats ran for the new slot: without it, range would still be 0.
     expect(inst.stats.damage).toBe(LASER_LONG.base.damage);
-    expect(inst.stats.range).toBe(430);
-    expect(inst.stats.rangeSq).toBe(430 * 430);
+    expect(inst.stats.range).toBe(LASER_LONG.base.range);
+    expect(inst.stats.rangeSq).toBe(LASER_LONG.base.range * LASER_LONG.base.range);
     expect(inst.stats.heatPerSec).toBe(LASER_LONG.base.heatPerSec);
 
     // And it is live in the pipeline, not just present in the array.

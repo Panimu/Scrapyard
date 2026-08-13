@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T22:10Z',
+    title: 'Missiles steer, lasers reach further',
+    notes: [
+      'Short Missiles turn twice as hard and Long Missiles half again as hard. Both racks were landing about one missile in six; they now land closer to one in three, and the Long rack is worth more than twice what it was.',
+      'All three lasers gained 10% base reach. The Medium Laser doubles its measured damage from it; the Long Laser was never short of range and is unchanged.',
+      'The Short Laser is still the weakest weapon in the game by a wide margin - 10% was not enough, and no laser tier sells range.',
+    ],
+  },
+  {
     at: '2026-08-13T21:55Z',
     title: 'Upgrade cards say which pool at a glance',
     notes: [
