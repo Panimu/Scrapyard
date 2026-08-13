@@ -1,0 +1,95 @@
+# Build, verify, and (optionally) publish Scrapyard.
+#
+# READ THIS BEFORE WIRING UP HOSTING
+# ----------------------------------
+# This repo is intended to be PRIVATE, and GitHub Pages does not serve private repositories on
+# the free plan - it needs GitHub Pro or better. Worse for the instinct behind "private": outside
+# GitHub Enterprise Cloud a Pages site is publicly reachable on the internet even when its source
+# repo is private, so Pages would not give you a private game either way.
+#
+# The `pages` job below is therefore OPT-IN and disabled by default. The recommended host is
+# Cloudflare Pages, which supports private repos on the free plan, has no commercial-use clause,
+# and builds on push with no workflow file at all - see docs/PLAY_ON_IPHONE.md.
+#
+# To enable GitHub Pages anyway (public repo, or a paid plan):
+#   Settings -> Pages -> Source: GitHub Actions
+#   Settings -> Secrets and variables -> Actions -> Variables -> New variable
+#     ENABLE_PAGES = true
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prepare sprites and icons
+        # Copies the ~71 sprites the game actually uses out of assets/kenney/** and regenerates
+        # the PWA icons. Idempotent, so it is safe even though public/ is committed.
+        run: node tools/prepare_assets.mjs
+
+      - name: Typecheck (app + core purity)
+        # Two configs on purpose: tsconfig.core.json compiles src/core alone with no DOM lib, so
+        # a stray `window` inside the simulation is a compile error rather than a phone-only bug.
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Headless simulation
+        # The fastest feedback loop this project has: balance changes are validated by reading
+        # this log on a phone, with no device, no rendering and no deploy.
+        run: npm run sim
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+      - name: Upload Pages artifact
+        if: vars.ENABLE_PAGES == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  pages:
+    # Opt-in only. See the header: a private repo on the free plan cannot use Pages at all.
+    if: vars.ENABLE_PAGES == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

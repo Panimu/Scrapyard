@@ -12,3 +12,6 @@ dist/
 coverage/
 test-results/
 playwright-report/
+
+# dev output (screenshots, sim dumps)
+artifacts/

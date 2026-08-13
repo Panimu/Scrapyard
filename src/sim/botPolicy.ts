@@ -142,7 +142,10 @@ function pickUpgrade(world: World): number {
   for (let i = 0; i < lu.offerCount; i++) {
     const idx = lu.offers[i];
     const def = world.upgradeCatalog[idx];
-    if (def !== undefined && def.tags.indexOf('offence') >= 0) return i;
+    // "Offence" = anything that touches the weapon. UpgradeDef carries no tag field; deriving the
+    // category from the effects themselves means a new upgrade is classified correctly the moment
+    // it is authored, with no tag to forget.
+    if (def !== undefined && def.effects.some((fx) => fx.target === 'weapon')) return i;
   }
   return 0;
 }

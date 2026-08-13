@@ -261,7 +261,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   };
 
   // Stats are resolved exactly here and on each upgrade applied - never per tick.
-  resolvePlayerStats(hero, world.levelUp.stacks, world.upgradeCatalog, player.stats);
+  // config.tuning is passed explicitly: omitting it silently falls back to DEFAULT_TUNING, so a
+  // swept tuning would apply from the first upgrade pick onward but NOT at run start - the run
+  // would start on one set of numbers and quietly change to another.
+  resolvePlayerStats(hero, world.levelUp.stacks, world.upgradeCatalog, player.stats, config.tuning);
   player.hp = player.stats.maxHp;
 
   // The hero's starting weapon. weaponCount stays 0 if the catalog is missing it, which the

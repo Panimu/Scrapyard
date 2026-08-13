@@ -1,0 +1,737 @@
+/*
+ * Scrapyard UI. Every rule that exists to survive mobile Safari is labelled with what breaks
+ * without it - docs/IPHONE_PLATFORM.md §2 is the source.
+ *
+ * index.html carries a minimal inline shell (background, position:fixed, touch-action) so the
+ * page is already hardened before this file has finished loading. This file owns everything
+ * else and repeats the critical rules rather than depending on load order.
+ */
+
+/* ============================================================================================
+ * Tokens
+ * ========================================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0b0e13;
+  --panel: #141a23;
+  --panel-2: #1b2330;
+  --line: #2a3442;
+  --ink: #e6edf5;
+  --ink-dim: #93a1b1;
+  --ink-faint: #5f6d7d;
+  --accent: #e7b900;
+  --hp: #d7503f;
+  --xp: #4fd1ff;
+  --good: #8bd450;
+
+  /* Safe areas resolve to 0 unless index.html ships viewport-fit=cover. They are non-zero in a
+     standalone PWA and zero in a browser tab, so both need testing. */
+  --sa-top: env(safe-area-inset-top, 0px);
+  --sa-right: env(safe-area-inset-right, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px);
+  --sa-left: env(safe-area-inset-left, 0px);
+
+  /* Minimum touch target. 44pt is the Apple HIG floor and this game is played with a thumb. */
+  --tap: 44px;
+
+  --pad: 12px;
+  --radius: 14px;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+/* ============================================================================================
+ * Document hardening
+ * ========================================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+
+  /* Rubber-band scroll and pull-to-refresh. `none`, not `contain` - `contain` still bounces.
+     Safari 16+; the position:fixed below is the belt for older iOS. */
+  overscroll-behavior: none;
+
+  /* THE rule that actually suppresses pinch-zoom, pan and the legacy 300 ms tap delay on iOS.
+     `user-scalable=no` in the viewport meta is deliberately IGNORED by mobile Safari, so it is
+     shipped for other browsers only and must never be depended on. */
+  touch-action: none;
+
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* no long-press "Save Image" sheet over the canvas */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+
+  overflow: hidden;
+}
+
+/* 100vh resolves to the TOOLBAR-HIDDEN viewport on iOS, so the page overflows by the toolbar
+   height and the bottom of the UI is cut off. 100svh is the small (toolbar-visible) viewport:
+   pessimistic, never overflows, and - unlike 100dvh - it does not animate as the toolbar
+   collapses, which would mean canvas backing-store churn mid-fight.
+   JS still treats visualViewport as the source of truth for the renderer size. */
+body {
+  position: fixed; /* pre-Safari-16 fallback: nothing can scroll at all */
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+}
+
+@supports not (height: 100svh) {
+  body {
+    height: 100vh;
+  }
+}
+
+#app,
+#app > canvas,
+#ui {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Overlay root. Children opt back into pointer events; everything else lets touches through to
+   the joystick surface underneath. */
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#boot {
+  transition: opacity 220ms ease;
+}
+
+/* ============================================================================================
+ * Shared primitives
+ * ========================================================================================== */
+
+.btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.btn:active {
+  background: #232d3c;
+  transform: translateY(1px);
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #201a00;
+}
+
+.btn--primary:active {
+  background: #cfa600;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Every full-screen overlay gets safe-area padding: interactive UI must never sit under the
+   notch or the home indicator, where iOS steals the swipe. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--sa-top) + var(--pad)) calc(var(--sa-right) + var(--pad))
+    calc(var(--sa-bottom) + var(--pad)) calc(var(--sa-left) + var(--pad));
+  background: rgba(6, 9, 13, 0.86);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  overscroll-behavior: contain;
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+/* ============================================================================================
+ * HUD
+ * ========================================================================================== */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: calc(var(--sa-top) + 10px) calc(var(--sa-right) + 12px)
+    calc(var(--sa-bottom) + 10px) calc(var(--sa-left) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud[hidden] {
+  display: none;
+}
+
+.hud__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Clears the absolutely-positioned pause button, which would otherwise sit on top of the
+     level badge. */
+  padding-right: calc(var(--tap) + 10px);
+}
+
+.hud__bars {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(10, 14, 20, 0.75);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.bar--xp {
+  height: 7px;
+}
+
+.bar__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  /* Scaled rather than width-animated: transform stays off the layout path, which matters when
+     it updates every frame. */
+  transform: scaleX(0);
+  transition: transform 90ms linear;
+}
+
+.bar__fill--hp {
+  background: linear-gradient(90deg, #ff7a5f, var(--hp));
+}
+
+.bar__fill--xp {
+  background: linear-gradient(90deg, #7fe0ff, var(--xp));
+}
+
+.bar__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.hud__level {
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__stats {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__timer {
+  pointer-events: auto; /* tap the timer to toggle the debug HUD */
+  touch-action: manipulation;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.hud__kills {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.hud__spacer {
+  flex: 1 1 auto;
+}
+
+.hud__pause {
+  position: absolute;
+  top: calc(var(--sa-top) + 10px);
+  right: calc(var(--sa-right) + 12px);
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+/* Damage vignette. Purely cosmetic, driven by EV_PLAYER_DAMAGED. */
+.hud__hurt {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(200, 40, 30, 0.55) 100%);
+  transition: opacity 220ms ease-out;
+}
+
+.hud__hurt--on {
+  opacity: 1;
+  transition-duration: 40ms;
+}
+
+.hud__debug {
+  align-self: flex-start;
+  margin-top: auto;
+  margin-bottom: 96px; /* clear of the stick's usual resting area */
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(8, 11, 16, 0.82);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  white-space: pre;
+}
+
+.hud__debug[hidden] {
+  display: none;
+}
+
+/* ============================================================================================
+ * Virtual joystick
+ * ========================================================================================== */
+
+/* The full-screen touch surface. Sits UNDER every other UI layer in the stacking order, so a
+   second finger landing on a button never reaches it and cannot hijack movement. */
+.stick-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: none;
+  background: transparent;
+}
+
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 112px;
+  height: 112px;
+  margin-left: -56px;
+  margin-top: -56px;
+  border-radius: 50%;
+  border: 2px solid rgba(200, 220, 240, 0.28);
+  background: radial-gradient(circle, rgba(120, 150, 180, 0.14), rgba(120, 150, 180, 0.05));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+  will-change: transform, opacity;
+}
+
+.stick--active {
+  opacity: 1;
+}
+
+.stick__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 50%;
+  background: rgba(220, 235, 250, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  will-change: transform;
+}
+
+/* ============================================================================================
+ * Level-up
+ * ========================================================================================== */
+
+.levelup {
+  justify-content: center;
+  gap: 12px;
+}
+
+.levelup__head {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.levelup__title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 4px 0 0;
+}
+
+.levelup__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  pointer-events: auto;
+  display: block;
+  width: 100%;
+  min-height: 78px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.card:active {
+  background: var(--panel-2);
+  border-color: var(--accent);
+}
+
+.card__name {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.card__desc {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
+
+.card__stacks {
+  float: right;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+/* ============================================================================================
+ * Hero select
+ * ========================================================================================== */
+
+.heroes {
+  gap: 10px;
+}
+
+.heroes__head {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.heroes__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 0;
+}
+
+.heroes__note {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+
+.heroes__grid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  align-content: start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 2px;
+}
+
+.hero {
+  pointer-events: auto;
+  min-height: calc(var(--tap) * 2);
+  padding: 10px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.hero--on {
+  border-color: var(--accent);
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.hero__art {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  image-rendering: auto;
+  pointer-events: none;
+  /* The art faces +x; nose-up reads better in a grid than nose-right. */
+  transform: rotate(-90deg);
+}
+
+.hero__name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hero__identity {
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
+.heroes__go {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 54px;
+  font-size: 18px;
+}
+
+/* ============================================================================================
+ * Summary
+ * ========================================================================================== */
+
+.summary {
+  gap: 10px;
+}
+
+.summary__head {
+  text-align: center;
+  padding: 4px 0;
+}
+
+.summary__title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin: 2px 0 0;
+}
+
+.summary__title--win {
+  color: var(--good);
+}
+
+.summary__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.stat__k {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.stat__v {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.list {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+.list__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summary__seed {
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  color: var(--ink);
+  padding: 8px;
+}
+
+.summary__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.summary__actions .btn {
+  flex: 1 1 0;
+  height: 54px;
+}
+
+/* ============================================================================================
+ * Pause + service-worker update toast
+ * ========================================================================================== */
+
+.pause {
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.pause__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.toast {
+  position: absolute;
+  left: calc(var(--sa-left) + 12px);
+  right: calc(var(--sa-right) + 12px);
+  bottom: calc(var(--sa-bottom) + 12px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  font-size: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast__text {
+  flex: 1 1 auto;
+}
+
+.toast .btn {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+/* Landscape is not blocked - iOS ignores manifest orientation and offers no JS lock, so the
+   camera fixes the field of view instead (src/render/camera.ts) and the layout just gets
+   shorter. Overlays go two-column so their buttons stay above the fold. */
+@media (orientation: landscape) and (max-height: 460px) {
+  .heroes__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .hero__art {
+    width: 52px;
+    height: 52px;
+  }
+
+  .levelup__cards {
+    flex-direction: row;
+  }
+
+  .card {
+    flex: 1 1 0;
+    min-height: 96px;
+  }
+
+  .heroes__title,
+  .summary__title {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar__fill,
+  .stick,
+  .hud__hurt {
+    transition-duration: 0ms;
+  }
+}

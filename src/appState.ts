@@ -1,0 +1,129 @@
+/**
+ * App-level state: the phases the SIMULATION deliberately does not know about, plus the handful
+ * of preferences worth remembering between sessions.
+ *
+ * WHY THESE PHASES ARE NOT `RunPhase`. Core owns five numeric run phases (INTRO, RUNNING,
+ * LEVEL_UP, DEAD, VICTORY). `boot`, `heroSelect` and `paused` are missing from that list on
+ * purpose: they have no simulation meaning, and keeping them out is what makes a replay a flat
+ * `InputFrame[]`. Pause in particular is implemented by main.ts simply not calling `stepWorld` -
+ * the core never learns about it, so pausing cannot perturb a replay.
+ *
+ * STORAGE IS ASSUMED TO VANISH. Safari clears all script-writable storage after 7 days of
+ * non-use (docs/IPHONE_PLATFORM.md §3.5), and a home-screen install is the real mitigation.
+ * Everything here therefore degrades to a default rather than erroring.
+ */
+
+export type AppPhase = 'boot' | 'heroSelect' | 'running' | 'paused' | 'summary';
+
+export interface Settings {
+  /** Index into HERO_CATALOG. Restored so the second run is one tap away. */
+  lastHeroId: number;
+  /** Backing-store scale cap. 2 is the shipping default; 1 halves fill rate on a struggling phone. */
+  dprCap: 1 | 2;
+  /** Whether the on-device debug HUD is showing. Safari Web Inspector needs a Mac we do not have. */
+  debug: boolean;
+}
+
+const STORAGE_KEY = 'scrapyard.settings.v1';
+
+const DEFAULTS: Settings = { lastHeroId: 0, dprCap: 2, debug: false };
+
+function loadSettings(): Settings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return { ...DEFAULTS };
+    const parsed = JSON.parse(raw) as Partial<Settings>;
+    return {
+      lastHeroId: clampInt(parsed.lastHeroId, 0, 7, DEFAULTS.lastHeroId),
+      dprCap: parsed.dprCap === 1 ? 1 : 2,
+      debug: parsed.debug === true,
+    };
+  } catch {
+    // Private browsing, quota, corrupt JSON - all the same answer.
+    return { ...DEFAULTS };
+  }
+}
+
+function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback;
+  const i = Math.round(v);
+  return i < lo ? lo : i > hi ? hi : i;
+}
+
+export class AppState {
+  private _phase: AppPhase = 'boot';
+  private readonly listeners = new Set<(phase: AppPhase, previous: AppPhase) => void>();
+
+  readonly settings: Settings = loadSettings();
+
+  /** Seed of the run in progress, kept so the summary can offer "same seed" and print it. */
+  seed = 0;
+  /** Hero chosen for the run in progress. */
+  heroId = 0;
+
+  get phase(): AppPhase {
+    return this._phase;
+  }
+
+  set(phase: AppPhase): void {
+    if (phase === this._phase) return;
+    const previous = this._phase;
+    this._phase = phase;
+    for (const fn of this.listeners) fn(phase, previous);
+  }
+
+  onChange(fn: (phase: AppPhase, previous: AppPhase) => void): void {
+    this.listeners.add(fn);
+  }
+
+  saveSettings(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
+    } catch {
+      // Nothing to do and nothing worth telling the player about.
+    }
+  }
+}
+
+/**
+ * A run's seed as a 6-character shareable string. Seed plus the input log is a full replay
+ * (DESIGN.md §11), so this is the one number worth putting on the summary screen.
+ *
+ * Base32 over an unambiguous alphabet: no 0/O, no 1/I/L. Someone reading it off a phone screen
+ * and typing it into another device has to be able to get it right.
+ */
+const SEED_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+
+export function seedToCode(seed: number): string {
+  let v = seed >>> 0;
+  let out = '';
+  for (let i = 0; i < 6; i++) {
+    out = SEED_ALPHABET[v % SEED_ALPHABET.length] + out;
+    v = Math.floor(v / SEED_ALPHABET.length);
+  }
+  return out;
+}
+
+export function codeToSeed(code: string): number | undefined {
+  const s = code.trim().toUpperCase();
+  if (s.length !== 6) return undefined;
+  let v = 0;
+  for (const ch of s) {
+    const i = SEED_ALPHABET.indexOf(ch);
+    if (i < 0) return undefined;
+    v = v * SEED_ALPHABET.length + i;
+  }
+  return v >>> 0;
+}
+
+/**
+ * A fresh run seed. Not from the sim's RNG - this is the value that SEEDS it.
+ *
+ * Capped at 31^6 so every seed the game can generate round-trips exactly through its 6-character
+ * code. A seed you can read off the screen but not type back in is worse than no code at all.
+ */
+export const MAX_SEED = SEED_ALPHABET.length ** 6;
+
+export function newSeed(): number {
+  return Math.floor(Math.random() * MAX_SEED);
+}

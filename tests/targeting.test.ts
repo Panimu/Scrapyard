@@ -36,20 +36,23 @@ import { EMPTY_INPUT, type Catalogs, type World } from '../src/core/types.js';
 import type { HeroDef } from '../src/core/data/heroes.js';
 
 // ---------------------------------------------------------------------------------------------
-// Fixtures. A hero with EMPTY layer-1 mods, so the Cannon resolves to exactly its catalog base
+// Fixtures. A hero with EMPTY multiplier maps, so the Cannon resolves to exactly its catalog base
 // numbers and every expectation below is a literal from DESIGN.md §7.3 rather than a product of
-// six multipliers. `reclaimer` is chosen because its trait is onKill-only: nothing in the hero
-// layer can perturb targeting or firing.
+// six multipliers.
+//
+// This stays an explicit fixture rather than reaching for HERO_CATALOG[n]: every shipping hero is
+// currently a skin with empty maps, so a catalog hero would pass today and silently start
+// perturbing these expectations the moment hero variety returns.
 // ---------------------------------------------------------------------------------------------
 
 const FIXTURE_HERO: HeroDef = {
-  id: 'reclaimer',
+  id: 'jade',
   name: 'Test Chassis',
-  tagline: 'fixture',
+  identity: 'fixture',
   sprite: 'mech_3dgreen',
   startingWeapon: 'cannon',
-  mods: {},
-  grants: [],
+  player: {},
+  weapon: {},
 };
 
 const FIXTURE_CATALOGS: Catalogs = {
