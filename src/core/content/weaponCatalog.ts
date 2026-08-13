@@ -26,7 +26,7 @@ import type { World, WeaponInstance } from '../types.js';
 // Id unions. Every one of these grows; none of them is a `string`.
 // ---------------------------------------------------------------------------------------------
 
-export type WeaponId = 'cannon'; // grows: | 'railgun' | 'mortar'
+export type WeaponId = 'cannon' | 'laser-short' | 'laser-medium' | 'laser-long';
 
 /**
  * Target-selection strategies.
@@ -35,9 +35,9 @@ export type WeaponId = 'cannon'; // grows: | 'railgun' | 'mortar'
  * `'nearest'` is not a demo: SCATTER's Flak Battery trait rewrites shells 2..n to it
  * (DESIGN.md §8.2), and it is what proves the strategy seam actually generalises.
  */
-export type TargetingId = 'highest-hp' | 'nearest'; // grows: | 'lowest-hp' | 'densest'
+export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp'; // grows: | 'densest'
 
-export type FirePatternId = 'battery'; // grows: | 'spread' | 'burst'
+export type FirePatternId = 'battery' | 'beam'; // grows: | 'spread' | 'burst'
 
 export type BehaviourId = 'straight'; // grows: | 'homing' | 'arc'
 
@@ -56,9 +56,21 @@ export const BEHAVIOUR_ID: Readonly<Record<BehaviourId, number>> = Object.freeze
 // WeaponDef
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * PROJECTILE weapons spawn shells on a cooldown. BEAM weapons are hitscan: they fire every tick
+ * they are allowed to, apply damage continuously, and are limited by HEAT rather than a cooldown.
+ *
+ * This is the one place the two modalities are distinguished, and it is a `kind` tag rather than
+ * a fourth strategy table because the difference is not "how do I pick a target" or "what shape is
+ * the volley" - it is whether a shot is an OBJECT or an EVENT. Everything downstream of that
+ * differs: allocation, damage timing, what the renderer draws, and what limits the rate of fire.
+ */
+export type WeaponKind = 'projectile' | 'beam';
+
 export interface WeaponDef {
   readonly id: WeaponId;
   readonly name: string;
+  readonly kind: WeaponKind;
   readonly targeting: TargetingId;
   readonly pattern: FirePatternId;
   readonly behaviour: BehaviourId;
@@ -91,6 +103,25 @@ export interface WeaponDef {
    * making it moddable would let `range`-style stacking silently turn a shell into a beam.
    */
   readonly shellRadius: number;
+
+  // ---- beam weapons only ----
+  /**
+   * Beam colour, 0xRRGGBB. Sim-owned rather than render-owned for the same reason `visualId` is:
+   * it lands in the replay, and the harness can name the laser that killed you.
+   */
+  readonly beamColour: number;
+  /** Drawn beam half-width, world units. Purely cosmetic; the beam's HIT test is a ray. */
+  readonly beamWidth: number;
+  /**
+   * When true the weapon fires ONLY if its chosen target is the first thing the ray touches.
+   * A body in the way means no shot at all - not a shot into the body.
+   *
+   * This is what gives the lasers their character. The Cannon lobs a shell at the biggest thing
+   * on the field and does not care what is between; a laser needs a CLEAN LINE to the weakest
+   * thing on the field, so it goes quiet exactly when the horde closes up. The two weapons want
+   * you standing in different places, which is the whole point of having both.
+   */
+  readonly requiresClearLine: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -177,6 +208,7 @@ const CANNON_FIRE_ARC = degToRad(12);
 export const CANNON: WeaponDef = Object.freeze({
   id: 'cannon',
   name: 'Cannon',
+  kind: 'projectile',
   targeting: 'highest-hp',
   pattern: 'battery',
   behaviour: 'straight',
@@ -197,6 +229,7 @@ export const CANNON: WeaponDef = Object.freeze({
     splashFrac: 0.62,
     turretTraverse: CANNON_TURRET_TRAVERSE,
     fireArc: CANNON_FIRE_ARC,
+    heatPerSec: 0, // projectile weapons never heat
   }),
   // Weapon levels are not in this iteration (there is no weapon-level-up path yet); the array is
   // present and empty so `resolveWeaponStats` has nothing to special-case when they arrive.
@@ -205,12 +238,96 @@ export const CANNON: WeaponDef = Object.freeze({
   visualId: 0,
   muzzleOffset: 30, // barrel tip, not chassis centre
   shellRadius: 9, // drawn ~18 u
+  beamColour: 0,
+  beamWidth: 0,
+  requiresClearLine: false,
 });
+
+// ---------------------------------------------------------------------------------------------
+// The lasers
+//
+// Three weapons, one mechanic, three tempos. Each targets the WEAKEST enemy in range, draws a line
+// that stops on the first body it touches, and will not fire at all unless that body is the target.
+//
+// HEAT replaces the cooldown. Every laser heats and cools at the same rate as itself, so all three
+// share a 2/3 duty cycle - but the burst length differs by a factor of three:
+//
+//              heat/s   full burst    cool 100->50   damage/s   range
+//   short        10        10.0 s         5.0 s          30       150
+//   medium       20         5.0 s         2.5 s          55       275
+//   long         30         3.3 s         1.7 s          85       430
+//
+// So the short laser is a floodlight you leave on, and the long one is a held breath. Effective
+// sustained damage is 2/3 of the listed figure - 20 / 37 / 57 - against the Cannon's 36.7 single
+// target. The lasers beat it on paper and lose on the field, because they refuse blocked shots and
+// pick the weakest thing rather than the most dangerous one.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Lasers slew fast and fire wide. They are emitters on a gimbal, not a turret with a barrel to
+ * heave around: the interesting gate on a laser is the CLEAR LINE, so making you also wait on
+ * traverse would be two gates doing one job and would read as unresponsiveness.
+ */
+const LASER_TRAVERSE = degToRad(720);
+const LASER_FIRE_ARC = degToRad(30);
+
+function laser(
+  id: WeaponId,
+  name: string,
+  range: number,
+  damagePerSec: number,
+  heatPerSec: number,
+  beamColour: number,
+  beamWidth: number,
+): WeaponDef {
+  return Object.freeze({
+    id,
+    name,
+    kind: 'beam' as WeaponKind,
+    targeting: 'lowest-hp' as TargetingId,
+    pattern: 'beam' as FirePatternId,
+    behaviour: 'straight' as BehaviourId, // unused by beams; no projectile is ever spawned
+    requiresTarget: true,
+    base: Object.freeze({
+      // DAMAGE IS PER SECOND for a beam, not per shot. updateWeapons multiplies by dt.
+      damage: damagePerSec,
+      cooldown: 0, // unused: heat is the limiter and the beam fires every tick it is allowed to
+      range,
+      projectileSpeed: 0,
+      projectileCount: 1,
+      pierce: 0,
+      // A continuous beam applying knockback every tick would launch a swarmer into orbit.
+      knockback: 0,
+      splashRadius: 0,
+      splashFrac: 0,
+      turretTraverse: LASER_TRAVERSE,
+      fireArc: LASER_FIRE_ARC,
+      heatPerSec,
+    }),
+    perLevel: Object.freeze([]),
+    reengageMul: 1,
+    visualId: 0,
+    muzzleOffset: 22,
+    shellRadius: 0,
+    beamColour,
+    beamWidth,
+    requiresClearLine: true,
+  }) as WeaponDef;
+}
+
+export const LASER_SHORT = laser('laser-short', 'Short Laser', 150, 30, 10, 0x3be86b, 1.6);
+export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 275, 55, 20, 0x4fa8ff, 2.1);
+export const LASER_LONG = laser('laser-long', 'Long Laser', 430, 85, 30, 0xff4d4d, 2.7);
 
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.
  */
-export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([CANNON]);
+export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
+  CANNON,
+  LASER_SHORT,
+  LASER_MEDIUM,
+  LASER_LONG,
+]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */
 export function weaponDefIndex(id: WeaponId): number {

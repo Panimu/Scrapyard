@@ -33,7 +33,28 @@ export const MAX_QUERY_CANDIDATES = 2048;
 /** Power of two - the ring masks rather than divides. */
 export const EVENT_RING_CAPACITY = 1024;
 
-export const MAX_WEAPONS = 6;
+/**
+ * Seven weapon slots and seven passive slots - the Vampire Survivors shape we are building toward.
+ * Four weapons exist today (Cannon + three lasers); the slot count is the target, not the content.
+ */
+export const MAX_WEAPONS = 7;
+export const MAX_PASSIVES = 7;
+
+/**
+ * HEAT - the lasers' limiter, in place of a cooldown.
+ *
+ * A laser fires CONTINUOUSLY and gains heat while it does; at HEAT_MAX it cuts out and cannot fire
+ * again until it has cooled to HEAT_RESUME. Cooling runs at the same rate as heating, so the duty
+ * cycle is identical for all three lasers - 100 up, 50 down = fire 2/3 of the time - while the
+ * BURST LENGTH differs sharply: the short laser sustains for 10 s, the long one for 3.3 s.
+ * Same rhythm, very different tempo, which is what makes them feel like different guns rather
+ * than one gun at three scales.
+ */
+export const HEAT_MAX = 100;
+export const HEAT_RESUME = 50;
+
+/** One beam per weapon per tick, at most. */
+export const MAX_BEAMS_PER_TICK = MAX_WEAPONS;
 export const UPGRADE_OFFER_COUNT = 3;
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;

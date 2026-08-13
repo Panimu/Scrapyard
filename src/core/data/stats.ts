@@ -77,7 +77,14 @@ export type WeaponStatKey =
   | 'splashRadius'
   | 'splashFrac'
   | 'turretTraverse'
-  | 'fireArc';
+  | 'fireArc'
+  /**
+   * Heat gained per second of continuous fire, and - deliberately the same number - heat shed per
+   * second while not firing. Beam weapons only; 0 on a projectile weapon, which never heats.
+   * One number rather than two because equal rates are what fix the duty cycle at 2/3 for every
+   * laser regardless of its tempo.
+   */
+  | 'heatPerSec';
 
 /**
  * Authored stats plus the four precomputed trigonometric/squared forms the hot loops want.
@@ -97,6 +104,8 @@ export interface WeaponStats {
   turretTraverse: number;
   /** Radians, half-angle permission gate. */
   fireArc: number;
+  /** Heat per second of fire, and per second of cooling. 0 for projectile weapons. */
+  heatPerSec: number;
 
   // ---- derived ----
   /** range / projectileSpeed, plus a margin so a shell never expires exactly at max range. */
@@ -305,6 +314,15 @@ export function resolveWeaponStats(
     'turretTraverse',
   );
   out.fireArc = resolveOne(lvl('fireArc'), h.fireArc ?? 1, stacks, upgrades, 'weapon', 'fireArc');
+  out.heatPerSec = resolveOne(
+    lvl('heatPerSec'),
+    h.heatPerSec ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'heatPerSec',
+  );
+  if (out.heatPerSec < 0) out.heatPerSec = 0;
 
   // Guard rails before anything derived is computed from these.
   if (out.cooldown < 0.05) out.cooldown = 0.05; // 20 shots/s ceiling; the pace can bend, not break

@@ -17,6 +17,7 @@ import {
   MAX_CONTACTS_PER_TICK,
   MAX_HITS_PER_TICK,
   MAX_KILLS_PER_TICK,
+  MAX_BEAMS_PER_TICK,
   MAX_QUERY_CANDIDATES,
   MAX_TARGETS,
   MAX_WEAPONS,
@@ -34,6 +35,7 @@ import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
 import { createProjectilePool } from './entity/projectilePool.js';
 import {
+  createBeamBuffer,
   createContactBuffer,
   createEventRing,
   createHitBuffer,
@@ -118,6 +120,7 @@ function createWeaponStats(): WeaponStats {
     splashFrac: 0,
     turretTraverse: 0,
     fireArc: 0,
+    heatPerSec: 0,
     projectileLifetime: 0,
     rangeSq: 0,
     cosTraverseStep: 1,
@@ -137,6 +140,8 @@ function createWeaponInstance(): WeaponInstance {
     turretY: 0,
     targetDense: -1,
     stats: createWeaponStats(),
+    heat: 0,
+    overheated: false,
     scratch: new Float32Array(WEAPON_SCRATCH_LEN),
   };
 }
@@ -242,6 +247,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     events: createEventRing(EVENT_RING_CAPACITY),
 
     hits: createHitBuffer(MAX_HITS_PER_TICK),
+    beams: createBeamBuffer(MAX_BEAMS_PER_TICK),
     contacts: createContactBuffer(MAX_CONTACTS_PER_TICK),
     kills: createKillFeed(MAX_KILLS_PER_TICK),
     scratch: {
@@ -276,6 +282,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     inst.level = 1;
     inst.cooldownLeft = 0;
     inst.targetDense = -1;
+    inst.heat = 0;
+    inst.overheated = false;
     resolveWeaponStats(
       world.weaponCatalog[defId],
       hero,

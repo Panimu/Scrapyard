@@ -16,7 +16,7 @@ import type { EnemyPool } from './entity/enemyPool.js';
 import type { ProjectilePool } from './entity/projectilePool.js';
 import type { PickupPool } from './entity/pickupPool.js';
 import type { SpatialHash } from './spatial/hashGrid.js';
-import type { ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
+import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
 import type { HeroDef } from './data/heroes.js';
@@ -24,7 +24,7 @@ import type { EnemyDef } from './data/enemies.js';
 import type { WeaponDef } from './data/weapons.js';
 import type { UpgradeDef } from './data/upgrades.js';
 
-export type { HitBuffer, ContactBuffer, KillFeed, EventRing } from './events/ring.js';
+export type { BeamBuffer, HitBuffer, ContactBuffer, KillFeed, EventRing } from './events/ring.js';
 
 // -------------------------------------------------------------------------------------------
 // Run phase. FIVE numeric phases, all of which mean something to the simulation.
@@ -143,6 +143,19 @@ export interface WeaponInstance {
   /** Dense index of the target chosen this tick, or -1. Render reads it for the reticle. */
   targetDense: number;
   readonly stats: WeaponStats;
+  /**
+   * HEAT, 0..HEAT_MAX. Beam weapons only; a projectile weapon leaves it at 0.
+   * Rises while firing and falls at the same rate while not, so it is a genuine duty cycle
+   * rather than a cooldown wearing a different hat.
+   */
+  heat: number;
+  /**
+   * Latched at HEAT_MAX, cleared at HEAT_RESUME. It has to be a separate flag rather than
+   * `heat >= HEAT_MAX`, because the whole point is the HYSTERESIS: once cut out, the weapon
+   * stays out through the whole 100 -> 50 slide instead of stuttering back on the instant heat
+   * dips below the ceiling.
+   */
+  overheated: boolean;
   /** Per-weapon scratch (burst counters, trait counters). Fixed size, no allocation. */
   readonly scratch: Float32Array;
 }
@@ -256,6 +269,8 @@ export interface World {
   readonly events: EventRing;
 
   readonly hits: HitBuffer;
+  /** Beams fired this tick: damage for updateDamage, geometry for the renderer. */
+  readonly beams: BeamBuffer;
   readonly contacts: ContactBuffer;
   readonly kills: KillFeed;
   readonly scratch: WorldScratch;

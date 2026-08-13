@@ -24,6 +24,10 @@ export const EV_LEVEL_UP = 9;
 export const EV_UPGRADE_TAKEN = 10;
 export const EV_PHASE_CHANGED = 11;
 export const EV_BOSS_SPAWNED = 12;
+/** A laser cut out at HEAT_MAX. The UI flashes the heat bar on this. */
+export const EV_WEAPON_OVERHEATED = 13;
+/** A laser cooled to HEAT_RESUME and is live again. */
+export const EV_WEAPON_COOLED = 14;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -155,6 +159,73 @@ export function pushHit(
   h.enemyDense[i] = enemyDense;
   h.x[i] = x;
   h.y[i] = y;
+}
+
+/**
+ * Beams fired this tick. Written by updateWeapons, damage consumed by updateDamage, geometry
+ * consumed by the renderer.
+ *
+ * SEPARATE FROM HitBuffer because a hit is keyed by the projectile that caused it, and a beam has
+ * no projectile - it is hitscan. Rather than invent a sentinel projectile index that every
+ * consumer would have to remember to check, beams get their own buffer and updateDamage reads
+ * both. The detection/application split is preserved: updateWeapons decides WHAT a beam touched,
+ * updateDamage decides what that costs.
+ *
+ * The endpoint is carried because the renderer must draw the beam terminating exactly where the
+ * simulation said it stopped. Recomputing it render-side would let the line and the damage
+ * disagree on a frame where interpolation moved the target.
+ */
+export interface BeamBuffer {
+  readonly capacity: number;
+  count: number;
+  /** Index into World.weapons - identifies which laser, hence colour and width. */
+  readonly weaponIdx: Uint8Array;
+  /** Enemy struck, or NO_BEAM_TARGET when the beam reached its full length hitting nothing. */
+  readonly enemyDense: Uint16Array;
+  /** Damage applied THIS TICK (dps * dt), already scaled - updateDamage does not rescale it. */
+  readonly damage: Float32Array;
+  readonly x0: Float32Array;
+  readonly y0: Float32Array;
+  readonly x1: Float32Array;
+  readonly y1: Float32Array;
+}
+
+/** enemyDense sentinel: the beam terminated in empty space. */
+export const NO_BEAM_TARGET = 0xffff;
+
+export function createBeamBuffer(capacity: number): BeamBuffer {
+  return {
+    capacity,
+    count: 0,
+    weaponIdx: new Uint8Array(capacity),
+    enemyDense: new Uint16Array(capacity),
+    damage: new Float32Array(capacity),
+    x0: new Float32Array(capacity),
+    y0: new Float32Array(capacity),
+    x1: new Float32Array(capacity),
+    y1: new Float32Array(capacity),
+  };
+}
+
+export function pushBeam(
+  b: BeamBuffer,
+  weaponIdx: number,
+  enemyDense: number,
+  damage: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): void {
+  if (b.count >= b.capacity) return;
+  const i = b.count++;
+  b.weaponIdx[i] = weaponIdx;
+  b.enemyDense[i] = enemyDense;
+  b.damage[i] = damage;
+  b.x0[i] = x0;
+  b.y0[i] = y0;
+  b.x1[i] = x1;
+  b.y1[i] = y1;
 }
 
 /** Player-vs-enemy overlaps this tick. Written by updateCollision, consumed by updateDamage. */
