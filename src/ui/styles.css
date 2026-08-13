@@ -405,9 +405,12 @@ body {
  * Level-up
  * ========================================================================================== */
 
+/* Cards sit in the THUMB ZONE, not the middle of the screen: this is a one-handed game and the
+   top third of a 6.1" phone is not comfortably reachable while holding it. */
 .levelup {
-  justify-content: center;
+  justify-content: flex-end;
   gap: 12px;
+  padding-bottom: calc(var(--sa-bottom) + 24px);
 }
 
 .levelup__head {
@@ -669,6 +672,11 @@ body {
   letter-spacing: 0.1em;
 }
 
+.pause .btn {
+  min-width: min(280px, 70vw);
+  height: 54px;
+}
+
 .toast {
   position: absolute;
   left: calc(var(--sa-left) + 12px);
@@ -684,6 +692,14 @@ body {
   border: 1px solid var(--accent);
   font-size: 14px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* The install banner has to sit at the TOP: it appears over the mech picker, whose Deploy
+   button owns the bottom of the screen. */
+.toast--top {
+  bottom: auto;
+  top: calc(var(--sa-top) + 12px);
+  border-color: var(--line);
 }
 
 .toast[hidden] {

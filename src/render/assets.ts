@@ -127,8 +127,27 @@ export interface GameTextures {
   readonly fxTrail: Texture;
 }
 
+/**
+ * A sprite name -> data: URI map, injected by tools/inline_build.mjs for the single-file build.
+ *
+ * Absent in every normal build, where sprites are fetched as ordinary files. It exists because a
+ * single-file share target runs under a CSP that blocks all external requests, so the textures
+ * have to arrive inside the document itself.
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var __SPRITE_DATA__: Record<string, string> | undefined;
+}
+
 /** Where prepare_assets.mjs put the sprites, honouring Vite's configured base path. */
 function spriteUrl(name: string): string {
+  const inlined = globalThis.__SPRITE_DATA__;
+  if (inlined !== undefined) {
+    const uri = inlined[name];
+    // Fall through to the normal URL when a name is missing rather than loading `undefined`:
+    // one absent sprite should be one missing texture, not a failed boot.
+    if (uri !== undefined) return uri;
+  }
   const base = import.meta.env.BASE_URL || './';
   return `${base.endsWith('/') ? base : `${base}/`}sprites/${name}.png`;
 }

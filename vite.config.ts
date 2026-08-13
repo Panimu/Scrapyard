@@ -10,6 +10,16 @@ import { VitePWA } from 'vite-plugin-pwa';
  */
 const isTest = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
 
+/**
+ * SINGLEFILE=1 builds one self-contained bundle instead of the normal split build.
+ *
+ * It exists for sandboxed hosts that serve a single HTML document under a CSP which blocks every
+ * external request - no second script, no sprite fetch. `tools/inline_build.mjs` folds that build
+ * plus every sprite into one .html. It is a SHARING format, not the shipping one: the real deploy
+ * keeps the split chunks and the service worker, which is what makes reloads on cellular cheap.
+ */
+const isSingleFile = process.env.SINGLEFILE === '1';
+
 export default defineConfig({
   // Relative base so the built bundle works from a subpath as well as from a Pages root.
   base: './',
@@ -23,21 +33,40 @@ export default defineConfig({
 
   build: {
     target: 'es2022',
-    sourcemap: true,
+    // Sourcemaps are 2.8 MB of the 4.2 MB build and are pure overhead in a single file.
+    sourcemap: !isSingleFile,
     // Safari's parser is fine with modern syntax; keep names readable in the on-device HUD.
     minify: 'esbuild',
     rollupOptions: {
-      output: {
-        // Pixi is big and changes rarely; a separate chunk keeps game-code deploys small,
-        // which matters when the update path is "reload on a phone over cellular".
-        manualChunks: (id: string): string | undefined =>
-          id.includes('node_modules/pixi.js') ? 'pixi' : undefined,
-      },
+      output: isSingleFile
+        ? // One chunk, no code splitting: a second <script> could not be fetched under the CSP.
+          { inlineDynamicImports: true }
+        : {
+            // Pixi is big and changes rarely; a separate chunk keeps game-code deploys small,
+            // which matters when the update path is "reload on a phone over cellular".
+            manualChunks: (id: string): string | undefined =>
+              id.includes('node_modules/pixi.js') ? 'pixi' : undefined,
+          },
     },
   },
 
   plugins: isTest
     ? []
+    : isSingleFile
+    ? [
+        {
+          // main.ts imports `virtual:pwa-register` to drive the update toast; that module is
+          // supplied by VitePWA, which is off here. A single file has no service worker and
+          // nothing to update, so resolve it to an inert stub rather than dragging the plugin in.
+          name: 'stub-pwa-register',
+          resolveId: (id: string): string | undefined =>
+            id === 'virtual:pwa-register' ? '\0virtual:pwa-register' : undefined,
+          load: (id: string): string | undefined =>
+            id === '\0virtual:pwa-register'
+              ? 'export const registerSW = () => () => Promise.resolve();'
+              : undefined,
+        },
+      ]
     : [
         VitePWA({
           // 'prompt', never 'autoUpdate': without a visible "new version" toast the PWA serves a

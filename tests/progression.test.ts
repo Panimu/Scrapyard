@@ -44,6 +44,10 @@ function makeWorld(seed = 1, catalogs?: Catalogs, runLengthSec = 900): World {
       ? createWorld({ seed, heroId: 0, runLengthSec, tuning: DEFAULT_TUNING })
       : createWorld({ seed, heroId: 0, runLengthSec, tuning: DEFAULT_TUNING }, catalogs);
   w.phase = RUN_PHASE_RUNNING;
+  // These suites reason in RAW XP so the arithmetic in each expectation is the arithmetic being
+  // tested. The shipping xpGain is a balance dial (currently 3.2) and moving it must not silently
+  // change what "bank 11" means here. The one test that cares about scaling sets it explicitly.
+  w.player.stats.xpGain = 1;
   return w;
 }
 
@@ -53,9 +57,17 @@ function bank(world: World, xp: number): void {
   updateProgression(world, DT);
 }
 
-/** Banks exactly enough for ONE level, so `pending` is exactly 1 and the card count is knowable. */
+/**
+ * Banks exactly enough for ONE level, so `pending` is exactly 1 and the card count is knowable.
+ *
+ * Divides by the CURRENT xpGain rather than trusting the fixture's override: applying a pick calls
+ * resolvePlayerStats, which recomputes xpGain from the tuning and silently restores the shipping
+ * value. Without this, the second call in a loop banks 3.2x what it intended and grants two levels.
+ */
 function gainOneLevel(world: World): void {
-  bank(world, world.player.xpToNext - world.player.xp);
+  const deficit = world.player.xpToNext - world.player.xp;
+  const gain = world.player.stats.xpGain || 1;
+  bank(world, deficit / gain);
 }
 
 /** One tick with `chooseIndex` set - the only way a pick can ever reach the simulation. */
@@ -150,28 +162,34 @@ function fixtureCatalogs(hero: HeroDef, upgrades: readonly UpgradeDef[]): Catalo
 
 describe('XP thresholds and levels', () => {
   it('follows the three-segment curve exactly', () => {
+    // Thresholds are DERIVED from the tuning, not hardcoded. These assertions are about the shape
+    // of the curve - one level per threshold, remainder carried, phase flips on the boundary -
+    // and a balance pass that moves tier1Base must not turn them red.
+    const need1 = xpToNextLevel(1, DEFAULT_TUNING.xp);
     const w = makeWorld();
     expect(w.player.level).toBe(1);
-    expect(w.player.xpToNext).toBe(20);
+    expect(w.player.xpToNext).toBe(need1);
 
-    bank(w, 19);
+    bank(w, need1 - 1);
     expect(w.player.level).toBe(1);
-    expect(w.player.xp).toBe(19);
+    expect(w.player.xp).toBe(need1 - 1);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
 
     bank(w, 1);
     expect(w.player.level).toBe(2);
     expect(w.player.xp).toBe(0);
     expect(w.player.xpToNext).toBe(xpToNextLevel(2, DEFAULT_TUNING.xp));
-    expect(w.player.xpToNext).toBe(34);
+    // The segment is linear: consecutive tier-1 thresholds differ by exactly tier1Step.
+    expect(w.player.xpToNext - need1).toBe(DEFAULT_TUNING.xp.tier1Step);
     expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
   });
 
   it('scales the banked total by xpGain, not the gem face value', () => {
     const w = makeWorld();
+    const need1 = xpToNextLevel(1, DEFAULT_TUNING.xp);
     w.player.stats.xpGain = 2;
-    bank(w, 10);
-    // 10 raw x2 = exactly the 20 needed for level 2.
+    // Half the requirement at face value, doubled by xpGain: lands exactly on the threshold.
+    bank(w, need1 / 2);
     expect(w.player.level).toBe(2);
     expect(w.player.xp).toBe(0);
     // And xpBanked is drained every tick, whether or not it was non-zero.
@@ -180,7 +198,8 @@ describe('XP thresholds and levels', () => {
 
   it('carries the remainder forward rather than discarding it', () => {
     const w = makeWorld();
-    bank(w, 25);
+    const need1 = xpToNextLevel(1, DEFAULT_TUNING.xp);
+    bank(w, need1 + 5);
     expect(w.player.level).toBe(2);
     expect(w.player.xp).toBe(5);
   });
@@ -189,11 +208,15 @@ describe('XP thresholds and levels', () => {
 describe('banked multi-level-ups - one card at a time, none lost', () => {
   it('queues seven levels from a single boss core and resolves every one', () => {
     const w = makeWorld();
-    // 20+34+48+62+76+90+104 = 434 <= 500 < 552, so a level-1 mech lands on level 8 with 66 over.
-    bank(w, 500);
+    // Seven consecutive thresholds, summed from the tuning rather than written out, plus a
+    // deliberate remainder. The point is that ONE deposit can queue seven cards and lose none.
+    let sevenLevels = 0;
+    for (let lvl = 1; lvl <= 7; lvl++) sevenLevels += xpToNextLevel(lvl, DEFAULT_TUNING.xp);
+    const remainder = 66;
+    bank(w, sevenLevels + remainder);
 
     expect(w.player.level).toBe(8);
-    expect(w.player.xp).toBe(500 - 434);
+    expect(w.player.xp).toBe(remainder);
     expect(w.levelUp.pending).toBe(7);
     expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
 

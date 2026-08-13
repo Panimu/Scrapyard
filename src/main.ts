@@ -382,6 +382,7 @@ async function boot(): Promise<void> {
   requestAnimationFrame(tick);
 
   void registerServiceWorker(uiRoot);
+  maybeShowInstallBanner(uiRoot);
 
   function seedFromParams(): number | undefined {
     const raw = params.get('seed');
@@ -450,6 +451,57 @@ async function registerServiceWorker(uiRoot: HTMLElement): Promise<void> {
     // The virtual module only exists when the PWA plugin ran (it is skipped under vitest).
     // A missing service worker costs offline support, not the game.
   }
+}
+
+/**
+ * "Add to Home Screen" is the PERSISTENCE STRATEGY, not a nicety. Safari clears all
+ * script-writable storage - Cache API, IndexedDB, localStorage, service worker registrations -
+ * after 7 days without use, while a home-screen app gets its own use counter and a far larger
+ * quota. Standalone mode also removes Safari's edge-swipe back gesture, which otherwise fights
+ * a full-screen drag surface.
+ *
+ * There is no `beforeinstallprompt` on iOS, so this is a hand-written banner and the actual
+ * install is a manual Share -> Add to Home Screen. Shown once, then never again.
+ */
+const INSTALL_DISMISSED_KEY = 'scrapyard.installDismissed.v1';
+
+function maybeShowInstallBanner(uiRoot: HTMLElement): void {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  const standalone =
+    nav.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (standalone) return;
+
+  // iPadOS reports a desktop UA, hence the touch-points check.
+  const isApple =
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isApple) return;
+
+  try {
+    if (localStorage.getItem(INSTALL_DISMISSED_KEY) !== null) return;
+  } catch {
+    return;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast toast--top';
+  const text = document.createElement('div');
+  text.className = 'toast__text';
+  text.textContent = 'Share → Add to Home Screen for fullscreen and offline play.';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn';
+  btn.textContent = 'Got it';
+  btn.addEventListener('click', () => {
+    toast.remove();
+    try {
+      localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+    } catch {
+      // Nothing to do; worst case the banner appears again next session.
+    }
+  });
+  toast.append(text, btn);
+  uiRoot.appendChild(toast);
 }
 
 function showUpdateToast(uiRoot: HTMLElement, onReload: () => void): void {

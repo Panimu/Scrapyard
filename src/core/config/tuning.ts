@@ -145,8 +145,8 @@ const PLAYER_BASE: PlayerBaseTuning = {
   armour: 0,
   moveAccel: 700,
   moveMaxSpeed: 195, // tau = 195/700 = 0.279 s; releasing the stick coasts 54 u, about one mech length
-  pickupRadius: 70,
-  xpGain: 1,
+  pickupRadius: 105,
+  xpGain: 3.2, // gems are sparse and often abandoned while kiting; the curve is paid here
   damageTakenMul: 1,
   radius: 26,
 };
@@ -187,8 +187,8 @@ const SPAWN_MIX: readonly SpawnMixRow[] = [
 ];
 
 const DIRECTOR: DirectorTuning = {
-  targetThreatBase: 20,
-  targetThreatPerMinute: 12.7, // ~11 live at 0:00, ~40 at 4:00, ~120 at 15:00
+  targetThreatBase: 8,
+  targetThreatPerMinute: 8.2, // ~8 live at 0:00, ~25 at 4:00, ~131 at 15:00
   maxSpawnsPerSec: 12,
   tierSeconds: 225,
   forwardBiasMinSpeed: 20,
@@ -208,8 +208,8 @@ const DIRECTOR: DirectorTuning = {
 };
 
 const XP: XpTuning = {
-  tier1Base: 20,
-  tier1Step: 14,
+  tier1Base: 12,
+  tier1Step: 10,
   tier1Cap: 10,
   tier2Base: 160,
   tier2Step: 42,

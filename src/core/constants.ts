@@ -49,8 +49,10 @@ export const WEAPON_SCRATCH_LEN = 4;
 // ---------------------------------------------------------------------------------------------
 export const SPAWN_RADIUS = 560;
 export const DESPAWN_RADIUS = 900;
-/** Equal to SPAWN_RADIUS so a freshly spawned enemy counts toward local threat immediately. */
-export const THREAT_RADIUS = 560;
+/** Equal to DESPAWN_RADIUS, NOT to SPAWN_RADIUS. At 560 the director could not see enemies
+ *  trailing behind a kiting player, read the field as empty and spawn more ahead of them - actual
+ *  threat ran at double target. Everything alive counts. */
+export const THREAT_RADIUS = 900;
 
 /**
  * Broad-phase grid. 64 u against enemy radii of 13-34 u is ~2.4 enemies per occupied cell at
