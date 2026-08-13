@@ -13,7 +13,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.core.json --noEmit",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
     "sim": "tsx tools/sim.ts",
-    "assets": "node tools/pack-assets.mjs",
+    "assets": "node tools/prepare_assets.mjs",
+    "mechs": "node tools/make-mechs.mjs",
     "screenshot": "tsx tools/screenshot.ts",
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
     "dps": "tsx tools/dps.ts"

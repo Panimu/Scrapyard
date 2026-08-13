@@ -57,6 +57,7 @@ import {
   MISSILE_SCALE,
   SLUG_SCALE,
   SHELL_SCALE,
+  TURRET_SCALE,
   type GameTextures,
 } from './assets.js';
 
@@ -78,14 +79,6 @@ const GLOW_SPRITES = 96;
 const HP_BAR_W_FRAC = 0.9;
 const HP_BAR_H = 4;
 const HP_BAR_GAP = 8;
-
-/**
- * Turret barrel. Drawn from Texture.WHITE so it batches with the health bars rather than adding
- * a texture bind, and long enough to protrude past the 52 u chassis so its heading is readable.
- */
-const BARREL_LEN = 44;
-const BARREL_W = 9;
-const BARREL_TINT = 0x232a33;
 
 /** Player hit feedback, seconds. */
 const PLAYER_FLASH_SEC = 0.12;
@@ -152,9 +145,11 @@ export class GameRenderer {
     });
 
     this.playerLayer = new Container({ label: 'player' });
-    this.barrel = new Sprite({ texture: Texture.WHITE, roundPixels: true });
-    this.barrel.anchor.set(0.1, 0.5); // pivot just behind the mech centre
-    this.barrel.tint = BARREL_TINT;
+    this.barrel = new Sprite({ texture: tex.turret, roundPixels: true });
+    // Pivot on the mount ring rather than the sprite centre: the turret swings about a point just
+    // behind the mech's middle, so the barrels sweep across the hull the way a real mount would.
+    this.barrel.anchor.set(0.2, 0.5);
+    this.barrel.scale.set(TURRET_SCALE);
     this.mech = new Sprite({ texture: tex.mechs[0], roundPixels: true });
     this.mech.anchor.set(0.5, 0.5);
     this.mech.scale.set(MECH_SCALE);
@@ -544,7 +539,7 @@ export class GameRenderer {
     const ty = w?.turretY ?? pl.faceY;
     this.barrel.position.set(px, py);
     this.barrel.rotation = Math.atan2(ty, tx);
-    this.barrel.scale.set(BARREL_LEN, BARREL_W);
+    this.barrel.tint = this.playerFlash > 0 ? 0xffb0a8 : 0xffffff;
   }
 
   private drawProjectiles(world: World, alpha: number): void {

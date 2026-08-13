@@ -14,6 +14,7 @@
  */
 
 import { HERO_CATALOG } from '../core/index.js';
+import { MECH_SRC_W, spriteUrl } from '../render/assets.js';
 
 export class HeroSelect {
   readonly element: HTMLDivElement;
@@ -43,9 +44,6 @@ export class HeroSelect {
     grid.setAttribute('role', 'radiogroup');
     el.appendChild(grid);
 
-    const base = import.meta.env.BASE_URL || './';
-    const spriteRoot = `${base.endsWith('/') ? base : `${base}/`}sprites/`;
-
     HERO_CATALOG.forEach((hero, index) => {
       const tile = document.createElement('button');
       tile.type = 'button';
@@ -54,12 +52,14 @@ export class HeroSelect {
 
       const img = document.createElement('img');
       img.className = 'hero__art';
-      img.src = `${spriteRoot}${hero.sprite}.png`;
+      // spriteUrl, NOT a hand-built path: in the single-file build the sprites live in
+      // __SPRITE_DATA__ as data: URIs and there is no sprites/ directory to point at.
+      img.src = spriteUrl(hero.sprite);
       img.alt = '';
       img.decoding = 'async';
       // Explicit intrinsic size so the grid does not reflow as the eight PNGs decode.
-      img.width = 148;
-      img.height = 154;
+      img.width = MECH_SRC_W;
+      img.height = 172;
 
       const name = document.createElement('div');
       name.className = 'hero__name';

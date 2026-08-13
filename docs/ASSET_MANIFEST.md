@@ -14,60 +14,73 @@ on screen (y-down), matching PixiJS `sprite.rotation`. 1 world unit = 1 CSS px a
 
 ## 1. Player mechs — the 8 heroes
 
-`assets/kenney/robot-pack/PNG/Top view/`
+**GENERATED, NOT SOURCED.** `tools/make-mechs.mjs` (`npm run mechs`) draws all eight chassis and
+the turret into `public/sprites/`. The PNGs are checked in; the generator runs only when the art
+changes.
 
-| File | Canvas | Alpha bbox | Silhouette | Body colour |
+| Frame key | Canvas | Hull | Trim | Canopy |
 |---|---|---|---|---|
-| `robot_blue.png` | 148×154 | full canvas | A | `#94A2B1` |
-| `robot_green.png` | 148×154 | full canvas | A | `#6FC4A9` |
-| `robot_red.png` | 148×154 | full canvas | B | `#D77A50` |
-| `robot_yellow.png` | 148×154 | full canvas | C | `#E7B900` |
-| `robot_3Dblue.png` | 148×154 | full canvas | A | `#A4B4C6` (shaded) |
-| `robot_3Dgreen.png` | 148×154 | full canvas | A | `#80D4BA` (shaded) |
-| `robot_3Dred.png` | 148×154 | full canvas | B | `#E9895E` (shaded) |
-| `robot_3Dyellow.png` | 148×154 | full canvas | C | `#FFCC00` (shaded) |
+| `mech_slate` | 148×172 | `#8d99ae` | `#5b6779` | `#4fa8ff` |
+| `mech_moss` | 148×172 | `#69ad6b` | `#417a48` | `#3be86b` |
+| `mech_ember` | 148×172 | `#d0574a` | `#8d382f` | `#ff4d4d` |
+| `mech_amber` | 148×172 | `#e0ae3c` | `#9c7620` | `#ffd45e` |
+| `mech_cobalt` | 148×172 | `#4a72d0` | `#2d4790` | `#4fa8ff` |
+| `mech_jade` | 148×172 | `#3fae94` | `#26705f` | `#3be86b` |
+| `mech_rust` | 148×172 | `#b5652f` | `#79401c` | `#ff8a4d` |
+| `mech_brass` | 148×172 | `#c9a24a` | `#8a6a25` | `#ffe08a` |
+| `turret` | 80×44 | — | — | — |
 
-All 8 exist and are exactly **148×154**. The `3D*` variants are **not** different models — they
-share a pixel-identical alpha silhouette with their flat counterpart and differ only in RGB (a
-gradient/highlight shading pass; mean RGB delta 7–13). Only **3 distinct silhouettes** exist across
-the 8 files (blue≡green, red, yellow). Stat blocks must carry the identity — the art gives you
-4 hues × 2 finishes, not 8 chassis.
+The canopy colour is the beam colour of the hero's starting weapon, so the chassis says what it
+opens with. The two Cannon heroes have no beam and get warm running lights instead.
 
-### Facing — the answer
+### Why these are not Kenney art
+
+The player used to draw from `assets/kenney/robot-pack/PNG/Top view/robot_*.png` — 148×154, four
+hues in two finishes. Two problems, and the second is the one that mattered:
+
+1. **Only 3 distinct silhouettes across 8 files.** The `3D*` variants are pixel-identical in alpha
+   to their flat counterparts (mean RGB delta 7–13), and blue ≡ green. Eight heroes, three shapes.
+2. **From directly above, those robots are a slab flanked by two tread blocks — a top-down TANK.**
+   No CC0 pack in the project has a top-down walker, so the options were to ship a tank and call
+   it a mech, or draw one.
+
+The generated chassis is a chicken-walker read from above: legs outboard and swept back with a
+visible knee, shoulder pods forward of the hips carrying twin barrels that project past the prow,
+a torso tapering to a flat nose, and a squared thruster block at the rear. See the header of
+`tools/make-mechs.mjs` for why each of those is load-bearing at 58 world units on a phone.
+
+The Kenney robot-pack files remain in `assets/kenney/` — nothing else uses them.
+
+### Facing
 
 **The art faces `+x` (right). Rotation offset = `0.0` radians.**
 
 ```ts
 // src/render — player mech
-sprite.rotation = mech.angle;   // no offset
+sprite.rotation = Math.atan2(faceY, faceX);   // no offset
 sprite.anchor.set(0.5, 0.5);
 ```
 
-**Confidence: high.** Three independent lines of evidence agree:
-
-1. **Alpha symmetry.** Mean abs difference between the alpha channel and its flip:
-   top-bottom `0.188–0.199`, left-right `3.26–29.04`. The sprite is near-perfectly mirror-symmetric
-   about the **horizontal** centreline, so the vehicle's long axis is the x-axis — it faces left or
-   right, definitively not up or down.
-2. **Head position.** At 4× zoom the right-hand ~25% of the chassis is a distinct shaded panel
-   carrying **two white oval eyes**. Treads run horizontally along the top and bottom edges.
-3. **Cross-check against the same pack's side view.** `PNG/Side view/robot_blueBody.png` et al. show
-   the identical robot in profile with two white eyes **and a mouth on the right-hand side** — the
-   eyes are unambiguously the front. The top view therefore has its nose at `+x`.
-
-Supporting detail: the alpha centroid sits at x≈70.0 against a geometric centre of 73.5 — the treads
-are set ~4 px toward the rear (left) while the head juts forward (right), exactly as the visual
-reads. The vertical centroid is 76.5, i.e. dead centre, confirming the horizontal symmetry axis.
+This used to be a conclusion drawn from three lines of evidence about someone else's art (alpha
+symmetry, content centroid, the cockpit's position). It is now a CONSTRUCTION RULE: the generator
+lays every shape out along +x and mirrors about the horizontal centreline, so `ROT_OFFSET.mech`
+is 0 because the art was drawn to make it 0.
 
 ### Draw parameters
 
-- **Anchor** `(0.5, 0.5)`. Content fills the whole canvas, so canvas centre = pivot.
-- **Scale** `52 / 148 = 0.3514` → drawn **52.0 × 54.1 u**. Collision radius 26 u = half the width.
-- **Do not downscale the source PNGs.** At iPhone `devicePixelRatio = 3`, 52 CSS px = 156 device px
-  and the source is 148 px — effectively 1:1. Set the Pixi renderer `resolution: 3` and let the
-  148 px texture serve it natively. Downsampling to ~52 px in the pipeline would cost you the
-  entire retina win.
-- Cannon muzzle should emit at **+24 u along facing** (front lip of the 52 u chassis).
+- **Anchor** `(0.5, 0.5)`. The generator centres the machine on the canvas, so canvas centre = pivot.
+- **Scale** `58 / 148 = 0.3919` → drawn **58.0 × 67.4 u**.
+- **The canvas is not the machine.** The painted hull spans x 26..120 of 148, so it measures ~37 u
+  across against a 26 u collision radius: the hitbox is slightly more generous than the paint.
+  That is the right way round for a bullet-heaven — a hit that looks like a graze still lands —
+  and it is why `MECH_DRAW_W` is not simply `2 × radius`.
+- **Do not downscale the source PNGs.** At iPhone `devicePixelRatio = 3`, 58 CSS px = 174 device px
+  against a 148 px source — near 1:1. Set the Pixi renderer `resolution: 3` and let the texture
+  serve it natively.
+- **Turret.** Separate sprite, separate rotation (the weapon's target, not the chassis' heading).
+  Anchor `(0.2, 0.5)` so it pivots on its mount ring just behind the mech centre; scale
+  `42 / 80 = 0.525`.
+- Cannon muzzle emits at **+24 u along facing**.
 
 ---
 
@@ -389,8 +402,7 @@ flat scheme (atlas frame keys use the same names):
 
 | Source | Frame key |
 |---|---|
-| `robot-pack/PNG/Top view/robot_3Dblue.png` | `mech_3dblue` |
-| `robot-pack/PNG/Top view/robot_blue.png` | `mech_blue` |
+| *(generated by `tools/make-mechs.mjs`)* | `mech_slate` … `mech_brass`, `turret` |
 | `sci-fi-rts/PNG/Retina/Unit/scifiUnit_07.png` | `enemy_07` |
 | `sci-fi-rts/PNG/Default size/Tile/scifiTile_42.png` | `floor` (standalone, not in atlas) |
 | `particle-pack/PNG (Transparent)/muzzle_04.png` | `fx_muzzle` |

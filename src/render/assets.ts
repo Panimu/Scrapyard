@@ -35,11 +35,25 @@ export const ROT_OFFSET = {
 // Source pixel dimensions. ASSET_MANIFEST §1-§3.
 // ---------------------------------------------------------------------------------------------
 
-/** Player mech canvas. Non-square: the treads add height even though the long axis is x. */
+/**
+ * Player mech canvas (tools/make-mechs.mjs). Non-square: the legs splay wider than the hull is
+ * long, so the canvas is taller than it is wide even though the machine faces +x.
+ */
 export const MECH_SRC_W = 148;
-/** Drawn chassis width in world units. Collision radius is 26 u = half of this. */
-export const MECH_DRAW_W = 52;
-export const MECH_SCALE = MECH_DRAW_W / MECH_SRC_W; // 0.35135
+/**
+ * Drawn canvas width in world units, NOT the width of the machine: the painted hull spans about
+ * two thirds of the canvas (x 26..120 of 148) and the barrels and shadow fill the rest. At 58 the
+ * hull measures ~37 u across against a 26 u collision radius, so the HITBOX IS SLIGHTLY MORE
+ * GENEROUS THAN THE PAINT. That is the right way round for a bullet-heaven - a hit that looks
+ * like a graze still lands - and it is why this is not simply 2 x radius.
+ */
+export const MECH_DRAW_W = 58;
+export const MECH_SCALE = MECH_DRAW_W / MECH_SRC_W;
+
+/** Turret canvas (tools/make-mechs.mjs), and its drawn length in world units. */
+export const TURRET_SRC_W = 80;
+export const TURRET_DRAW_W = 42;
+export const TURRET_SCALE = TURRET_DRAW_W / TURRET_SRC_W;
 
 /** Muzzle emits at +24 u along facing - the front lip of the 52 u chassis. */
 export const MUZZLE_OFFSET = 24;
@@ -123,6 +137,7 @@ export const FLOOR_TILE_UNITS = 64;
 export interface GameTextures {
   /** Indexed by HERO_CATALOG position, resolved through each hero's `sprite` key. */
   readonly mechs: readonly Texture[];
+  readonly turret: Texture;
   /** Indexed by EnemyPool.typeId (0..47). */
   readonly enemies: readonly Texture[];
   /** Sprite scale for each typeId, so the CONTENT measures the archetype's drawSize. */
@@ -155,7 +170,16 @@ declare global {
 }
 
 /** Where prepare_assets.mjs put the sprites, honouring Vite's configured base path. */
-function spriteUrl(name: string): string {
+/**
+ * URL for a sprite by atlas key.
+ *
+ * EXPORTED, and every consumer must use it. The single-file share build has no `sprites/`
+ * directory at all - `tools/inline_build.mjs` folds all 79 assets into `__SPRITE_DATA__` as data:
+ * URIs - so anything that builds `sprites/<name>.png` by hand renders nothing in the artifact
+ * while working perfectly on the dev server. The hero-select grid did exactly that, and shipped
+ * eight broken images to every player who opened the shared link.
+ */
+export function spriteUrl(name: string): string {
   const inlined = globalThis.__SPRITE_DATA__;
   if (inlined !== undefined) {
     const uri = inlined[name];
@@ -200,6 +224,7 @@ export async function loadGameTextures(
   // The eight heroes reference only four hues x two finishes, and two heroes could in principle
   // share a sprite key, so de-duplicate before asking the loader for them.
   for (const k of new Set(mechKeys)) keys.push(k);
+  keys.push('turret');
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
@@ -248,6 +273,7 @@ export async function loadGameTextures(
 
   return {
     mechs: HERO_CATALOG.map((h) => get(h.sprite)),
+    turret: get('turret'),
     enemies,
     enemyScale,
     floor,
