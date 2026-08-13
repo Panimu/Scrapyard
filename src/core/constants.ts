@@ -90,19 +90,22 @@ export const SPAWN_RADIUS = 560;
 /**
  * ARTILLERY STRIKE ANNULUS - where a barrage is allowed to land.
  *
- * "Random VISIBLE spots" is a render concept, and the simulation is forbidden from knowing the
- * viewport (the camera rule exists because iOS cannot lock orientation, so screen shape must never
- * change what the game does). The resolution is the same one SPAWN_RADIUS uses from the other
- * direction: pick a fixed radius that is correct on EVERY supported device rather than asking what
- * this device can see.
+ * A long radius about the player, deliberately NOT tied to what is on screen. Trying to define
+ * "visible" made the simulation care about the viewport, which the camera rule forbids (iOS cannot
+ * lock orientation, so screen shape must never change what the game does). A fixed long radius
+ * sidesteps that entirely and gives the weapon a different job: it reaches past the fight you are
+ * in and onto the ground enemies are still crossing, out toward the SPAWN_RADIUS ring at 560.
  *
- * The short axis always shows VIEW_MINOR_UNITS (440), so a circle of radius 220 about the player is
- * on screen for everyone, in either orientation, on every phone. 210 keeps a margin. The inner
- * bound stops a barrage from simply landing on the player, which would make it a self-centred nuke
- * rather than the area denial it is meant to be.
+ * The inner bound keeps a barrage off your own feet - artillery that could land on the player
+ * would be a self-centred nuke rather than area denial.
+ *
+ * CONSEQUENCE WORTH KNOWING: area grows with the square of the radius, so widening the annulus
+ * thins the barrage rather than moving it. Most shells now fall on ground no enemy happens to be
+ * standing on, and many land off-screen. That is the trade this radius buys - reach instead of
+ * reliability.
  */
-export const STRIKE_RADIUS_MIN = 60;
-export const STRIKE_RADIUS_MAX = 210;
+export const STRIKE_RADIUS_MIN = 70;
+export const STRIKE_RADIUS_MAX = 520;
 export const DESPAWN_RADIUS = 900;
 /** Equal to DESPAWN_RADIUS, NOT to SPAWN_RADIUS. At 560 the director could not see enemies
  *  trailing behind a kiting player, read the field as empty and spawn more ahead of them - actual

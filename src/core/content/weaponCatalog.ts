@@ -606,12 +606,10 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // spots near the mech - not on enemies, not ahead of the player, not where you are looking. It is
 // weather, and you learn to fight underneath it.
 //
-// WHAT "RANDOM VISIBLE SPOTS" MEANS HERE. The simulation is not allowed to know the viewport (the
-// camera rule: iOS cannot lock orientation, so screen shape must never change what the game does),
-// so "visible" is resolved the same way SPAWN_RADIUS resolves it from the other side - with a
-// radius that is correct on EVERY supported device. The short axis always shows 440 units, so
-// anything within 210 u of the mech is on screen for everybody, in either orientation. Strikes
-// land in a 60-210 u annulus: never on your own feet, always where you can see them.
+// STRIKES FALL IN A WIDE ANNULUS, 70-520 u about the mech - well past what any screen shows, out
+// toward the spawn ring at 560. So the barrage is not covering the fight you are in; it is working
+// the ground enemies still have to cross. Much of it lands out of sight, and most of it lands on
+// nobody: area grows with the square of the radius, so a wide barrage is a thin one.
 //
 //   3 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload
 //
