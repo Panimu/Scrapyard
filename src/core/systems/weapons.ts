@@ -38,7 +38,7 @@
  * A BEAM WEAPON'S TICK, in order (and every early exit COOLS, which is what makes the duty cycle
  * a property of the mechanic rather than of how often you happen to have a target):
  *
- *   1. overheated?          cool; resume at HEAT_RESUME. Never fires.
+ *   1. overheated?          cool; resume at `stats.heatResume`. Never fires.
  *   2. no target in range?  cool.
  *   3. turret not laid on?  cool.
  *   4. raycast from the muzzle for the NEAREST enemy the line touches.
@@ -49,9 +49,32 @@
  * DAMAGE IS PER SECOND for a beam. `stats.damage * dt` goes into the buffer already scaled, and
  * updateDamage applies it verbatim - so a 30 dps laser deals exactly 30 over a second of contact
  * no matter what the tick rate is, and there is exactly one place that knows about the scaling.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * HEAT IS THREE PER-WEAPON NUMBERS, NOT ONE GLOBAL CEILING
+ * ---------------------------------------------------------------------------------------------
+ * There is no HEAT_MAX and no HEAT_RESUME here any more. Every laser carries its own
+ *
+ *     stats.heatPerSec       gained per second of fire       (a damage tier raises it)
+ *     stats.heatCapacity     the ceiling it cuts out at      (a capacity tier raises it)
+ *     stats.heatDispersion   shed per second while not firing (a dispersion tier raises it)
+ *     stats.heatResume       derived: heatCapacity * HEAT_RESUME_FRAC
+ *
+ * and this file reads all four off `inst.stats` rather than off a constant. GENERATION AND
+ * DISPERSION ARE DIFFERENT NUMBERS - that is the whole point of the ladder, and it is why cooling
+ * runs at `heatDispersion` and NOT at `heatPerSec`. They start equal on an untiered laser (which
+ * is what gives it its even half-uptime rhythm) and diverge the moment a tier is taken:
+ *
+ *     burst from cold     heatCapacity / heatPerSec
+ *     burst in steady state   (heatCapacity - heatResume) / heatPerSec
+ *     silence             (heatCapacity - heatResume) / heatDispersion
+ *     sustained uptime    heatDispersion / (heatPerSec + heatDispersion)
+ *
+ * A capacity tier makes both the burst and the silence proportionally longer at the same uptime;
+ * a dispersion tier shortens the silence alone and is the only thing that moves the uptime.
  */
 
-import { HEAT_MAX, HEAT_RESUME, MAX_TARGETS } from '../constants.js';
+import { MAX_TARGETS } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/enemyCatalog.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile } from '../entity/projectilePool.js';
@@ -233,24 +256,33 @@ export function updateWeapons(world: World, dt: number): void {
 // -------------------------------------------------------------------------------------------
 
 /**
- * Sheds `heatPerSec * dt` and, once at or below HEAT_RESUME, unlatches the weapon.
+ * Sheds `stats.heatDispersion * dt` and, once at or below `stats.heatResume`, unlatches the
+ * weapon. Heat is clamped into [0, heatCapacity] on the way through.
+ *
+ * DISPERSION, NOT GENERATION. Cooling used to run at `heatPerSec` because the two were the same
+ * number; they are now separate stats upgraded by separate tiers, and reading the wrong one here
+ * would silently delete the entire dispersion half of every laser's ladder - the weapon would
+ * take the tier, the card would claim it, and nothing on the field would change.
  *
  * Called from EVERY path that does not fire - overheated, no target, not laid on, blocked line -
  * because "cools while not firing" has to mean exactly that. If cooling only ran while the
- * weapon had a target and a clear line, a laser would freeze at 99 heat the moment the horde
- * closed up and stay dead until the crowd parted, which is the opposite of the intended
- * behaviour: refusing a blocked shot is supposed to BUY you the next burst.
+ * weapon had a target and a clear line, a laser would freeze one point under its ceiling the
+ * moment the horde closed up and stay dead until the crowd parted, which is the opposite of the
+ * intended behaviour: refusing a blocked shot is supposed to BUY you the next burst.
  *
  * The unlatch tick does not fire. That is deliberate and it is what `overheated` being a latched
- * flag rather than `heat >= HEAT_MAX` buys: the weapon stays out for the whole 100 -> 50 slide,
- * then comes back on the following tick with 50 points of headroom.
+ * flag rather than `heat >= heatCapacity` buys: the weapon stays out for the whole slide down to
+ * the resume threshold, then comes back on the following tick with that much headroom.
  */
 function coolBeam(world: World, weaponIdx: number, inst: WeaponInstance, dt: number): void {
-  const heat = inst.heat - inst.stats.heatPerSec * dt;
-  inst.heat = heat > 0 ? heat : 0;
-  if (inst.overheated && inst.heat <= HEAT_RESUME) {
+  const stats = inst.stats;
+  let heat = inst.heat - stats.heatDispersion * dt;
+  if (heat < 0) heat = 0;
+  else if (heat > stats.heatCapacity) heat = stats.heatCapacity;
+  inst.heat = heat;
+  if (inst.overheated && heat <= stats.heatResume) {
     inst.overheated = false;
-    pushEvent(world.events, EV_WEAPON_COOLED, world.tick, weaponIdx, inst.heat, 0, 0);
+    pushEvent(world.events, EV_WEAPON_COOLED, world.tick, weaponIdx, heat, 0, 0);
   }
 }
 
@@ -586,14 +618,16 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     y0 + aim.y * reach,
   );
 
-  // Step 6. The tick that reaches HEAT_MAX still fires - the weapon cuts out AFTER delivering
-  // the shot that overloaded it, so a full burst is exactly HEAT_MAX / heatPerSec seconds of
-  // damage and not one tick less.
+  // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
+  // delivering the shot that overloaded it, so a full burst is exactly
+  // heatCapacity / heatPerSec seconds of damage and not one tick less. The ceiling is the
+  // weapon's, so a capacity tier buys a longer burst rather than a fuller bar.
+  const capacity = stats.heatCapacity;
   const heat = inst.heat + stats.heatPerSec * dt;
-  if (heat >= HEAT_MAX) {
-    inst.heat = HEAT_MAX;
+  if (heat >= capacity) {
+    inst.heat = capacity; // clamped: heat never exceeds this weapon's capacity
     inst.overheated = true;
-    pushEvent(world.events, EV_WEAPON_OVERHEATED, world.tick, weaponIdx, HEAT_MAX, 0, 0);
+    pushEvent(world.events, EV_WEAPON_OVERHEATED, world.tick, weaponIdx, capacity, 0, 0);
   } else {
     inst.heat = heat;
   }
