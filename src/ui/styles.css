@@ -319,8 +319,8 @@ body {
   gap: 8px;
 }
 
-/* The row is hidden outright while no beam weapon is held, so the flex gap above it does not
-   leave a band of dead space under the XP bar during a Cannon-only run. */
+/* The row is hidden outright while no weapon is held at all - which is Plum's opening minutes -
+   so the flex gap above it does not leave a band of dead space under the XP bar. */
 .hud__heat[hidden] {
   display: none;
 }
@@ -440,6 +440,40 @@ body {
 .heat__status {
   flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
+}
+
+/* A MAGAZINE, not a heat bar. The resume notch and the "too hot" band above it are a property of
+   a beam's hysteresis and mean nothing to a gun with rounds in it, so both are removed. The bar
+   is then simply how full the magazine is. */
+.heat--mag .heat__track {
+  background: rgba(10, 14, 20, 0.72);
+}
+
+.heat--mag .heat__track::after {
+  display: none;
+}
+
+/* RELOADING. The longest silence in the game - fifteen seconds at tier 1 - and it needs its own
+   state, distinct from a laser cutting out. Overheating is a FAULT and looks like one (hazard
+   stripes, red, a pulse); a reload is a procedure that is going to finish, so it gets a calm
+   brass fill that visibly climbs and a countdown, with no pulse and no alarm colour. Confusing
+   the two would teach the player to panic on a reload or to shrug at an overheat. */
+.heat--reload .heat__track {
+  border-color: rgba(224, 179, 74, 0.75);
+}
+
+.heat--reload .heat__fill {
+  background: linear-gradient(90deg, rgba(224, 179, 74, 0.55), #e0b34a);
+  box-shadow: none;
+  /* No transition: the fill is driven directly from reloadLeft, which already moves smoothly at
+     60 Hz. A 60 ms ease on top of it would lag the number in the footer. */
+  transition: none;
+}
+
+.heat--reload .heat__status,
+.heat--reload .heat__name {
+  color: #f0c96a;
+  opacity: 1;
 }
 
 /* OVERHEATED. A hard cut-out gets a hard state: the fill goes hazard-striped and stops being the

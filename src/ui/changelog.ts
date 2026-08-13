@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T22:45Z',
+    title: 'The Machine Gun shows its magazine and its reload',
+    notes: [
+      'The loadout chip now carries a brass ammunition bar that drains as you fire, with the rounds left beside it.',
+      'When the magazine runs dry the bar refills through the reload with a countdown, so the longest silence in the game - 15s at tier 1 - stops looking like a broken gun.',
+      'It is deliberately not dressed like an overheat: a laser cutting out is a fault and looks like one, a reload is a procedure that is going to finish.',
+    ],
+  },
+  {
     at: '2026-08-13T22:15Z',
     title: 'Plum starts with the shield and nothing else',
     notes: [

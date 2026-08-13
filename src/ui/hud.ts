@@ -1,5 +1,6 @@
 /**
- * The in-run HUD: hull integrity, XP, level, clock, kills, laser heat - plus the debug panel.
+ * The in-run HUD: hull integrity, XP, level, clock, kills, laser heat, ammunition and reloads -
+ * plus the debug panel.
  *
  * DOM, not Pixi text. Text in the scene graph would break the sprite batch and cost a texture
  * bind per label; the DOM composites on its own layer, gets the system font for free, and reads
@@ -43,11 +44,37 @@ import { MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
  * pace - rather than showing the same heat as a smaller fraction, which would read as the upgrade
  * having made the weapon cooler when it has not.
  *
- * Projectile weapons (the Cannon) get a chip too, but a TRACKLESS one: `heat` is 0 forever and a
- * permanently empty bar is noise that teaches the player to ignore the whole row, while the tier
- * is exactly as worth seeing as a laser's.
+ * A MAGAZINE WEAPON gets the same chip and the same bar, reading AMMUNITION. It has to: the
+ * Machine Gun is the only weapon in the game that goes away completely, for 15 s at tier 1 and
+ * 10.5 s at tier 7, and a fifteen-second silence with nothing on screen moving reads as a broken
+ * gun rather than as a reload. The bar therefore does three jobs in sequence -
+ *
+ *   drains as rounds are spent, with the count in the footer, so the silence is never a surprise;
+ *   empties, and the chip switches to its RELOAD state;
+ *   refills as the reload runs, with a countdown, so "when do I get it back" always has an answer.
+ *
+ * IT IS A DIFFERENT STATE FROM OVERHEATED, and looks it. Overheating is a FAULT - hazard stripes,
+ * warning red, a pulse. A reload is a procedure that is going to finish, so it is calm brass with
+ * no pulse. Dressing them alike would teach the player either to panic on a reload or to shrug at
+ * an overheat.
+ *
+ * THE BAR RUNS THE OTHER WAY from a laser's, and that is deliberate. Heat fills toward a cut-out;
+ * ammunition drains toward one. "The bar going down means you are running out" is the one
+ * convention every player already has, and inverting it to match the laser would be consistent
+ * with the wrong thing.
+ *
+ * A pure COOLDOWN weapon (the Cannon, the racks, the artillery) still gets a TRACKLESS chip: it
+ * has no reservoir of any kind, a permanently empty bar is noise that teaches the player to
+ * ignore the whole row, and the tier is exactly as worth seeing as a laser's.
  */
 
+
+/**
+ * The magazine chip's colour. Brass, and deliberately NOT any of the three beam colours or the
+ * UI's own accent: the bar has to say "this is the kinetic gun" at a glance in a row that may
+ * also be carrying a green, a blue and a red laser.
+ */
+const MAG_COLOUR = '#e0b34a';
 
 export interface DebugInfo {
   /** Rolling mean frame time, ms. */
@@ -95,6 +122,15 @@ export class Hud {
   private readonly heatPct = new Int32Array(MAX_WEAPONS).fill(-1);
   private readonly heatOut = new Int32Array(MAX_WEAPONS).fill(-1);
   private readonly heatTenths = new Int32Array(MAX_WEAPONS).fill(-1);
+  /**
+   * WHAT THE STATUS SLOT IS SAYING: 0 nothing, 1 a laser's OFFLINE countdown, 2 a magazine's
+   * RELOADING countdown, 3 a magazine's round count.
+   *
+   * Paired with `heatTenths` (which carries the number) so the write is gated on the pair rather
+   * than on the number alone. Without it, a magazine dropping to 12 rounds and a laser 1.2 s from
+   * coming back would both cache as "12" and the second one would not repaint.
+   */
+  private readonly heatStatusMode = new Int32Array(MAX_WEAPONS).fill(-1);
   /** Last written tier and resume-notch percent - both move only on a level-up. */
   private readonly heatTier = new Int32Array(MAX_WEAPONS).fill(-1);
   private readonly heatResumePct = new Int32Array(MAX_WEAPONS).fill(-1);
@@ -265,6 +301,12 @@ export class Hud {
       if (def === undefined) continue;
       const beam = def.kind === 'beam';
       const stats = inst.stats;
+      // A MAGAZINE WEAPON gets the same chip and the same bar, reading AMMUNITION instead of
+      // heat. The two are opposite in direction on purpose - a heat bar fills toward a cut-out,
+      // an ammo bar drains toward one - because "the bar going down means you are running out" is
+      // the one convention a player already has, and inverting it to match the laser would be
+      // consistent with the wrong thing.
+      const mag = stats.ammoCapacity > 0;
 
       const chip = this.heatChips[n];
 
@@ -276,13 +318,18 @@ export class Hud {
         // projectile weapon has no beam colour at all (0x000000 would paint the chip black), so
         // the property is removed and the stylesheet's neutral default applies.
         if (beam) chip.style.setProperty('--beam', cssColour(def.beamColour));
+        else if (mag) chip.style.setProperty('--beam', MAG_COLOUR);
         else chip.style.removeProperty('--beam');
-        chip.classList.toggle('heat--dry', !beam);
+        // `dry` is the trackless chip - a weapon with no bar worth drawing. A magazine weapon has
+        // one, so only a pure cooldown gun (the Cannon, the racks, the artillery) gets it.
+        chip.classList.toggle('heat--dry', !beam && !mag);
+        chip.classList.toggle('heat--mag', mag);
         this.heatNames[n].textContent = shortWeaponName(def.name);
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;
         this.heatOut[n] = -1;
         this.heatTenths[n] = -1;
+        this.heatStatusMode[n] = -1;
         this.heatTier[n] = -1;
         this.heatResumePct[n] = -1;
       }
@@ -293,7 +340,10 @@ export class Hud {
       if (tier !== this.heatTier[n]) {
         this.heatTier[n] = tier;
         this.heatTiers[n].textContent = `T${tier}`;
-        chip.setAttribute('aria-label', `${def.name}, tier ${tier}${beam ? ' heat' : ''}`);
+        chip.setAttribute(
+          'aria-label',
+          `${def.name}, tier ${tier}${beam ? ' heat' : mag ? ' ammunition' : ''}`,
+        );
       }
 
       // CAPACITY IS THE WEAPON'S OWN, so the bar means "how close is this gun to cutting out"
@@ -301,8 +351,26 @@ export class Hud {
       // of shortening the bar.
       const capacity = stats.heatCapacity > 0 ? stats.heatCapacity : 1;
       const heat = inst.heat < 0 ? 0 : inst.heat > capacity ? capacity : inst.heat;
+      const reloading = mag && inst.reloadLeft > 0;
+
+      // WHAT THE BAR IS SHOWING, in one expression per weapon family:
+      //   magazine, reloading  the magazine REFILLING - 0 at the moment it ran dry, 1 as the
+      //                        last round goes in. This is the whole point of the change: a
+      //                        fifteen-second silence with no bar moving reads as a broken gun.
+      //   magazine, loaded     rounds left, draining as they are spent.
+      //   beam                 heat, rising toward this weapon's own cut-out.
       // Quantised to whole percent: a sub-pixel move is invisible and still costs a style write.
-      const pct = Math.round((heat / capacity) * 100);
+      let pct: number;
+      if (reloading) {
+        const total = stats.reloadTime > 0 ? stats.reloadTime : 1;
+        const done = 1 - inst.reloadLeft / total;
+        pct = Math.round((done < 0 ? 0 : done > 1 ? 1 : done) * 100);
+      } else if (mag) {
+        const rounds = inst.ammo < 0 ? stats.ammoCapacity : inst.ammo;
+        pct = Math.round((rounds / stats.ammoCapacity) * 100);
+      } else {
+        pct = Math.round((heat / capacity) * 100);
+      }
       if (pct !== this.heatPct[n]) {
         this.heatPct[n] = pct;
         this.heatFills[n].style.transform = `scaleX(${pct / 100})`;
@@ -317,25 +385,53 @@ export class Hud {
         chip.style.setProperty('--resume', `${resumePct}%`);
       }
 
-      const out = inst.overheated ? 1 : 0;
+      // Two states, one slot, and they cannot both be true: a beam has no magazine and a
+      // magazine weapon never overheats. 0 live, 1 cut out, 2 reloading.
+      const out = inst.overheated ? 1 : reloading ? 2 : 0;
       if (out !== this.heatOut[n]) {
         this.heatOut[n] = out;
         chip.classList.toggle('heat--out', out === 1);
+        chip.classList.toggle('heat--reload', out === 2);
       }
 
       // Time until the weapon comes back: the slide from here down to its resume threshold at its
       // own DISPERSION rate - not its generation rate, which is a different number the moment a
       // tier is taken. Shown only while cut out: before that the number is a hypothetical and the
       // bar already tells the story.
-      let tenths = -1;
+      //
+      // A RELOAD IS THE SAME PROMISE, with a different reason and a much longer number: the
+      // Machine Gun is away for 15 s at tier 1 and 10.5 s at tier 7, which is the longest any
+      // weapon in the game is gone. It gets the same treatment - a countdown, tenths of a second
+      // - because "it will come back" is exactly as useless here.
+      //
+      // A LOADED magazine shows its round count instead. It is the only number that tells you
+      // whether the silence is coming in two seconds or twenty, and there is nowhere else in the
+      // game to read it.
+      let mode = 0;
+      let value = -1;
       if (out === 1) {
         const rate = stats.heatDispersion;
         const sec = rate > 0 ? (heat - stats.heatResume) / rate : 0;
-        tenths = sec > 0 ? Math.ceil(sec * 10) : 0;
+        mode = 1;
+        value = sec > 0 ? Math.ceil(sec * 10) : 0;
+      } else if (out === 2) {
+        mode = 2;
+        value = inst.reloadLeft > 0 ? Math.ceil(inst.reloadLeft * 10) : 0;
+      } else if (mag) {
+        mode = 3;
+        value = inst.ammo < 0 ? stats.ammoCapacity : inst.ammo;
       }
-      if (tenths !== this.heatTenths[n]) {
-        this.heatTenths[n] = tenths;
-        this.heatStatus[n].textContent = tenths < 0 ? '' : `OFFLINE ${(tenths / 10).toFixed(1)}s`;
+      if (mode !== this.heatStatusMode[n] || value !== this.heatTenths[n]) {
+        this.heatStatusMode[n] = mode;
+        this.heatTenths[n] = value;
+        this.heatStatus[n].textContent =
+          mode === 1
+            ? `OFFLINE ${(value / 10).toFixed(1)}s`
+            : mode === 2
+              ? `RELOAD ${(value / 10).toFixed(1)}s`
+              : mode === 3
+                ? String(value)
+                : '';
       }
 
       n++;
