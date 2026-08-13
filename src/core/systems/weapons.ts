@@ -82,6 +82,8 @@ import { NULL_HANDLE } from '../entity/handle.js';
 import {
   EV_WEAPON_COOLED,
   EV_WEAPON_FIRED,
+  EV_WEAPON_RELOADED,
+  EV_WEAPON_RELOADING,
   EV_WEAPON_OVERHEATED,
   NO_BEAM_TARGET,
   pushBeam,
@@ -195,6 +197,39 @@ export function updateWeapons(world: World, dt: number): void {
     // 0.05 by resolveWeaponStats, so letting a beam through this gate would silently throttle it
     // to 20 ticks per second of fire.
     if (!beam && inst.cooldownLeft > 0) inst.cooldownLeft -= dt;
+
+    // AMMUNITION, before anything else looks at this weapon.
+    //
+    // A reloading gun is genuinely offline: it does not target, does not traverse, does not hold
+    // a target. That is the whole cost of the magazine - not a slower gun, an absent one - and
+    // letting the turret keep tracking through a reload would quietly soften it.
+    //
+    // The magazine is FILLED HERE rather than at install time so that a fresh weapon, a weapon
+    // whose capacity tier just landed, and a weapon finishing a reload all take the same path.
+    if (stats.ammoCapacity > 0) {
+      // -1 is "never loaded": a rack that has just been installed, or one whose capacity tier
+      // landed before it ever fired. It fills instantly and silently. Only a magazine emptied BY
+      // FIRING costs a reload - otherwise picking the weapon up would open with fifteen seconds
+      // of nothing, which is exactly the bug this sentinel exists to prevent.
+      if (inst.ammo < 0) inst.ammo = stats.ammoCapacity;
+
+      if (inst.reloadLeft > 0) {
+        inst.reloadLeft -= dt;
+        if (inst.reloadLeft <= 0) {
+          inst.reloadLeft = 0;
+          inst.ammo = stats.ammoCapacity;
+          pushEvent(world.events, EV_WEAPON_RELOADED, world.tick, i, stats.ammoCapacity, 0, 0);
+        }
+        inst.targetDense = -1;
+        continue;
+      }
+      if (inst.ammo === 0 && stats.reloadTime > 0) {
+        inst.reloadLeft = stats.reloadTime;
+        pushEvent(world.events, EV_WEAPON_RELOADING, world.tick, i, stats.reloadTime, 0, 0);
+        inst.targetDense = -1;
+        continue;
+      }
+    }
 
     // Step 1: a laser that has cut out is not engaging anything. It cools, it holds no target,
     // and it does not traverse - an emitter with the breaker tripped is not tracking you.
@@ -664,8 +699,11 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
   const behaviour = BEHAVIOUR_ID[def.behaviour];
 
-  const baseX = player.faceX;
-  const baseY = player.faceY;
+  // Fan centre: the chassis facing for a rack aimed by your feet, otherwise the turret's own aim
+  // line. Same pattern, two very different weapons - the missiles spray where you ran, the machine
+  // gun straddles what it is looking at.
+  const baseX = def.fireAlongFacing ? player.faceX : inst.turretX;
+  const baseY = def.fireAlongFacing ? player.faceY : inst.turretY;
   const half = (count - 1) * 0.5;
 
   for (let i = 0; i < count; i++) {
@@ -675,6 +713,15 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
     // Rotate the facing by the fan offset. Unit in, unit out - no renormalisation needed.
     const dirX = baseX * c - baseY * sn;
     const dirY = baseX * sn + baseY * c;
+
+    // A magazine is spent per ROUND, not per burst, so a two-round weapon empties twice as fast
+    // as its shot count suggests. Running dry mid-burst simply ends the burst - the reload is
+    // started by updateWeapons on the next tick, not here, so all magazine state changes in one
+    // place.
+    if (stats.ammoCapacity > 0) {
+      if (inst.ammo <= 0) break;
+      inst.ammo--;
+    }
 
     const spawnId = ++world.stats.shotsFired;
     const handle = allocProjectile(

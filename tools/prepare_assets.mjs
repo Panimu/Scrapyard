@@ -74,6 +74,8 @@ COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_012.png
 // The missile racks draw a different projectile from the Cannon's shell - a longer finned body,
 // so a screen carrying both reads as two weapons rather than one firing oddly.
 COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_001.png', 'missile.png']);
+// Machine gun rounds: a small slug, distinct from both the Cannon's shell and the missile body.
+COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_027.png', 'slug.png']);
 COPIES.push(['space-shooter-extension/PNG/Sprites/Parts/spaceParts_035.png', 'gem.png']);
 
 // -- 5. Death puff, 7 frames. Strictly size-monotonic subset: 011 and 014 are deliberately

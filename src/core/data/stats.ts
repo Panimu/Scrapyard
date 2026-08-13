@@ -97,7 +97,18 @@ export type WeaponStatKey =
    * Authored flight time in seconds, for weapons whose reach is a fuse rather than a range.
    * 0 means "derive it from range / projectileSpeed" as a gun would.
    */
-  | 'flightTime';
+  | 'flightTime'
+  /**
+   * Rounds in a magazine. 0 means the weapon does not use ammunition at all.
+   *
+   * This is the THIRD limiter in the game and it is deliberately unlike the other two. A cooldown
+   * paces you evenly and a heat bar trades burst against silence on a short cycle; a magazine
+   * gives you a long uninterrupted stream and then takes the weapon away entirely for a fixed,
+   * uncomfortable stretch. Every round spent is a second of that stretch you have already bought.
+   */
+  | 'ammoCapacity'
+  /** Seconds to refill an empty magazine. */
+  | 'reloadTime';
 
 /**
  * Authored stats plus the four precomputed trigonometric/squared forms the hot loops want.
@@ -134,6 +145,10 @@ export interface WeaponStats {
   /** DERIVED per tick: cos/sin of one tick of homing turn. */
   cosTurnStep: number;
   sinTurnStep: number;
+  /** Magazine size. 0 = the weapon does not use ammunition. */
+  ammoCapacity: number;
+  /** Seconds to refill an empty magazine. */
+  reloadTime: number;
 
   // ---- derived ----
   /** range / projectileSpeed, plus a margin so a shell never expires exactly at max range. */
@@ -408,6 +423,21 @@ export function resolveWeaponStats(
   // when present, which is what lets a missile outrange its own nominal `range`.
   out.projectileLifetime =
     out.flightTime > 0 ? out.flightTime : (out.range / out.projectileSpeed) * LIFETIME_MARGIN;
+  out.ammoCapacity = Math.floor(
+    resolveOne(lvl('ammoCapacity'), h.ammoCapacity ?? 1, stacks, upgrades, 'weapon', 'ammoCapacity'),
+  );
+  if (out.ammoCapacity < 0) out.ammoCapacity = 0;
+  out.reloadTime = resolveOne(
+    lvl('reloadTime'),
+    h.reloadTime ?? 1,
+    stacks,
+    upgrades,
+    'weapon',
+    'reloadTime',
+  );
+  // A reload that reached zero would make the magazine a cooldown wearing a different hat.
+  if (out.ammoCapacity > 0 && out.reloadTime < 0.5) out.reloadTime = 0.5;
+
   const turnStep = out.turnRate * DT;
   out.cosTurnStep = Math.cos(turnStep);
   out.sinTurnStep = Math.sin(turnStep);

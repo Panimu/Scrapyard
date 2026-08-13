@@ -48,6 +48,7 @@ import {
   PARTICLE_SRC,
   ROT_OFFSET,
   MISSILE_SCALE,
+  SLUG_SCALE,
   SHELL_SCALE,
   bossScale,
   type GameTextures,
@@ -539,9 +540,17 @@ export class GameRenderer {
       // visualId is sim-owned data, copied onto each projectile at spawn: 0 is the Cannon's shell,
       // 1 the missile racks' body. Read per projectile rather than per weapon slot, so a round
       // already in flight keeps its own look if the rack that fired it is upgraded behind it.
-      const isMissile = p.visualId[d] === 1;
-      s.texture = isMissile ? this.tex.missile : this.tex.shell;
-      s.scale.set(isMissile ? MISSILE_SCALE : SHELL_SCALE);
+      const vis = p.visualId[d];
+      if (vis === 1) {
+        s.texture = this.tex.missile;
+        s.scale.set(MISSILE_SCALE);
+      } else if (vis === 2) {
+        s.texture = this.tex.slug;
+        s.scale.set(SLUG_SCALE);
+      } else {
+        s.texture = this.tex.shell;
+        s.scale.set(SHELL_SCALE);
+      }
       s.alpha = 1;
       s.tint = 0xffffff;
     }

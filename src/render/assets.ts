@@ -81,6 +81,11 @@ const MISSILE_SRC_H = 40;
 const MISSILE_DRAW_LEN = 22;
 export const MISSILE_SCALE = MISSILE_DRAW_LEN / MISSILE_SRC_H;
 
+/** Machine gun slug: drawn ~9 u long - small enough that a stream of them reads as a stream. */
+const SLUG_SRC_H = 26;
+const SLUG_DRAW_LEN = 9;
+export const SLUG_SCALE = SLUG_DRAW_LEN / SLUG_SRC_H;
+
 /** Gem `spaceParts_035` is 32x63; drawn ~18 u tall. */
 const GEM_SRC_H = 63;
 const GEM_DRAW_H = 18;
@@ -133,6 +138,8 @@ export interface GameTextures {
   readonly fxTrail: Texture;
   /** Missile body, indexed by WeaponDef.visualId === 1. */
   readonly missile: Texture;
+  /** Machine gun round, visualId === 2. */
+  readonly slug: Texture;
 }
 
 /**
@@ -196,7 +203,7 @@ export async function loadGameTextures(
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
-  keys.push('floor', 'shell', 'missile', 'gem');
+  keys.push('floor', 'shell', 'missile', 'slug', 'gem');
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
 
@@ -246,6 +253,7 @@ export async function loadGameTextures(
     floor,
     shell: get('shell'),
     missile: get('missile'),
+    slug: get('slug'),
     gem: get('gem'),
     puff,
     fxMuzzle: get('fx_muzzle'),

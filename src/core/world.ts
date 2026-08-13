@@ -129,6 +129,8 @@ function createWeaponStats(): WeaponStats {
     flightTime: 0,
     cosTurnStep: 1,
     sinTurnStep: 0,
+    ammoCapacity: 0,
+    reloadTime: 0,
     projectileLifetime: 0,
     rangeSq: 0,
     cosTraverseStep: 1,
@@ -150,6 +152,8 @@ function createWeaponInstance(): WeaponInstance {
     stats: createWeaponStats(),
     heat: 0,
     overheated: false,
+    ammo: -1,
+    reloadLeft: 0,
     scratch: new Float32Array(WEAPON_SCRATCH_LEN),
   };
 }
@@ -316,6 +320,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     inst.targetDense = -1;
     inst.heat = 0;
     inst.overheated = false;
+    inst.ammo = -1;
+    inst.reloadLeft = 0;
     resolveWeaponStats(
       world.weaponCatalog[defId],
       hero,

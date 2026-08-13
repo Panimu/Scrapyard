@@ -117,6 +117,8 @@ export function hashWorld(world: World): number {
     // identically right up until that difference finally produces a shot.
     h = mixF64(h, w.heat);
     h = mixU32(h, w.overheated ? 1 : 0);
+    h = mixU32(h, w.ammo);
+    h = mixF64(h, w.reloadLeft);
     for (let k = 0; k < w.scratch.length; k++) h = mixF64(h, w.scratch[k]);
   }
 

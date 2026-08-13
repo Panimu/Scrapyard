@@ -33,7 +33,8 @@ export type WeaponId =
   | 'laser-medium'
   | 'laser-long'
   | 'missile-short'
-  | 'missile-long';
+  | 'missile-long'
+  | 'machine-gun';
 
 /**
  * Target-selection strategies.
@@ -258,6 +259,8 @@ export const CANNON: WeaponDef = Object.freeze({
     turnRate: 0, // flies straight
     spreadAngle: 0,
     flightTime: 0, // reach is range / speed, not a fuse
+    ammoCapacity: 0, // no magazine: the cooldown is the whole limiter
+    reloadTime: 0,
   }),
   /**
    * TIERS 2-7. Index i applies at tier i+2, cumulatively. Deltas are ADDITIVE.
@@ -392,6 +395,8 @@ function laser(
       turnRate: 0,
       spreadAngle: 0,
       flightTime: 0,
+      ammoCapacity: 0,
+      reloadTime: 0,
     }),
     perLevel: laserTiers(damagePerSec, heatPerSec),
     reengageMul: 1,
@@ -482,6 +487,8 @@ function missile(
       turnRate,
       spreadAngle: degToRad(spreadDeg),
       flightTime,
+      ammoCapacity: 0,
+      reloadTime: 0,
     }),
     perLevel,
     reengageMul: 1,
@@ -522,6 +529,75 @@ export const MISSILE_LONG = missile(
   ]),
 );
 
+// ---------------------------------------------------------------------------------------------
+// The Machine Gun
+//
+// The third kind of limiter in the game, and the one that hurts. A cooldown paces you evenly; a
+// heat bar trades burst against silence every few seconds; a MAGAZINE gives you a long
+// uninterrupted stream and then takes the weapon away for fifteen seconds. Every round you spend
+// is a slice of that silence you have already bought.
+//
+//   200 rounds, 2 per burst = 100 bursts. At a 0.09 s cycle that is 9.0 s of fire, then 15 s of
+//   nothing: 37% uptime, the lowest in the game by a distance.
+//
+// Everything else about it is built to make that trade worth taking. 5.5 damage a round is the
+// smallest number in the catalog, but 22 rounds a second is 122 dps while the belt lasts - the
+// highest burst in the game - and it targets the WEAKEST enemy in range, so it finishes what other
+// weapons started rather than starting anything itself. Range 130 is shorter than any laser: you
+// have to be inside the crowd for it to do anything at all, and it is empty exactly when you most
+// want to leave.
+// ---------------------------------------------------------------------------------------------
+
+export const MACHINE_GUN: WeaponDef = Object.freeze({
+  id: 'machine-gun',
+  name: 'Machine Gun',
+  kind: 'projectile',
+  targeting: 'lowest-hp',
+  // `spread` fanned about the TURRET, not the chassis: fireAlongFacing is false, so the pair
+  // straddles the aim line rather than the direction of travel.
+  pattern: 'spread',
+  behaviour: 'straight',
+  requiresTarget: true,
+  base: Object.freeze({
+    damage: 5.5, // the smallest number in the catalog, fired more often than anything else
+    cooldown: 0.09, // ~11 bursts/s = 22 rounds/s
+    range: 130, // shorter than the Short Laser's 150 - you must be inside the crowd
+    projectileSpeed: 900, // near-hitscan; at this range travel time is not the point
+    projectileCount: 2,
+    pierce: 0,
+    knockback: 14, // barely a nudge, but 22 a second adds up against a swarmer
+    splashRadius: 0,
+    splashFrac: 0,
+    turretTraverse: degToRad(900), // whips around; it has to keep up with its own rate of fire
+    fireArc: degToRad(20),
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: degToRad(5), // "close together" - a tight pair, not a shotgun
+    flightTime: 0,
+    ammoCapacity: 200,
+    reloadTime: 15,
+  }),
+  perLevel: Object.freeze([
+    { damage: 1.5 }, // T2  5.5 -> 7.0
+    { cooldown: -0.018 }, // T3  0.090 -> 0.072 s  (~28 rounds/s)
+    { ammoCapacity: 80 }, // T4  200 -> 280 rounds
+    { range: 25 }, // T5  130 -> 155
+    { damage: 3 }, // T6  7.0 -> 10.0
+    { reloadTime: -4.5 }, // T7  15.0 -> 10.5 s
+  ]),
+  reengageMul: 1,
+  visualId: 2,
+  muzzleOffset: 28,
+  shellRadius: 5,
+  beamColour: 0,
+  beamWidth: 0,
+  requiresClearLine: false,
+  fireAlongFacing: false,
+  detonateOnExpiry: false,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -529,6 +605,7 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   LASER_LONG,
   MISSILE_SHORT,
   MISSILE_LONG,
+  MACHINE_GUN,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */

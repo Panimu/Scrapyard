@@ -26,6 +26,10 @@ export const EV_PHASE_CHANGED = 11;
 export const EV_BOSS_SPAWNED = 12;
 /** A laser cut out at its own heatCapacity. The UI flashes the heat bar on this. */
 export const EV_WEAPON_OVERHEATED = 13;
+/** A magazine ran dry and a reload started. Payload: (weaponIdx, reloadSeconds). */
+export const EV_WEAPON_RELOADING = 15;
+/** A reload finished. Payload: (weaponIdx, rounds). */
+export const EV_WEAPON_RELOADED = 16;
 /** A laser cooled to its own heatResume and is live again. */
 export const EV_WEAPON_COOLED = 14;
 

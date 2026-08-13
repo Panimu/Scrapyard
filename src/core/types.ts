@@ -157,6 +157,14 @@ export interface WeaponInstance {
    * on the instant heat dips below the ceiling.
    */
   overheated: boolean;
+  /**
+   * Rounds left in the magazine. Meaningless (and left at 0) on a weapon whose `ammoCapacity`
+   * is 0. Every projectile fired costs one, so a two-round burst empties the magazine twice as
+   * fast as the shot count suggests.
+   */
+  ammo: number;
+  /** Seconds left of a reload, or 0 when not reloading. */
+  reloadLeft: number;
   /** Per-weapon scratch (burst counters, trait counters). Fixed size, no allocation. */
   readonly scratch: Float32Array;
 }

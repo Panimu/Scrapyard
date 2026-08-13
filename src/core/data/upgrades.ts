@@ -30,7 +30,8 @@ export type UpgradeId =
   | 'w-laser-medium'
   | 'w-laser-long'
   | 'w-missile-short'
-  | 'w-missile-long';
+  | 'w-missile-long'
+  | 'w-machine-gun';
 
 /** Tiers per weapon, including the unlock. */
 export const WEAPON_MAX_TIER = 7;
@@ -155,6 +156,26 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'A fourth missile.',
       'Flight time +0.6s.',
       'A fifth missile.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-machine-gun',
+    kind: 'weapon',
+    grantsWeapon: 'machine-gun',
+    name: 'Machine Gun',
+    description:
+      'Two rounds at a time into the weakest enemy, very close in. 200 rounds, then a long reload.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Damage +1.5 per round.',
+      'Rate of fire: cycle -0.018s.',
+      'Magazine +80 rounds.',
+      'Range +25.',
+      'Damage +3 per round.',
+      'Reload 4.5s faster.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
