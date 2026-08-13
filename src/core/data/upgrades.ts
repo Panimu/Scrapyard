@@ -392,7 +392,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // "Unlock." on its own would put the three numbers that define the card nowhere the player
     // can read them before spending the pick.
     description:
-      'A blue rim absorbs one hit outright, whatever its size. 0.1s immunity, back in 20s.',
+      'A blue rim absorbs one hit outright and burns what hit it. 0.1s immunity, back in 20s.',
     // NOT a percentage card, and not on the shared ramp: there is nothing here to take a
     // percentage OF. All three numbers are 0 at base (tuning.ts), so the unlock tier carries the
     // whole mechanism and the six after it move three separate dials.

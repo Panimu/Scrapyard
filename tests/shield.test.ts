@@ -15,11 +15,12 @@ import { describe, expect, it } from 'vitest';
 
 import { DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
+import { CYCLE_LADDER } from '../src/core/content/cycles.js';
 import { ARCHETYPES, ARCH_GRUNT } from '../src/core/content/enemyCatalog.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { resolvePlayerStats } from '../src/core/data/stats.js';
 import { UPGRADE_CATALOG, upgradeIndex } from '../src/core/data/upgrades.js';
-import { allocEnemy } from '../src/core/entity/enemyPool.js';
+import { ENEMY_FLAG_DEAD, allocEnemy } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
 import { EV_PLAYER_SHIELD_BROKEN, EV_PLAYER_SHIELD_RESTORED } from '../src/core/events/ring.js';
 import { rebuildSpatialHash } from '../src/core/spatial/hashGrid.js';
@@ -54,14 +55,20 @@ function makeWorld(shieldTier = 0): World {
   return w;
 }
 
-/** One biter parked exactly on the player, its contact cooldown already expired. */
-function addBiter(world: World, damage: number): number {
+/**
+ * One biter parked exactly on the player, its contact cooldown already expired.
+ *
+ * `hp` defaults to something nothing can kill, because most of this file is about what happens to
+ * the PLAYER and a biter that died to the shield's backlash mid-scenario would silently end it.
+ * The backlash suite passes real numbers.
+ */
+function addBiter(world: World, damage: number, hp = 1e6): number {
   const e = world.enemies;
   const handle = allocEnemy(e, 0, 0, ARCH_GRUNT, 0, 0, world.director.nextSpawnId++);
   expect(handle).not.toBe(NULL_HANDLE);
   const d = e.count - 1;
-  e.hp[d] = 1e6; // nothing in these tests shoots back; it must not die mid-scenario
-  e.maxHp[d] = 1e6;
+  e.hp[d] = hp;
+  e.maxHp[d] = hp;
   e.radius[d] = ARCHETYPES[ARCH_GRUNT].radius;
   e.mass[d] = ARCHETYPES[ARCH_GRUNT].mass;
   e.speed[d] = 0;
@@ -359,5 +366,80 @@ describe('Energy Shield: recharge', () => {
     for (let i = 0; i < 120; i++) tick(w);
     expect(w.player.shieldLayers).toBe(1);
     expect(w.player.shieldTimer).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Backlash
+// ---------------------------------------------------------------------------------------------
+
+describe('Energy Shield: backlash into whatever broke it', () => {
+  const BACKLASH = DEFAULT_TUNING.combat.shieldBreakDamage;
+
+  it('one-shots a first-cycle regular', () => {
+    // The whole size claim: cycle 0's Rustling opens at 22 HP and reaches 28.6 at the very end of
+    // the cycle once the within-cycle ramp has run. Both must die on a rim.
+    for (const hp of [CYCLE_LADDER[0].hp, CYCLE_LADDER[0].hp * 1.3]) {
+      const w = makeWorld(1);
+      const biter = addBiter(w, 40, hp);
+      tick(w);
+      expect(w.enemies.flags[biter] & ENEMY_FLAG_DEAD, `hp ${hp}`).not.toBe(0);
+      expect(w.stats.kills).toBe(1);
+    }
+  });
+
+  it('does not one-shot the next cycle up', () => {
+    const w = makeWorld(1);
+    const biter = addBiter(w, 40, CYCLE_LADDER[1].hp); // Scavenger, 34
+    tick(w);
+    expect(w.enemies.flags[biter] & ENEMY_FLAG_DEAD).toBe(0);
+    expect(w.enemies.hp[biter]).toBeCloseTo(CYCLE_LADDER[1].hp - BACKLASH, 6);
+    expect(w.stats.kills).toBe(0);
+  });
+
+  it('bills effective damage, not the overkill', () => {
+    const w = makeWorld(1);
+    addBiter(w, 40, 22);
+    tick(w);
+    // 30 into 22 HP is 22 dealt. Charging the full 30 would inflate the harness dps by an amount
+    // that scales with how often the player is hit.
+    expect(w.stats.damageDealt).toBeCloseTo(22, 6);
+  });
+
+  it('leaves the crowd eaten by the immunity window untouched', () => {
+    const w = makeWorld(5); // 0.2 s window, one rim
+    const biters = [];
+    for (let i = 0; i < 6; i++) biters.push(addBiter(w, 40, 22));
+
+    tick(w);
+
+    // Exactly one body touched a standing field; the other five hit one that was already down.
+    // A defensive card that cleared the ring around you would be a better area weapon than any
+    // of the actual area weapons.
+    let dead = 0;
+    for (const b of biters) if ((w.enemies.flags[b] & ENEMY_FLAG_DEAD) !== 0) dead++;
+    expect(dead).toBe(1);
+    expect(w.stats.kills).toBe(1);
+  });
+
+  it('does nothing at all without the card', () => {
+    const w = makeWorld();
+    const biter = addBiter(w, 40, 22);
+    tick(w);
+    expect(w.enemies.hp[biter]).toBe(22);
+    expect(w.stats.kills).toBe(0);
+  });
+
+  it('pays out: a body killed on a rim reaches the kill feed like any other kill', () => {
+    const w = makeWorld(1);
+    const biter = addBiter(w, 40, 22);
+    w.enemies.xpValue[biter] = 7;
+
+    tick(w);
+
+    // The KillFeed is what S10 turns into a gem later this same tick. A kill that skipped it
+    // would be a body that vanished and paid nothing - the one way this could be a downside.
+    expect(w.kills.count).toBe(1);
+    expect(w.kills.xpValue[0]).toBe(7);
   });
 });

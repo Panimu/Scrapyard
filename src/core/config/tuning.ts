@@ -67,6 +67,20 @@ export interface CombatTuning {
    * with no shield card taken, that window is never opened and hits land back to back.
    */
   readonly playerHitFlashSec: number;
+  /**
+   * BACKLASH: damage dealt to the enemy whose contact broke an Energy Shield layer. A field that
+   * collapses has to put its energy somewhere, and the body that touched it is where.
+   *
+   * Deliberately FLAT and deliberately small. It is sized to one-shot a first-cycle Rustling
+   * (22 HP, and 28.6 at the very end of the cycle once the within-cycle ramp has run) and nothing
+   * else: a Scavenger opens at 34 HP one cycle later, so the backlash stops being a kill almost
+   * immediately and goes back to being a nudge. It is a moment of feedback - the thing that hit
+   * you falls over - not a damage source anyone should build around.
+   *
+   * It is a CombatTuning constant rather than a resolved player stat because no tier moves it.
+   * The three numbers the shield's ladder does move live on the card.
+   */
+  readonly shieldBreakDamage: number;
 }
 
 export interface SteeringTuning {
@@ -195,6 +209,7 @@ const COMBAT: CombatTuning = {
   armourMinFrac: 0.25,
   pierceFalloff: 0.75,
   playerHitFlashSec: 0.12,
+  shieldBreakDamage: 30, // one-shots cycle 0's Rustling at 22 HP, and at 28.6 with the ramp run
 };
 
 const STEERING: SteeringTuning = {

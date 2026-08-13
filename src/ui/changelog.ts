@@ -45,6 +45,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     notes: [
       'A blue rim around the mech absorbs one hit outright, whatever its size, then breaks and recharges after 20s.',
       'Breaking a rim also makes you immune for a moment, so a crowd that all reach you at once spends its whole bite on the one layer.',
+      'The field discharges into whatever broke it. Enough to knock over a first-cycle Rustling outright; a Scavenger one cycle later walks away from it.',
       'Seven tiers: three cut the recharge to 9s, two extend the immunity to 0.2s, and the last adds a second rim that recharges in its own right.',
       'It is the opposite trade to Ablative Plate - armour is worth the same against a nibble and a boss slam, a rim is worth the whole hit - and there are now six passives competing for five slots.',
     ],

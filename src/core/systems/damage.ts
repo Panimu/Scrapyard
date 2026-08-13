@@ -365,6 +365,38 @@ function killEnemy(world: World, ed: number): void {
   );
 }
 
+/**
+ * The Energy Shield's discharge into whatever broke it.
+ *
+ * Split out rather than inlined because it is the ONE place in this file where damage flows
+ * backwards - player defence killing an enemy - and burying that inside the contact loop would
+ * hide the fact that `killEnemy` can now be reached from the contact path at all. S10 spawns the
+ * gem from the KillFeed later this same tick, exactly as it would for a shell.
+ */
+function applyShieldBacklash(world: World, ed: number, amount: number): void {
+  if (amount <= 0) return;
+  const enemies = world.enemies;
+
+  const hpBefore = enemies.hp[ed];
+  enemies.hp[ed] = hpBefore - amount;
+  // Effective, not raw: 30 backlash into a 22 HP Rustling is 22 dealt, not 30. Overkill here
+  // would inflate the dps the harness prints by an amount that scales with how often you are hit,
+  // which is the last thing that number should measure.
+  world.stats.damageDealt += amount < hpBefore ? amount : hpBefore;
+
+  pushEvent(
+    world.events,
+    EV_ENEMY_DAMAGED,
+    world.tick,
+    enemies.x[ed],
+    enemies.y[ed],
+    amount,
+    enemies.slot[ed],
+  );
+
+  if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+}
+
 // -------------------------------------------------------------------------------------------
 // Contact damage
 // -------------------------------------------------------------------------------------------
@@ -424,6 +456,15 @@ function applyContacts(world: World): void {
         taken,
         player.shieldLayers,
       );
+      // BACKLASH, to the body that touched the field and nothing else. It goes through the same
+      // path a shell does - effective damage into RunStats, EV_ENEMY_DAMAGED for the spark, and
+      // `killEnemy` on the way through zero - so a Rustling that dies on a rim drops a gem and
+      // lands in the kill feed exactly like one shot off it.
+      //
+      // The bodies eaten by the IMMUNITY WINDOW take nothing: they hit a field that was already
+      // down. Burning the whole crowd would turn a defensive card into the game's best area
+      // weapon, which is a different card than the one on offer.
+      applyShieldBacklash(world, ed, combat.shieldBreakDamage);
       continue;
     }
 
