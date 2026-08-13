@@ -15,7 +15,8 @@
     "sim": "tsx tools/sim.ts",
     "assets": "node tools/pack-assets.mjs",
     "screenshot": "tsx tools/screenshot.ts",
-    "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html"
+    "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
+    "dps": "tsx tools/dps.ts"
   },
   "dependencies": {
     "pixi.js": "8.19.0"

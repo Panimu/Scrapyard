@@ -606,10 +606,10 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // spots near the mech - not on enemies, not ahead of the player, not where you are looking. It is
 // weather, and you learn to fight underneath it.
 //
-// STRIKES FALL IN A WIDE ANNULUS, 70-520 u about the mech - well past what any screen shows, out
-// toward the spawn ring at 560. So the barrage is not covering the fight you are in; it is working
-// the ground enemies still have to cross. Much of it lands out of sight, and most of it lands on
-// nobody: area grows with the square of the radius, so a wide barrage is a thin one.
+// STRIKES FALL IN A 70-320 u ANNULUS about the mech: past the bodies actually touching you, onto
+// the ground the next wave is crossing, but close enough that most of it happens where you can see
+// it. Area grows with the square of the radius, so that band is a density dial as much as a reach
+// one - see STRIKE_RADIUS_MIN/MAX in constants.ts for what the tighter and wider versions cost.
 //
 //   3 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload
 //

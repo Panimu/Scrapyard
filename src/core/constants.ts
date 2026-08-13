@@ -99,13 +99,15 @@ export const SPAWN_RADIUS = 560;
  * The inner bound keeps a barrage off your own feet - artillery that could land on the player
  * would be a self-centred nuke rather than area denial.
  *
- * CONSEQUENCE WORTH KNOWING: area grows with the square of the radius, so widening the annulus
- * thins the barrage rather than moving it. Most shells now fall on ground no enemy happens to be
- * standing on, and many land off-screen. That is the trade this radius buys - reach instead of
- * reliability.
+ * 70-320 is a deliberate middle. Area grows with the SQUARE of the radius, so the annulus is a
+ * density dial as much as a reach one: at 210 the barrage was concentrated and reliable but sat on
+ * top of the melee; at 520 it reached the spawn ring and dealt a sixth of the damage, with four
+ * fifths of it landing where no screen could show it. At 320 most shells are still on screen on a
+ * typical device, it reaches past the bodies actually touching you, and it keeps roughly half the
+ * concentration of the tight version.
  */
 export const STRIKE_RADIUS_MIN = 70;
-export const STRIKE_RADIUS_MAX = 520;
+export const STRIKE_RADIUS_MAX = 320;
 export const DESPAWN_RADIUS = 900;
 /** Equal to DESPAWN_RADIUS, NOT to SPAWN_RADIUS. At 560 the director could not see enemies
  *  trailing behind a kiting player, read the field as empty and spawn more ahead of them - actual
