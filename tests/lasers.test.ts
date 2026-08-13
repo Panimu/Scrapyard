@@ -994,11 +994,14 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
       if (w.phase !== RUN_PHASE_LEVEL_UP) break;
       for (let s = 0; s < w.levelUp.offerCount; s++) {
         const idx = w.levelUp.offers[s];
-        // With the slots full, an UNLOCK (stacks 0) can never be offered - but the guns already
-        // held keep climbing their ladders, which is what stops progression ending at the cap
-        // now that every card in the pool is a weapon.
-        expect(w.levelUp.stacks[idx]).toBeGreaterThan(0);
-        sawTierOffer = true;
+        // With the weapon slots full, an UNLOCK of a NEW GUN can never be offered. Passives are
+        // a separate pool with their own cap, so a passive unlock is still legitimate here - the
+        // assertion is about weapon slots, not about every card in the game.
+        const def = w.upgradeCatalog[idx];
+        if (def.kind === 'weapon') {
+          expect(w.levelUp.stacks[idx]).toBeGreaterThan(0);
+          sawTierOffer = true;
+        }
       }
       choose(w, 0);
     }

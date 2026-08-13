@@ -185,7 +185,26 @@ function accumulate(
   for (let i = 0; i < catalog.length; i++) {
     const taken = stacks[i];
     if (taken === 0) continue;
-    const effects = catalog[i].effects;
+    const def = catalog[i];
+
+    if (def.tierEffects !== undefined) {
+      // BACK-LOADED CARD: each tier carries its own amounts, summed over the tiers actually taken.
+      // Still additive across tiers rather than compounding - the seventh rung is bigger than the
+      // first because it is AUTHORED bigger, not because the maths curves.
+      const upTo = taken < def.tierEffects.length ? taken : def.tierEffects.length;
+      for (let t = 0; t < upTo; t++) {
+        const tier = def.tierEffects[t];
+        for (let e = 0; e < tier.length; e++) {
+          const fx = tier[e];
+          if (fx.target !== target || fx.key !== key) continue;
+          if (fx.mode === 'add') out.add += fx.amount;
+          else out.mul += fx.amount;
+        }
+      }
+      continue;
+    }
+
+    const effects = def.effects;
     for (let e = 0; e < effects.length; e++) {
       const fx = effects[e];
       if (fx.target !== target || fx.key !== key) continue;

@@ -32,7 +32,12 @@ export type UpgradeId =
   | 'w-missile-short'
   | 'w-missile-long'
   | 'w-machine-gun'
-  | 'w-artillery';
+  | 'w-artillery'
+  | 'p-range'
+  | 'p-damage'
+  | 'p-rate'
+  | 'p-speed'
+  | 'p-armour';
 
 /** Tiers per weapon, including the unlock. */
 export const WEAPON_MAX_TIER = 7;
@@ -63,6 +68,17 @@ export type UpgradeKind = 'weapon' | 'passive';
 export interface UpgradeDef {
   readonly id: UpgradeId;
   readonly kind: UpgradeKind;
+  /**
+   * PER-TIER effects, index 0 = tier 1, applied cumulatively for every tier taken.
+   *
+   * This exists because `effects` alone can only ever be LINEAR: the resolver multiplies one
+   * amount by the stack count, so every tier of a card is worth exactly the same. Passives are
+   * deliberately back-loaded - the seventh tier is worth about twice the first - which needs a
+   * different number per rung, exactly the way a weapon's `perLevel` ladder works.
+   *
+   * When present this REPLACES `effects` entirely; a card uses one mechanism or the other.
+   */
+  readonly tierEffects?: readonly (readonly UpgradeEffect[])[];
   /** Set only on `kind: 'weapon'`: the weapon this card unlocks at tier 1 and levels thereafter. */
   readonly grantsWeapon?: WeaponId;
   readonly name: string;
@@ -103,6 +119,37 @@ function laserTierText(
     'Heat capacity +40.',
     `Heat dispersion +${disp}/s.`,
   ];
+}
+
+// ---------------------------------------------------------------------------------------------
+// PASSIVES
+//
+// Five cards, seven tiers each, BACK-LOADED: 5 / 5 / 6 / 7 / 8 / 9 / 10 percent. That sums to
+// exactly 50% and the seventh rung is worth exactly twice the first, so finishing a passive is a
+// real decision rather than a rounding error - the last two tiers alone are worth as much as the
+// first four.
+//
+// Every percentage card multiplies rather than adds, and they are summed linearly by the resolver
+// (see stats.ts): a fully-invested card is +50%, never 1.05 x 1.05 x ... compounding to +58%. The
+// number on the card is the number.
+// ---------------------------------------------------------------------------------------------
+
+/** The shared back-loaded ramp. Sums to 0.50; last tier is exactly twice the first. */
+const PASSIVE_RAMP: readonly number[] = [0.05, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1];
+
+function rampText(prefix: string): readonly string[] {
+  return PASSIVE_RAMP.map((v) => `${prefix} +${Math.round(v * 100)}%.`);
+}
+
+/** One `mul` effect per tier on a single key, following the ramp. */
+function rampEffects(
+  target: 'player' | 'weapon',
+  keys: readonly (PlayerStatKey | WeaponStatKey)[],
+  scale = 1,
+): readonly (readonly UpgradeEffect[])[] {
+  return PASSIVE_RAMP.map((v) =>
+    keys.map((key) => ({ target, key, mode: 'mul' as const, amount: v * scale })),
+  );
 }
 
 /**
@@ -237,6 +284,94 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     tiers: laserTierText(92, 34, 8.0),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
+    effects: [],
+  },
+  // ---- passives ----------------------------------------------------------------------------
+  {
+    id: 'p-range',
+    kind: 'passive',
+    name: 'Targeting Optics',
+    description: 'Every weapon reaches further.',
+    tiers: rampText('Weapon range'),
+    tierEffects: rampEffects('weapon', ['range']),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+  },
+  {
+    id: 'p-damage',
+    kind: 'passive',
+    name: 'Ordnance',
+    description: 'Every weapon hits harder.',
+    tiers: rampText('Weapon damage'),
+    tierEffects: rampEffects('weapon', ['damage']),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+  },
+  {
+    id: 'p-rate',
+    kind: 'passive',
+    name: 'Feed Systems',
+    description: 'Every weapon fires more often - shorter cooldowns, faster heat dispersion.',
+    // Two keys because the game has two ways of pacing a weapon. A card that only touched
+    // `cooldown` would do NOTHING for the three lasers, which are gated by heat - a passive that
+    // is dead weight for three of eight weapons is a trap, not a choice.
+    //
+    // Cooldown carries a NEGATIVE ramp scaled so the full card is a +50% RATE of fire, not a -50%
+    // cooldown: cooldown x (1/1.5) = 0.667, so the amounts must total -0.333.
+    tiers: rampText('Rate of fire'),
+    tierEffects: PASSIVE_RAMP.map((v) => [
+      { target: 'weapon' as const, key: 'cooldown' as const, mode: 'mul' as const, amount: -v * (1 / 3 / 0.5) },
+      { target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: v },
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+  },
+  {
+    id: 'p-speed',
+    kind: 'passive',
+    name: 'Servo Drive',
+    description: 'The chassis moves faster.',
+    // Acceleration rises with top speed deliberately. moveDrag is DERIVED as accel/maxSpeed, so
+    // raising only the top speed would lower drag and make the mech float - a higher ceiling it
+    // takes noticeably longer to reach. Scaling both keeps time-to-max-speed constant, so the mech
+    // feels the same and is simply quicker.
+    tiers: rampText('Movement speed'),
+    tierEffects: rampEffects('player', ['moveMaxSpeed', 'moveAccel']),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+  },
+  {
+    id: 'p-armour',
+    kind: 'passive',
+    name: 'Ablative Plate',
+    description: 'Subtracts from every hit taken, down to a floor of 25% of the original.',
+    // FLAT, not a percentage. Base armour is 0, so a multiplier would be worth precisely nothing -
+    // the one place the shared ramp cannot be used. The same back-loaded shape by hand: +22 armour
+    // in total, seventh tier twice the first.
+    //
+    // Flat armour is strong against the swarm and weak against elites by design (tuning.ts): 22
+    // armour turns a 5-damage swarmer hit into the 25% floor, and a 28-damage elite hit into 6.
+    // It buys tolerance for being SURROUNDED, never for being hit by the big thing.
+    tiers: Object.freeze([
+      'Armour +2.',
+      'Armour +2.',
+      'Armour +3.',
+      'Armour +3.',
+      'Armour +4.',
+      'Armour +4.',
+      'Armour +4.',
+    ]),
+    tierEffects: Object.freeze(
+      [2, 2, 3, 3, 4, 4, 4].map((v) => [
+        { target: 'player' as const, key: 'armour' as const, mode: 'add' as const, amount: v },
+      ]),
+    ),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
     effects: [],
   },
 ] as const) as readonly UpgradeDef[];

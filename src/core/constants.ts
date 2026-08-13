@@ -34,20 +34,18 @@ export const MAX_QUERY_CANDIDATES = 2048;
 export const EVENT_RING_CAPACITY = 1024;
 
 /**
- * EIGHT weapon slots, seven passive.
+ * FIVE weapon slots and five passive slots.
  *
- * The stated target was seven and seven; the weapon set then landed at eight - Cannon, three
- * lasers, two missile racks, the machine gun and the artillery. Slots are set to eight so every
- * specced weapon is actually obtainable, rather than leaving one permanently unreachable once a
- * run fills up.
+ * Eight weapons exist and only five can be carried, which makes a run a CHOICE rather than a
+ * collection: by the fifth gun the pool stops offering new ones and every later card deepens what
+ * you already hold. Two runs on the same mech can end up genuinely different builds.
  *
- * If the intent is instead that a run must CHOOSE - eight weapons competing for seven slots is a
- * real and interesting constraint - this is the one number to change, and the offer logic already
- * handles it: `isOfferable` gates unlocks on the cap while still offering tiers for guns already
- * held.
+ * `isOfferable` enforces both caps independently - it gates the UNLOCK on the cap while continuing
+ * to offer tiers for anything already held, so hitting five weapons narrows the pool instead of
+ * ending progression.
  */
-export const MAX_WEAPONS = 8;
-export const MAX_PASSIVES = 7;
+export const MAX_WEAPONS = 5;
+export const MAX_PASSIVES = 5;
 
 /**
  * HEAT - the lasers' limiter, in place of a cooldown.

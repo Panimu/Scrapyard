@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { DT, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
+import { DT, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
 import { DEFAULT_TUNING, xpToNextLevel } from '../src/core/config/tuning.js';
 import {
   CANNON,
@@ -410,10 +410,15 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   /**
    * ONE CARD IN THE POOL, on purpose.
    *
-   * Walking a single weapon to tier 7 against the full eight-card pool is a lottery: every
-   * level-up that offers something else has to be spent, and 55 tiers of other weapons run out
-   * before the wanted card has surfaced seven times. That made this test fail for a reason that
-   * has nothing to do with what it checks.
+   * Two reasons, and the second is the important one.
+   *
+   * Walking a single weapon to tier 7 against the full pool is a lottery: every level-up that
+   * offers something else has to be spent, and the other cards run out before the wanted one has
+   * surfaced seven times.
+   *
+   * And PASSIVES MULTIPLY EVERY WEAPON. A blind pick taken on the way to the card under test can
+   * now change that card's resolved damage, range or cooldown, so a suite asserting exact numbers
+   * cannot share a pool with them at all.
    *
    * These suites are the contract between the card, the ladder and WeaponInstance.level. Pool
    * competition is a different property, tested separately in the offer suites.
@@ -473,8 +478,8 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   it('gives the Cannon range, fire rate, damage and pierce on the tiers that claim them', () => {
     // Amber opens with the Cannon. Every hero multiplier is 1 and no card in the shipping pool
     // carries an effect, so these are the ladder's own numbers reaching the resolved stats.
-    const w = makeWorldForHero(heroIndex('amber'), 21);
-    const card = upgradeIndexForWeapon('cannon');
+    const w = makeWorldForHero(heroIndex('amber'), 21, 'cannon');
+    const card = 0; // solo catalog: the Cannon card is the only one in this world's pool
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
     expect(s().range).toBe(CANNON.base.range); // 260
@@ -512,9 +517,10 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   });
 
   it('gives a laser damage AND heat together, then capacity, then dispersion', () => {
-    // Slate opens with the Medium Laser: 55 dps, 20 heat/s, capacity 100, dispersion 20.
-    const w = makeWorldForHero(heroIndex('slate'), 33);
-    const card = upgradeIndexForWeapon('laser-medium');
+    // Slate opens with the Medium Laser. Solo catalog, so its card is the only one and sits at
+    // index 0 - the shipping index would point past the end of this world's pool.
+    const w = makeWorldForHero(heroIndex('slate'), 33, 'laser-medium');
+    const card = 0;
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
     expect(s().damage).toBe(LASER_MEDIUM.base.damage);
@@ -660,16 +666,30 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     }
 
     // Every tier that was not free had to be taken: 4 x 7, minus the one the hero opened with.
+    // TOTAL_AVAILABLE_STACKS counts the whole catalog, but a RUN cannot reach all of it: the
+    // slot caps mean at most MAX_WEAPONS guns and MAX_PASSIVES passives are ever held, so the
+    // reachable pool is (5 + 5) cards' worth of tiers, less the one the hero was seeded with.
     expect(TOTAL_AVAILABLE_STACKS).toBe(UPGRADE_CATALOG.length * WEAPON_MAX_TIER);
-    expect(picks).toBe(TOTAL_AVAILABLE_STACKS - seeded);
+    const reachable = (MAX_WEAPONS + MAX_PASSIVES) * WEAPON_MAX_TIER;
+    expect(picks).toBe(reachable - seeded);
     expect(stackTotal(w)).toBe(picks + seeded); // no pick vanished
 
-    // Every card in the pool is maxed, and every gun is held exactly once at its last tier.
+    // The slot caps mean the run CANNOT max every card - it maxes exactly the ones it took, and
+    // the cards it never had room for stay untouched. That partition is the property worth
+    // asserting now: nothing is half-taken, and nothing outside the loadout moved.
+    let maxedWeapons = 0;
+    let maxedPassives = 0;
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
-      expect(w.levelUp.stacks[i]).toBe(UPGRADE_CATALOG[i].maxStacks);
+      const taken = w.levelUp.stacks[i];
+      const def = UPGRADE_CATALOG[i];
+      if (taken === 0) continue;
+      expect(taken).toBe(def.maxStacks); // taken at all => taken to the top
+      if (def.kind === 'weapon') maxedWeapons++;
+      else maxedPassives++;
     }
-    expect(w.weaponCount).toBe(WEAPON_CATALOG.length);
-    expect(w.weaponCount).toBeLessThanOrEqual(MAX_WEAPONS);
+    expect(maxedWeapons).toBe(MAX_WEAPONS);
+    expect(maxedPassives).toBe(MAX_PASSIVES);
+    expect(w.weaponCount).toBe(MAX_WEAPONS);
     const seen = new Set<number>();
     for (let i = 0; i < w.weaponCount; i++) {
       expect(w.weapons[i].level).toBe(WEAPON_MAX_TIER);
