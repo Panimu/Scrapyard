@@ -714,6 +714,12 @@ body {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  /* MAX-CONTENT, NOT auto. This grid is a scroll container with a definite height, and `auto`
+     rows are allowed to be squeezed toward their minimum to fit that height - so each tile
+     collapsed to its 88px min-height and its name and identity overflowed the border. It was
+     invisible with an 8-hero roster (4 rows into 678px had room to spare) and appeared the
+     moment the roster reached 16. Rows must size to their content and let the grid scroll. */
+  grid-auto-rows: max-content;
   gap: 8px;
   align-content: start;
   overflow-y: auto;

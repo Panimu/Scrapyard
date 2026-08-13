@@ -40,7 +40,15 @@ export type HeroId =
   | 'cobalt'
   | 'jade'
   | 'rust'
-  | 'brass';
+  | 'brass'
+  | 'onyx'
+  | 'ash'
+  | 'vermilion'
+  | 'indigo'
+  | 'bone'
+  | 'copper'
+  | 'plum'
+  | 'fern';
 
 /**
  * The mutable per-shell context handed to `HeroTrait.onFireShell`, owned by updateWeapons.
@@ -92,7 +100,15 @@ export interface HeroDef {
 
 /**
  * Index in this array is `WorldConfig.heroId` and is written into every replay. APPEND ONLY -
- * reordering invalidates saved runs.
+ * reordering invalidates saved runs. The eight added in the second pass are therefore appended
+ * after `brass` rather than interleaved with the chassis they pair with.
+ *
+ * SIXTEEN CHASSIS, TWO PER WEAPON, ONE LIGHT AND ONE HEAVY. Every one of the eight weapons is
+ * somebody's opener, and each has a light frame and a heavy frame that look nothing alike -
+ * different legs, different weapon mount, different torso (tools/make-mechs.mjs asserts that no
+ * two share a silhouette). The stat blocks are still empty, so today the pairing is a promise the
+ * art is making on the simulation's behalf: when hero variety lands, the light one takes speed
+ * and the heavy one takes armour, and the roster is already shaped for it.
  *
  * Named after their paint, deliberately: a name like "Bulwark" would promise a behaviour these
  * chassis do not yet have.
@@ -101,7 +117,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'slate',
     name: 'Slate',
-    identity: 'Gunmetal plate, blue canopy. Opens with the Medium Laser.',
+    identity: 'Light biped, twin gun pods. Opens with the Medium Laser.',
     sprite: 'mech_slate',
     startingWeapon: 'laser-medium',
     player: {},
@@ -110,7 +126,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'moss',
     name: 'Moss',
-    identity: 'Field green, green canopy. Opens with the Short Laser.',
+    identity: 'Light strider, rotary drums. Opens with the Short Laser.',
     sprite: 'mech_moss',
     startingWeapon: 'laser-short',
     player: {},
@@ -119,7 +135,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'ember',
     name: 'Ember',
-    identity: 'Signal red, red canopy. Opens with the Long Laser.',
+    identity: 'Light strider, one heavy cannon. Opens with the Long Laser.',
     sprite: 'mech_ember',
     startingWeapon: 'laser-long',
     player: {},
@@ -128,7 +144,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'amber',
     name: 'Amber',
-    identity: 'Hazard yellow, amber lamps. Opens with the Cannon.',
+    identity: 'Heavy biped, one heavy cannon. Opens with the Cannon.',
     sprite: 'mech_amber',
     startingWeapon: 'cannon',
     player: {},
@@ -137,7 +153,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'cobalt',
     name: 'Cobalt',
-    identity: 'Deep blue, blue canopy. Opens with the Medium Laser.',
+    identity: 'Heavy quad, twin gun pods. Opens with the Medium Laser.',
     sprite: 'mech_cobalt',
     startingWeapon: 'laser-medium',
     player: {},
@@ -146,7 +162,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'jade',
     name: 'Jade',
-    identity: 'Teal plate, green canopy. Opens with the Short Laser.',
+    identity: 'Heavy biped, forward claw arms. Opens with the Short Laser.',
     sprite: 'mech_jade',
     startingWeapon: 'laser-short',
     player: {},
@@ -155,7 +171,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'rust',
     name: 'Rust',
-    identity: 'Oxide orange, red canopy. Opens with the Long Laser.',
+    identity: 'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
     sprite: 'mech_rust',
     startingWeapon: 'laser-long',
     player: {},
@@ -164,9 +180,82 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'brass',
     name: 'Brass',
-    identity: 'Old brass, amber lamps. Opens with the Cannon.',
+    identity: 'Light hover, one heavy cannon. Opens with the Cannon.',
     sprite: 'mech_brass',
     startingWeapon: 'cannon',
+    player: {},
+    weapon: {},
+  },
+  // ---- second pass: the missiles, the machine gun and the artillery get openers -------
+  {
+    id: 'onyx',
+    name: 'Onyx',
+    identity: 'Heavy quad, boxed missile racks. Opens with the Short Missiles.',
+    sprite: 'mech_onyx',
+    startingWeapon: 'missile-short',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'ash',
+    name: 'Ash',
+    identity: 'Light biped, boxed missile racks. Opens with the Short Missiles.',
+    sprite: 'mech_ash',
+    startingWeapon: 'missile-short',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'vermilion',
+    name: 'Vermilion',
+    identity: 'Light hover, rotary drums. Opens with the Long Missiles.',
+    sprite: 'mech_vermilion',
+    startingWeapon: 'missile-long',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'indigo',
+    name: 'Indigo',
+    identity: 'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
+    sprite: 'mech_indigo',
+    startingWeapon: 'missile-long',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'bone',
+    name: 'Bone',
+    identity: 'Light strider, twin gun pods. Opens with the Machine Gun.',
+    sprite: 'mech_bone',
+    startingWeapon: 'machine-gun',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'copper',
+    name: 'Copper',
+    identity: 'Heavy quad, rotary drums. Opens with the Machine Gun.',
+    sprite: 'mech_copper',
+    startingWeapon: 'machine-gun',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'plum',
+    name: 'Plum',
+    identity: 'Heavy biped, spine-slung artillery tube. Opens with the Heavy Artillery.',
+    sprite: 'mech_plum',
+    startingWeapon: 'artillery',
+    player: {},
+    weapon: {},
+  },
+  {
+    id: 'fern',
+    name: 'Fern',
+    identity: 'Light hover, forward claw arms. Opens with the Heavy Artillery.',
+    sprite: 'mech_fern',
+    startingWeapon: 'artillery',
     player: {},
     weapon: {},
   },

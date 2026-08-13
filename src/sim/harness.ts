@@ -97,7 +97,7 @@ function printUsage(): void {
     [
       'npm run sim -- [options]',
       '  --seed <int>       run seed (default 0x5ca19a2d)',
-      '  --hero <0..7>      hero index into HERO_CATALOG',
+      '  --hero <0..15>     hero index into HERO_CATALOG',
       '  --minutes <n>      simulated minutes (default 15:08)',
       '  --interval <sec>   seconds between timeline rows (default 30)',
       '  --hashes           print the world hash on every row',

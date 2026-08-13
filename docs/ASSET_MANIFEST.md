@@ -12,26 +12,40 @@ on screen (y-down), matching PixiJS `sprite.rotation`. 1 world unit = 1 CSS px a
 
 ---
 
-## 1. Player mechs — the 8 heroes
+## 1. Player mechs — the 16 heroes
 
-**GENERATED, NOT SOURCED.** `tools/make-mechs.mjs` (`npm run mechs`) draws all eight chassis and
+**GENERATED, NOT SOURCED.** `tools/make-mechs.mjs` (`npm run mechs`) draws all sixteen chassis and
 the turret into `public/sprites/`. The PNGs are checked in; the generator runs only when the art
-changes.
+changes. Canvas is **148×172** for every chassis, **80×44** for `turret`.
 
-| Frame key | Canvas | Hull | Trim | Canopy |
-|---|---|---|---|---|
-| `mech_slate` | 148×172 | `#8d99ae` | `#5b6779` | `#4fa8ff` |
-| `mech_moss` | 148×172 | `#69ad6b` | `#417a48` | `#3be86b` |
-| `mech_ember` | 148×172 | `#d0574a` | `#8d382f` | `#ff4d4d` |
-| `mech_amber` | 148×172 | `#e0ae3c` | `#9c7620` | `#ffd45e` |
-| `mech_cobalt` | 148×172 | `#4a72d0` | `#2d4790` | `#4fa8ff` |
-| `mech_jade` | 148×172 | `#3fae94` | `#26705f` | `#3be86b` |
-| `mech_rust` | 148×172 | `#b5652f` | `#79401c` | `#ff8a4d` |
-| `mech_brass` | 148×172 | `#c9a24a` | `#8a6a25` | `#ffe08a` |
-| `turret` | 80×44 | — | — | — |
+Each chassis picks a **leg style**, a **weapon mount**, a **torso shape** and a **weight class**,
+and the generator asserts at build time that **no two heroes share a (legs, mount) pair** — that
+rule is what makes sixteen chassis sixteen chassis rather than sixteen recolours.
 
-The canopy colour is the beam colour of the hero's starting weapon, so the chassis says what it
-opens with. The two Cannon heroes have no beam and get warm running lights instead.
+| # | Frame key | Class | Legs | Mount | Torso | Hull | Canopy |
+|---|---|---|---|---|---|---|---|
+| 0 | `mech_slate` | light | chicken | pods | wedge | `#8d99ae` | `#4fa8ff` |
+| 1 | `mech_moss` | light | strider | gatling | spear | `#69ad6b` | `#3be86b` |
+| 2 | `mech_ember` | light | strider | cannon | wedge | `#d0574a` | `#ff4d4d` |
+| 3 | `mech_amber` | heavy | chicken | cannon | slab | `#e0ae3c` | `#ffd45e` |
+| 4 | `mech_cobalt` | heavy | quad | pods | slab | `#4a72d0` | `#4fa8ff` |
+| 5 | `mech_jade` | heavy | chicken | claws | drum | `#3fae94` | `#3be86b` |
+| 6 | `mech_rust` | heavy | quad | artillery | slab | `#b5652f` | `#ff8a4d` |
+| 7 | `mech_brass` | light | hover | cannon | drum | `#c9a24a` | `#ffe08a` |
+| 8 | `mech_onyx` | heavy | quad | missiles | slab | `#3a3f4d` | `#b072ff` |
+| 9 | `mech_ash` | light | chicken | missiles | spear | `#c3c9d4` | `#b072ff` |
+| 10 | `mech_vermilion` | light | hover | gatling | drum | `#e0603a` | `#45e0d0` |
+| 11 | `mech_indigo` | heavy | strider | missiles | wedge | `#5a4bb8` | `#45e0d0` |
+| 12 | `mech_bone` | light | strider | pods | spear | `#ded3b6` | `#ff9d3c` |
+| 13 | `mech_copper` | heavy | quad | gatling | drum | `#a85f3c` | `#ff9d3c` |
+| 14 | `mech_plum` | heavy | chicken | artillery | wedge | `#8f4a76` | `#ff6fae` |
+| 15 | `mech_fern` | light | hover | claws | spear | `#7fb23a` | `#c8ff5e` |
+
+Row order **is** `WorldConfig.heroId` and is append-only — it is written into every replay.
+
+The canopy colour is the beam colour of the hero's starting weapon where there is one (blue
+Medium, green Short, red Long); the beamless weapons get a signature lamp colour each. Every
+weapon has exactly **two** chassis, one light and one heavy.
 
 ### Why these are not Kenney art
 
@@ -39,15 +53,19 @@ The player used to draw from `assets/kenney/robot-pack/PNG/Top view/robot_*.png`
 hues in two finishes. Two problems, and the second is the one that mattered:
 
 1. **Only 3 distinct silhouettes across 8 files.** The `3D*` variants are pixel-identical in alpha
-   to their flat counterparts (mean RGB delta 7–13), and blue ≡ green. Eight heroes, three shapes.
+   to their flat counterparts (mean RGB delta 7–13), and blue ≡ green.
 2. **From directly above, those robots are a slab flanked by two tread blocks — a top-down TANK.**
-   No CC0 pack in the project has a top-down walker, so the options were to ship a tank and call
-   it a mech, or draw one.
+   That is not a mis-assembly on our side: the pack ships `body_*` alongside `track_long` /
+   `track_short` as separate composable pieces and contains **no leg part anywhere**.
 
-The generated chassis is a chicken-walker read from above: legs outboard and swept back with a
-visible knee, shoulder pods forward of the hips carrying twin barrels that project past the prow,
-a torso tapering to a flat nose, and a squared thruster block at the rear. See the header of
-`tools/make-mechs.mjs` for why each of those is load-bearing at 58 world units on a phone.
+Kenney's full catalogue is 192 packs with exactly one robot pack and no mech or walker pack at
+all (`tag:robot` → `robot-pack`; searching `mech`, `mecha`, `walker` → nothing). Nothing
+verified-CC0 and top-down turned up outside it either. So the options were to ship a tank and call
+it a mech, or draw one.
+
+See the header of `tools/make-mechs.mjs` for what makes a top-down walker read as a walker — legs
+outboard, swept back and **stroked** rather than filled; weapons forward and legs aft, never
+interleaved; a narrowing nose and a squared tail.
 
 The Kenney robot-pack files remain in `assets/kenney/` — nothing else uses them.
 

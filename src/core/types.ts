@@ -98,7 +98,7 @@ export function dequantiseAxis(q: number): number {
 
 export interface WorldConfig {
   readonly seed: number;
-  /** Index into HERO_CATALOG, 0..7. */
+  /** Index into HERO_CATALOG. */
   readonly heroId: number;
   readonly runLengthSec: number;
   /** Frozen; part of the determinism key. NO VIEWPORT FIELDS - deliberate (DESIGN.md §0 #16). */
