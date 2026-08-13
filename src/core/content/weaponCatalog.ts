@@ -297,27 +297,31 @@ export const CANNON: WeaponDef = Object.freeze({
 // Three weapons, one mechanic, three tempos. Each targets the WEAKEST enemy in range, draws a line
 // that stops on the first body it touches, and will not fire at all unless that body is the target.
 //
-// HEAT replaces the cooldown. Every laser heats and cools at the same rate as itself, so all three
-// share identical RATIOS and differ only in tempo:
+// HEAT replaces the cooldown. All three share one mechanic and differ in TEMPO. Every figure
+// here is TIER 1, and every one of them is derived from the four numbers in the constructor
+// calls below - if you edit those, `npm run dps` recomputes this table and this comment does not.
 //
-//              heat/s   opening burst   later bursts   gap      damage/s   range
-//   short        10         10.0 s          5.0 s      5.0 s        30       150
-//   medium       20          5.0 s          2.5 s      2.5 s        55       275
-//   long         30          3.3 s          1.7 s      1.7 s        85       430
+//            range  dmg/s  heat/s  disp/s   burst from cold   steady burst   gap    uptime  sustained
+//   short     150     46     10     8.5          10.0 s           5.0 s     5.9 s    45.9%    21.1
+//   medium    275     66     22     8.6           4.5 s           2.3 s     5.8 s    28.1%    18.5
+//   long      430     92     34     8.0           2.9 s           1.5 s     6.3 s    19.0%    17.5
 //
-// The opening burst is twice as long as the rest because it climbs from cold (0 -> capacity) while
-// every later one restarts at the resume threshold (half capacity -> capacity). Sustained uptime is
-// therefore dispersion / (generation + dispersion), which is 1/2 at tier 1 where the two rates are
-// equal - not the 2/3 the opening burst suggests. Effective sustained damage at tier 1 is half the
-// listed figure: 15 / 27.5 / 42.5, against the Cannon's 36.7 single target.
+// The opening burst is twice the steady one because it climbs from cold (0 -> capacity) while
+// every later burst restarts at the resume line (half capacity -> capacity). Sustained uptime is
+// therefore dispersion / (generation + dispersion) and has NO CAPACITY TERM AT ALL - which is
+// worth saying out loud, because it means the two capacity tiers (3 and 6) lengthen the burst and
+// the silence in equal measure and add exactly zero sustained damage. They buy rhythm, not output.
 //
-// Every number here is TIER 1. The ladder moves all of them - a fully tiered Medium Laser runs
-// 99 dps at 36 heat/s into a 180 capacity dispersing 40/s, which is 52 sustained.
+// DISPERSION IS NEARLY FLAT ACROSS THE THREE (8.5 / 8.6 / 8.0) while generation triples. That is
+// the retune that put the SHORT laser on top of the sustained ranking: it is the one that fires
+// nearly half the time, and the long one is a held breath that spends four fifths of a fight
+// cooling. All three are the weakest sustained weapons in the game, and they pay for it with
+// range and with a max hit of one tick's damage.
 //
-// So the short laser is a floodlight you leave on, and the long one is a held breath. Only the
-// long laser out-damages the Cannon on sustained single-target numbers, and it pays for that by
-// refusing blocked shots and by picking the WEAKEST thing on the field rather than the most
-// dangerous one.
+// WHAT THE TABLE CANNOT TELL YOU is that measured output is far below it - the short laser
+// managed 1.6 dps against a kiting player because 150 u is inside a 195 u/s mech's wake, and the
+// long laser managed 1.8 dps standing still because lowest-HP targeting over a 430 u disc almost
+// always picks something buried behind another body. See the beam path in systems/weapons.ts.
 // ---------------------------------------------------------------------------------------------
 
 /**

@@ -141,7 +141,14 @@ export interface WeaponInstance {
   /** Unit vector: the turret's current facing, independent of the chassis. */
   turretX: number;
   turretY: number;
-  /** Dense index of the target chosen this tick, or -1. Render reads it for the reticle. */
+  /**
+   * Dense index of the target chosen this tick, or -1.
+   *
+   * SIM-ONLY, and it has to stay that way: a dense index is invalidated by reapDead's swap-remove
+   * at S12, so anything reading this AFTER stepWorld returns - the renderer, a HUD reticle - would
+   * be pointing at whichever enemy happened to be swapped into the slot. Consumers outside the
+   * tick need a handle or a slot, not this.
+   */
   targetDense: number;
   readonly stats: WeaponStats;
   /**
