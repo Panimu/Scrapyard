@@ -59,7 +59,7 @@
  * `normal` for the cores.
  */
 
-import { Container, Graphics, GraphicsContext, type Sprite } from 'pixi.js';
+import { Container, FillGradient, Graphics, GraphicsContext, type Sprite } from 'pixi.js';
 import { MAX_WEAPONS, NO_BEAM_TARGET, type World } from '../core/index.js';
 import { SpritePool } from './spritePool.js';
 import { PARTICLE_SRC, type GameTextures } from './assets.js';
@@ -71,17 +71,17 @@ import type { Effects } from './effects.js';
  * the halo is deliberately narrower than it once was, because a wide dim additive band over rust
  * is exactly the thing that turns a blue laser salmon.
  */
-const SHEATH_MUL = 3.6;
-const CORE_MUL = 2.1;
-const PULSE_MUL = 2.6;
-const INNER_MUL = 3.2;
-const OUTER_MUL = 6;
+const SHEATH_MUL = 5;
+const CORE_MUL = 1.5;
+const PULSE_MUL = 5.4;
+const INNER_MUL = 4.2;
+const OUTER_MUL = 9;
 
-const SHEATH_ALPHA = 0.34;
+const SHEATH_ALPHA = 0.42;
 const CORE_ALPHA = 1;
-const INNER_ALPHA = 0.34;
-const OUTER_ALPHA = 0.13;
-const PULSE_ALPHA = 0.5;
+const INNER_ALPHA = 0.42;
+const OUTER_ALPHA = 0.2;
+const PULSE_ALPHA = 0.42;
 
 /** Dark warm brown, not black: a neutral rim on a rust floor reads as a hole punched in it. */
 const SHEATH_TINT = 0x2a1410;
@@ -198,16 +198,39 @@ export class BeamLayer {
     const glow = new Container({ label: 'beam-glow', blendMode: 'add' });
     const cores = new Container({ label: 'beam-cores', blendMode: 'normal' });
 
-    // ONE context, shared by every Graphics in the layer: the quad is uploaded once and each
+    // TWO contexts, shared by every Graphics in the layer: each quad is uploaded once and each
     // beam is a transform of it. Sharing is explicitly supported in v8 (GraphicsOptions.context).
-    const quad = new GraphicsContext().rect(0, -0.5, 1, 1).fill(0xffffff);
+    //
+    //   hard  a plain white unit quad - the core filament, which wants a crisp edge.
+    //   soft  the same quad filled with a LINEAR GRADIENT across its width, transparent at both
+    //         edges and opaque down the middle. Every soft-edged layer in the beam is this one
+    //         quad at a different scale, so the falloff is baked into the geometry at boot and
+    //         costs nothing per frame. Stacking more and more flat quads to fake a gradient was
+    //         what made the beam read as a plastic tube: hard-edged whatever the layer count.
+    const hard = new GraphicsContext().rect(0, -0.5, 1, 1).fill(0xffffff);
+    const soft = new GraphicsContext().rect(0, -0.5, 1, 1).fill(
+      new FillGradient({
+        type: 'linear',
+        start: { x: 0, y: 0 },
+        end: { x: 0, y: 1 },
+        // `textureSpace` is local by default, so 0..1 spans the quad's own bounds - which is what
+        // makes one gradient serve every beam width without rebuilding anything.
+        colorStops: [
+          { offset: 0, color: 'rgba(255,255,255,0)' },
+          { offset: 0.32, color: 'rgba(255,255,255,0.55)' },
+          { offset: 0.5, color: 'rgba(255,255,255,1)' },
+          { offset: 0.68, color: 'rgba(255,255,255,0.55)' },
+          { offset: 1, color: 'rgba(255,255,255,0)' },
+        ],
+      }),
+    );
 
     for (let i = 0; i < MAX_WEAPONS; i++) {
-      this.sheath.push(addQuad(quad, this.underContainer));
-      this.outer.push(addQuad(quad, glow));
-      this.inner.push(addQuad(quad, glow));
-      for (let p = 0; p < PULSES_PER_BEAM; p++) this.pulses.push(addQuad(quad, glow));
-      this.core.push(addQuad(quad, cores));
+      this.sheath.push(addQuad(soft, this.underContainer));
+      this.outer.push(addQuad(soft, glow));
+      this.inner.push(addQuad(soft, glow));
+      for (let p = 0; p < PULSES_PER_BEAM; p++) this.pulses.push(addQuad(soft, glow));
+      this.core.push(addQuad(hard, cores));
       // Golden-ratio stride: any two slots are far apart in phase, with no table.
       this.phase[i] = (i * 0.618034) % 1;
     }
