@@ -31,8 +31,17 @@ const KIND_BURST = 2;
 const KIND_PUFF = 3;
 const KIND_SPARK = 4;
 const KIND_SPARKLE = 5;
+/** Beam impact debris: the only kind that MOVES. Additive, shrinking, thrown back up the beam. */
+const KIND_EMBER = 6;
+/** Beam impact burn. NORMAL blended and dark - the one effect in here that subtracts light. */
+const KIND_SCORCH = 7;
 
-/** Hard cap. At the endgame a busy frame is ~30 live effects; 256 is four times worst case. */
+/**
+ * Hard cap. At the endgame a busy frame is ~30 live effects. Beams add the most of anything in
+ * here - three lasers burning is ~22 live embers plus ~10 scorches on top of the per-tick damage
+ * sparks the sim already emits - and 256 still leaves better than 3x headroom. Nothing grows it:
+ * `alloc` drops the newest instead.
+ */
 const CAPACITY = 256;
 
 /** Timings and sizes, all from DESIGN.md §10.5 / ASSET_MANIFEST §3. */
@@ -42,6 +51,21 @@ const FLASH_LIFE = 0.12;
 const BURST_LIFE = 0.2;
 const SPARK_LIFE = 0.1;
 const SPARKLE_LIFE = 0.18;
+const EMBER_LIFE = 0.36;
+const SCORCH_LIFE = 0.5;
+const BEAM_START_LIFE = 0.14;
+const OVERHEAT_LIFE = 0.26;
+
+/** Ember velocity, world units/s, and the per-second drag that pulls it back down. */
+const EMBER_SPEED_MIN = 55;
+const EMBER_SPEED_MAX = 190;
+const EMBER_DRAG = 3.4;
+/** Half-angle of the spray cone around the beam's reflected direction, radians. */
+const EMBER_SPREAD = 1.0;
+
+/** Peak opacity of a burn mark. Deliberately low - a scorch is a stain, not a hole. */
+const SCORCH_ALPHA = 0.42;
+const SCORCH_TINT = 0x21100c;
 
 export class Effects {
   /** Opaque art (the death puff), drawn before the additive pass. */
@@ -59,6 +83,13 @@ export class Effects {
   private readonly size0 = new Float32Array(CAPACITY);
   private readonly size1 = new Float32Array(CAPACITY);
   private readonly tint = new Uint32Array(CAPACITY);
+  /**
+   * World units per second. Zero for every kind except KIND_EMBER, and integrated unconditionally
+   * in `update` - a multiply-add on a zeroed lane is cheaper than the branch that would skip it,
+   * and it keeps the loop free of per-kind dispatch.
+   */
+  private readonly vx = new Float32Array(CAPACITY);
+  private readonly vy = new Float32Array(CAPACITY);
   private count = 0;
 
   constructor(private readonly tex: GameTextures) {
@@ -90,6 +121,8 @@ export class Effects {
     this.size0[i] = 1;
     this.size1[i] = 1;
     this.tint[i] = 0xffffff;
+    this.vx[i] = 0;
+    this.vy[i] = 0;
     return i;
   }
 
@@ -140,6 +173,70 @@ export class Effects {
     this.size1[i] = units / 34;
   }
 
+  // -------------------------------------------------------------------------------------------
+  // Beam effects.
+  //
+  // Spawned by BeamLayer, which throttles them on REAL seconds, so the rate is independent of
+  // frame rate and of how many sim steps a frame ran. Everything here is cosmetic and one-way:
+  // Effects has no reference to World and never will.
+  // -------------------------------------------------------------------------------------------
+
+  /**
+   * A speck thrown off the contact point. `dirX/dirY` is the unit vector back ALONG the beam
+   * (impact towards emitter) - debris comes off the surface the beam is cutting, so it sprays
+   * back at the shooter rather than continuing through the body.
+   */
+  beamEmber(x: number, y: number, dirX: number, dirY: number, tint: number): void {
+    const i = this.alloc(KIND_EMBER, x, y, EMBER_LIFE * (0.7 + Math.random() * 0.6));
+    if (i < 0) return;
+    const a = Math.atan2(dirY, dirX) + (Math.random() * 2 - 1) * EMBER_SPREAD;
+    const speed = EMBER_SPEED_MIN + Math.random() * (EMBER_SPEED_MAX - EMBER_SPEED_MIN);
+    this.vx[i] = Math.cos(a) * speed;
+    this.vy[i] = Math.sin(a) * speed;
+    this.rot[i] = a;
+    this.size0[i] = 7;
+    this.size1[i] = 1.5; // shrinks to nothing: an ember cools, it does not bloom
+    this.tint[i] = tint;
+  }
+
+  /** The burn the beam leaves behind. Normal-blended and dark, so it reads on the rust floor. */
+  scorch(x: number, y: number, units: number): void {
+    const i = this.alloc(KIND_SCORCH, x, y, SCORCH_LIFE);
+    if (i < 0) return;
+    this.rot[i] = Math.random() * Math.PI * 2;
+    this.size0[i] = units;
+    this.size1[i] = units * 1.7;
+    this.tint[i] = SCORCH_TINT;
+  }
+
+  /** Ignition: one flash at the emitter on the frame a beam starts firing. */
+  beamStart(x: number, y: number, tint: number): void {
+    const i = this.alloc(KIND_FLASH, x, y, BEAM_START_LIFE);
+    if (i < 0) return;
+    this.size0[i] = 34;
+    this.size1[i] = 8; // collapses INTO the muzzle - the opposite of an impact flash
+    this.tint[i] = tint;
+  }
+
+  /**
+   * Cut-out. Fired on the edge where `overheated` latches true, never on the level, so it marks
+   * the moment the weapon dies rather than the whole time it is dead.
+   */
+  overheatBurst(x: number, y: number, tint: number): void {
+    const f = this.alloc(KIND_FLASH, x, y, OVERHEAT_LIFE);
+    if (f >= 0) {
+      this.size0[f] = 10;
+      this.size1[f] = 74;
+      this.tint[f] = 0xffb050;
+    }
+    // Six sparks straight out of the emitter, evenly spread so it reads as a discharge rather
+    // than as another impact. Six is the whole budget for the event; it fires twice a burst.
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2 + Math.random() * 0.6;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), whitenTint(tint));
+    }
+  }
+
   sparkle(x: number, y: number, tint: number): void {
     const i = this.alloc(KIND_SPARKLE, x, y, SPARKLE_LIFE);
     if (i < 0) return;
@@ -151,20 +248,31 @@ export class Effects {
 
   /** Advances every live effect by real seconds and compacts out the finished ones. */
   update(dtSec: number): void {
+    // Exponential drag, evaluated once per frame rather than once per particle.
+    let damp = 1 - EMBER_DRAG * dtSec;
+    if (damp < 0) damp = 0;
+
     let d = 0;
     for (let i = 0; i < this.count; i++) {
       const age = this.age[i] + dtSec;
       if (age >= this.life[i]) continue;
+      // Integrate before compaction so the write below carries the advanced value.
+      const vx = this.vx[i] * damp;
+      const vy = this.vy[i] * damp;
+      const x = this.x[i] + vx * dtSec;
+      const y = this.y[i] + vy * dtSec;
       if (d !== i) {
         this.kind[d] = this.kind[i];
-        this.x[d] = this.x[i];
-        this.y[d] = this.y[i];
         this.rot[d] = this.rot[i];
         this.life[d] = this.life[i];
         this.size0[d] = this.size0[i];
         this.size1[d] = this.size1[i];
         this.tint[d] = this.tint[i];
       }
+      this.x[d] = x;
+      this.y[d] = y;
+      this.vx[d] = vx;
+      this.vy[d] = vy;
       this.age[d] = age;
       d++;
     }
@@ -180,6 +288,24 @@ export class Effects {
     for (let i = 0; i < this.count; i++) {
       const t = this.age[i] / this.life[i];
       const kind = this.kind[i];
+
+      if (kind === KIND_SCORCH) {
+        // The one dark effect. It goes in the NORMAL pool with the death puffs, which is drawn
+        // before the whole additive run, so a burn mark can never brighten what it sits on.
+        const s: Sprite | undefined = this.normalPool.acquire();
+        if (s === undefined) continue;
+        s.texture = tex.fxFlash;
+        s.anchor.set(0.5, 0.5);
+        s.position.set(this.x[i], this.y[i]);
+        s.rotation = this.rot[i];
+        const units = this.size0[i] + (this.size1[i] - this.size0[i]) * t;
+        s.scale.set(units / PARTICLE_SRC);
+        // Full strength immediately, then fades over the whole life: a burn appears at once and
+        // cools away, it does not swell into being.
+        s.alpha = SCORCH_ALPHA * (1 - t);
+        s.tint = this.tint[i];
+        continue;
+      }
 
       if (kind === KIND_PUFF) {
         const frame = Math.min(PUFF_FRAME_COUNT - 1, (t * PUFF_FRAME_COUNT) | 0);
@@ -203,6 +329,7 @@ export class Effects {
       else if (kind === KIND_BURST) texture = tex.fxBurst;
       else if (kind === KIND_SPARK) texture = tex.fxSparkle;
       else if (kind === KIND_SPARKLE) texture = tex.fxSparkle;
+      else if (kind === KIND_EMBER) texture = tex.fxSparkle;
 
       s.texture = texture;
       // The muzzle flash roots the flame on the barrel tip; everything else is centred.
@@ -219,4 +346,12 @@ export class Effects {
     this.normalPool.end();
     this.addPool.end();
   }
+}
+
+/** Halfway to white. Used for the overheat sputter, which should read hotter than the beam. */
+function whitenTint(colour: number): number {
+  const r = (colour >> 16) & 0xff;
+  const g = (colour >> 8) & 0xff;
+  const b = colour & 0xff;
+  return (((r + 255) >> 1) << 16) | (((g + 255) >> 1) << 8) | ((b + 255) >> 1);
 }

@@ -235,9 +235,13 @@ function drainEvents(
         // Field `a` is the catalog index; `c` is picksTaken. Reading `c` here printed whichever
         // upgrade happened to sit at "number of picks so far", so every name in every timeline
         // this harness has ever produced was wrong - and wrong in a plausible-looking way.
+        // Field `a` is the catalog index, `b` is the new stack count - which for a weapon card IS
+        // its tier. Printing the player level instead made a four-card pool read as a wall of
+        // repeated names with no indication of what had actually improved.
         const def = world.upgradeCatalog[r.a[i]];
+        const tier = r.b[i];
         console.log(
-          `  [${clock(world.runSec)}]  + ${def?.name ?? `upgrade ${r.a[i]}`} (lvl ${world.player.level})`,
+          `  [${clock(world.runSec)}]  + ${def?.name ?? `upgrade ${r.a[i]}`} T${tier}`,
         );
       }
     }

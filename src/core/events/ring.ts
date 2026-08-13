@@ -24,9 +24,9 @@ export const EV_LEVEL_UP = 9;
 export const EV_UPGRADE_TAKEN = 10;
 export const EV_PHASE_CHANGED = 11;
 export const EV_BOSS_SPAWNED = 12;
-/** A laser cut out at HEAT_MAX. The UI flashes the heat bar on this. */
+/** A laser cut out at its own heatCapacity. The UI flashes the heat bar on this. */
 export const EV_WEAPON_OVERHEATED = 13;
-/** A laser cooled to HEAT_RESUME and is live again. */
+/** A laser cooled to its own heatResume and is live again. */
 export const EV_WEAPON_COOLED = 14;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */

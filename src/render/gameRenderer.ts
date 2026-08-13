@@ -18,7 +18,9 @@
  * BEAMS live inside that trailing additive run - above the enemies and the player (a laser is in
  * front of the thing it is burning), below the DOM HUD (which is a separate compositing layer and
  * is always on top). They are additive themselves, so putting them anywhere else would cost a
- * second blend-state flush for nothing.
+ * second blend-state flush for nothing. Their one NORMAL-blended under-layer (the dark sheath
+ * that keeps a saturated beam readable on a rust floor) is parked at the tail of the normal run
+ * instead, so the frame still pays exactly two blend-state changes.
  */
 
 import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
@@ -171,8 +173,10 @@ export class GameRenderer {
       blendMode: 'add',
       label: 'glows',
     });
-    this.beams = new BeamLayer(tex);
+    // Effects first: the beam layer spawns impact debris, burn marks and the overheat sputter
+    // through it, so it holds the reference for the life of the renderer.
     this.effects = new Effects(tex);
+    this.beams = new BeamLayer(tex, this.effects);
 
     this.letterbox = new Graphics({ label: 'letterbox' });
 
@@ -183,6 +187,10 @@ export class GameRenderer {
       this.playerLayer,
       this.projectiles.container,
       this.effects.normalPool.container,
+      // The beams' dark sheath is NORMAL blended, so it goes here, at the tail of the normal
+      // run, rather than inside the beam layer proper. Putting it with the rest of the beam
+      // would sandwich a normal draw inside the additive run and cost two extra state flips.
+      this.beams.underContainer,
       // Everything additive, adjacent and last: one blend-state change for the whole frame.
       this.trails.container,
       this.glows.container,
@@ -244,8 +252,10 @@ export class GameRenderer {
     this.drawPlayer(world, px, py);
     this.drawProjectiles(world, alpha);
     // NOT interpolated, unlike everything above it: the endpoints are the ones the simulation
-    // published this tick, so the line and the damage can never disagree.
-    this.beams.draw(world, this.clock);
+    // published this tick, so the line and the damage can never disagree. `dtSec` drives the
+    // render-only fire/fade envelope; `px, py` only place the emitter's heat glow on a weapon
+    // that is NOT firing and therefore has no published muzzle to sit on.
+    this.beams.draw(world, this.clock, dtSec, px, py);
     this.effects.draw();
 
     this.world.position.set(this.camera.originX, this.camera.originY);

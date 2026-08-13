@@ -160,7 +160,10 @@ export class LevelUpOverlay {
       // The tier strings live next to the perLevel deltas that implement them, so a balance pass
       // cannot move the number without moving the sentence. An unlock shows the weapon's own
       // description instead, because "Unlock." is not a description of anything.
-      const tierText = def.tiers[tier - 1];
+      // Optional-chained on purpose: this file renders whatever catalog the sim was built with,
+      // and a card whose `tiers` array is short must degrade to its description rather than throw
+      // inside a phase transition.
+      const tierText = def.tiers?.[tier - 1];
       this.descs[i].textContent = unlock ? def.description : (tierText ?? def.description);
     }
   }

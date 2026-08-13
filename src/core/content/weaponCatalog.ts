@@ -274,10 +274,14 @@ export const CANNON: WeaponDef = Object.freeze({
 //   medium       20          5.0 s          2.5 s      2.5 s        55       275
 //   long         30          3.3 s          1.7 s      1.7 s        85       430
 //
-// The opening burst is twice as long as the rest because it climbs from cold (0 -> 100) while
-// every later one restarts at HEAT_RESUME (50 -> 100). Sustained uptime is therefore 1/2, not the
-// 2/3 the first burst suggests - see constants.ts. Effective sustained damage is half the listed
-// figure - 15 / 27.5 / 42.5 - against the Cannon's 36.7 single target.
+// The opening burst is twice as long as the rest because it climbs from cold (0 -> capacity) while
+// every later one restarts at the resume threshold (half capacity -> capacity). Sustained uptime is
+// therefore dispersion / (generation + dispersion), which is 1/2 at tier 1 where the two rates are
+// equal - not the 2/3 the opening burst suggests. Effective sustained damage at tier 1 is half the
+// listed figure: 15 / 27.5 / 42.5, against the Cannon's 36.7 single target.
+//
+// Every number here is TIER 1. The ladder moves all of them - a fully tiered Medium Laser runs
+// 99 dps at 36 heat/s into a 180 capacity dispersing 40/s, which is 52 sustained.
 //
 // So the short laser is a floodlight you leave on, and the long one is a held breath. Only the
 // long laser out-damages the Cannon on sustained single-target numbers, and it pays for that by

@@ -19,8 +19,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DT,
-  HEAT_MAX,
-  HEAT_RESUME,
+  HEAT_CAPACITY_BASE,
+  HEAT_RESUME_FRAC,
   MAX_WEAPONS,
   TICK_RATE,
 } from '../src/core/constants.js';
@@ -36,7 +36,13 @@ import {
   type WeaponId,
 } from '../src/core/content/weaponCatalog.js';
 import { ENEMY_CATALOG } from '../src/core/data/enemies.js';
-import { UPGRADE_CATALOG, upgradeIndex } from '../src/core/data/upgrades.js';
+import {
+  UPGRADE_CATALOG,
+  WEAPON_MAX_TIER,
+  upgradeIndex,
+  upgradeIndexForWeapon,
+} from '../src/core/data/upgrades.js';
+import { resolveWeaponStats, type WeaponStats } from '../src/core/data/stats.js';
 import type { HeroDef } from '../src/core/data/heroes.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
@@ -132,6 +138,29 @@ function ticks(world: World, n: number): void {
 /** Refreshes the hash without advancing time, for the direct-comparator tests. */
 function sync(world: World): void {
   rebuildSpatialHash(world.spatial, world.enemies);
+}
+
+/**
+ * Puts the weapon in slot 0 at `tier` and re-resolves its stats, exactly as applying that card
+ * would (progression.ts writes `level` and then re-resolves every live weapon).
+ *
+ * Used by the heat suite because THOSE tests are about what the weapon system does with three
+ * numbers, not about how the numbers were earned - the card path that earns them is covered
+ * end-to-end in progression.test.ts. Going through the card here would need a dozen level-ups per
+ * assertion and would put the RNG between the tier and the burst length it is supposed to explain.
+ */
+function setTier(world: World, tier: number): void {
+  const inst = world.weapons[0];
+  const hero = world.heroes[world.player.heroId];
+  inst.level = tier;
+  resolveWeaponStats(
+    world.weaponCatalog[inst.defId],
+    hero,
+    tier,
+    world.levelUp.stacks,
+    world.upgradeCatalog,
+    inst.stats,
+  );
 }
 
 const LASERS: readonly { def: WeaponDef; id: WeaponId; dps: number; heat: number }[] = [
@@ -426,9 +455,7 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     readonly resumes: number[];
   }
 
-  function burn(id: WeaponId, totalTicks: number): Burn {
-    const w = makeWorld(id);
-    addEnemy(w, 100, 0, TOUGH_HP);
+  function burnWorld(w: World, totalTicks: number): Burn {
     const fired: boolean[] = [];
     const overheats: number[] = [];
     const resumes: number[] = [];
@@ -444,6 +471,13 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     return { fired, overheats, resumes };
   }
 
+  function burn(id: WeaponId, totalTicks: number, tier = 1): Burn {
+    const w = makeWorld(id);
+    addEnemy(w, 100, 0, TOUGH_HP);
+    if (tier !== 1) setTier(w, tier);
+    return burnWorld(w, totalTicks);
+  }
+
   /** Fraction of ticks in [from, to) that fired. */
   function duty(b: Burn, from: number, to: number): number {
     let n = 0;
@@ -451,23 +485,35 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     return n / (to - from);
   }
 
-  it('takes the short laser from 0 to 100 in exactly 10.0 s and latches there', () => {
+  it('takes the short laser to its own capacity in exactly 10.0 s and latches there', () => {
     const w = makeWorld('laser-short');
     addEnemy(w, 100, 0, TOUGH_HP);
 
-    // One tick short of the ceiling: still live, still firing, heat just under HEAT_MAX.
+    // THE CEILING IS THE WEAPON'S, not a global constant. At tier 1 it is the shipping base and
+    // the resume line is the documented fraction of it - which is what makes the arithmetic
+    // below (10.0 s up, 5.0 s down at 10 heat/s) come out in whole seconds.
+    const stats = w.weapons[0].stats;
+    const cap = stats.heatCapacity;
+    const resume = stats.heatResume;
+    expect(cap).toBe(HEAT_CAPACITY_BASE);
+    expect(resume).toBe(cap * HEAT_RESUME_FRAC);
+    // Generation and dispersion START equal, and only start equal: every dispersion tier moves
+    // one of them. That is why the two halves of this cycle are 10 s and 5 s here.
+    expect(stats.heatDispersion).toBe(stats.heatPerSec);
+
+    // One tick short of the ceiling: still live, still firing, heat just under capacity.
     ticks(w, 599);
     expect(w.weapons[0].overheated).toBe(false);
-    expect(w.weapons[0].heat).toBeLessThan(HEAT_MAX);
-    expect(w.weapons[0].heat).toBeCloseTo(HEAT_MAX - 10 * DT, 6);
+    expect(w.weapons[0].heat).toBeLessThan(cap);
+    expect(w.weapons[0].heat).toBeCloseTo(cap - 10 * DT, 6);
     expect(w.beams.count).toBe(1);
 
     // The 600th tick - 10.0 s at 10 heat/s - is the last one that fires. It delivers its damage
-    // AND cuts the weapon out, which is why a full burst is exactly HEAT_MAX/heatPerSec seconds
-    // of damage rather than one tick less.
+    // AND cuts the weapon out, which is why a full burst is exactly heatCapacity/heatPerSec
+    // seconds of damage rather than one tick less.
     ticks(w, 1);
-    expect(600 * DT).toBe(HEAT_MAX / 10);
-    expect(w.weapons[0].heat).toBe(HEAT_MAX); // clamped, never above
+    expect(600 * DT).toBe(cap / 10);
+    expect(w.weapons[0].heat).toBe(cap); // clamped, never above
     expect(w.weapons[0].overheated).toBe(true);
     expect(w.beams.count).toBe(1);
 
@@ -477,22 +523,22 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     expect(w.stats.damageDealt).toBeCloseTo(300, 9);
 
     // And now it is OFF. Not throttled, not dimmed - off, and it stays off while heat is above
-    // HEAT_RESUME even though heat is below HEAT_MAX the whole way down.
+    // its resume line even though heat is below its capacity the whole way down.
     for (let t = 1; t < 300; t++) {
       tick(w);
       expect(w.beams.count).toBe(0);
       expect(w.weapons[0].overheated).toBe(true);
-      expect(w.weapons[0].heat).toBeLessThan(HEAT_MAX);
-      expect(w.weapons[0].heat).toBeGreaterThan(HEAT_RESUME);
+      expect(w.weapons[0].heat).toBeLessThan(cap);
+      expect(w.weapons[0].heat).toBeGreaterThan(resume);
     }
     expect(w.enemies.hp[0]).toBe(hpAtCutout); // not one point of damage while cut out
 
-    // Tick 300 of the slide is the one that reaches HEAT_RESUME. Cooling runs at the same rate
-    // as heating, so 100 -> 50 is exactly 5.0 s.
+    // Tick 300 of the slide is the one that reaches the resume line. Dispersion equals generation
+    // at tier 1, so 100 -> 50 is exactly 5.0 s.
     tick(w);
-    expect(300 * DT).toBe((HEAT_MAX - HEAT_RESUME) / 10);
+    expect(300 * DT).toBe((cap - resume) / stats.heatDispersion);
     expect(w.weapons[0].overheated).toBe(false);
-    expect(w.weapons[0].heat).toBeCloseTo(HEAT_RESUME, 9);
+    expect(w.weapons[0].heat).toBeCloseTo(resume, 9);
     expect(w.beams.count).toBe(0); // the unlatching tick does not fire
 
     // The tick after that, it is a laser again.
@@ -503,9 +549,12 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
 
   it('runs the same cycle for all three, scaled by heat rate alone', () => {
     for (const laser of LASERS) {
-      const burstSec = HEAT_MAX / laser.heat;
-      const coolSec = (HEAT_MAX - HEAT_RESUME) / laser.heat;
-      const b = burn(laser.id, Math.ceil((burstSec + coolSec) * TICK_RATE) + 5);
+      const w = makeWorld(laser.id);
+      addEnemy(w, 100, 0, TOUGH_HP);
+      const s = w.weapons[0].stats;
+      const burstSec = s.heatCapacity / s.heatPerSec;
+      const coolSec = (s.heatCapacity - s.heatResume) / s.heatDispersion;
+      const b = burnWorld(w, Math.ceil((burstSec + coolSec) * TICK_RATE) + 5);
 
       expect(b.overheats.length).toBeGreaterThanOrEqual(1);
       expect(b.resumes.length).toBeGreaterThanOrEqual(1);
@@ -515,34 +564,36 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
       expect(Math.abs((b.resumes[0] - b.overheats[0]) * DT - coolSec)).toBeLessThanOrEqual(DT);
     }
     // The short laser holds a burst three times as long as the long one - same rhythm, very
-    // different tempo.
-    expect(HEAT_MAX / 10 / (HEAT_MAX / 30)).toBe(3);
+    // different tempo. Both start from the same capacity, so this is the heat rates alone.
+    expect(LASER_LONG.base.heatPerSec / LASER_SHORT.base.heatPerSec).toBe(3);
+    expect(LASER_LONG.base.heatCapacity).toBe(LASER_SHORT.base.heatCapacity);
   });
 
   it('shares its duty cycle across all three lasers despite the different burst lengths', () => {
-    // TWO different duty cycles fall out of these constants, and both are shared by all three
-    // lasers because heating and cooling run at the same rate:
+    // TWO different duty cycles fall out of an UNTIERED laser's numbers, and both are shared by
+    // all three because generation and dispersion start equal:
     //
-    //   FROM COLD   HEAT_MAX up then HEAT_MAX - HEAT_RESUME down = 100 up / 50 down = 2/3.
+    //   FROM COLD   capacity up then capacity - resume down = 100 up / 50 down = 2/3.
     //               This is the figure the design quotes, and it is what a laser delivers when
     //               it walks into a fight with a cold emitter.
-    //   IN STEADY   every later burst starts at HEAT_RESUME rather than 0, so it is only
-    //   STATE       HEAT_MAX - HEAT_RESUME long = 50 up / 50 down = exactly 1/2. Sustained fire
-    //               on one target forever is the WORST case, and the mechanic's own hysteresis
-    //               is what makes it worse than the headline number.
+    //   IN STEADY   every later burst starts at the resume line rather than 0, so it is only
+    //   STATE       capacity - resume long = 50 up / 50 down = exactly 1/2. Sustained fire on one
+    //               target forever is the WORST case, and the mechanic's own hysteresis is what
+    //               makes it worse than the headline number.
     //
     // Both are measured over whole cycles, from one resume to the next, so a partial cycle at
-    // the end of the window cannot flatter or spoil either figure.
+    // the end of the window cannot flatter or spoil either figure. Dispersion tiers are what
+    // move the steady-state figure off 1/2 - see the per-weapon suite below.
     const fromCold: number[] = [];
     const steadyState: number[] = [];
 
     for (const laser of LASERS) {
-      const cycleTicks = Math.ceil((HEAT_MAX / laser.heat) * TICK_RATE) * 3;
+      const cycleTicks = Math.ceil((HEAT_CAPACITY_BASE / laser.heat) * TICK_RATE) * 3;
       const b = burn(laser.id, cycleTicks * 8);
       expect(b.resumes.length).toBeGreaterThanOrEqual(3);
 
       fromCold.push(duty(b, 0, b.resumes[0] + 1));
-      // Two full steady cycles, both starting from HEAT_RESUME.
+      // Two full steady cycles, both starting from the resume line.
       steadyState.push(duty(b, b.resumes[0] + 1, b.resumes[2] + 1));
     }
 
@@ -560,7 +611,8 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     ticks(w, 300); // half a burst: 50 heat
     expect(w.weapons[0].heat).toBeCloseTo(50, 6);
 
-    // The target walks out of range. Cooling runs at the SAME rate, so 50 heat is 5.0 s of quiet.
+    // The target walks out of range. Dispersion equals generation at tier 1, so 50 heat is 5.0 s
+    // of quiet.
     w.enemies.x[target] = 100000;
     ticks(w, 150);
     expect(w.weapons[0].heat).toBeCloseTo(25, 6);
@@ -583,6 +635,119 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     expect(w.weapons[0].heat).toBeCloseTo(10, 6);
     expect(w.enemies.hp[blocker]).toBe(TOUGH_HP);
     void target;
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // THE THREE HEAT STATS ARE THE WEAPON'S OWN, AND THEY ARE THREE DIFFERENT NUMBERS
+  //
+  // heatPerSec (up), heatCapacity (the ceiling) and heatDispersion (down) start in a fixed
+  // relationship on an untiered laser and are pulled apart by the ladder. Every test below reads
+  // the weapon's resolved stats and asserts the BEHAVIOUR follows them - which is the only way to
+  // catch the failure this restructure invites, where the sim keeps using one number for two jobs
+  // and half the ladder silently does nothing.
+  // -------------------------------------------------------------------------------------------
+
+  /** Ticks the first burst lasted, and ticks the first silence lasted. */
+  function cycle(id: WeaponId, tier: number): { burst: number; cool: number; stats: WeaponStats } {
+    const w = makeWorld(id);
+    addEnemy(w, 100, 0, TOUGH_HP);
+    setTier(w, tier);
+    const stats = w.weapons[0].stats;
+    const burstSec = stats.heatCapacity / stats.heatPerSec;
+    const coolSec = (stats.heatCapacity - stats.heatResume) / stats.heatDispersion;
+    const b = burnWorld(w, Math.ceil((burstSec + coolSec) * TICK_RATE) + 10);
+    expect(b.overheats.length).toBeGreaterThanOrEqual(1);
+    expect(b.resumes.length).toBeGreaterThanOrEqual(1);
+    return { burst: b.overheats[0] + 1, cool: b.resumes[0] - b.overheats[0], stats };
+  }
+
+  it('sustains a proportionally LONGER burst when capacity goes up, at the same heat rate', () => {
+    // T3 is the short laser's first capacity tier and changes nothing else, so the burst has to
+    // grow by exactly the capacity ratio: same climb rate, higher ceiling.
+    const t2 = cycle('laser-short', 2);
+    const t3 = cycle('laser-short', 3);
+
+    expect(t3.stats.heatCapacity).toBeGreaterThan(t2.stats.heatCapacity);
+    expect(t3.stats.heatPerSec).toBe(t2.stats.heatPerSec); // the tier bought capacity, nothing else
+    expect(t3.stats.heatDispersion).toBe(t2.stats.heatDispersion);
+
+    const ratio = t3.stats.heatCapacity / t2.stats.heatCapacity;
+    expect(t3.burst / t2.burst).toBeCloseTo(ratio, 2);
+    // And the bar it fills is bigger, rather than the same bar filling more slowly: the weapon
+    // cuts out at ITS capacity, which is a different number than the base one.
+    expect(t3.stats.heatCapacity).not.toBe(HEAT_CAPACITY_BASE);
+    expect(t3.stats.heatResume).toBe(t3.stats.heatCapacity * HEAT_RESUME_FRAC);
+  });
+
+  it('cools proportionally FASTER when dispersion goes up, at the same capacity', () => {
+    // T4 is the first dispersion tier. Capacity and generation are untouched, so the burst is
+    // identical and only the silence shortens - which is the entire point of the stat existing
+    // separately from heatPerSec.
+    const t3 = cycle('laser-short', 3);
+    const t4 = cycle('laser-short', 4);
+
+    expect(t4.stats.heatDispersion).toBeGreaterThan(t3.stats.heatDispersion);
+    expect(t4.stats.heatCapacity).toBe(t3.stats.heatCapacity);
+    expect(t4.stats.heatPerSec).toBe(t3.stats.heatPerSec);
+
+    expect(t4.burst).toBe(t3.burst);
+    const ratio = t3.stats.heatDispersion / t4.stats.heatDispersion;
+    expect(t4.cool / t3.cool).toBeCloseTo(ratio, 2);
+    // Cooling that still ran at heatPerSec would make this equal, which is the bug.
+    expect(t4.cool).toBeLessThan(t3.cool);
+  });
+
+  it('cuts out AT its own capacity and resumes AT its own resume line, not at 100 and 50', () => {
+    const w = makeWorld('laser-medium');
+    addEnemy(w, 100, 0, TOUGH_HP);
+    setTier(w, WEAPON_MAX_TIER); // both capacity tiers taken: the ceiling is far off the base
+    const stats = w.weapons[0].stats;
+    expect(stats.heatCapacity).toBeGreaterThan(HEAT_CAPACITY_BASE);
+
+    // Climb to the cut-out and stop exactly there.
+    const burstTicks = Math.ceil((stats.heatCapacity / stats.heatPerSec) * TICK_RATE);
+    for (let t = 0; t < burstTicks + 2 && !w.weapons[0].overheated; t++) tick(w);
+    expect(w.weapons[0].overheated).toBe(true);
+    expect(w.weapons[0].heat).toBe(stats.heatCapacity);
+    // It went well past the old global ceiling on the way, and was never clamped there.
+    expect(w.weapons[0].heat).toBeGreaterThan(HEAT_CAPACITY_BASE);
+
+    // It stays out until ITS resume line - which is well ABOVE the old global 50, so a weapon
+    // that came back at 50 would be firing for several seconds before this loop ends.
+    const coolTicks = Math.ceil(
+      ((stats.heatCapacity - stats.heatResume) / stats.heatDispersion) * TICK_RATE,
+    );
+    for (let t = 0; t < coolTicks + 5 && w.weapons[0].overheated; t++) {
+      tick(w);
+      expect(w.beams.count).toBe(0);
+    }
+    expect(w.weapons[0].overheated).toBe(false);
+    // The unlatch happens on the first tick at or below the line, so the heat lands within one
+    // tick of dispersion under it - never at the old global 50.
+    expect(w.weapons[0].heat).toBeLessThanOrEqual(stats.heatResume);
+    expect(w.weapons[0].heat).toBeGreaterThan(stats.heatResume - stats.heatDispersion * DT - 1e-9);
+    expect(stats.heatResume).toBeGreaterThan(HEAT_CAPACITY_BASE * HEAT_RESUME_FRAC);
+  });
+
+  it('lifts sustained uptime to dispersion / (generation + dispersion)', () => {
+    // The formula the ladder is built on. At tier 1 the two rates are equal and it is 1/2; a
+    // dispersion tier is the ONLY thing that moves it, and a damage tier moves it the other way.
+    for (const tier of [3, 4]) {
+      const w = makeWorld('laser-short');
+      addEnemy(w, 100, 0, TOUGH_HP);
+      setTier(w, tier);
+      const s = w.weapons[0].stats;
+      const expected = s.heatDispersion / (s.heatPerSec + s.heatDispersion);
+
+      const cycleTicks = Math.ceil(
+        ((s.heatCapacity - s.heatResume) / s.heatPerSec +
+          (s.heatCapacity - s.heatResume) / s.heatDispersion) *
+          TICK_RATE,
+      );
+      const b = burnWorld(w, cycleTicks * 4 + Math.ceil((s.heatCapacity / s.heatPerSec) * TICK_RATE));
+      expect(b.resumes.length).toBeGreaterThanOrEqual(3);
+      expect(duty(b, b.resumes[0] + 1, b.resumes[2] + 1)).toBeCloseTo(expected, 2);
+    }
   });
 });
 
@@ -617,7 +782,7 @@ describe('the Cannon is untouched by any of this', () => {
 
 // ---------------------------------------------------------------------------------------------
 
-describe('progression: weapon cards fill weapon slots', () => {
+describe('progression: weapon cards unlock a slot, then level the gun in it', () => {
   /** The real catalogs, but a fixture hero so the starting weapon is under the test's control. */
   function progressionWorld(startingWeapon: WeaponId, seed = 1): World {
     const w = createWorld(
@@ -698,62 +863,115 @@ describe('progression: weapon cards fill weapon slots', () => {
     expect(w.weapons[1].heat).toBeGreaterThan(0);
   });
 
-  it('never offers a gun the run already carries - starting weapon included', () => {
-    // The hero STARTS with the short laser, and its card has stacks 0, so only a check against
-    // the loadout can catch this.
+  it('starts the hero gun at tier 1 and offers its card as TIER 2, never as an unlock', () => {
+    // The hero STARTS with the short laser and never chose a card for it, so `stacks` is seeded
+    // at run start. Without that seed the card would come back as an unlock and taking it would
+    // either install a second copy or set a gun that has been firing since t=0 back to tier 1.
     const w = progressionWorld('laser-short', 3);
     const own = upgradeIndex('w-laser-short');
+    const defId = weaponDefIndex('laser-short');
 
+    expect(w.levelUp.stacks[own]).toBe(1);
+    expect(w.weaponCount).toBe(1);
+    expect(w.weapons[0].defId).toBe(defId);
+    expect(w.weapons[0].level).toBe(1);
+
+    let sawOwnCard = false;
     for (let i = 0; i < 40; i++) {
       gainOneLevel(w);
       if (w.phase !== RUN_PHASE_LEVEL_UP) break;
-      for (let s = 0; s < w.levelUp.offerCount; s++) {
-        expect(w.levelUp.offers[s]).not.toBe(own);
+      const slot = slotOf(w, own);
+      if (slot >= 0) {
+        // Whenever it IS offered it is offered as the next tier up, which is at least 2.
+        expect(w.levelUp.stacks[own]).toBeGreaterThanOrEqual(1);
+        sawOwnCard = true;
+        choose(w, slot);
+        // Taken as a tier: the same single instance, one level higher. Never a second copy.
+        expect(w.weapons[0].level).toBe(w.levelUp.stacks[own]);
+        expect(w.weapons[0].level).toBeGreaterThanOrEqual(2);
+        let held = 0;
+        for (let s = 0; s < w.weaponCount; s++) if (w.weapons[s].defId === defId) held++;
+        expect(held).toBe(1);
+        continue;
       }
       choose(w, 0);
     }
-    expect(w.levelUp.stacks[own]).toBe(0);
+    expect(sawOwnCard).toBe(true);
   });
 
-  it('never offers a gun twice', () => {
+  it('levels the gun it already holds instead of installing a second copy', () => {
     const w = progressionWorld('cannon', 5);
     const card = upgradeIndex('w-laser-medium');
     expect(takeCard(w, card)).toBe(true);
-    expect(w.weaponCount).toBe(2);
 
-    for (let i = 0; i < 40; i++) {
-      gainOneLevel(w);
-      if (w.phase !== RUN_PHASE_LEVEL_UP) break;
-      expect(slotOf(w, card)).toBe(-1);
-      choose(w, 0);
-    }
-    expect(w.levelUp.stacks[card]).toBe(1);
-    // Exactly one slot holds it. Other weapon cards were taken along the way (the loop takes
-    // slot 0 blindly), which is precisely why this counts occurrences rather than weaponCount.
+    // Which slot it landed in is a function of what else the blind picks unlocked on the way, so
+    // the slot is looked up rather than assumed.
     const defId = weaponDefIndex('laser-medium');
+    const countBefore = w.weaponCount;
+    let slotHoldingIt = -1;
+    for (let i = 0; i < w.weaponCount; i++) if (w.weapons[i].defId === defId) slotHoldingIt = i;
+    expect(slotHoldingIt).toBeGreaterThanOrEqual(0);
+    expect(w.weapons[slotHoldingIt].level).toBe(1);
+
+    // Take the SAME card again, however many levels it takes to come round.
+    expect(takeCard(w, card)).toBe(true);
+    expect(w.weaponCount).toBeGreaterThanOrEqual(countBefore);
+
+    expect(w.levelUp.stacks[card]).toBe(2);
+    expect(w.weapons[slotHoldingIt].level).toBe(2);
+    // Still exactly one slot holds it, and the loadout did not grow.
     let held = 0;
     for (let i = 0; i < w.weaponCount; i++) if (w.weapons[i].defId === defId) held++;
     expect(held).toBe(1);
+    // Tier 2 of the medium laser is damage + heat, and both moved.
+    expect(w.weapons[slotHoldingIt].stats.damage).toBeGreaterThan(LASER_MEDIUM.base.damage);
+    expect(w.weapons[slotHoldingIt].stats.heatPerSec).toBeGreaterThan(
+      LASER_MEDIUM.base.heatPerSec,
+    );
   });
 
-  it('stops offering weapon cards once every slot is full', () => {
+  it('stops offering UNLOCKS once every slot is full, and keeps offering tiers', () => {
     const w = progressionWorld('cannon', 9);
     // Fill the loadout. The catalog only has four guns, so the slots are filled directly - the
     // cap is about MAX_WEAPONS, not about how many distinct guns exist this month.
     for (let i = 1; i < MAX_WEAPONS; i++) {
       w.weapons[i].defId = i % WEAPON_CATALOG.length;
+      w.weapons[i].level = 1;
     }
     w.weaponCount = MAX_WEAPONS;
 
+    let sawTierOffer = false;
     for (let i = 0; i < 30; i++) {
       gainOneLevel(w);
       if (w.phase !== RUN_PHASE_LEVEL_UP) break;
       for (let s = 0; s < w.levelUp.offerCount; s++) {
-        expect(w.upgradeCatalog[w.levelUp.offers[s]].kind).toBe('passive');
+        const idx = w.levelUp.offers[s];
+        // With the slots full, an UNLOCK (stacks 0) can never be offered - but the guns already
+        // held keep climbing their ladders, which is what stops progression ending at the cap
+        // now that every card in the pool is a weapon.
+        expect(w.levelUp.stacks[idx]).toBeGreaterThan(0);
+        sawTierOffer = true;
       }
       choose(w, 0);
     }
+    expect(sawTierOffer).toBe(true);
     expect(w.weaponCount).toBe(MAX_WEAPONS);
+  });
+
+  it('installs the unlocked gun at tier 1 with its card seeded to one stack', () => {
+    const w = progressionWorld('cannon', 7);
+    const card = upgradeIndexForWeapon('laser-long');
+    expect(card).toBe(upgradeIndex('w-laser-long'));
+    expect(w.levelUp.stacks[card]).toBe(0); // not held: the card is an UNLOCK
+
+    expect(takeCard(w, card)).toBe(true);
+    expect(w.levelUp.stacks[card]).toBe(1);
+    const inst = w.weapons[w.weaponCount - 1];
+    expect(inst.defId).toBe(weaponDefIndex('laser-long'));
+    expect(inst.level).toBe(1);
+    // Tier 1 is the base weapon, so the ladder has not been applied to it yet.
+    expect(inst.stats.damage).toBe(LASER_LONG.base.damage);
+    expect(inst.stats.heatCapacity).toBe(LASER_LONG.base.heatCapacity);
   });
 });
 

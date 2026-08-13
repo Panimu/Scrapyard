@@ -144,16 +144,17 @@ export interface WeaponInstance {
   targetDense: number;
   readonly stats: WeaponStats;
   /**
-   * HEAT, 0..HEAT_MAX. Beam weapons only; a projectile weapon leaves it at 0.
-   * Rises while firing and falls at the same rate while not, so it is a genuine duty cycle
-   * rather than a cooldown wearing a different hat.
+   * HEAT, 0..`stats.heatCapacity`. Beam weapons only; a projectile weapon leaves it at 0.
+   * Rises at `stats.heatPerSec` while firing and falls at `stats.heatDispersion` while not.
+   * Those two are SEPARATE numbers - equal only on an untiered laser - which is what makes
+   * "more capacity" and "faster dispersion" different upgrades rather than one.
    */
   heat: number;
   /**
-   * Latched at HEAT_MAX, cleared at HEAT_RESUME. It has to be a separate flag rather than
-   * `heat >= HEAT_MAX`, because the whole point is the HYSTERESIS: once cut out, the weapon
-   * stays out through the whole 100 -> 50 slide instead of stuttering back on the instant heat
-   * dips below the ceiling.
+   * Latched at `stats.heatCapacity`, cleared at `stats.heatResume`. It has to be a separate flag
+   * rather than `heat >= capacity`, because the whole point is the HYSTERESIS: once cut out, the
+   * weapon stays out for the entire slide down to the resume threshold instead of stuttering back
+   * on the instant heat dips below the ceiling.
    */
   overheated: boolean;
   /** Per-weapon scratch (burst counters, trait counters). Fixed size, no allocation. */
