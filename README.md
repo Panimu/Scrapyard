@@ -211,3 +211,4 @@ plan**, and what to use instead.
 | `docs/ASSET_MANIFEST.md` | Every sprite, measured — sizes, draw scales, rotation offsets |
 | `docs/BROWSER_TESTING.md` | How to drive headless Chromium here (never run `npx playwright install`) |
 | `docs/PLAY_ON_IPHONE.md` | Install, play, and develop from the phone |
+| `src/ui/changelog.ts` | The in-game changelog (pause → Changelog). **Add an entry here with every player-visible change** |

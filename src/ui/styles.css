@@ -897,6 +897,89 @@ body {
   height: 54px;
 }
 
+/* ---------------------------------------------------------------------------------------------
+   CHANGELOG
+
+   A scrolling list under a fixed header and above a fixed Back button, so the button is reachable
+   with a thumb however long the list grows. `min-height: 0` on the list is what actually lets it
+   scroll: a flex child defaults to min-content and would otherwise push the button off-screen
+   rather than overflow.
+   --------------------------------------------------------------------------------------------- */
+.changelog {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: calc(var(--sa-top) + 14px) calc(var(--sa-right) + 12px)
+    calc(var(--sa-bottom) + 12px) calc(var(--sa-left) + 12px);
+}
+
+.changelog__head {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.changelog__title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.changelog__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.changelog__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px;
+}
+
+.change {
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.change__when {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.change__name {
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.change__notes {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-faint);
+}
+
+.changelog__back {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 54px;
+  font-size: 18px;
+}
+
 .toast {
   position: absolute;
   left: calc(var(--sa-left) + 12px);

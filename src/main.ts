@@ -40,6 +40,7 @@ import { Hud, type DebugInfo } from './ui/hud.js';
 import { HeroSelect } from './ui/heroSelect.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
+import { buildChangelogOverlay } from './ui/changelog.js';
 import { VirtualJoystick } from './ui/virtualJoystick.js';
 import './ui/styles.css';
 
@@ -187,7 +188,21 @@ async function boot(): Promise<void> {
     startRun(heroId, seedFromParams() ?? newSeed());
   }, state.settings.lastHeroId);
 
-  const pauseOverlay = buildPauseOverlay(() => togglePause(), () => showHeroSelect());
+  // The changelog is a leaf of the pause menu: it covers pause rather than replacing it, and
+  // Back restores pause WITHOUT touching AppState. The run stays paused the whole time, so
+  // reading the changelog can never cost you a mech.
+  const changelog = buildChangelogOverlay(() => {
+    changelog.hide();
+    pauseOverlay.element.hidden = false;
+  });
+  const pauseOverlay = buildPauseOverlay(
+    () => togglePause(),
+    () => showHeroSelect(),
+    () => {
+      pauseOverlay.element.hidden = true;
+      changelog.show();
+    },
+  );
 
   // Stacking order matters: the joystick surface goes in FIRST so it sits underneath every
   // overlay. A finger that lands on a card or a button therefore never reaches the stick.
@@ -196,6 +211,7 @@ async function boot(): Promise<void> {
     hud.element,
     levelUp.element,
     pauseOverlay.element,
+    changelog.element,
     summary.element,
     heroSelect.element,
   );
@@ -240,6 +256,7 @@ async function boot(): Promise<void> {
     summary.hide();
     levelUp.hide();
     pauseOverlay.element.hidden = true;
+    changelog.hide();
     hud.setVisible(true);
     joystick.setEnabled(true);
     state.set('running');
@@ -255,6 +272,7 @@ async function boot(): Promise<void> {
     levelUp.hide();
     summary.hide();
     pauseOverlay.element.hidden = true;
+    changelog.hide();
     heroSelect.show(state.settings.lastHeroId);
   }
 
@@ -266,6 +284,7 @@ async function boot(): Promise<void> {
     } else if (state.phase === 'paused') {
       state.set('running');
       pauseOverlay.element.hidden = true;
+      changelog.hide();
       joystick.setEnabled(true);
       // The pause was real time the sim must not try to catch up on.
       sim.resetClock();
@@ -459,6 +478,7 @@ async function boot(): Promise<void> {
 function buildPauseOverlay(
   onResume: () => void,
   onQuit: () => void,
+  onChangelog: () => void,
 ): { element: HTMLDivElement } {
   const el = document.createElement('div');
   el.className = 'overlay pause';
@@ -476,13 +496,21 @@ function buildPauseOverlay(
   resume.textContent = 'Resume';
   resume.addEventListener('click', onResume);
 
+  const changes = document.createElement('button');
+  changes.type = 'button';
+  changes.className = 'btn';
+  changes.textContent = 'Changelog';
+  changes.addEventListener('click', onChangelog);
+
+  // Abandon is LAST and is not primary: it is the one button here that destroys the run, and it
+  // should never be the one a thumb finds by accident on the way to Resume.
   const quit = document.createElement('button');
   quit.type = 'button';
   quit.className = 'btn';
   quit.textContent = 'Abandon run';
   quit.addEventListener('click', onQuit);
 
-  el.append(title, resume, quit);
+  el.append(title, resume, changes, quit);
   return { element: el };
 }
 
