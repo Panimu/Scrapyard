@@ -1,42 +1,64 @@
 /**
- * `npm run dps` - the weapon damage table, computed from the shipping catalog.
+ * `npm run dps` - the weapon damage table. Every weapon MEASURED IN A REAL FIGHT, at T1 and T7.
  *
- * WHY THIS IS A TOOL AND NOT A DOCUMENT: every number here is derived by running the real
- * `resolveWeaponStats` over the real `WEAPON_CATALOG` at the real tier. A table typed into a
- * markdown file is wrong the first time anyone edits a `perLevel` entry and nobody notices for a
- * month. Run this instead.
+ * ---------------------------------------------------------------------------------------------
+ * WHAT CHANGED, AND WHY IT MATTERED
+ * ---------------------------------------------------------------------------------------------
+ * This table used to be arithmetic: resolve the weapon's stats, divide damage by cooldown, apply
+ * the limiter's duty cycle, print. That number is a CEILING and it assumes the one thing a
+ * Vampire-Survivors-like never gives you - a target, in range, in arc, all of the time.
  *
- * WHAT THE COLUMNS MEAN, because "DPS" is doing a lot of work in a game where three weapons are
- * limited in three different ways:
+ * It is still computed (the `ceiling` column) because the gap between it and reality is the most
+ * interesting number here: a weapon at 90% of its ceiling is limited by its own cooldown, and one
+ * at 25% is limited by the field. Those are different problems and the arithmetic cannot tell them
+ * apart.
  *
- *   BURST     damage per second while the weapon is actually firing, ignoring every limiter.
- *             What it feels like in the moment.
- *   UPTIME    the fraction of a long fight the weapon is allowed to fire, from its OWN limiter:
- *               cooldown weapons  1.00 - they fire whenever a target is up
- *               beams             dispersion / (generation + dispersion)
- *               magazines         fireTime / (fireTime + reloadTime)
- *   SUSTAINED burst x uptime. The honest long-fight number, and the one to compare across weapons.
- *   MAX HIT   the largest single damage number one enemy can take from one discrete event -
- *             the biggest number that can ever pop over one body.
+ * The headline columns now come from STEPPING THE ACTUAL SIMULATION: the real director, the real
+ * horde, the real spatial hash, the real targeting rules, driven by the same reference bot that
+ * `npm run sim` uses. Nothing is modelled.
  *
- * THREE THINGS THIS DELIBERATELY DOES NOT MODEL, because they depend on the field rather than the
- * weapon, and pretending otherwise would make the table lie:
+ * ---------------------------------------------------------------------------------------------
+ * HOW THE MEASUREMENT IS SET UP, and every one of these is a deliberate distortion
+ * ---------------------------------------------------------------------------------------------
+ *   ONE WEAPON, FIXED TIER. The loadout is forced to exactly the weapon under test at exactly the
+ *   tier under test. No starting weapon, no second gun stealing kills.
  *
- *   - SPLASH SPREAD. Sustained is computed against a SINGLE target. The Cannon, missiles and
- *     especially the artillery all do far more than their sustained figure into a packed crowd -
- *     measured artillery was ~6x its single-target number against 25 bodies.
- *   - HIT RATE. Missiles home weakly and can miss entirely; artillery aims at ground, not bodies;
- *     lasers refuse blocked shots; the machine gun's 130 u range is often empty. Every figure
- *     below assumes a target is present and reachable, which is the ceiling, not the average.
- *   - TARGETING. Where the damage GOES is half of each weapon's identity and none of it is in a
- *     damage number.
+ *   NO LEVEL-UPS. `xpGain` is zeroed, so no card ever opens and no passive can creep into the
+ *   measurement. This is the whole reason the numbers are comparable across weapons - a run that
+ *   picked up Ordnance would print 50% high and nothing would say so.
+ *
+ *   THE PLAYER IS IMMORTAL. `damageTakenMul` is zeroed. Without it a weak weapon dies at two
+ *   minutes and gets measured over a shorter, easier window than a strong one - which would make
+ *   the table rank weapons by how long they survive rather than by what they kill.
+ *
+ *   The cost of immortality is real and is reported: a weapon that cannot clear the field ends up
+ *   standing in a bigger crowd than one that can, which flatters splash and flatters anything that
+ *   wants a target nearby. That is what the `live` column is for. Read a high dps next to a high
+ *   `live` as "this weapon is drowning, and hitting a lot of things on the way down".
+ *
+ *   A WARM-UP IS DISCARDED. The first WARMUP_SEC are stepped and thrown away: the arena starts
+ *   empty, the intro runs for three seconds with no spawns at all, and a weapon measured across
+ *   that window is measured mostly against nothing.
+ *
+ * Same seed, same duration, same warm-up for every row, so the comparison between rows is exact
+ * even where the absolute numbers depend on the setup above.
  */
 
+import { DT } from '../src/core/constants.js';
 import { WEAPON_CATALOG, type WeaponDef } from '../src/core/content/weaponCatalog.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { resolveWeaponStats, type WeaponStats } from '../src/core/data/stats.js';
 import { WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
+import { Simulation } from '../src/core/simulation.js';
+import { botInput, createBot } from '../src/sim/botPolicy.js';
+
+/** Seconds stepped and discarded before the clock starts. One full elite phase of a cycle. */
+const WARMUP_SEC = 60;
+/** Seconds measured, after the warm-up. Two full 120 s cycles: two elite phases, two bosses. */
+const MEASURE_SEC = 240;
+/** Same for every row. Changing it changes every number, which is why it is a constant. */
+const SEED = 0x5ca19a2d;
 
 function blankStats(): WeaponStats {
   return {
@@ -68,12 +90,33 @@ interface Row {
   tier: number;
   burst: number;
   uptime: number;
+  /** The ARITHMETIC ceiling: burst x the weapon's own duty cycle, against a target that is always there. */
   sustained: number;
   maxHit: number;
   note: string;
+  /** Filled by `runField`. */
+  field: Field;
 }
 
-function measure(def: WeaponDef, tier: number): Row {
+/** What actually happened over MEASURE_SEC of real simulation. */
+interface Field {
+  dps: number;
+  killsPerMin: number;
+  /**
+   * HITS PER SHOT FIRED, and it is deliberately not called accuracy: `shotsHit` counts one per
+   * PIERCE PASS, so a Cannon shell that punches through two bodies scores two. Above 1.00 means
+   * the shell is connecting more than once, not that it is hitting more often than it fires.
+   *
+   * -1 where the number would be a lie rather than a statistic: a BEAM has no discrete shot, and
+   * a BARRAGE never registers a direct hit at all - artillery detonates on its fuse and does its
+   * whole damage as splash, so it would print a flat 0.00 forever.
+   */
+  hitsPerShot: number;
+  /** Mean live enemies over the measured window - how crowded the field this weapon produced was. */
+  live: number;
+}
+
+function analytic(def: WeaponDef, tier: number): Row {
   const s = blankStats();
   resolveWeaponStats(def, NEUTRAL, tier, NO_STACKS, UPGRADE_CATALOG, s);
 
@@ -119,36 +162,150 @@ function measure(def: WeaponDef, tier: number): Row {
     note = `${s.cooldown.toFixed(2)}s cooldown${s.pierce > 0 ? `, pierce ${s.pierce}` : ''}`;
   }
 
-  return { name: def.name, tier, burst, uptime, sustained: burst * uptime, maxHit, note };
+  return {
+    name: def.name,
+    tier,
+    burst,
+    uptime,
+    sustained: burst * uptime,
+    maxHit,
+    note,
+    field: { dps: 0, killsPerMin: 0, hitsPerShot: 0, live: 0 },
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The measurement
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Steps a real world with exactly this weapon at exactly this tier, and reports what it did.
+ *
+ * The loadout is written directly rather than driven through `applyChoice`, because the point is
+ * to isolate ONE weapon at ONE tier - and the only path the game offers to tier 7 goes through six
+ * level-ups, which would also hand out six other cards.
+ */
+function runField(def: WeaponDef, tier: number): Field {
+  const defId = WEAPON_CATALOG.indexOf(def);
+  const sim = new Simulation({
+    seed: SEED,
+    heroId: HERO_CATALOG.indexOf(NEUTRAL),
+    // Longer than the window, or the run would declare VICTORY partway through and stop stepping.
+    runLengthSec: (WARMUP_SEC + MEASURE_SEC) * 2,
+  });
+  const world = sim.world;
+  const bot = createBot();
+
+  // Wipe whatever the chassis walked in with, including the tier its card was seeded to. Anything
+  // left here is a second weapon, or a passive, quietly inside the number.
+  world.levelUp.stacks.fill(0);
+
+  const inst = world.weapons[0];
+  inst.defId = defId;
+  inst.level = tier;
+  inst.cooldownLeft = 0;
+  inst.targetDense = -1;
+  inst.turretX = 1;
+  inst.turretY = 0;
+  inst.heat = 0;
+  inst.overheated = false;
+  // -1, not 0: the weapon system reads this as "magazine not yet filled" and loads it on the first
+  // shot. Zero would mean an empty magazine and open with a reload.
+  inst.ammo = -1;
+  inst.reloadLeft = 0;
+  resolveWeaponStats(def, NEUTRAL, tier, world.levelUp.stacks, UPGRADE_CATALOG, inst.stats);
+  world.weaponCount = 1;
+
+  // See the header. Both of these are written after resolution and never re-resolved, because no
+  // card is ever taken - which is exactly what the first of them guarantees.
+  world.player.stats.xpGain = 0;
+  world.player.stats.damageTakenMul = 0;
+
+  const warmupTicks = Math.round(WARMUP_SEC / DT);
+  const measureTicks = Math.round(MEASURE_SEC / DT);
+  for (let t = 0; t < warmupTicks; t++) sim.step(botInput(bot, world));
+
+  const damage0 = world.stats.damageDealt;
+  const kills0 = world.stats.kills;
+  const fired0 = world.stats.shotsFired;
+  const hit0 = world.stats.shotsHit;
+  let liveSum = 0;
+
+  for (let t = 0; t < measureTicks; t++) {
+    sim.step(botInput(bot, world));
+    liveSum += world.enemies.count;
+  }
+
+  const fired = world.stats.shotsFired - fired0;
+  const countable = def.kind !== 'beam' && def.pattern !== 'barrage' && fired > 0;
+  return {
+    dps: (world.stats.damageDealt - damage0) / MEASURE_SEC,
+    killsPerMin: ((world.stats.kills - kills0) / MEASURE_SEC) * 60,
+    hitsPerShot: countable ? (world.stats.shotsHit - hit0) / fired : -1,
+    live: liveSum / measureTicks,
+  };
 }
 
 const rows: Row[] = [];
 for (const def of WEAPON_CATALOG) {
-  rows.push(measure(def, 1));
-  rows.push(measure(def, WEAPON_MAX_TIER));
+  rows.push(analytic(def, 1));
+  rows.push(analytic(def, WEAPON_MAX_TIER));
 }
+
+process.stdout.write(`  measuring ${rows.length} runs of ${MEASURE_SEC}s`);
+for (const r of rows) {
+  const def = WEAPON_CATALOG.find((d) => d.name === r.name);
+  if (def !== undefined) r.field = runField(def, r.tier);
+  process.stdout.write('.');
+}
+process.stdout.write('\n');
 
 const pad = (s: string, n: number): string => s.padEnd(n);
 const num = (v: number, n: number, dp = 1): string => v.toFixed(dp).padStart(n);
 
 console.log('');
-console.log('  WEAPON DAMAGE TABLE   (single target, target always present - a ceiling, not an average)');
+console.log(
+  `  WEAPON DAMAGE TABLE   (measured over ${MEASURE_SEC / 60} minutes of real simulation, after a ${WARMUP_SEC}s warm-up)`,
+);
+console.log(
+  '  one weapon at a time, no passives, no level-ups, immortal pilot, same seed for every row',
+);
+console.log(
+  `  the window spans cycles 0-2: Rustlings at 22 HP up to Haulers at 50, two elite phases, two bosses`,
+);
 console.log('');
 console.log(
-  `  ${pad('weapon', 17)}${pad('tier', 6)}${'burst'.padStart(8)}${'uptime'.padStart(9)}${'sustained'.padStart(11)}${'max hit'.padStart(9)}   notes`,
+  `  ${pad('weapon', 17)}${pad('tier', 6)}${'dps'.padStart(8)}${'kills/m'.padStart(9)}${'hit/sh'.padStart(8)}${'live'.padStart(7)}${'ceiling'.padStart(9)}${'of ceil'.padStart(9)}   notes`,
 );
-console.log(`  ${'-'.repeat(17 + 6 + 8 + 9 + 11 + 9 + 3 + 34)}`);
+console.log(`  ${'-'.repeat(17 + 6 + 8 + 9 + 8 + 7 + 9 + 9 + 3 + 34)}`);
 for (const r of rows) {
   const isT7 = r.tier === WEAPON_MAX_TIER;
+  const hps = r.field.hitsPerShot < 0 ? '-' : num(r.field.hitsPerShot, 1, 2);
   console.log(
-    `  ${pad(isT7 ? '' : r.name, 17)}${pad(`T${r.tier}`, 6)}${num(r.burst, 8)}${num(r.uptime * 100, 8)}%${num(r.sustained, 11)}${num(r.maxHit, 9)}   ${r.note}`,
+    `  ${pad(isT7 ? '' : r.name, 17)}${pad(`T${r.tier}`, 6)}${num(r.field.dps, 8)}` +
+      `${num(r.field.killsPerMin, 9)}${hps.padStart(8)}${num(r.field.live, 7, 0)}` +
+      `${num(r.sustained, 9)}${num((r.field.dps / r.sustained) * 100, 8)}%   ${r.note}`,
   );
   if (isT7) console.log('');
 }
 
-// A single sorted comparison, because the per-weapon rows above are grouped for reading rather
-// than for ranking.
-const t7 = rows.filter((r) => r.tier === WEAPON_MAX_TIER).sort((a, b) => b.sustained - a.sustained);
-console.log('  SUSTAINED AT TIER 7, RANKED');
-for (const r of t7) console.log(`    ${pad(r.name, 17)}${num(r.sustained, 8)} dps`);
+console.log('  MEASURED DPS, RANKED');
+for (const tier of [1, WEAPON_MAX_TIER]) {
+  const ranked = rows.filter((r) => r.tier === tier).sort((a, b) => b.field.dps - a.field.dps);
+  console.log(`    tier ${tier}`);
+  for (const r of ranked) {
+    console.log(
+      `      ${pad(r.name, 17)}${num(r.field.dps, 8)} dps   ${num(r.field.killsPerMin, 6)} kills/min`,
+    );
+  }
+}
+
+console.log('');
+console.log('  COLUMNS');
+console.log('    dps       effective damage per second - overkill on a dying body is not counted');
+console.log('    kills/m   bodies killed per minute, which is what the field actually feels');
+console.log('    acc       shotsHit / shotsFired. Blank for beams: a beam has no discrete shot');
+console.log('    live      mean enemies alive - how crowded the field this weapon left itself');
+console.log('    ceiling   the old arithmetic: burst x duty cycle, target always present');
+console.log('    of ceil   how much of that ceiling the weapon reaches in a real fight');
 console.log('');

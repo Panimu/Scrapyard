@@ -21,7 +21,15 @@
   --ink: #e6edf5;
   --ink-dim: #93a1b1;
   --ink-faint: #5f6d7d;
+  /* ORDNANCE vs SYSTEMS, and the pair is used in exactly one place: the upgrade card, to say
+     which of the two pools an offer comes from before the player reads a word of it.
+
+     --accent is already the game's yellow. --accent-sys is the blue the SIMULATION uses for
+     everything defensive - the Energy Shield rim, the boss outline, the cockpit glass and the app
+     icon are all 0x4fa8ff - so a passive card matching it is not a new colour, it is the one the
+     player has already learned means "system, not gun". */
   --accent: #e7b900;
+  --accent-sys: #4fa8ff;
   --hp: #d7503f;
   --xp: #4fd1ff;
   --good: #8bd450;
@@ -638,7 +646,26 @@ body {
 
 .card:active {
   background: var(--panel-2);
-  border-color: var(--accent);
+  border-color: var(--card-key);
+}
+
+/* WHICH POOL THIS OFFER CAME FROM, said in colour before it is said in words.
+ *
+ * Every card in the pool is either a gun or a system, they compete for separate slots, and by the
+ * fifth pick a player is choosing between deepening a weapon and deepening a passive several times
+ * a minute. The tier line and the badge carry the distinction because they are the two bits of
+ * text a thumb-sized card can spare - the NAME stays white, since it is the thing being read and
+ * a coloured 17px heading on a dark panel is harder to read, not easier.
+ *
+ * `--card-key` is set by the kind and consumed by everything that keys off it, so a card that
+ * somehow arrives without a kind class degrades to the faint grey it used to be rather than to
+ * an invisible `color: ;`. */
+.card--weapon {
+  --card-key: var(--accent);
+}
+
+.card--passive {
+  --card-key: var(--accent-sys);
 }
 
 .card__name {
@@ -656,7 +683,10 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--card-key, var(--ink-faint));
+  /* Dimmed on an ordinary tier so the unlock below still reads as the louder card. Opacity rather
+     than a second pair of colours: one number to move, and it cannot drift out of sync. */
+  opacity: 0.72;
   margin-bottom: 5px;
 }
 
@@ -669,19 +699,22 @@ body {
 .card__stacks {
   float: right;
   font-size: 11px;
-  color: var(--ink-faint);
+  color: var(--card-key, var(--ink-faint));
+  opacity: 0.72;
   letter-spacing: 0.08em;
 }
 
-/* AN UNLOCK IS A NEW GUN, not a percentage on one you have. It is the most consequential pick in
-   the pool and it gets the only accent on the screen, so it never reads as one more tier. */
+/* AN UNLOCK IS A NEW THING IN YOUR HANDS, not a percentage on something you already have. It is
+   the most consequential pick in the pool, and it says so with its border and with full-strength
+   text - in ITS OWN pool's colour, so "new" and "which pool" are two independent readings of the
+   same card rather than one overriding the other. */
 .card--unlock {
-  border-color: var(--accent);
+  border-color: var(--card-key);
 }
 
 .card--unlock .card__stacks,
 .card--unlock .card__tier {
-  color: var(--accent);
+  opacity: 1;
 }
 
 /* ============================================================================================

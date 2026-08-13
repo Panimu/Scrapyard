@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T21:55Z',
+    title: 'Upgrade cards say which pool at a glance',
+    notes: [
+      'Weapon cards head in the game’s yellow; passive cards head in the shield’s blue. Weapons and passives compete for separate slots, so which pool an offer comes from is now readable before you read the name.',
+    ],
+  },
+  {
     at: '2026-08-13T20:50Z',
     title: 'Mechs stop being skins',
     notes: [

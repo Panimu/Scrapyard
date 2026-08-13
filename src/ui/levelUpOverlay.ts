@@ -135,7 +135,7 @@ export class LevelUpOverlay {
         // The sim promised an offer we cannot name. Show the raw id rather than silently
         // swallowing it: an empty card is a bug that hides itself.
         card.hidden = false;
-        card.classList.remove('card--unlock');
+        card.classList.remove('card--unlock', 'card--weapon', 'card--passive');
         this.names[i].textContent = `Upgrade #${defId}`;
         this.tiers[i].textContent = '';
         this.descs[i].textContent = '';
@@ -150,12 +150,20 @@ export class LevelUpOverlay {
 
       card.hidden = false;
       card.classList.toggle('card--unlock', unlock);
+      // WHICH POOL, in colour: guns take the game's yellow, systems take the blue the shield rim
+      // and the boss outline already use. The two pools compete for separate slots, so "is this a
+      // gun or a system" is a decision the player makes several times a minute - and it is worth
+      // answering before they have read the name. Both classes are toggled rather than one being
+      // added, so a card reused for the other pool cannot keep the old colour.
+      const isWeapon = def.kind === 'weapon';
+      card.classList.toggle('card--weapon', isWeapon);
+      card.classList.toggle('card--passive', !isWeapon);
       this.names[i].textContent = def.name;
       this.stacks[i].textContent = unlock ? 'NEW' : `TIER ${tier}`;
       // "New weapon" only if it IS one. A passive announced as a weapon is the kind of small lie
       // that teaches the player the card text cannot be trusted.
       this.tiers[i].textContent = unlock
-        ? `New ${def.kind === 'weapon' ? 'weapon' : 'system'} - Tier ${tier} of ${def.maxStacks}`
+        ? `New ${isWeapon ? 'weapon' : 'system'} - Tier ${tier} of ${def.maxStacks}`
         : `Tier ${tier} of ${def.maxStacks}`;
 
       // WHAT THIS TIER DOES, straight from the catalog - "the number on screen is the number".
