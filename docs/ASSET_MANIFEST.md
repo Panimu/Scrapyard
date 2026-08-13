@@ -14,9 +14,31 @@ on screen (y-down), matching PixiJS `sprite.rotation`. 1 world unit = 1 CSS px a
 
 ## 1. Player mechs — the 16 heroes
 
-**GENERATED, NOT SOURCED.** `tools/make-mechs.mjs` (`npm run mechs`) draws all sixteen chassis and
-the turret into `public/sprites/`. The PNGs are checked in; the generator runs only when the art
-changes. Canvas is **148×172** for every chassis, **80×44** for `turret`.
+**GENERATED, NOT SOURCED.** `tools/make-mechs.mjs` (`npm run mechs`) draws all sixteen chassis,
+their walk cycles and the turret into `public/sprites/`. The PNGs are checked in; the generator
+runs only when the art changes. Canvas is **148×172** for every chassis layer, **80×44** for
+`turret`. 81 files, ~1.1 MB.
+
+### Two layers and a four-frame half-cycle
+
+Each chassis is **two sprites**: `mech_x.png` (body — torso, mount, cockpit, thrusters) and
+`mech_x_w0..3.png` (legs — ground shadow and limbs). The renderer stacks them at the same
+position and rotation and swaps only the leg texture, so the paint and the guns are stored once
+rather than once per frame.
+
+**The four frames cover HALF a gait cycle; the other half is a vertical flip.** A walker at phase
+`φ+π` is itself at `φ` with left and right legs exchanged, and every chassis is drawn mirrored
+about its own centreline — so exchanging the legs *is* mirroring the sprite. Eight distinct poses
+out of four textures. Quads trot on diagonals, which flips the same way (front-left with
+rear-right becomes front-right with rear-left).
+
+**The cycle advances on distance walked, not on the clock** (`STRIDE_UNITS` = 23 u per frame, so
+a full stride is 184 u against a 195 u/s mech). Stand still and the legs park mid-stride; sprint
+and they keep up. A clock-driven cycle moon-walks, and no amount of care in the art fixes that.
+
+The three hover chassis have no legs to swing, so their four frames pulse the lift skirt and
+flicker the nozzles, and they also advance on a slow idle timer — a hover that goes completely
+still has landed.
 
 Each chassis picks a **leg style**, a **weapon mount**, a **torso shape** and a **weight class**,
 and the generator asserts at build time that **no two heroes share a (legs, mount) pair** — that
@@ -95,9 +117,13 @@ is 0 because the art was drawn to make it 0.
 - **Do not downscale the source PNGs.** At iPhone `devicePixelRatio = 3`, 58 CSS px = 174 device px
   against a 148 px source — near 1:1. Set the Pixi renderer `resolution: 3` and let the texture
   serve it natively.
+- **Layer order** `legs` → `body` → `turret`, all at the same position, all anchored `(0.5, 0.5)`
+  except the turret. The legs sprite carries the ground shadow, so it must be bottom-most.
+- **Gait yaw.** The chassis yaws ±0.045 rad across a cycle — weight shifting onto the planted
+  foot. Applied to legs and body together so they never separate.
 - **Turret.** Separate sprite, separate rotation (the weapon's target, not the chassis' heading).
   Anchor `(0.2, 0.5)` so it pivots on its mount ring just behind the mech centre; scale
-  `42 / 80 = 0.525`.
+  `42 / 80 = 0.525`. Recoils 5 u back along its own axis for 0.08 s on `EV_WEAPON_FIRED`.
 - Cannon muzzle emits at **+24 u along facing**.
 
 ---

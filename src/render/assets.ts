@@ -50,6 +50,12 @@ export const MECH_SRC_W = 148;
 export const MECH_DRAW_W = 58;
 export const MECH_SCALE = MECH_DRAW_W / MECH_SRC_W;
 
+/**
+ * Leg frames per chassis, covering HALF a gait cycle (tools/make-mechs.mjs). The full cycle is
+ * `2 * MECH_WALK_FRAMES` poses; the second half is the first half mirrored.
+ */
+export const MECH_WALK_FRAMES = 4;
+
 /** Turret canvas (tools/make-mechs.mjs), and its drawn length in world units. */
 export const TURRET_SRC_W = 80;
 export const TURRET_DRAW_W = 42;
@@ -135,8 +141,15 @@ export const FLOOR_TILE_UNITS = 64;
 // ---------------------------------------------------------------------------------------------
 
 export interface GameTextures {
-  /** Indexed by HERO_CATALOG position, resolved through each hero's `sprite` key. */
+  /** Body layer, indexed by HERO_CATALOG position, resolved through each hero's `sprite` key. */
   readonly mechs: readonly Texture[];
+  /**
+   * Leg layer: `[heroIndex][frame]`, MECH_WALK_FRAMES frames covering HALF a gait cycle. The
+   * renderer plays them forwards then again mirrored vertically, because a walker at phase
+   * `phi + pi` is itself at `phi` with its legs exchanged - and every chassis is drawn mirrored
+   * about its own centreline, so exchanging the legs is exactly a vertical flip.
+   */
+  readonly mechLegs: readonly (readonly Texture[])[];
   readonly turret: Texture;
   /** Indexed by EnemyPool.typeId (0..47). */
   readonly enemies: readonly Texture[];
@@ -223,7 +236,10 @@ export async function loadGameTextures(
   const mechKeys = HERO_CATALOG.map((h) => h.sprite);
   // The eight heroes reference only four hues x two finishes, and two heroes could in principle
   // share a sprite key, so de-duplicate before asking the loader for them.
-  for (const k of new Set(mechKeys)) keys.push(k);
+  for (const k of new Set(mechKeys)) {
+    keys.push(k);
+    for (let f = 0; f < MECH_WALK_FRAMES; f++) keys.push(`${k}_w${f}`);
+  }
   keys.push('turret');
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
@@ -273,6 +289,9 @@ export async function loadGameTextures(
 
   return {
     mechs: HERO_CATALOG.map((h) => get(h.sprite)),
+    mechLegs: HERO_CATALOG.map((h) =>
+      Array.from({ length: MECH_WALK_FRAMES }, (_, f) => get(`${h.sprite}_w${f}`)),
+    ),
     turret: get('turret'),
     enemies,
     enemyScale,

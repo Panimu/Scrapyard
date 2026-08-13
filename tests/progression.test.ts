@@ -174,6 +174,7 @@ const HEAVY_HERO: HeroDef = {
   name: 'Fixture Chassis',
   identity: 'fixture',
   sprite: HERO_CATALOG[0].sprite,
+  gait: 'walk',
   startingWeapon: 'cannon',
   player: { maxHp: 1.5 },
   weapon: {},

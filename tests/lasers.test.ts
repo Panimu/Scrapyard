@@ -80,6 +80,7 @@ function heroWith(startingWeapon: WeaponId): HeroDef {
     name: 'Test Chassis',
     identity: 'fixture',
     sprite: 'mech_3dgreen',
+    gait: 'walk' as const,
     startingWeapon,
     player: {},
     weapon: {},

@@ -1,5 +1,6 @@
 /**
- * `npm run mechs` - draws the sixteen player chassis and the turret into public/sprites/.
+ * `npm run mechs` - draws the sixteen player chassis, their walk cycles and the turret into
+ * public/sprites/.
  *
  * WHY THE ART IS GENERATED RATHER THAN DOWNLOADED. The rest of the game runs on Kenney CC0 packs,
  * and the player used to as well: `robot-pack/PNG/Top view/robot_*.png`. From above, that pack's
@@ -24,20 +25,26 @@
  *   its target independently.
  *   A NARROWING NOSE AND A SQUARED TAIL. No front-to-back symmetry; a tank hull has nearly the
  *   same shape at both ends.
+ *   AND, ABOVE ALL, THE LEGS HAVE TO MOVE. A static walker slides; it reads as a vehicle no
+ *   matter how carefully the limbs are drawn. See the walk cycle below.
  *
  * ---------------------------------------------------------------------------------------------
- * SIXTEEN CHASSIS, AND WHY THEY ARE PARAMETERISED RATHER THAN HAND-DRAWN
+ * TWO LAYERS, AND A FOUR-FRAME HALF-CYCLE
+ * ---------------------------------------------------------------------------------------------
+ * Each chassis emits a BODY (`mech_x.png` - torso, mount, cockpit, thrusters) and FOUR LEG frames
+ * (`mech_x_w0..3.png` - ground shadow and limbs). The renderer stacks them and swaps only the leg
+ * texture, so the paint and the guns are stored once instead of once per frame.
  *
- * A roster of sixteen recolours is a roster of one. Each hero picks a LEG STYLE, a WEAPON MOUNT,
- * a TORSO SHAPE and a WEIGHT CLASS, and no two heroes share a (legs, mount) pair - so every
- * silhouette differs before the paint is applied. Weight class then rescales torso width, limb
- * thickness and stance, so a light strider and a heavy quad do not read as the same machine in
- * different colours.
+ * FOUR FRAMES COVER HALF A GAIT CYCLE, AND THE OTHER HALF IS A VERTICAL FLIP. A walker at gait
+ * phase φ+π is exactly itself at φ with left and right legs exchanged - and since every chassis is
+ * mirrored about its own centreline, exchanging the legs IS mirroring the sprite. So the renderer
+ * plays 0,1,2,3 then 0,1,2,3 flipped, and gets eight distinct poses out of four textures. The
+ * quads trot on diagonals, which flips the same way: front-left with rear-right becomes
+ * front-right with rear-left.
  *
- * The pairing is deliberate and forward-looking: the eight weapons get two chassis each, one
- * light and one heavy. Hero STATS are still identical (variety was deferred), but when they
- * arrive the structure is already there - the light one takes speed, the heavy one takes armour,
- * and the art has been promising exactly that the whole time.
+ * The hovers have no legs to swing, so their four frames pulse the lift skirt and flicker the
+ * nozzles instead - they are the one chassis type that must animate while standing still, because
+ * a hover that goes completely still has landed.
  *
  * Rendered through headless Chromium's canvas rather than a hand-rolled PNG encoder: antialiased
  * curves and strokes for free, and the browser is already a dependency (tools/screenshot.ts).
@@ -54,16 +61,17 @@ import { fileURLToPath } from 'node:url';
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'sprites');
 
 /**
- * Canvas size, shared by all sixteen. WIDTH is what MECH_SRC_W in src/render/assets.ts scales
- * against, so every chassis is laid out to fill it - a mech drawn small inside a large canvas
- * would draw small in the world too. Taller than wide because legs splay wider than the hull is
- * long. One size for all sixteen so weight class shows in PROPORTION, never in canvas bounds:
- * a heavier canvas would just make the sprite bigger, which the collision radius does not.
+ * Canvas size, shared by every body and every leg frame so the two layers register exactly.
+ * WIDTH is what MECH_SRC_W in src/render/assets.ts scales against, so each chassis is laid out to
+ * fill it. Taller than wide because legs splay wider than the hull is long.
  */
 const W = 148;
 const H = 172;
 const CX = W / 2;
 const CY = H / 2;
+
+/** Frames per HALF gait cycle. The renderer mirrors these for the other half. */
+const WALK_FRAMES = 4;
 
 /** Structural metal, shared by every chassis: legs, joints, mounts, thrusters. */
 const DARK = '#262b33';
@@ -73,7 +81,8 @@ const SHADOW = 'rgba(0,0,0,0.30)';
 
 /**
  * THE ROSTER. Order is APPEND-ONLY and must match HERO_CATALOG exactly: the index is
- * `WorldConfig.heroId` and is written into every replay.
+ * `WorldConfig.heroId` and is written into every replay. `legs: 'hover'` here must match
+ * `gait: 'hover'` there - that is the one fact both tables have to agree on.
  *
  * `glass` is the beam colour of the hero's starting weapon wherever there is one (blue Medium,
  * green Short, red Long), so the chassis says what it opens with before the first shot. The
@@ -102,14 +111,14 @@ const HEROES = [
 ];
 
 /**
- * The drawing program, as a string, because it is evaluated inside the browser page.
+ * Canvas setup, weight-class numbers and drawing helpers, shared verbatim by the body pass and
+ * the leg pass so the two layers cannot drift apart on geometry.
  *
- * EVERY SHAPE IS MIRRORED ABOUT y = CY AND THE MACHINE FACES +x. That convention is load-bearing:
- * ROT_OFFSET.mech is 0 precisely because the art is drawn to make it 0, and the renderer sets
- * `rotation = atan2(faceY, faceX)` with no correction.
+ * EVERY SHAPE IS MIRRORED ABOUT y = CY AND THE MACHINE FACES +x. That convention is load-bearing
+ * twice over: `ROT_OFFSET.mech` is 0 because the art is drawn to make it 0, and the walk cycle's
+ * half-cycle mirror trick only works because left and right are reflections of each other.
  */
-const DRAW = /* js */ `
-(m) => {
+const PREAMBLE = /* js */ `
   const c = document.createElement('canvas');
   c.width = ${W}; c.height = ${H};
   const g = c.getContext('2d');
@@ -123,8 +132,8 @@ const DRAW = /* js */ `
   // Weight class, as three numbers. Everything else about a chassis is categorical; this is the
   // only continuous axis, and it is what stops a light strider and a heavy quad from reading as
   // the same machine painted differently.
-  const K = heavy ? 1.16 : 0.86;   // torso and mount width
-  const LIMB = heavy ? 15 : 11;    // leg thickness
+  const K = heavy ? 1.16 : 0.86;    // torso and mount width
+  const LIMB = heavy ? 15 : 11;     // leg thickness
   const REACH = heavy ? 0.92 : 1.1; // leg length, so lights stand taller and wider
 
   // Every shape is a filled path with a dark outline, so the silhouette survives being scaled to
@@ -166,10 +175,32 @@ const DRAW = /* js */ `
       g.beginPath(); g.moveTo(tx, my(s, dy + 2)); g.lineTo(tx + 1, my(s, dy + 2 + wid)); g.stroke();
     }
   };
+`;
+
+/**
+ * THE LEG LAYER, at half-cycle phase `t` in [0, 1).
+ *
+ * The swing is `SWING * side * sin(pi * t)`, added to the x of the knee, the ankle and the foot.
+ * At t = 0 both legs are neutral (mid-stride, passing each other); at t = 0.5 the swing is at
+ * full extension. The two sides always carry opposite signs, so one leg reaches while the other
+ * pushes - and because the whole chassis is mirrored about its centreline, the renderer gets the
+ * second half of the cycle by flipping this sprite rather than by storing four more frames.
+ *
+ * A SWINGING LEG IS ALSO A LIFTED LEG: the foot pad grows a few percent as it comes forward.
+ * There is no vertical axis to raise it along in a top-down view, so scale is the only cue
+ * available, and without it the feet appear to skate rather than step.
+ */
+const DRAW_LEGS = /* js */ `
+(m, t) => {
+${PREAMBLE}
+  const SW = Math.sin(Math.PI * t);
+  const SWING = (m.legs === 'strider' ? 11 : 9) * REACH;
+  const PULSE = Math.sin(2 * Math.PI * t);
 
   // ---- ground shadow ---------------------------------------------------------------------
-  // Soft and offset down-right, matching the baked drop shadows on the enemy sprites so the mech
-  // stands on the same imaginary floor they do.
+  // Bottom of the whole stack, and on the leg layer rather than the body so it is drawn once
+  // under everything. Soft and offset down-right, matching the baked drop shadows on the enemy
+  // sprites so the mech stands on the same imaginary floor they do.
   g.save();
   g.filter = 'blur(6px)';
   g.fillStyle = SHADOW;
@@ -178,51 +209,82 @@ const DRAW = /* js */ `
   g.fill();
   g.restore();
 
-  // ---- legs ------------------------------------------------------------------------------
-  // Drawn FIRST so the torso overlaps the hips: that overlap is what makes the legs read as
-  // hanging from the machine rather than as decals beside it.
   if (m.legs === 'chicken') {
     // The default walker. Hip forward, knee back and outboard, ankle forward again.
     bothSides((s) => {
-      limb([[56, my(s, 20 * REACH)], [26, my(s, 46 * REACH)], [56, my(s, 60 * REACH)]], LIMB);
-      foot(46, s, 54 * REACH, 40, 14);
+      const d = SWING * s * SW;
+      limb([[56, my(s, 20 * REACH)], [26 + d * 0.5, my(s, 46 * REACH)], [56 + d, my(s, 60 * REACH)]], LIMB);
+      g.save();
+      g.translate(46 + d, my(s, 54 * REACH));
+      g.scale(1 + 0.06 * s * SW, 1 + 0.06 * s * SW);
+      g.translate(-(46 + d), -my(s, 54 * REACH));
+      foot(46 + d, s, 54 * REACH, 40, 14);
+      g.restore();
       disc(56, my(s, 20 * REACH), LIMB * 0.85, METAL_HI, DARK, 3);
       disc(56, my(s, 20 * REACH), 4, DARK);
     });
   } else if (m.legs === 'strider') {
-    // Longer, thinner, knee thrown much further back: a light frame built for stride length.
+    // Longer, thinner, knee thrown much further back: a light frame built for stride length, and
+    // the frame whose swing is widest because that is what the proportions are promising.
     bothSides((s) => {
-      limb([[60, my(s, 16 * REACH)], [16, my(s, 50 * REACH)], [52, my(s, 66 * REACH)]], LIMB - 2);
-      foot(44, s, 62 * REACH, 34, 11);
+      const d = SWING * s * SW;
+      limb([[60, my(s, 16 * REACH)], [16 + d * 0.5, my(s, 50 * REACH)], [52 + d, my(s, 66 * REACH)]], LIMB - 2);
+      g.save();
+      g.translate(44 + d, my(s, 62 * REACH));
+      g.scale(1 + 0.07 * s * SW, 1 + 0.07 * s * SW);
+      g.translate(-(44 + d), -my(s, 62 * REACH));
+      foot(44 + d, s, 62 * REACH, 34, 11);
+      g.restore();
       disc(60, my(s, 16 * REACH), LIMB * 0.8, METAL_HI, DARK, 3);
       disc(60, my(s, 16 * REACH), 3.5, DARK);
     });
   } else if (m.legs === 'quad') {
-    // Four legs, front pair short and rear pair long, so the machine reads as crouched over its
-    // own footprint rather than as a wider biped.
+    // A TROT, on diagonals: front-left swings with rear-right. That is what four-legged machines
+    // actually do, it is what keeps the thing balanced over two contact points at all times, and
+    // it survives the mirror trick unchanged - flipping swaps the diagonal for the other one.
     bothSides((s) => {
-      limb([[88, my(s, 22 * REACH)], [72, my(s, 46 * REACH)], [96, my(s, 56 * REACH)]], LIMB - 3);
-      foot(88, s, 52 * REACH, 26, 10);
-      limb([[44, my(s, 22 * REACH)], [18, my(s, 46 * REACH)], [42, my(s, 58 * REACH)]], LIMB - 2);
-      foot(34, s, 54 * REACH, 30, 12);
+      const df = SWING * 0.8 * s * SW;
+      const dr = -SWING * 0.8 * s * SW;
+      limb([[88, my(s, 22 * REACH)], [72 + df * 0.5, my(s, 46 * REACH)], [96 + df, my(s, 56 * REACH)]], LIMB - 3);
+      foot(88 + df, s, 52 * REACH, 26, 10);
+      limb([[44, my(s, 22 * REACH)], [18 + dr * 0.5, my(s, 46 * REACH)], [42 + dr, my(s, 58 * REACH)]], LIMB - 2);
+      foot(34 + dr, s, 54 * REACH, 30, 12);
       disc(88, my(s, 22 * REACH), 7, METAL_HI, DARK, 2.5);
       disc(44, my(s, 22 * REACH), 8, METAL_HI, DARK, 2.5);
     });
   } else {
-    // hover: NO LEGS AT ALL, and the one frame that has to say so loudly. A lift skirt ringing
-    // the hull plus three rear nozzles, so the absence reads as a design rather than as a
-    // sprite that failed to draw its legs.
+    // hover: NO LEGS AT ALL, and the one chassis type that has to animate while standing still -
+    // a hover that goes completely still has landed. The skirt breathes and the nozzles flicker,
+    // both on a full cycle within these four frames rather than a half, so the pulse is smooth
+    // whether the renderer is mirroring or not.
+    const r = 1 + 0.05 * PULSE;
     g.save();
     g.strokeStyle = DARK; g.lineWidth = 11; g.lineJoin = 'round';
-    g.beginPath(); g.ellipse(CX, CY, 52, 44 * REACH, 0, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.ellipse(CX, CY, 52 * r, 44 * REACH * r, 0, 0, Math.PI * 2); g.stroke();
     g.strokeStyle = METAL; g.lineWidth = 6;
-    g.beginPath(); g.ellipse(CX, CY, 52, 44 * REACH, 0, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.ellipse(CX, CY, 52 * r, 44 * REACH * r, 0, 0, Math.PI * 2); g.stroke();
+    g.globalAlpha = 0.28 + 0.22 * PULSE;
+    g.strokeStyle = m.glass; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(CX, CY, 52 * r, 44 * REACH * r, 0, 0, Math.PI * 2); g.stroke();
     g.restore();
-    for (const dy of [-26, 0, 26]) {
+    for (let i = 0; i < 3; i++) {
+      const dy = -26 + i * 26;
+      // Each nozzle flickers a third of a cycle out of step with its neighbours, so the exhaust
+      // shimmers instead of blinking in unison.
+      const f = 0.5 + 0.5 * Math.sin(2 * Math.PI * (t - i / 3));
       poly([[14, CY + dy - 8], [34, CY + dy - 9], [34, CY + dy + 9], [14, CY + dy + 8]], METAL, DARK, 3);
-      poly([[14, CY + dy - 6], [22, CY + dy - 6], [22, CY + dy + 6], [14, CY + dy + 6]], m.glass);
+      poly([[14 - 7 * f, CY + dy - 5], [22, CY + dy - 6], [22, CY + dy + 6], [14 - 7 * f, CY + dy + 5]], m.glass);
     }
   }
+
+  return c.toDataURL('image/png');
+}
+`;
+
+/** THE BODY LAYER: everything that does not move relative to the chassis. Stored once. */
+const DRAW_BODY = /* js */ `
+(m) => {
+${PREAMBLE}
 
   // ---- rear thruster block ---------------------------------------------------------------
   if (m.legs !== 'hover') {
@@ -261,7 +323,7 @@ const DRAW = /* js */ `
   poly(hullPts, m.hull, DARK, 3.5);
 
   // Shadowed underside along one flank, so the plate reads as a solid volume and not a decal.
-  // Built by walking the hull's own outline out and back at 70% offset, so it fits any shape.
+  // Built by walking the hull's own outline out and back at 60% offset, so it fits any shape.
   const half = hullPts.length / 2;
   const shade = hullPts.slice(0, half + 1);
   for (let i = half; i >= 0; i--) {
@@ -315,7 +377,6 @@ const DRAW = /* js */ `
     // waiting rather than a muzzle pointed at you.
     bothSides((s) => {
       poly([[74, my(s, SY - 14)], [124, my(s, SY - 16)], [124, my(s, SY + 12)], [74, my(s, SY + 14)]], METAL, DARK, 3);
-      g.fillStyle = DARK;
       for (let r = 0; r < 2; r++) {
         for (let col = 0; col < 3; col++) {
           const x = 82 + col * 14, dy = SY - 8 + r * 13;
@@ -437,22 +498,30 @@ async function main() {
   await page.goto('about:blank');
   await mkdir(OUT_DIR, { recursive: true });
 
+  let bytes = 0;
   const write = async (key, dataUrl) => {
     const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
     const buf = Buffer.from(base64, 'base64');
     await writeFile(join(OUT_DIR, `${key}.png`), buf);
-    console.log(`  ${key.padEnd(16)} ${(buf.length / 1024).toFixed(1)} kB`);
+    bytes += buf.length;
+    return buf.length;
   };
 
   // Built as a self-contained expression rather than passed as (fn, arg): Playwright evaluates a
   // STRING pageFunction as an expression and does not apply the argument to it.
   for (const hero of HEROES) {
-    await write(hero.key, await page.evaluate(`(${DRAW})(${JSON.stringify(hero)})`));
+    const arg = JSON.stringify(hero);
+    let n = await write(hero.key, await page.evaluate(`(${DRAW_BODY})(${arg})`));
+    for (let f = 0; f < WALK_FRAMES; f++) {
+      n += await write(`${hero.key}_w${f}`, await page.evaluate(`(${DRAW_LEGS})(${arg}, ${f / WALK_FRAMES})`));
+    }
+    console.log(`  ${hero.key.padEnd(16)} body + ${WALK_FRAMES} frames   ${(n / 1024).toFixed(1)} kB`);
   }
   await write('turret', await page.evaluate(`(${DRAW_TURRET})()`));
 
   await browser.close();
-  console.log(`\n${HEROES.length + 1} sprites -> ${OUT_DIR}`);
+  const count = HEROES.length * (1 + WALK_FRAMES) + 1;
+  console.log(`\n${count} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 
 void main();

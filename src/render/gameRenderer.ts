@@ -56,6 +56,7 @@ import {
   ROT_OFFSET,
   MISSILE_SCALE,
   SLUG_SCALE,
+  MECH_WALK_FRAMES,
   SHELL_SCALE,
   TURRET_SCALE,
   type GameTextures,
@@ -82,6 +83,19 @@ const HP_BAR_GAP = 8;
 
 /** Player hit feedback, seconds. */
 const PLAYER_FLASH_SEC = 0.12;
+
+/**
+ * World units walked per leg-frame. Eight frames make a full cycle, so a stride is 8 x this =
+ * 184 u, against a 195 u/s mech: a little over one cycle a second at a flat run. FEEL.
+ */
+const STRIDE_UNITS = 23;
+/** Peak chassis yaw across a gait cycle, radians. Deliberately small - weight shift, not a waddle. */
+const GAIT_YAW = 0.045;
+/** A hover's idle drift through its own cycle, in equivalent world units per second. */
+const HOVER_IDLE_SPEED = 34;
+/** Turret recoil: how far the mount slides back along its axis, and for how long. */
+const TURRET_KICK_UNITS = 5;
+const TURRET_KICK_SEC = 0.08;
 
 export interface RenderStats {
   enemySprites: number;
@@ -112,6 +126,7 @@ export class GameRenderer {
   private readonly playerLayer: Container;
   private readonly barrel: Sprite;
   private readonly mech: Sprite;
+  private readonly legs: Sprite;
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
   private readonly glows: SpritePool;
@@ -121,6 +136,19 @@ export class GameRenderer {
   /** Wall-clock seconds since boot, for cosmetic cycles (gem bob). Never touches the sim. */
   private clock = 0;
   private playerFlash = 0;
+  /**
+   * GAIT PHASE, IN WORLD UNITS WALKED - not seconds.
+   *
+   * Driving the walk cycle off distance rather than the clock is the whole difference between a
+   * mech that walks and a mech that moon-walks: stand still and the legs stop mid-stride, sprint
+   * and they keep up, and the feet never slide against ground they are not covering. It also
+   * makes the cycle immune to frame rate, which a per-frame counter would not be.
+   */
+  private stride = 0;
+  private prevPlayerX = Number.NaN;
+  private prevPlayerY = Number.NaN;
+  /** Seconds left of the turret's recoil kick. Cosmetic; the shell has already left. */
+  private turretKick = 0;
 
   constructor(
     private readonly app: Application,
@@ -153,10 +181,15 @@ export class GameRenderer {
     this.mech = new Sprite({ texture: tex.mechs[0], roundPixels: true });
     this.mech.anchor.set(0.5, 0.5);
     this.mech.scale.set(MECH_SCALE);
-    // Barrel ON TOP of the chassis. The Kenney top-view mech is a near-symmetric slab of plate
-    // over treads with no visible muzzle, so without a drawn barrel the player has no cue at all
-    // for where the turret is pointing - and turret traverse is the weapon's whole texture.
-    this.playerLayer.addChild(this.mech, this.barrel);
+    // The leg layer carries the walk cycle AND the ground shadow, so it goes under everything.
+    // Same canvas size and same anchor as the body, so the two register exactly whatever the
+    // chassis - no per-hero offset table to drift out of date.
+    this.legs = new Sprite({ texture: tex.mechLegs[0][0], roundPixels: true });
+    this.legs.anchor.set(0.5, 0.5);
+    this.legs.scale.set(MECH_SCALE);
+    // Turret ON TOP of the chassis: the mech walks one way and shoots another, and the turret is
+    // the only thing on screen that says where the shot is going before it arrives.
+    this.playerLayer.addChild(this.legs, this.mech, this.barrel);
 
     this.trails = new SpritePool({
       capacity: PROJECTILE_SPRITES,
@@ -240,6 +273,7 @@ export class GameRenderer {
   draw(world: World, alpha: number, dtSec: number): void {
     this.clock += dtSec;
     if (this.playerFlash > 0) this.playerFlash -= dtSec;
+    if (this.turretKick > 0) this.turretKick -= dtSec;
 
     this.drainEvents(world);
     this.effects.update(dtSec);
@@ -252,7 +286,7 @@ export class GameRenderer {
     this.drawFloor();
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
-    this.drawPlayer(world, px, py);
+    this.drawPlayer(world, px, py, dtSec);
     this.drawProjectiles(world, alpha);
     // NOT interpolated, unlike everything above it: the endpoints are the ones the simulation
     // published this tick, so the line and the damage can never disagree. `dtSec` drives the
@@ -301,6 +335,7 @@ export class GameRenderer {
           // Payload is muzzle position then the shell's unit direction - everything needed to
           // place and rotate the flash without recomputing anything.
           this.effects.muzzle(a, b, c, d);
+          this.turretKick = TURRET_KICK_SEC;
           this.camera.kick(c, d);
           break;
 
@@ -525,21 +560,63 @@ export class GameRenderer {
     fill.alpha = 1;
   }
 
-  private drawPlayer(world: World, px: number, py: number): void {
+  private drawPlayer(world: World, px: number, py: number, dtSec: number): void {
     const pl = world.player;
+    const hero = world.heroes[pl.heroId];
+
+    // --- gait phase ------------------------------------------------------------------------
+    // Advance by DISTANCE WALKED. A hover also idles on the clock, because a hover that goes
+    // completely still has landed; a walker deliberately does not, so standing still parks the
+    // legs mid-stride instead of moon-walking on the spot.
+    if (Number.isFinite(this.prevPlayerX)) {
+      const dx = px - this.prevPlayerX;
+      const dy = py - this.prevPlayerY;
+      this.stride += Math.sqrt(dx * dx + dy * dy);
+    }
+    if (hero?.gait === 'hover') this.stride += HOVER_IDLE_SPEED * dtSec;
+    this.prevPlayerX = px;
+    this.prevPlayerY = py;
+
+    // Eight poses out of four textures: the second half of the cycle is the first half with the
+    // legs exchanged, and exchanging the legs on a chassis mirrored about its own centreline is
+    // exactly a vertical flip. See GameTextures.mechLegs.
+    const cycleSteps = MECH_WALK_FRAMES * 2;
+    const step = Math.floor(this.stride / STRIDE_UNITS) % cycleSteps;
+    const frames = this.tex.mechLegs[pl.heroId] ?? this.tex.mechLegs[0];
+    this.legs.texture = frames[step % MECH_WALK_FRAMES] ?? frames[0];
+    const flip = step >= MECH_WALK_FRAMES ? -1 : 1;
+
+    // A walker shifts its weight onto the planted foot, so the whole machine yaws a little
+    // against the swing. Small - a few degrees - but it is what stops the chassis reading as a
+    // sprite being slid across the floor by something off-screen.
+    const facing = Math.atan2(pl.faceY, pl.faceX) + ROT_OFFSET.mech;
+    const phase = (this.stride / (STRIDE_UNITS * cycleSteps)) * Math.PI * 2;
+    const yaw = hero?.gait === 'hover' ? 0 : Math.sin(phase) * GAIT_YAW;
+    const tint = this.playerFlash > 0 ? 0xffb0a8 : 0xffffff;
+
+    this.legs.position.set(px, py);
+    this.legs.rotation = facing + yaw;
+    this.legs.scale.set(MECH_SCALE, MECH_SCALE * flip);
+    this.legs.tint = tint;
 
     // The chassis faces velocity; the turret is independent and driven by the weapon instance,
     // which is what makes the mech read as "walking one way, shooting another".
     this.mech.position.set(px, py);
-    this.mech.rotation = Math.atan2(pl.faceY, pl.faceX) + ROT_OFFSET.mech;
-    this.mech.tint = this.playerFlash > 0 ? 0xffb0a8 : 0xffffff;
+    this.mech.rotation = facing + yaw;
+    this.mech.tint = tint;
 
+    // --- turret ----------------------------------------------------------------------------
     const w = world.weaponCount > 0 ? world.weapons[0] : undefined;
     const tx = w?.turretX ?? pl.faceX;
     const ty = w?.turretY ?? pl.faceY;
-    this.barrel.position.set(px, py);
-    this.barrel.rotation = Math.atan2(ty, tx);
-    this.barrel.tint = this.playerFlash > 0 ? 0xffb0a8 : 0xffffff;
+    const aim = Math.atan2(ty, tx);
+    // RECOIL: the mount slides back along its own axis and returns. The shell is long gone by
+    // then - this is pure feedback, and it is the cheapest way to make firing feel like an event
+    // rather than a stream of sprites appearing at the muzzle.
+    const kick = this.turretKick > 0 ? (this.turretKick / TURRET_KICK_SEC) * TURRET_KICK_UNITS : 0;
+    this.barrel.position.set(px - tx * kick, py - ty * kick);
+    this.barrel.rotation = aim;
+    this.barrel.tint = tint;
   }
 
   private drawProjectiles(world: World, alpha: number): void {

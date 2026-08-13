@@ -91,6 +91,13 @@ export interface HeroDef {
   readonly identity: string;
   /** Sprite key produced by tools/prepare_assets.mjs - see docs/ASSET_MANIFEST.md. */
   readonly sprite: string;
+  /**
+   * How the chassis moves, which is the only thing the renderer needs to know about the art.
+   * `walk` advances the leg cycle by DISTANCE TRAVELLED, so a standing mech stands still instead
+   * of moon-walking. `hover` advances it on the clock as well, because a hover that goes
+   * completely still has landed. Must match `legs` in tools/make-mechs.mjs.
+   */
+  readonly gait: 'walk' | 'hover';
   readonly startingWeapon: WeaponId;
   /** Multipliers on the tuning base. Absent key = x1. Empty for every hero today. */
   readonly player: Readonly<Partial<Record<PlayerStatKey, number>>>;
@@ -119,6 +126,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Slate',
     identity: 'Light biped, twin gun pods. Opens with the Medium Laser.',
     sprite: 'mech_slate',
+    gait: 'walk',
     startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
@@ -128,6 +136,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Moss',
     identity: 'Light strider, rotary drums. Opens with the Short Laser.',
     sprite: 'mech_moss',
+    gait: 'walk',
     startingWeapon: 'laser-short',
     player: {},
     weapon: {},
@@ -137,6 +146,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Ember',
     identity: 'Light strider, one heavy cannon. Opens with the Long Laser.',
     sprite: 'mech_ember',
+    gait: 'walk',
     startingWeapon: 'laser-long',
     player: {},
     weapon: {},
@@ -146,6 +156,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Amber',
     identity: 'Heavy biped, one heavy cannon. Opens with the Cannon.',
     sprite: 'mech_amber',
+    gait: 'walk',
     startingWeapon: 'cannon',
     player: {},
     weapon: {},
@@ -155,6 +166,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Cobalt',
     identity: 'Heavy quad, twin gun pods. Opens with the Medium Laser.',
     sprite: 'mech_cobalt',
+    gait: 'walk',
     startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
@@ -164,6 +176,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Jade',
     identity: 'Heavy biped, forward claw arms. Opens with the Short Laser.',
     sprite: 'mech_jade',
+    gait: 'walk',
     startingWeapon: 'laser-short',
     player: {},
     weapon: {},
@@ -173,6 +186,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Rust',
     identity: 'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
     sprite: 'mech_rust',
+    gait: 'walk',
     startingWeapon: 'laser-long',
     player: {},
     weapon: {},
@@ -182,6 +196,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Brass',
     identity: 'Light hover, one heavy cannon. Opens with the Cannon.',
     sprite: 'mech_brass',
+    gait: 'hover',
     startingWeapon: 'cannon',
     player: {},
     weapon: {},
@@ -192,6 +207,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Onyx',
     identity: 'Heavy quad, boxed missile racks. Opens with the Short Missiles.',
     sprite: 'mech_onyx',
+    gait: 'walk',
     startingWeapon: 'missile-short',
     player: {},
     weapon: {},
@@ -201,6 +217,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Ash',
     identity: 'Light biped, boxed missile racks. Opens with the Short Missiles.',
     sprite: 'mech_ash',
+    gait: 'walk',
     startingWeapon: 'missile-short',
     player: {},
     weapon: {},
@@ -210,6 +227,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Vermilion',
     identity: 'Light hover, rotary drums. Opens with the Long Missiles.',
     sprite: 'mech_vermilion',
+    gait: 'hover',
     startingWeapon: 'missile-long',
     player: {},
     weapon: {},
@@ -219,6 +237,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Indigo',
     identity: 'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
     sprite: 'mech_indigo',
+    gait: 'walk',
     startingWeapon: 'missile-long',
     player: {},
     weapon: {},
@@ -228,6 +247,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Bone',
     identity: 'Light strider, twin gun pods. Opens with the Machine Gun.',
     sprite: 'mech_bone',
+    gait: 'walk',
     startingWeapon: 'machine-gun',
     player: {},
     weapon: {},
@@ -237,6 +257,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Copper',
     identity: 'Heavy quad, rotary drums. Opens with the Machine Gun.',
     sprite: 'mech_copper',
+    gait: 'walk',
     startingWeapon: 'machine-gun',
     player: {},
     weapon: {},
@@ -246,6 +267,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Plum',
     identity: 'Heavy biped, spine-slung artillery tube. Opens with the Heavy Artillery.',
     sprite: 'mech_plum',
+    gait: 'walk',
     startingWeapon: 'artillery',
     player: {},
     weapon: {},
@@ -255,6 +277,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     name: 'Fern',
     identity: 'Light hover, forward claw arms. Opens with the Heavy Artillery.',
     sprite: 'mech_fern',
+    gait: 'hover',
     startingWeapon: 'artillery',
     player: {},
     weapon: {},

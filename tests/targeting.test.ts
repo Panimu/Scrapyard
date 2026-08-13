@@ -50,6 +50,7 @@ const FIXTURE_HERO: HeroDef = {
   name: 'Test Chassis',
   identity: 'fixture',
   sprite: 'mech_3dgreen',
+  gait: 'walk' as const,
   startingWeapon: 'cannon',
   player: {},
   weapon: {},
