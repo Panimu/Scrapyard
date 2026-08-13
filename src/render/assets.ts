@@ -161,6 +161,24 @@ function spriteUrl(name: string): string {
 export async function loadGameTextures(
   onProgress?: (fraction: number) => void,
 ): Promise<GameTextures> {
+  // LOAD TEXTURES THROUGH `Image`, NOT WORKERS OR `fetch`. Pixi's default path is blocked twice
+  // over inside a sandboxed embed, and both failures hang rather than throw:
+  //
+  //   preferWorkers        decodes in a worker built from a `blob:` URL. Without `worker-src
+  //                        blob:` the worker is refused and `isImageBitmapSupported()` awaits a
+  //                        handshake that never arrives.
+  //   preferCreateImageBitmap
+  //                        falls back to `fetch(url)` even for a `data:` URI, which `connect-src`
+  //                        governs - and a strict embed sets `connect-src 'none'`.
+  //
+  // Turning both off takes the `new Image(); img.src = url` path, which is governed by `img-src`
+  // and is the most permissively treated way to get pixels into a page. Neither failure surfaced
+  // as a rejection: the loader simply never settled, progress sat at 0, and it looked exactly
+  // like a slow network. That is why this is pinned rather than left to the defaults.
+  //
+  // Cost is a few ms per sprite across the 71 we load, on a decode that happens once at boot.
+  Assets.setPreferences({ preferWorkers: false, preferCreateImageBitmap: false });
+
   const keys: string[] = [];
 
   const mechKeys = HERO_CATALOG.map((h) => h.sprite);

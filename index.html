@@ -82,16 +82,55 @@
         padding: env(safe-area-inset-top) env(safe-area-inset-right)
           env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
-      /* Shown until the renderer boots; src/main.ts removes it. */
+      /* Shown until the renderer boots; src/main.ts removes it.
+         Styles live inline in this file, not in styles.css, so the boot screen is painted from
+         the first HTML chunk - before any stylesheet or module has been fetched. A loading screen
+         that needs a download to appear is not a loading screen. */
       #boot {
         position: absolute;
         inset: 0;
-        display: grid;
-        place-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
         color: #7f8c9b;
-        font-size: 14px;
+        font-size: 13px;
         letter-spacing: 0.18em;
         text-transform: uppercase;
+        text-align: center;
+        padding: 0 32px;
+      }
+      #boot-bar {
+        width: min(260px, 62vw);
+        height: 6px;
+        border-radius: 999px;
+        background: #1b2027;
+        overflow: hidden;
+      }
+      /* Width is driven from the loader's real fraction. transform would be smoother, but width
+         keeps the fill's rounded right edge instead of scaling it into an ellipse. */
+      #boot-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #d9822b, #ffc247);
+        transition: width 140ms linear;
+      }
+      #boot-pct {
+        font-variant-numeric: tabular-nums;
+        color: #55606d;
+        font-size: 11px;
+      }
+      /* Only shown if the watchdog fires. */
+      #boot-help {
+        display: none;
+        max-width: 34ch;
+        line-height: 1.7;
+        color: #8a6a4a;
+        text-transform: none;
+        letter-spacing: 0.02em;
+        font-size: 12px;
       }
     </style>
   </head>
@@ -100,7 +139,12 @@
     <div id="app"></div>
     <!-- DOM overlay root: virtual stick, HUD, level-up cards, summary. -->
     <div id="ui"></div>
-    <div id="boot">Spinning up reactor</div>
+    <div id="boot">
+      <div id="boot-label">Spinning up reactor</div>
+      <div id="boot-bar"><div id="boot-fill"></div></div>
+      <div id="boot-pct">0%</div>
+      <div id="boot-help"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

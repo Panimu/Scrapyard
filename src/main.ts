@@ -59,9 +59,59 @@ async function boot(): Promise<void> {
   const params = new URLSearchParams(location.search);
   if (params.get('debug') === '1') state.settings.debug = true;
 
+  // ---------------------------------------------------------------------------------------
+  // Boot progress.
+  //
+  // The bar is DETERMINATE and driven by real work, not a timer: texture loading reports a true
+  // fraction, and the stages around it own fixed slices of the bar. A fake bar that fills on a
+  // timer is worse than no bar - it tells you everything is fine while the thing is wedged.
+  //
+  // A watchdog fires if the fraction has not moved for a while, because the failure this replaces
+  // was exactly that: a blocked API leaving the loader stuck at 0% forever, indistinguishable
+  // from a slow download.
+  // ---------------------------------------------------------------------------------------
+  const bootLabel = document.getElementById('boot-label');
+  const bootFill = document.getElementById('boot-fill');
+  const bootPct = document.getElementById('boot-pct');
+  const bootHelp = document.getElementById('boot-help');
+
+  let lastProgressAt = performance.now();
+  let bootFraction = 0;
+  let stalled = false;
+
   const setBootText = (text: string): void => {
-    if (bootEl !== null) bootEl.textContent = text;
+    if (bootLabel !== null) bootLabel.textContent = text;
   };
+
+  const setBootProgress = (fraction: number): void => {
+    // Never let the bar go backwards: a stage boundary that reported a lower number than the
+    // previous stage's tail would read as the load failing and restarting.
+    const f = Math.max(bootFraction, Math.min(1, Math.max(0, fraction)));
+    if (f > bootFraction) {
+      bootFraction = f;
+      lastProgressAt = performance.now();
+      if (stalled) {
+        stalled = false;
+        if (bootHelp !== null) bootHelp.style.display = 'none';
+      }
+    }
+    if (bootFill !== null) bootFill.style.width = `${(f * 100).toFixed(1)}%`;
+    if (bootPct !== null) bootPct.textContent = `${Math.round(f * 100)}%`;
+  };
+
+  const STALL_AFTER_MS = 9000;
+  const watchdog = window.setInterval(() => {
+    if (bootFraction >= 1 || performance.now() - lastProgressAt < STALL_AFTER_MS) return;
+    stalled = true;
+    if (bootHelp !== null) {
+      bootHelp.style.display = 'block';
+      bootHelp.textContent =
+        bootFraction === 0
+          ? 'Still waiting on the renderer. If this never moves, the browser is likely blocking WebGL or worker access — try opening it in a normal tab rather than an embedded viewer.'
+          : 'Loading has stalled part-way. Reloading usually clears it.';
+    }
+  }, 1000);
+  const stopWatchdog = (): void => window.clearInterval(watchdog);
 
   const app = new Application();
 
@@ -90,10 +140,16 @@ async function boot(): Promise<void> {
   // v8: app.canvas. `app.view` is the deprecated alias and still compiles, so nothing warns.
   host.appendChild(app.canvas);
 
+  // Renderer up: that is genuinely the first 12% of the wait on a phone.
+  setBootProgress(0.12);
+
   setBootText('Loading scrap');
+  // Textures own 12% -> 96%. The last 4% is renderer/UI construction below, so the bar cannot sit
+  // at 100% while there is still visible work to do.
   const textures = await loadGameTextures((p) => {
-    setBootText(`Loading scrap ${Math.round(p * 100)}%`);
+    setBootProgress(0.12 + p * 0.84);
   });
+  setBootProgress(0.96);
 
   const renderer = new GameRenderer(app, textures);
 
@@ -368,6 +424,8 @@ async function boot(): Promise<void> {
   // Go
   // ---------------------------------------------------------------------------------------
 
+  setBootProgress(1);
+  stopWatchdog();
   bootEl?.remove();
 
   const autoHero = Number.parseInt(params.get('hero') ?? '', 10);
