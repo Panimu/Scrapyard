@@ -3,16 +3,22 @@
  *
  * Eight because the art gives exactly eight top-down chassis in robot-pack.
  *
- * HERO VARIETY IS DEFERRED. Every mech in this catalog is mechanically IDENTICAL - same stats,
- * same gun, no traits. They are skins. Picking one changes what you look at and nothing else.
+ * STATS ARE STILL IDENTICAL ACROSS ALL EIGHT. The one thing that differs is the WEAPON each starts
+ * with, unlocked at tier 1 - which makes picking a mech a loadout decision rather than a cosmetic
+ * one, without opening the balance surface that eight distinct stat blocks would.
  *
- * That is a scope decision, not an oversight: differentiated heroes are a balance surface that
- * needs playtesting to be worth anything, and none of it is required to answer the only question
- * that matters right now, which is whether the core loop is fun. Shipping eight heroes that are
- * secretly the same is honest; shipping eight untested stat blocks and calling them designed is
- * not.
+ * THE PAINT TELLS YOU WHAT YOU ARE HOLDING. Beam colours and chassis colours are matched:
  *
- * WHEN VARIETY RETURNS, nothing structural has to change:
+ *     green chassis  -> Short Laser   (green beam)
+ *     blue chassis   -> Medium Laser  (blue beam)
+ *     red chassis    -> Long Laser    (red beam)
+ *     yellow chassis -> Cannon        (no laser is yellow, and the Cannon is the odd one out)
+ *
+ * Four weapons across eight chassis means each weapon is offered by two mechs - the plain finish
+ * and the shaded one. That pairing is memorable in a way an arbitrary assignment would not be: a
+ * player who has used the green mech once knows what the other green mech does.
+ *
+ * WHEN FULLER VARIETY RETURNS, nothing structural has to change:
  *   - `player` and `weapon` are already multiplier maps consumed by resolvePlayerStats /
  *     resolveWeaponStats. Fill them in and the difference is live.
  *   - `HeroTrait` and the HERO_TRAITS registry in data/traits.ts are already wired into
@@ -95,34 +101,34 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'slate',
     name: 'Slate',
-    identity: 'Standard chassis, grey plate.',
+    identity: 'Grey plate, blue beam. Opens with the Medium Laser.',
     sprite: 'mech_blue',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
   },
   {
     id: 'moss',
     name: 'Moss',
-    identity: 'Standard chassis, green plate.',
+    identity: 'Green plate, green beam. Opens with the Short Laser.',
     sprite: 'mech_green',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-short',
     player: {},
     weapon: {},
   },
   {
     id: 'ember',
     name: 'Ember',
-    identity: 'Standard chassis, red plate.',
+    identity: 'Red plate, red beam. Opens with the Long Laser.',
     sprite: 'mech_red',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-long',
     player: {},
     weapon: {},
   },
   {
     id: 'amber',
     name: 'Amber',
-    identity: 'Standard chassis, yellow plate.',
+    identity: 'Yellow plate. Opens with the Cannon.',
     sprite: 'mech_yellow',
     startingWeapon: 'cannon',
     player: {},
@@ -131,34 +137,34 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'cobalt',
     name: 'Cobalt',
-    identity: 'Shaded chassis, blue plate.',
+    identity: 'Shaded blue. Opens with the Medium Laser.',
     sprite: 'mech_3dblue',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-medium',
     player: {},
     weapon: {},
   },
   {
     id: 'jade',
     name: 'Jade',
-    identity: 'Shaded chassis, green plate.',
+    identity: 'Shaded green. Opens with the Short Laser.',
     sprite: 'mech_3dgreen',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-short',
     player: {},
     weapon: {},
   },
   {
     id: 'rust',
     name: 'Rust',
-    identity: 'Shaded chassis, red plate.',
+    identity: 'Shaded red. Opens with the Long Laser.',
     sprite: 'mech_3dred',
-    startingWeapon: 'cannon',
+    startingWeapon: 'laser-long',
     player: {},
     weapon: {},
   },
   {
     id: 'brass',
     name: 'Brass',
-    identity: 'Shaded chassis, yellow plate.',
+    identity: 'Shaded yellow. Opens with the Cannon.',
     sprite: 'mech_3dyellow',
     startingWeapon: 'cannon',
     player: {},
