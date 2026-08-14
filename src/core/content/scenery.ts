@@ -51,8 +51,38 @@ const SCENERY_FILL = 0.55;
 const RADIUS_MIN = 45;
 const RADIUS_MAX = 90;
 
-/** How many distinct pile sprites the renderer has. */
-export const SCENERY_VARIANTS = 4;
+/**
+ * How many distinct pile sprites the renderer has.
+ *
+ *   0 crushed cars        1 barrel cluster      2 girder heap
+ *   3 tyres and rubble    4 WRECKED ENEMIES     5 A WRECKED MECH
+ */
+export const SCENERY_VARIANTS = 6;
+
+export const SCRAP_ENEMY_WRECK = 4;
+export const SCRAP_MECH_WRECK = 5;
+
+/**
+ * Cumulative weights for the variant draw. NOT uniform, and the shape is the point.
+ *
+ * The last two are the yard's STORYTELLING, and story is worth less the more of it there is. A
+ * dead enemy hull says the horde has been coming through here for a long time and is common
+ * enough to be part of the furniture. A dead MECH says someone exactly like you stood here and
+ * lost - and at one pile in thirty three that is a thing you come across two or three times in a
+ * run and stop at. At one in six it would be wallpaper, and the yard would read as a graveyard
+ * for player mechs specifically, which is a different and much sillier place.
+ *
+ * The four junk variants stay dominant because the yard's job is to be a scrapyard first and a
+ * memorial second.
+ */
+const VARIANT_CDF: readonly number[] = Object.freeze([
+  0.24, // 0 crushed cars      24%
+  0.46, // 1 barrels           22%
+  0.68, // 2 girders           22%
+  0.88, // 3 tyres             20%
+  0.97, // 4 enemy wrecks       9%
+  1.0, // 5 mech wreck          3%
+]);
 
 /**
  * No scrap within this of the origin. The player starts at (0, 0) and must not open a run wedged
@@ -99,9 +129,14 @@ export function createScenery(seed: number): Scenery {
       const roll = rng.nextFloat();
       const jx = rng.nextRange(-SCENERY_JITTER, SCENERY_JITTER);
       const jy = rng.nextRange(-SCENERY_JITTER, SCENERY_JITTER);
-      const r = rng.nextRange(RADIUS_MIN, RADIUS_MAX);
-      const variant = rng.nextInt(SCENERY_VARIANTS);
+      let r = rng.nextRange(RADIUS_MIN, RADIUS_MAX);
+      const variant = pickVariant(rng.nextFloat());
       if (roll >= SCENERY_FILL) continue;
+
+      // A dead mech is a LANDMARK, so it is never one of the small ones. Biased rather than drawn
+      // from its own range, which would cost a second draw and shift the stream: the size roll has
+      // already happened, this only refuses to let it come out puny.
+      if (variant === SCRAP_MECH_WRECK && r < RADIUS_MAX * 0.82) r = RADIUS_MAX * 0.82;
 
       const cx = -ARENA_HALF + (col + 0.5) * SCENERY_CELL + jx;
       const cy = -ARENA_HALF + (row + 0.5) * SCENERY_CELL + jy;
@@ -120,6 +155,17 @@ export function createScenery(seed: number): Scenery {
   }
 
   return s;
+}
+
+/**
+ * Variant for a roll in [0, 1). Linear scan over six entries - a binary search would be slower
+ * and this runs 256 times, once, at world creation.
+ */
+function pickVariant(roll: number): number {
+  for (let i = 0; i < VARIANT_CDF.length; i++) {
+    if (roll < VARIANT_CDF[i]) return i;
+  }
+  return VARIANT_CDF.length - 1;
 }
 
 /** Cell index for a world coordinate, clamped to the grid. */

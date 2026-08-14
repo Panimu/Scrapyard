@@ -1,5 +1,5 @@
 /**
- * `npm run scrap` - draws the four scrap piles that stand in the yard, into public/sprites/.
+ * `npm run scrap` - draws the six scrap piles that stand in the yard, into public/sprites/.
  *
  * WHERE THE ART COMES FROM. Kenney has no junkyard pack, and the search was not a quick one:
  * sci-fi-rts ships rocks, crystals and buildings; top-down-shooter's 524 tiles are floors and
@@ -13,8 +13,15 @@
  * directly above is a shape nobody has a stock sprite for, and drawing it lets it match the mechs
  * it will be standing next to.
  *
+ * TWO OF THE SIX ARE THE GAME'S OWN SPRITES, DEAD. Variant 4 is wrecked enemy vehicles and
+ * variant 5 is a wrecked player mech, composited from the very same PNGs the renderer draws live
+ * and then burned: desaturated, darkened, tilted off their axis, cracked open and scorched. That
+ * is the cheapest storytelling in the project and the most effective - a hull you have been
+ * shooting all run, lying still, says what the yard is without a line of text. The mech is drawn
+ * from the same art the player is looking down at, which is the whole point of it.
+ *
  * ---------------------------------------------------------------------------------------------
- * FOUR PILES, ALL THE SAME SIZE, AND WHY THEY ARE ROUND
+ * SIX PILES, ALL THE SAME SIZE, AND WHY THEY ARE ROUND
  * ---------------------------------------------------------------------------------------------
  * The simulation models every pile as ONE CIRCLE (content/scenery.ts) - that is what makes the
  * collision resolve in a handful of instructions inside the movement loop, and what lets a laser
@@ -46,7 +53,7 @@ const PX = 2;
 const NOMINAL_RADIUS = 96;
 const S = NOMINAL_RADIUS * PX;
 
-const DRAW = `(variant, barrels) => {
+const DRAW = `(variant, barrels, hulls, mechs) => {
   const S = ${S}, PX = ${PX};
   const c = document.createElement('canvas');
   c.width = S; c.height = S;
@@ -99,6 +106,21 @@ const DRAW = `(variant, barrels) => {
     g.fillStyle = fill; g.fillRect(-w / 2, -h / 2, w, h);
     g.fillStyle = edge ?? STEEL_HI; g.fillRect(-w / 2, -h / 2, w, Math.max(1.5, h * 0.14));
     g.restore();
+  };
+
+  /** Scorch: a soft black bloom with soot flecks, for anything that stopped by burning. */
+  const burn = (px, py, rad) => {
+    const gr = g.createRadialGradient(px, py, rad * 0.15, px, py, rad);
+    gr.addColorStop(0, 'rgba(12,10,8,0.42)');
+    gr.addColorStop(0.6, 'rgba(12,10,8,0.18)');
+    gr.addColorStop(1, 'rgba(12,10,8,0)');
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(px, py, rad, 0, 6.284); g.fill();
+    for (let i = 0; i < 14; i++) {
+      const a = rnd() * 6.284, d = Math.sqrt(rnd()) * rad;
+      g.fillStyle = 'rgba(10,9,7,0.55)';
+      g.fillRect(px + Math.cos(a) * d, py + Math.sin(a) * d, rr(1, 3), rr(1, 3));
+    }
   };
 
   // --- variant 0: CRUSHED CARS ---------------------------------------------------------------
@@ -199,6 +221,73 @@ const DRAW = `(variant, barrels) => {
     }
   }
 
+  // --- variant 4: WRECKED ENEMIES ------------------------------------------------------------
+  // Two or three vehicle hulls off the live atlas, dead. Burnt and tilted off their own axis,
+  // because a hull sitting square reads as a parked one - a wreck has to be at an angle nothing
+  // drives at.
+  if (variant === 4) {
+    const lay = [[-0.19, -0.15, 0.9, 0.92], [0.20, 0.02, 2.35, 0.84], [-0.02, 0.24, -0.7, 0.66]];
+    for (let i = 0; i < lay.length; i++) {
+      const [fx, fy, rot, sc] = lay[i];
+      const px = CX + fx * S, py = CY + fy * S;
+      const img = hulls[i % hulls.length];
+      const w = R * 1.05 * sc, h = R * 1.05 * sc;
+      g.save();
+      g.translate(px, py); g.rotate(rot);
+      g.globalAlpha = 0.45;
+      g.filter = 'blur(2px) brightness(0)';
+      g.drawImage(img, -w / 2 + 3, -h / 2 + 4, w, h);   // its own shadow, from its own shape
+      g.filter = 'none'; g.globalAlpha = 1;
+      // Dead paint: most of the colour gone, most of the light gone.
+      g.filter = 'grayscale(0.5) brightness(0.72) contrast(1.05)';
+      g.drawImage(img, -w / 2, -h / 2, w, h);
+      g.filter = 'none';
+      g.restore();
+      burn(px, py, R * 0.36 * sc);
+    }
+  }
+
+  // --- variant 5: A WRECKED MECH -------------------------------------------------------------
+  // One chassis, on its side, with a leg torn off and thrown clear. Rarest thing in the yard.
+  if (variant === 5) {
+    const body = mechs[0], legs = mechs[1];
+    const w = R * 1.5, h = (R * 1.5 * 172) / 148;   // the mech canvas is taller than it is wide
+    g.save();
+    g.translate(CX - R * 0.05, CY + R * 0.02); g.rotate(-0.42);
+    g.globalAlpha = 0.5; g.filter = 'blur(3px) brightness(0)';
+    g.drawImage(body, -w / 2 + 4, -h / 2 + 5, w, h);
+    g.filter = 'none'; g.globalAlpha = 1;
+    g.filter = 'grayscale(0.45) brightness(0.68) contrast(1.06)';
+    g.drawImage(legs, -w / 2, -h / 2, w, h);
+    g.drawImage(body, -w / 2, -h / 2, w, h);
+    g.filter = 'none';
+    g.restore();
+
+    // The torn-off leg, well clear of the hull and at a wrong angle - the detail that says this
+    // did not simply stop, it came apart.
+    g.save();
+    g.translate(CX + R * 0.42, CY - R * 0.40); g.rotate(1.9);
+    g.globalAlpha = 0.45; g.filter = 'blur(2px) brightness(0)';
+    g.drawImage(legs, -w * 0.30 + 3, -h * 0.30 + 4, w * 0.6, h * 0.6);
+    g.filter = 'none'; g.globalAlpha = 1;
+    g.filter = 'grayscale(0.5) brightness(0.62)';
+    g.drawImage(legs, -w * 0.30, -h * 0.30, w * 0.6, h * 0.6);
+    g.filter = 'none';
+    g.restore();
+
+    burn(CX - R * 0.02, CY + R * 0.05, R * 0.52);
+    // Cockpit glass, thrown forward. The one bright thing on the whole pile, and the only colour
+    // that survives the burn - so the eye lands on the part that used to be a person's window.
+    for (let i = 0; i < 5; i++) {
+      const a = rnd() * 6.284, d = rr(R * 0.35, R * 0.72);
+      g.save(); g.translate(CX + Math.cos(a) * d, CY + Math.sin(a) * d); g.rotate(rnd() * 3.14);
+      g.globalAlpha = rr(0.5, 0.85); g.fillStyle = '#5fa8d8';
+      g.fillRect(-rr(2, 5), -rr(1.5, 3), rr(5, 10), rr(3, 6));
+      g.restore();
+    }
+    g.globalAlpha = 1;
+  }
+
   return c.toDataURL('image/png');
 }`;
 
@@ -218,12 +307,21 @@ function resolveChromium() {
 }
 
 async function main() {
+  const uri = async (p) => `data:image/png;base64,${(await readFile(p)).toString('base64')}`;
+
   const barrelFiles = ['barrelGreen_up.png', 'barrelRed_up.png', 'barrelGrey_up.png'];
   const barrelUris = [];
-  for (const f of barrelFiles) {
-    const buf = await readFile(join(KENNEY, f));
-    barrelUris.push(`data:image/png;base64,${buf.toString('base64')}`);
+  for (const f of barrelFiles) barrelUris.push(await uri(join(KENNEY, f)));
+
+  // THE GAME'S OWN SPRITES, read straight out of public/sprites - so a wreck can never drift out
+  // of step with the thing it is a wreck OF. Three big vehicle hulls (long truck, tank, rig) in
+  // two faction paints, and one chassis with a leg frame.
+  const SPRITES = join(ROOT, 'public', 'sprites');
+  const hullUris = [];
+  for (const f of ['enemy_09', 'enemy_19', 'enemy_11']) {
+    hullUris.push(await uri(join(SPRITES, `${f}.png`)));
   }
+  const mechUris = [await uri(join(SPRITES, 'mech_rust.png')), await uri(join(SPRITES, 'mech_rust_w2.png'))];
 
   const { chromium } = await import('@playwright/test');
   const launchOptions = {};
@@ -236,23 +334,29 @@ async function main() {
   await mkdir(OUT_DIR, { recursive: true });
 
   // Decode the Kenney drums once, into page scope, so each variant can composite them.
-  await page.evaluate(async (uris) => {
-    window.__barrels = await Promise.all(
-      uris.map(
-        (u) =>
-          new Promise((ok, fail) => {
-            const img = new Image();
-            img.onload = () => ok(img);
-            img.onerror = fail;
-            img.src = u;
-          }),
-      ),
-    );
-  }, barrelUris);
+  await page.evaluate(async (sets) => {
+    const load = (uris) =>
+      Promise.all(
+        uris.map(
+          (u) =>
+            new Promise((ok, fail) => {
+              const img = new Image();
+              img.onload = () => ok(img);
+              img.onerror = fail;
+              img.src = u;
+            }),
+        ),
+      );
+    window.__barrels = await load(sets.barrels);
+    window.__hulls = await load(sets.hulls);
+    window.__mechs = await load(sets.mechs);
+  }, { barrels: barrelUris, hulls: hullUris, mechs: mechUris });
 
   let bytes = 0;
-  for (let v = 0; v < 4; v++) {
-    const dataUrl = await page.evaluate(`(${DRAW})(${v}, window.__barrels)`);
+  for (let v = 0; v < 6; v++) {
+    const dataUrl = await page.evaluate(
+      `(${DRAW})(${v}, window.__barrels, window.__hulls, window.__mechs)`,
+    );
     const buf = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
     await writeFile(join(OUT_DIR, `scrap_${v}.png`), buf);
     bytes += buf.length;
@@ -260,7 +364,7 @@ async function main() {
   }
 
   await browser.close();
-  console.log(`\n4 sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
+  console.log(`\n6 sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 
 void main();
