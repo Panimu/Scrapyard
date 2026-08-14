@@ -4,8 +4,10 @@
  * It exists to make `npm run sim` a MEASUREMENT rather than a smoke test. Invariant L (pacing)
  * and Invariant T (director tracking) are both asserted against this policy, so it must be:
  *   - deterministic (no Math.random, no clock - it is a pure function of World);
- *   - representative (it kites, it collects, it takes damage upgrades when offered nothing
- *     offensive) - a bot that plays unrealistically well or badly makes the pacing numbers lie;
+ *   - representative (it SKIRTS the horde rather than fleeing it, it collects, it takes damage
+ *     upgrades when offered nothing offensive) - a bot that plays unrealistically well or badly
+ *     makes the pacing numbers lie, and a bot that keeps the field at arm's length measures the
+ *     short-ranged half of the catalog on a field it emptied on purpose. See PANIC_DIST;
  *   - stable, because changing it invalidates every recorded pacing baseline.
  *
  * It lives in src/sim, not src/core: it is a test fixture, not a game rule.
@@ -30,9 +32,37 @@ const AWARENESS_RADIUS_SQ = AWARENESS_RADIUS * AWARENESS_RADIUS;
 const FLEE_SOFTENING = 40;
 /** How hard to chase gems relative to fleeing. Under ~1 the bot never suicides for a gem. */
 const GEM_WEIGHT = 0.6;
-/** Sideways component, so the bot ORBITS the horde instead of sprinting into fresh spawns
- *  (the director biases spawns to where you are heading - running forward is not free). */
-const ORBIT_WEIGHT = 0.35;
+/**
+ * THE SKIRT. The bot holds a STANDOFF DISTANCE from the nearest body and travels SIDEWAYS along
+ * the crowd rather than away from it - which is what a player who is winning actually does.
+ *
+ * The old policy was a pure flee: every body pushed the bot directly away, and the sideways term
+ * was a 0.35 garnish on top. That bot dodges beautifully and measures the game badly. Fleeing
+ * efficiently means the nearest enemy is as far away as the bot can make it, which is exactly the
+ * arrangement in which a 130 u Machine Gun has nothing to shoot and a 75 u blast lands on empty
+ * ground - so the short-ranged half of the catalog was being measured on a field its owner had
+ * deliberately emptied.
+ *
+ * Three bands, and the radial term is SIGNED:
+ *
+ *   inside PANIC_DIST    break away. A player does run when something is on top of them, and a
+ *                        bot that never does dies to the first elite and measures nothing after.
+ *   at SKIRT_DIST        radial term is zero: pure tangential travel, circling the horde's edge.
+ *   beyond it            the term goes NEGATIVE and the bot moves back IN. This is the half the
+ *                        old policy had no way to express, and it is what keeps the fight inside
+ *                        the weapons' reach instead of at the far end of the yard.
+ *
+ * THE STANDOFF WIDENS AS THE HULL GOES DOWN, between SKIRT_DIST and SKIRT_DIST_HURT. It is the
+ * one piece of "smart" here: a healthy player leans in and a hurt one backs off, and without it a
+ * bot that skirts is simply a bot that dies sooner.
+ */
+const PANIC_DIST = 46;
+const SKIRT_DIST = 96;
+const SKIRT_DIST_HURT = 190;
+/** Ceiling on the inward term, so re-engaging is a drift back in, never a charge. */
+const APPROACH_MAX = 0.55;
+/** Sideways weight. At 1.0 against a radial term of 0, the bot travels purely along the crowd. */
+const SKIRT_WEIGHT = 1;
 const GEM_SEEK_RADIUS = 260;
 const GEM_SEEK_RADIUS_SQ = GEM_SEEK_RADIUS * GEM_SEEK_RADIUS;
 
@@ -85,9 +115,11 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
   const px = world.player.x;
   const py = world.player.y;
 
-  // --- flee: inverse-distance-weighted sum of "away from that thing" ---------------------
+  // --- threat: inverse-distance-weighted sum of "away from that thing", plus how near the
+  // --- nearest body actually is, which is what the skirt is measured against.
   let fleeX = 0;
   let fleeY = 0;
+  let nearest = Infinity;
   const e = world.enemies;
   for (let d = 0; d < e.count; d++) {
     if ((e.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
@@ -96,6 +128,9 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
     const d2 = dx * dx + dy * dy;
     if (d2 > AWARENESS_RADIUS_SQ || d2 === 0) continue;
     const dist = Math.sqrt(d2);
+    // WEIGHTED by rank for the DIRECTION, but the standoff is measured off the raw nearest body:
+    // a swarmer with its teeth in you is as much a reason to move as a boss at the same distance.
+    if (dist < nearest) nearest = dist;
     const ef = e.flags[d];
     const pressure =
       RANK_FLEE_WEIGHT[(ef & ENEMY_FLAG_BOSS) !== 0 ? 2 : (ef & ENEMY_FLAG_ELITE) !== 0 ? 1 : 0];
@@ -133,9 +168,21 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
   if (fleeLen > 1e-6) {
     const nx = fleeX / fleeLen;
     const ny = fleeY / fleeLen;
-    // Perpendicular to the flee direction: the orbit component.
-    mx = nx + gemX * GEM_WEIGHT + -ny * ORBIT_WEIGHT;
-    my = ny + gemY * GEM_WEIGHT + nx * ORBIT_WEIGHT;
+
+    // THE STANDOFF the bot is trying to hold, widened as the hull goes down.
+    const hpFrac = clamp01(world.player.hp / (world.player.stats.maxHp || 1));
+    const skirt = SKIRT_DIST_HURT + (SKIRT_DIST - SKIRT_DIST_HURT) * hpFrac;
+
+    // SIGNED radial: +1 with something in your face, 0 at the standoff, negative beyond it.
+    let radial = (skirt - nearest) / (skirt - PANIC_DIST);
+    if (radial > 1) radial = 1;
+    if (radial < -APPROACH_MAX) radial = -APPROACH_MAX;
+
+    // Perpendicular to the threat direction: the skirt itself. One handedness, always, because a
+    // sign that flipped on some condition would make the bot jitter on the boundary and put a
+    // discontinuity in the middle of every pacing number.
+    mx = nx * radial + gemX * GEM_WEIGHT + -ny * SKIRT_WEIGHT;
+    my = ny * radial + gemY * GEM_WEIGHT + nx * SKIRT_WEIGHT;
   } else {
     // Nothing nearby: go get the gem, or drift in a fixed direction so the run still travels
     // (a stationary bot would sit inside its own spawn ring and never see fresh terrain).
@@ -173,6 +220,10 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
  * matters and then commits, rather than drifting inward across the whole yard and never sampling
  * the perimeter at all - the fence still has to be somewhere the measurements go.
  */
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
 function wallPush(v: number): number {
   const slack = ARENA_HALF - Math.abs(v);
   if (slack >= WALL_FEEL) return 0;
