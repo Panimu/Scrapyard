@@ -11,6 +11,8 @@
  */
 
 import {
+  CHEST_MAX_PAYOUT,
+  CHEST_REELS,
   DT,
   ENEMY_CAP,
   EVENT_RING_CAPACITY,
@@ -46,6 +48,7 @@ import {
 import { createRngStreams } from './rng.js';
 import { createSpatialHash, rebuildSpatialHash } from './spatial/hashGrid.js';
 import {
+  RUN_PHASE_CHEST,
   RUN_PHASE_DEAD,
   RUN_PHASE_INTRO,
   RUN_PHASE_LEVEL_UP,
@@ -242,6 +245,12 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
     scenery: createScenery(config.seed),
+    chest: {
+      reels: new Int32Array(CHEST_REELS).fill(-1),
+      payout: 0,
+      grants: new Int32Array(CHEST_MAX_PAYOUT).fill(-1),
+      opened: 0,
+    },
     director: createDirector(),
     difficulty: {
       hpRamp: 1,
@@ -265,6 +274,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       credits: 0,
       consumables: 0,
       barrelsBroken: 0,
+      chests: 0,
       // Sized from the INJECTED catalog, not the shipping one: a fixture catalog with two weapons
       // gets a two-entry breakdown rather than an eight-entry array with six permanent zeroes.
       damageByWeapon: new Float64Array(catalogs.weapons.length),
@@ -404,7 +414,10 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
     return;
   }
 
-  if (world.phase === RUN_PHASE_LEVEL_UP) {
+  // A CHEST FREEZES THE WORLD EXACTLY AS A CARD DOES, and shares the card's branch for exactly
+  // that reason: the reels are spinning, forty enemies are standing mid-stride, and the only thing
+  // the simulation has left to do is wait for the input that says the animation has finished.
+  if (world.phase === RUN_PHASE_LEVEL_UP || world.phase === RUN_PHASE_CHEST) {
     // The world is frozen mid-stride while the card is open: forty enemies stand there
     // menacingly and the renderer keeps drawing at 60 fps with a frozen interpolation alpha.
     // Only progression runs, and it consumes input.chooseIndex.

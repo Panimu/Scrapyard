@@ -291,6 +291,12 @@ function printSummary(
   // Barrels and what came out of them. Only when one was actually broken - the reference bot does
   // not aim at scenery, so this line is a measure of how much a run BLUNDERS into the furniture,
   // which is exactly the number worth watching while the drop rates are being tuned.
+  // Chests are the one reward the bot can genuinely miss - it does not detour for pickups - so
+  // "bosses killed" against "chests opened" is the number that says how much of this feature a run
+  // actually saw.
+  if (s.chests > 0 || s.killsByRank[2] > 0) {
+    console.log(`  chests            ${s.chests} opened, from ${s.killsByRank[2]} boss kills`);
+  }
   if (s.barrelsBroken > 0) {
     console.log(
       `  barrels           ${s.barrelsBroken} broken, ${s.consumables} taken, ${s.credits} credits`,

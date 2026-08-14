@@ -39,7 +39,12 @@ import {
   ENEMY_FLAG_DEAD,
   ENEMY_FLAG_ELITE,
 } from '../src/core/entity/enemyPool.js';
-import { RUN_PHASE_LEVEL_UP, RUN_PHASE_RUNNING, type World } from '../src/core/types.js';
+import {
+  RUN_PHASE_CHEST,
+  RUN_PHASE_LEVEL_UP,
+  RUN_PHASE_RUNNING,
+  type World,
+} from '../src/core/types.js';
 import { createWorld, stepWorld } from '../src/core/world.js';
 
 const T = DEFAULT_TUNING.director;
@@ -64,7 +69,8 @@ function run(w: World, sec: number, onTick?: (w: World) => void): void {
   const ticks = Math.round(sec / DT);
   for (let i = 0; i < ticks; i++) {
     w.player.hp = w.player.stats.maxHp;
-    FRAME.chooseIndex = w.phase === RUN_PHASE_LEVEL_UP ? 0 : -1;
+    // A chest freezes the clock until it is acknowledged, exactly as a card does.
+    FRAME.chooseIndex = w.phase === RUN_PHASE_LEVEL_UP || w.phase === RUN_PHASE_CHEST ? 0 : -1;
     stepWorld(w, FRAME);
     onTick?.(w);
   }

@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T11:16Z',
+    title: 'Bosses drop a Cyber Chest',
+    notes: [
+      'Kill a boss and it leaves a chest behind. Walk onto it and the yard stops dead while three reels spin.',
+      'The reels carry an icon for every weapon and every passive - amber for guns, blue for systems - and they only ever land on something you can actually take.',
+      'WHAT YOU GET IS WHAT YOU SPUN. Three of a kind pays five power-ups; a pair with a third of the same colour pays four; a pair pays three; three different symbols of the same colour pay two; anything else pays one. The symbols you watched land are the first upgrades you receive.',
+      'Each power-up is a full level-up card applied on the spot - a new gun, a tier on one you carry, a passive. You do not choose them. That is the trade: a chest gives you more than a level-up ever will, and gives you no say in it.',
+      'Every boss drops one, every time. There are seven bosses in a run.',
+    ],
+  },
+  {
     at: '2026-08-14T10:28Z',
     title: 'Credits are kept between runs',
     notes: [

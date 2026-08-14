@@ -220,6 +220,17 @@ export const SPATIAL_CELL_SIZE = 64;
 /** Power of two - buckets are masked, not modulo'd. */
 export const SPATIAL_BUCKET_COUNT = 4096;
 
+/**
+ * THE CYBER CHEST - the slot machine a dead boss leaves behind.
+ *
+ * Three reels, and a spin pays between one and five power-ups. Both numbers are simulation facts
+ * rather than presentation ones: the sim decides where the reels land and how many upgrades that
+ * is worth, and the overlay animates toward a result it was handed. A slot machine whose outcome
+ * were decided by the animation would be a slot machine that could not be replayed.
+ */
+export const CHEST_REELS = 3;
+export const CHEST_MAX_PAYOUT = 5;
+
 /** Seconds of playable calm before the director starts. runSec stays 0 throughout. */
 export const INTRO_SEC = 3;
 /** The Scraplord walks in at 15:00. */

@@ -91,19 +91,24 @@
  * clock alone ends it.
  */
 
-import { MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../constants.js';
+import {
+  CHEST_REELS, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../constants.js';
 import { xpToNextLevel } from '../config/tuning.js';
+import type { Rng } from '../rng.js';
 import type { WeaponId } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveWeaponStats } from '../data/stats.js';
 import { isEnemyAlive } from '../entity/enemyPool.js';
 import type { EnemyHandle } from '../entity/handle.js';
 import {
+  EV_CHEST_CLOSED,
+  EV_CHEST_OPENED,
   EV_LEVEL_UP,
   EV_PHASE_CHANGED,
   EV_UPGRADE_TAKEN,
   pushEvent,
 } from '../events/ring.js';
 import {
+  RUN_PHASE_CHEST,
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_RUNNING,
   RUN_PHASE_VICTORY,
@@ -111,6 +116,10 @@ import {
 } from '../types.js';
 
 export function updateProgression(world: World, dt: number): void {
+  if (world.phase === RUN_PHASE_CHEST) {
+    settleChest(world);
+    return;
+  }
   if (world.phase === RUN_PHASE_LEVEL_UP) {
     serveCard(world);
     return;
@@ -228,9 +237,25 @@ function serveCard(world: World): void {
 function applyChoice(world: World, choiceIndex: number): boolean {
   const lu = world.levelUp;
   if (choiceIndex < 0 || choiceIndex >= lu.offerCount) return false;
-
   const idx = lu.offers[choiceIndex];
   if (idx < 0) return false;
+  return applyUpgrade(world, idx, choiceIndex);
+}
+
+/**
+ * Applies ONE upgrade by CATALOG index, wherever it came from.
+ *
+ * Split out of `applyChoice` when the Cyber Chest arrived: a chest grants upgrades that were never
+ * on a card, so the "which of the three did you tap" step and the "make this upgrade real" step
+ * had to stop being the same function. Everything below the split - the install-before-resolve
+ * ordering, the shield-layer grant, the max-HP heal, the weapon re-resolve - is identical for both
+ * routes and must stay that way, because a chest that levelled a weapon differently from a card
+ * would be a second progression system pretending to be the first.
+ *
+ * `slot` is only carried into the event for the UI; -1 means "not from a card".
+ */
+function applyUpgrade(world: World, idx: number, slot: number): boolean {
+  const lu = world.levelUp;
   const def = world.upgradeCatalog[idx];
   if (def === undefined) return false;
   if (lu.stacks[idx] >= def.maxStacks) return false;
@@ -297,7 +322,7 @@ function applyChoice(world: World, choiceIndex: number): boolean {
     idx,
     lu.stacks[idx],
     lu.picksTaken,
-    choiceIndex,
+    slot,
   );
   return true;
 }
@@ -537,4 +562,179 @@ function checkVictory(world: World): boolean {
   world.phase = RUN_PHASE_VICTORY;
   pushEvent(world.events, EV_PHASE_CHANGED, world.tick, RUN_PHASE_VICTORY, 0, 0, 0);
   return true;
+}
+
+// -------------------------------------------------------------------------------------------
+// The Cyber Chest
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Spins a chest and freezes the world. Called from S10 the tick the player walks onto one.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE SIMULATION DECIDES, THE OVERLAY ANIMATES
+ * ---------------------------------------------------------------------------------------------
+ * Everything about the spin is settled here, before a frame of animation has drawn: where each
+ * reel lands, what that combination pays, and exactly which upgrades are coming. The overlay is
+ * handed the answer and spends two seconds arriving at it. That ordering is not a nicety - a slot
+ * machine whose outcome came out of the animation could not be replayed, and would have put a game
+ * rule in the render layer.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE PAYOUT TABLE
+ * ---------------------------------------------------------------------------------------------
+ *      three of a kind                     5
+ *      a pair, third the same TYPE         4
+ *      a pair                              3
+ *      all different, all the same type    2
+ *      anything else                       1
+ *
+ * "Type" is weapon-vs-passive, which is the split the reels already show in their colour, so a
+ * player reads their payout off the icons before the number appears. It also means the floor is
+ * ONE - a chest is never nothing, because a boss is the hardest thing in a cycle and walking away
+ * from one with a blank would be a punishment for winning.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THE REELS ARE DRAWN FROM WHAT YOU CAN ACTUALLY TAKE
+ * ---------------------------------------------------------------------------------------------
+ * Every symbol comes from the OFFERABLE pool - the same eligibility test a level-up card uses - so
+ * a reel can never land on a weapon you have no slot for or a tier you already maxed. The symbols
+ * are then GRANTED, in the order they landed, before the payout is topped up with fresh rolls. The
+ * icons a player watched stop are the upgrades they are about to receive, which is the only thing
+ * that makes watching them worth doing.
+ *
+ * ROLLED ON `rng.loot`, not `rng.upgrade`. A chest is loot. Keeping it off the upgrade stream is
+ * what guarantees that opening one cannot change which three cards a later level-up offers.
+ */
+export function openChest(world: World): void {
+  const chest = world.chest;
+  const catalog = world.upgradeCatalog;
+  const rng = world.rng.loot;
+
+  const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+  const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
+  const unarmed = world.weaponCount === 0;
+
+  chest.reels.fill(-1);
+  chest.grants.fill(-1);
+  chest.payout = 0;
+
+  // `filled: 0` on every draw: the card's no-duplicates rule is the CARD's, and a slot machine
+  // that could not show the same symbol twice could never pay a jackpot.
+  for (let r = 0; r < CHEST_REELS; r++) {
+    chest.reels[r] = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
+  }
+
+  // A pool with nothing left in it. Only reachable with every weapon slot full and every held
+  // upgrade at tier 7, which is a won run - the chest opens, shows blanks and pays nothing.
+  if (chest.reels[0] < 0) {
+    world.phase = RUN_PHASE_CHEST;
+    pushEvent(world.events, EV_CHEST_OPENED, world.tick, world.player.x, world.player.y, 0, 0);
+    return;
+  }
+
+  chest.payout = payoutFor(chest.reels, catalog);
+
+  // The symbols first, in the order they landed, then fresh rolls to make up the number. Duplicate
+  // symbols are not skipped: a jackpot of three Long Lasers grants three tiers of Long Laser,
+  // which is exactly what the player was hoping for when the third reel stopped.
+  let n = 0;
+  for (let r = 0; r < CHEST_REELS && n < chest.payout; r++) {
+    if (chest.reels[r] >= 0) chest.grants[n++] = chest.reels[r];
+  }
+  while (n < chest.payout) {
+    const idx = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
+    if (idx < 0) break;
+    chest.grants[n++] = idx;
+  }
+  chest.payout = n;
+
+  chest.opened++;
+  world.stats.chests++;
+  world.phase = RUN_PHASE_CHEST;
+  pushEvent(
+    world.events,
+    EV_CHEST_OPENED,
+    world.tick,
+    world.player.x,
+    world.player.y,
+    chest.payout,
+    chest.opened,
+  );
+}
+
+/**
+ * One weighted draw from the offerable pool, or -1 if nothing is eligible. Mirrors the weighted
+ * walk in `generateOffers` exactly, minus the card's distinctness rule.
+ */
+function rollOfferable(
+  world: World,
+  rng: Rng,
+  weaponsFull: boolean,
+  passivesFull: boolean,
+  unarmed: boolean,
+): number {
+  const catalog = world.upgradeCatalog;
+  let total = 0;
+  let last = -1;
+  for (let i = 0; i < catalog.length; i++) {
+    if (!isOfferable(world, i, 0, weaponsFull, passivesFull, unarmed)) continue;
+    const w = catalog[i].weight;
+    if (w > 0) total += w;
+    last = i;
+  }
+  if (last < 0) return -1;
+  if (total <= 0) return last;
+
+  let target = rng.nextFloat() * total;
+  for (let i = 0; i < catalog.length; i++) {
+    if (!isOfferable(world, i, 0, weaponsFull, passivesFull, unarmed)) continue;
+    const w = catalog[i].weight;
+    if (w <= 0) continue;
+    if (target < w) return i;
+    target -= w;
+  }
+  return last;
+}
+
+/** The payout table at the top of this section, applied to three landed symbols. */
+function payoutFor(reels: Int32Array, catalog: World['upgradeCatalog']): number {
+  const a = reels[0];
+  const b = reels[1];
+  const c = reels[2];
+  if (a === b && b === c) return 5;
+
+  const kindOf = (i: number): string => catalog[i]?.kind ?? '';
+  const ka = kindOf(a);
+  const kb = kindOf(b);
+  const kc = kindOf(c);
+  const sameType = ka === kb && kb === kc;
+
+  const pair = a === b || b === c || a === c;
+  if (pair) return sameType ? 4 : 3;
+  return sameType ? 2 : 1;
+}
+
+/**
+ * Waits for the input that says the animation is over, then makes the spin real.
+ *
+ * THE GRANTS LAND ON THE WAY OUT, not on the way in, so the HUD's new weapon chip and the mech's
+ * new shield rim appear as the overlay closes rather than behind it. `chooseIndex >= 0` is the
+ * acknowledgement - the same field a card uses, so the InputFrame and therefore the replay format
+ * are untouched by this whole feature.
+ */
+function settleChest(world: World): void {
+  if (world.input.chooseIndex < 0) return;
+
+  const chest = world.chest;
+  for (let i = 0; i < chest.payout; i++) {
+    const idx = chest.grants[i];
+    if (idx >= 0) applyUpgrade(world, idx, -1);
+  }
+
+  chest.payout = 0;
+  chest.reels.fill(-1);
+  chest.grants.fill(-1);
+  world.phase = RUN_PHASE_RUNNING;
+  pushEvent(world.events, EV_CHEST_CLOSED, world.tick, world.player.x, world.player.y, 0, 0);
 }

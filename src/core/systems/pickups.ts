@@ -53,9 +53,11 @@ import { ARENA_HALF, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
 import { destroyScenery, destructibleOverlap } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
+import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
 import {
   PICKUP_FLAG_AUTO,
   PICKUP_FLAG_DEAD,
+  PICKUP_KIND_CHEST,
   PICKUP_KIND_CREDIT,
   PICKUP_KIND_GEM,
   PICKUP_KIND_MAGNET,
@@ -70,6 +72,7 @@ import {
   EV_GEM_SPAWNED,
   pushEvent,
 } from '../events/ring.js';
+import { openChest } from './progression.js';
 import type { World } from '../types.js';
 
 /** Uint16Array ceiling. An absorbed gem saturates here rather than wrapping to a white gem. */
@@ -192,6 +195,33 @@ function dropConsumable(world: World, x: number, y: number): void {
   pushEvent(world.events, EV_GEM_SPAWNED, world.tick, x, y, value, tier);
 }
 
+/**
+ * Puts a Cyber Chest where a boss fell.
+ *
+ * NO ROLL AND NO CHANCE. Every boss drops one, every time. A boss is the longest single engagement
+ * in the game and there are only seven of them in a run; a chest that sometimes did not appear
+ * would turn the one guaranteed reward in the yard into another thing the player feels unlucky
+ * about.
+ *
+ * It is a pickup rather than a scenery object because it has to be walked over, has to persist
+ * exactly where it fell, and has to survive the boss's body being reaped in the same tick.
+ */
+function dropChest(world: World, x: number, y: number): void {
+  const handle = allocPickup(
+    world.pickups,
+    PICKUP_KIND_CHEST,
+    0,
+    0,
+    x,
+    y,
+    CHEST_SPAWN_ID_BASE + world.tick,
+  );
+  if (handle === NULL_HANDLE) return;
+  const d = world.pickups.count - 1;
+  world.pickups.flags[d] |= PICKUP_FLAG_AUTO;
+  pushEvent(world.events, EV_GEM_SPAWNED, world.tick, x, y, 0, 0);
+}
+
 /** Which of the four coin sprites a value draws. Highest threshold that fits. */
 function creditTier(value: number, thresholds: readonly number[]): number {
   let tier = 0;
@@ -215,6 +245,9 @@ const CONSUMABLE_MAGNET_CHANCE = 0.15;
  * sprites off spawnId without the two ever colliding.
  */
 const CONSUMABLE_SPAWN_ID_BASE = 0x40000000;
+
+/** Above the consumables' band, for the same reason theirs sits above the gems'. */
+const CHEST_SPAWN_ID_BASE = 0x60000000;
 
 // -------------------------------------------------------------------------------------------
 // Drops
@@ -241,6 +274,11 @@ function dropGems(world: World): void {
       absorbIntoNearest(world, x, y, value);
       continue;
     }
+
+    // A BOSS LEAVES A CYBER CHEST as well as its core. Dropped here rather than in updateDamage
+    // because this is already the stage that turns a KillFeed entry into something on the ground,
+    // and the feed carries the flags that say which kills were bosses.
+    if ((feed.flags[k] & ENEMY_FLAG_BOSS) !== 0) dropChest(world, x, y);
 
     const spawnId = 1 + world.tick * MAX_KILLS_PER_TICK + k;
     const tier = gemTierForValue(value, tuning);
@@ -424,6 +462,18 @@ function takeConsumable(world: World, d: number): void {
   const player = world.player;
   const kind = pool.kind[d];
   const value = pool.value[d];
+
+  if (kind === PICKUP_KIND_CHEST) {
+    // FREEZES THE WORLD. openChest rolls the spin and sets RUN_PHASE_CHEST, so this tick is the
+    // last one the horde moves until the player acknowledges the overlay. Marked dead first: the
+    // chest must not still be sitting there to be collected a second time on the tick the phase
+    // changes back.
+    markPickupDead(pool, d);
+    world.stats.consumables++;
+    pushEvent(world.events, EV_CONSUMABLE_TAKEN, world.tick, pool.x[d], pool.y[d], 0, kind);
+    openChest(world);
+    return;
+  }
 
   if (kind === PICKUP_KIND_REPAIR) {
     // Clamped to max: a spanner tops you up, it never overheals into a buffer the HUD cannot show.

@@ -35,6 +35,8 @@ export const PICKUP_KIND_GEM = 0;
 export const PICKUP_KIND_REPAIR = 1;
 export const PICKUP_KIND_CREDIT = 2;
 export const PICKUP_KIND_MAGNET = 3;
+/** A CYBER CHEST, left behind by a dead boss. Walk over it and the slot machine opens. */
+export const PICKUP_KIND_CHEST = 4;
 
 export interface PickupPool {
   readonly capacity: number;

@@ -16,6 +16,7 @@ import {
   ENEMY_FLAG_BOSS,
   ENEMY_FLAG_DEAD,
   ENEMY_FLAG_ELITE,
+  RUN_PHASE_CHEST,
   RUN_PHASE_LEVEL_UP,
   quantiseAxis,
   type InputFrame,
@@ -62,6 +63,17 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
   const f = bot.frame;
   f.buttons = 0;
   f.chooseIndex = -1;
+
+  // A CYBER CHEST FREEZES THE WORLD until something acknowledges it. On a phone that is the
+  // overlay finishing its spin; here it is this line, and without it the harness would stand in
+  // front of a slot machine for the rest of the run and every pacing number past the first boss
+  // would be a lie about a game that had stopped.
+  if (world.phase === RUN_PHASE_CHEST) {
+    f.chooseIndex = 0;
+    f.moveX = 0;
+    f.moveY = 0;
+    return f;
+  }
 
   if (world.phase === RUN_PHASE_LEVEL_UP) {
     f.chooseIndex = pickUpgrade(world);

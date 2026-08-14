@@ -1151,3 +1151,88 @@ body {
   color: #4fb8ff;
   opacity: .8;
 }
+
+/* ---------------------------------------------------------------------------------------------
+   THE CYBER CHEST. Three reel windows, a payout line and the upgrades it handed over.
+
+   The windows are fixed-height with `overflow: hidden` and the strip inside them is translated -
+   that clipping IS the slot machine, and it is why the tiles are sized in `--chest-tile` rather
+   than by their content: every tile has to be exactly one window tall or the landing lands wrong.
+   --------------------------------------------------------------------------------------------- */
+.chest {
+  --chest-tile: min(22vw, 96px);
+  justify-content: center;
+  gap: 14px;
+}
+.chest__head { text-align: center; }
+.chest__reels {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: #0d1016;
+  border: 1px solid #2a323e;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .7);
+}
+.chest__window {
+  width: var(--chest-tile);
+  height: var(--chest-tile);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #05070a;
+}
+.chest__strip { will-change: transform; }
+.chest__tile {
+  width: var(--chest-tile);
+  height: var(--chest-tile);
+  display: grid;
+  place-items: center;
+}
+.chest__tile img { width: 100%; height: 100%; display: block; }
+
+.chest__payout {
+  text-align: center;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  min-height: 24px;
+  opacity: 0;
+  transform: translateY(6px);
+}
+/* Only the reveal is animated. The line is always in the layout so the button does not jump. */
+.chest__payout--in {
+  opacity: 1;
+  transform: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.chest__grants {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  min-height: 0;
+  overflow-y: auto;
+}
+.chest__grant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #141a22;
+  border-left: 3px solid var(--chest-key, var(--accent));
+  font-size: 15px;
+}
+.chest__grant--weapon { --chest-key: var(--accent); }
+.chest__grant--passive { --chest-key: var(--accent-sys); }
+.chest__grant img { width: 26px; height: 26px; display: block; }
+
+.chest__go--waiting { opacity: .35; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chest__payout--in { transition: none; }
+}

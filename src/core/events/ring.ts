@@ -64,6 +64,14 @@ export const EV_BARREL_BROKEN = 20;
  * renderer picks the effect off `d`.
  */
 export const EV_CONSUMABLE_TAKEN = 21;
+/**
+ * A Cyber Chest was walked onto and its reels are spinning. Payload: (x, y, payout, chests opened
+ * this run). The overlay reads the landed symbols off `World.chest` rather than off this event -
+ * three reels do not fit in four payload floats, and the state is still there when the drain runs.
+ */
+export const EV_CHEST_OPENED = 22;
+/** The chest's upgrades have landed and the world is running again. Payload: (x, y, 0, 0). */
+export const EV_CHEST_CLOSED = 23;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -89,6 +97,8 @@ export const EVENT_NAMES: readonly string[] = [
   'PROJECTILE_DETONATED',
   'BARREL_BROKEN',
   'CONSUMABLE_TAKEN',
+  'CHEST_OPENED',
+  'CHEST_CLOSED',
 ];
 
 export interface EventRing {

@@ -25,6 +25,7 @@ import { Application } from 'pixi.js';
 import {
   MAX_FRAME_MS,
   RUN_LENGTH_SEC,
+  RUN_PHASE_CHEST,
   RUN_PHASE_DEAD,
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_VICTORY,
@@ -39,6 +40,7 @@ import { GameRenderer } from './render/gameRenderer.js';
 import { Hud, type DebugInfo } from './ui/hud.js';
 import { HeroSelect } from './ui/heroSelect.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
+import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
 import { buildChangelogOverlay } from './ui/changelog.js';
 import { VirtualJoystick } from './ui/virtualJoystick.js';
@@ -177,6 +179,12 @@ async function boot(): Promise<void> {
     pendingChoice = index;
   });
 
+  // The chest's Collect button becomes ordinary player intent on the next tick, exactly as a
+  // level-up pick does. There is still no out-of-band event anywhere in this loop.
+  const chest = new ChestOverlay(() => {
+    pendingChoice = 0;
+  });
+
   const summary = new GameOverOverlay({
     onRetry: () => startRun(state.heroId, newSeed()),
     onChangeMech: () => showHeroSelect(),
@@ -210,6 +218,7 @@ async function boot(): Promise<void> {
     joystick.element,
     hud.element,
     levelUp.element,
+    chest.element,
     pauseOverlay.element,
     changelog.element,
     summary.element,
@@ -255,6 +264,7 @@ async function boot(): Promise<void> {
     heroSelect.hide();
     summary.hide();
     levelUp.hide();
+    chest.hide();
     pauseOverlay.element.hidden = true;
     changelog.hide();
     hud.setVisible(true);
@@ -270,6 +280,7 @@ async function boot(): Promise<void> {
     hud.setVisible(false);
     joystick.setEnabled(false);
     levelUp.hide();
+    chest.hide();
     summary.hide();
     pauseOverlay.element.hidden = true;
     changelog.hide();
@@ -386,6 +397,16 @@ async function boot(): Promise<void> {
 
     // --- phase reactions -----------------------------------------------------------------
     if (state.phase === 'running') {
+      if (world.phase === RUN_PHASE_CHEST) {
+        // `show` is a no-op while already visible, so this fires once per chest even though the
+        // phase persists for however many frames the spin takes.
+        chest.show(world);
+        joystick.setEnabled(false);
+      } else if (chest.visible) {
+        chest.hide();
+        joystick.setEnabled(true);
+      }
+
       if (world.phase === RUN_PHASE_LEVEL_UP) {
         levelUp.show(world);
         joystick.setEnabled(false);
@@ -396,6 +417,7 @@ async function boot(): Promise<void> {
 
       if (world.phase === RUN_PHASE_DEAD || world.phase === RUN_PHASE_VICTORY) {
         levelUp.hide();
+        chest.hide();
         joystick.setEnabled(false);
         hud.setVisible(false);
         // BANK BEFORE SHOWING. This branch runs once - `state.set('summary')` below leaves the

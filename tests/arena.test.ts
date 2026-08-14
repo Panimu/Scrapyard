@@ -30,6 +30,7 @@ import {
 import { allocPickup } from '../src/core/entity/pickupPool.js';
 import {
   RUN_PHASE_DEAD,
+  RUN_PHASE_CHEST,
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_RUNNING,
   quantiseAxis,
@@ -78,7 +79,7 @@ function drive(
       moveX: quantiseAxis(mx),
       moveY: quantiseAxis(my),
       buttons: 0,
-      chooseIndex: w.phase === RUN_PHASE_LEVEL_UP ? 0 : -1,
+      chooseIndex: w.phase === RUN_PHASE_LEVEL_UP || w.phase === RUN_PHASE_CHEST ? 0 : -1,
     };
     stepWorld(w, input);
     onTick?.(w, t);

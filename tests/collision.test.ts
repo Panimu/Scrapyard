@@ -49,6 +49,7 @@ import { heroIndex } from '../src/core/data/heroes.js';
 import {
   EMPTY_INPUT,
   RUN_PHASE_DEAD,
+  RUN_PHASE_CHEST,
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_RUNNING,
   type World,
@@ -669,7 +670,9 @@ describe('damage by source accounts for every point dealt', () => {
       });
       for (let t = 0; t < 60 * 90; t++) {
         const input =
-          w.phase === RUN_PHASE_LEVEL_UP ? { ...EMPTY_INPUT, chooseIndex: 0 } : EMPTY_INPUT;
+          w.phase === RUN_PHASE_LEVEL_UP || w.phase === RUN_PHASE_CHEST
+            ? { ...EMPTY_INPUT, chooseIndex: 0 }
+            : EMPTY_INPUT;
         stepWorld(w, input);
         if (w.phase === RUN_PHASE_DEAD) break;
       }

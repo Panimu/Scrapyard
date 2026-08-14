@@ -40,7 +40,13 @@ export const RUN_PHASE_RUNNING = 1;
 export const RUN_PHASE_LEVEL_UP = 2;
 export const RUN_PHASE_DEAD = 3;
 export const RUN_PHASE_VICTORY = 4;
-export type RunPhase = 0 | 1 | 2 | 3 | 4;
+/**
+ * A Cyber Chest is open and its reels are spinning. The world is frozen exactly as it is during a
+ * level-up card, and for the same reason - and, like the card, it ends when the player's input
+ * says it has.
+ */
+export const RUN_PHASE_CHEST = 5;
+export type RunPhase = 0 | 1 | 2 | 3 | 4 | 5;
 
 export const RUN_PHASE_NAMES: readonly string[] = [
   'INTRO',
@@ -48,6 +54,7 @@ export const RUN_PHASE_NAMES: readonly string[] = [
   'LEVEL_UP',
   'DEAD',
   'VICTORY',
+  'CHEST',
 ];
 
 /** Button bits. 1..7 reserved for a future dash / ability. */
@@ -263,6 +270,30 @@ export interface LevelUpState {
   picksTaken: number;
 }
 
+/**
+ * A CYBER CHEST spin, decided by the simulation and animated by the overlay.
+ *
+ * THE SIM ROLLS, THE UI SPINS. Every value here is written the tick the player walks onto the
+ * chest, before a single frame of animation has run, and the overlay's whole job is to arrive at
+ * numbers it was given. Deciding the outcome in the animation would make a chest unreplayable and
+ * would put a game rule in the render layer, which is the one thing that layer may not have.
+ */
+export interface ChestState {
+  /**
+   * Where each reel landed, as an UPGRADE CATALOG INDEX. -1 when no chest is open.
+   *
+   * Catalog indices rather than a symbol enum, because the reels are not decoration: the symbols
+   * the player watched land are the first upgrades they are about to be given.
+   */
+  readonly reels: Int32Array;
+  /** How many power-ups this spin pays, 1..CHEST_MAX_PAYOUT. 0 when no chest is open. */
+  payout: number;
+  /** Catalog indices to grant, the first `payout` entries valid. */
+  readonly grants: Int32Array;
+  /** Chests opened this run. */
+  opened: number;
+}
+
 export interface RunStats {
   kills: number;
   /** Length 5, indexed by Archetype - the enemy's BODY CLASS. Elite and boss rows stay 0: the
@@ -289,6 +320,8 @@ export interface RunStats {
   consumables: number;
   /** Fuel barrels broken. Not the same number - a barrel you never walked back to still counts. */
   barrelsBroken: number;
+  /** Cyber Chests opened. */
+  chests: number;
   /**
    * EFFECTIVE damage dealt, split by the WEAPON that dealt it. Indexed by WEAPON CATALOG index -
    * not by loadout slot - so a summary can name the gun without knowing what the loadout looked
@@ -363,6 +396,8 @@ export interface World {
    * movement, projectiles and the lasers all read it, nothing writes it.
    */
   readonly scenery: Scenery;
+  /** The Cyber Chest currently open, if any. See ChestState. */
+  readonly chest: ChestState;
   readonly director: SpawnDirector;
   readonly difficulty: DifficultyState;
   readonly levelUp: LevelUpState;
