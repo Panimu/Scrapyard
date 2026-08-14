@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T23:58Z',
+    title: 'Every laser runs 25% cooler',
+    notes: [
+      'ALL FOUR LASERS GENERATE A QUARTER LESS HEAT. Nothing they hit for changes - the damage on every card is the number it always was - they simply spend more of a fight firing and less of it cooling.',
+      'THE SHORT LASER NOW SPENDS MORE TIME ON THAN OFF: 46% uptime becomes 53%. The Medium goes 28% to 34%, the Long 19% to 24%. Over a long fight that is about 16% more damage out of all three, and the Long Laser gains the most because its heat bill was the steepest.',
+      'THE HEAT TIERS SCALE WITH IT, so the cut holds at tier 7 rather than fading out: a maxed Short Laser goes from 49% uptime to 56%.',
+      'WHY: with every weapon in the game held at tier 7, the four beams were taking a fifth of a run\'s damage between them while the four projectile weapons took four fifths. A volley bills a separate body per shell and gets better the more crowded the yard is; a beam burns one target and does not. Buying the beams SECONDS rather than bigger numbers is the half of that the ladder was already built around.',
+    ],
+  },
+  {
     at: '2026-08-14T23:28Z',
     title: 'Cannon and Artillery rate tiers are percentages now',
     notes: [

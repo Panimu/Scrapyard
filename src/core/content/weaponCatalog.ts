@@ -482,25 +482,41 @@ function laser(
   }) as WeaponDef;
 }
 
+// HEAT GENERATION IS 25% BELOW WHAT THESE LASERS SHIPPED WITH (10 / 22 / 34). Uptime is
+// dispersion / (generation + dispersion), so every beam in the game now spends noticeably more of
+// a fight firing and less of it cooling - which is the lever that lifts the beams as a CLASS
+// without changing a single number their cards advertise as damage.
+//
+// WHY UPTIME AND NOT DAMAGE. Measured across five full runs with every weapon held at tier 7, the
+// four beams took 19.7% of a run's damage against the four projectile weapons' 80.1%. That split
+// is structural rather than a stray number: a volley bills a separate body per shell and so scales
+// with how crowded the field is, while a beam burns one target and does not. Paying the beams more
+// damage per second would have papered over that; buying them more SECONDS is the half of the
+// equation the ladder was already built around - damage tiers raise heat, capacity and dispersion
+// buy it back - so this makes the existing economy more generous instead of bypassing it.
+//
+// IT SCALES ITSELF. `laserTiers` derives every heat rung as 0.4x the base, so the cut holds at
+// every tier rather than washing out by tier 7 the way a flat delta would.
+//
 // Base ranges are all +10% over the numbers this file shipped with (150 / 275 / 430). Measured,
 // a beam spends most of a fight with NOTHING INSIDE IT - the Short Laser reached 9% of its
 // arithmetic ceiling at tier 7 and gained almost nothing across six tiers, because reach, not
 // damage, was what it was short of. Range tiers do not exist on the laser ladder, so the base is
 // the only place this can be bought. `npm run dps` is where to check whether it was enough.
-export const LASER_SHORT = laser('laser-short', 'Short Laser', 165, 46, 10, 8.5, 0x3be86b, 1.6);
+export const LASER_SHORT = laser('laser-short', 'Short Laser', 165, 46, 7.5, 8.5, 0x3be86b, 1.6);
 export const LASER_MEDIUM = laser(
   'laser-medium',
   'Medium Laser',
   302.5,
   66,
-  22,
+  16.5,
   8.6,
   0x4fa8ff,
   2.1,
   // Chains from tier 8 - the Chain Laser. See WeaponDef.chainsFrom.
   8,
 );
-export const LASER_LONG = laser('laser-long', 'Long Laser', 473, 92, 34, 8.0, 0xff4d4d, 2.7);
+export const LASER_LONG = laser('laser-long', 'Long Laser', 473, 92, 25.5, 8.0, 0xff4d4d, 2.7);
 
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.

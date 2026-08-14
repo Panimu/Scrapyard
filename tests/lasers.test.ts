@@ -505,36 +505,37 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
     return n / (to - from);
   }
 
-  it('takes the short laser to its own capacity in exactly 10.0 s and latches there', () => {
+  it('takes the short laser to its own capacity in exactly 13.3 s and latches there', () => {
     const w = makeWorld('laser-short');
     addEnemy(w, 100, 0, TOUGH_HP);
 
     // THE CEILING IS THE WEAPON'S, not a global constant. At tier 1 it is the shipping base and
-    // the resume line is the documented fraction of it - which is what makes the arithmetic
-    // below (10.0 s up, 5.0 s down at 10 heat/s) come out in whole seconds.
+    // the resume line is the documented fraction of it.
     const stats = w.weapons[0].stats;
     const cap = stats.heatCapacity;
     const resume = stats.heatResume;
+    const gen = stats.heatPerSec;
     expect(cap).toBe(HEAT_CAPACITY_BASE);
     expect(resume).toBe(cap * HEAT_RESUME_FRAC);
-    // Generation and dispersion START equal, and only start equal: every dispersion tier moves
-    // one of them. That is why the two halves of this cycle are 10 s and 5 s here.
-    // Dispersion sits BELOW generation on every laser. That asymmetry is the whole reason a beam
-    // spends more of a fight cooling than firing, and it is what holds uptime under half.
-    expect(stats.heatDispersion).toBeLessThan(stats.heatPerSec);
+    // THE BURST IS DERIVED, not hardcoded: 100 capacity at 7.5 heat/s is 800 ticks. It was 600
+    // when generation was 10/s, and pinning the tick count to a balance number meant a heat
+    // retune failed a test about the LATCH. The mechanic is "the tick that reaches capacity still
+    // fires, and the weapon is off from the next one" - that is what is asserted below, at
+    // whatever rate the weapon is authored to.
+    const burstTicks = Math.round(cap / gen / DT);
+    expect(burstTicks).toBe(800);
 
     // One tick short of the ceiling: still live, still firing, heat just under capacity.
-    ticks(w, 599);
+    ticks(w, burstTicks - 1);
     expect(w.weapons[0].overheated).toBe(false);
     expect(w.weapons[0].heat).toBeLessThan(cap);
-    expect(w.weapons[0].heat).toBeCloseTo(cap - 10 * DT, 6);
+    expect(w.weapons[0].heat).toBeCloseTo(cap - gen * DT, 6);
     expect(w.beams.count).toBe(1);
 
-    // The 600th tick - 10.0 s at 10 heat/s - is the last one that fires. It delivers its damage
-    // AND cuts the weapon out, which is why a full burst is exactly heatCapacity/heatPerSec
-    // seconds of damage rather than one tick less.
+    // The LAST tick of the burst delivers its damage AND cuts the weapon out, which is why a full
+    // burst is exactly heatCapacity/heatPerSec seconds of damage rather than one tick less.
     ticks(w, 1);
-    expect(600 * DT).toBe(cap / 10);
+    expect(burstTicks * DT).toBeCloseTo(cap / gen, 9);
     expect(w.weapons[0].heat).toBe(cap); // clamped, never above
     expect(w.weapons[0].overheated).toBe(true);
     expect(w.beams.count).toBe(1);
@@ -636,8 +637,12 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
       // The simulated cycle matches the closed form, which is the real assertion: uptime is a
       // property of two authored numbers and nothing else.
       expect(m.duty).toBeCloseTo(m.predicted, 2);
-      // "A little more time offline" - every laser is now under half uptime.
-      expect(m.duty).toBeLessThan(0.5);
+      // A BEAM STILL SPENDS A REAL PART OF EVERY FIGHT OFFLINE. The bound is 0.6 rather than the
+      // 0.5 it was: cutting generation 25% to lift the beams as a class put the SHORT laser at
+      // 53% uptime - its dispersion (8.5/s) now exceeds its generation (7.5/s), which is only
+      // possible at all because dispersion applies while IDLE and never while firing, so the
+      // weapon still overheats after a full burst. The other two remain under half.
+      expect(m.duty).toBeLessThan(0.6);
     }
 
     const [short, medium, long] = measured;
@@ -651,8 +656,10 @@ describe('heat: the limiter, and the hysteresis that makes it one', () => {
   it('cools while it has no target, so a fight is not entered at 99 heat', () => {
     const w = makeWorld('laser-short');
     const target = addEnemy(w, 100, 0, TOUGH_HP);
-    ticks(w, 300); // half a burst: 50 heat
-    expect(w.weapons[0].heat).toBeCloseTo(50, 6);
+    // Derived from the weapon rather than hardcoded, so a heat retune moves the fixture with it.
+    const genShort = w.weapons[0].stats.heatPerSec;
+    ticks(w, 300);
+    expect(w.weapons[0].heat).toBeCloseTo(genShort * 300 * DT, 6);
 
     // The target walks out of range and the emitter starts shedding heat at its OWN dispersion
     // rate, which is well below its generation rate - that asymmetry is what puts every laser
