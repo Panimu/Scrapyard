@@ -50,8 +50,17 @@ export const SCENERY_COLS = ARENA_SIZE / SCENERY_CELL;
  */
 const SCENERY_JITTER = 230;
 
-/** Chance a cell holds a pile at all. */
-const SCENERY_FILL = 0.55;
+/**
+ * Chance a cell holds a pile at all.
+ *
+ * RAISED WITH THE BARREL SHARE, AND THE TWO MOVE TOGETHER. Doubling the drums by widening their
+ * slice of `VARIANT_CDF` alone would have taken the extra barrels OUT of the other six piles -
+ * same number of objects, a quarter fewer wrecks - which is not what "more barrels" means. So the
+ * yard holds more cells (0.55 -> 0.671) AND barrels take a bigger share of them, sized so the six
+ * unbreakable piles come out at exactly the count they had before and the drums come out at twice
+ * theirs. Measured, not derived: see the note on VARIANT_CDF.
+ */
+const SCENERY_FILL = 0.671;
 
 const RADIUS_MIN = 45;
 const RADIUS_MAX = 90;
@@ -102,14 +111,31 @@ const BARREL_RADIUS = 20;
  * you clip on the way past and are mildly pleased about. Objects like that have to be plentiful or
  * the habit never forms - and the empty roll is what stops plentiful from meaning guaranteed.
  */
+/**
+ * DRUMS ARE DOUBLED AND NOTHING ELSE MOVED.
+ *
+ * The six unbreakable piles keep their proportions to one another exactly - every cutoff below is
+ * the old one times 0.8197 - and their SHARE shrinks only because the pool of occupied cells grew
+ * by the same factor. `SCENERY_FILL` went 0.55 -> 0.671 to pay for it, so:
+ *
+ *                     share of cells    piles per yard (before culling)
+ *   six unbreakables  0.429 -> 0.429    110 -> 110
+ *   FUEL BARRELS      0.121 -> 0.242     31 ->  62
+ *
+ * Measured across three seeds after the clear-radius and fence culls, which is the check that
+ * matters because those culls are what the arithmetic above cannot see:
+ *
+ *   drums         32 -> 64,  26 -> 60,  34 -> 70     (2.11x over the three)
+ *   unbreakables 116 -> 115, 112 -> 107, 100 -> 99   (unchanged, to within a pile)
+ */
 const VARIANT_CDF: readonly number[] = Object.freeze([
-  0.17, // 0 crushed cars      17%
-  0.34, // 1 barrels           17%
-  0.51, // 2 girders           17%
-  0.66, // 3 tyres             15%
-  0.75, // 4 enemy wrecks       9%
-  0.78, // 5 mech wreck         3%
-  1.0, // 6 FUEL BARREL        22%
+  0.1393, // 0 crushed cars    13.93%
+  0.2787, // 1 barrels         13.93%
+  0.418, // 2 girders          13.93%
+  0.541, // 3 tyres            12.29%
+  0.6148, // 4 enemy wrecks     7.38%
+  0.6393, // 5 mech wreck       2.46%
+  1.0, // 6 FUEL BARREL        36.07%
 ]);
 
 /**

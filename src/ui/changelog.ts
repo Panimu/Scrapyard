@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T15:34Z',
+    title: 'Twice as many fuel barrels in the yard',
+    notes: [
+      'A Scrapyard now opens with about sixty drums instead of about thirty.',
+      'And it opens with just as much of everything else. The extra barrels are ADDED to the yard rather than taken out of the wrecks and the girders - there is simply more scrap standing in it now, not the same scrap with more of it flammable.',
+    ],
+  },
+  {
     at: '2026-08-14T15:25Z',
     title: 'The yard restocks its fuel barrels',
     notes: [
