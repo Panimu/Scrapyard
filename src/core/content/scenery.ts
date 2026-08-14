@@ -424,6 +424,73 @@ export function destroyScenery(s: Scenery, i: number): void {
 }
 
 /**
+ * How far a drum must stand from the mech to come back. A hair past the camera's own reach
+ * (500.9 u on the short axis), so a barrel is never seen standing up - it is always something
+ * that was already there when the player arrived.
+ */
+export const BARREL_REGROW_MIN_DIST = 560;
+
+/**
+ * Stands ONE destroyed barrel back up, somewhere the player is not looking. Returns the cell it
+ * revived, or -1 if there was nothing eligible.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT REVIVES A CELL RATHER THAN PLACING A NEW BARREL
+ * ---------------------------------------------------------------------------------------------
+ * `destroyScenery` zeroes the radius and touches nothing else, so a broken drum leaves its
+ * position and its variant sitting in the grid. Reviving it is therefore one write, and it
+ * inherits every guarantee the original layout was built with for free: it is on the jittered
+ * grid, it is inside the fence, it is outside the player's opening, and it cannot overlap another
+ * pile - because it is exactly where a barrel already stood.
+ *
+ * The alternative - rolling a fresh position - would need every one of those checks written a
+ * second time, in a second place, and would let the yard slowly fill with drums in the gaps the
+ * grid deliberately leaves.
+ *
+ * It also means the yard can never hold MORE barrels than it opened with, which is the property
+ * that stops a long run turning the Scrapyard into a barrel farm.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * ONE RNG DRAW, WHATEVER THE CANDIDATE COUNT
+ * ---------------------------------------------------------------------------------------------
+ * Two passes - count the eligible cells, then draw one index into that count - rather than a
+ * reservoir sample, which would spend a draw per candidate and make the stream's position depend
+ * on how much of the yard the player happens to have cleared. Nothing is drawn at all when there
+ * is nothing to revive, so an untouched yard never moves the stream.
+ *
+ * `variant === SCRAP_BARREL && radius === 0` identifies a BROKEN barrel and nothing else: a cell
+ * that never held anything was `continue`d before its variant was written, so it is still 0
+ * (cars), and no empty cell can be mistaken for a drum that was there.
+ */
+export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): number {
+  const n = s.radius.length;
+  const min2 = BARREL_REGROW_MIN_DIST * BARREL_REGROW_MIN_DIST;
+
+  let eligible = 0;
+  for (let i = 0; i < n; i++) {
+    if (s.variant[i] !== SCRAP_BARREL || s.radius[i] !== 0) continue;
+    const dx = s.x[i] - px;
+    const dy = s.y[i] - py;
+    if (dx * dx + dy * dy < min2) continue;
+    eligible++;
+  }
+  if (eligible === 0) return -1;
+
+  let pick = rng.nextInt(eligible);
+  for (let i = 0; i < n; i++) {
+    if (s.variant[i] !== SCRAP_BARREL || s.radius[i] !== 0) continue;
+    const dx = s.x[i] - px;
+    const dy = s.y[i] - py;
+    if (dx * dx + dy * dy < min2) continue;
+    if (pick-- > 0) continue;
+    s.radius[i] = BARREL_RADIUS;
+    s.count++;
+    return i;
+  }
+  return -1;
+}
+
+/**
  * The first DESTRUCTIBLE the ray enters, or -1. Same ray-circle maths as `sceneryRayHit` and the
  * exact complement of it: that one sees everything except barrels, this one sees only barrels.
  *

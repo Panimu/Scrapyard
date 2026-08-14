@@ -61,9 +61,9 @@
  * It is 1-based so that 0 stays available as "none" for anything that later wants it.
  */
 
-import { ARENA_HALF, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
+import { ARENA_HALF, DT, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
-import { destroyScenery, destructibleOverlap } from '../content/scenery.js';
+import { destroyScenery, destructibleOverlap, regrowBarrel } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
 import {
@@ -79,6 +79,7 @@ import {
 } from '../entity/pickupPool.js';
 import {
   EV_BARREL_BROKEN,
+  EV_BARREL_GREW,
   EV_CONSUMABLE_TAKEN,
   EV_GEM_COLLECTED,
   EV_GEM_SPAWNED,
@@ -96,8 +97,44 @@ export function updatePickups(world: World, dt: number): void {
     p.magnetSec -= dt;
     if (p.magnetSec < 0) p.magnetSec = 0;
   }
+  regrowBarrels(world);
   dropGems(world);
   magnetAndCollect(world, dt);
+}
+
+/**
+ * Stands one broken drum back up every `barrelRegrowSec` of PLAYED time.
+ *
+ * THE YARD USED TO BE A FIXED ALLOWANCE. Scenery was generated once at world creation and a
+ * broken barrel was gone for the rest of the run, so a 16-minute run spent its second half in
+ * ground the player had already stripped - the piles do not move, so a cleared area stays cleared
+ * and the whole mechanic quietly stopped existing partway through.
+ *
+ * `runTicks` RATHER THAN `tick`, and a modulo rather than a stored timer. runTicks is frozen while
+ * a level-up card or a chest is open, so the cadence counts time the player was actually PLAYING -
+ * eighteen seconds of fighting, not eighteen seconds of menu. The modulo means there is no timer
+ * to add to World, to reset, or to keep in the hash; the schedule is a pure function of the clock.
+ *
+ * THE DRAW IS ON `rng.loot`, like everything else a barrel does. Not `spawn` - see this file's
+ * header: the horde must not depend on how much scrap the player has shot, and that argument runs
+ * in both directions.
+ */
+function regrowBarrels(world: World): void {
+  const every = Math.round(world.config.tuning.pickups.barrelRegrowSec / DT);
+  if (every <= 0) return;
+  if (world.runTicks === 0 || world.runTicks % every !== 0) return;
+
+  const i = regrowBarrel(world.scenery, world.rng.loot, world.player.x, world.player.y);
+  if (i < 0) return;
+  pushEvent(
+    world.events,
+    EV_BARREL_GREW,
+    world.tick,
+    world.scenery.x[i],
+    world.scenery.y[i],
+    world.scenery.radius[i],
+    0,
+  );
 }
 
 // -------------------------------------------------------------------------------------------

@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T15:25Z',
+    title: 'The yard restocks its fuel barrels',
+    notes: [
+      'Barrels used to be a fixed allowance handed out when the level was built, and a broken one was gone for good. Since the scrap does not move, ground you had cleared stayed cleared - so the back half of a run was played in a yard with no drums left anywhere you had been, and the whole mechanic quietly stopped existing partway through.',
+      'One broken drum now stands back up somewhere every eighteen seconds of play. Always at least 560 units away, which is past what the camera can see: a barrel is never seen appearing, it is always something that was already there when you arrived.',
+      'It comes back where a barrel already stood, so the yard can never hold more drums than it opened with. This restocks the Scrapyard; it does not turn it into a barrel farm.',
+      'Measured over a full run, this roughly triples how many barrels a player gets through - 33 broken instead of 13 on one seed, 29 instead of 10 on another - and the number standing holds steady all run instead of draining away.',
+    ],
+  },
+  {
     at: '2026-08-14T15:17Z',
     title: 'Elites and bosses keep the health, give back the damage',
     notes: [

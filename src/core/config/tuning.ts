@@ -193,6 +193,11 @@ export interface PickupTuning {
   readonly magnetSec: number;
   /** Chance a broken barrel held nothing at all. */
   readonly barrelEmptyChance: number;
+  /**
+   * Seconds of PLAYED time between one destroyed barrel standing back up somewhere in the yard.
+   * 0 turns regrowth off entirely and the run is played on the barrels it started with.
+   */
+  readonly barrelRegrowSec: number;
 }
 
 export interface Tuning {
@@ -299,6 +304,15 @@ const PICKUPS: PickupTuning = {
   // credits and the player would stop noticing them. The empty is what keeps the full one a
   // result.
   barrelEmptyChance: 0.25,
+
+  // THE YARD REPLACES ITS DRUMS. A 16-minute run against a fixed layout is a run whose second
+  // half has no barrels left anywhere the player has been - the piles do not move, so a cleared
+  // area stays cleared, and the whole mechanic quietly stops existing partway through.
+  //
+  // 18 s is roughly 53 drums over a full run against the ~31 the yard opens with, so the supply
+  // is real without the yard visibly filling up: a barrel comes back somewhere every eighteen
+  // seconds, and the player who has been standing in one place is the one who notices.
+  barrelRegrowSec: 18,
 };
 
 export const DEFAULT_TUNING: Tuning = Object.freeze({

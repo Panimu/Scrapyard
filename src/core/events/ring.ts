@@ -72,6 +72,19 @@ export const EV_CONSUMABLE_TAKEN = 21;
 export const EV_CHEST_OPENED = 22;
 /** The chest's upgrades have landed and the world is running again. Payload: (x, y, 0, 0). */
 export const EV_CHEST_CLOSED = 23;
+/**
+ * A destroyed fuel barrel stood back up. Payload: (x, y, the barrel's radius, 0).
+ *
+ * APPENDED, never inserted. These numbers are written into replays, so the list is append-only in
+ * exactly the way UPGRADE_CATALOG is - renumbering one would silently reinterpret every recording
+ * ever made.
+ *
+ * The renderer does not have to do anything with this: regrowth happens at least 560 u away,
+ * which is past the camera's reach, so there is nothing on screen to announce. It exists so the
+ * harness timeline and the debug HUD can see the yard restocking rather than having to infer it
+ * from a barrel count that went up on its own.
+ */
+export const EV_BARREL_GREW = 24;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -99,6 +112,7 @@ export const EVENT_NAMES: readonly string[] = [
   'CONSUMABLE_TAKEN',
   'CHEST_OPENED',
   'CHEST_CLOSED',
+  'BARREL_GREW',
 ];
 
 export interface EventRing {
