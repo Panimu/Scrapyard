@@ -859,6 +859,396 @@ body {
 }
 
 /* ============================================================================================
+ * THE MENU FLOW: title -> mech -> yard, plus Settings and Upgrades off the title.
+ *
+ * Every screen here is a `.overlay`, so they all inherit the same full-bleed column with safe-area
+ * padding. What they share beyond that is the ACTION ROW at the bottom - Back on the left, the
+ * one that moves you forward on the right, both 54px tall - because on a phone the bottom of the
+ * screen is the only place a thumb reaches without regripping, and a flow whose buttons move
+ * between steps is a flow that gets mis-tapped.
+ * ========================================================================================== */
+
+.menu-actions,
+.heroes__actions,
+.levels__actions,
+.settings__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.heroes__actions > .btn,
+.levels__actions > .btn,
+.settings__actions > .btn {
+  height: 54px;
+  font-size: 18px;
+}
+
+/* The forward button takes the room; Back stays narrow. Reaching for "Next" should not require
+   aiming, and reaching for "Back" should. */
+.heroes__actions > .btn:first-child,
+.levels__actions > .btn:first-child,
+.settings__actions > .btn:first-child {
+  flex: 0 0 auto;
+  padding: 0 22px;
+}
+.heroes__actions > .btn:last-child,
+.levels__actions > .btn:last-child,
+.settings__actions > .btn:last-child {
+  flex: 1 1 auto;
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Title
+ * ----------------------------------------------------------------------------------------- */
+
+.title {
+  justify-content: center;
+  gap: 26px;
+}
+
+.title__head {
+  text-align: center;
+}
+
+.title__art {
+  width: min(46vw, 190px);
+  height: auto;
+  display: block;
+  margin: 0 auto 10px;
+  /* The chassis is a backdrop for the name, not the subject: dropped back so the type stays the
+     thing the eye lands on. */
+  opacity: 0.55;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.6));
+}
+
+.title__name {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.92;
+}
+
+.title__word {
+  font-size: clamp(38px, 13vw, 62px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.title__sub {
+  font-size: clamp(17px, 5.6vw, 27px);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  /* Indented by exactly the tracking, so the letter-spacing on the last glyph does not push the
+     word visually left of the one above it. */
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
+.title__tag {
+  margin-top: 14px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.title__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 340px);
+  margin: 0 auto;
+}
+
+.title__menu > .btn {
+  width: 100%;
+  height: 54px;
+  font-size: 18px;
+}
+
+.title__go {
+  height: 62px;
+  font-size: 21px;
+  letter-spacing: 0.04em;
+}
+
+.title__bank {
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4fb8ff;
+  opacity: 0.8;
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Level select
+ * ----------------------------------------------------------------------------------------- */
+
+.levels {
+  gap: 10px;
+}
+
+.levels__head {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.levels__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 0;
+}
+
+.levels__grid {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 8px 2px;
+  min-height: 0;
+}
+
+.level {
+  position: relative;
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  pointer-events: auto;
+}
+
+.level__art {
+  grid-row: 1 / 3;
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  background: #0a0d12;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.level__art img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+}
+
+.level__name {
+  font-size: 20px;
+  font-weight: 700;
+  align-self: end;
+}
+
+.level__blurb {
+  font-size: 13px;
+  color: var(--ink-faint);
+  align-self: start;
+  margin-top: 4px;
+}
+
+.level--on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent);
+}
+
+/* LOCKED. Dimmed, and the browser refuses the tap - see levelSelect.ts. The card keeps its full
+   layout rather than shrinking to a stub, because its job is to show the shape of a thing that is
+   coming. */
+.level--locked {
+  opacity: 0.42;
+  filter: grayscale(1);
+}
+
+.level__flag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #0a0d12;
+  color: var(--ink-faint);
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Settings
+ * ----------------------------------------------------------------------------------------- */
+
+.settings {
+  gap: 10px;
+}
+
+.settings__head {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.settings__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 0;
+}
+
+.settings__list {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 8px 2px;
+  min-height: 0;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.setting__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.setting__name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.setting__note {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+/* A switch drawn from a button. 52x32 with a 26px knob: the whole control is well inside a 44px
+   tap target, and the knob travels exactly its own width. */
+.switch {
+  flex: 0 0 auto;
+  position: relative;
+  width: 52px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #0a0d12;
+  pointer-events: auto;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.switch--on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch--on::after {
+  transform: translateX(20px);
+  background: #201a00;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch::after {
+    transition: none;
+  }
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Upgrades - a bank statement until there is something to buy.
+ * ----------------------------------------------------------------------------------------- */
+
+.upgrades {
+  gap: 16px;
+  justify-content: center;
+}
+
+.upgrades__head {
+  text-align: center;
+}
+
+.upgrades__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 0;
+}
+
+.upgrades__total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upgrades__figure {
+  font-size: clamp(44px, 16vw, 72px);
+  font-weight: 800;
+  line-height: 1;
+  color: #4fb8ff;
+}
+
+.upgrades__unit {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.upgrades__note {
+  max-width: 34ch;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.upgrades__back {
+  flex: 0 0 auto;
+  width: min(100%, 340px);
+  margin: 0 auto;
+  height: 54px;
+  font-size: 18px;
+}
+
+/* ============================================================================================
  * Summary
  * ========================================================================================== */
 

@@ -39,6 +39,10 @@ import { loadGameTextures } from './render/assets.js';
 import { GameRenderer } from './render/gameRenderer.js';
 import { Hud, type DebugInfo } from './ui/hud.js';
 import { HeroSelect } from './ui/heroSelect.js';
+import { TitleScreen } from './ui/titleScreen.js';
+import { LevelSelect } from './ui/levelSelect.js';
+import { SettingsScreen } from './ui/settingsScreen.js';
+import { UpgradesScreen } from './ui/upgradesScreen.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
@@ -187,27 +191,83 @@ async function boot(): Promise<void> {
 
   const summary = new GameOverOverlay({
     onRetry: () => startRun(state.heroId, newSeed()),
-    onChangeMech: () => showHeroSelect(),
+    onChangeMech: () => showScreen('heroSelect'),
   });
 
-  const heroSelect = new HeroSelect((heroId) => {
-    state.settings.lastHeroId = heroId;
-    state.saveSettings();
-    startRun(heroId, seedFromParams() ?? newSeed());
-  }, state.settings.lastHeroId);
+  // ---------------------------------------------------------------------------------------
+  // The menu flow
+  //
+  //   title -> heroSelect -> levelSelect -> run
+  //     |         |              |
+  //     |         +-- back ------+
+  //     +-- upgrades, settings
+  //
+  // Every screen below is a plain overlay that shows and hides itself; `showScreen` is the only
+  // thing that decides which one is up. That matters more than it looks: the old code had each
+  // entry point hiding six other overlays by hand, which is a bug per screen added, and adding
+  // four screens to that shape would have been twenty-four hide calls waiting to disagree.
+  // ---------------------------------------------------------------------------------------
 
-  // The changelog is a leaf of the pause menu: it covers pause rather than replacing it, and
-  // Back restores pause WITHOUT touching AppState. The run stays paused the whole time, so
-  // reading the changelog can never cost you a mech.
+  const title = new TitleScreen({
+    onNewGame: () => showScreen('heroSelect'),
+    onUpgrades: () => showScreen('upgrades'),
+    onSettings: () => showScreen('settings'),
+  });
+
+  const heroSelect = new HeroSelect(
+    (heroId) => {
+      state.settings.lastHeroId = heroId;
+      state.saveSettings();
+      showScreen('levelSelect');
+    },
+    () => showScreen('title'),
+    state.settings.lastHeroId,
+  );
+
+  const levelSelect = new LevelSelect(
+    (levelId) => {
+      state.levelId = levelId;
+      startRun(heroSelect.heroId, seedFromParams() ?? newSeed());
+    },
+    () => showScreen('heroSelect'),
+    state.levelId,
+  );
+
+  const upgrades = new UpgradesScreen(() => showScreen('title'));
+
+  const settings = new SettingsScreen(state.settings, {
+    onBack: () => showScreen('title'),
+    onChanged: () => {
+      state.saveSettings();
+      // The debug readout is the one setting that can be honoured immediately, so it is.
+      hud.setDebugVisible(state.settings.debug);
+    },
+    onChangelog: () => {
+      settings.hide();
+      changelogReturn = () => settings.show();
+      changelog.show();
+    },
+  });
+
+  // The changelog is a LEAF of whatever opened it - the pause menu mid-run, or Settings from the
+  // title - and Back goes back there rather than to a fixed destination. It covers its opener
+  // rather than replacing it, and never touches AppState: reading the changelog mid-run leaves
+  // the run paused underneath, so it can never cost you a mech.
+  let changelogReturn: () => void = () => showScreen('title');
   const changelog = buildChangelogOverlay(() => {
     changelog.hide();
-    pauseOverlay.element.hidden = false;
+    changelogReturn();
   });
   const pauseOverlay = buildPauseOverlay(
     () => togglePause(),
-    () => showHeroSelect(),
+    // Abandoning goes to the TITLE, not to the mech picker. Quitting a run is a decision to stop
+    // playing this one, which is not the same as a decision to start another.
+    () => showScreen('title'),
     () => {
       pauseOverlay.element.hidden = true;
+      changelogReturn = () => {
+        pauseOverlay.element.hidden = false;
+      };
       changelog.show();
     },
   );
@@ -220,9 +280,14 @@ async function boot(): Promise<void> {
     levelUp.element,
     chest.element,
     pauseOverlay.element,
-    changelog.element,
     summary.element,
     heroSelect.element,
+    levelSelect.element,
+    upgrades.element,
+    settings.element,
+    title.element,
+    // LAST, so it covers the settings screen that can open it as well as the pause menu.
+    changelog.element,
   );
 
   // ---------------------------------------------------------------------------------------
@@ -261,7 +326,13 @@ async function boot(): Promise<void> {
     lastDamageTaken = 0;
 
     renderer.reset(sim.world);
+    // Every menu screen down, whichever one we came from - including the deep-link path, where
+    // we came from none of them.
+    title.hide();
     heroSelect.hide();
+    levelSelect.hide();
+    settings.hide();
+    upgrades.hide();
     summary.hide();
     levelUp.hide();
     chest.hide();
@@ -275,8 +346,18 @@ async function boot(): Promise<void> {
     lastFrameMs = performance.now();
   }
 
-  function showHeroSelect(): void {
-    state.set('heroSelect');
+  /**
+   * Shows exactly one menu screen and takes the game out of play.
+   *
+   * ONE FUNCTION, NOT ONE PER SCREEN. Every menu here has to put the same six things away - the
+   * HUD, the stick, the two in-run overlays, the pause menu and the summary - and the version of
+   * this that had each entry point doing that by hand grew a missed hide every time a screen was
+   * added. This closes over all of them once.
+   */
+  type MenuScreen = 'title' | 'heroSelect' | 'levelSelect' | 'settings' | 'upgrades';
+
+  function showScreen(screen: MenuScreen): void {
+    state.set(screen);
     hud.setVisible(false);
     joystick.setEnabled(false);
     levelUp.hide();
@@ -284,8 +365,36 @@ async function boot(): Promise<void> {
     summary.hide();
     pauseOverlay.element.hidden = true;
     changelog.hide();
-    heroSelect.setCredits(state.settings.credits);
-    heroSelect.show(state.settings.lastHeroId);
+
+    title.hide();
+    heroSelect.hide();
+    levelSelect.hide();
+    settings.hide();
+    upgrades.hide();
+
+    // The banked total is read fresh on every showing rather than cached: a run finishes between
+    // one visit and the next, and a stale figure on the screen whose whole subject is that
+    // figure would be the one bug nobody forgives.
+    switch (screen) {
+      case 'title':
+        title.setCredits(state.settings.credits);
+        title.show();
+        break;
+      case 'heroSelect':
+        heroSelect.setCredits(state.settings.credits);
+        heroSelect.show(state.settings.lastHeroId);
+        break;
+      case 'levelSelect':
+        levelSelect.show(state.levelId);
+        break;
+      case 'settings':
+        settings.show();
+        break;
+      case 'upgrades':
+        upgrades.setCredits(state.settings.credits);
+        upgrades.show();
+        break;
+    }
   }
 
   function togglePause(): void {
@@ -480,7 +589,7 @@ async function boot(): Promise<void> {
     // straight into a run so a screenshot shows the game, not a menu.
     startRun(Number.isFinite(autoHero) ? autoHero : state.settings.lastHeroId, seedFromParams() ?? newSeed());
   } else {
-    showHeroSelect();
+    showScreen('title');
   }
 
   requestAnimationFrame(tick);

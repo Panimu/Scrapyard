@@ -27,7 +27,8 @@ export class HeroSelect {
   private readonly bank: HTMLDivElement;
 
   constructor(
-    private readonly onStart: (heroId: number) => void,
+    private readonly onNext: (heroId: number) => void,
+    onBack: () => void,
     initialHeroId = 0,
   ) {
     const el = document.createElement('div');
@@ -38,7 +39,7 @@ export class HeroSelect {
 
     const head = document.createElement('div');
     head.className = 'heroes__head';
-    head.innerHTML = `<div class="eyebrow">Scrapyard</div>
+    head.innerHTML = `<div class="eyebrow">New game</div>
       <h1 class="heroes__title">Pick a mech</h1>
       <div class="heroes__note">Sixteen chassis. Eight carry a bonus to one weapon.</div>
       <div class="heroes__bank" data-bank hidden></div>`;
@@ -83,12 +84,25 @@ export class HeroSelect {
       this.tiles.push(tile);
     });
 
+    // "Next", not "Deploy": the yard is still to choose. The word a button uses has to be true
+    // about what happens when it is pressed, or the flow teaches the player to distrust it.
+    const row = document.createElement('div');
+    row.className = 'heroes__actions';
+
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'btn';
+    back.textContent = 'Back';
+    back.addEventListener('click', onBack);
+
     const go = document.createElement('button');
     go.type = 'button';
-    go.className = 'btn btn--primary heroes__go';
-    go.textContent = 'Deploy';
-    go.addEventListener('click', () => this.onStart(this.selected));
-    el.appendChild(go);
+    go.className = 'btn btn--primary';
+    go.textContent = 'Next';
+    go.addEventListener('click', () => this.onNext(this.selected));
+
+    row.append(back, go);
+    el.appendChild(row);
 
     this.element = el;
     this.select(clampHeroId(initialHeroId));

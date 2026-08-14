@@ -40,6 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T14:46Z',
+    title: 'The game has a front door, and a name on it',
+    notes: [
+      'SCRAPYARD SURVIVORS. There is a title screen now, and the game opens on it instead of dropping you into the mech picker.',
+      'NEW GAME runs mech, then yard. Picking a chassis is “Next” rather than “Deploy”, because there is a step after it, and every screen in the flow has a Back.',
+      'CHOOSE A YARD is the new step. Scrapyard is the one you can play. Mossy Mayhem is on the card next to it, greyed out and marked TBD - something green and overgrown, not built yet.',
+      'SETTINGS, off the title. Performance mode renders at half resolution for a struggling phone, and the debug readout is a switch rather than a URL only I knew about. The changelog you are reading lives here too, as well as in the pause menu.',
+      'UPGRADES, off the title, and it is honest about being empty: it shows what you have banked and says plainly that nothing spends it yet. That is the screen the credits have been piling up for.',
+      'Abandoning a run now returns to the title rather than the mech picker. Quitting a run is not the same as starting another one.',
+    ],
+  },
+  {
     at: '2026-08-14T14:11Z',
     title: 'Percentages add up instead of multiplying together',
     notes: [

@@ -39,6 +39,7 @@ export * from './data/stats.js';
 export * from './data/weapons.js';
 export * from './data/enemies.js';
 export * from './content/cycles.js';
+export * from './content/levels.js';
 export * from './content/scenery.js';
 export * from './data/heroes.js';
 export * from './data/upgrades.js';

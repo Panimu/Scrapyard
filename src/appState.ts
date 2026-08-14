@@ -14,8 +14,23 @@
  */
 
 import { HERO_CATALOG } from './core/data/heroes.js';
+import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
 
-export type AppPhase = 'boot' | 'heroSelect' | 'running' | 'paused' | 'summary';
+/**
+ * `title`, `levelSelect`, `settings` and `upgrades` join the list for the same reason
+ * `heroSelect` was already on it: they are places the player can be that the simulation has no
+ * opinion about. None of them steps the world.
+ */
+export type AppPhase =
+  | 'boot'
+  | 'title'
+  | 'heroSelect'
+  | 'levelSelect'
+  | 'settings'
+  | 'upgrades'
+  | 'running'
+  | 'paused'
+  | 'summary';
 
 export interface Settings {
   /** Index into HERO_CATALOG. Restored so the second run is one tap away. */
@@ -84,6 +99,14 @@ export class AppState {
   seed = 0;
   /** Hero chosen for the run in progress. */
   heroId = 0;
+  /**
+   * Level chosen for the run in progress. Carried by the app and not handed to `Simulation`,
+   * which takes a seed and a hero and nothing else - there is one playable level, so plumbing an
+   * id the sim ignores through the run and the world hash would change the determinism contract
+   * in exchange for nothing. It becomes a Simulation parameter the day a second yard behaves
+   * differently.
+   */
+  levelId: LevelId = firstPlayableLevel();
 
   get phase(): AppPhase {
     return this._phase;
