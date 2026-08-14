@@ -9,37 +9,19 @@
  * ---------------------------------------------------------------------------------------------
  * THE RULES THAT MAKE FOURTEEN ICONS DISTINGUISHABLE
  * ---------------------------------------------------------------------------------------------
- *   COLOUR IS THE CATEGORY - EXCEPT FOR THE LASERS, WHICH WEAR THEIR OWN BEAM. Weapons are amber
- *     and passives are blue, the same split the level-up cards use (`--accent` against
- *     `--accent-sys`) and the same split the chest's payout table cares about, so two amber and
- *     one blue tells a player what they scored before the number appears.
- *
- *     The four laser icons take the exact colour their beam is drawn in - green, blue, red - so
- *     the symbol on the reel is the light the player has been staring at for ten minutes. That is
- *     a stronger identity than the category is: nobody confuses a Long Laser with a Cannon, but
- *     three amber bars of different lengths were always going to be confusable with EACH OTHER
- *     while moving.
- *
- *     THE PLATE STILL WEARS THE CATEGORY, and that is load-bearing rather than tidy. A chest pays
- *     4 for a pair sharing a KIND and 2 for three different symbols sharing one, so the amber /
- *     blue split on the border is how a player reads the payout off the reels before the word
- *     appears. Colouring the whole tile by beam - which is where this started - would have made a
- *     green laser and a blue laser look like two categories and quietly broken that. So: the
- *     border says gun or system, the glyph says WHICH.
+ *   COLOUR IS THE CATEGORY, NOT THE ITEM. Weapons are amber and passives are blue, which is the
+ *     same split the level-up cards already use (`--accent` against `--accent-sys` in styles.css)
+ *     and the same split the chest's payout table cares about. A player reading two amber and one
+ *     blue knows what they scored before the number appears.
  *   ONE SHAPE IDEA EACH. Not a small picture of the weapon - a single geometric gesture. Three
  *     lasers that differed only in barrel length would be three identical icons in motion; they
  *     differ in BEAM LENGTH AND COUNT instead, which survives being 64 px and moving.
  *   NOTHING TOUCHES THE EDGE. Each is drawn inside a rounded plate with a margin, so a column of
  *     them reads as a column of tiles rather than as a texture.
  *
- * The lasers are the hardest case and are worth stating explicitly: short is one stub, medium is
- * one longer bar, long is one full-width bar with a lens flare at the muzzle, and the Chain Laser
- * is the medium's bar bent through two nodes. Length IS the weapon, which is also true in the
- * game - and now so is colour.
- *
- * THE COLOURS ARE IMPORTED, NOT COPIED. `beamColour` comes out of WEAPON_CATALOG, so an icon
- * cannot drift from the beam it is supposed to be a picture of. That is why this script runs
- * under tsx rather than bare node.
+ * The three lasers are the hardest case and are worth stating explicitly: short is one stub, medium
+ * is one longer bar, long is one full-width bar with a lens flare at the muzzle. Length IS the
+ * weapon, which is also true in the game.
  *
  * NEVER run `npx playwright install` here - browsers are preinstalled at /opt/pw-browsers.
  */
@@ -48,38 +30,6 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.ts';
-
-/**
- * Upgrade id -> the beam colour that weapon actually draws with, straight from the catalog.
- *
- * The Chain Laser is the Medium Laser at tier 8 - one WeaponDef, one beam, one colour - so it
- * takes its entry from the same weapon rather than declaring a colour of its own.
- */
-const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
-const beamOf = (weaponId) => {
-  const def = WEAPON_CATALOG.find((w) => w.id === weaponId);
-  if (def === undefined) throw new Error(`make-icons: no weapon "${weaponId}" in WEAPON_CATALOG`);
-  return hex(def.beamColour);
-};
-const LASER_KEY = {
-  'w-laser-short': beamOf('laser-short'),
-  'w-laser-medium': beamOf('laser-medium'),
-  'w-laser-long': beamOf('laser-long'),
-  'w-chain-laser': beamOf('laser-medium'),
-};
-
-/**
- * The plate border and every dimmed stroke, at the same ratio the hand-picked amber pair already
- * used (0xf0b429 -> 0x8a6415 is about 0.55 per channel). Derived rather than authored so a new
- * beam colour needs no second hex value.
- */
-const DIM = 0.55;
-const dimHex = (h) => {
-  const n = parseInt(h.slice(1), 16);
-  const ch = (shift) => Math.round(((n >> shift) & 0xff) * DIM);
-  return hex((ch(16) << 16) | (ch(8) << 8) | ch(0));
-};
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'sprites');
 
@@ -113,10 +63,6 @@ const ICONS = [
 ];
 
 const DRAW = `(id) => {
-  const LASER_KEY = ${JSON.stringify(LASER_KEY)};
-  const LASER_DIM = ${JSON.stringify(
-    Object.fromEntries(Object.entries(LASER_KEY).map(([k, v]) => [k, dimHex(v)])),
-  )};
   const S = ${S};
   const c = document.createElement('canvas');
   c.width = S; c.height = S;
@@ -124,9 +70,7 @@ const DRAW = `(id) => {
   const CX = S / 2, CY = S / 2;
 
   const WEAPON = id.charAt(0) === 'w';
-  // A laser wears its own beam; everything else wears its category. See the header.
-  const LASER = LASER_KEY[id];
-  const KEY      = LASER ?? (WEAPON ? '#f0b429' : '#4fa8ff');
+  const KEY      = WEAPON ? '#f0b429' : '#4fa8ff';
   const KEY_DIM  = WEAPON ? '#8a6415' : '#25597f';
   const PLATE    = '#161b23';
   const PLATE_HI = '#232b36';
