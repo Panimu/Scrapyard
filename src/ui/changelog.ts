@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T22:13Z',
+    title: 'Feed Systems now shortens the reload',
+    notes: [
+      'EVERY TIER OF FEED SYSTEMS TAKES TIME OFF YOUR RELOAD, on top of what it already did. All seven is 3.5 seconds.',
+      'IT IS DELIBERATELY BACK-LOADED, harder than any other card in the game: 0.15s, then 0.2, 0.3, 0.4, 0.55, 0.7 - and then 1.2 for the seventh. The last tier is worth more than the first three put together, and finishing the card is the whole point of it.',
+      'THIS IS THE MACHINE GUN CARD IT ALWAYS SHOULD HAVE BEEN. Rate of fire and a magazine fight each other: firing faster only empties the belt sooner, so the old card bought burst and quietly took your uptime away in exchange - 38% of the time firing became 29%. The seconds are what buy it back.',
+      'Measured: a fresh Machine Gun goes from 46 to 63 damage a second with the card finished, up from 52 before this change. A tier-7 Machine Gun goes from 136 to 200, and for the first time its uptime goes UP rather than down as you invest - 49% to 50%, on a belt that now runs 7 seconds against a 7-second reload.',
+      'No other weapon has a magazine, so nothing else notices.',
+    ],
+  },
+  {
     at: '2026-08-14T21:43Z',
     title: 'The whole Chain Laser is drawn, not just its far end',
     notes: [

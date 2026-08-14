@@ -572,6 +572,10 @@ export function resolveWeaponStats(
     'reloadTime',
     bonus,
   );
+  // Feed Systems takes FLAT SECONDS off this, so a weapon with no magazine - base reload 0 -
+  // resolves to a negative number. Nothing reads it (the reload path is gated on ammoCapacity),
+  // but a stat block holding -3.5 seconds is a trap for the next weapon that grows a magazine.
+  if (out.reloadTime < 0) out.reloadTime = 0;
   // A reload that reached zero would make the magazine a cooldown wearing a different hat.
   if (out.ammoCapacity > 0 && out.reloadTime < 0.5) out.reloadTime = 0.5;
 

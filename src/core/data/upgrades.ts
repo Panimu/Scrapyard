@@ -214,6 +214,32 @@ function laserTierText(
 /** The shared back-loaded ramp. Sums to 0.50; last tier is exactly twice the first. */
 const PASSIVE_RAMP: readonly number[] = [0.05, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1];
 
+/**
+ * FEED SYSTEMS' RELOAD RUNGS, in SECONDS off the top, summing to 3.5.
+ *
+ * A STEEPER SHAPE THAN THE SHARED RAMP, deliberately. PASSIVE_RAMP's rungs step up by a flat
+ * point at a time, so finishing it is worth twice starting it and no rung is an event. These
+ * step up by ever more - and the seventh is worth more than the first three together:
+ *
+ *   T1  0.15    cumulative 0.15
+ *   T2  0.20               0.35
+ *   T3  0.30               0.65
+ *   T4  0.40               1.05
+ *   T5  0.55               1.60
+ *   T6  0.70               2.30
+ *   T7  1.20               3.50   <- the jump the card is built around
+ *
+ * The early rungs are meant to feel thin. This half of the card only matters to a weapon with a
+ * magazine, and there is exactly one of those; making its first tier generous would hand the
+ * Machine Gun most of the benefit for a single pick and leave six rungs of nothing behind it.
+ * Back-loading it this hard is what makes FINISHING the card the decision.
+ *
+ * Flat seconds rather than a percentage, because there is only one reload in the game to take a
+ * percentage of and "3.5 seconds off" is a thing a player can hold in their head while a belt
+ * runs dry. A weapon with no magazine never notices: the reload path is gated on ammoCapacity.
+ */
+const FEED_RELOAD: readonly number[] = [0.15, 0.2, 0.3, 0.4, 0.55, 0.7, 1.2];
+
 function rampText(prefix: string): readonly string[] {
   return PASSIVE_RAMP.map((v) => `${prefix} +${Math.round(v * 100)}%.`);
 }
@@ -413,17 +439,27 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     id: 'p-rate',
     kind: 'passive',
     name: 'Feed Systems',
-    description: 'Every weapon fires more often - shorter cooldowns, faster heat dispersion.',
-    // Two keys because the game has two ways of pacing a weapon. A card that only touched
-    // `cooldown` would do NOTHING for the three lasers, which are gated by heat - a passive that
-    // is dead weight for three of eight weapons is a trap, not a choice.
+    description:
+      'Every weapon fires more often - shorter cooldowns, faster heat dispersion, a quicker reload.',
+    // THREE keys, because the game has three ways of pacing a weapon and a card that named only
+    // one would be dead weight for whole halves of the catalog. `cooldown` would do NOTHING for
+    // the three lasers, which are gated by heat; neither of those touches the MAGAZINE, which is
+    // the only limiter the Machine Gun has.
     //
     // Cooldown carries a NEGATIVE ramp scaled so the full card is a +50% RATE of fire, not a -50%
     // cooldown: cooldown x (1/1.5) = 0.667, so the amounts must total -0.333.
-    tiers: rampText('Rate of fire'),
-    tierEffects: PASSIVE_RAMP.map((v) => [
+    //
+    // RELOAD IS FLAT SECONDS, NOT A PERCENTAGE, and it has its own steeper shape - see
+    // FEED_RELOAD. Rate of fire and reload pull against each other on a magazine weapon: firing
+    // faster empties the belt sooner, so the percentage half of this card buys burst and gives
+    // back uptime. The seconds half is what buys the uptime back.
+    tiers: PASSIVE_RAMP.map(
+      (v, i) => `Rate of fire +${Math.round(v * 100)}%. Reload ${FEED_RELOAD[i]}s faster.`,
+    ),
+    tierEffects: PASSIVE_RAMP.map((v, i) => [
       { target: 'weapon' as const, key: 'cooldown' as const, mode: 'mul' as const, amount: -v * (1 / 3 / 0.5) },
       { target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: v },
+      { target: 'weapon' as const, key: 'reloadTime' as const, mode: 'add' as const, amount: -FEED_RELOAD[i] },
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
