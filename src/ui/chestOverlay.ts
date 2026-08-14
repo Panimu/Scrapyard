@@ -29,8 +29,36 @@
  * entire feeling of a slot machine: two matching symbols and one still spinning is the only moment
  * in this game where the player wants time to pass more slowly.
  *
- * `prefers-reduced-motion` collapses the whole thing to the result. Someone who has asked their
- * phone not to move things has not asked for a two-second spin.
+ * ---------------------------------------------------------------------------------------------
+ * THE MACHINE KNOWS, SO IT CAN ACT LIKE IT KNOWS
+ * ---------------------------------------------------------------------------------------------
+ * Because the sim decided everything before the first frame, this overlay can do what real slot
+ * machines do and what an honest-but-ignorant animation cannot: react to the spin WHILE it is
+ * still going. Each reel gets a landing effect whose size is chosen from what that landing means,
+ * and the three of them are deliberately different beats.
+ *
+ *   REEL ONE - THE PREMONITION. It lands on a symbol, which on its own tells the player nothing.
+ *   So when the payout is going to be a big one (four or five), it lands HARD: the machine tips
+ *   its hand before it has shown a single match. It says "big", it does not say WHICH big - four
+ *   and five flare identically - so the promise raises the stakes on the two reels still turning
+ *   instead of spoiling them.
+ *
+ *   REEL TWO - WHAT IS BEING BUILT TO. Now a landing can mean something, so the effect is sized by
+ *   what is still LIVE rather than by what is guaranteed. Matching the first reel keeps the
+ *   jackpot alive and gets the biggest treatment in the machine; matching only its colour leaves
+ *   the same-type haul alive and gets the middle one; anything else lands flat, because nothing is
+ *   being built to and pretending otherwise is the thing that makes a slot machine feel fake.
+ *
+ *   REEL THREE - THE ANSWER, and it is the only reel that can be sized by the payout itself.
+ *
+ * And when reel two leaves something live, THE LAST REEL CRAWLS - `ANTICIPATION_MS` of extra
+ * spin, easing that spends it almost entirely in the last few tiles, and the whole frame leaning
+ * in while it does. That is the single most effective trick a slot machine has, and it costs a
+ * timing constant.
+ *
+ * `prefers-reduced-motion` collapses the whole thing to the result - no spin, no landings, no
+ * anticipation. Someone who has asked their phone not to move things has not asked for a
+ * two-second spin, and certainly has not asked for the machine to shake.
  */
 
 import type { World } from '../core/index.js';
@@ -43,6 +71,36 @@ const REEL_SPIN_MS = 900;
 const REEL_STAGGER_MS = 420;
 /** Beat between the last reel landing and the payout appearing. */
 const PAYOUT_DELAY_MS = 260;
+
+/**
+ * Extra spin given to the LAST reel, indexed by how hot reel two left things (see `HEAT_*`).
+ * Nothing live, no crawl - a machine that draws out every spin has taught the player to ignore it.
+ */
+const ANTICIPATION_MS: readonly number[] = [0, 460, 980];
+
+/** Landing sizes. The class suffixes are the same words, so the CSS reads as this ladder. */
+const HEAT_NONE = 0;
+const HEAT_HOT = 1;
+const HEAT_BLAZE = 2;
+const HEAT_CLASS: readonly string[] = ['', 'chest__window--hot', 'chest__window--blaze'];
+
+/**
+ * Payout at or above which reel one gives the game away. Four and five both flare, identically -
+ * the premonition promises "big" without conceding which big, so the last two reels still matter.
+ */
+const BIG_PAYOUT = 4;
+
+/**
+ * Nearly linear, then a hard brake in the last fifth. A single ease-out from t=0 - which is what
+ * this was - has the reel decelerating for its whole life, and reads as a list sliding to a halt
+ * rather than a drum being let go of and then stopped.
+ */
+const SPIN_EASE = 'cubic-bezier(.3,.32,.42,1)';
+/**
+ * The anticipation curve. Same brake, but it arrives far earlier and leaves a long crawl over the
+ * final tiles - the reel is visibly TRYING to stop on the symbol and not quite getting there.
+ */
+const CRAWL_EASE = 'cubic-bezier(.26,.4,.06,1)';
 
 const PAYOUT_WORD: readonly string[] = [
   '',
@@ -57,6 +115,9 @@ export class ChestOverlay {
   readonly element: HTMLDivElement;
 
   private readonly reelEls: HTMLDivElement[] = [];
+  /** The clipping frames. The STRIP moves; the WINDOW is what reacts when the strip stops. */
+  private readonly windowEls: HTMLDivElement[] = [];
+  private readonly reelsEl: HTMLDivElement;
   private readonly payoutEl: HTMLDivElement;
   private readonly grantsEl: HTMLDivElement;
   private readonly button: HTMLButtonElement;
@@ -86,8 +147,10 @@ export class ChestOverlay {
       window_.appendChild(strip);
       reels.appendChild(window_);
       this.reelEls.push(strip);
+      this.windowEls.push(window_);
     }
     el.appendChild(reels);
+    this.reelsEl = reels;
 
     this.payoutEl = document.createElement('div');
     this.payoutEl.className = 'chest__payout';
@@ -152,14 +215,46 @@ export class ChestOverlay {
     this.grantsEl.innerHTML = '';
     this.button.disabled = true;
     this.button.classList.add('chest__go--waiting');
+    this.clearEffects();
 
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // The whole spin is planned here, before a single tile is built, because everything it depends
+    // on is already decided. The last reel's duration is a function of what the first two land on.
+    const heat = this.planHeat(world);
+    const crawl = ANTICIPATION_MS[heat[1]] ?? 0;
+    const landAt = [
+      REEL_SPIN_MS,
+      REEL_SPIN_MS + REEL_STAGGER_MS,
+      REEL_SPIN_MS + REEL_STAGGER_MS * 2 + crawl,
+    ];
+
+    // SHOWN BEFORE THE STRIPS ARE ARMED, AND THIS ORDERING IS THE WHOLE ANIMATION.
+    //
+    // `.overlay[hidden]` is `display: none`. An element with no box has no layout to force, so the
+    // `strip.offsetHeight` read below returns 0 and flushes nothing, the browser coalesces the
+    // reset and the target into a single style change, and the strip is simply AT its final
+    // transform by the time anything is displayed. Unhiding last - which is what this did - meant
+    // three reels that teleported to the answer the instant the chest opened. Every reel, every
+    // chest, since the feature landed.
+    //
+    // Nothing paints between here and the end of this method (it is all one task), so revealing
+    // first costs no flash of an empty machine.
+    this.element.hidden = false;
 
     for (let r = 0; r < this.reelEls.length; r++) {
       const strip = this.reelEls[r];
       const landed = chest.reels[r];
       const landedId = landed >= 0 ? (catalog[landed]?.id ?? '') : '';
+
+      // Tint the landing to the symbol that caused it - amber for a gun, blue for a system. The
+      // flash is the only moment the machine has to say WHAT it landed on other than the icon.
+      const kind = landed >= 0 ? (catalog[landed]?.kind ?? '') : '';
+      this.windowEls[r].style.setProperty(
+        '--land-key',
+        kind === 'passive' ? 'var(--accent-sys)' : 'var(--accent)',
+      );
 
       strip.innerHTML = '';
       strip.style.transition = 'none';
@@ -180,10 +275,12 @@ export class ChestOverlay {
       if (reduced) continue;
 
       // Forced reflow before the transition, or the browser coalesces the reset and the target
-      // into one style change and nothing moves at all.
+      // into one style change and nothing moves at all. This only does anything because the
+      // overlay was unhidden above - see the note there.
       void strip.offsetHeight;
-      const spin = REEL_SPIN_MS + r * REEL_STAGGER_MS;
-      strip.style.transition = `transform ${spin}ms cubic-bezier(.13,.72,.28,1)`;
+      const spin = landAt[r];
+      const ease = r === 2 && crawl > 0 ? CRAWL_EASE : SPIN_EASE;
+      strip.style.transition = `transform ${spin}ms ${ease}`;
       // IN TILES, NOT PER CENT. A percentage translateY resolves against the ELEMENT's own height,
       // and the strip is fifteen tiles tall - so `-1400%` travelled fourteen STRIPS and parked the
       // reels miles past their last icon, showing three empty windows. `--chest-tile` is the one
@@ -191,15 +288,71 @@ export class ChestOverlay {
       strip.style.transform = `translateY(calc(var(--chest-tile) * -${decoys}))`;
     }
 
-    const settleIn = reduced ? 0 : REEL_SPIN_MS + (this.reelEls.length - 1) * REEL_STAGGER_MS;
-    this.after(settleIn + PAYOUT_DELAY_MS, () => this.settle(world));
+    if (!reduced) {
+      for (let r = 0; r < this.reelEls.length; r++) {
+        this.after(landAt[r], () => this.land(r, heat[r], chest.payout));
+      }
+    }
 
-    this.element.hidden = false;
+    const settleIn = reduced ? 0 : landAt[landAt.length - 1];
+    this.after(settleIn + PAYOUT_DELAY_MS, () => this.settle(world));
   }
 
   hide(): void {
     this.clearTimers();
+    this.clearEffects();
     this.element.hidden = true;
+  }
+
+  /**
+   * How big each of the three landings should be. Read the header before changing any of it - the
+   * three reels answer three different questions and the sizes are not interchangeable.
+   */
+  private planHeat(world: World): number[] {
+    const chest = world.chest;
+    const catalog = world.upgradeCatalog;
+    const a = chest.reels[0];
+    const b = chest.reels[1];
+    const kindOf = (i: number): string => (i >= 0 ? (catalog[i]?.kind ?? '') : '');
+
+    // REEL ONE speaks for the payout, because on its own it has nothing else to say.
+    const first = chest.payout >= BIG_PAYOUT ? HEAT_BLAZE : HEAT_NONE;
+
+    // REEL TWO speaks for what is still LIVE - the ceiling, not the floor. `a >= 0` matters: an
+    // empty reel is -1, and two of those are not a matching pair.
+    let second = HEAT_NONE;
+    if (a >= 0 && a === b) second = HEAT_BLAZE; // jackpot still on the table
+    else if (a >= 0 && b >= 0 && kindOf(a) === kindOf(b)) second = HEAT_HOT; // rare haul still on it
+
+    // REEL THREE is the only one that can speak for the result, because it IS the result.
+    const third =
+      chest.payout >= 5 ? HEAT_BLAZE : chest.payout >= 3 ? HEAT_HOT : HEAT_NONE;
+
+    return [first, second, third];
+  }
+
+  /**
+   * One reel has stopped. Sizes the impact, and runs the anticipation state between reel two
+   * landing on something live and reel three answering it.
+   */
+  private land(r: number, heat: number, payout: number): void {
+    const win = this.windowEls[r];
+    win.classList.add('chest__window--land');
+    if (heat > HEAT_NONE) win.classList.add(HEAT_CLASS[heat]);
+
+    if (r === 1 && heat > HEAT_NONE) this.reelsEl.classList.add('chest__reels--anticipating');
+    if (r === 2) {
+      this.reelsEl.classList.remove('chest__reels--anticipating');
+      if (payout >= 5) this.reelsEl.classList.add('chest__reels--jackpot');
+    }
+  }
+
+  /** Every class the spin adds, off. Called on show and on hide, so a re-open starts cold. */
+  private clearEffects(): void {
+    this.reelsEl.classList.remove('chest__reels--anticipating', 'chest__reels--jackpot');
+    for (const win of this.windowEls) {
+      win.classList.remove('chest__window--land', HEAT_CLASS[HEAT_HOT], HEAT_CLASS[HEAT_BLAZE]);
+    }
   }
 
   /** Reveals the payout and arms the button. Split out so reduced-motion can jump straight here. */

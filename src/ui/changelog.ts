@@ -40,6 +40,25 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T12:39Z',
+    title: 'The chest reels actually spin now',
+    notes: [
+      'They never did. The machine snapped straight to its answer the moment the chest opened, so every spin in the game so far has been three symbols appearing at once. They turn now - fast, then braking hard onto the symbol, stopping left to right.',
+    ],
+  },
+  {
+    at: '2026-08-14T12:39Z',
+    title: 'The slot machine tells you where you stand while it is still spinning',
+    notes: [
+      'Each reel now lands with a weight chosen from what that landing MEANS, and the three of them are different beats.',
+      'REEL ONE is a premonition. It cannot show you a match yet, so instead it slams home when the haul is going to be a big one. It says “big”. It does not say which big - a rare haul and a jackpot flare identically - so the promise raises the stakes on the two reels still turning instead of spoiling them.',
+      'REEL TWO is about what is still LIVE. Match the first reel and the jackpot is still on the table: the biggest reaction in the machine. Match only its colour and the same-type haul is still alive: a smaller one. Match nothing and it lands flat, because nothing is being built to.',
+      'AND THEN THE LAST REEL CRAWLS. When reel two leaves something alive, reel three takes almost a second longer to arrive, dragging over the final symbols while the whole frame pulses. Nothing left alive, no crawl - a machine that draws out every spin teaches you to stop watching.',
+      'The landing flash is the colour of what it landed on: amber for a gun, blue for a system.',
+      'All of it is off if your phone is set to reduce motion.',
+    ],
+  },
+  {
     at: '2026-08-14T12:11Z',
     title: 'Enemies never stop dropping XP',
     notes: [

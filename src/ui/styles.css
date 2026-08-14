@@ -1176,13 +1176,141 @@ body {
   box-shadow: inset 0 0 24px rgba(0, 0, 0, .7);
 }
 .chest__window {
+  position: relative;
   width: var(--chest-tile);
   height: var(--chest-tile);
   overflow: hidden;
   border-radius: 12px;
   background: #05070a;
+  /* Set per reel from the symbol it lands on, so the flash is the colour of the thing you won. */
+  --land-key: var(--accent);
 }
 .chest__strip { will-change: transform; }
+
+/* THE DRUM. A fixed gradient darkening the top and bottom of the window, which does more for the
+   illusion than any amount of easing: it makes the strip read as a cylinder turning past a slot
+   rather than a list sliding behind a hole. Static, so it costs nothing per frame - and
+   `pointer-events: none` because the only thing in this overlay you can click is the button. */
+.chest__window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, .85) 0%,
+    rgba(0, 0, 0, .18) 26%,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, .18) 74%,
+    rgba(0, 0, 0, .85) 100%
+  );
+}
+
+/* THE FLASH. Clipped to the window by the overflow above, so it fills the tile rather than
+   bleeding into the frame. The glow that DOES escape is the window's own box-shadow, which
+   `overflow: hidden` does not clip. */
+.chest__window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--land-key);
+  mix-blend-mode: screen;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   LANDINGS. Three sizes, and which one a reel gets is decided in chestOverlay.ts - reel one for a
+   big payout, reel two for what is still live, reel three for the answer. See that file's header:
+   the sizes are not decoration, they are the machine telling you where you stand mid-spin.
+   --------------------------------------------------------------------------------------------- */
+
+/* PLAIN. A drum arriving at a stop. Down hard, a touch of rebound, done in a quarter second. */
+@keyframes chest-land {
+  0%   { transform: scale(1); }
+  24%  { transform: scale(.93); }
+  58%  { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+.chest__window--land { animation: chest-land .26s cubic-bezier(.3,.7,.4,1) both; }
+.chest__window--land::after { animation: chest-flash-soft .26s ease-out both; }
+@keyframes chest-flash-soft {
+  0%   { opacity: .34; }
+  100% { opacity: 0; }
+}
+
+/* HOT. Something is still live. Bigger punch, a held flash, and the frame keeps a rim of the
+   symbol's colour so the player can see at a glance which reels are the ones that matter. */
+.chest__window--hot {
+  animation: chest-land-hot .42s cubic-bezier(.28,.72,.36,1) both;
+  box-shadow: 0 0 0 2px var(--land-key), 0 0 18px -2px var(--land-key);
+}
+@keyframes chest-land-hot {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(.88); }
+  46%  { transform: scale(1.07); }
+  72%  { transform: scale(.985); }
+  100% { transform: scale(1); }
+}
+.chest__window--hot::after { animation: chest-flash-hot .42s ease-out both; }
+@keyframes chest-flash-hot {
+  0%   { opacity: .62; }
+  30%  { opacity: .3; }
+  100% { opacity: 0; }
+}
+
+/* BLAZE. The big one - a jackpot still live, or a payout worth announcing before the reels have
+   finished. It shakes, which nothing else in this game does, and that is the point: it is the one
+   effect the player has no prior for, so it reads as the machine losing its composure. */
+.chest__window--blaze {
+  animation: chest-land-blaze .62s cubic-bezier(.24,.76,.3,1) both;
+  box-shadow: 0 0 0 3px var(--land-key), 0 0 34px 2px var(--land-key);
+}
+@keyframes chest-land-blaze {
+  0%   { transform: scale(1) translateX(0); }
+  12%  { transform: scale(.82) translateX(0); }
+  26%  { transform: scale(1.13) translateX(-5px); }
+  38%  { transform: scale(1.06) translateX(5px); }
+  50%  { transform: scale(1.08) translateX(-3px); }
+  62%  { transform: scale(1.02) translateX(2px); }
+  76%  { transform: scale(1.03) translateX(-1px); }
+  100% { transform: scale(1) translateX(0); }
+}
+.chest__window--blaze::after { animation: chest-flash-blaze .62s ease-out both; }
+@keyframes chest-flash-blaze {
+  0%   { opacity: .95; }
+  16%  { opacity: .5; }
+  34%  { opacity: .62; }
+  100% { opacity: 0; }
+}
+
+/* ANTICIPATION. Runs from the moment reel two lands on something live until reel three answers
+   it, while the last reel is still crawling. The frame breathes; nothing moves position, because
+   a shaking frame around a reel you are trying to read is just hard to look at. */
+.chest__reels--anticipating {
+  animation: chest-anticipate .58s ease-in-out infinite alternate;
+}
+@keyframes chest-anticipate {
+  from { border-color: #2a323e; box-shadow: inset 0 0 24px rgba(0, 0, 0, .7); }
+  to {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, .7), 0 0 26px -4px var(--accent);
+  }
+}
+
+/* And the settled jackpot: the frame keeps glowing while the payout line and the grants arrive. */
+.chest__reels--jackpot {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .7), 0 0 30px -4px var(--accent);
+  animation: chest-jackpot .9s ease-out both;
+}
+@keyframes chest-jackpot {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
 .chest__tile {
   width: var(--chest-tile);
   height: var(--chest-tile);
@@ -1233,6 +1361,18 @@ body {
 
 .chest__go--waiting { opacity: .35; }
 
+/* The landing classes are never added under reduced motion - chestOverlay.ts skips the whole
+   schedule - but the reels frame is shared, so its two states are disarmed here as well. */
 @media (prefers-reduced-motion: reduce) {
   .chest__payout--in { transition: none; }
+  .chest__window--land,
+  .chest__window--hot,
+  .chest__window--blaze,
+  .chest__window--land::after,
+  .chest__window--hot::after,
+  .chest__window--blaze::after,
+  .chest__reels--anticipating,
+  .chest__reels--jackpot {
+    animation: none;
+  }
 }
