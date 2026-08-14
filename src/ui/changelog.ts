@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T15:17Z',
+    title: 'Elites and bosses keep the health, give back the damage',
+    notes: [
+      'They stay exactly as tough as they were made an hour ago - an elite has double the hit points and a Scraplord has triple - but their contact damage goes back to what it has always been.',
+      'A last-cycle boss was hitting for 145 against a 120 hull, which is a one-shot kill from full health that even a maxed Ablative Plate could not turn into a survivable hit. It is 48 again: three hits, which is a mistake you can read and recover from.',
+      'A last-cycle elite goes from 66 to 33 for the same reason.',
+      'So the two numbers now do different jobs. Health is how long the fight lasts. Damage is how badly touching the thing goes. Making a boss last three times as long is a bigger fight; making it hit three times as hard was a different game.',
+    ],
+  },
+  {
     at: '2026-08-14T15:07Z',
     title: 'The Scrapyard is won at sixteen minutes with the yard clear',
     notes: [

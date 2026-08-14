@@ -115,23 +115,31 @@ export interface RankDef {
  * the mass is belt and braces for the separation force, which does not check flags.
  */
 /**
- * ELITES ARE TWICE WHAT THEY WERE AND BOSSES THREE TIMES, in both HP and contact damage - the two
- * numbers that mean "strong" for a body whose whole job is to be in the way. Elite 5 -> 10 HP and
- * 1.5 -> 3.0 damage; boss 14 -> 42 and 2.2 -> 6.6.
+ * ELITES ARE TWICE AS TOUGH AND BOSSES THREE TIMES - and that is a HEALTH change only. Elite HP
+ * 5 -> 10, boss 14 -> 42, with contact damage left exactly where it always was.
  *
- * XP IS DELIBERATELY UNCHANGED. It is a separate axis and nobody asked for it to move, so an
- * elite is now twice the work for the same 8x payout and a boss three times the work for the same
- * 60x. That is a real change to what those fights are WORTH, and it is the first thing to revisit
- * if the back half of a run starts feeling like it is starving.
+ * DAMAGE WAS TRIPLED WITH THE HEALTH AND IT DID NOT SURVIVE THE ARITHMETIC. A boss at 6.6x ran
+ * into 145.2 contact damage in the last cycle against a 120 HP mech - a one-shot kill from full
+ * health that a maxed Ablative Plate (22 flat) could not even turn into a survivable hit. At the
+ * shipping 2.2x it is 48.4, which is three hits, and three hits is a mistake you can read and
+ * recover from rather than a death you cannot.
  *
- * SPEED IS UNCHANGED TOO, and that is what keeps this survivable: the table's one rule is that
- * every rank moves HP up while moving speed DOWN, so a boss with three times the hit points is
- * still the slowest thing on the field and still a place on the map rather than a pursuer.
+ * So the two axes do different jobs and are tuned apart: HEALTH is how long the fight lasts, and
+ * DAMAGE is how badly touching the thing goes. Making a boss last three times as long is a bigger
+ * fight; making it hit three times as hard is a different game.
+ *
+ * XP IS UNCHANGED. An elite is now twice the work for the same 8x payout and a boss three times
+ * the work for the same 60x - a real change to what those fights are WORTH, and the first thing
+ * to revisit if the back half of a run starts feeling like it is starving.
+ *
+ * SPEED IS UNCHANGED TOO, which is what keeps the table's one rule intact: every rank moves HP up
+ * while moving speed DOWN, so a boss with three times the hit points is still the slowest thing on
+ * the field and still a place on the map rather than a pursuer.
  */
 export const RANKS: readonly RankDef[] = Object.freeze([
   Object.freeze({ id: RANK_REGULAR as Rank, name: 'regular', hp: 1, xp: 1, speed: 1, dmg: 1, size: 1, mass: 1, pressure: 1 }),
-  Object.freeze({ id: RANK_ELITE as Rank, name: 'elite', hp: 10, xp: 8, speed: 0.86, dmg: 3, size: 1.5, mass: 3, pressure: 3 }),
-  Object.freeze({ id: RANK_BOSS as Rank, name: 'boss', hp: 42, xp: 60, speed: 0.72, dmg: 6.6, size: 2.9, mass: 1e9, pressure: 6 }),
+  Object.freeze({ id: RANK_ELITE as Rank, name: 'elite', hp: 10, xp: 8, speed: 0.86, dmg: 1.5, size: 1.5, mass: 3, pressure: 3 }),
+  Object.freeze({ id: RANK_BOSS as Rank, name: 'boss', hp: 42, xp: 60, speed: 0.72, dmg: 2.2, size: 2.9, mass: 1e9, pressure: 6 }),
 ] as const) as readonly RankDef[];
 
 /** Largest `RankDef.size`. Sizes MAX_ENEMY_RADIUS, so it must stay a compile-time fact. */
