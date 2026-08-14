@@ -142,6 +142,14 @@ export interface PlayerState {
    *                 and it is what makes the immunity tiers worth taking: the window absorbs a
    *                 whole crowd's simultaneous bite, not just the one that broke the layer.
    */
+  /**
+   * Seconds left on a MAGNET consumable. While positive every gem in the world is attracted,
+   * whatever the distance - the pickupRadius gate in updatePickups is skipped entirely.
+   *
+   * On the player rather than on World because it is a property of the mech's state, next to the
+   * shield timers, and because that is where the renderer already looks for player-scoped effects.
+   */
+  magnetSec: number;
   shieldLayers: number;
   shieldTimer: number;
   invulnLeft: number;
@@ -275,6 +283,12 @@ export interface RunStats {
    * this into a measure of how crowded the player was.
    */
   damagePrevented: number;
+  /** Credits banked from blue coins. The run's second currency, and purely a score for now. */
+  credits: number;
+  /** Consumables walked over, all kinds. */
+  consumables: number;
+  /** Fuel barrels broken. Not the same number - a barrel you never walked back to still counts. */
+  barrelsBroken: number;
   /**
    * EFFECTIVE damage dealt, split by the WEAPON that dealt it. Indexed by WEAPON CATALOG index -
    * not by loadout slot - so a summary can name the gun without knowing what the loadout looked

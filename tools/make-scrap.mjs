@@ -82,6 +82,11 @@ const DRAW = `(variant, barrels, hulls, mechs) => {
   // --- the ground the pile stands on -------------------------------------------------------
   // A dirt scar under everything, and a soft contact shadow. Without the shadow the pile reads as
   // a decal; it is the same trick and the same reason as the fence's inside shade.
+  //
+  // THE FUEL BARREL SKIPS IT. A scar says "this has been here for years and settled"; a drum you
+  // are meant to notice and shoot needs to read as an OBJECT standing on the floor, not as part
+  // of the floor. Losing the scar is most of that difference on its own.
+  if (variant !== 6) {
   g.save();
   g.beginPath(); g.arc(CX, CY, R * 0.94, 0, 6.284); g.clip();
   const scar = g.createRadialGradient(CX, CY, R * 0.2, CX, CY, R * 0.94);
@@ -95,6 +100,7 @@ const DRAW = `(variant, barrels, hulls, mechs) => {
     g.fillRect(CX + Math.cos(a) * d, CY + Math.sin(a) * d, rr(1, 4), rr(1, 3));
   }
   g.restore();
+  }
 
   const shadow = (px, py, w, h, rot) => {
     g.save(); g.translate(px + 2.5, py + 3.5); g.rotate(rot);
@@ -288,6 +294,184 @@ const DRAW = `(variant, barrels, hulls, mechs) => {
     g.globalAlpha = 1;
   }
 
+  // --- variant 6: FUEL BARREL ----------------------------------------------------------------
+  // ONE drum, standing, and it has to read as a different CLASS of object from the six heaps
+  // above - because it is the only one that goes up. It gets a lone silhouette on clean ground
+  // (no scar, no scatter), a bright hazard band, and a hard rim highlight, so a player scanning
+  // the field sorts it from the scenery without being taught to.
+  if (variant === 6) {
+    const rad = R * 0.62;
+    g.beginPath(); g.arc(CX + 3, CY + 5, rad, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.fill();
+
+    g.drawImage(barrels[2], CX - rad, CY - rad, rad * 2, rad * 2);
+
+    // Hazard band and a rim, drawn over the drum and clipped to it.
+    g.save();
+    g.beginPath(); g.arc(CX, CY, rad, 0, 6.284); g.clip();
+    g.fillStyle = '#d8862c'; g.globalAlpha = 0.85;
+    g.fillRect(CX - rad, CY - rad * 0.18, rad * 2, rad * 0.36);
+    g.globalAlpha = 1;
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.fillRect(CX - rad, CY + rad * 0.12, rad * 2, rad * 0.09);
+    for (let i = 0; i < 10; i++) {
+      g.globalAlpha = rr(0.15, 0.4); g.fillStyle = rnd() < 0.5 ? RUST : RUST_DEEP;
+      g.beginPath();
+      g.ellipse(CX + rr(-rad, rad), CY + rr(-rad, rad), rr(2, 6), rr(2, 5), 0, 0, 6.284);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+    g.restore();
+
+    g.beginPath(); g.arc(CX, CY, rad, 0, 6.284);
+    g.strokeStyle = STEEL_HI; g.lineWidth = 2.5; g.stroke();
+    g.beginPath(); g.arc(CX, CY, rad * 0.42, 0, 6.284);
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 2; g.stroke();
+  }
+
+  return c.toDataURL('image/png');
+}`;
+
+/**
+ * THE CONSUMABLES a broken drum leaves on the ground.
+ *
+ * Drawn on a much smaller canvas than the piles - these are objects you walk over, not terrain -
+ * and every one of them is built to be identified in PERIPHERAL VISION at 34 world units while
+ * the player is being chased. That is a harder brief than it sounds and it rules out detail: each
+ * gets ONE silhouette and ONE colour that nothing else in the game uses.
+ *
+ *   SPANNER   green, the only green object on the field, in the shape everyone reads as "repair".
+ *   COIN      blue, in four escalating piles - and the pile IS the amount, so a player learns to
+ *             judge a coin's worth by its shape before they ever see the number.
+ *   MAGNET    the classic red horseshoe with grey poles. Nothing else in the game is that red.
+ */
+const DRAW_CONSUMABLE = `(kind) => {
+  const S = ${48 * 2};
+  const c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  const CX = S / 2, CY = S / 2;
+
+  let seed = (0x2545f491 ^ (kind * 0x9e3779b9)) >>> 0;
+  const rnd = () => {
+    seed ^= seed << 13; seed >>>= 0;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;  seed >>>= 0;
+    return seed / 4294967296;
+  };
+
+  // A soft dark disc under everything: these lie ON the rust floor, and without it they look
+  // pasted onto the screen rather than dropped on the ground.
+  const gr = g.createRadialGradient(CX, CY + 3, 2, CX, CY + 3, S * 0.42);
+  gr.addColorStop(0, 'rgba(0,0,0,0.42)');
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(CX, CY + 3, S * 0.42, 0, 6.284); g.fill();
+
+  const coin = (px, py, rad, faceCol, edgeCol) => {
+    g.beginPath(); g.arc(px + 1, py + 2, rad, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill();
+    g.beginPath(); g.arc(px, py, rad, 0, 6.284);
+    g.fillStyle = edgeCol; g.fill();
+    g.beginPath(); g.arc(px, py, rad * 0.74, 0, 6.284);
+    g.fillStyle = faceCol; g.fill();
+    g.beginPath(); g.arc(px - rad * 0.22, py - rad * 0.26, rad * 0.26, 0, 6.284);
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.fill();
+  };
+  const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8';
+
+  // --- 0: SPANNER --------------------------------------------------------------------------
+  // An OPEN-END wrench. The first attempt drew two closed rings on a shaft and read as a barbell:
+  // at 34 world units a closed jaw is just a circle, and two circles on a bar is a dumbbell to
+  // everyone who has ever seen one. What makes it a spanner is the GAP - so the notch is cut wide
+  // enough (about a third of the head) to survive at a glance, and the heads are set at different
+  // angles the way a real double-ended wrench is.
+  if (kind === 0) {
+    const DARK = '#1c6335', LIT = '#3ecb70';
+    const head = (hx, hy, rot) => {
+      g.save();
+      g.translate(hx, hy); g.rotate(rot);
+      g.beginPath(); g.arc(0, 0, S * 0.15, 0, 6.284);
+      g.fillStyle = DARK; g.fill();
+      g.beginPath(); g.arc(0, 0, S * 0.15 - 3.5, 0, 6.284);
+      g.fillStyle = LIT; g.fill();
+      // The jaw: a wide wedge of everything punched back out, opening away from the shaft.
+      g.globalCompositeOperation = 'destination-out';
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.lineTo(-S * 0.17, -S * 0.24);
+      g.lineTo(S * 0.17, -S * 0.24);
+      g.closePath(); g.fill();
+      g.restore();
+    };
+
+    g.save();
+    g.translate(CX, CY); g.rotate(-0.55);
+    // Shaft.
+    g.lineCap = 'round';
+    g.strokeStyle = DARK; g.lineWidth = 15;
+    g.beginPath(); g.moveTo(0, -S * 0.17); g.lineTo(0, S * 0.17); g.stroke();
+    g.strokeStyle = LIT; g.lineWidth = 9;
+    g.beginPath(); g.moveTo(0, -S * 0.17); g.lineTo(0, S * 0.17); g.stroke();
+    head(0, -S * 0.22, 0);
+    head(0, S * 0.22, Math.PI * 0.82);
+    g.restore();
+  }
+
+  // --- 1..4: COINS, one / small stack / large stack / bag ------------------------------------
+  if (kind === 1) coin(CX, CY, S * 0.20, COIN_FACE, COIN_EDGE);
+
+  if (kind === 2) {
+    const spots = [[-0.12, 0.08], [0.11, 0.10], [-0.01, -0.09]];
+    for (const [fx, fy] of spots) coin(CX + fx * S, CY + fy * S, S * 0.155, COIN_FACE, COIN_EDGE);
+  }
+
+  if (kind === 3) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * 6.284, d = i === 0 ? 0 : S * 0.155;
+      coin(CX + Math.cos(a) * d, CY + Math.sin(a) * d * 0.85, S * 0.135, COIN_FACE, COIN_EDGE);
+    }
+    coin(CX, CY - S * 0.03, S * 0.145, COIN_FACE, COIN_EDGE);
+  }
+
+  if (kind === 4) {
+    // A sack with the neck open and coins spilling over the lip.
+    g.beginPath();
+    g.ellipse(CX + 2, CY + S * 0.10, S * 0.30, S * 0.26, 0, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill();
+    g.beginPath();
+    g.ellipse(CX, CY + S * 0.08, S * 0.29, S * 0.25, 0, 0, 6.284);
+    g.fillStyle = '#7a6a4e'; g.fill();
+    g.beginPath();
+    g.ellipse(CX, CY + S * 0.08, S * 0.29, S * 0.25, 0, 3.34, 6.08);
+    g.strokeStyle = '#5c4f3a'; g.lineWidth = 3; g.stroke();
+    // Neck.
+    g.fillStyle = '#8d7b5b';
+    g.beginPath(); g.ellipse(CX, CY - S * 0.13, S * 0.17, S * 0.09, 0, 0, 6.284); g.fill();
+    for (let i = 0; i < 7; i++) {
+      const a = rnd() * 6.284;
+      coin(CX + Math.cos(a) * S * 0.16, CY - S * 0.16 + Math.sin(a) * S * 0.06, S * 0.10, COIN_FACE, COIN_EDGE);
+    }
+  }
+
+  // --- 5: MAGNET ----------------------------------------------------------------------------
+  if (kind === 5) {
+    g.save();
+    g.translate(CX, CY + S * 0.06); g.rotate(0.3);
+    g.lineCap = 'butt';
+    g.strokeStyle = '#8f2020'; g.lineWidth = 17;
+    g.beginPath(); g.arc(0, 0, S * 0.20, Math.PI, 0); g.stroke();
+    g.strokeStyle = '#e03b3b'; g.lineWidth = 11;
+    g.beginPath(); g.arc(0, 0, S * 0.20, Math.PI, 0); g.stroke();
+    // Poles.
+    for (const dir of [-1, 1]) {
+      g.fillStyle = '#3a3f47';
+      g.fillRect(dir * S * 0.20 - 8.5, 0, 17, S * 0.15);
+      g.fillStyle = '#5d646e';
+      g.fillRect(dir * S * 0.20 - 8.5, 0, 6, S * 0.15);
+    }
+    g.restore();
+  }
+
   return c.toDataURL('image/png');
 }`;
 
@@ -353,7 +537,7 @@ async function main() {
   }, { barrels: barrelUris, hulls: hullUris, mechs: mechUris });
 
   let bytes = 0;
-  for (let v = 0; v < 6; v++) {
+  for (let v = 0; v < 7; v++) {
     const dataUrl = await page.evaluate(
       `(${DRAW})(${v}, window.__barrels, window.__hulls, window.__mechs)`,
     );
@@ -363,8 +547,17 @@ async function main() {
     console.log(`  scrap_${v}        ${(buf.length / 1024).toFixed(1)} kB`);
   }
 
+  const CONSUMABLES = ['cons_spanner', 'cons_coin0', 'cons_coin1', 'cons_coin2', 'cons_coin3', 'cons_magnet'];
+  for (let k = 0; k < CONSUMABLES.length; k++) {
+    const dataUrl = await page.evaluate(`(${DRAW_CONSUMABLE})(${k})`);
+    const buf = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+    await writeFile(join(OUT_DIR, `${CONSUMABLES[k]}.png`), buf);
+    bytes += buf.length;
+    console.log(`  ${CONSUMABLES[k].padEnd(14)} ${(buf.length / 1024).toFixed(1)} kB`);
+  }
+
   await browser.close();
-  console.log(`\n6 sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
+  console.log(`\n${7 + CONSUMABLES.length} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 
 void main();

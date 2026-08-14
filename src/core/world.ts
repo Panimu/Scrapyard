@@ -210,6 +210,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     xpToNext: xpToNextLevel(1, config.tuning.xp),
     heroId: config.heroId,
     stats: createPlayerStats(),
+    magnetSec: 0,
     shieldLayers: 0,
     shieldTimer: 0,
     invulnLeft: 0,
@@ -261,6 +262,9 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       damageDealt: 0,
       damageTaken: 0,
       damagePrevented: 0,
+      credits: 0,
+      consumables: 0,
+      barrelsBroken: 0,
       // Sized from the INJECTED catalog, not the shipping one: a fixture catalog with two weapons
       // gets a two-entry breakdown rather than an eight-entry array with six permanent zeroes.
       damageByWeapon: new Float64Array(catalogs.weapons.length),

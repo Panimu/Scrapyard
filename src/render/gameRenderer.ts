@@ -27,6 +27,8 @@ import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 
 import {
   ARCHETYPES,
   ARENA_HALF,
+  EV_BARREL_BROKEN,
+  EV_CONSUMABLE_TAKEN,
   BOSS_OUTLINE_SCALE,
   BOSS_OUTLINE_TINT,
   ENEMY_FLAG_BOSS,
@@ -46,6 +48,9 @@ import {
   RANKS,
   RANK_BOSS,
   RANK_ELITE,
+  PICKUP_KIND_GEM,
+  PICKUP_KIND_MAGNET,
+  PICKUP_KIND_REPAIR,
   RANK_REGULAR,
   SCENERY_CELL,
   SCENERY_COLS,
@@ -72,6 +77,7 @@ import {
   MISSILE_LONG_SCALE_Y,
   MISSILE_SHORT_SCALE_X,
   MISSILE_SHORT_SCALE_Y,
+  CONSUMABLE_SCALE,
   SCRAP_SRC_RADIUS,
   SHELL_SCALE,
   TURRET_SCALE,
@@ -501,6 +507,25 @@ export class GameRenderer {
           this.effects.shieldRestore(a, b, SHIELD_RIM_TINT);
           break;
 
+        case EV_BARREL_BROKEN:
+          // A drum going up is the loudest thing scenery ever does, and it has to be, because the
+          // player did not aim at it: the burst is what tells them a barrel WAS there and that
+          // something has just been left on the ground where it stood.
+          this.effects.artilleryBlast(a, b, Math.max(20, c));
+          this.effects.scorch(a, b, c * 1.6);
+          break;
+
+        case EV_CONSUMABLE_TAKEN:
+          // Tinted by kind, so the confirmation names the thing without a word of text: green for
+          // the spanner, blue for a coin, red for the magnet.
+          this.effects.sparkle(
+            a,
+            b,
+            d === PICKUP_KIND_REPAIR ? 0x3ecb70 : d === PICKUP_KIND_MAGNET ? 0xe03b3b : 0x4fb8ff,
+          );
+          if (d === PICKUP_KIND_REPAIR) this.healFlash = HEAL_FLASH_SEC;
+          break;
+
         case EV_GEM_COLLECTED: {
           // Defensive: gem collection happens at the player, so a payload that is not a position
           // would otherwise scatter sparkles at the arena origin.
@@ -613,10 +638,31 @@ export class GameRenderer {
       // Bob phase keyed off spawnId so each gem has its own rhythm and none of them pulse in
       // lockstep. spawnId is stable across the pool's swap-removes; the dense index is not.
       const phase = p.spawnId[d] * 0.7;
-      s.position.set(x, y + Math.sin(this.clock * 3 + phase) * 2.5);
-      s.rotation = Math.sin(this.clock * 1.6 + phase) * 0.35;
-      s.scale.set(GEM_SCALE);
-      s.tint = GEM_TINT[p.tier[d]] ?? GEM_TINT[0];
+      const kind = p.kind[d];
+
+      if (kind === PICKUP_KIND_GEM) {
+        s.texture = this.tex.gem;
+        s.position.set(x, y + Math.sin(this.clock * 3 + phase) * 2.5);
+        s.rotation = Math.sin(this.clock * 1.6 + phase) * 0.35;
+        s.scale.set(GEM_SCALE);
+        s.tint = GEM_TINT[p.tier[d]] ?? GEM_TINT[0];
+        s.alpha = 1;
+        continue;
+      }
+
+      // A CONSUMABLE. It bobs slower and does NOT spin: these are objects lying on the ground
+      // rather than floating crystals, and a spinning spanner reads as another kind of gem. The
+      // slow rise and fall is enough to say "pick me up" without pretending to be weightless.
+      s.texture =
+        kind === PICKUP_KIND_REPAIR
+          ? this.tex.consSpanner
+          : kind === PICKUP_KIND_MAGNET
+            ? this.tex.consMagnet
+            : (this.tex.consCoin[p.tier[d]] ?? this.tex.consCoin[0]);
+      s.position.set(x, y + Math.sin(this.clock * 1.8 + phase) * 1.8);
+      s.rotation = 0;
+      s.scale.set(CONSUMABLE_SCALE);
+      s.tint = 0xffffff;
       s.alpha = 1;
     }
 

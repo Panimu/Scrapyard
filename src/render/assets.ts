@@ -180,6 +180,14 @@ export const VOID_COLOUR = 0x151109;
  */
 export const SCRAP_SRC_RADIUS = 96;
 
+/**
+ * Consumables are drawn on a 96 px canvas and want to sit at about 38 world units - a shade bigger
+ * than the 34 u pickup radius, so the thing you can see is very slightly more generous than the
+ * thing you have to touch. Nobody ever complained that a pickup was too easy to grab; the reverse
+ * is the complaint.
+ */
+export const CONSUMABLE_SCALE = 38 / 96;
+
 // ---------------------------------------------------------------------------------------------
 // Loading
 // ---------------------------------------------------------------------------------------------
@@ -206,6 +214,12 @@ export interface GameTextures {
   readonly fencePost: Texture;
   /** Scrap piles, indexed by `Scenery.variant`. */
   readonly scrap: readonly Texture[];
+  /** The spanner - PICKUP_KIND_REPAIR. */
+  readonly consSpanner: Texture;
+  /** Blue credit coins, indexed by the pickup's `tier`: single / small / large / bag. */
+  readonly consCoin: readonly Texture[];
+  /** The gem magnet - PICKUP_KIND_MAGNET. */
+  readonly consMagnet: Texture;
   readonly shell: Texture;
   readonly gem: Texture;
   readonly puff: readonly Texture[];
@@ -296,6 +310,8 @@ export async function loadGameTextures(
 
   keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem');
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
+  keys.push('cons_spanner', 'cons_magnet');
+  for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
 
@@ -354,6 +370,9 @@ export async function loadGameTextures(
     fence,
     fencePost: get('fence_post'),
     scrap: Array.from({ length: SCENERY_VARIANTS }, (_, i) => get(`scrap_${i}`)),
+    consSpanner: get('cons_spanner'),
+    consCoin: Array.from({ length: 4 }, (_, i) => get(`cons_coin${i}`)),
+    consMagnet: get('cons_magnet'),
     shell: get('shell'),
     missile: get('missile'),
     slug: get('slug'),

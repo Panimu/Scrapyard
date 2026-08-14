@@ -51,23 +51,154 @@
 
 import { ARENA_HALF, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
+import { destroyScenery, destructibleOverlap } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import {
+  PICKUP_FLAG_AUTO,
   PICKUP_FLAG_DEAD,
+  PICKUP_KIND_CREDIT,
   PICKUP_KIND_GEM,
+  PICKUP_KIND_MAGNET,
+  PICKUP_KIND_REPAIR,
   allocPickup,
   markPickupDead,
 } from '../entity/pickupPool.js';
-import { EV_GEM_COLLECTED, EV_GEM_SPAWNED, pushEvent } from '../events/ring.js';
+import {
+  EV_BARREL_BROKEN,
+  EV_CONSUMABLE_TAKEN,
+  EV_GEM_COLLECTED,
+  EV_GEM_SPAWNED,
+  pushEvent,
+} from '../events/ring.js';
 import type { World } from '../types.js';
 
 /** Uint16Array ceiling. An absorbed gem saturates here rather than wrapping to a white gem. */
 const MAX_GEM_VALUE = 65535;
 
 export function updatePickups(world: World, dt: number): void {
+  const p = world.player;
+  if (p.magnetSec > 0) {
+    p.magnetSec -= dt;
+    if (p.magnetSec < 0) p.magnetSec = 0;
+  }
   dropGems(world);
   magnetAndCollect(world, dt);
 }
+
+// -------------------------------------------------------------------------------------------
+// Fuel barrels and what falls out of them
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Breaks any FUEL BARREL overlapping the circle (x, y, r) and drops what was inside. Returns true
+ * if something went up.
+ *
+ * CALLED FROM THREE PLACES, and they are exactly the three ways a weapon can touch the ground: a
+ * shell arriving (radius 0), a blast going off (radius = splashRadius), and a beam sweeping across
+ * (the caller resolves the ray and passes the point). Nothing else in the game can break one -
+ * enemies walk around barrels, and the player cannot push one over.
+ *
+ * A barrel is NEVER TARGETED. It is not an enemy, so no targeting rule can see it, and that is the
+ * whole character of the thing: you do not shoot barrels, you notice one went up because you were
+ * shooting through where it stood. Making it targetable would put a decoy in front of every
+ * weapon whose job is to pick the right enemy.
+ */
+export function breakBarrelIn(world: World, x: number, y: number, r: number): boolean {
+  const i = destructibleOverlap(world.scenery, x, y, r);
+  if (i < 0) return false;
+
+  const bx = world.scenery.x[i];
+  const by = world.scenery.y[i];
+  // Read BEFORE destroying: destruction is a radius write, so this is the last tick the size of
+  // the thing that went up exists anywhere, and the renderer sizes its burst from it.
+  const br = world.scenery.radius[i];
+  destroyScenery(world.scenery, i);
+  world.stats.barrelsBroken++;
+  pushEvent(world.events, EV_BARREL_BROKEN, world.tick, bx, by, br, 0);
+  dropConsumable(world, bx, by);
+  return true;
+}
+
+/**
+ * Rolls one consumable and puts it where the barrel stood.
+ *
+ * THE DRAW IS ON `rng.loot`, not `rng.spawn`. Barrels are broken by whatever the player happened
+ * to be shooting at the time, so the number of draws per run is a function of how they play - and
+ * pulling those out of the spawn stream would make the horde itself depend on how much scenery
+ * someone shot. Loot is the stream that already exists for exactly this.
+ *
+ * Two draws, always, in this order: WHICH consumable, then the coin jitter. The second is drawn
+ * even for a spanner or a magnet, so that adding or reweighting a kind later cannot shift the
+ * stream for the kinds either side of it.
+ */
+function dropConsumable(world: World, x: number, y: number): void {
+  const rng = world.rng.loot;
+  const t = world.config.tuning.pickups;
+
+  const which = rng.nextFloat();
+  const jitter = rng.nextRange(1 - t.creditJitter, 1 + t.creditJitter);
+
+  let kind: number;
+  let value: number;
+  let tier: number;
+
+  if (which < CONSUMABLE_REPAIR_CHANCE) {
+    kind = PICKUP_KIND_REPAIR;
+    value = Math.max(1, Math.round(world.player.stats.maxHp * t.repairFrac));
+    tier = 0;
+  } else if (which < CONSUMABLE_REPAIR_CHANCE + CONSUMABLE_MAGNET_CHANCE) {
+    kind = PICKUP_KIND_MAGNET;
+    value = 0;
+    tier = 0;
+  } else {
+    kind = PICKUP_KIND_CREDIT;
+    // VALUE RIDES THE CLOCK. A coin found in the first minute is worth about 1 and one found at
+    // the end is worth about 50, so the same barrel is a trivial pickup early and a real prize
+    // late - which is what stops the yard being farmed dry in the opening two minutes while the
+    // player is safe and everything is slow.
+    const span = world.config.runLengthSec > 0 ? world.runSec / world.config.runLengthSec : 0;
+    const clamped = span < 0 ? 0 : span > 1 ? 1 : span;
+    const base = t.creditMin + (t.creditMax - t.creditMin) * clamped;
+    const rolled = Math.round(base * jitter);
+    value = rolled < t.creditMin ? t.creditMin : rolled > t.creditMax ? t.creditMax : rolled;
+    tier = creditTier(value, t.creditTierValues);
+  }
+
+  const spawnId = CONSUMABLE_SPAWN_ID_BASE + world.tick;
+  const handle = allocPickup(world.pickups, kind, value, tier, x, y, spawnId);
+  if (handle === NULL_HANDLE) return; // pool full: the drop is simply lost, never overwritten
+
+  const d = world.pickups.count - 1;
+  // NOT MAGNETISED. A consumable that flew to you would delete the decision the barrel exists to
+  // pose - is that spanner worth crossing the field for, right now, with this much behind you.
+  world.pickups.flags[d] |= PICKUP_FLAG_AUTO;
+
+  pushEvent(world.events, EV_GEM_SPAWNED, world.tick, x, y, value, tier);
+}
+
+/** Which of the four coin sprites a value draws. Highest threshold that fits. */
+function creditTier(value: number, thresholds: readonly number[]): number {
+  let tier = 0;
+  for (let i = 0; i < thresholds.length; i++) {
+    if (value >= thresholds[i]) tier = i;
+  }
+  return tier;
+}
+
+/**
+ * Drop weights. A spanner is the most common because it is the one that answers the question the
+ * player actually has in the back half of a run; the magnet is rarest because it is the only one
+ * that changes the next ten seconds rather than the next number.
+ */
+const CONSUMABLE_REPAIR_CHANCE = 0.45;
+const CONSUMABLE_MAGNET_CHANCE = 0.15;
+
+/**
+ * Consumable spawnIds live above every gem's. A gem's is `1 + tick * MAX_KILLS_PER_TICK + k`, so
+ * this base clears the whole space a 15-minute run can reach and the renderer can keep keying
+ * sprites off spawnId without the two ever colliding.
+ */
+const CONSUMABLE_SPAWN_ID_BASE = 0x40000000;
 
 // -------------------------------------------------------------------------------------------
 // Drops
@@ -174,12 +305,25 @@ function magnetAndCollect(world: World, dt: number): void {
   /** Top tier of gemTierValues - the boss core, which is attracted from any distance. */
   const bossTier = tuning.gemTierValues.length - 1;
 
+  const consumableR2 = tuning.consumableRadius * tuning.consumableRadius;
+  // While a MAGNET is running, every gem is in the field whatever the distance.
+  const magnetAll = player.magnetSec > 0;
+
   for (let d = 0; d < n; d++) {
     if ((pool.flags[d] & PICKUP_FLAG_DEAD) !== 0) continue;
 
     const dx = px - pool.x[d];
     const dy = py - pool.y[d];
     const d2 = dx * dx + dy * dy;
+
+    // CONSUMABLES ARE WALKED OVER. They do not chase and are not chased: no magnet term, no
+    // velocity, just a generous contact radius. That is the point of them - a barrel poses a
+    // question ("is that spanner worth crossing the field for, right now") and a consumable that
+    // flew to the player would answer it for them.
+    if (pool.kind[d] !== PICKUP_KIND_GEM) {
+      if (d2 <= consumableR2) takeConsumable(world, d);
+      continue;
+    }
 
     // `d2 === 0` is folded in here so the normalise below can never divide by zero: a gem sitting
     // exactly on the player is, by any reading, collected.
@@ -188,7 +332,7 @@ function magnetAndCollect(world: World, dt: number): void {
       continue;
     }
 
-    if (d2 > pickupR2 && pool.tier[d] < bossTier) {
+    if (!magnetAll && d2 > pickupR2 && pool.tier[d] < bossTier) {
       // Outside the field. The magnet is a field, not a launcher - a gem that leaves it stops
       // rather than coasting on a drag constant that does not exist in Tuning.
       pool.vx[d] = 0;
@@ -249,5 +393,36 @@ function collect(world: World, d: number): void {
   );
   // Marked, never removed. S12 is the only removal site, so this dense index stays valid for
   // updateProgression and for the renderer's drain after stepWorld returns.
+  markPickupDead(pool, d);
+}
+
+/**
+ * Applies a consumable and marks it taken.
+ *
+ * All three land INSTANTLY and none of them opens a menu. A bullet-heaven's floor pickups have to
+ * resolve in the moment the player runs over them, because the player is running over them while
+ * being chased - anything that needed a decision would be a pause button with extra steps.
+ */
+function takeConsumable(world: World, d: number): void {
+  const pool = world.pickups;
+  const player = world.player;
+  const kind = pool.kind[d];
+  const value = pool.value[d];
+
+  if (kind === PICKUP_KIND_REPAIR) {
+    // Clamped to max: a spanner tops you up, it never overheals into a buffer the HUD cannot show.
+    const hp = player.hp + value;
+    player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;
+  } else if (kind === PICKUP_KIND_CREDIT) {
+    world.stats.credits += value;
+  } else if (kind === PICKUP_KIND_MAGNET) {
+    // Refreshed, not stacked. Two magnets inside four seconds is a longer pull, not a double one -
+    // there is nothing for a second copy of "every gem is attracted" to do.
+    const sec = world.config.tuning.pickups.magnetSec;
+    if (sec > player.magnetSec) player.magnetSec = sec;
+  }
+
+  world.stats.consumables++;
+  pushEvent(world.events, EV_CONSUMABLE_TAKEN, world.tick, pool.x[d], pool.y[d], value, kind);
   markPickupDead(pool, d);
 }

@@ -282,7 +282,13 @@ export class Hud {
       this.timer.textContent = timerText;
     }
 
-    const killsText = `${world.stats.kills} kills`;
+    // Credits ride alongside the kill count rather than getting a row of their own: they are a
+    // score, not a resource the player spends in-run, and the HUD's whole job on a phone is to
+    // stay out of the way of the field. Hidden entirely until the first coin, so a player who
+    // never breaks a barrel never sees a zero they have to wonder about.
+    const credits = world.stats.credits;
+    const killsText =
+      credits > 0 ? `${world.stats.kills} kills   ${credits}c` : `${world.stats.kills} kills`;
     if (killsText !== this.lastKillsText) {
       this.lastKillsText = killsText;
       this.kills.textContent = killsText;

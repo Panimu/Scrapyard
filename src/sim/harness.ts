@@ -288,6 +288,14 @@ function printSummary(
   console.log(
     `  shots             ${s.shotsFired} fired, ${s.shotsHit} hit (${fixed(s.shotsFired > 0 ? (100 * s.shotsHit) / s.shotsFired : 0, 1)}%)`,
   );
+  // Barrels and what came out of them. Only when one was actually broken - the reference bot does
+  // not aim at scenery, so this line is a measure of how much a run BLUNDERS into the furniture,
+  // which is exactly the number worth watching while the drop rates are being tuned.
+  if (s.barrelsBroken > 0) {
+    console.log(
+      `  barrels           ${s.barrelsBroken} broken, ${s.consumables} taken, ${s.credits} credits`,
+    );
+  }
   // WHERE THE DAMAGE CAME FROM. Printed only when there is more than one source, because on a
   // single-weapon run the line would just restate `damage dealt` under a different heading.
   const sources: { name: string; amount: number }[] = [];

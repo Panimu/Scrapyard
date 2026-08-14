@@ -101,6 +101,7 @@ import {
   pushKill,
   NO_DIRECT_HIT,
 } from '../events/ring.js';
+import { breakBarrelIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
 import { KILL_REASON_KILLED } from './enemyAI.js';
@@ -324,6 +325,13 @@ function applySplash(
   slot: number,
 ): void {
   if (amount <= 0) return;
+
+  // A BLAST TAKES OUT DRUMS IT LANDS ON. Without this the artillery could never break a barrel at
+  // all - it has no direct contact to speak of (it detonates on its fuse over open ground), so the
+  // one weapon most likely to be dropping shells on scenery would be the one weapon that could
+  // not set any of it off.
+  breakBarrelIn(world, x, y, radius);
+
   const enemies = world.enemies;
   const candidates = world.scratch.candidates;
   const found = queryCircleLiveInto(world.spatial, enemies, x, y, radius, candidates);

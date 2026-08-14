@@ -76,7 +76,7 @@
 
 import { MAX_TARGETS, STRIKE_RADIUS_MAX, STRIKE_RADIUS_MIN } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
-import { sceneryRayHit } from '../content/scenery.js';
+import { destructibleRayHit, sceneryRayHit } from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
@@ -100,6 +100,7 @@ import {
   type FirePatternId,
   type WeaponDef,
 } from '../content/weaponCatalog.js';
+import { breakBarrelIn } from './pickups.js';
 import { TARGETING } from './targeting.js';
 import type { World, WeaponInstance } from '../types.js';
 
@@ -702,6 +703,14 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     px + aim.x * endT,
     py + aim.y * endT,
   );
+
+  // A BEAM TAKES DRUMS WITH IT. Barrels are exempt from beam occlusion (they have to be, or the
+  // lasers would refuse to fire at one and could never break it), so the sweep happens after the
+  // shot instead: whatever the line crossed goes up, and the beam carries on to its target.
+  const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
+  if (drum >= 0) {
+    breakBarrelIn(world, world.scenery.x[drum], world.scenery.y[drum], 0);
+  }
 
   // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
   // delivering the shot that overloaded it, so a full burst is exactly

@@ -131,6 +131,8 @@ export class GameOverOverlay {
         ${stat('Accuracy', `${accuracy}%`)}
         ${stat('Gems', String(s.gemsCollected))}
         ${s.damagePrevented > 0 ? stat('Shielded', compact(s.damagePrevented)) : ''}
+        ${s.credits > 0 ? stat('Credits', String(s.credits)) : ''}
+        ${s.barrelsBroken > 0 ? stat('Barrels', String(s.barrelsBroken)) : ''}
       </div>
       <div class="list">
         <div class="eyebrow">Damage by source</div>

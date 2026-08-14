@@ -33,6 +33,7 @@ import {
   type ProjectileBehaviour,
   type WeaponDef,
 } from '../content/weaponCatalog.js';
+import { breakBarrelIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { World } from '../types.js';
 
@@ -268,6 +269,9 @@ function stopAtTheEdges(world: World): void {
 
     // Radius 0: a round is a point against scenery, as it already is against enemies.
     if (sceneryOverlap(scenery, x[d], y[d], 0) >= 0) {
+      // A FUEL BARREL goes up rather than swallowing the round quietly. The projectile still dies
+      // here either way - a drum stops a shell whether or not it was the breakable kind.
+      breakBarrelIn(world, x[d], y[d], 0);
       markProjectileDead(p, d);
       pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, x[d], y[d], 0, d);
     }

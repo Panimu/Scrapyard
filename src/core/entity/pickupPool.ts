@@ -23,7 +23,18 @@ export const PICKUP_FLAG_DEAD = 1 << 0;
 export const PICKUP_FLAG_AUTO = 1 << 1;
 
 export const PICKUP_KIND_GEM = 0;
+/**
+ * CONSUMABLES - what a fuel barrel leaves behind. Everything above 0 is one, which is the only
+ * test the magnet and the collector need to tell "XP" from "a thing you walk over and use".
+ *
+ *   REPAIR  a spanner. Heals a fraction of max HP.
+ *   CREDIT  a blue coin. `value` is 1..50 and `tier` picks which of the four coin sprites is
+ *           drawn, so the pile you can see IS the amount you are about to bank.
+ *   MAGNET  drags every gem in the world to the player for a few seconds.
+ */
 export const PICKUP_KIND_REPAIR = 1;
+export const PICKUP_KIND_CREDIT = 2;
+export const PICKUP_KIND_MAGNET = 3;
 
 export interface PickupPool {
   readonly capacity: number;

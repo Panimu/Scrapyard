@@ -172,6 +172,25 @@ export interface PickupTuning {
   readonly magnetMaxSpeed: number;
   /** Collection distance, world units. Generous: a gem you visibly touched must be collected. */
   readonly collectRadius: number;
+
+  // --- consumables, from a broken fuel barrel ------------------------------------------------
+  /**
+   * How near you have to be to pick a consumable UP. Bigger than `collectRadius` because a
+   * consumable does not come to you - it is not magnetised, and walking over to it is the whole
+   * decision the barrel poses - so the target has to be forgiving once you are on top of it.
+   */
+  readonly consumableRadius: number;
+  /** Spanner heal, as a fraction of MAX HP - so it stays worth picking up at every level. */
+  readonly repairFrac: number;
+  /** Credit coin value at t=0 and at the end of the run. Interpolated by run time. */
+  readonly creditMin: number;
+  readonly creditMax: number;
+  /** +-this fraction of jitter on a coin, so two barrels a minute apart are not the same coin. */
+  readonly creditJitter: number;
+  /** Coin `value` at or above which each of the four coin sprites is used. */
+  readonly creditTierValues: readonly [number, number, number, number];
+  /** Seconds during which a magnet pulls EVERY gem, at any distance. */
+  readonly magnetSec: number;
 }
 
 export interface Tuning {
@@ -252,6 +271,21 @@ const PICKUPS: PickupTuning = {
   magnetAccel: 1400,
   magnetMaxSpeed: 600,
   collectRadius: 18,
+
+  consumableRadius: 34,
+  // 30 HP at base maxHp - six swarmer bites, and six times what a level-up heals. A barrel is a
+  // real decision to walk to, so it has to pay like one.
+  repairFrac: 0.25,
+  creditMin: 1,
+  creditMax: 50,
+  creditJitter: 0.25,
+  // Single coin / small stack / large stack / overflowing bag. The thresholds are spaced so the
+  // top sprite stays uncommon early: at t=0 a coin is worth ~1 and can only ever be the single,
+  // and the bag needs a value only the last third of a run can produce.
+  creditTierValues: [1, 8, 20, 36],
+  // Long enough to clear a field the player had given up on, short enough that it is a moment
+  // rather than a mode.
+  magnetSec: 4,
 };
 
 export const DEFAULT_TUNING: Tuning = Object.freeze({

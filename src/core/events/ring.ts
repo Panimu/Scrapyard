@@ -50,6 +50,20 @@ export const EV_PLAYER_SHIELD_RESTORED = 18;
  * nowhere else the render layer could read it once the shell has been reaped.
  */
 export const EV_PROJECTILE_DETONATED = 19;
+/**
+ * A fuel barrel was destroyed by a weapon. Payload: (x, y, the barrel's radius, 0).
+ *
+ * Carries the radius because the renderer draws the burst to the size of the thing that went up,
+ * and the simulation has already zeroed it by the time the event is drained - destruction IS a
+ * radius write (content/scenery.ts), so this is the last place the number exists.
+ */
+export const EV_BARREL_BROKEN = 20;
+/**
+ * The player walked over a consumable. Payload: (x, y, value, KIND) - kind being the
+ * PICKUP_KIND_* constant, so one event covers the spanner, the coin and the magnet and the
+ * renderer picks the effect off `d`.
+ */
+export const EV_CONSUMABLE_TAKEN = 21;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -73,6 +87,8 @@ export const EVENT_NAMES: readonly string[] = [
   'SHIELD_BROKEN',
   'SHIELD_RESTORED',
   'PROJECTILE_DETONATED',
+  'BARREL_BROKEN',
+  'CONSUMABLE_TAKEN',
 ];
 
 export interface EventRing {
