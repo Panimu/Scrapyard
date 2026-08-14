@@ -403,7 +403,8 @@ export interface World {
   readonly projectiles: ProjectilePool;
   readonly pickups: PickupPool;
 
-  /** Length MAX_WEAPONS, all allocated at createWorld. weaponCount are live. */
+  /** Length WEAPON_SLOTS, all allocated at createWorld. weaponCount are live, capped at
+   * MAX_WEAPONS for anything the player can reach. */
   readonly weapons: WeaponInstance[];
   weaponCount: number;
 
@@ -430,6 +431,16 @@ export interface World {
    * nothing else in the game is allowed to work this way.
    */
   infiniteRerolls: boolean;
+  /**
+   * FORBID EVERY TIER 8, for the measurement rig in tools/loadout.ts.
+   *
+   * A rig that hands itself every weapon at tier 7 and every passive has satisfied every
+   * ascension's requirements on tick one, so the first Cyber Chest would silently turn its Medium
+   * Laser into a Chain Laser and the damage table would be measuring a weapon that was never in
+   * the loadout. Read in exactly one place, `ascensionReady`, which is the gate both the chest and
+   * the tier cap already go through.
+   */
+  noAscension: boolean;
   readonly stats: RunStats;
   readonly events: EventRing;
 

@@ -60,7 +60,7 @@
  */
 
 import { Container, FillGradient, Graphics, GraphicsContext, type Sprite } from 'pixi.js';
-import { MAX_CHAIN_LINKS, MAX_WEAPONS, NO_BEAM_TARGET, type World } from '../core/index.js';
+import { MAX_CHAIN_LINKS, WEAPON_SLOTS, NO_BEAM_TARGET, type World } from '../core/index.js';
 import { SpritePool } from './spritePool.js';
 import { PARTICLE_SRC, type GameTextures } from './assets.js';
 import type { Effects } from './effects.js';
@@ -184,7 +184,7 @@ export class BeamLayer {
 
   // ---- render-only per-weapon-slot state. Never written back to World. ----
   /** 0..1 envelope: 1 while the sim is publishing this beam, decaying once it stops. */
-  private readonly env = new Float32Array(MAX_WEAPONS);
+  private readonly env = new Float32Array(WEAPON_SLOTS);
   /**
    * Last published SEGMENTS, held so the fade-out draws exactly what the sim last said.
    *
@@ -194,24 +194,24 @@ export class BeamLayer {
    * only the LAST jump was ever drawn: a Chain Laser looked like a loose beam floating in the
    * crowd with nothing joining it to the mech.
    */
-  private readonly lx0 = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
-  private readonly ly0 = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
-  private readonly lang = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
-  private readonly llen = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  private readonly lx0 = new Float32Array(WEAPON_SLOTS * MAX_CHAIN_LINKS);
+  private readonly ly0 = new Float32Array(WEAPON_SLOTS * MAX_CHAIN_LINKS);
+  private readonly lang = new Float32Array(WEAPON_SLOTS * MAX_CHAIN_LINKS);
+  private readonly llen = new Float32Array(WEAPON_SLOTS * MAX_CHAIN_LINKS);
   /** Segments latched for this slot: 1 for an ordinary laser, more while a chain is live. */
-  private readonly lsegs = new Uint8Array(MAX_WEAPONS);
-  private readonly lhalf = new Float32Array(MAX_WEAPONS);
-  private readonly lcolour = new Int32Array(MAX_WEAPONS);
+  private readonly lsegs = new Uint8Array(WEAPON_SLOTS);
+  private readonly lhalf = new Float32Array(WEAPON_SLOTS);
+  private readonly lcolour = new Int32Array(WEAPON_SLOTS);
   /** 1 when that segment stopped on a body; 0 when it reached full range. Per SEGMENT. */
-  private readonly lhit = new Uint8Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  private readonly lhit = new Uint8Array(WEAPON_SLOTS * MAX_CHAIN_LINKS);
   /** Set every frame from the buffer, then consumed by the envelope update. */
-  private readonly firing = new Uint8Array(MAX_WEAPONS);
-  private readonly emberTimer = new Float32Array(MAX_WEAPONS);
-  private readonly scorchTimer = new Float32Array(MAX_WEAPONS);
+  private readonly firing = new Uint8Array(WEAPON_SLOTS);
+  private readonly emberTimer = new Float32Array(WEAPON_SLOTS);
+  private readonly scorchTimer = new Float32Array(WEAPON_SLOTS);
   /** Last frame's `inst.overheated`, so the cut-out can be detected as an edge, not a level. */
-  private readonly wasOverheated = new Uint8Array(MAX_WEAPONS);
+  private readonly wasOverheated = new Uint8Array(WEAPON_SLOTS);
   /** Fixed per-slot phase offset so nothing in the layer pulses in lockstep. */
-  private readonly phase = new Float32Array(MAX_WEAPONS);
+  private readonly phase = new Float32Array(WEAPON_SLOTS);
 
   /** Beams drawn on the last frame, for the debug readout. */
   private live = 0;
@@ -273,8 +273,8 @@ export class BeamLayer {
     // publish ten segments from one weapon, but only one weapon in the game chains and most runs
     // never hold it - paying 70 quads' worth of scene graph at boot for that would be a cost
     // every run carries for a case most runs never reach.
-    this.ensureQuads(MAX_WEAPONS);
-    for (let i = 0; i < MAX_WEAPONS; i++) {
+    this.ensureQuads(WEAPON_SLOTS);
+    for (let i = 0; i < WEAPON_SLOTS; i++) {
       // Golden-ratio stride: any two slots are far apart in phase, with no table.
       this.phase[i] = (i * 0.618034) % 1;
     }
@@ -282,7 +282,7 @@ export class BeamLayer {
     this.flares = new SpritePool({
       // Emitter heat per slot, plus a muzzle and two impact flares for every segment a chaining
       // beam can publish.
-      capacity: MAX_WEAPONS + MAX_WEAPONS * MAX_CHAIN_LINKS * 3,
+      capacity: WEAPON_SLOTS + WEAPON_SLOTS * MAX_CHAIN_LINKS * 3,
       texture: tex.fxFlash,
       blendMode: 'add',
       label: 'beam-flares',
@@ -305,7 +305,7 @@ export class BeamLayer {
    * the quads for the rest of the run - they are hidden, not destroyed, when the chain shortens.
    */
   private ensureQuads(count: number): void {
-    const cap = MAX_WEAPONS * MAX_CHAIN_LINKS;
+    const cap = WEAPON_SLOTS * MAX_CHAIN_LINKS;
     const want = count > cap ? cap : count;
     while (this.core.length < want) {
       this.sheath.push(addQuad(this.softCtx, this.underContainer));
@@ -324,7 +324,7 @@ export class BeamLayer {
       this.inner[i].visible = false;
       this.core[i].visible = false;
     }
-    for (let i = 0; i < MAX_WEAPONS; i++) {
+    for (let i = 0; i < WEAPON_SLOTS; i++) {
       this.env[i] = 0;
       this.firing[i] = 0;
       this.lsegs[i] = 0;
@@ -357,7 +357,7 @@ export class BeamLayer {
     const b = world.beams;
     for (let i = 0; i < b.count; i++) {
       const w = b.weaponIdx[i];
-      if (w >= MAX_WEAPONS) continue;
+      if (w >= WEAPON_SLOTS) continue;
       const inst = world.weapons[w];
       if (inst === undefined) continue;
       const def = world.weaponCatalog[inst.defId];
@@ -401,7 +401,7 @@ export class BeamLayer {
     let pulseSlot = 0;
     const weaponCount = world.weaponCount;
 
-    for (let w = 0; w < MAX_WEAPONS; w++) {
+    for (let w = 0; w < WEAPON_SLOTS; w++) {
       const firing = this.firing[w] === 1;
       const before = this.env[w];
       let env = before;

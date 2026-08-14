@@ -16,7 +16,7 @@
  */
 
 import {
-  MAX_WEAPONS,
+  WEAPON_SLOTS,
   RUN_PHASE_INTRO,
   weaponNameAtTier,
   type World,
@@ -132,7 +132,7 @@ export class Hud {
   private readonly hurt: HTMLDivElement;
   private readonly debug: HTMLPreElement;
 
-  /** Loadout chips: built once at MAX_WEAPONS, shown/hidden as weapons are acquired. */
+  /** Loadout chips: built once at WEAPON_SLOTS, shown/hidden as weapons are acquired. */
   private readonly heatRow: HTMLDivElement;
   private readonly heatChips: HTMLDivElement[] = [];
   private readonly heatFills: HTMLDivElement[] = [];
@@ -140,11 +140,11 @@ export class Hud {
   private readonly heatTiers: HTMLSpanElement[] = [];
   private readonly heatStatus: HTMLSpanElement[] = [];
   /** Catalog index currently bound to each chip, or -1. Rebinding is what rewrites name/colour. */
-  private readonly heatDefId = new Int32Array(MAX_WEAPONS).fill(-1);
+  private readonly heatDefId = new Int32Array(WEAPON_SLOTS).fill(-1);
   /** Last written fill percent, overheated flag and countdown tenths. -1 forces the first write. */
-  private readonly heatPct = new Int32Array(MAX_WEAPONS).fill(-1);
-  private readonly heatOut = new Int32Array(MAX_WEAPONS).fill(-1);
-  private readonly heatTenths = new Int32Array(MAX_WEAPONS).fill(-1);
+  private readonly heatPct = new Int32Array(WEAPON_SLOTS).fill(-1);
+  private readonly heatOut = new Int32Array(WEAPON_SLOTS).fill(-1);
+  private readonly heatTenths = new Int32Array(WEAPON_SLOTS).fill(-1);
   /**
    * WHAT THE STATUS SLOT IS SAYING: 0 nothing, 1 a laser's OFFLINE countdown, 2 a magazine's
    * RELOADING countdown, 3 a magazine's round count.
@@ -153,10 +153,10 @@ export class Hud {
    * than on the number alone. Without it, a magazine dropping to 12 rounds and a laser 1.2 s from
    * coming back would both cache as "12" and the second one would not repaint.
    */
-  private readonly heatStatusMode = new Int32Array(MAX_WEAPONS).fill(-1);
+  private readonly heatStatusMode = new Int32Array(WEAPON_SLOTS).fill(-1);
   /** Last written tier and resume-notch percent - both move only on a level-up. */
-  private readonly heatTier = new Int32Array(MAX_WEAPONS).fill(-1);
-  private readonly heatResumePct = new Int32Array(MAX_WEAPONS).fill(-1);
+  private readonly heatTier = new Int32Array(WEAPON_SLOTS).fill(-1);
+  private readonly heatResumePct = new Int32Array(WEAPON_SLOTS).fill(-1);
   private heatShown = -1;
 
   private lastHpText = '';
@@ -214,7 +214,7 @@ export class Hud {
     const heatRow = query(el, '[data-heat]');
     heatRow.hidden = true;
     this.heatRow = heatRow;
-    for (let i = 0; i < MAX_WEAPONS; i++) {
+    for (let i = 0; i < WEAPON_SLOTS; i++) {
       const chip = document.createElement('div');
       chip.className = 'heat';
       chip.hidden = true;
@@ -323,7 +323,7 @@ export class Hud {
   private updateHeat(world: World): void {
     let n = 0;
 
-    for (let i = 0; i < world.weaponCount && n < MAX_WEAPONS; i++) {
+    for (let i = 0; i < world.weaponCount && n < WEAPON_SLOTS; i++) {
       const inst = world.weapons[i];
       if (inst === undefined) continue;
       const def = world.weaponCatalog[inst.defId];
@@ -497,7 +497,7 @@ export class Hud {
 
     // Only touches the DOM when the number of beam weapons actually changed.
     if (n !== this.heatShown) {
-      for (let i = 0; i < MAX_WEAPONS; i++) this.heatChips[i].hidden = i >= n;
+      for (let i = 0; i < WEAPON_SLOTS; i++) this.heatChips[i].hidden = i >= n;
       this.heatRow.hidden = n === 0;
       this.heatShown = n;
     }

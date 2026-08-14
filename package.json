@@ -20,7 +20,8 @@
     "icons": "tsx tools/make-icons.mjs",
     "screenshot": "tsx tools/screenshot.ts",
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
-    "dps": "tsx tools/dps.ts"
+    "dps": "tsx tools/dps.ts",
+    "loadout": "tsx tools/loadout.ts"
   },
   "dependencies": {
     "pixi.js": "8.19.0"

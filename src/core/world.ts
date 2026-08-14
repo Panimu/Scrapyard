@@ -23,6 +23,7 @@ import {
   MAX_QUERY_CANDIDATES,
   MAX_TARGETS,
   MAX_WEAPONS,
+  WEAPON_SLOTS,
   PICKUP_CAP,
   PROJECTILE_CAP,
   SPATIAL_BUCKET_COUNT,
@@ -221,7 +222,9 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   };
 
   const weapons: WeaponInstance[] = [];
-  for (let i = 0; i < MAX_WEAPONS; i++) weapons.push(createWeaponInstance());
+  // WEAPON_SLOTS, not MAX_WEAPONS: the cap on what a RUN may unlock is enforced by isOfferable,
+  // and this is only how many instances exist to be claimed. See constants.ts.
+  for (let i = 0; i < WEAPON_SLOTS; i++) weapons.push(createWeaponInstance());
 
   const world: World = {
     config,
@@ -268,6 +271,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       rerollsUsed: 0,
     },
     infiniteRerolls: false,
+    noAscension: false,
     stats: {
       kills: 0,
       killsByArchetype: new Uint32Array(ARCHETYPE_COUNT),

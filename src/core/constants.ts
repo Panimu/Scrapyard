@@ -74,6 +74,23 @@ export const MAX_WEAPONS = 5;
 export const MAX_PASSIVES = 5;
 
 /**
+ * HOW MANY WEAPON INSTANCES EXIST, which is NOT how many a run may carry.
+ *
+ * `MAX_WEAPONS` is a RULE - the cap `isOfferable` enforces on unlocks, and the thing that makes a
+ * build a choice. This is the ARRAY LENGTH behind it: how many `WeaponInstance` slots createWorld
+ * allocates and how wide the render layer's per-slot tables are.
+ *
+ * They were the same number, and separating them costs three unused instances and buys the
+ * measurement rig in `tools/loadout.ts`: a headless run holding every weapon in the catalog at
+ * once, which is the only way to read one weapon's share of a run's damage against all the
+ * others. A rig writes the loadout directly and never goes through `isOfferable`, so the rule is
+ * untouched by it - no card, no chest and no ascension can put a sixth gun in a player's hands.
+ *
+ * Sized to the catalog rather than to a literal, so a ninth weapon needs no edit here.
+ */
+export const WEAPON_SLOTS = 8;
+
+/**
  * HEAT - the lasers' limiter, in place of a cooldown.
  *
  * A laser fires CONTINUOUSLY and gains heat while it does; at its CAPACITY it cuts out and cannot
@@ -109,7 +126,7 @@ export const MAX_CHAIN_LINKS = 10;
  * One entry per DRAWN SEGMENT, not per weapon. A chaining beam pushes one segment per jump, so a
  * full-length chain from every laser slot at once is the worst case - which is what this is.
  */
-export const MAX_BEAMS_PER_TICK = MAX_WEAPONS * MAX_CHAIN_LINKS;
+export const MAX_BEAMS_PER_TICK = WEAPON_SLOTS * MAX_CHAIN_LINKS;
 export const UPGRADE_OFFER_COUNT = 3;
 
 /**

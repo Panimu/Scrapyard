@@ -676,6 +676,9 @@ function checkVictory(world: World): boolean {
  * what keeps a second chest from trying to grant a ninth tier that has no numbers behind it.
  */
 export function ascensionReady(world: World, idx: number): boolean {
+  // The measurement rig's veto - see World.noAscension. One branch, at the single gate every
+  // route to a tier 8 already passes through, so no chest and no cap check can route around it.
+  if (world.noAscension) return false;
   const def = world.upgradeCatalog[idx];
   const asc = def?.ascension;
   if (asc === undefined) return false;
