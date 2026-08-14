@@ -248,6 +248,44 @@ function accumulate(
 /** Reused by both resolvers; they run at most a few dozen times per run, never concurrently. */
 const ACC = { add: 0, mul: 1 };
 
+/**
+ * One stat, from its base through every source that touches it.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * PERCENTAGES ADD. THEY DO NOT COMPOUND. THIS IS THE RULE FOR THE WHOLE GAME.
+ * ---------------------------------------------------------------------------------------------
+ * Two +60% bonuses to the same stat are +120%, not +156%. Three sources of +50% are x2.5, not
+ * x3.375. Every percentage in this game is a share of the BASE, and it does not matter whether it
+ * came from a card, a card's seventh rung, or the chassis.
+ *
+ * `accumulate` has always worked this way inside the catalog - `out.mul` starts at 1 and each
+ * effect does `+= amount`, so two stacks of +20% is +40% and not +44%. This function used to
+ * throw that away at the last step by MULTIPLYING the three pools together:
+ *
+ *     (base + add) * heroMul * bonusMul * ACC.mul        <- compounding
+ *
+ * so Slate's x1.5 dispersion on the Medium Laser and a maxed Feed Systems (x1.5) came out at
+ * x2.25 rather than x2.0, and Moss's doubled Short Laser reach with maxed Targeting Optics came
+ * out at x3.0 rather than x2.5. The chassis bonuses were quietly worth more to a finished build
+ * than to a fresh one, which is the exact trap the comment in `accumulate` warns about - and it
+ * is worse here, because nothing on either card or the chassis says so.
+ *
+ * So all three pools are folded into ONE share-of-base, by taking each multiplier's DISTANCE FROM
+ * ONE and summing those:
+ *
+ *     scale = 1 + (heroMul - 1) + (bonusMul - 1) + (ACC.mul - 1)
+ *
+ * Reductions fold the same way, and stack HARDER than they used to for it: a x0.8 cooldown
+ * chassis with a maxed Feed Systems (x0.667) is now x0.467 rather than x0.533. That is the same
+ * rule, not an exception to it - a "-20%" that is worth less than 20% because of what else you
+ * are carrying would be the same lie in the other direction.
+ *
+ * `add` contributions are untouched: they are absolute amounts in the stat's own units (a pierce,
+ * a missile, a second of shield recharge) and were never percentages of anything.
+ *
+ * The clamp is a floor, not a design. Nothing in the catalog comes close to summing to -100%, and
+ * a negative multiplier would flip the sign of a stat in ways nothing downstream expects.
+ */
 function resolveOne(
   base: number,
   heroMul: number,
@@ -261,7 +299,8 @@ function resolveOne(
   accumulate(stacks, catalog, target, key, ACC);
   const add = bonus?.add?.[key as WeaponStatKey] ?? 0;
   const mul = bonus?.mul?.[key as WeaponStatKey] ?? 1;
-  return (base + add + ACC.add) * heroMul * mul * ACC.mul;
+  const scale = heroMul + mul + ACC.mul - 2;
+  return (base + add + ACC.add) * (scale > 0 ? scale : 0);
 }
 
 /**

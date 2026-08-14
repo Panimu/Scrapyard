@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T14:11Z',
+    title: 'Percentages add up instead of multiplying together',
+    notes: [
+      'Two +60% bonuses to the same stat are +120%. They used to be +156%, because your chassis bonus was multiplied by your cards rather than added to them.',
+      'Cards already worked this way with each other - it was the CHASSIS that compounded. Slate’s medium-laser cooling with a maxed Feed Systems was x2.25 and is now x2.0; Moss’s doubled Short Laser reach with a maxed Targeting Optics was x3.0 and is now x2.5; Ember’s Long Laser with a maxed Ordnance was x1.95 and is now x1.8.',
+      'So a chassis bonus is worth the same whether you are five minutes in or fifteen, instead of quietly growing more valuable the more cards you stacked behind it.',
+      'Reductions fold the same way and now stack harder for it: Ash’s faster rearm with a maxed Feed Systems goes from x0.53 to x0.47 of the base reload.',
+    ],
+  },
+  {
     at: '2026-08-14T13:55Z',
     title: 'Ordnance makes lasers run hot',
     notes: [
