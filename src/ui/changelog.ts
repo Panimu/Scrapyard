@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T17:57Z',
+    title: 'The stick works after a chest, and the reels take their time',
+    notes: [
+      'THE JOYSTICK USED TO DIE THE MOMENT YOU COLLECTED A CHEST, and stayed dead for the rest of the run unless you paused and unpaused. The stick is put away while the reels spin and was only ever brought back by a check the chest could not reach - so it never came back. It is now driven by whether the game is actually running, which cannot get out of step.',
+      'THE FIRST CHEST OF A RUN NO LONGER HITCHES. Its icons were being fetched for the first time in the same instant the reels started turning; they are loaded up front now, so the first spin is as smooth as the seventh.',
+      'THE SPIN IS MUCH LONGER: twice as long on the first two reels and three times on the last, which with the anticipation crawl makes a live jackpot over six seconds of reel. The strips grew with the timing rather than the reels just slowing down - they travel further, at the same speed, for longer.',
+      'AND THE SIEGE RING HAS NO GAP IN IT. A Heavy that would have landed in a wreck was being shoved outward to clear it, which left a hole in the ring exactly where a body should have been. They stand in the wreck now and walk out of it, and the circle stays a circle.',
+    ],
+  },
+  {
     at: '2026-08-14T17:45Z',
     title: 'Heavies look like Heavies, and the ring lands closer',
     notes: [

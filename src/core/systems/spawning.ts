@@ -83,7 +83,7 @@ import {
   type Archetype,
 } from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
-import { pushOutOfScenery, sceneryOverlap } from '../content/scenery.js';
+import { pushOutOfScenery } from '../content/scenery.js';
 import {
   RANKS,
   RANK_BOSS,
@@ -416,56 +416,7 @@ const SIEGE_COUNT = 50;
  * is pinned to the view box and must not drift with it.
  */
 const SIEGE_RING_RADIUS = 520;
-/** How many body-widths outward a spoke may walk to clear a wreck before it gives up and stands. */
-const SIEGE_CLEAR_STEPS = 6;
-/** How many times the WHOLE ring may grow to find enough fence-free arc for fifty bodies. */
-const SIEGE_FIT_STEPS = 12;
 
-
-/**
- * Angular resolution of the fence scan. Four samples per body is enough to find the two ends of
- * a clipped arc to within a fifth of a body width, which is finer than anything downstream cares
- * about.
- */
-const SIEGE_ANGLE_SAMPLES = SIEGE_COUNT * 4;
-/** Preallocated: this runs twice a run, but allocating inside a system is still not done here. */
-const SIEGE_ANGLES = new Float64Array(SIEGE_ANGLE_SAMPLES);
-
-/**
- * Fills `SIEGE_ANGLES` with the angles whose ring position is INSIDE the yard, and returns how
- * many there are.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THE FENCE REMOVES ANGLES RATHER THAN MOVING BODIES
- * ---------------------------------------------------------------------------------------------
- * The first version clamped an out-of-bounds ring position back inside the arena, on the grounds
- * that a ring with a flat side beats a ring with a gap. Measured, that was wrong in a way the
- * reasoning could not see: a siege sprung with the player 490 u from the east wall put five
- * bodies ON the wire at 477 u from the mech - INSIDE the camera's 500.9 u corner. The one thing
- * the ring must never do is be seen arriving, and clamping is the only operation in this function
- * that can pull a body closer than the radius that guarantees it.
- *
- * So an angle that does not fit is dropped, and the fifty bodies are redistributed across the arc
- * that remains. The ring closes up rather than thinning out: the count is preserved, the radius is
- * preserved, and the wall simply gets no besiegers standing in it - which is also what a wall is
- * for. A player who springs the siege with their back to the fence has bought themselves a
- * protected flank and a denser ring in front, which is a real and legible trade.
- *
- * The margin is the body's own radius, so a body is inside the yard rather than merely centred
- * inside it - S4's fence clamp would otherwise slide it, which is the very thing being avoided.
- */
-function legalAngles(px: number, py: number, radius: number, bodyRadius: number): number {
-  const bound = ARENA_HALF - bodyRadius;
-  let n = 0;
-  for (let i = 0; i < SIEGE_ANGLE_SAMPLES; i++) {
-    const angle = (i / SIEGE_ANGLE_SAMPLES) * TWO_PI;
-    const x = px + dcos(angle) * radius;
-    const y = py + dsin(angle) * radius;
-    if (x < -bound || x > bound || y < -bound || y > bound) continue;
-    SIEGE_ANGLES[n++] = angle;
-  }
-  return n;
-}
 
 /**
  * Drops `SIEGE_COUNT` Heavies in a circle around the player.
@@ -473,9 +424,10 @@ function legalAngles(px: number, py: number, radius: number, bodyRadius: number)
  * ---------------------------------------------------------------------------------------------
  * THE RADIUS SATISFIES TWO RULES AND TAKES WHICHEVER IS LARGER
  * ---------------------------------------------------------------------------------------------
- * OUT OF SIGHT. `SIEGE_RING_RADIUS` (520) clears the camera's 500.9 u corner by 19 units. Fifty
- * bodies appearing in view would be a spawn effect; fifty bodies found already standing there is
- * a siege.
+ * OUT OF SIGHT, WHEN THE YARD ALLOWS IT. `SIEGE_RING_RADIUS` (520) clears the camera's 500.9 u
+ * corner by 19 units, so in open ground the ring is found rather than watched arriving. Near the
+ * fence that is geometrically impossible for a CLOSED ring and the ring wins - see the note on
+ * the centre offset below.
  *
  * SHOULDER TO SHOULDER, NOT OVERLAPPING. Bodies of radius r on a circle of radius R sit
  * `2R sin(pi/n)` apart, so they just touch at `R = r / sin(pi/n)`. That is the tightest legal
@@ -510,7 +462,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
   // differently is a different run. A siege is only two events per run, but a replay recorded on
   // a phone still has to reproduce in Node, and that property does not have a cheap half.
   const tightRadius = bodyRadius / dsin(PI / SIEGE_COUNT);
-  let ringRadius = tightRadius > SIEGE_RING_RADIUS ? tightRadius : SIEGE_RING_RADIUS;
+  const ringRadius = tightRadius > SIEGE_RING_RADIUS ? tightRadius : SIEGE_RING_RADIUS;
 
   const px = world.player.x;
   const py = world.player.y;
@@ -519,50 +471,41 @@ function spawnSiege(world: World, t: DirectorTuning): void {
   const hp = c.hp * r.hp * f.hp * diff.hpRamp;
   const speed = c.speed * r.speed * f.speed * diff.speedRamp;
 
-  // THE FENCE TAKES ANGLES AWAY; IT DOES NOT PUSH BODIES INWARD. See `legalAngles`.
+  // THE RING IS A CIRCLE AND STAYS ONE. Everything below exists to stop something breaking it.
   //
-  // AND THE RING GROWS IF WHAT IS LEFT CANNOT HOLD IT. Redistributing fifty bodies into a clipped
-  // arc packs them tighter, and a player caught in a CORNER loses about three quarters of the
-  // circle - at which point the survivors would be ~16 u apart against the 26-36 u their bodies
-  // need. Stepping the radius outward buys arc length linearly while the requirement stays fixed,
-  // so a few steps always clear it. Growing is always safe: it can only take the ring further out
-  // of sight, never nearer.
-  const neededArc = SIEGE_COUNT * 2 * bodyRadius;
-  let placed = 0;
-  for (let step = 0; step < SIEGE_FIT_STEPS; step++) {
-    placed = legalAngles(px, py, ringRadius, bodyRadius);
-    const legalArc = (placed / SIEGE_ANGLE_SAMPLES) * TWO_PI * ringRadius;
-    if (legalArc >= neededArc) break;
-    ringRadius += bodyRadius * 2;
-  }
-  if (placed === 0) return;
+  // THE SCRAP WAS THE GAP, and it took three wrong fixes to the FENCE to notice. Pushing a spoke
+  // outward to clear a wreck moved that body from 520 u to as far as 739 u, which from the middle
+  // of the ring is not a bulge - it is a body missing from where the ring is, and a hole is a hole
+  // whatever put it there. So scrap no longer moves anybody: a Heavy that lands in a wreck stands
+  // in it, and steering walks it out over the next few ticks. Materialising inside a pile is a
+  // cosmetic blemish for a moment; a door in a trap is a design failure for two minutes.
+  //
+  // THE FENCE CANNOT BE SOLVED, ONLY CHOSEN. A closed circle inside the yard can never hold the
+  // player further from its nearest body than the player is from the wall, and in a corner it
+  // cannot contain the player at all above a radius of about 58 u - far under the 207 u fifty
+  // bodies need to stand apart. Measured, every attempt to force it failed a different way:
+  // clamping strays onto the wire put five bodies inside the camera, sliding the whole circle
+  // inward put the PLAYER on its edge 17 u from a body, and shrinking to fit stacked forty-five
+  // pairs on top of each other.
+  //
+  // So the ring is centred on the mech, always, and the fence simply takes the bodies that would
+  // stand outside the yard. That is not a gap in the trap: the missing arc is a WALL, and a wall
+  // is not a way out. In open ground - which is where a siege is sprung nearly every time - the
+  // ring is a complete, evenly spaced, non-overlapping fifty at exactly SIEGE_RING_RADIUS.
+  const bound = ARENA_HALF - bodyRadius;
 
   for (let i = 0; i < SIEGE_COUNT; i++) {
-    // Spread the fifty evenly across whatever arc survived, rather than across the whole turn.
-    // A full circle gives back exactly `i / SIEGE_COUNT` of a turn; a clipped one closes the ring
-    // up into the arc that is left, which keeps all fifty bodies at the right distance.
-    const angle = SIEGE_ANGLES[Math.floor((i * placed) / SIEGE_COUNT)];
+    const angle = (i / SIEGE_COUNT) * TWO_PI;
     const ux = dcos(angle);
     const uy = dsin(angle);
 
-    // SCRAP IS CLEARED BY MOVING OUTWARD ALONG THE SPOKE, NEVER SIDEWAYS.
-    //
-    // `pushOutOfScenery` takes the shortest way out of a pile, which is the right answer for a
-    // single spawn and the wrong one for a ring: two neighbours pushed off the same wreck are
-    // pushed toward each other, and they land in each other's laps. Measured, that put one
-    // overlapping pair in the wave-4 ring at 10.4 u against the 26 u their bodies need.
-    //
-    // Holding the ANGLE fixed and only ever increasing the RADIUS makes overlap impossible by
-    // construction: every body keeps its own spoke, and a body shoved further out only opens the
-    // gap to the two either side of it. The ring bulges around a wreck instead of pinching.
-    let radius = ringRadius;
-    for (let step = 0; step < SIEGE_CLEAR_STEPS; step++) {
-      if (sceneryOverlap(world.scenery, px + ux * radius, py + uy * radius, bodyRadius) < 0) break;
-      radius += bodyRadius * 2;
-    }
+    const x = px + ux * ringRadius;
+    const y = py + uy * ringRadius;
 
-    const x = px + ux * radius;
-    const y = py + uy * radius;
+    // Outside the yard: the wall stands here instead. See the note above - this is the ONE thing
+    // allowed to take a body out of the ring, and only because the alternative is a body in the
+    // void.
+    if (x < -bound || x > bound || y < -bound || y > bound) continue;
 
     const handle = allocEnemy(p, typeId, FLAV_HEAVY, c.archetype, x, y, dir.nextSpawnId);
     const d = enemyIndex(p, handle);

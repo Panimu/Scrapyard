@@ -395,3 +395,30 @@ export async function loadGameTextures(
   };
 }
 
+/**
+ * Warms the browser cache for every upgrade icon.
+ *
+ * THE ICONS ARE NOT IN THE ATLAS AND MUST NOT BE. They are drawn as DOM `<img>` by the level-up
+ * card and the chest overlay - never by Pixi - so loading them as textures would pay for a second
+ * copy on the GPU that nothing samples.
+ *
+ * But it left them COLD. The first Cyber Chest of a run builds ninety-odd tiles and asks the
+ * browser for fourteen images it has never seen, all inside the frame the reels start spinning -
+ * so the first spin of every run hitched while the first spin of every later chest did not. That
+ * asymmetry is the tell, and it is why this is a preload rather than a rendering fix.
+ *
+ * Fire and forget: the Images are never added to the document and are held only so the decoded
+ * bitmaps survive until something asks for them. A failure is silently fine - the icon simply
+ * loads later, exactly as it did before.
+ */
+const iconCache: HTMLImageElement[] = [];
+
+export function preloadUpgradeIcons(ids: readonly string[]): void {
+  if (iconCache.length > 0) return;
+  for (const id of ids) {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = spriteUrl(`icon_${id}`);
+    iconCache.push(img);
+  }
+}

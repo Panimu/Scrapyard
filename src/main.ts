@@ -30,12 +30,13 @@ import {
   RUN_PHASE_LEVEL_UP,
   RUN_PHASE_VICTORY,
   Simulation,
+  UPGRADE_CATALOG,
   quantiseAxis,
   type InputFrame,
 } from './core/index.js';
 
 import { AppState, codeToSeed, newSeed } from './appState.js';
-import { loadGameTextures } from './render/assets.js';
+import { loadGameTextures, preloadUpgradeIcons } from './render/assets.js';
 import { GameRenderer } from './render/gameRenderer.js';
 import { Hud, type DebugInfo } from './ui/hud.js';
 import { HeroSelect } from './ui/heroSelect.js';
@@ -159,6 +160,11 @@ async function boot(): Promise<void> {
   setBootProgress(0.96);
 
   const renderer = new GameRenderer(app, textures);
+
+  // The upgrade icons are DOM images rather than atlas textures, so nothing above has fetched
+  // them. Warmed here, once, so the first level-up card and the first chest of a run are not the
+  // ones that pay for it. See preloadUpgradeIcons.
+  preloadUpgradeIcons(UPGRADE_CATALOG.map((d) => d.id));
 
   // ---------------------------------------------------------------------------------------
   // UI
@@ -506,23 +512,29 @@ async function boot(): Promise<void> {
 
     // --- phase reactions -----------------------------------------------------------------
     if (state.phase === 'running') {
-      if (world.phase === RUN_PHASE_CHEST) {
-        // `show` is a no-op while already visible, so this fires once per chest even though the
-        // phase persists for however many frames the spin takes.
-        chest.show(world);
-        joystick.setEnabled(false);
-      } else if (chest.visible) {
-        chest.hide();
-        joystick.setEnabled(true);
-      }
+      // `show` is a no-op while already visible, so these fire once per card or chest even though
+      // the phase persists for however many frames the overlay is up.
+      if (world.phase === RUN_PHASE_CHEST) chest.show(world);
+      else if (chest.visible) chest.hide();
 
-      if (world.phase === RUN_PHASE_LEVEL_UP) {
-        levelUp.show(world);
-        joystick.setEnabled(false);
-      } else if (levelUp.visible) {
-        levelUp.hide();
-        joystick.setEnabled(true);
-      }
+      if (world.phase === RUN_PHASE_LEVEL_UP) levelUp.show(world);
+      else if (levelUp.visible) levelUp.hide();
+
+      // THE STICK IS DRIVEN BY THE WORLD PHASE, NOT BY WHETHER AN OVERLAY HAPPENS TO BE UP.
+      //
+      // It used to be re-enabled inside the `else if (chest.visible)` branch above - and that
+      // branch cannot run for the chest, because `ChestOverlay.collect()` hides itself before
+      // handing back. So the overlay was already invisible by the time the loop looked, the
+      // re-enable was skipped, and the stick stayed dead for the rest of the run. Pausing and
+      // unpausing was the only way back, because `togglePause` sets it unconditionally.
+      //
+      // The level-up card never hit this because it does NOT hide itself; the loop hides it. That
+      // difference between two overlays is exactly the kind of thing this coupling should not be
+      // sensitive to, so the phase - which is the actual truth - now decides. `setEnabled` returns
+      // early when the value has not changed, so calling it every frame costs a comparison.
+      joystick.setEnabled(
+        world.phase !== RUN_PHASE_CHEST && world.phase !== RUN_PHASE_LEVEL_UP,
+      );
 
       if (world.phase === RUN_PHASE_DEAD || world.phase === RUN_PHASE_VICTORY) {
         levelUp.hide();

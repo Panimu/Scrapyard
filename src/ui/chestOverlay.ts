@@ -69,11 +69,27 @@
 import type { World } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
 
-/** Tiles above the result in each strip. Enough to be a blur, few enough to build cheaply. */
+/** Tiles above the result in each strip, BEFORE the per-reel stretch below. */
 const STRIP_LENGTH = 14;
 /** How long a reel spins before it lands, and how far apart the three landings are. */
 const REEL_SPIN_MS = 900;
 const REEL_STAGGER_MS = 420;
+
+/**
+ * PER-REEL STRETCH. Reels one and two run twice as long as the base timing, reel three runs three
+ * times - so the machine opens at a pace and then visibly refuses to finish.
+ *
+ * THE STRIP GROWS BY THE SAME FACTOR, and that is not decoration. A reel's apparent speed is
+ * travel over time; stretching only the time turns a spin into a slow scroll, which reads as the
+ * machine running out of batteries rather than as suspense. Multiplying the tiles too holds the
+ * speed where it was and spends the extra seconds on distance, which is what a longer spin is
+ * supposed to be.
+ *
+ * The cost is tiles: 14/14/14 becomes 28/28/42, so a spin builds 98 of them instead of 42. They
+ * are `<div><img>` pairs against preloaded images (see preloadUpgradeIcons) and are built once
+ * per chest, seven times a run at most.
+ */
+const REEL_STRETCH: readonly number[] = [2, 2, 3];
 /** Beat between the last reel landing and the payout appearing. */
 const PAYOUT_DELAY_MS = 260;
 
@@ -226,10 +242,12 @@ export class ChestOverlay {
     // on is already decided. The last reel's duration is a function of what the first two land on.
     const heat = this.planHeat(world);
     const crawl = ANTICIPATION_MS[heat[1]] ?? 0;
+    // The stretch multiplies each reel's own base timing, so the STAGGER stretches with it and the
+    // three landings spread further apart rather than merely arriving later together.
     const landAt = [
-      REEL_SPIN_MS,
-      REEL_SPIN_MS + REEL_STAGGER_MS,
-      REEL_SPIN_MS + REEL_STAGGER_MS * 2 + crawl,
+      REEL_SPIN_MS * REEL_STRETCH[0],
+      (REEL_SPIN_MS + REEL_STAGGER_MS) * REEL_STRETCH[1],
+      (REEL_SPIN_MS + REEL_STAGGER_MS * 2) * REEL_STRETCH[2] + crawl,
     ];
 
     // SHOWN BEFORE THE STRIPS ARE ARMED, AND THIS ORDERING IS THE WHOLE ANIMATION.
@@ -265,7 +283,7 @@ export class ChestOverlay {
       // DECORATION FIRST, RESULT LAST. The strip is built so that its final tile is the answer,
       // and the animation simply travels the whole strip - which means the landing cannot drift
       // out of step with the simulation however the timing is tuned.
-      const decoys = reduced ? 0 : STRIP_LENGTH;
+      const decoys = reduced ? 0 : STRIP_LENGTH * (REEL_STRETCH[r] ?? 1);
       for (let i = 0; i < decoys; i++) {
         // Deterministic-looking noise from the reel index, so a rebuild does not reshuffle the
         // blur, and so two reels never spin the identical sequence.
