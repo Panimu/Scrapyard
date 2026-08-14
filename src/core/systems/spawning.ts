@@ -320,16 +320,26 @@ function drawUnitDirection(rng: Rng, out: Vec2): void {
  * and exists only so that a tuning sweep which shrank the arena to a closet could not place an
  * enemy outside the world.
  *
- * Exported because RELOCATION reuses it - an enemy the player outran is put back on this same ring,
- * with this same forward bias, which is what makes a relocated horde arrive rather than reappear.
+ * Exported because RELOCATION reuses it - an enemy the player outran is put back on this same ring.
+ * It passes `biasForward: false`, and that is a balance decision rather than a detail: the forward
+ * bias is the director's TAX ON RUNNING, and a relocated body has already paid it once by being
+ * outrun. Charging it again hands the runner's own escape back as an ambush every time, and the
+ * reference run measured the difference as surviving the full fifteen minutes versus dying at 6:47.
+ * Relocated bodies therefore arrive uniformly around you - half of them behind - which is a horde
+ * closing in rather than a wall being erected in front of you.
  */
-export function rollRingPosition(world: World, t: DirectorTuning, out: Vec2): void {
+export function rollRingPosition(
+  world: World,
+  t: DirectorTuning,
+  out: Vec2,
+  biasForward = true,
+): void {
   const rng = world.rng.spawn;
   drawUnitDirection(rng, out);
 
   const p = world.player;
   const minSpeed = t.forwardBiasMinSpeed;
-  if (p.vx * p.vx + p.vy * p.vy > minSpeed * minSpeed) {
+  if (biasForward && p.vx * p.vx + p.vy * p.vy > minSpeed * minSpeed) {
     // dot(u, vHat) < 0 is the same test as dot(u, v) < 0 for a non-zero v - one normalise saved.
     if (out.x * p.vx + out.y * p.vy < 0) drawUnitDirection(rng, out);
   }

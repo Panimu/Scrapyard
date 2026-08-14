@@ -289,4 +289,29 @@ describe('gems', () => {
     // 40 s of running east: it is now most of a screen-and-a-half behind, and staying there.
     expect(w.player.x - w.pickups.x[d]).toBeGreaterThan(RELOCATE_RADIUS);
   });
+
+  it('cannot be flung outside the fence by the magnet', () => {
+    // The magnet is an accelerator: 600 u/s is 10 u per tick against an 18 u collect radius, so a
+    // gem crossing at a shallow angle can miss the player. Against the fence that miss lands it in
+    // the void, where it stops - and where the player can never get within 18 u of it, because
+    // they cannot reach the wire. That is XP silently deleted, and it measured 89 u out.
+    const w = makeWorld(11);
+    w.player.x = ARENA_HALF - w.player.stats.radius;
+
+    // A ring of gems just inside the player, all of which will be yanked outward past them.
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      allocPickup(w.pickups, 0, 1, 0, w.player.x - 60 + Math.cos(a) * 55, Math.sin(a) * 55, 100 + i);
+    }
+
+    let worst = 0;
+    drive(w, 6, 1, 0, (world) => {
+      const g = world.pickups;
+      for (let d = 0; d < g.count; d++) {
+        worst = Math.max(worst, Math.abs(g.x[d]), Math.abs(g.y[d]));
+      }
+    });
+
+    expect(worst).toBeLessThanOrEqual(ARENA_HALF);
+  });
 });

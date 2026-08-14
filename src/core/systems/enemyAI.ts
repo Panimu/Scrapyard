@@ -351,7 +351,9 @@ function relocateStragglers(world: World): void {
     const dy = y[d] - py;
     if (dx * dx + dy * dy <= r2) continue;
 
-    rollRingPosition(world, t, pos);
+    // NO forward bias. See rollRingPosition: the bias is the tax on running, and this body has
+    // already paid it by being outrun.
+    rollRingPosition(world, t, pos, false);
     x[d] = pos.x;
     y[d] = pos.y;
     p.prevX[d] = pos.x;

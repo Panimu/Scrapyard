@@ -12,6 +12,7 @@
  */
 
 import {
+  ARENA_HALF,
   ENEMY_FLAG_BOSS,
   ENEMY_FLAG_DEAD,
   ENEMY_FLAG_ELITE,
@@ -33,6 +34,10 @@ const GEM_WEIGHT = 0.6;
 const ORBIT_WEIGHT = 0.35;
 const GEM_SEEK_RADIUS = 260;
 const GEM_SEEK_RADIUS_SQ = GEM_SEEK_RADIUS * GEM_SEEK_RADIUS;
+
+/** How near the fence the bot starts steering away from it, and how hard it steers at the wire. */
+const WALL_FEEL = 1000;
+const WALL_PUSH = 2.5;
 
 /** Per-RANK flee weight. A boss is one body but the reason you are moving, so it outweighs the
  *  chaff around it - keyed off the flags rather than the chassis, because under the cycle ladder
@@ -126,6 +131,17 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
     my = bestI >= 0 ? gemY : 0;
   }
 
+  // THE FENCE. Without this the bot is not a player, it is a thing that walks into a wall: it
+  // kites in whatever direction the crowd pushes it, reaches the perimeter after a couple of
+  // minutes of that, and then stands in the corner pressing into the wire while the horde closes.
+  // The reference run measured the difference as dying at 6:47 rather than surviving all fifteen
+  // minutes - a number about the bot's stupidity, not about the game's difficulty.
+  //
+  // A repulsion that grows as the wall approaches, rather than a hard "turn around" test, so the
+  // bot curves along the fence the way a player does instead of oscillating on a threshold.
+  mx += wallPush(px);
+  my += wallPush(py);
+
   const l = Math.sqrt(mx * mx + my * my);
   if (l > 1e-6) {
     mx /= l;
@@ -135,6 +151,21 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
   f.moveX = quantiseAxis(mx);
   f.moveY = quantiseAxis(my);
   return f;
+}
+
+/**
+ * Inward push on one axis, 0 until `WALL_FEEL` from the fence and rising to `WALL_PUSH` at it.
+ *
+ * WALL_FEEL is a little over two screens, which is roughly the distance at which a player starts
+ * thinking about where the edge is. Squared falloff so the bot ignores the fence entirely until it
+ * matters and then commits, rather than drifting inward across the whole yard and never sampling
+ * the perimeter at all - the fence still has to be somewhere the measurements go.
+ */
+function wallPush(v: number): number {
+  const slack = ARENA_HALF - Math.abs(v);
+  if (slack >= WALL_FEEL) return 0;
+  const t = (WALL_FEEL - slack) / WALL_FEEL;
+  return (v > 0 ? -1 : 1) * WALL_PUSH * t * t;
 }
 
 /**

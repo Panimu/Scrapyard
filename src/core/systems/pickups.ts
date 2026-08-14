@@ -49,7 +49,7 @@
  * It is 1-based so that 0 stays available as "none" for anything that later wants it.
  */
 
-import { GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
+import { ARENA_HALF, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import {
@@ -209,8 +209,23 @@ function magnetAndCollect(world: World, dt: number): void {
 
     pool.vx[d] = vx;
     pool.vy[d] = vy;
-    pool.x[d] += vx * dt;
-    pool.y[d] += vy * dt;
+    let x = pool.x[d] + vx * dt;
+    let y = pool.y[d] + vy * dt;
+
+    // THE FENCE, and it is the magnet that needs it rather than the drop. A gem is dropped where
+    // a body died, and bodies are held inside the yard - but the magnet is a launcher-shaped
+    // accelerator: at 600 u/s it covers 10 u per tick against an 18 u collect radius, so a gem
+    // crossing at a shallow angle can miss the player entirely. Standing AT the fence, the miss
+    // throws it into the void, where it stops - and where the player can never get within 18 u of
+    // it, because they cannot reach the wire. Measured at 89 u outside the bound before this
+    // clamp, which is XP silently deleted.
+    if (x < -ARENA_HALF) x = -ARENA_HALF;
+    else if (x > ARENA_HALF) x = ARENA_HALF;
+    if (y < -ARENA_HALF) y = -ARENA_HALF;
+    else if (y > ARENA_HALF) y = ARENA_HALF;
+
+    pool.x[d] = x;
+    pool.y[d] = y;
   }
 }
 

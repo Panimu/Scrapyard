@@ -53,8 +53,8 @@ const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public',
 
 /**
  * TWO PIXELS PER WORLD UNIT, matching the mechs closely enough that nothing looks like it came
- * from a different game. The strip is 256 world units long and 80 deep; of that depth, 16 units
- * sit INSIDE the arena bound (shadow, and the junk drifted against the foot) and 64 outside
+ * from a different game. The strip is 256 world units long and 128 deep; of that depth, 16 units
+ * sit INSIDE the arena bound (shadow, and the junk drifted against the foot) and 112 outside
  * (structure, then the dead ground beyond).
  * src/render/assets.ts restates these three numbers and must be kept in step with them.
  */
@@ -109,8 +109,11 @@ const DRAW_FENCE = `() => {
   // Everything outboard of the structure fades to dead flat nothing. The renderer paints the same
   // VOID over the whole exterior, so this gradient is the SEAM between the yard and the outside
   // and the two colours have to agree exactly.
-  const fadeTop = INNER + 30 * PX;
-  const fadeEnd = INNER + 64 * PX;
+  // A LONG fade. The yard floor is bright rust and the outside is nearly black, so a short one
+  // reads as a painted line rather than as ground running out. This covers 44 world units, which
+  // is a tenth of the minor view - enough that the eye reads distance rather than an edge.
+  const fadeTop = INNER + 36 * PX;
+  const fadeEnd = INNER + 80 * PX;
   const beyond = g.createLinearGradient(0, fadeTop, 0, fadeEnd);
   beyond.addColorStop(0, 'rgba(21,17,9,0)');
   beyond.addColorStop(0.5, 'rgba(21,17,9,0.88)');
@@ -141,9 +144,11 @@ const DRAW_FENCE = `() => {
   }
 
   // --- (4) the panels ------------------------------------------------------------------------
-  // Structure occupies a 16 u band starting 4 u outboard of the bound.
+  // Structure occupies a 22 u band starting 4 u outboard of the bound. That is 5% of the 440 u
+  // minor view - thin enough to still be a fence rather than a building, thick enough that a mech
+  // standing against it is clearly standing against SOMETHING.
   const PY = INNER + 4 * PX;
-  const PH = 16 * PX;
+  const PH = 22 * PX;
 
   const corrugated = (x0, w) => {
     rect(x0, PY, w, PH, STEEL_DK);

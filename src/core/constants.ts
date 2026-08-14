@@ -147,15 +147,30 @@ export const FENCE_DEPTH = 56;
  * around the back - it reappears on the ring ahead of you, at the SAME HP, rank and cycle. A horde
  * you ran away from is a horde you still have to kill.
  *
- * 1400 u against a 500.9 u max half-diagonal: relocation always happens well off screen, and never
- * within 2.5 screens of the player, so nothing is ever seen to jump.
+ * IT IS PINNED JUST OUTSIDE THREAT_RADIUS (900), AND THAT IS THE WHOLE CHOICE. The gap between the
+ * two is a DEAD BAND: an enemy in it has stopped counting toward local pressure, so the director
+ * will not spawn to replace it, and it has not yet been relocated, so it will not come back either.
+ * Every unit of that band is population quietly leaking out of the fight.
+ *
+ * The first draft put this at 1400 and the band was 500 u wide, which measured as a visibly emptier
+ * yard: at 3:29 the reference run held 20 live enemies against the previous build's 53, and 129
+ * kills by 9:29 against 369. The bot then arrived at the late cycles six levels under-geared and
+ * died to them. It also meant relocation essentially never fired for a player who ORBITS rather
+ * than sprints, which is most play - the rule was there and did nothing.
+ *
+ * At 1000 the band is 100 u, about half a second of walking, and the four reference seeds land
+ * within one minute of each other instead of spread across seven. Consistency is the tell: field
+ * density has stopped depending on how far the player happened to wander.
+ *
+ * Still comfortably off screen - 1000 against a 500.9 u max half-diagonal - so nothing is ever seen
+ * to jump.
  *
  * IT DOES NOT APPLY TO BOSSES. A boss is a tenant, not a wave (systems/spawning.ts), and outrunning
  * one has always been possible and always cost you - it is still walking toward you, still alive,
  * and still suppressing six regulars' worth of spawning when it catches up. Relocating bosses would
  * make a cycle's set-piece inescapable, which is a difficulty change dressed up as a geometry one.
  */
-export const RELOCATE_RADIUS = 1400;
+export const RELOCATE_RADIUS = 1000;
 
 /**
  * ARTILLERY STRIKE ANNULUS - where a barrage is allowed to land.
