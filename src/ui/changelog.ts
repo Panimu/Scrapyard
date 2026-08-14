@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T13:55Z',
+    title: 'Ordnance makes lasers run hot',
+    notes: [
+      'A laser that hits harder now heats faster to match, exactly the way its own damage tiers already did - the same +50% on the Short Laser as on the Long one, each measured against its own heat.',
+      'Ordnance was the one way in the game to get laser damage with no heat bill, which made it strictly better on a beam than the beam’s own damage rungs. On a laser it now buys a harder burst rather than a bigger total, and you buy the burst back with heat capacity and dispersion - the trade the lasers were built around.',
+      'Every other weapon is unchanged. Shell-throwers do not heat, so there is nothing there to raise.',
+    ],
+  },
+  {
     at: '2026-08-14T12:39Z',
     title: 'The chest reels actually spin now',
     notes: [

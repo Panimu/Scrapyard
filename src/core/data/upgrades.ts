@@ -312,9 +312,22 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     id: 'p-damage',
     kind: 'passive',
     name: 'Ordnance',
-    description: 'Every weapon hits harder.',
+    description: 'Every weapon hits harder. A hotter-running laser burns through its heat faster.',
+    // HEAT RIDES WITH DAMAGE, and it is the same key pairing the lasers' own damage tiers use
+    // (`laserTiers`: `{ damage: +40%, heatPerSec: +40% }`). The rule in this game is that raw
+    // power on a beam costs burst - you buy the burst back with capacity and dispersion tiers -
+    // and a passive that broke that rule was the one way to get laser damage with no heat bill.
+    // It made Ordnance strictly better on a laser than the laser's own damage rungs, which is
+    // backwards: a card that says "every weapon hits harder" should not also quietly say "and on
+    // these three, ignore the mechanic they are built around".
+    //
+    // Proportional, not flat, so it lands "in line with that laser's heat profile" whichever
+    // laser it is: the same +50% on the Short Laser's 10/s and the Long Laser's 34/s.
+    //
+    // A NO-OP FOR EVERYTHING ELSE. Projectile weapons declare `heatPerSec: 0` and multiplying
+    // zero leaves zero, so no shell-thrower notices this key exists.
     tiers: rampText('Weapon damage'),
-    tierEffects: rampEffects('weapon', ['damage']),
+    tierEffects: rampEffects('weapon', ['damage', 'heatPerSec']),
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
