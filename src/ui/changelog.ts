@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T23:28Z',
+    title: 'Cannon and Artillery rate tiers are percentages now',
+    notes: [
+      'THE CARDS SAY A PERCENTAGE INSTEAD OF A NUMBER OF SECONDS. The Cannon reads "cooldown -15%" and Heavy Artillery "reload -16.7%", which is exactly what those tiers were always worth - a fifteenth and a sixth of the weapon they were written for.',
+      'WHAT IT FIXES: yesterday\'s 5% rate cut landed as 5% on a fresh gun and 7% on a finished one, because a tier that removes a fixed number of seconds removes a smaller SHARE of a longer cooldown. Both weapons now lose exactly 5% at every tier.',
+      'The ladder is otherwise identical to the one these guns have always had: a tier-7 Cannon still fires at 0.70x its base cooldown and a tier-7 Artillery at two thirds of its reload, to the decimal.',
+    ],
+  },
+  {
     at: '2026-08-14T23:22Z',
     title: 'Artillery and the Cannon both slow down',
     notes: [

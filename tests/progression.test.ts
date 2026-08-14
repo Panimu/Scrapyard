@@ -516,26 +516,26 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(3); // FIRE RATE
-    expect(s().cooldown).toBeCloseTo(1.083, 9);
+    expect(s().cooldown).toBeCloseTo(1.07355, 9);
     expect(s().range).toBe(309); // and nothing else moved
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(4); // DAMAGE
     expect(s().damage).toBe(62);
-    expect(s().cooldown).toBeCloseTo(1.083, 9);
+    expect(s().cooldown).toBeCloseTo(1.07355, 9);
 
     expect(takeTier(w, card)).toBe(5); // RANGE again
     expect(s().range).toBe(371);
 
     expect(takeTier(w, card)).toBe(6); // FIRE RATE again
-    expect(s().cooldown).toBeCloseTo(0.903, 9);
+    expect(s().cooldown).toBeCloseTo(0.8841, 9);
 
     expect(takeTier(w, card)).toBe(7); // PIERCE
     expect(s().pierce).toBe(1);
     // The last tier changes what the gun IS; everything below it is intact.
     expect(s().range).toBe(371);
     expect(s().damage).toBe(62);
-    expect(s().cooldown).toBeCloseTo(0.903, 9);
+    expect(s().cooldown).toBeCloseTo(0.8841, 9);
   });
 
   it('gives a laser damage AND heat together, then capacity, then dispersion', () => {

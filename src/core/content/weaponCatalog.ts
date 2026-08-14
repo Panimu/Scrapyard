@@ -253,6 +253,20 @@ const CANNON_TURRET_TRAVERSE = degToRad(220);
  */
 const CANNON_FIRE_ARC = degToRad(12);
 
+/**
+ * THE CANNON'S PACE, and its two rate tiers expressed as a FRACTION OF IT rather than as a
+ * number of seconds.
+ *
+ * The tiers used to be a flat -0.18 s each, which was 15% of the 1.2 s cooldown they were
+ * authored against. Flat deltas do not survive a change to the base: trimming the base by 5%
+ * left those two rungs subtracting the same 0.18 s from a bigger number, so the finished gun
+ * lost 7% of its rate where the fresh one lost 5%. Deriving them keeps the LADDER'S SHAPE fixed
+ * - tier 7 is 0.70x the base cooldown, exactly as it always was - whatever the base becomes.
+ */
+const CANNON_COOLDOWN = 1.263;
+const CANNON_RATE_TIER_FRAC = 0.15;
+const CANNON_RATE_TIER = -CANNON_COOLDOWN * CANNON_RATE_TIER_FRAC;
+
 export const CANNON: WeaponDef = Object.freeze({
   id: 'cannon',
   name: 'Cannon',
@@ -263,7 +277,7 @@ export const CANNON: WeaponDef = Object.freeze({
   requiresTarget: true,
   base: Object.freeze({
     damage: 44, // no variance, no crit
-    cooldown: 1.263, // 0.792 shots/s - the whole pace of the game is this number
+    cooldown: CANNON_COOLDOWN, // 0.792 shots/s - the whole pace of the game is this number
     range: 247, // 56% of the visible width at VIEW_MINOR_UNITS 440
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
@@ -301,10 +315,10 @@ export const CANNON: WeaponDef = Object.freeze({
    */
   perLevel: Object.freeze([
     { range: 62 }, // T2  247 -> 309
-    { cooldown: -0.18 }, // T3  1.263 -> 1.083 s
+    { cooldown: CANNON_RATE_TIER }, // T3  1.263 -> 1.0736 s  (-15% of base)
     { damage: 18 }, // T4  44 -> 62
     { range: 62 }, // T5  309 -> 371
-    { cooldown: -0.18 }, // T6  1.083 -> 0.903 s
+    { cooldown: CANNON_RATE_TIER }, // T6  1.0736 -> 0.8841 s  (0.70x base, as always)
     { pierce: 1 }, // T7  punches through one body
   ]),
   reengageMul: 0.55,
@@ -711,6 +725,15 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // whether to walk into that ground or away from it.
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * The barrage's rhythm, and its two rate tiers as a fraction of it - see CANNON_COOLDOWN for why
+ * these are derived rather than flat. One sixth each, which is what -0.6 s was against the 3.6 s
+ * this ladder was authored around; tier 7 is still exactly two thirds of the base reload.
+ */
+const ARTILLERY_COOLDOWN = 3.789;
+const ARTILLERY_RATE_TIER_FRAC = 1 / 6;
+const ARTILLERY_RATE_TIER = -ARTILLERY_COOLDOWN * ARTILLERY_RATE_TIER_FRAC;
+
 export const ARTILLERY: WeaponDef = Object.freeze({
   id: 'artillery',
   name: 'Heavy Artillery',
@@ -723,7 +746,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   requiresTarget: false,
   base: Object.freeze({
     damage: 55.1,
-    cooldown: 3.789, // slow: this is a rhythm you plan around, not a gun you aim
+    cooldown: ARTILLERY_COOLDOWN, // slow: this is a rhythm you plan around, not a gun you aim
     range: STRIKE_RADIUS_MAX,
     projectileSpeed: 0, // shells do not travel - they arrive
     projectileCount: 2,
@@ -744,10 +767,10 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   }),
   perLevel: Object.freeze([
     { splashRadius: 18 }, // T2  75 -> 93
-    { cooldown: -0.6 }, // T3  3.789 -> 3.189 s
+    { cooldown: ARTILLERY_RATE_TIER }, // T3  3.789 -> 3.1575 s  (-1/6 of base)
     { damage: 22 }, // T4  55.1 -> 77.1
     { splashRadius: 18 }, // T5  93 -> 111
-    { cooldown: -0.6 }, // T6  3.189 -> 2.589 s
+    { cooldown: ARTILLERY_RATE_TIER }, // T6  3.1575 -> 2.526 s  (2/3 base, as always)
     { projectileCount: 1 }, // T7  a third shell
   ]),
   reengageMul: 1,
