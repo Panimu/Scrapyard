@@ -112,6 +112,40 @@ export const WEAPON_SCRATCH_LEN = 4;
 export const SPAWN_RADIUS = 560;
 
 /**
+ * A fuel barrel further than this from the mech CANNOT BE BROKEN, by anything.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT IS A CHEAT, AND IT IS ON THE PLAYER'S SIDE
+ * ---------------------------------------------------------------------------------------------
+ * A barrel broken off screen is worse than a barrel not broken: the drum is spent, and whatever
+ * fell out of it lands somewhere the player never saw and never collects. Several things reach
+ * well past the edge of the picture - a Long Laser with Targeting Optics is a 710 u beam, the
+ * artillery lands on ground the player is not looking at, and a missile rack fires wherever the
+ * mech last ran - so a run quietly burns drums it never gets paid for. This stops that.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY IT IS A CONSTANT AND NOT THE ACTUAL VIEWPORT
+ * ---------------------------------------------------------------------------------------------
+ * This is the whole reason the number is here rather than being asked of the camera. Core is the
+ * determinism boundary: if what breaks depended on the SHAPE OF THE PHONE, a wide screen and a
+ * tall one would consume different barrels, drop different consumables, and diverge - and a run
+ * recorded on a phone would not replay in Node, which has no viewport at all.
+ *
+ * So it is one fixed radius, derived once from the view box rather than from a device: the short
+ * axis shows VIEW_MINOR_UNITS (440) and the long axis is capped at VIEW_MAJOR_MAX_UNITS (900) and
+ * letterboxed past that, so the furthest visible point on ANY supported viewport is the corner at
+ * sqrt(220^2 + 450^2) = 500.9 u.
+ *
+ * 512 sits just outside that. The error is deliberately biased: too LOW and the game refuses to
+ * break a drum the player can plainly see, which reads as broken; too HIGH and a few genuinely
+ * unseen barrels still go up, which is only the old behaviour in a smaller radius. So "off screen"
+ * here means DEFINITELY off screen - a barrel 480 u out to the side is not on screen either, and
+ * it can still be broken. Tightening to the 220 u that is visible in every orientation would
+ * refuse most of what the player is actually aiming at.
+ */
+export const BARREL_BREAK_RADIUS = 512;
+
+/**
  * THE ARENA IS A FENCED SQUARE OF THIS SIZE, in world units. A real barrier, not a wrap: the
  * scrapyard has a perimeter fence, you can walk up to it, and you cannot walk through it.
  *

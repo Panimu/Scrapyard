@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T18:01Z',
+    title: 'Fuel barrels survive anything you cannot see',
+    notes: [
+      'A drum is now immune to everything while it is off screen. Nothing you fire can break one you are not looking at.',
+      'This is a cheat, and it is on your side. A barrel broken off screen is worse than a barrel left standing: the drum is spent and whatever fell out of it lands somewhere you will never walk. Plenty of things reach past the edge of the picture - a Long Laser with Targeting Optics is a 710-unit beam, the artillery lands on ground you are not watching, and a missile rack fires wherever you last ran.',
+      'Measured over a full run, TWO THIRDS OF EVERY BARREL BROKEN was going up out of sight - 29 of 41 on one seed, 30 of 46 on another, with the furthest at 1412 and 1545 units against a screen that reaches 501. None of them paid out. That is about thirty drums a run handed back to you.',
+      'The number you break in front of you is unchanged. You simply stop burning the rest of the yard by accident.',
+    ],
+  },
+  {
     at: '2026-08-14T17:57Z',
     title: 'The stick works after a chest, and the reels take their time',
     notes: [

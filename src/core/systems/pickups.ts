@@ -61,7 +61,13 @@
  * It is 1-based so that 0 stays available as "none" for anything that later wants it.
  */
 
-import { ARENA_HALF, DT, GEM_SOFT_CAP, MAX_KILLS_PER_TICK } from '../constants.js';
+import {
+  ARENA_HALF,
+  BARREL_BREAK_RADIUS,
+  DT,
+  GEM_SOFT_CAP,
+  MAX_KILLS_PER_TICK,
+} from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
 import { destroyScenery, destructibleOverlap, regrowBarrel } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
@@ -167,6 +173,17 @@ export function breakBarrelIn(world: World, x: number, y: number, r: number): bo
 
   const bx = world.scenery.x[i];
   const by = world.scenery.y[i];
+
+  // OFF SCREEN, SO IT SURVIVES. See BARREL_BREAK_RADIUS: a drum the player cannot see is a drum
+  // whose contents they will never collect, so breaking it only costs them the barrel. Measured
+  // from the MECH rather than from the hit, because the mech is what the camera is centred on -
+  // an artillery shell landing 800 u away is exactly the case this exists for.
+  //
+  // Every caller ignores the return value, so refusing is free: the shell still lands, the beam
+  // still burns, the blast still goes off. Only the drum is spared.
+  const dx = bx - world.player.x;
+  const dy = by - world.player.y;
+  if (dx * dx + dy * dy > BARREL_BREAK_RADIUS * BARREL_BREAK_RADIUS) return false;
   // Read BEFORE destroying: destruction is a radius write, so this is the last tick the size of
   // the thing that went up exists anywhere, and the renderer sizes its burst from it.
   const br = world.scenery.radius[i];
