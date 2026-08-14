@@ -1140,3 +1140,14 @@ body {
     animation: none;
   }
 }
+
+/* Banked credits on the mech picker. Blue, matching the coin, and deliberately quiet: it is a
+   number that does nothing yet, so it should read as a promise rather than as a resource bar. */
+.heroes__bank {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #4fb8ff;
+  opacity: .8;
+}

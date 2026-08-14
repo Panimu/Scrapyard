@@ -191,6 +191,8 @@ export interface PickupTuning {
   readonly creditTierValues: readonly [number, number, number, number];
   /** Seconds during which a magnet pulls EVERY gem, at any distance. */
   readonly magnetSec: number;
+  /** Chance a broken barrel held nothing at all. */
+  readonly barrelEmptyChance: number;
 }
 
 export interface Tuning {
@@ -286,6 +288,12 @@ const PICKUPS: PickupTuning = {
   // Long enough to clear a field the player had given up on, short enough that it is a moment
   // rather than a mode.
   magnetSec: 4,
+  // A QUARTER OF THEM ARE EMPTY, and that number went in the moment barrels became common. A drum
+  // you clip on the way past should be a small hope, not a small tax on the designer's economy:
+  // if every one paid out, twenty-two per cent of the yard would be a guaranteed drip of heals and
+  // credits and the player would stop noticing them. The empty is what keeps the full one a
+  // result.
+  barrelEmptyChance: 0.25,
 };
 
 export const DEFAULT_TUNING: Tuning = Object.freeze({

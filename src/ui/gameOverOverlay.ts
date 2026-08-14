@@ -72,7 +72,11 @@ export class GameOverOverlay {
   }
 
   /** Built once per run end, not per frame - this is the only place it allocates DOM. */
-  show(world: World, seed: number): void {
+  /**
+   * `banked` is the LIFETIME credit total, already including this run's take. Passed in rather
+   * than read from storage here, so this overlay stays a pure function of what it is handed.
+   */
+  show(world: World, seed: number, banked = 0): void {
     const won = world.phase === RUN_PHASE_VICTORY;
     this.eyebrow.textContent = won ? 'Scraplord down' : 'Run over';
     this.title.textContent = won ? 'SURVIVED' : 'SCRAPPED';
@@ -131,7 +135,8 @@ export class GameOverOverlay {
         ${stat('Accuracy', `${accuracy}%`)}
         ${stat('Gems', String(s.gemsCollected))}
         ${s.damagePrevented > 0 ? stat('Shielded', compact(s.damagePrevented)) : ''}
-        ${s.credits > 0 ? stat('Credits', String(s.credits)) : ''}
+        ${s.credits > 0 ? stat('Credits', `+${s.credits}`) : ''}
+        ${banked > 0 ? stat('Banked', String(banked)) : ''}
         ${s.barrelsBroken > 0 ? stat('Barrels', String(s.barrelsBroken)) : ''}
       </div>
       <div class="list">

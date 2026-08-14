@@ -70,11 +70,14 @@ export const SCRAP_MECH_WRECK = 5;
 export const SCRAP_BARREL = 6;
 
 /**
- * A lone drum, not a heap, so it is fixed SMALL rather than drawn from the pile range - about a
- * mech's width across. Size is how the player tells at a glance that this one is different from
- * the six things they cannot break.
+ * A lone drum, not a heap, so it is fixed SMALL rather than drawn from the pile range. Size is how
+ * the player tells at a glance that this one is different from the six things they cannot break.
+ *
+ * 20 u, down from 30: at 30 a drum was 60 u across against a 58 u mech, which read as a small pile
+ * rather than as a barrel and made it a real obstacle to walk around. At 20 it is comfortably
+ * smaller than the machine that walks into it, which is what a drum should be.
  */
-const BARREL_RADIUS = 30;
+const BARREL_RADIUS = 20;
 
 /**
  * Cumulative weights for the variant draw. NOT uniform, and the shape is the point.
@@ -90,20 +93,23 @@ const BARREL_RADIUS = 30;
  * memorial second.
  *
  * FUEL BARRELS are the exception to "rarer is better", because they are the only pile that gives
- * anything back and there are THREE things they can give. At 8% the reference run broke four in
- * fifteen minutes, which is under two of each kind and means a player could finish a run having
- * never seen a magnet. 12% puts about eighteen in the yard and six in the ground a run covers -
- * often enough that each consumable is a thing you learn, rare enough that finding one is still
- * an event.
+ * anything back and there are three things they can give - four counting the empty. They started
+ * at 8%, which the reference run turned into four broken in fifteen minutes: under two of each
+ * kind, and a player could finish a run having never seen a magnet.
+ *
+ * At 22% they are the most common thing in the yard, and that is the right shape now that they are
+ * SMALL and sometimes EMPTY. A drum is no longer a landmark you cross the map for; it is something
+ * you clip on the way past and are mildly pleased about. Objects like that have to be plentiful or
+ * the habit never forms - and the empty roll is what stops plentiful from meaning guaranteed.
  */
 const VARIANT_CDF: readonly number[] = Object.freeze([
-  0.21, // 0 crushed cars      21%
-  0.4, // 1 barrels            19%
-  0.59, // 2 girders           19%
-  0.76, // 3 tyres             17%
-  0.85, // 4 enemy wrecks       9%
-  0.88, // 5 mech wreck         3%
-  1.0, // 6 FUEL BARREL        12%
+  0.17, // 0 crushed cars      17%
+  0.34, // 1 barrels           17%
+  0.51, // 2 girders           17%
+  0.66, // 3 tyres             15%
+  0.75, // 4 enemy wrecks       9%
+  0.78, // 5 mech wreck         3%
+  1.0, // 6 FUEL BARREL        22%
 ]);
 
 /**

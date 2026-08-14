@@ -23,6 +23,9 @@ export class HeroSelect {
   private readonly tiles: HTMLButtonElement[] = [];
   private selected = 0;
 
+  /** Lifetime credit readout. Hidden until the player has banked a coin. */
+  private readonly bank: HTMLDivElement;
+
   constructor(
     private readonly onStart: (heroId: number) => void,
     initialHeroId = 0,
@@ -37,8 +40,10 @@ export class HeroSelect {
     head.className = 'heroes__head';
     head.innerHTML = `<div class="eyebrow">Scrapyard</div>
       <h1 class="heroes__title">Pick a mech</h1>
-      <div class="heroes__note">Sixteen chassis. Eight carry a bonus to one weapon.</div>`;
+      <div class="heroes__note">Sixteen chassis. Eight carry a bonus to one weapon.</div>
+      <div class="heroes__bank" data-bank hidden></div>`;
     el.appendChild(head);
+    this.bank = head.querySelector('[data-bank]') as HTMLDivElement;
 
     const grid = document.createElement('div');
     grid.className = 'heroes__grid';
@@ -87,6 +92,15 @@ export class HeroSelect {
 
     this.element = el;
     this.select(clampHeroId(initialHeroId));
+  }
+
+  /**
+   * Updates the banked credit readout. Called every time the picker is shown, because the total
+   * changes while this screen is hidden - a run happens in between.
+   */
+  setCredits(total: number): void {
+    this.bank.hidden = total <= 0;
+    this.bank.textContent = `${total} credits banked`;
   }
 
   get visible(): boolean {

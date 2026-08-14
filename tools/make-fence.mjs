@@ -66,9 +66,9 @@ const W = 256 * PX;
  * non-power-of-two texture at all: it silently samples black. The floor tile is kept out of the
  * atlas for exactly this reason (docs/ASSET_MANIFEST.md gotcha 8).
  *
- * The structure needs only 80 of the 128 world units; the remaining 48 are solid VOID, which is
- * what the outside of the world looks like anyway. So the padding the constraint forces is not
- * waste - it buys 48 more units of dead ground beyond the wire.
+ * The structure needs only 80 of the 128 world units; the remaining 48 carry the exterior wash,
+ * which is what the outside of the fence looks like anyway. So the padding the constraint forces
+ * is not waste - it buys 48 more units of dimmed ground beyond the wire.
  */
 const H = 128 * PX;
 
@@ -84,7 +84,6 @@ const DRAW_FENCE = `() => {
   const PANEL = W / 4;
 
   // Palette: dead earth, galvanised steel gone grey, and a lot of rust.
-  const VOID      = '#151109';
   const DIRT      = '#3b3125';
   const DIRT_DARK = '#2b2419';
   const STEEL     = '#697079';
@@ -106,20 +105,24 @@ const DRAW_FENCE = `() => {
   const rect = (x, y, w, h, fill) => { g.fillStyle = fill; g.fillRect(x, y, w, h); };
 
   // --- (1) the ground beyond ---------------------------------------------------------------
-  // Everything outboard of the structure fades to dead flat nothing. The renderer paints the same
-  // VOID over the whole exterior, so this gradient is the SEAM between the yard and the outside
-  // and the two colours have to agree exactly.
-  // A LONG fade. The yard floor is bright rust and the outside is nearly black, so a short one
-  // reads as a painted line rather than as ground running out. This covers 44 world units, which
-  // is a tenth of the minor view - enough that the eye reads distance rather than an edge.
-  const fadeTop = INNER + 36 * PX;
-  const fadeEnd = INNER + 80 * PX;
+  // THE STRIP DOES NOT TINT THE OUTSIDE. It used to, and having two sources for one wash was the
+  // bug: the renderer lays OUTSIDE_COLOUR over the whole exterior and the strip laid it again over
+  // its own outer band, so 0.55 over 0.55 became 0.80 and drew a darker stripe hugging all four
+  // runs. Insetting the renderer's fill to avoid the overlap then left the 112 u corner squares -
+  // covered by neither run - undimmed and glowing.
+  //
+  // So the wash has exactly ONE owner (src/render/fence.ts) and the strip is TRANSPARENT outboard
+  // of its structure. It draws on top of the fill, which means the panels stay bright while the
+  // ground either side of them is the renderer's business alone. No overlap, no gap, no corner.
+  //
+  // The little that remains here is a short DIRT ramp just outboard of the panels - the berm
+  // running out - which is opaque ground rather than a tint and so cannot double with anything.
+  const fadeTop = INNER + 30 * PX;
+  const fadeEnd = INNER + 44 * PX;
   const beyond = g.createLinearGradient(0, fadeTop, 0, fadeEnd);
-  beyond.addColorStop(0, 'rgba(21,17,9,0)');
-  beyond.addColorStop(0.5, 'rgba(21,17,9,0.88)');
-  beyond.addColorStop(1, VOID);
+  beyond.addColorStop(0, 'rgba(43,36,25,0.55)');
+  beyond.addColorStop(1, 'rgba(43,36,25,0)');
   rect(0, fadeTop, W, fadeEnd - fadeTop, beyond);
-  rect(0, fadeEnd, W, H - fadeEnd, VOID);
 
   // --- (2) the inside shadow ----------------------------------------------------------------
   // THE HEIGHT CUE. Soft, wide, and entirely inboard, so the yard side of the line is where the

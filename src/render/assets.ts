@@ -166,11 +166,20 @@ export const FENCE_INNER_UNITS = 16;
 /** How far it reaches OUTSIDE: structure, then dead ground fading to VOID. */
 export const FENCE_OUTER_UNITS = 112;
 /**
- * The colour beyond the fence, and it MUST equal the value the texture's gradient ends on
- * (`VOID` in make-fence.mjs). The renderer floods the whole exterior with it and the strip fades
- * into it; a mismatch of even one step draws a visible band along all four runs.
+ * THE GROUND OUTSIDE THE FENCE IS STILL GROUND.
+ *
+ * It was an opaque near-black for a while, and that was wrong: the yard sat in a void, and a
+ * barren place with nothing at all beyond its fence reads as the edge of a level rather than as
+ * somewhere. The floor tile already covers the whole viewport, so all the exterior needs is to be
+ * visibly OUTSIDE - dimmer and colder, not absent.
+ *
+ * So this is a WASH, not a fill: the same dark tone at `OUTSIDE_ALPHA` over the ground, which
+ * leaves the rust and the tile pattern legible underneath while putting the yard unmistakably in
+ * the light. The strip's own gradient in make-fence.mjs fades to exactly this and no further, so
+ * the two meet without a band.
  */
-export const VOID_COLOUR = 0x151109;
+export const OUTSIDE_COLOUR = 0x140f09;
+export const OUTSIDE_ALPHA = 0.55;
 
 /**
  * Scrap piles are drawn on a 192 px canvas at 2 px per world unit, so the art fills a 96 u radius

@@ -273,6 +273,7 @@ async function boot(): Promise<void> {
     summary.hide();
     pauseOverlay.element.hidden = true;
     changelog.hide();
+    heroSelect.setCredits(state.settings.credits);
     heroSelect.show(state.settings.lastHeroId);
   }
 
@@ -397,7 +398,11 @@ async function boot(): Promise<void> {
         levelUp.hide();
         joystick.setEnabled(false);
         hud.setVisible(false);
-        summary.show(world, state.seed);
+        // BANK BEFORE SHOWING. This branch runs once - `state.set('summary')` below leaves the
+        // running phase, and the loop only reaches here while running - so the credits are added
+        // exactly once per run. Doing it inside summary.show() would pay again on every re-render.
+        state.bankCredits(world.stats.credits);
+        summary.show(world, state.seed, state.settings.credits);
         state.set('summary');
       }
 

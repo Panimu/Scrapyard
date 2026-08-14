@@ -144,15 +144,25 @@ function dropConsumable(world: World, x: number, y: number): void {
   const which = rng.nextFloat();
   const jitter = rng.nextRange(1 - t.creditJitter, 1 + t.creditJitter);
 
+  // EMPTY. Drawn from the same `which` roll rather than a separate one, so the odds are a single
+  // readable partition of [0, 1) and adding a fourth outcome later does not change how many values
+  // a barrel consumes. The break still happens - the burst, the event, the stat - because "you
+  // opened it and there was nothing in it" is a result, and one the player has to be able to see.
+  if (which < t.barrelEmptyChance) return;
+
   let kind: number;
   let value: number;
   let tier: number;
 
-  if (which < CONSUMABLE_REPAIR_CHANCE) {
+  // The kind thresholds sit ABOVE the empty band, so the three shares below are shares of the
+  // barrels that actually held something.
+  const held = (which - t.barrelEmptyChance) / (1 - t.barrelEmptyChance);
+
+  if (held < CONSUMABLE_REPAIR_CHANCE) {
     kind = PICKUP_KIND_REPAIR;
     value = Math.max(1, Math.round(world.player.stats.maxHp * t.repairFrac));
     tier = 0;
-  } else if (which < CONSUMABLE_REPAIR_CHANCE + CONSUMABLE_MAGNET_CHANCE) {
+  } else if (held < CONSUMABLE_REPAIR_CHANCE + CONSUMABLE_MAGNET_CHANCE) {
     kind = PICKUP_KIND_MAGNET;
     value = 0;
     tier = 0;

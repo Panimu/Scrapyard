@@ -24,11 +24,27 @@ export interface Settings {
   dprCap: 1 | 2;
   /** Whether the on-device debug HUD is showing. Safari Web Inspector needs a Mac we do not have. */
   debug: boolean;
+  /**
+   * CREDITS BANKED ACROSS EVERY RUN EVER PLAYED. The one number in this file that is a game
+   * mechanic rather than a preference.
+   *
+   * Blue coins are the meta-currency, and a meta-currency that resets with the run is just a
+   * score. Nothing spends this yet - it accumulates, it shows on the mech select, and the shop
+   * that gives it a purpose is a later job. Banking it from the first day it exists means the
+   * players who are here now arrive at that shop with something in their pocket.
+   *
+   * Saturated rather than allowed to grow without bound: this round-trips through JSON, and a
+   * number that has stopped being an integer is a number that will one day render as 1.0000001e21.
+   */
+  credits: number;
 }
+
+/** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
+export const MAX_BANKED_CREDITS = 9_999_999;
 
 const STORAGE_KEY = 'scrapyard.settings.v1';
 
-const DEFAULTS: Settings = { lastHeroId: 0, dprCap: 2, debug: false };
+const DEFAULTS: Settings = { lastHeroId: 0, dprCap: 2, debug: false, credits: 0 };
 
 function loadSettings(): Settings {
   try {
@@ -42,6 +58,9 @@ function loadSettings(): Settings {
       lastHeroId: clampInt(parsed.lastHeroId, 0, HERO_CATALOG.length - 1, DEFAULTS.lastHeroId),
       dprCap: parsed.dprCap === 1 ? 1 : 2,
       debug: parsed.debug === true,
+      // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
+      // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
+      credits: clampInt(parsed.credits, 0, MAX_BANKED_CREDITS, 0),
     };
   } catch {
     // Private browsing, quota, corrupt JSON - all the same answer.
@@ -79,6 +98,21 @@ export class AppState {
 
   onChange(fn: (phase: AppPhase, previous: AppPhase) => void): void {
     this.listeners.add(fn);
+  }
+
+  /**
+   * Banks a finished run's credits. Returns the amount actually added.
+   *
+   * Called EXACTLY ONCE per run, at the transition into the summary phase - not from the summary's
+   * render, which can happen again on a resize and would pay the player twice for one run.
+   */
+  bankCredits(earned: number): number {
+    if (!Number.isFinite(earned) || earned <= 0) return 0;
+    const before = this.settings.credits;
+    const after = Math.min(MAX_BANKED_CREDITS, before + Math.round(earned));
+    this.settings.credits = after;
+    this.saveSettings();
+    return after - before;
   }
 
   saveSettings(): void {

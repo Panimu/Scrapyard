@@ -300,7 +300,10 @@ const DRAW = `(variant, barrels, hulls, mechs) => {
   // (no scar, no scatter), a bright hazard band, and a hard rim highlight, so a player scanning
   // the field sorts it from the scenery without being taught to.
   if (variant === 6) {
-    const rad = R * 0.62;
+    // Nearly fills its circle. Every other variant is a heap whose art can sit inside its
+    // collision radius with room to spare; a drum is ONE object and the circle IS the drum, so
+    // anything less than this reads as a barrel with an invisible skirt you cannot walk through.
+    const rad = R * 0.88;
     g.beginPath(); g.arc(CX + 3, CY + 5, rad, 0, 6.284);
     g.fillStyle = 'rgba(0,0,0,0.45)'; g.fill();
 

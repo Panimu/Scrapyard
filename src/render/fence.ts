@@ -18,16 +18,19 @@
  * turn. One texture, one bind, four walls.
  *
  * ---------------------------------------------------------------------------------------------
- * WHY THERE IS A VOID FILL AT ALL
+ * WHAT IS BEYOND THE FENCE, AND WHY IT IS NOT NOTHING
  * ---------------------------------------------------------------------------------------------
  * The floor is a screen-space TilingSprite covering the whole viewport, so it does not stop at the
- * fence - and standing at the wall the camera shows about 450 units of ground BEYOND it. Without
- * this, the yard's own gravel would carry on past its own fence and the barrier would read as a
- * decoration dropped on an infinite plane rather than as the edge of somewhere.
+ * fence - standing at the wall the camera shows about 450 units of ground BEYOND it. That ground
+ * stays. It is a barren area with a scrapyard in it, and the world does not end at the wire.
  *
- * It is drawn once, as static geometry big enough to cover anything the camera can reach past the
- * wall, and its colour has to match the value the strip's own gradient fades into. Both live in
- * assets.ts as VOID_COLOUR for exactly that reason.
+ * What it gets instead is a WASH: the same ground, dimmed and cooled by a translucent overlay, so
+ * the fence still reads as a boundary without the outside reading as a void. An opaque fill was
+ * tried first and made the yard look like a level rather than a place.
+ *
+ * Drawn once, as static geometry big enough to cover anything the camera can reach past the wall.
+ * Its colour and alpha have to match the value the strip's own gradient fades into - both live in
+ * assets.ts as OUTSIDE_COLOUR / OUTSIDE_ALPHA for exactly that reason.
  */
 
 import { Container, Graphics, Sprite, TilingSprite, type Texture } from 'pixi.js';
@@ -38,7 +41,8 @@ import {
   FENCE_INNER_UNITS,
   FENCE_OUTER_UNITS,
   FENCE_TILE_UNITS,
-  VOID_COLOUR,
+  OUTSIDE_ALPHA,
+  OUTSIDE_COLOUR,
   type GameTextures,
 } from './assets.js';
 
@@ -49,8 +53,8 @@ const DEPTH = FENCE_INNER_UNITS + FENCE_OUTER_UNITS;
 const PX_PER_UNIT = 2;
 
 /**
- * How far out the void fill reaches. The camera can see at most 500.9 u past the player and the
- * player cannot pass the wall, so anything beyond ~600 is never sampled; 2400 is slack for a
+ * How far out the exterior wash reaches. The camera can see at most 500.9 u past the player and
+ * the player cannot pass the wall, so anything beyond ~600 is never sampled; 2400 is slack for a
  * future zoom-out and costs nothing, being four static rectangles.
  */
 const VOID_REACH = 2400;
@@ -75,18 +79,26 @@ export class Fence {
   constructor(tex: GameTextures) {
     this.container = new Container({ label: 'fence' });
 
-    // --- the dead ground -------------------------------------------------------------------
+    // --- the ground beyond ------------------------------------------------------------------
     // Four rectangles rather than one big one with a hole: a Graphics hole needs an even-odd fill
     // and this is a rectangle subtraction that can be written down exactly. North and south span
     // the full width including the corners, so the sides only have to cover between them.
+    //
+    // THIS IS THE ONLY THING THAT DIMS THE OUTSIDE, and the strip texture is transparent out
+    // there precisely so that stays true. Two sources for one wash was a bug twice over: overlap
+    // multiplied 0.55 by 0.55 into a darker band hugging every run, and insetting to avoid the
+    // overlap left the corner squares - which no run covers - undimmed and glowing.
+    //
+    // It therefore starts exactly at the bound. The fence draws OVER it, so the panels stay bright
+    // while the ground either side of them is this rectangle's business alone.
     const h = ARENA_HALF;
     const r = VOID_REACH;
-    this.voidFill = new Graphics({ label: 'void' })
+    this.voidFill = new Graphics({ label: 'outside' })
       .rect(-h - r, -h - r, (h + r) * 2, r)
       .rect(-h - r, h, (h + r) * 2, r)
       .rect(-h - r, -h, r, h * 2)
       .rect(h, -h, r, h * 2)
-      .fill({ color: VOID_COLOUR });
+      .fill({ color: OUTSIDE_COLOUR, alpha: OUTSIDE_ALPHA });
 
     // --- the four runs ---------------------------------------------------------------------
     // `tileScale` maps the 2 px-per-unit source onto world units; the sprite's own width/height
