@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T11:44Z',
+    title: 'Chest reels show your own loadout, and pay out in it',
+    notes: [
+      'The reels no longer carry the whole arsenal. They show what YOU are running - every upgrade you hold and have not maxed - so two Long Lasers and a Servo Drive is a sentence about your build rather than a wall of symbols you have never seen.',
+      'EVERY POWER-UP NOW COMES OFF THE REELS. The payout is dealt across the three of them in order: a jackpot of three Medium Lasers is five tiers of Medium Laser, a pair paying four is A, B, A, A. Nothing is topped up from outside any more.',
+      'So a chest deepens the run you committed to rather than handing you something new. Breadth comes from level-up cards, which are a choice; depth comes from bosses, which are a fight.',
+      'A symbol that hits tier 7 part way through a payout passes its share to the next reel.',
+    ],
+  },
+  {
     at: '2026-08-14T11:16Z',
     title: 'Bosses drop a Cyber Chest',
     notes: [

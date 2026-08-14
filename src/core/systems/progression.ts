@@ -595,56 +595,98 @@ function checkVictory(world: World): boolean {
  * from one with a blank would be a punishment for winning.
  *
  * ---------------------------------------------------------------------------------------------
- * WHY THE REELS ARE DRAWN FROM WHAT YOU CAN ACTUALLY TAKE
+ * THE REELS SHOW WHAT YOU ALREADY CARRY, AND NOTHING ELSE
  * ---------------------------------------------------------------------------------------------
- * Every symbol comes from the OFFERABLE pool - the same eligibility test a level-up card uses - so
- * a reel can never land on a weapon you have no slot for or a tier you already maxed. The symbols
- * are then GRANTED, in the order they landed, before the payout is topped up with fresh rolls. The
- * icons a player watched stop are the upgrades they are about to receive, which is the only thing
- * that makes watching them worth doing.
+ * The symbol pool is the player's OWN LOADOUT - every upgrade they hold at least one tier of and
+ * have not maxed. Not the offerable pool, and not the catalog.
  *
- * ROLLED ON `rng.loot`, not `rng.upgrade`. A chest is loot. Keeping it off the upgrade stream is
- * what guarantees that opening one cannot change which three cards a later level-up offers.
+ * That is what makes a chest legible. A slot machine whose symbols include eight guns you have
+ * never seen is a wall of noise: you cannot tell a good spin from a bad one because you do not
+ * know what any of it means. A machine showing YOUR five things is one you can read at a glance -
+ * two Long Lasers and a Servo Drive is a sentence about your build.
+ *
+ * It also changes what a chest IS, deliberately. It no longer hands out new weapons; it DEEPENS
+ * what the run already committed to. Breadth comes from level-up cards, which are a choice; depth
+ * comes from bosses, which are a fight.
+ *
+ * The fallback, for a run where everything held is at tier 7: the offerable pool, so a chest is
+ * still never nothing. Reachable only very late and worth having rather than worth hiding.
+ *
+ * UNIFORM, NOT WEIGHTED. `UpgradeDef.weight` tunes how often a card OFFERS something, which is a
+ * different question from what a reel shows. Weighting the reels would make the odds of a triple
+ * depend on which upgrades you happened to take, and a slot machine has to have odds a player can
+ * feel.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * EVERY POWER-UP COMES OFF THE REELS
+ * ---------------------------------------------------------------------------------------------
+ * The payout is DEALT ROUND-ROBIN ACROSS THE THREE REELS, in reel order, one tier per deal. So a
+ * jackpot of three Long Lasers is five tiers of Long Laser; a pair paying three is A, A, B; two
+ * different symbols paying two is one tier each.
+ *
+ * Nothing is ever topped up from outside. An earlier version filled the remainder with fresh rolls
+ * and it was the wrong shape twice over: the reels stopped being the reason to watch, and a
+ * five-power-up jackpot could hand you two upgrades you had never seen on the machine.
+ *
+ * A symbol that hits tier 7 part way through the deal is skipped and its share passes to the next
+ * reel, counting the tiers granted EARLIER IN THIS SAME SPIN - which is why the loop carries its
+ * own tally rather than re-reading `lu.stacks`, since nothing is applied until the player collects.
  */
 export function openChest(world: World): void {
   const chest = world.chest;
   const catalog = world.upgradeCatalog;
+  const lu = world.levelUp;
   const rng = world.rng.loot;
-
-  const weaponsFull = world.weaponCount >= MAX_WEAPONS;
-  const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
-  const unarmed = world.weaponCount === 0;
 
   chest.reels.fill(-1);
   chest.grants.fill(-1);
   chest.payout = 0;
 
-  // `filled: 0` on every draw: the card's no-duplicates rule is the CARD's, and a slot machine
-  // that could not show the same symbol twice could never pay a jackpot.
-  for (let r = 0; r < CHEST_REELS; r++) {
-    chest.reels[r] = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
+  // --- the symbol pool: what the player is actually running --------------------------------
+  const pool: number[] = [];
+  for (let i = 0; i < catalog.length; i++) {
+    const def = catalog[i];
+    if (def === undefined) continue;
+    const stacks = lu.stacks[i];
+    if (stacks > 0 && stacks < def.maxStacks) pool.push(i);
   }
 
-  // A pool with nothing left in it. Only reachable with every weapon slot full and every held
-  // upgrade at tier 7, which is a won run - the chest opens, shows blanks and pays nothing.
-  if (chest.reels[0] < 0) {
+  if (pool.length === 0) {
+    // Everything held is maxed. Fall back to whatever a card could still offer, so a boss is
+    // never worth nothing - and if THAT is empty too the run has taken every upgrade in the game.
+    const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+    const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
+    const unarmed = world.weaponCount === 0;
+    const idx = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
+    if (idx >= 0) pool.push(idx);
+  }
+
+  if (pool.length === 0) {
     world.phase = RUN_PHASE_CHEST;
     pushEvent(world.events, EV_CHEST_OPENED, world.tick, world.player.x, world.player.y, 0, 0);
     return;
   }
 
-  chest.payout = payoutFor(chest.reels, catalog);
-
-  // The symbols first, in the order they landed, then fresh rolls to make up the number. Duplicate
-  // symbols are not skipped: a jackpot of three Long Lasers grants three tiers of Long Laser,
-  // which is exactly what the player was hoping for when the third reel stopped.
-  let n = 0;
-  for (let r = 0; r < CHEST_REELS && n < chest.payout; r++) {
-    if (chest.reels[r] >= 0) chest.grants[n++] = chest.reels[r];
+  for (let r = 0; r < CHEST_REELS; r++) {
+    chest.reels[r] = pool[rng.nextInt(pool.length)];
   }
-  while (n < chest.payout) {
-    const idx = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
-    if (idx < 0) break;
+
+  const target = payoutFor(chest.reels, catalog);
+
+  // --- deal the payout across the reels -----------------------------------------------------
+  // `taken` counts tiers granted EARLIER IN THIS SPIN. Nothing is applied until the player
+  // collects, so `lu.stacks` is still the pre-chest value and a triple would otherwise happily
+  // deal a sixth tier to a weapon already sitting on tier 6.
+  const taken = new Map<number, number>();
+  let n = 0;
+  for (let deal = 0; deal < target * CHEST_REELS && n < target; deal++) {
+    const idx = chest.reels[deal % CHEST_REELS];
+    if (idx < 0) continue;
+    const def = catalog[idx];
+    if (def === undefined) continue;
+    const already = taken.get(idx) ?? 0;
+    if (lu.stacks[idx] + already >= def.maxStacks) continue; // this symbol is finished
+    taken.set(idx, already + 1);
     chest.grants[n++] = idx;
   }
   chest.payout = n;

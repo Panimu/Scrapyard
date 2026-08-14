@@ -18,8 +18,12 @@
  * ---------------------------------------------------------------------------------------------
  * Each reel is a tall strip of icon tiles whose LAST tile is the one the sim chose. The strip is
  * translated from the top to the bottom with an ease-out, so it decelerates onto its result. The
- * icons above it are decoration - random draws from the same pool - and exist only to be blurred
- * past.
+ * icons above it are decoration and exist only to be blurred past.
+ *
+ * THE DECOYS COME FROM THE SAME POOL THE SIM ROLLED FROM - the player's own loadout - and that is
+ * not cosmetic. A machine that blurs past eight guns you have never carried and then lands on your
+ * Long Laser is a machine that was never really spinning; the player has to believe that any of
+ * the symbols going past COULD have stopped there.
  *
  * The three reels stop in sequence, left to right, `REEL_STAGGER_MS` apart. That stagger is the
  * entire feeling of a slot machine: two matching symbols and one still spinning is the only moment
@@ -121,8 +125,27 @@ export class ChestOverlay {
 
     const chest = world.chest;
     const catalog = world.upgradeCatalog;
+
+    // The loadout, exactly as openChest built it: held, and not yet maxed. Recomputed here rather
+    // than published on World because it is three lines and the alternative is a second array to
+    // keep in step with the one the simulation already has.
     const pool: string[] = [];
-    for (const def of catalog) pool.push(def.id);
+    for (let i = 0; i < catalog.length; i++) {
+      const def = catalog[i];
+      if (def === undefined) continue;
+      const stacks = world.levelUp.stacks[i];
+      if (stacks > 0 && stacks < def.maxStacks) pool.push(def.id);
+    }
+    // A late run with everything maxed rolls from the offerable pool instead, and the reels can
+    // then show a symbol this list does not have. Seed the decoys with the landed symbols so the
+    // strip is never empty and never blurs past something the spin could not produce.
+    if (pool.length === 0) {
+      for (let r = 0; r < chest.reels.length; r++) {
+        const def = catalog[chest.reels[r]];
+        if (def !== undefined) pool.push(def.id);
+      }
+    }
+    if (pool.length === 0) pool.push('');
 
     this.payoutEl.textContent = '';
     this.payoutEl.classList.remove('chest__payout--in');
