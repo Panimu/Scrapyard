@@ -37,19 +37,24 @@
  * still going. Each reel gets a landing effect whose size is chosen from what that landing means,
  * and the three of them are deliberately different beats.
  *
- *   REEL ONE - THE PREMONITION. It lands on a symbol, which on its own tells the player nothing.
- *   So when the payout is going to be a big one (four or five), it lands HARD: the machine tips
- *   its hand before it has shown a single match. It says "big", it does not say WHICH big - four
- *   and five flare identically - so the promise raises the stakes on the two reels still turning
- *   instead of spoiling them.
+ *   REEL ONE - JUST A DRUM STOPPING. One symbol on its own says nothing about the haul, so the
+ *   landing says nothing either: the plain thump, every time. It is the baseline the other two are
+ *   read against, and it only works as a baseline because it is never anything else.
  *
  *   REEL TWO - WHAT IS BEING BUILT TO. Now a landing can mean something, so the effect is sized by
  *   what is still LIVE rather than by what is guaranteed. Matching the first reel keeps the
- *   jackpot alive and gets the biggest treatment in the machine; matching only its colour leaves
+ *   jackpot alive and gets the biggest treatment the machine has; matching only its colour leaves
  *   the same-type haul alive and gets the middle one; anything else lands flat, because nothing is
  *   being built to and pretending otherwise is the thing that makes a slot machine feel fake.
  *
- *   REEL THREE - THE ANSWER, and it is the only reel that can be sized by the payout itself.
+ *   REEL THREE - THE ANSWER, and the only reel that knows one. THIS is where the machine makes a
+ *   fuss, and it makes it in proportion to the prize: a big haul blazes and the whole frame blooms
+ *   around it, a jackpot does that and kicks the machine as well, and a one-power-up spin gets the
+ *   same plain thump reel one got - because that is what it is worth.
+ *
+ * The order of those three matters. Anything that flared before the reels had shown a match would
+ * be the machine conceding the answer while pretending to still be looking for it; the payoff has
+ * to arrive with the payout or it is not a payoff.
  *
  * And when reel two leaves something live, THE LAST REEL CRAWLS - `ANTICIPATION_MS` of extra
  * spin, easing that spends it almost entirely in the last few tiles, and the whole frame leaning
@@ -84,10 +89,7 @@ const HEAT_HOT = 1;
 const HEAT_BLAZE = 2;
 const HEAT_CLASS: readonly string[] = ['', 'chest__window--hot', 'chest__window--blaze'];
 
-/**
- * Payout at or above which reel one gives the game away. Four and five both flare, identically -
- * the premonition promises "big" without conceding which big, so the last two reels still matter.
- */
+/** Payout at or above which the last reel is worth making a fuss about. */
 const BIG_PAYOUT = 4;
 
 /**
@@ -315,8 +317,8 @@ export class ChestOverlay {
     const b = chest.reels[1];
     const kindOf = (i: number): string => (i >= 0 ? (catalog[i]?.kind ?? '') : '');
 
-    // REEL ONE speaks for the payout, because on its own it has nothing else to say.
-    const first = chest.payout >= BIG_PAYOUT ? HEAT_BLAZE : HEAT_NONE;
+    // REEL ONE says nothing, because it knows nothing. See the header - this is deliberate.
+    const first = HEAT_NONE;
 
     // REEL TWO speaks for what is still LIVE - the ceiling, not the floor. `a >= 0` matters: an
     // empty reel is -1, and two of those are not a matching pair.
@@ -324,9 +326,10 @@ export class ChestOverlay {
     if (a >= 0 && a === b) second = HEAT_BLAZE; // jackpot still on the table
     else if (a >= 0 && b >= 0 && kindOf(a) === kindOf(b)) second = HEAT_HOT; // rare haul still on it
 
-    // REEL THREE is the only one that can speak for the result, because it IS the result.
+    // REEL THREE is the payoff, sized by the prize. Three (a plain pair) is a good spin and gets
+    // the middle treatment; four and five are the ones worth a fuss.
     const third =
-      chest.payout >= 5 ? HEAT_BLAZE : chest.payout >= 3 ? HEAT_HOT : HEAT_NONE;
+      chest.payout >= BIG_PAYOUT ? HEAT_BLAZE : chest.payout >= 3 ? HEAT_HOT : HEAT_NONE;
 
     return [first, second, third];
   }
@@ -343,13 +346,21 @@ export class ChestOverlay {
     if (r === 1 && heat > HEAT_NONE) this.reelsEl.classList.add('chest__reels--anticipating');
     if (r === 2) {
       this.reelsEl.classList.remove('chest__reels--anticipating');
+      // THE FUSS, and it is the whole machine rather than the one window: the frame lights and
+      // holds while the payout line and the grants arrive under it. A jackpot additionally kicks
+      // the machine, because five power-ups should not look like four.
       if (payout >= 5) this.reelsEl.classList.add('chest__reels--jackpot');
+      else if (payout >= BIG_PAYOUT) this.reelsEl.classList.add('chest__reels--big');
     }
   }
 
   /** Every class the spin adds, off. Called on show and on hide, so a re-open starts cold. */
   private clearEffects(): void {
-    this.reelsEl.classList.remove('chest__reels--anticipating', 'chest__reels--jackpot');
+    this.reelsEl.classList.remove(
+      'chest__reels--anticipating',
+      'chest__reels--big',
+      'chest__reels--jackpot',
+    );
     for (const win of this.windowEls) {
       win.classList.remove('chest__window--land', HEAT_CLASS[HEAT_HOT], HEAT_CLASS[HEAT_BLAZE]);
     }

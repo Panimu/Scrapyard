@@ -1300,15 +1300,23 @@ body {
   }
 }
 
-/* And the settled jackpot: the frame keeps glowing while the payout line and the grants arrive. */
+/* THE FUSS. Added when the LAST reel lands on something worth one, and held while the payout line
+   and the grants arrive underneath - so the frame is still lit when the words turn up to explain
+   it. A rare haul lights; a jackpot lights and kicks the machine. */
+.chest__reels--big {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .7), 0 0 26px -6px var(--accent);
+}
 .chest__reels--jackpot {
   border-color: var(--accent);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, .7), 0 0 30px -4px var(--accent);
-  animation: chest-jackpot .9s ease-out both;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .7), 0 0 40px -2px var(--accent);
+  animation: chest-jackpot 1.1s cubic-bezier(.22,.72,.3,1) both;
 }
 @keyframes chest-jackpot {
   0%   { transform: scale(1); }
-  22%  { transform: scale(1.045); }
+  14%  { transform: scale(1.075); }
+  34%  { transform: scale(.99); }
+  52%  { transform: scale(1.025); }
   100% { transform: scale(1); }
 }
 .chest__tile {
@@ -1375,4 +1383,5 @@ body {
   .chest__reels--jackpot {
     animation: none;
   }
+  /* --big is glow only, so it has nothing to disarm and stays as it is. */
 }
