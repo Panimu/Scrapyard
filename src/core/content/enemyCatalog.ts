@@ -62,7 +62,22 @@ export const FLAV_PLAIN = 0;
 export const FLAV_SWIFT = 1;
 export const FLAV_TOUGH = 2;
 export const FLAV_SPIKY = 3;
-export type Flavour = 0 | 1 | 2 | 3;
+/**
+ * HEAVY - THE ONE FLAVOUR THE DIRECTOR CANNOT ROLL.
+ *
+ * It is absent from every `ArchetypeDef.flavours` list below, and that absence IS the rule: the
+ * spawner picks a flavour by drawing from the archetype's own list, so a flavour that is not on
+ * any list can never arrive through the ordinary drip, through an elite drop-in, or through a
+ * boss. There is no `spawnable: false` field and no branch in the spawner to forget - the only
+ * way a Heavy reaches the field is a set-piece that names it (systems/spawning.ts, `spawnSiege`).
+ *
+ * x10 HP at x0.05 speed is a wall that walks. Both halves matter: ten times the hit points would
+ * be a wandering roadblock, and one twentieth of the speed alone would be a free kill. Together
+ * they are a thing you must either grind down or go around, and it will still be there when you
+ * come back.
+ */
+export const FLAV_HEAVY = 4;
+export type Flavour = 0 | 1 | 2 | 3 | 4;
 
 export interface FlavourDef {
   readonly id: Flavour;
@@ -81,6 +96,10 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false }),
   Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false }),
   Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true }),
+  // `renderScale` is a RENDER HINT and does not move the hitbox - the same compromise `tough`
+  // already makes at 1.18. Kept to 1.3 for that reason: a Heavy has to read as a different object
+  // at a glance, and every unit past that is a unit of lie between the sprite and the circle.
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.05, dmg: 1, renderScale: 1.3, renderGlow: false }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {

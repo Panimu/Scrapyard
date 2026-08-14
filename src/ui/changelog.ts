@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T16:44Z',
+    title: 'The siege: fifty Heavies close in at 6:00 and 12:00',
+    notes: [
+      'At the top of wave 4 and wave 7, fifty HEAVY units are already standing in a ring around you when the wave turns over. You do not see them arrive - the ring is set down at 560 units, just past what the camera can reach - so they are simply there, all the way round, when you next look outward.',
+      'A HEAVY HAS TEN TIMES THE HIT POINTS OF AN ORDINARY ENEMY AND MOVES AT A TWENTIETH OF THE SPEED. Wave 4’s are 660 hit points at under 5 units a second; wave 7’s are 1720 at under 4. They are walls that walk. Stand still and the ring takes about two minutes to close on you.',
+      'They cannot turn up any other way. Heavy is the one variant the director cannot roll - it will never appear in the ordinary horde, on an elite, or on a Scraplord. The only Heavies in a run are the hundred from these two moments.',
+      'The ring stands shoulder to shoulder without ever overlapping, and it bulges outward around a wreck rather than pinching in.',
+      'While the ring is around you the yard sends fewer ordinary enemies - the director counts what is already near you before it opens the tap, and fifty bodies is a lot to count. Waves 4 and 7 are quieter and much heavier than they were.',
+    ],
+  },
+  {
     at: '2026-08-14T15:34Z',
     title: 'Twice as many fuel barrels in the yard',
     notes: [

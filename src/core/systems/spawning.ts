@@ -75,9 +75,15 @@
 
 import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
-import { ARCHETYPES, FLAVOURS, FLAV_PLAIN, type Archetype } from '../content/enemyCatalog.js';
+import {
+  ARCHETYPES,
+  FLAVOURS,
+  FLAV_HEAVY,
+  FLAV_PLAIN,
+  type Archetype,
+} from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
-import { pushOutOfScenery } from '../content/scenery.js';
+import { pushOutOfScenery, sceneryOverlap } from '../content/scenery.js';
 import {
   RANKS,
   RANK_BOSS,
@@ -96,6 +102,7 @@ import {
   enemyIndex,
 } from '../entity/enemyPool.js';
 import { EV_BOSS_SPAWNED, EV_ENEMY_SPAWNED, pushEvent } from '../events/ring.js';
+import { PI, TWO_PI, dcos, dsin } from '../math/trig.js';
 import type { Vec2 } from '../math/vec2.js';
 import type { Rng } from '../rng.js';
 import { RUN_PHASE_RUNNING, type World } from '../types.js';
@@ -128,6 +135,9 @@ export function updateSpawning(world: World, dt: number): void {
     dir.cycleIndex = index;
     // Zero, not `interval`: the elite phase opens with an arrival rather than with a wait.
     dir.eliteTimer = 0;
+    // The set-piece waves. Fired from inside the rollover branch, which runs exactly once per
+    // cycle change, so the siege cannot repeat and needs no "already done" flag.
+    if (SIEGE_CYCLES.includes(index)) spawnSiege(world, t);
   }
   const cycleTime = runSec - index * t.cycleSeconds;
   dir.cyclePhase = cycleTime >= t.bossFromSec ? 2 : cycleTime >= t.eliteFromSec ? 1 : 0;
@@ -369,6 +379,129 @@ export function rollRingPosition(
 // -------------------------------------------------------------------------------------------
 // Spawning
 // -------------------------------------------------------------------------------------------
+
+/* ---------------------------------------------------------------------------------------------
+ * THE SIEGE - a scripted ring of Heavies at the top of waves 4 and 7.
+ *
+ * Nothing else in this file is scripted. The director is a feedback loop - it measures the
+ * pressure near the player and opens the tap - and a loop cannot produce a MOMENT. Two of them
+ * are hand-placed for exactly that reason: at 06:00 and at 12:00 a ring closes around wherever
+ * the player happens to be standing, and it is the same ring every run, in the same place
+ * relative to them, at the same second.
+ *
+ * WAVES 4 AND 7 IN THE PLAYER'S COUNTING, cycle index 3 and 6 in the code's. The HUD and the
+ * ladder are both zero-based; the waves as a player counts them are not.
+ * ------------------------------------------------------------------------------------------- */
+
+/** Cycle INDICES, so 3 and 6 are the fourth and seventh waves. */
+const SIEGE_CYCLES: readonly number[] = [3, 6];
+/** Bodies in the ring. */
+const SIEGE_COUNT = 50;
+/** How many body-widths outward a spoke may walk to clear a wreck before it gives up and stands. */
+const SIEGE_CLEAR_STEPS = 6;
+
+/**
+ * Drops `SIEGE_COUNT` Heavies in a circle around the player.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE RADIUS SATISFIES TWO RULES AND TAKES WHICHEVER IS LARGER
+ * ---------------------------------------------------------------------------------------------
+ * OUT OF SIGHT. The camera's furthest visible point is its corner - 501 u on the widest supported
+ * viewport - so `SPAWN_RADIUS` (560) is the distance the rest of the director already uses to
+ * mean "not on screen". Fifty bodies appearing in view would be a spawn effect; fifty bodies
+ * found already standing there is a siege.
+ *
+ * SHOULDER TO SHOULDER, NOT OVERLAPPING. Bodies of radius r on a circle of radius R sit
+ * `2R sin(pi/n)` apart, so they just touch at `R = r / sin(pi/n)`. That is the tightest legal
+ * ring, and it is what the geometry below solves for.
+ *
+ * At fifty bodies the out-of-sight rule wins by a distance: the tight ring for a swarmer is 207 u
+ * and for a grunt 287 u, both well inside the camera. So the ring ships at 560 and the bodies
+ * stand about 70 u apart. The `max` is still written out rather than folded away, because it is
+ * the rule that keeps the ring legal if the count ever doubles or the waves ever move to a
+ * heavier chassis - at which point the tight radius is the one that binds.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT DRAWS NO RANDOM NUMBERS AT ALL
+ * ---------------------------------------------------------------------------------------------
+ * Every angle is `i / n` of a turn. That is not a convenience: the siege therefore cannot shift
+ * `rng.spawn`, so adding it - or later moving it, or changing its count - leaves every ordinary
+ * spawn in the run exactly where it was. A ring rolled from the stream would have re-rolled the
+ * entire horde downstream of 06:00.
+ */
+function spawnSiege(world: World, t: DirectorTuning): void {
+  const p = world.enemies;
+  const dir = world.director;
+  const c = dir.cycle;
+  const r = RANKS[RANK_REGULAR];
+  const a = ARCHETYPES[c.archetype];
+  const f = FLAVOURS[FLAV_HEAVY];
+  const diff = world.difficulty;
+
+  const bodyRadius = a.radius * r.size;
+  // `dsin`/`dcos`, NEVER Math.sin/Math.cos. Core bans the built-ins because they are
+  // implementation-defined - V8 and JSC disagree in the last bit - and a ring placed one ulp
+  // differently is a different run. A siege is only two events per run, but a replay recorded on
+  // a phone still has to reproduce in Node, and that property does not have a cheap half.
+  const tightRadius = bodyRadius / dsin(PI / SIEGE_COUNT);
+  const ringRadius = tightRadius > SPAWN_RADIUS ? tightRadius : SPAWN_RADIUS;
+
+  const px = world.player.x;
+  const py = world.player.y;
+  const typeId = c.typeByRank[RANK_REGULAR];
+
+  const hp = c.hp * r.hp * f.hp * diff.hpRamp;
+  const speed = c.speed * r.speed * f.speed * diff.speedRamp;
+
+  for (let i = 0; i < SIEGE_COUNT; i++) {
+    const angle = (i / SIEGE_COUNT) * TWO_PI;
+    const ux = dcos(angle);
+    const uy = dsin(angle);
+
+    // SCRAP IS CLEARED BY MOVING OUTWARD ALONG THE SPOKE, NEVER SIDEWAYS.
+    //
+    // `pushOutOfScenery` takes the shortest way out of a pile, which is the right answer for a
+    // single spawn and the wrong one for a ring: two neighbours pushed off the same wreck are
+    // pushed toward each other, and they land in each other's laps. Measured, that put one
+    // overlapping pair in the wave-4 ring at 10.4 u against the 26 u their bodies need.
+    //
+    // Holding the ANGLE fixed and only ever increasing the RADIUS makes overlap impossible by
+    // construction: every body keeps its own spoke, and a body shoved further out only opens the
+    // gap to the two either side of it. The ring bulges around a wreck instead of pinching.
+    let radius = ringRadius;
+    for (let step = 0; step < SIEGE_CLEAR_STEPS; step++) {
+      if (sceneryOverlap(world.scenery, px + ux * radius, py + uy * radius, bodyRadius) < 0) break;
+      radius += bodyRadius * 2;
+    }
+
+    let x = px + ux * radius;
+    let y = py + uy * radius;
+
+    // THE FENCE WINS OVER THE CIRCLE. A siege sprung with the player's back to the wire puts part
+    // of the ring outside the yard; clamping bunches those bodies along the fence instead, which
+    // separation then spreads out over the following second. A ring with a flat side is a worse
+    // look than a ring with a gap in it, and both are better than bodies standing in the void.
+    x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
+    y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
+
+    const handle = allocEnemy(p, typeId, FLAV_HEAVY, c.archetype, x, y, dir.nextSpawnId);
+    const d = enemyIndex(p, handle);
+    if (d < 0) return; // pool exhausted: take the short ring rather than spinning
+
+    dir.nextSpawnId++;
+    p.hp[d] = hp;
+    p.maxHp[d] = hp;
+    p.speed[d] = speed;
+    p.radius[d] = bodyRadius;
+    p.mass[d] = a.mass * r.mass;
+    p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
+    p.contactTimer[d] = 0;
+    p.xpValue[d] = c.xp * r.xp;
+    p.flags[d] = 0;
+
+    pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, x, y, p.slot[d], typeId);
+  }
+}
 
 /**
  * THE SINGLE PLACE ENEMY STATS ARE WRITTEN. Puts one enemy of the current cycle, at `rank`, on
