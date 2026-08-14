@@ -397,8 +397,75 @@ export function rollRingPosition(
 const SIEGE_CYCLES: readonly number[] = [3, 6];
 /** Bodies in the ring. */
 const SIEGE_COUNT = 50;
+/**
+ * Where the ring is set down, and it is the tightest legal value rather than a round number.
+ *
+ * The camera's furthest visible point is its CORNER, and that corner is a fixed fact of the view
+ * box rather than a property of the phone: the short axis shows VIEW_MINOR_UNITS (440), the long
+ * axis is capped at VIEW_MAJOR_MAX_UNITS (900) and letterboxed past that, so the worst case is
+ * sqrt(220^2 + 450^2) = 500.9 units from the mech. Anything beyond that cannot be on screen on
+ * any supported viewport.
+ *
+ * 520 leaves 19 units of margin on that bound. The ring used to sit at SPAWN_RADIUS (560), which
+ * is the number the ordinary director uses and is 59 units of slack it does not need - a siege
+ * wants to be as close as it can be while still being something the player TURNS AND FINDS rather
+ * than something they watch arrive. This is 7% tighter and still cannot be seen appearing.
+ *
+ * It is deliberately NOT SPAWN_RADIUS. That constant means "where the drip puts things" and is
+ * free to move for pacing reasons that have nothing to do with what the camera can see; this one
+ * is pinned to the view box and must not drift with it.
+ */
+const SIEGE_RING_RADIUS = 520;
 /** How many body-widths outward a spoke may walk to clear a wreck before it gives up and stands. */
 const SIEGE_CLEAR_STEPS = 6;
+/** How many times the WHOLE ring may grow to find enough fence-free arc for fifty bodies. */
+const SIEGE_FIT_STEPS = 12;
+
+
+/**
+ * Angular resolution of the fence scan. Four samples per body is enough to find the two ends of
+ * a clipped arc to within a fifth of a body width, which is finer than anything downstream cares
+ * about.
+ */
+const SIEGE_ANGLE_SAMPLES = SIEGE_COUNT * 4;
+/** Preallocated: this runs twice a run, but allocating inside a system is still not done here. */
+const SIEGE_ANGLES = new Float64Array(SIEGE_ANGLE_SAMPLES);
+
+/**
+ * Fills `SIEGE_ANGLES` with the angles whose ring position is INSIDE the yard, and returns how
+ * many there are.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THE FENCE REMOVES ANGLES RATHER THAN MOVING BODIES
+ * ---------------------------------------------------------------------------------------------
+ * The first version clamped an out-of-bounds ring position back inside the arena, on the grounds
+ * that a ring with a flat side beats a ring with a gap. Measured, that was wrong in a way the
+ * reasoning could not see: a siege sprung with the player 490 u from the east wall put five
+ * bodies ON the wire at 477 u from the mech - INSIDE the camera's 500.9 u corner. The one thing
+ * the ring must never do is be seen arriving, and clamping is the only operation in this function
+ * that can pull a body closer than the radius that guarantees it.
+ *
+ * So an angle that does not fit is dropped, and the fifty bodies are redistributed across the arc
+ * that remains. The ring closes up rather than thinning out: the count is preserved, the radius is
+ * preserved, and the wall simply gets no besiegers standing in it - which is also what a wall is
+ * for. A player who springs the siege with their back to the fence has bought themselves a
+ * protected flank and a denser ring in front, which is a real and legible trade.
+ *
+ * The margin is the body's own radius, so a body is inside the yard rather than merely centred
+ * inside it - S4's fence clamp would otherwise slide it, which is the very thing being avoided.
+ */
+function legalAngles(px: number, py: number, radius: number, bodyRadius: number): number {
+  const bound = ARENA_HALF - bodyRadius;
+  let n = 0;
+  for (let i = 0; i < SIEGE_ANGLE_SAMPLES; i++) {
+    const angle = (i / SIEGE_ANGLE_SAMPLES) * TWO_PI;
+    const x = px + dcos(angle) * radius;
+    const y = py + dsin(angle) * radius;
+    if (x < -bound || x > bound || y < -bound || y > bound) continue;
+    SIEGE_ANGLES[n++] = angle;
+  }
+  return n;
+}
 
 /**
  * Drops `SIEGE_COUNT` Heavies in a circle around the player.
@@ -406,18 +473,17 @@ const SIEGE_CLEAR_STEPS = 6;
  * ---------------------------------------------------------------------------------------------
  * THE RADIUS SATISFIES TWO RULES AND TAKES WHICHEVER IS LARGER
  * ---------------------------------------------------------------------------------------------
- * OUT OF SIGHT. The camera's furthest visible point is its corner - 501 u on the widest supported
- * viewport - so `SPAWN_RADIUS` (560) is the distance the rest of the director already uses to
- * mean "not on screen". Fifty bodies appearing in view would be a spawn effect; fifty bodies
- * found already standing there is a siege.
+ * OUT OF SIGHT. `SIEGE_RING_RADIUS` (520) clears the camera's 500.9 u corner by 19 units. Fifty
+ * bodies appearing in view would be a spawn effect; fifty bodies found already standing there is
+ * a siege.
  *
  * SHOULDER TO SHOULDER, NOT OVERLAPPING. Bodies of radius r on a circle of radius R sit
  * `2R sin(pi/n)` apart, so they just touch at `R = r / sin(pi/n)`. That is the tightest legal
  * ring, and it is what the geometry below solves for.
  *
  * At fifty bodies the out-of-sight rule wins by a distance: the tight ring for a swarmer is 207 u
- * and for a grunt 287 u, both well inside the camera. So the ring ships at 560 and the bodies
- * stand about 70 u apart. The `max` is still written out rather than folded away, because it is
+ * and for a grunt 287 u, both well inside the camera. So the ring ships at 520 and the bodies
+ * stand about 65 u apart. The `max` is still written out rather than folded away, because it is
  * the rule that keeps the ring legal if the count ever doubles or the waves ever move to a
  * heavier chassis - at which point the tight radius is the one that binds.
  *
@@ -444,7 +510,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
   // differently is a different run. A siege is only two events per run, but a replay recorded on
   // a phone still has to reproduce in Node, and that property does not have a cheap half.
   const tightRadius = bodyRadius / dsin(PI / SIEGE_COUNT);
-  const ringRadius = tightRadius > SPAWN_RADIUS ? tightRadius : SPAWN_RADIUS;
+  let ringRadius = tightRadius > SIEGE_RING_RADIUS ? tightRadius : SIEGE_RING_RADIUS;
 
   const px = world.player.x;
   const py = world.player.y;
@@ -453,8 +519,29 @@ function spawnSiege(world: World, t: DirectorTuning): void {
   const hp = c.hp * r.hp * f.hp * diff.hpRamp;
   const speed = c.speed * r.speed * f.speed * diff.speedRamp;
 
+  // THE FENCE TAKES ANGLES AWAY; IT DOES NOT PUSH BODIES INWARD. See `legalAngles`.
+  //
+  // AND THE RING GROWS IF WHAT IS LEFT CANNOT HOLD IT. Redistributing fifty bodies into a clipped
+  // arc packs them tighter, and a player caught in a CORNER loses about three quarters of the
+  // circle - at which point the survivors would be ~16 u apart against the 26-36 u their bodies
+  // need. Stepping the radius outward buys arc length linearly while the requirement stays fixed,
+  // so a few steps always clear it. Growing is always safe: it can only take the ring further out
+  // of sight, never nearer.
+  const neededArc = SIEGE_COUNT * 2 * bodyRadius;
+  let placed = 0;
+  for (let step = 0; step < SIEGE_FIT_STEPS; step++) {
+    placed = legalAngles(px, py, ringRadius, bodyRadius);
+    const legalArc = (placed / SIEGE_ANGLE_SAMPLES) * TWO_PI * ringRadius;
+    if (legalArc >= neededArc) break;
+    ringRadius += bodyRadius * 2;
+  }
+  if (placed === 0) return;
+
   for (let i = 0; i < SIEGE_COUNT; i++) {
-    const angle = (i / SIEGE_COUNT) * TWO_PI;
+    // Spread the fifty evenly across whatever arc survived, rather than across the whole turn.
+    // A full circle gives back exactly `i / SIEGE_COUNT` of a turn; a clipped one closes the ring
+    // up into the arc that is left, which keeps all fifty bodies at the right distance.
+    const angle = SIEGE_ANGLES[Math.floor((i * placed) / SIEGE_COUNT)];
     const ux = dcos(angle);
     const uy = dsin(angle);
 
@@ -474,15 +561,8 @@ function spawnSiege(world: World, t: DirectorTuning): void {
       radius += bodyRadius * 2;
     }
 
-    let x = px + ux * radius;
-    let y = py + uy * radius;
-
-    // THE FENCE WINS OVER THE CIRCLE. A siege sprung with the player's back to the wire puts part
-    // of the ring outside the yard; clamping bunches those bodies along the fence instead, which
-    // separation then spreads out over the following second. A ring with a flat side is a worse
-    // look than a ring with a gap in it, and both are better than bodies standing in the void.
-    x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
-    y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
+    const x = px + ux * radius;
+    const y = py + uy * radius;
 
     const handle = allocEnemy(p, typeId, FLAV_HEAVY, c.archetype, x, y, dir.nextSpawnId);
     const d = enemyIndex(p, handle);

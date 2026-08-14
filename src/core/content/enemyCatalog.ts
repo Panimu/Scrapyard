@@ -89,17 +89,36 @@ export interface FlavourDef {
   readonly renderScale: number;
   /** Render hint. `spiky` gets a red additive rim - the only cue for a stat the turret ignores. */
   readonly renderGlow: boolean;
+  /**
+   * Render hint. Multiplied into the body sprite, so 0xffffff is "leave the art alone" and every
+   * flavour but `heavy` uses it.
+   *
+   * A TINT AND NOT A GLOW, for the Heavy specifically. The additive rim `spiky` uses says "this
+   * one bites harder" and is meant to catch the eye in a crowd; a Heavy is not a warning, it is a
+   * different KIND of object, and the honest way to say that is to change what it is made of
+   * rather than to put a light on it.
+   *
+   * A TINT IS A MULTIPLY, WHICH CANNOT DESATURATE - it can only take light away, per channel. So
+   * the grey is bought by taking MORE red than blue: the paint goes cooler and dimmer while the
+   * silhouette and its shading survive intact. Checked against the actual sprites rather than
+   * guessed at, on the rust floor they are seen on, at three candidate strengths.
+   */
+  readonly renderTint: number;
 }
 
 export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
-  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, renderScale: 1, renderGlow: false }),
-  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false }),
-  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false }),
-  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true }),
+  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffffff }),
+  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff }),
+  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff }),
+  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true, renderTint: 0xffffff }),
   // `renderScale` is a RENDER HINT and does not move the hitbox - the same compromise `tough`
   // already makes at 1.18. Kept to 1.3 for that reason: a Heavy has to read as a different object
   // at a glance, and every unit past that is a unit of lie between the sprite and the circle.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.05, dmg: 1, renderScale: 1.3, renderGlow: false }),
+  // 0xa8b2bd: red down to 66%, blue only to 74%, so the lean is cool rather than merely dark.
+  // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
+  // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
+  // stopped reading as a tinge and started reading as a different paint job.
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.05, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {

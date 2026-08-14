@@ -868,7 +868,9 @@ export class GameRenderer {
       s.scale.set(p.vx[d] < 0 ? -base : base, base);
       s.position.set(x, y);
       s.zIndex = y;
-      s.tint = 0xffffff;
+      // From the flavour, so the only flavour that is not white costs nothing to add and nothing
+      // to look up - see FlavourDef.renderTint. A Heavy comes out as unpainted steel.
+      s.tint = flavour?.renderTint ?? 0xffffff;
       s.alpha = 1;
 
       // `spiky` carries +35% contact damage and NO extra HP, so the targeting rule ignores it -

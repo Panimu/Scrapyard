@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T17:45Z',
+    title: 'Heavies look like Heavies, and the ring lands closer',
+    notes: [
+      'A HEAVY IS GREY NOW. Its faction paint is knocked back and cooled, so a Heavy standing next to the same hull in blue or orange reads as unpainted steel rather than as a slightly larger version of the thing beside it. It is a tinge, not a repaint - you can still tell exactly what chassis it is.',
+      'THE SIEGE RING IS TIGHTER: 520 units out instead of 560. That is as close as it can be set down and still be something you turn around and find rather than something you watch arrive - the camera can see 501 units into the corner of the screen, and no further.',
+      'And a ring sprung with your back to the fence now leaves the wall empty instead of stacking bodies against it. The fifty close up into the arc that fits, so you get a protected flank and a denser wall in front of you. Cornered, the ring simply sets down further out to make room.',
+    ],
+  },
+  {
     at: '2026-08-14T17:14Z',
     title: 'Everything in the yard moves a quarter slower',
     notes: [
