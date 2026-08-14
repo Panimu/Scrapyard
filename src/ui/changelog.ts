@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T15:07Z',
+    title: 'The Scrapyard is won at sixteen minutes with the yard clear',
+    notes: [
+      'The run is a minute longer - 16:00, which is exactly the eight cycles the ladder authors.',
+      'AND THE CLOCK ALONE NO LONGER ENDS IT. You win when the timer has passed 16:00 and there is no Scraplord left alive anywhere in the yard. The last one walks in at 15:30, so the ordinary way a run finishes is now: the timer runs out, nothing happens, and the thing standing between you and the end of the run is the thing you are already fighting.',
+      'EVERY boss counts, not just the most recent. One you ran away from at six minutes is still out there and still enormous, and the run will not end until it is dealt with. The arrow on the edge of the screen is how you find it.',
+      'Only bosses. The horde never stops arriving, so a yard full of regulars is not what is holding you.',
+    ],
+  },
+  {
     at: '2026-08-14T15:00Z',
     title: 'Twice the horde, and the big things hit like it',
     notes: [

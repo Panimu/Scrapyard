@@ -83,12 +83,15 @@
  * ---------------------------------------------------------------------------------------------
  * VICTORY
  * ---------------------------------------------------------------------------------------------
- * The run ends at `config.runLengthSec` - EXCEPT that the Scraplord postpones it. With the
- * shipping numbers runLengthSec and bossAtSec are both 900, so a naive "runSec >= runLengthSec"
- * would declare victory on the exact tick the finale begins. So: if the boss is on the field, the
- * run is not over until it is dead; if the scripted silence before its arrival is still running,
- * the run is not over yet either; otherwise (a tuning with no boss, or a short fixture run) the
- * clock alone ends it.
+ * TWO CONDITIONS, BOTH REQUIRED: the clock has reached `config.runLengthSec` (16:00), AND there
+ * is no boss alive anywhere in the yard.
+ *
+ * The clock alone cannot end it, and that is the whole design of the finale rather than an edge
+ * case. Cycle 8's Scraplord walks in at 15:30 and the clock runs out thirty seconds later, so the
+ * ordinary way a run ends is: the timer expires, nothing happens, and the last thing standing
+ * between you and the end of the run is the thing you are already fighting. A run with a boss
+ * still up simply keeps going - the horde keeps arriving and the ladder keeps hardening past the
+ * eight authored cycles - until the yard is clear.
  */
 
 import {
@@ -97,8 +100,7 @@ import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
 import type { WeaponId } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveWeaponStats } from '../data/stats.js';
-import { isEnemyAlive } from '../entity/enemyPool.js';
-import type { EnemyHandle } from '../entity/handle.js';
+import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import {
   EV_CHEST_CLOSED,
   EV_CHEST_OPENED,
@@ -545,18 +547,26 @@ function isOfferable(
 function checkVictory(world: World): boolean {
   if (world.runSec < world.config.runLengthSec) return false;
 
-  const director = world.director;
-
-  // THE REIGNING BOSS GETS THE LAST WORD. A boss walks in every 120 s, so the clock running out
-  // mid-fight is the normal case, not an edge case: the run does not end while the most recent
-  // one is still standing. `isEnemyAlive` goes through the handle, so a reaped boss - and a
-  // recycled slot - both read as dead, which is the only safe way to ask this question.
+  // EVERY BOSS COUNTS, not just the reigning one.
   //
-  // Only the most recent boss counts. An earlier one you ran away from is still out there and
-  // still enormous, but holding the run open for a boss the player abandoned four minutes ago
-  // would turn victory into a scavenger hunt across an unbounded map.
-  if (director.bossSpawned !== 0) {
-    if (isEnemyAlive(world.enemies, director.bossHandle as EnemyHandle)) return false;
+  // This used to hold the run open for the LATEST Scraplord only, on the grounds that chasing one
+  // the player had abandoned four minutes ago would be a scavenger hunt across an unbounded map.
+  // Both halves of that reason have since gone: the map is a fenced 12 288-unit yard with nowhere
+  // to lose anything in, and an off-screen boss now has an arrow on the edge of the screen saying
+  // exactly which way it is. What is left is the cleaner rule - the yard is clear or it is not.
+  //
+  // A linear pass over the pool rather than a handle test, because the question is now about a
+  // SET rather than about one entity. It runs only after the clock is up, so it costs nothing for
+  // the first sixteen minutes and one scan a tick after that.
+  //
+  // ENEMY_FLAG_DEAD is skipped: S12 has not run yet at S11, so the boss killed on this very tick
+  // is still in the pool, and without this the run would hold open for one extra tick after the
+  // kill that finished it.
+  const e = world.enemies;
+  for (let d = 0; d < e.count; d++) {
+    const f = e.flags[d];
+    if ((f & ENEMY_FLAG_DEAD) !== 0) continue;
+    if ((f & ENEMY_FLAG_BOSS) !== 0) return false;
   }
 
   world.phase = RUN_PHASE_VICTORY;

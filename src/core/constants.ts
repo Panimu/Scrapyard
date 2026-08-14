@@ -255,5 +255,10 @@ export const CHEST_MAX_PAYOUT = 5;
 
 /** Seconds of playable calm before the director starts. runSec stays 0 throughout. */
 export const INTRO_SEC = 3;
-/** The Scraplord walks in at 15:00. */
-export const RUN_LENGTH_SEC = 900;
+/**
+ * The clock the run is measured against - 16:00, which is exactly the eight authored cycles at
+ * 120 s each. Reaching it is NECESSARY but not SUFFICIENT: `checkVictory` also requires an empty
+ * yard, so the last cycle's Scraplord (in at 15:30) is the finale rather than something the
+ * clock can expire out from under.
+ */
+export const RUN_LENGTH_SEC = 960;

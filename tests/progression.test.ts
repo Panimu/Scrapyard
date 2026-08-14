@@ -31,7 +31,12 @@ import {
   type UpgradeDef,
   type UpgradeId,
 } from '../src/core/data/upgrades.js';
-import { allocEnemy, markEnemyDead, enemyHandleAt } from '../src/core/entity/enemyPool.js';
+import {
+  ENEMY_FLAG_BOSS,
+  allocEnemy,
+  markEnemyDead,
+  enemyHandleAt,
+} from '../src/core/entity/enemyPool.js';
 import { updateProgression } from '../src/core/systems/progression.js';
 import { reapDead } from '../src/core/systems/reap.js';
 import {
@@ -876,14 +881,15 @@ describe('victory', () => {
     expect(w.phase).toBe(RUN_PHASE_VICTORY);
   });
 
-  it('waits for the reigning boss to die, however far past runLengthSec that is', () => {
-    // A boss walks in every 120 s, so the clock running out mid-fight is the normal case rather
-    // than an edge case. The run is not over while the most recent one is standing.
+  it('waits for a boss to die, however far past runLengthSec that is', () => {
+    // Cycle 8's Scraplord walks in at 15:30 against a 16:00 clock, so the timer expiring mid-fight
+    // is the normal way a run ends rather than an edge case.
     const w = makeWorld();
     const e = w.enemies;
     allocEnemy(e, 45, 0, 2, 0, 0, w.director.nextSpawnId++);
     const boss = e.count - 1;
     e.hp[boss] = 4000;
+    e.flags[boss] |= ENEMY_FLAG_BOSS;
     w.director.bossSpawned = 1;
     w.director.bossHandle = enemyHandleAt(e, boss);
 
@@ -891,13 +897,53 @@ describe('victory', () => {
     updateProgression(w, DT);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
 
-    // It dies. The handle must read dead through both the flag and, after reaping, the generation.
+    // It dies. S12 has not run, so the body is still in the pool with the dead flag set - and the
+    // run must end on THIS tick rather than the one after the reap.
     markEnemyDead(e, boss);
     updateProgression(w, DT);
     expect(w.phase).toBe(RUN_PHASE_VICTORY);
 
     reapDead(w);
     expect(w.enemies.count).toBe(0);
+  });
+
+  it('is held open by ANY live boss, not just the most recent one', () => {
+    // The old rule tracked one handle, so a boss the player walked away from could not stop the
+    // clock. The yard is fenced and off-screen bosses carry an arrow now, so "the yard is clear"
+    // is a fair thing to ask of the player and a much simpler thing to state.
+    const w = makeWorld();
+    const e = w.enemies;
+    allocEnemy(e, 45, 0, 2, 0, 0, w.director.nextSpawnId++);
+    const abandoned = e.count - 1;
+    e.flags[abandoned] |= ENEMY_FLAG_BOSS;
+
+    allocEnemy(e, 45, 0, 2, 500, 500, w.director.nextSpawnId++);
+    const reigning = e.count - 1;
+    e.flags[reigning] |= ENEMY_FLAG_BOSS;
+    w.director.bossSpawned = 1;
+    w.director.bossHandle = enemyHandleAt(e, reigning);
+
+    w.runSec = w.config.runLengthSec + 20;
+
+    // The one the director is tracking dies. The forgotten one is still out there.
+    markEnemyDead(e, reigning);
+    updateProgression(w, DT);
+    expect(w.phase).toBe(RUN_PHASE_RUNNING);
+
+    markEnemyDead(e, abandoned);
+    updateProgression(w, DT);
+    expect(w.phase).toBe(RUN_PHASE_VICTORY);
+  });
+
+  it('ignores a NON-boss still standing at the end of the clock', () => {
+    // The rule is "no bosses", not "no enemies". The horde never stops arriving, so requiring an
+    // empty field would mean the run could never end at all.
+    const w = makeWorld();
+    allocEnemy(w.enemies, 1, 0, 0, 0, 0, w.director.nextSpawnId++);
+
+    w.runSec = w.config.runLengthSec;
+    updateProgression(w, DT);
+    expect(w.phase).toBe(RUN_PHASE_VICTORY);
   });
 
   it('does not end the run before runLengthSec even with the boss dead', () => {
