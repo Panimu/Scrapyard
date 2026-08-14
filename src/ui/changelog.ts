@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T23:05Z',
+    title: 'Every weapon shows what it is waiting on',
+    notes: [
+      'The Cannon, both missile racks and Heavy Artillery now carry a rearm bar that fills to full the moment the weapon can fire again, with the rearm time beside it.',
+      'The number is the real one: it moves with fire-rate tiers and with chassis bonuses, so Ash reads 2.40s on the Short Missiles where everyone else reads 3.00s.',
+      'Nothing on the loadout row is a blank chip any more - a beam shows heat, a magazine shows ammunition, everything else shows rearm.',
+    ],
+  },
+  {
     at: '2026-08-13T22:45Z',
     title: 'The Machine Gun shows its magazine and its reload',
     notes: [

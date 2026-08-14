@@ -307,8 +307,15 @@ body {
  * below is the untiered HEAT_RESUME_FRAC of 0.5 and exists only so a chip renders sanely before
  * its first update.
  *
- * A projectile weapon gets `.heat--dry`: the same chip, carrying the name and tier, with no track
- * at all - a permanently empty heat bar would teach the player to ignore the whole row.
+ * EVERY WEAPON HAS A BAR, and the three families read it differently:
+ *
+ *   beam      `.heat` proper. HEAT, filling toward a cut-out, with the resume notch above.
+ *   magazine  `.heat--mag`. AMMUNITION, draining as it is spent, then refilling on a reload.
+ *   cooldown  `.heat--cool`. REARM PROGRESS, filling to full at the moment it can fire again.
+ *
+ * The last two fill toward READY and the first fills toward TROUBLE. That inversion is not an
+ * oversight: heat is the only one of the three where a full bar is bad news, and a player already
+ * reads "ammo going down" and "a timer filling up" correctly without being taught.
  * ------------------------------------------------------------------------------------------- */
 
 /* No pause-button inset here, unlike .hud__top: this row sits BELOW the button (the top row is
@@ -336,17 +343,6 @@ body {
 
 .heat[hidden] {
   display: none;
-}
-
-/* A weapon with no heat at all (the Cannon). The chip stays for the name and the tier; the empty
-   track goes. */
-.heat--dry .heat__track {
-  display: none;
-}
-
-.heat--dry .heat__foot {
-  /* Without a track above it the footer would sit a row higher than every other chip's. */
-  margin-top: 12px;
 }
 
 .heat__track {
@@ -442,15 +438,31 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* A MAGAZINE, not a heat bar. The resume notch and the "too hot" band above it are a property of
-   a beam's hysteresis and mean nothing to a gun with rounds in it, so both are removed. The bar
-   is then simply how full the magazine is. */
-.heat--mag .heat__track {
+/* NOT A HEAT BAR. The resume notch and the "too hot" band above it are a property of a beam's
+   HYSTERESIS and mean nothing to a gun with rounds in it or a gun waiting on a cooldown, so both
+   are removed for those two. The bar is then simply how ready the weapon is.
+
+   Every weapon in the game now has a bar of some kind, which is why the old trackless `--dry`
+   chip is gone: it existed for the Cannon, and the Cannon has a rearm bar now. */
+.heat--mag .heat__track,
+.heat--cool .heat__track {
   background: rgba(10, 14, 20, 0.72);
 }
 
-.heat--mag .heat__track::after {
+.heat--mag .heat__track::after,
+.heat--cool .heat__track::after {
   display: none;
+}
+
+/* REARMING. The calmest state on the row and it should be: a cooldown is the weapon working
+   normally, not a fault or an interruption, and it completes several times a second on a Cannon.
+   No border change, no colour change, no pulse - just the fill sweeping across. The number beside
+   it is the rearm TIME, which only moves on a fire-rate tier. */
+.heat--cool .heat__fill {
+  box-shadow: none;
+  /* Matched to the shortest rearm in the game (0.84 s at Cannon tier 7) so the sweep still reads
+     as motion rather than as a bar that teleports. */
+  transition: transform 40ms linear;
 }
 
 /* RELOADING. The longest silence in the game - fifteen seconds at tier 1 - and it needs its own

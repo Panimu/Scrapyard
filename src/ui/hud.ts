@@ -63,9 +63,20 @@ import { MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
  * convention every player already has, and inverting it to match the laser would be consistent
  * with the wrong thing.
  *
- * A pure COOLDOWN weapon (the Cannon, the racks, the artillery) still gets a TRACKLESS chip: it
- * has no reservoir of any kind, a permanently empty bar is noise that teaches the player to
- * ignore the whole row, and the tier is exactly as worth seeing as a laser's.
+ * A COOLDOWN WEAPON - the Cannon, both missile racks, the artillery - gets a REARM bar and its
+ * rearm TIME. The chip used to be trackless for these on the grounds that they had no reservoir
+ * to show, which was true and beside the point: the thing a player wants to know about a rack
+ * with a 4.2 s rearm is when the next salvo is coming, and there was nowhere on screen to read
+ * it. The bar fills to full at the instant the weapon can fire again.
+ *
+ * The NUMBER beside it is the rearm time itself, not a countdown of it. The bar is already the
+ * countdown; a Cannon's 0.84 s spent as a live readout would flicker through eight digits a
+ * second and say nothing. The duration is the number worth having - it is the one thing a
+ * fire-rate tier moves, and there is nowhere else in the game to read it.
+ *
+ * A weapon holding fire for want of a target sits at FULL rather than pretending to rearm:
+ * `cooldownLeft` is only spent on a shot actually taken, so a Cannon with an empty field reads
+ * ready, which is what it is.
  */
 
 
@@ -75,6 +86,13 @@ import { MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
  * also be carrying a green, a blue and a red laser.
  */
 const MAG_COLOUR = '#e0b34a';
+
+/**
+ * The cooldown chip's colour. Steel, and shared by the Cannon, both missile racks and the
+ * artillery - they are one family, paced by one limiter, and giving each its own colour would
+ * claim a difference the simulation does not make.
+ */
+const COOL_COLOUR = '#8fa3bb';
 
 export interface DebugInfo {
   /** Rolling mean frame time, ms. */
@@ -307,6 +325,11 @@ export class Hud {
       // the one convention a player already has, and inverting it to match the laser would be
       // consistent with the wrong thing.
       const mag = stats.ammoCapacity > 0;
+      // EVERY OTHER PROJECTILE WEAPON is paced by a COOLDOWN, and its bar is that: how far
+      // through rearming it is, filling to full when it is ready to fire. The Cannon, both
+      // missile racks and the artillery share it, because they share the limiter - splitting the
+      // racks out would be inventing a distinction the simulation does not make.
+      const cool = !beam && !mag;
 
       const chip = this.heatChips[n];
 
@@ -319,11 +342,11 @@ export class Hud {
         // the property is removed and the stylesheet's neutral default applies.
         if (beam) chip.style.setProperty('--beam', cssColour(def.beamColour));
         else if (mag) chip.style.setProperty('--beam', MAG_COLOUR);
-        else chip.style.removeProperty('--beam');
-        // `dry` is the trackless chip - a weapon with no bar worth drawing. A magazine weapon has
-        // one, so only a pure cooldown gun (the Cannon, the racks, the artillery) gets it.
-        chip.classList.toggle('heat--dry', !beam && !mag);
+        else chip.style.setProperty('--beam', COOL_COLOUR);
+        // Both suppress the resume notch, which is a property of a beam's hysteresis and means
+        // nothing to a magazine or a cooldown.
         chip.classList.toggle('heat--mag', mag);
+        chip.classList.toggle('heat--cool', cool);
         this.heatNames[n].textContent = shortWeaponName(def.name);
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;
@@ -368,6 +391,15 @@ export class Hud {
       } else if (mag) {
         const rounds = inst.ammo < 0 ? stats.ammoCapacity : inst.ammo;
         pct = Math.round((rounds / stats.ammoCapacity) * 100);
+      } else if (cool) {
+        // REARM PROGRESS, filling to full at the moment the weapon can fire again - the same
+        // direction as a reload, because it is the same promise. A weapon holding fire for want
+        // of a target sits at full: `cooldownLeft` is only spent on a shot actually taken, so a
+        // Cannon with nothing in range reads READY rather than pretending to rearm.
+        const total = stats.cooldown > 0 ? stats.cooldown : 1;
+        const left = inst.cooldownLeft > 0 ? inst.cooldownLeft : 0;
+        const done = 1 - left / total;
+        pct = Math.round((done < 0 ? 0 : done > 1 ? 1 : done) * 100);
       } else {
         pct = Math.round((heat / capacity) * 100);
       }
@@ -420,6 +452,14 @@ export class Hud {
       } else if (mag) {
         mode = 3;
         value = inst.ammo < 0 ? stats.ammoCapacity : inst.ammo;
+      } else if (cool) {
+        // THE REARM TIME ITSELF, not a countdown of it. The bar is already the countdown, and a
+        // Cannon's 0.84 s would spend its life flickering through eight digits a second for no
+        // information; the DURATION is the number a player actually wants, it is the one thing a
+        // fire-rate tier moves, and there is nowhere else in the game to read it. Carried in
+        // hundredths so the cache stays integer.
+        mode = 4;
+        value = Math.round(stats.cooldown * 100);
       }
       if (mode !== this.heatStatusMode[n] || value !== this.heatTenths[n]) {
         this.heatStatusMode[n] = mode;
@@ -431,7 +471,9 @@ export class Hud {
               ? `RELOAD ${(value / 10).toFixed(1)}s`
               : mode === 3
                 ? String(value)
-                : '';
+                : mode === 4
+                  ? `${(value / 100).toFixed(2)}s`
+                  : '';
       }
 
       n++;
