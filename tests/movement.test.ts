@@ -24,7 +24,14 @@ import { createWorld } from '../src/core/world.js';
 
 /** Heroes are indexed positionally, never by id: the catalog's ids are content, not contract. */
 function makeWorld(heroId = 0): World {
-  return createWorld({ seed: 1, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING });
+  const w = createWorld({ seed: 1, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING });
+  // AN EMPTY YARD. These are tests about the integrator - terminal velocity, drag, the diagonal
+  // clamp - and every one of them holds the stick down for long enough to cross a few hundred
+  // units. With scrap standing in the world that eventually means driving into a pile and
+  // measuring the collision response instead of the thing under test. Scenery has its own tests.
+  w.scenery.radius.fill(0);
+  w.scenery.count = 0;
+  return w;
 }
 
 /** Holds the stick at (mx, my) - quantised exactly as the UI layer would - for `ticks` ticks. */

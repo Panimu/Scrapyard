@@ -14,7 +14,7 @@
  */
 
 import { Assets, Texture } from 'pixi.js';
-import { ARCHETYPES, ENEMY_CATALOG, HERO_CATALOG } from '../core/index.js';
+import { ARCHETYPES, ENEMY_CATALOG, HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
 
 // ---------------------------------------------------------------------------------------------
 // Rotation offsets. ASSET_MANIFEST §8.
@@ -172,6 +172,14 @@ export const FENCE_OUTER_UNITS = 112;
  */
 export const VOID_COLOUR = 0x151109;
 
+/**
+ * Scrap piles are drawn on a 192 px canvas at 2 px per world unit, so the art fills a 96 u radius
+ * (tools/make-scrap.mjs). The sim rolls each pile's radius independently, and the renderer scales
+ * by `radius / SCRAP_SRC_RADIUS` - so the sprite is always exactly as big as the circle the
+ * simulation is colliding against, and a pile never lies about how far around it you have to walk.
+ */
+export const SCRAP_SRC_RADIUS = 96;
+
 // ---------------------------------------------------------------------------------------------
 // Loading
 // ---------------------------------------------------------------------------------------------
@@ -196,6 +204,8 @@ export interface GameTextures {
   readonly fence: Texture;
   /** Corner pillar, one per corner, capping the two runs that meet there. */
   readonly fencePost: Texture;
+  /** Scrap piles, indexed by `Scenery.variant`. */
+  readonly scrap: readonly Texture[];
   readonly shell: Texture;
   readonly gem: Texture;
   readonly puff: readonly Texture[];
@@ -285,6 +295,7 @@ export async function loadGameTextures(
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
   keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem');
+  for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
 
@@ -342,6 +353,7 @@ export async function loadGameTextures(
     floor,
     fence,
     fencePost: get('fence_post'),
+    scrap: Array.from({ length: SCENERY_VARIANTS }, (_, i) => get(`scrap_${i}`)),
     shell: get('shell'),
     missile: get('missile'),
     slug: get('slug'),

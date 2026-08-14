@@ -26,6 +26,7 @@
 import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
 import {
   ARCHETYPES,
+  ARENA_HALF,
   BOSS_OUTLINE_SCALE,
   BOSS_OUTLINE_TINT,
   ENEMY_FLAG_BOSS,
@@ -46,6 +47,8 @@ import {
   RANK_BOSS,
   RANK_ELITE,
   RANK_REGULAR,
+  SCENERY_CELL,
+  SCENERY_COLS,
   VIS_MISSILE_LONG,
   VIS_MISSILE_SHORT,
   VIS_SLUG,
@@ -69,6 +72,7 @@ import {
   MISSILE_LONG_SCALE_Y,
   MISSILE_SHORT_SCALE_X,
   MISSILE_SHORT_SCALE_Y,
+  SCRAP_SRC_RADIUS,
   SHELL_SCALE,
   TURRET_SCALE,
   type GameTextures,
@@ -76,10 +80,10 @@ import {
 
 /**
  * `EV_ENEMY_KILLED` carries the reason in `d`. 1 means the enemy was recycled rather than killed -
- * no death, no puff. The simulation no longer emits it: the arena wraps, so there is no distance
- * at which an enemy stops mattering and nothing despawns any more. The branch stays because the
- * value is part of the event contract and a future recycler would use it. Mirrored from
- * src/core/systems/enemyAI.ts, which is not part of the public barrel, so it cannot be imported.
+ * no death, no puff. The simulation no longer emits it: nothing despawns, and an enemy the player
+ * outruns is RELOCATED in front of them instead, which moves a body without destroying it and so
+ * needs no event at all. The branch stays because the value is part of the event contract.
+ * Mirrored from src/core/systems/enemyAI.ts, which is not part of the public barrel.
  */
 const KILL_REASON_DESPAWNED = 1;
 
@@ -89,6 +93,9 @@ const PICKUP_SPRITES = 420; // GEM_SOFT_CAP is 400
 const PROJECTILE_SPRITES = 256; // PROJECTILE_CAP
 const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;
+/** Scrap on screen. The camera reaches 500.9 u against a 768 u scenery cell, so it can see at
+ *  most a 3x3 block of cells and therefore at most nine piles. Sixteen is slack. */
+const SCRAP_SPRITES = 16;
 
 /** Health bar geometry, world units. */
 const HP_BAR_W_FRAC = 0.9;
@@ -185,6 +192,7 @@ export class GameRenderer {
 
   private readonly floor: TilingSprite;
   private readonly fence: Fence;
+  private readonly scrap: SpritePool;
   private readonly world: Container;
   private readonly letterbox: Graphics;
 
@@ -305,6 +313,10 @@ export class GameRenderer {
     this.letterbox = new Graphics({ label: 'letterbox' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
     this.fence = new Fence(tex);
+    // No texture: each pile picks its own variant, exactly as the enemy pool does. Small capacity
+    // because the yard is deliberately sparse - the camera reaches 500 u and piles sit a cell
+    // apart, so it can never see more than a handful (see drawScenery).
+    this.scrap = new SpritePool({ capacity: SCRAP_SPRITES, label: 'scrap' });
 
     this.world.addChild(
       // FIRST, because it is the ground itself - it has to cover the floor tile, which is drawn
@@ -313,6 +325,11 @@ export class GameRenderer {
       // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
       // hide the bodies the player is deciding about.
       this.strikeMarkers,
+      // Scrap sits above the markers (a barrage lands ON the ground, including the ground a wreck
+      // is standing on) and below every moving thing. It never needs y-sorting against the horde:
+      // nothing in the game can overlap a pile, because the simulation pushes everything out of
+      // them - so there is no case where a body and a wreck contend for depth.
+      this.scrap.container,
       this.pickups.container,
       this.enemies.container,
       this.hpBars.container,
@@ -389,6 +406,7 @@ export class GameRenderer {
     // Static geometry - this only decides which of the four runs are worth submitting, and in the
     // middle of the yard the answer is none of them.
     this.fence.update(this.camera);
+    this.drawScenery(world);
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);
@@ -530,6 +548,53 @@ export class GameRenderer {
   private drawFloor(): void {
     this.floor.tileScale.set(this.camera.scale);
     this.floor.tilePosition.set(this.camera.originX, this.camera.originY);
+  }
+
+  /**
+   * The scrap piles in view.
+   *
+   * Walks the SCENERY GRID over the camera rect rather than the whole 256-cell array: the pile
+   * layout is a jittered grid, so "which piles could be on screen" is arithmetic on the camera
+   * bounds. That is at most a 3x3 block of cells for any supported viewport - the camera reaches
+   * 500.9 u against a 768 u cell - so this loop is nine iterations whatever the yard contains.
+   *
+   * Static geometry, so nothing is interpolated: a pile has no prev position because it has never
+   * moved.
+   */
+  private drawScenery(world: World): void {
+    const s = world.scenery;
+    const pool = this.scrap;
+    pool.begin();
+
+    const c0 = Math.floor((this.camera.x - this.camera.halfW + ARENA_HALF) / SCENERY_CELL);
+    const c1 = Math.floor((this.camera.x + this.camera.halfW + ARENA_HALF) / SCENERY_CELL);
+    const r0 = Math.floor((this.camera.y - this.camera.halfH + ARENA_HALF) / SCENERY_CELL);
+    const r1 = Math.floor((this.camera.y + this.camera.halfH + ARENA_HALF) / SCENERY_CELL);
+
+    // One cell of margin: a pile is jittered off its cell centre and is up to 90 u wide, so a
+    // sliver of one belonging to the next cell out can still be on screen.
+    for (let row = r0 - 1; row <= r1 + 1; row++) {
+      if (row < 0 || row >= SCENERY_COLS) continue;
+      for (let col = c0 - 1; col <= c1 + 1; col++) {
+        if (col < 0 || col >= SCENERY_COLS) continue;
+        const i = row * SCENERY_COLS + col;
+        const radius = s.radius[i];
+        if (radius === 0) continue;
+        const x = s.x[i];
+        const y = s.y[i];
+        if (!this.camera.isVisible(x, y, radius)) continue;
+
+        const sp = pool.acquire();
+        if (sp === undefined) break;
+        sp.texture = this.tex.scrap[s.variant[i]] ?? this.tex.scrap[0];
+        sp.position.set(x, y);
+        sp.scale.set(radius / SCRAP_SRC_RADIUS);
+        sp.rotation = 0;
+        sp.alpha = 1;
+        sp.tint = 0xffffff;
+      }
+    }
+    pool.end();
   }
 
   private drawPickups(world: World, alpha: number): void {

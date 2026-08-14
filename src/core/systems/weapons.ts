@@ -76,6 +76,7 @@
 
 import { MAX_TARGETS, STRIKE_RADIUS_MAX, STRIKE_RADIUS_MIN } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
+import { sceneryRayHit } from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
@@ -654,6 +655,24 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // `requiresTarget`, so updateWeapons has already skipped them), but a beam must never pay heat
   // for firing at nothing, and this is the only place that can guarantee it.
   if (target < 0) {
+    coolBeam(world, weaponIdx, inst, dt);
+    return;
+  }
+
+  // SCRAP IN THE WAY, AND THE LASERS HOLD FIRE FOR IT.
+  //
+  // Every other weapon in the game finds out about an obstacle by hitting it: a shell buries
+  // itself in a wreck and that is the shot spent. A laser is not a shot, it is a TAP - it burns
+  // continuously and pays heat by the second - so "fires into the scrap and is absorbed" would
+  // not be a miss, it would be the weapon quietly cooking itself to zero while the player watches
+  // a beam terminate in a pile. Checking first makes the obstruction free: the laser stays cold,
+  // the bar stays full, and the burst is waiting the moment the player steps around the wreck.
+  //
+  // Compared against the RAY'S OWN reach rather than the target's distance, because the beam bills
+  // whatever it touches first - scrap nearer than the enemy the ray found is genuinely between the
+  // two, and scrap beyond it is behind the thing being burned and does not matter.
+  const blocked = sceneryRayHit(world.scenery, px, py, aim.x, aim.y, stats.range);
+  if (blocked >= 0 && (hit < 0 || blocked < BEAM.hitT)) {
     coolBeam(world, weaponIdx, inst, dt);
     return;
   }

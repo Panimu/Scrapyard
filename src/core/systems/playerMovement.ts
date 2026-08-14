@@ -55,6 +55,7 @@
  */
 
 import { ARENA_HALF } from '../constants.js';
+import { pushOutOfScenery } from '../content/scenery.js';
 import { EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
@@ -113,6 +114,21 @@ export function updatePlayerMovement(world: World, dt: number): void {
     p.y = bound;
     if (vy > 0) vy = 0;
   }
+  // SCRAP PILES, resolved after the fence so a wreck sitting against the wire cannot squeeze the
+  // mech through it. Same rule as the fence, generalised to an arbitrary normal: slide out, then
+  // drop only the velocity component going INTO the obstacle. The tangent survives, so running at
+  // a pile at an angle carries you around it rather than stopping you dead in front of it.
+  const push = pushOutOfScenery(world.scenery, p.x, p.y, s.radius);
+  if (push.hit) {
+    p.x = push.x;
+    p.y = push.y;
+    const into = vx * push.nx + vy * push.ny;
+    if (into < 0) {
+      vx -= push.nx * into;
+      vy -= push.ny * into;
+    }
+  }
+
   p.vx = vx;
   p.vy = vy;
 

@@ -31,6 +31,7 @@ import {
 } from './constants.js';
 import { xpToNextLevel } from './config/tuning.js';
 import { RANKS, createResolvedCycle } from './content/cycles.js';
+import { createScenery } from './content/scenery.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
@@ -239,6 +240,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     weaponCount: 0,
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
+    scenery: createScenery(config.seed),
     director: createDirector(),
     difficulty: {
       hpRamp: 1,

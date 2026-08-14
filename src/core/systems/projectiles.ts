@@ -24,6 +24,7 @@
  */
 
 import { ARENA_HALF } from '../constants.js';
+import { sceneryOverlap } from '../content/scenery.js';
 import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
 import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
 import {
@@ -221,40 +222,55 @@ export function updateProjectiles(world: World, dt: number): void {
   for (let b = 0; b < PROJECTILE_BEHAVIOURS.length; b++) {
     PROJECTILE_BEHAVIOURS[b](world, b, dt);
   }
-  stopAtTheFence(world);
+  stopAtTheEdges(world);
 }
 
 /**
- * Anything that leaves the yard expires where it crossed the fence.
+ * WHERE THE WORLD STOPS A ROUND: the perimeter fence, and the scrap piles standing in the yard.
  *
- * One sweep after every behaviour rather than a bound test inside each: the rule is about the
- * WORLD, not about how a given round flies, and a straight shell and a homing missile should both
- * stop at the same wire. A third behaviour added later inherits it for free.
+ * One sweep after every behaviour rather than a bound test inside each. The rule is about the
+ * WORLD, not about how a given round flies - a straight shell and a homing missile should both
+ * stop at the same wire and bury themselves in the same wreck - and a third behaviour added later
+ * inherits it for free.
  *
- * It expires rather than merely dying, so a shell with `detonateOnExpiry` bursts against the fence
- * instead of winking out - the barrier reads as something that was hit.
+ * THE FENCE AND THE SCRAP END A ROUND DIFFERENTLY, and the difference is the design:
  *
- * A round is only ever one tick's travel past the line (at most 15 u for the fastest slug), so the
- * burst lands ON the fence and never visibly beyond it.
+ *   THE FENCE expires it, so a shell with `detonateOnExpiry` bursts against the wire and the
+ *     barrier reads as something that was hit.
+ *   SCRAP ABSORBS IT, doing no damage to anything. A pile is cover, and cover that set off a
+ *     tier-7 barrage's splash would be the opposite of cover - the player would be shelling
+ *     themselves every time they used it. So the round dies where it struck, the renderer plays
+ *     the same fizzle it plays for any expiry, and nothing is charged for it.
+ *
+ * A round is only ever one tick's travel past the line (at most 15 u for the fastest slug), so it
+ * always dies visibly ON the thing it hit.
  */
-function stopAtTheFence(world: World): void {
+function stopAtTheEdges(world: World): void {
   const p = world.projectiles;
   const n = p.count;
   const x = p.x;
   const y = p.y;
   const flags = p.flags;
+  const scenery = world.scenery;
 
   for (let d = 0; d < n; d++) {
     if ((flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+
     if (
-      x[d] >= -ARENA_HALF &&
-      x[d] <= ARENA_HALF &&
-      y[d] >= -ARENA_HALF &&
-      y[d] <= ARENA_HALF
+      x[d] < -ARENA_HALF ||
+      x[d] > ARENA_HALF ||
+      y[d] < -ARENA_HALF ||
+      y[d] > ARENA_HALF
     ) {
+      expireProjectile(world, d);
       continue;
     }
-    expireProjectile(world, d);
+
+    // Radius 0: a round is a point against scenery, as it already is against enemies.
+    if (sceneryOverlap(scenery, x[d], y[d], 0) >= 0) {
+      markProjectileDead(p, d);
+      pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, x[d], y[d], 0, d);
+    }
   }
 }
 

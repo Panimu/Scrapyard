@@ -25,10 +25,12 @@
  * INVARIANT K - KITING MUST ALWAYS WORK
  * ---------------------------------------------------------------------------------------------
  * Nothing here caps enemy speed against the player's. It does not need to: the fastest enemy at
- * any point in the run is 144.4 u/s (a plain swarmer at t=900) against 163.8 u/s for the slowest
- * hero - a 1.13x margin, and >=1.08x for every hero at every t. That is a CONTENT property,
- * enforced by the catalog (no `swift` swarmers, elites at 64 u/s) and asserted by the tests, not
- * by a clamp in this file. A runtime clamp would hide the regression instead of failing it.
+ * any point in the run is a cycle-3 Prowler at 100.7 u/s, against 195 u/s for the slowest chassis
+ * on the roster - a 1.94x margin. It is widest of all at the END of a run, where the ladder now
+ * slows down rather than speeding up: the last cycle tops out at 67.9 u/s, so the fifteenth minute
+ * is the most kiteable minute in the game and its threat is mass instead. That is a CONTENT
+ * property, enforced by the catalog (no `swift` swarmers) and asserted by the tests, not by a
+ * clamp in this file. A runtime clamp would hide the regression instead of failing it.
  *
  * Separation can transiently push an enemy above its own steering speed, which is fine and
  * intended - the impulse points AWAY from the crowd, never at the player, so it cannot help
@@ -37,6 +39,7 @@
 
 import { ARENA_HALF, RELOCATE_RADIUS } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
+import { pushOutOfScenery } from '../content/scenery.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
 import { EV_ENEMY_KILLED, pushEvent } from '../events/ring.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
@@ -275,6 +278,24 @@ function integrate(world: World, dt: number): void {
     else if (nx > bound) nx = bound;
     if (ny < -bound) ny = -bound;
     else if (ny > bound) ny = bound;
+
+    // SCRAP PILES. The push-out is the same as the player's; what the enemy does with the normal
+    // is not. It keeps the TANGENT and loses only the inward component, so a body that walks into
+    // a wreck slides around it instead of grinding into the back of it forever. That matters more
+    // here than anywhere else in the game: enemies have no pathfinding whatsoever (seek is a
+    // straight line at the player, every tick), so this slide is the only thing that gets them
+    // past an obstacle at all. Without it every pile is a permanent trap and the player learns to
+    // park behind one.
+    const push = pushOutOfScenery(world.scenery, nx, ny, radius[d]);
+    if (push.hit) {
+      nx = push.x;
+      ny = push.y;
+      const into = vx[d] * push.nx + vy[d] * push.ny;
+      if (into < 0) {
+        vx[d] -= push.nx * into;
+        vy[d] -= push.ny * into;
+      }
+    }
 
     x[d] = nx;
     y[d] = ny;

@@ -15,6 +15,7 @@ import type { RngStreams } from './rng.js';
 import type { EnemyPool } from './entity/enemyPool.js';
 import type { ProjectilePool } from './entity/projectilePool.js';
 import type { PickupPool } from './entity/pickupPool.js';
+import type { Scenery } from './content/scenery.js';
 import type { SpatialHash } from './spatial/hashGrid.js';
 import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
@@ -343,6 +344,11 @@ export interface World {
   weaponCount: number;
 
   readonly spatial: SpatialHash;
+  /**
+   * The scrap piles standing in the yard. Generated once from the seed and immutable for the run -
+   * movement, projectiles and the lasers all read it, nothing writes it.
+   */
+  readonly scenery: Scenery;
   readonly director: SpawnDirector;
   readonly difficulty: DifficultyState;
   readonly levelUp: LevelUpState;

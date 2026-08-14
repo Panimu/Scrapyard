@@ -76,6 +76,8 @@
 import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
 import { ARCHETYPES, FLAVOURS, FLAV_PLAIN, type Archetype } from '../content/enemyCatalog.js';
+import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
+import { pushOutOfScenery } from '../content/scenery.js';
 import {
   RANKS,
   RANK_BOSS,
@@ -348,8 +350,20 @@ export function rollRingPosition(
   let y = p.y + out.y * SPAWN_RADIUS;
   if (x < -ARENA_HALF || x > ARENA_HALF) x = p.x - out.x * SPAWN_RADIUS;
   if (y < -ARENA_HALF || y > ARENA_HALF) y = p.y - out.y * SPAWN_RADIUS;
-  out.x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
-  out.y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
+  x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
+  y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
+
+  // NOTHING IS EVER PLACED INSIDE A SCRAP PILE. Movement would push it straight back out on the
+  // first tick, so this is not a correctness fix - it is a visual one: an enemy that materialises
+  // inside a wreck and squirts out of the side of it is the sort of thing a player sees once and
+  // never unsees. Pushed out along the shortest path rather than redrawn, which costs no RNG and
+  // therefore cannot change the spawn stream.
+  //
+  // MAX_ENEMY_RADIUS, not the actual body's: this runs before the archetype is known, and erring
+  // large only means clearing the wreck by a few units more than strictly needed.
+  const clear = pushOutOfScenery(world.scenery, x, y, MAX_ENEMY_RADIUS);
+  out.x = clear.x;
+  out.y = clear.y;
 }
 
 // -------------------------------------------------------------------------------------------
