@@ -270,10 +270,10 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     description: 'Lobs a heavy shell at the highest-HP enemy in range. One target, hit hard.',
     tiers: Object.freeze([
       'Unlock.',
-      'Range +65.',
+      'Range +62.',
       'Fire rate: cooldown -0.18s.',
       'Damage +18 per shell.',
-      'Range +65.',
+      'Range +62.',
       'Fire rate: cooldown -0.18s.',
       'Shells pierce one extra enemy.',
     ]),

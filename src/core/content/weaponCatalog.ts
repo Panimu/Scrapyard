@@ -264,7 +264,7 @@ export const CANNON: WeaponDef = Object.freeze({
   base: Object.freeze({
     damage: 44, // no variance, no crit
     cooldown: 1.2, // 0.833 shots/s - the whole pace of the game is this number
-    range: 260, // 59% of the visible width at VIEW_MINOR_UNITS 440
+    range: 247, // 56% of the visible width at VIEW_MINOR_UNITS 440
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
     pierce: 0,
@@ -300,10 +300,10 @@ export const CANNON: WeaponDef = Object.freeze({
    * relationship with the swarm it otherwise ignores.
    */
   perLevel: Object.freeze([
-    { range: 65 }, // T2  260 -> 325
+    { range: 62 }, // T2  247 -> 309
     { cooldown: -0.18 }, // T3  1.20 -> 1.02 s
     { damage: 18 }, // T4  44 -> 62
-    { range: 65 }, // T5  325 -> 390
+    { range: 62 }, // T5  309 -> 371
     { cooldown: -0.18 }, // T6  1.02 -> 0.84 s
     { pierce: 1 }, // T7  punches through one body
   ]),

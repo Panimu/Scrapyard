@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T23:07Z',
+    title: 'The Cannon reaches 5% less far',
+    notes: [
+      'THE CANNON GIVES UP 5% OF ITS RANGE, at every tier rather than only at the first: 260 becomes 247, and a finished Cannon reaches 371 instead of 390. Its two range tiers are worth 62 each now rather than 65.',
+      'Nothing else about it moved - same shell, same damage, same rate of fire, same pierce at tier 7. It still commits to the highest-HP body it can see; it simply has to be slightly closer to see it.',
+    ],
+  },
+  {
     at: '2026-08-14T22:13Z',
     title: 'Feed Systems now shortens the reload',
     notes: [

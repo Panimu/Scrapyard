@@ -31,7 +31,7 @@ import {
   targetNearest,
 } from '../src/core/systems/targeting.js';
 import { updateWeapons } from '../src/core/systems/weapons.js';
-import { CANNON, WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
+import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
 import { EMPTY_INPUT, type Catalogs, type World } from '../src/core/types.js';
 import type { HeroDef } from '../src/core/data/heroes.js';
 
@@ -128,7 +128,10 @@ describe('the specced rule: highest CURRENT hp within range', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    const n = targetHighestHp(w, 0, 0, CANNON.base.range ** 2, 1, out);
+    // A LITERAL RADIUS, like every other case in this file. It used to read CANNON.base.range,
+    // which quietly coupled a targeting test to a balance number: trimming the Cannon's reach put
+    // the 250 u body outside the radius and failed a test that is not about the Cannon at all.
+    const n = targetHighestHp(w, 0, 0, 260 * 260, 1, out);
 
     expect(n).toBe(1);
     expect(out[0]).toBe(far90);
