@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T17:14Z',
+    title: 'Everything in the yard moves a quarter slower',
+    notes: [
+      'Every enemy in every wave had its speed cut by 25%. The fastest thing in the game - a Prowler at the end of wave 4 - drops from 101 units a second to 75, against a mech that does 195. The last wave now closes at 53.',
+      'One factor across the whole ladder, so the shape of it is untouched: a Scavenger is still 22% quicker than a Rustling, a Hauler still drops 20% below the Scavenger, and speed still rises and falls from wave to wave instead of climbing. What changed is the pace of the game, not the relationship between the waves.',
+      'The elites, the bosses and the Heavies all inherit the cut, since each of them is a multiple of its wave.',
+    ],
+  },
+  {
     at: '2026-08-14T16:44Z',
     title: 'The siege: fifty Heavies close in at 6:00 and 12:00',
     notes: [

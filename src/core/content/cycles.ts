@@ -64,12 +64,22 @@
  * every rank multiplies HP UP and speed DOWN, so the thing your cannon commits to is always the
  * thing least able to reach you.
  *
- * SPEED HAS A FLOOR, AND IT IS NOT ZERO. Cycle 0 is `speed 74` against a 195 u/s mech - well
- * under half your pace, "one simple slow enemy" as specified, and slow enough that the first
- * minute teaches the controls rather than the horde. It started at 58 and that was too slow to
- * be a game: the horde took 9.6 s to cross the spawn ring, never reached weapon range against a
- * moving player, and a measured run produced 2.2 dps and seven kills in two minutes. Anything
- * below ~70 stops being "slow" and starts being "absent".
+ * SPEED HAS A FLOOR, AND THE FLOOR MOVED. The whole column was cut 25% - every cycle, the same
+ * factor, so the shape below is untouched - and cycle 0 now opens at 56 against a 195 u/s mech.
+ *
+ * That is BELOW the old floor, and the old floor is why this paragraph is worth reading rather
+ * than deleting. It used to say "anything below ~70 stops being slow and starts being absent",
+ * measured from a build where speed 58 produced 2.2 dps and seven kills in two minutes: the horde
+ * took 9.6 s to cross the spawn ring and never reached weapon range against a moving player.
+ *
+ * That finding no longer reproduces, because the two things it depended on have both changed. The
+ * horde is twice as dense (pressureBase 14 -> 28), and nothing despawns any more - anything the
+ * player outruns is RELOCATED onto the ring in front of them rather than left behind. Speed was
+ * the only thing bringing bodies to the player then; it is one of three now.
+ *
+ * Re-measured at 56 across three seeds, the first two minutes produce 78 / 146 / 186 kills at
+ * 19 / 31 / 44 dps. Not absent. The floor is real but it is lower than it was, and the reason is
+ * that the rest of the director grew up around it.
  */
 
 import {
@@ -198,37 +208,37 @@ export interface CycleDef {
  *                    to clear cycle 0's chaff outright and not cycle 1's (tests/shield.test.ts).
  *      2 Hauler      SLOW AND FAT.      Speed DROPS 20% below the Scavenger while HP rises 65%.
  *                    You can walk away from these; you cannot ignore them.
- *      3 Prowler     THE FASTEST THING IN THE GAME at 95, and LIGHTER than the Hauler before it -
+ *      3 Prowler     THE FASTEST THING IN THE GAME at 71, and LIGHTER than the Hauler before it -
  *                    the one rung where HP goes backwards.
- *      4 Dozer       Slams the brakes to 70 and nearly doubles the bite. The first cycle that
+ *      4 Dozer       Slams the brakes to 53 and nearly doubles the bite. The first cycle that
  *                    hurts to touch.
- *      5 Breaker     Quick AGAIN at 86, and it hits hardest of anything so far.
+ *      5 Breaker     Quick AGAIN at 65, and it hits hardest of anything so far.
  *      6 Warden      Tanky and unhurried.
- *      7 Colossus    A WALL: 225 HP at 66 speed, the slowest and by far the heaviest.
+ *      7 Colossus    A WALL: 225 HP at 50 speed, the slowest and by far the heaviest.
  *
- * SPEED FALLS ACROSS THE LAST TWO CYCLES on purpose - 76, then 66 - because the endgame's threat
- * is meant to be MASS, not pace. The old table climbed to 91 and 85 there, and the final minutes
- * read as being chased by everything at once; the field now closes in slowly and the problem is
- * that there is no gap in it.
+ * SPEED FALLS ACROSS THE LAST TWO CYCLES on purpose - 57, then 50 - because the endgame's threat
+ * is meant to be MASS, not pace. An earlier table climbed at the end instead, and the final
+ * minutes read as being chased by everything at once; the field now closes in slowly and the
+ * problem is that there is no gap in it.
  *
- * THE TRADE IS MEANT TO BE EVEN, and it was measured that way rather than assumed: the average
- * speed moves 82 -> 78.6 and the summed HP 761 -> 797, and four reference seeds land within a few
- * seconds of the previous table's mean. A ladder that varied the stats AND quietly got harder
- * would be two changes wearing one coat.
+ * EVERY FIGURE IN THIS BLOCK IS 25% BELOW WHAT IT ONCE WAS, and the RATIOS are all exactly as
+ * they were: one factor across the whole column moves the pace of the game without touching the
+ * shape of the ladder. The percentages quoted above - 22% quicker, 20% slower - are unchanged for
+ * that reason, and always will be under a uniform scale.
  *
- * Invariant K is untouched and has more room at the end of a run than before, not less: the
- * fastest enemy at any point is a Prowler at 100.7 u/s, and the last cycle tops out at 68.
+ * Invariant K has more room than it has ever had: the fastest enemy at any point in a run is a
+ * Prowler at 75.5 u/s against a 195 u/s mech, and the last cycle tops out at 53.
  */
 export const CYCLE_LADDER: readonly CycleDef[] = Object.freeze([
   // hull 1,2,3 = infantry (swarmer) | 6,8 = trucks (grunt) | 7,11 = rigs (bruiser)
-  Object.freeze({ name: 'Rustling', hull: 1, tier: 0 as const, hp: 22, speed: 74, contactDamage: 5, xp: 1, variantChance: 0 }),
-  Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 90, contactDamage: 6, xp: 2, variantChance: 0.1 }),
-  Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 56, speed: 72, contactDamage: 9, xp: 3, variantChance: 0.16 }),
-  Object.freeze({ name: 'Prowler', hull: 3, tier: 2 as const, hp: 66, speed: 95, contactDamage: 8, xp: 4, variantChance: 0.22 }),
-  Object.freeze({ name: 'Dozer', hull: 8, tier: 1 as const, hp: 104, speed: 70, contactDamage: 14, xp: 6, variantChance: 0.26 }),
-  Object.freeze({ name: 'Breaker', hull: 7, tier: 0 as const, hp: 118, speed: 86, contactDamage: 18, xp: 8, variantChance: 0.3 }),
-  Object.freeze({ name: 'Warden', hull: 6, tier: 3 as const, hp: 172, speed: 76, contactDamage: 15, xp: 11, variantChance: 0.32 }),
-  Object.freeze({ name: 'Colossus', hull: 11, tier: 2 as const, hp: 225, speed: 66, contactDamage: 22, xp: 15, variantChance: 0.34 }),
+  Object.freeze({ name: 'Rustling', hull: 1, tier: 0 as const, hp: 22, speed: 56, contactDamage: 5, xp: 1, variantChance: 0 }),
+  Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 68, contactDamage: 6, xp: 2, variantChance: 0.1 }),
+  Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 56, speed: 54, contactDamage: 9, xp: 3, variantChance: 0.16 }),
+  Object.freeze({ name: 'Prowler', hull: 3, tier: 2 as const, hp: 66, speed: 71, contactDamage: 8, xp: 4, variantChance: 0.22 }),
+  Object.freeze({ name: 'Dozer', hull: 8, tier: 1 as const, hp: 104, speed: 53, contactDamage: 14, xp: 6, variantChance: 0.26 }),
+  Object.freeze({ name: 'Breaker', hull: 7, tier: 0 as const, hp: 118, speed: 65, contactDamage: 18, xp: 8, variantChance: 0.3 }),
+  Object.freeze({ name: 'Warden', hull: 6, tier: 3 as const, hp: 172, speed: 57, contactDamage: 15, xp: 11, variantChance: 0.32 }),
+  Object.freeze({ name: 'Colossus', hull: 11, tier: 2 as const, hp: 225, speed: 50, contactDamage: 22, xp: 15, variantChance: 0.34 }),
 ] as const) as readonly CycleDef[];
 
 /** Body class per ladder entry, read off the atlas rather than authored. See `CycleDef.hull`. */
