@@ -345,7 +345,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'artillery',
     name: 'Heavy Artillery',
     description:
-      'Three shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast.',
+      'Two shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast.',
     tiers: Object.freeze([
       'Unlock.',
       'Blast radius +18.',
@@ -353,7 +353,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'Damage +22 per shell.',
       'Blast radius +18.',
       'Rate of fire: reload -0.6s.',
-      'A fourth shell.',
+      'A third shell.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,

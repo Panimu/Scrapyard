@@ -695,7 +695,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 // Heavy Artillery
 //
-// The only weapon in the game that does not care where anything is. Three shells fall on random
+// The only weapon in the game that does not care where anything is. Two shells fall on random
 // spots near the mech - not on enemies, not ahead of the player, not where you are looking. It is
 // weather, and you learn to fight underneath it.
 //
@@ -704,7 +704,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // it. Area grows with the square of the radius, so that band is a density dial as much as a reach
 // one - see STRIKE_RADIUS_MIN/MAX in constants.ts for what the tighter and wider versions cost.
 //
-//   3 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload
+//   2 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload   -> 3 shells at tier 7
 //
 // The fuse is the weapon. Shells are inert while they fall - flagged NOCONTACT so nothing can set
 // one off early - which gives the player two thirds of a second to read the markers and decide
@@ -726,7 +726,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     cooldown: 3.6, // slow: this is a rhythm you plan around, not a gun you aim
     range: STRIKE_RADIUS_MAX,
     projectileSpeed: 0, // shells do not travel - they arrive
-    projectileCount: 3,
+    projectileCount: 2,
     pierce: 0,
     knockback: 120,
     splashRadius: 75, // the damage IS the blast; there is no direct hit
@@ -748,7 +748,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     { damage: 22 }, // T4  58 -> 80
     { splashRadius: 18 }, // T5  93 -> 111
     { cooldown: -0.6 }, // T6  3.0 -> 2.4 s
-    { projectileCount: 1 }, // T7  a fourth shell
+    { projectileCount: 1 }, // T7  a third shell
   ]),
   reengageMul: 1,
   visualId: VIS_STRIKE_MARKER,

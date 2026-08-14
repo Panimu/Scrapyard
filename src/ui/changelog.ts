@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T23:10Z',
+    title: 'Heavy Artillery drops two shells, not three',
+    notes: [
+      'A BARRAGE IS TWO SHELLS NOW. Tier 7 adds the third, where it used to add a fourth.',
+      'Everything else is untouched: same 58 damage, same 75 unit blast, same 0.7 second fuse to read the markers by, same 3.6 second rhythm, and the blast and rate tiers all still do exactly what they say.',
+      'So it opens with two shells where it used to open with three, and a finished one drops three where it used to drop four. A third less ground covered at tier 1, a quarter less at tier 7.',
+    ],
+  },
+  {
     at: '2026-08-14T23:07Z',
     title: 'The Cannon reaches 5% less far',
     notes: [
