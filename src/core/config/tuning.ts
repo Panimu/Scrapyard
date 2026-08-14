@@ -245,8 +245,13 @@ const DIRECTOR: DirectorTuning = {
   cycleSeconds: 120,
   eliteFromSec: 60,
   bossFromSec: 90,
-  pressureBase: 14,
-  pressurePerCycle: 4.5,
+  // DOUBLED, 14/4.5 -> 28/9: the target rises 28 -> 91 across the eight cycles instead of
+  // 14 -> 45.5. Pressure is the only lever for headcount - `maxSpawnsPerSec` is a rate limit, not
+  // a population - so doubling the target is what doubles the horde standing around the player.
+  // Elites and bosses still weigh 3 and 6 against it, so a boss displaces the same six regulars'
+  // worth of spawning it always did; there is simply twice as much room behind it.
+  pressureBase: 28,
+  pressurePerCycle: 9,
   eliteIntervalBase: 8,
   eliteIntervalPerCycle: 0.4,
   eliteIntervalMin: 4.5,

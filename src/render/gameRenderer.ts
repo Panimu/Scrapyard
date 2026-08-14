@@ -32,6 +32,7 @@ import {
   BOSS_OUTLINE_SCALE,
   BOSS_OUTLINE_TINT,
   ENEMY_FLAG_BOSS,
+  ENEMY_FLAG_DEAD,
   ENEMY_FLAG_ELITE,
   EV_BOSS_SPAWNED,
   EV_ENEMY_DAMAGED,
@@ -177,6 +178,35 @@ const STRIKE_TICK_FRAC = 0.22;
 /** The closing ring stops here rather than at zero - a dot that vanishes reads as a glitch. */
 const STRIKE_MIN_FRAC = 0.12;
 
+/* ---------------------------------------------------------------------------------------------
+ * OFF-SCREEN BOSS POINTERS
+ *
+ * The camera sees about 440 world units across the short axis and the yard is 12 288. A boss is
+ * one body in that, it moves at 34 u/s, and it is the only thing on the field the player is
+ * expected to make a PLAN about - which they cannot do while it is a rumour somewhere off the
+ * top of the screen. So while a Scraplord is alive and out of view, an arrow sits on the edge of
+ * the drawn rect pointing at it.
+ *
+ * ONLY WHILE OFF SCREEN. The instant the boss is in view the arrow goes: an indicator that stays
+ * up once you can see the thing it indicates is an indicator the player learns to ignore.
+ *
+ * SCREEN SPACE, in CSS px, on the stage rather than in the world container - it is furniture on
+ * the glass, so it must not scale, rotate or scroll with the yard.
+ * ------------------------------------------------------------------------------------------- */
+const BOSS_ARROW_TINT = BOSS_OUTLINE_TINT;
+/** Distance from the drawn rect's edge to the arrow's tip, CSS px. Clear of the HUD's own gutter. */
+const BOSS_ARROW_INSET = 18;
+/** Tip-to-base length and half-width of the head, CSS px. */
+const BOSS_ARROW_LEN = 20;
+const BOSS_ARROW_HALF = 11;
+/** The tail behind the head, so it reads as an arrow rather than a floating triangle. */
+const BOSS_ARROW_TAIL = 9;
+const BOSS_ARROW_TAIL_HALF = 3.5;
+/** Slow breath, so the pointer is alive without being a strobe on a screen already full of them. */
+const BOSS_ARROW_PULSE_HZ = 1.1;
+const BOSS_ARROW_ALPHA_MIN = 0.62;
+const BOSS_ARROW_ALPHA_MAX = 1;
+
 export interface RenderStats {
   enemySprites: number;
   pickupSprites: number;
@@ -201,6 +231,8 @@ export class GameRenderer {
   private readonly scrap: SpritePool;
   private readonly world: Container;
   private readonly letterbox: Graphics;
+  /** Screen-space, not world-space: the boss pointers live in CSS px on the stage. */
+  private readonly bossArrows: Graphics;
 
   private readonly pickups: SpritePool;
   private readonly enemies: SpritePool;
@@ -317,6 +349,7 @@ export class GameRenderer {
     this.beams = new BeamLayer(tex, this.effects);
 
     this.letterbox = new Graphics({ label: 'letterbox' });
+    this.bossArrows = new Graphics({ label: 'boss-arrows' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
     this.fence = new Fence(tex);
     // No texture: each pile picks its own variant, exactly as the enemy pool does. Small capacity
@@ -355,7 +388,9 @@ export class GameRenderer {
       this.beams.container,
     );
 
-    this.app.stage.addChild(this.floor, this.world, this.letterbox);
+    // The arrows sit ABOVE the world and BELOW the letterbox: they are screen furniture, not
+    // something in the yard, and they must not draw over the black bars they point out of.
+    this.app.stage.addChild(this.floor, this.world, this.bossArrows, this.letterbox);
   }
 
   /** CSS px. Called from the debounced visualViewport handler, never from the draw path. */
@@ -382,6 +417,7 @@ export class GameRenderer {
     this.shieldRimDrawn = -1;
     this.shieldRim.clear();
     this.strikeMarkers.clear();
+    this.bossArrows.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
     this.camera.snapTo(world.player.x, world.player.y);
     // Drop anything the previous run left in the ring so its explosions do not play now.
@@ -426,6 +462,10 @@ export class GameRenderer {
 
     this.world.position.set(this.camera.originX, this.camera.originY);
     this.world.scale.set(this.camera.scale);
+
+    // AFTER the world transform is written, because it reads the same camera the world was just
+    // placed with and a frame of disagreement would be a frame of arrows pointing slightly wrong.
+    this.drawBossArrows(world, alpha);
 
     this.stats.enemySprites = this.enemies.inUse;
     this.stats.pickupSprites = this.pickups.inUse;
@@ -548,6 +588,105 @@ export class GameRenderer {
   // -------------------------------------------------------------------------------------------
   // Layers
   // -------------------------------------------------------------------------------------------
+
+  /**
+   * An arrow on the edge of the drawn rect for every live boss that is off screen.
+   *
+   * WHY THE EDGE OF THE DRAWN RECT AND NOT THE VIEWPORT. On a wide phone the game letterboxes,
+   * and an arrow parked against the true viewport edge would sit ON the black bar - pointing at
+   * the boss from outside the picture. `barX`/`barY` are exactly the thickness of that bar, so
+   * insetting by them puts the pointer on the last pixels of the yard the player can actually see.
+   *
+   * THE RAY IS CAST FROM THE CENTRE OF THE VIEW, which is the mech: the camera follows the player
+   * with no lag and no lookahead, so screen centre IS the player, and an arrow on the edge of the
+   * screen is genuinely "walk this way". If the camera ever grows a lookahead, this has to switch
+   * to the player's own projected position or the arrows will quietly start lying.
+   *
+   * Cleared and rebuilt every frame. It is at most a couple of triangles - there is one boss per
+   * cycle and only a straggler makes two - so the geometry rebuild is not worth caching against.
+   */
+  private drawBossArrows(world: World, alpha: number): void {
+    const g = this.bossArrows;
+    g.clear();
+
+    const e = world.enemies;
+    const n = e.count;
+    if (n === 0) return;
+
+    const cam = this.camera;
+    const cx = cam.viewW * 0.5;
+    const cy = cam.viewH * 0.5;
+    // Half-extents of the DRAWN rect in CSS px, pulled in so the tip clears the edge.
+    const limX = cam.halfW * cam.scale - BOSS_ARROW_INSET;
+    const limY = cam.halfH * cam.scale - BOSS_ARROW_INSET;
+    if (limX <= 0 || limY <= 0) return;
+
+    // One phase for every arrow this frame, so two bosses pulse together rather than beating
+    // against each other.
+    const pulse = 0.5 + 0.5 * Math.sin(this.clock * BOSS_ARROW_PULSE_HZ * Math.PI * 2);
+    const alphaNow = BOSS_ARROW_ALPHA_MIN + (BOSS_ARROW_ALPHA_MAX - BOSS_ARROW_ALPHA_MIN) * pulse;
+
+    for (let d = 0; d < n; d++) {
+      if ((e.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+      if ((e.flags[d] & ENEMY_FLAG_BOSS) === 0) continue;
+
+      // Interpolated for the same reason everything else here is: an arrow stepping at 60 Hz
+      // against a body drawn at 120 would visibly disagree with the boss when it came into view.
+      const bx = lerp(e.prevX[d], e.x[d], alpha);
+      const by = lerp(e.prevY[d], e.y[d], alpha);
+
+      // Offset from screen centre, in CSS px.
+      const dx = (bx - cam.x) * cam.scale;
+      const dy = (by - cam.y) * cam.scale;
+
+      // In view: no arrow. Measured against the boss's own drawn radius so the pointer survives
+      // exactly as long as the body is genuinely hidden, and not a moment past it.
+      const r = e.radius[d] * cam.scale;
+      if (Math.abs(dx) <= limX + r && Math.abs(dy) <= limY + r) continue;
+
+      // Where the ray from centre leaves the inset rect. Both axes are tested and the NEARER
+      // crossing wins, which is what puts a boss that is off the top-left corner in the corner
+      // rather than off the side of the screen it is less far past.
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+      const tx = ax > 1e-4 ? limX / ax : Infinity;
+      const ty = ay > 1e-4 ? limY / ay : Infinity;
+      const t = tx < ty ? tx : ty;
+      if (!Number.isFinite(t)) continue; // boss exactly under the camera: nothing to point at
+
+      const ex = cx + dx * t;
+      const ey = cy + dy * t;
+
+      // Unit vector along the arrow. `t` scales dx/dy to the edge, so dividing by that length is
+      // one sqrt rather than a second atan2 plus a cos and a sin.
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const ux = dx / len;
+      const uy = dy / len;
+      // Perpendicular, for the base corners.
+      const nx = -uy;
+      const ny = ux;
+
+      // Head: tip on the edge, base BOSS_ARROW_LEN back along the ray.
+      const bxp = ex - ux * BOSS_ARROW_LEN;
+      const byp = ey - uy * BOSS_ARROW_LEN;
+      g.moveTo(ex, ey)
+        .lineTo(bxp + nx * BOSS_ARROW_HALF, byp + ny * BOSS_ARROW_HALF)
+        .lineTo(bxp - nx * BOSS_ARROW_HALF, byp - ny * BOSS_ARROW_HALF)
+        .closePath()
+        .fill({ color: BOSS_ARROW_TINT, alpha: alphaNow });
+
+      // Tail. A stub behind the head, which is the whole difference between "an arrow" and "a
+      // triangle stuck to the edge of the screen".
+      const t0x = bxp - ux * BOSS_ARROW_TAIL;
+      const t0y = byp - uy * BOSS_ARROW_TAIL;
+      g.moveTo(bxp + nx * BOSS_ARROW_TAIL_HALF, byp + ny * BOSS_ARROW_TAIL_HALF)
+        .lineTo(t0x + nx * BOSS_ARROW_TAIL_HALF, t0y + ny * BOSS_ARROW_TAIL_HALF)
+        .lineTo(t0x - nx * BOSS_ARROW_TAIL_HALF, t0y - ny * BOSS_ARROW_TAIL_HALF)
+        .lineTo(bxp - nx * BOSS_ARROW_TAIL_HALF, byp - ny * BOSS_ARROW_TAIL_HALF)
+        .closePath()
+        .fill({ color: BOSS_ARROW_TINT, alpha: alphaNow * 0.85 });
+    }
+  }
 
   private drawLetterbox(): void {
     const { viewW, viewH, barX, barY } = this.camera;

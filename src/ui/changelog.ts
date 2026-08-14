@@ -40,6 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T15:00Z',
+    title: 'Twice the horde, and the big things hit like it',
+    notes: [
+      'TWICE AS MANY REGULARS around you, at every point in a run. The yard used to hold about 14 bodies’ worth of pressure near you in the first cycle and 45 by the last; it is 28 and 91 now. Measured with the reference bot, the peak headcount went from about 40 to about 75.',
+      'ELITES ARE TWICE AS STRONG - double the hit points and double the contact damage.',
+      'BOSSES ARE THREE TIMES STRONGER, on both. A first-cycle Scraplord has 924 hit points and the last one has 9450.',
+      'Speed is untouched on both, which is the only reason this is survivable: a boss with three times the health is still the slowest thing on the field and still a place on the map rather than something that chases you down.',
+      'XP is untouched too, so an elite is now twice the work for the same payout and a boss three times. That is a real change to what those fights are worth and it may not survive contact with a few runs.',
+      'AN ARROW POINTS AT A BOSS YOU CANNOT SEE. While a Scraplord is alive and off screen, a blue pointer sits on the edge of the picture showing which way it is. It disappears the moment the boss is actually in view.',
+    ],
+  },
+  {
     at: '2026-08-14T14:46Z',
     title: 'The game has a front door, and a name on it',
     notes: [
