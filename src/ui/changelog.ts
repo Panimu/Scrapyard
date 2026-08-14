@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T19:55Z',
+    title: 'Laser icons wear their own beam colour',
+    notes: [
+      'The four laser symbols are now the colour of the light they fire: the Short Laser green, the Medium and Chain Lasers blue, the Long Laser red. On a spinning reel the symbol is now the same colour you have been staring at all run.',
+      'They were three amber bars that differed only in length, which is a fine way to tell them apart standing still and a poor one at speed.',
+      'The tile border still says gun or system, in amber and blue, because that is how you read a chest payout off the reels before the word turns up. The border says which pool, the symbol says which weapon.',
+    ],
+  },
+  {
     at: '2026-08-14T19:43Z',
     title: 'TIER 8: the Medium Laser becomes the Chain Laser',
     notes: [
