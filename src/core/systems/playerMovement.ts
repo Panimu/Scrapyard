@@ -56,6 +56,7 @@
 
 import { ARENA_HALF } from '../constants.js';
 import { pushOutOfScenery } from '../content/scenery.js';
+import { breakBarrelIn } from './pickups.js';
 import { EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
@@ -114,6 +115,16 @@ export function updatePlayerMovement(world: World, dt: number): void {
     p.y = bound;
     if (vy > 0) vy = 0;
   }
+  // A FUEL BARREL GOES OVER WHEN YOU WALK INTO IT. Checked before the push, so the drum is already
+  // gone by the time the collision is resolved and the mech never stops for it - which is the
+  // whole feel of the thing. A forty-tonne walker does not brake for a drum.
+  //
+  // It also makes a barrel a MOVEMENT decision rather than a shooting one. The weapons destroy
+  // barrels by accident, aiming at something else; this is the only way to take one deliberately,
+  // and it costs exactly what walking somewhere costs - which, in a game about where you are
+  // standing, is the right price.
+  breakBarrelIn(world, p.x, p.y, s.radius);
+
   // SCRAP PILES, resolved after the fence so a wreck sitting against the wire cannot squeeze the
   // mech through it. Same rule as the fence, generalised to an arbitrary normal: slide out, then
   // drop only the velocity component going INTO the obstacle. The tangent survives, so running at

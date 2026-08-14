@@ -93,15 +93,21 @@ export function updatePickups(world: World, dt: number): void {
  * Breaks any FUEL BARREL overlapping the circle (x, y, r) and drops what was inside. Returns true
  * if something went up.
  *
- * CALLED FROM THREE PLACES, and they are exactly the three ways a weapon can touch the ground: a
- * shell arriving (radius 0), a blast going off (radius = splashRadius), and a beam sweeping across
- * (the caller resolves the ray and passes the point). Nothing else in the game can break one -
- * enemies walk around barrels, and the player cannot push one over.
+ * CALLED FROM FOUR PLACES - the three ways a WEAPON can touch the ground, and the player.
+ *
+ *   a shell arriving          radius 0
+ *   a blast going off         radius = splashRadius
+ *   a beam sweeping across    the caller resolves the ray and passes the point
+ *   THE PLAYER WALKING INTO IT   radius = the mech's own, from updatePlayerMovement
+ *
+ * ENEMIES CANNOT. They walk around barrels like any other scenery, which keeps a drum a thing the
+ * player spends on rather than something the horde clears for them on its way past.
  *
  * A barrel is NEVER TARGETED. It is not an enemy, so no targeting rule can see it, and that is the
- * whole character of the thing: you do not shoot barrels, you notice one went up because you were
- * shooting through where it stood. Making it targetable would put a decoy in front of every
- * weapon whose job is to pick the right enemy.
+ * whole character of the thing: the guns break barrels BY ACCIDENT, aiming at something else.
+ * Making it targetable would put a decoy in front of every weapon whose job is to pick the right
+ * enemy - and it would delete the reason to ever walk into one, which is the only DELIBERATE way
+ * to take a barrel there is.
  */
 export function breakBarrelIn(world: World, x: number, y: number, r: number): boolean {
   const i = destructibleOverlap(world.scenery, x, y, r);
