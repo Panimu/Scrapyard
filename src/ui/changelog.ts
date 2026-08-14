@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T21:43Z',
+    title: 'The whole Chain Laser is drawn, not just its far end',
+    notes: [
+      'THE CHAIN IS ONE UNBROKEN RUN OF LIGHT AGAIN, from the muzzle through every body it jumps to. What you were seeing - a loose beam out in the crowd with nothing joining it to the mech - was the last jump on its own: the beam layer only ever kept ONE segment per weapon, so each jump painted over the one before it and only the final link survived to be drawn.',
+      'The simulation was chaining correctly the whole time; the damage always landed where the beam should have been. This was the picture disagreeing with the game.',
+      'Each link now carries its own travelling energy, offset link by link, so the light visibly runs outward through the crowd. The muzzle flash stays at the muzzle and the debris still comes off the first body, because ten links spitting sparks would bury the horde they are drawn over.',
+    ],
+  },
+  {
     at: '2026-08-14T21:19Z',
     title: 'One reroll a run',
     notes: [

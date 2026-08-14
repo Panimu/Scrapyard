@@ -60,7 +60,7 @@
  */
 
 import { Container, FillGradient, Graphics, GraphicsContext, type Sprite } from 'pixi.js';
-import { MAX_WEAPONS, NO_BEAM_TARGET, type World } from '../core/index.js';
+import { MAX_CHAIN_LINKS, MAX_WEAPONS, NO_BEAM_TARGET, type World } from '../core/index.js';
 import { SpritePool } from './spritePool.js';
 import { PARTICLE_SRC, type GameTextures } from './assets.js';
 import type { Effects } from './effects.js';
@@ -185,15 +185,25 @@ export class BeamLayer {
   // ---- render-only per-weapon-slot state. Never written back to World. ----
   /** 0..1 envelope: 1 while the sim is publishing this beam, decaying once it stops. */
   private readonly env = new Float32Array(MAX_WEAPONS);
-  /** Last published segment, held so the fade-out draws exactly what the sim last said. */
-  private readonly lx0 = new Float32Array(MAX_WEAPONS);
-  private readonly ly0 = new Float32Array(MAX_WEAPONS);
-  private readonly lang = new Float32Array(MAX_WEAPONS);
-  private readonly llen = new Float32Array(MAX_WEAPONS);
+  /**
+   * Last published SEGMENTS, held so the fade-out draws exactly what the sim last said.
+   *
+   * A CHAINING BEAM PUBLISHES SEVERAL ENTRIES UNDER ONE WEAPON SLOT - the shot from the muzzle,
+   * then one per jump - so these are indexed `w * MAX_CHAIN_LINKS + s` rather than by slot alone.
+   * They used to be one segment per slot, which meant each link overwrote the one before it and
+   * only the LAST jump was ever drawn: a Chain Laser looked like a loose beam floating in the
+   * crowd with nothing joining it to the mech.
+   */
+  private readonly lx0 = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  private readonly ly0 = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  private readonly lang = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  private readonly llen = new Float32Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
+  /** Segments latched for this slot: 1 for an ordinary laser, more while a chain is live. */
+  private readonly lsegs = new Uint8Array(MAX_WEAPONS);
   private readonly lhalf = new Float32Array(MAX_WEAPONS);
   private readonly lcolour = new Int32Array(MAX_WEAPONS);
-  /** 1 when the last published beam stopped on a body; 0 when it reached full range. */
-  private readonly lhit = new Uint8Array(MAX_WEAPONS);
+  /** 1 when that segment stopped on a body; 0 when it reached full range. Per SEGMENT. */
+  private readonly lhit = new Uint8Array(MAX_WEAPONS * MAX_CHAIN_LINKS);
   /** Set every frame from the buffer, then consumed by the envelope update. */
   private readonly firing = new Uint8Array(MAX_WEAPONS);
   private readonly emberTimer = new Float32Array(MAX_WEAPONS);
@@ -206,6 +216,12 @@ export class BeamLayer {
   /** Beams drawn on the last frame, for the debug readout. */
   private live = 0;
 
+  /** Held so segments beyond the first can be built on demand - see `ensureQuads`. */
+  private readonly glow: Container;
+  private readonly cores: Container;
+  private readonly hardCtx: GraphicsContext;
+  private readonly softCtx: GraphicsContext;
+
   constructor(
     tex: GameTextures,
     private readonly fx: Effects,
@@ -214,6 +230,8 @@ export class BeamLayer {
     this.container = new Container({ label: 'beams' });
     const glow = new Container({ label: 'beam-glow', blendMode: 'add' });
     const cores = new Container({ label: 'beam-cores', blendMode: 'normal' });
+    this.glow = glow;
+    this.cores = cores;
 
     // TWO contexts, shared by every Graphics in the layer: each quad is uploaded once and each
     // beam is a transform of it. Sharing is explicitly supported in v8 (GraphicsOptions.context).
@@ -249,18 +267,22 @@ export class BeamLayer {
       }),
     );
 
+    this.hardCtx = hard;
+    this.softCtx = soft;
+    // ONE SEGMENT PER SLOT UP FRONT, and the rest grown on demand in `ensureQuads`. A chain can
+    // publish ten segments from one weapon, but only one weapon in the game chains and most runs
+    // never hold it - paying 70 quads' worth of scene graph at boot for that would be a cost
+    // every run carries for a case most runs never reach.
+    this.ensureQuads(MAX_WEAPONS);
     for (let i = 0; i < MAX_WEAPONS; i++) {
-      this.sheath.push(addQuad(soft, this.underContainer));
-      this.outer.push(addQuad(soft, glow));
-      this.inner.push(addQuad(soft, glow));
-      for (let p = 0; p < PULSES_PER_BEAM; p++) this.pulses.push(addQuad(soft, glow));
-      this.core.push(addQuad(hard, cores));
       // Golden-ratio stride: any two slots are far apart in phase, with no table.
       this.phase[i] = (i * 0.618034) % 1;
     }
 
     this.flares = new SpritePool({
-      capacity: MAX_WEAPONS * 4,
+      // Emitter heat per slot, plus a muzzle and two impact flares for every segment a chaining
+      // beam can publish.
+      capacity: MAX_WEAPONS + MAX_WEAPONS * MAX_CHAIN_LINKS * 3,
       texture: tex.fxFlash,
       blendMode: 'add',
       label: 'beam-flares',
@@ -274,15 +296,38 @@ export class BeamLayer {
     return this.live;
   }
 
+  /**
+   * Grows the quad pools to `count` drawable segments, up to the hard ceiling of what the
+   * simulation can publish in a tick.
+   *
+   * A run with no Chain Laser never calls this past its boot size, so the ordinary case pays
+   * exactly what it always did. A run that earns one grows once, on the first shot, and keeps
+   * the quads for the rest of the run - they are hidden, not destroyed, when the chain shortens.
+   */
+  private ensureQuads(count: number): void {
+    const cap = MAX_WEAPONS * MAX_CHAIN_LINKS;
+    const want = count > cap ? cap : count;
+    while (this.core.length < want) {
+      this.sheath.push(addQuad(this.softCtx, this.underContainer));
+      this.outer.push(addQuad(this.softCtx, this.glow));
+      this.inner.push(addQuad(this.softCtx, this.glow));
+      for (let p = 0; p < PULSES_PER_BEAM; p++) this.pulses.push(addQuad(this.softCtx, this.glow));
+      this.core.push(addQuad(this.hardCtx, this.cores));
+    }
+  }
+
   /** Hides everything and drops the envelope. Called when a run starts or is abandoned. */
   clear(): void {
-    for (let i = 0; i < MAX_WEAPONS; i++) {
+    for (let i = 0; i < this.core.length; i++) {
       this.sheath[i].visible = false;
       this.outer[i].visible = false;
       this.inner[i].visible = false;
       this.core[i].visible = false;
+    }
+    for (let i = 0; i < MAX_WEAPONS; i++) {
       this.env[i] = 0;
       this.firing[i] = 0;
+      this.lsegs[i] = 0;
       this.emberTimer[i] = 0;
       this.scorchTimer[i] = 0;
       this.wasOverheated[i] = 0;
@@ -302,6 +347,9 @@ export class BeamLayer {
    */
   draw(world: World, clockSec: number, dtSec: number, px: number, py: number): void {
     this.firing.fill(0);
+    // Segment counts are rebuilt from the buffer every frame while a weapon is publishing, and
+    // left alone once it stops so the fade-out keeps the whole chain rather than its first link.
+    const segs = this.lsegs;
 
     // ---- pass 1: latch what the simulation published this tick, keyed by WEAPON SLOT. ------
     // Keyed by slot rather than by buffer position because the envelope has to survive the
@@ -322,21 +370,27 @@ export class BeamLayer {
       const dx = b.x1[i] - x0;
       const dy = b.y1[i] - y0;
       const len = Math.sqrt(dx * dx + dy * dy);
-      // A sub-unit beam is a target standing inside the muzzle. It has no readable direction and
-      // scaling the quad by ~0 leaves a smear of a pixel, so it is dropped entirely - the sim's
-      // damage still lands, and the enemy's own hit spark is what shows it.
-      if (len < 1) continue;
 
-      this.firing[w] = 1;
-      this.lx0[w] = x0;
-      this.ly0[w] = y0;
-      this.lang[w] = Math.atan2(dy, dx);
-      this.llen[w] = len;
+      // The FIRST entry this frame for a slot resets its segment count; the ones after it are the
+      // chain's jumps, in the order the simulation published them (muzzle outwards).
+      if (this.firing[w] === 0) {
+        this.firing[w] = 1;
+        segs[w] = 0;
+      }
+      const s = segs[w];
+      if (s >= MAX_CHAIN_LINKS) continue;
+      const at = w * MAX_CHAIN_LINKS + s;
+      segs[w] = s + 1;
+
+      this.lx0[at] = x0;
+      this.ly0[at] = y0;
+      this.lang[at] = Math.atan2(dy, dx);
+      this.llen[at] = len;
       this.lhalf[w] = def.beamWidth;
       this.lcolour[w] = def.beamColour;
       // enemyDense is NOT resolved to an enemy here and must never be: reapDead can invalidate
       // that dense index before this layer runs. Only the sentinel test is safe.
-      this.lhit[w] = b.enemyDense[i] !== NO_BEAM_TARGET ? 1 : 0;
+      this.lhit[at] = b.enemyDense[i] !== NO_BEAM_TARGET ? 1 : 0;
     }
 
     // ---- pass 2: advance the envelope and draw every slot that still has any beam in it. ----
@@ -407,12 +461,8 @@ export class BeamLayer {
 
       if (env <= 0) continue;
 
-      const len = this.llen[w];
       const half = this.lhalf[w];
       const colour = this.lcolour[w];
-      const x0 = this.lx0[w];
-      const y0 = this.ly0[w];
-      const angle = this.lang[w];
 
       // THE CORE COLLAPSES, IT DOES NOT DISSOLVE. Fading an opaque coloured core by alpha alone
       // leaves a translucent hue lying over rust orange, and a half-transparent green line on an
@@ -428,98 +478,127 @@ export class BeamLayer {
       const wmul = wideGlow * breathe;
       const amul = env * flicker;
 
-      const ux = Math.cos(angle);
-      const uy = Math.sin(angle);
+      // EVERY SEGMENT THE SLOT PUBLISHED, joined end to end. For an ordinary laser that is one;
+      // for a live chain it is the shot from the muzzle followed by its jumps, and drawing only
+      // the last of them was what left a Chain Laser hanging in the crowd with nothing attaching
+      // it to the mech.
+      const count = this.lsegs[w];
+      this.ensureQuads(n + count);
+      for (let s = 0; s < count; s++) {
+        const at = w * MAX_CHAIN_LINKS + s;
+        const len = this.llen[at];
+        // A sub-unit segment is a body standing inside the muzzle: no readable direction, and the
+        // quad scaled by ~0 is a smear of a pixel. The sim's damage still lands and the body's own
+        // hit spark shows it. Skipped rather than dropped in pass 1, so the jumps that follow it
+        // keep their place in the chain.
+        if (len < 1) continue;
+        const x0 = this.lx0[at];
+        const y0 = this.ly0[at];
+        const angle = this.lang[at];
+        const ux = Math.cos(angle);
+        const uy = Math.sin(angle);
 
-      // The sheath fades on the SQUARE of the envelope so the dark band is always gone before
-      // the light is - it exists to make a bright beam readable, never to outlive one.
-      const sheathW = half * SHEATH_MUL * wmul;
-      place(this.sheath[n], x0, y0, angle, len, sheathW, SHEATH_TINT, SHEATH_ALPHA * env * env);
-      const halo = purify(colour, OUTER_PURITY);
-      place(this.outer[n], x0, y0, angle, len, half * OUTER_MUL * wmul, halo, OUTER_ALPHA * amul);
-      // One `purify` for the two mid layers; the pulse is the same light, just whiter.
-      const pure = purify(colour, INNER_PURITY);
-      const mid = whiten(pure, INNER_WHITEN);
-      place(this.inner[n], x0, y0, angle, len, half * INNER_MUL * wmul, mid, INNER_ALPHA * amul);
-      place(
-        this.core[n],
-        x0,
-        y0,
-        angle,
-        len,
-        half * CORE_MUL * wideCore * breathe,
-        whiten(colour, CORE_WHITEN),
-        CORE_ALPHA * coreFade * flicker,
-      );
-
-      // ---- travelling energy ----------------------------------------------------------
-      // Head position slides at a constant world speed; `u` is where it is along this beam, so
-      // the pulses are evenly spread whatever the beam's length.
-      const pulseLen = Math.min(len * PULSE_FRAC, PULSE_MAX_LEN);
-      const rate = Math.min(PULSE_SPEED / len, PULSE_MAX_RATE);
-      const travel = clockSec * rate + this.phase[w];
-      for (let k = 0; k < PULSES_PER_BEAM; k++) {
-        const u = fract(travel + k / PULSES_PER_BEAM);
-        const head = u * len;
-        const tail = head - pulseLen;
-        const from = tail > 0 ? tail : 0;
-        const segLen = head - from;
-        if (segLen < 0.5) continue;
-        // Fades in over the first tenth so energy appears to leave the emitter rather than to
-        // wink into existence in mid-air; it is at full brightness when it reaches the target.
-        const rise = u < 0.12 ? u / 0.12 : 1;
+        // The sheath fades on the SQUARE of the envelope so the dark band is always gone before
+        // the light is - it exists to make a bright beam readable, never to outlive one.
+        const sheathW = half * SHEATH_MUL * wmul;
+        place(this.sheath[n], x0, y0, angle, len, sheathW, SHEATH_TINT, SHEATH_ALPHA * env * env);
+        const halo = purify(colour, OUTER_PURITY);
+        place(this.outer[n], x0, y0, angle, len, half * OUTER_MUL * wmul, halo, OUTER_ALPHA * amul);
+        // One `purify` for the two mid layers; the pulse is the same light, just whiter.
+        const pure = purify(colour, INNER_PURITY);
+        const mid = whiten(pure, INNER_WHITEN);
+        place(this.inner[n], x0, y0, angle, len, half * INNER_MUL * wmul, mid, INNER_ALPHA * amul);
         place(
-          this.pulses[pulseSlot++],
-          x0 + ux * from,
-          y0 + uy * from,
+          this.core[n],
+          x0,
+          y0,
           angle,
-          segLen,
-          half * PULSE_MUL * wmul,
-          whiten(pure, PULSE_WHITEN),
-          PULSE_ALPHA * amul * rise,
+          len,
+          half * CORE_MUL * wideCore * breathe,
+          whiten(colour, CORE_WHITEN),
+          CORE_ALPHA * coreFade * flicker,
         );
-      }
 
-      // ---- ends -------------------------------------------------------------------------
-      flare(flares, x0, y0, half * MUZZLE_UNITS * wmul, whiten(colour, 0.5), 0.5 * amul);
-
-      // Contact only when the beam actually stopped on a body. NO_BEAM_TARGET means it reached
-      // full range through empty air, and a bloom hanging out there would read as a hit that
-      // never happened.
-      if (this.lhit[w] === 1) {
-        const x1 = x0 + ux * len;
-        const y1 = y0 + uy * len;
-        const beat = 0.88 + 0.24 * (0.5 + 0.5 * Math.sin(clockSec * IMPACT_BEAT_RATE + ph));
-        // Two flares: a wide bloom in the weapon's hue, and a small near-white contact point.
-        const bloom = beat * wideGlow;
-        flare(flares, x1, y1, half * IMPACT_UNITS * bloom, whiten(colour, 0.45), 0.85 * amul);
-        flare(flares, x1, y1, half * IMPACT_HOT_UNITS * bloom, 0xfff2e0, 0.9 * amul);
-
-        // Debris and scorch are spawned ONLY while the sim is actually publishing the beam, on
-        // a real-seconds throttle so the rate does not change with frame rate.
-        if (firing) {
-          this.emberTimer[w] += dtSec;
-          if (this.emberTimer[w] >= EMBER_INTERVAL) {
-            this.emberTimer[w] = 0;
-            this.fx.beamEmber(x1, y1, -ux, -uy, whiten(colour, 0.35));
-          }
-          this.scorchTimer[w] += dtSec;
-          if (this.scorchTimer[w] >= SCORCH_INTERVAL) {
-            this.scorchTimer[w] = 0;
-            this.fx.scorch(x1, y1, half * 4.5);
+        // ---- travelling energy --------------------------------------------------------
+        // Head position slides at a constant world speed; `u` is where it is along this beam, so
+        // the pulses are evenly spread whatever the beam's length. Each link of a chain carries
+        // its own, and the per-segment phase offset makes the energy read as running OUTWARD
+        // through the crowd rather than as every link blinking together.
+        const pulseLen = Math.min(len * PULSE_FRAC, PULSE_MAX_LEN);
+        const rate = Math.min(PULSE_SPEED / len, PULSE_MAX_RATE);
+        const travel = clockSec * rate + this.phase[w] + s * 0.37;
+        if (pulseSlot + PULSES_PER_BEAM <= this.pulses.length) {
+          for (let k = 0; k < PULSES_PER_BEAM; k++) {
+            const u = fract(travel + k / PULSES_PER_BEAM);
+            const head = u * len;
+            const tail = head - pulseLen;
+            const from = tail > 0 ? tail : 0;
+            const segLen = head - from;
+            if (segLen < 0.5) continue;
+            // Fades in over the first tenth so energy appears to leave the emitter rather than to
+            // wink into existence in mid-air; it is at full brightness when it reaches the target.
+            const rise = u < 0.12 ? u / 0.12 : 1;
+            place(
+              this.pulses[pulseSlot++],
+              x0 + ux * from,
+              y0 + uy * from,
+              angle,
+              segLen,
+              half * PULSE_MUL * wmul,
+              whiten(pure, PULSE_WHITEN),
+              PULSE_ALPHA * amul * rise,
+            );
           }
         }
+
+        // ---- ends ---------------------------------------------------------------------
+        // The muzzle flash belongs to the SHOT, not to every link: a jump starts on a body that
+        // already has the previous link's impact bloom sitting on it, and a second flare there
+        // would double it.
+        if (s === 0) {
+          flare(flares, x0, y0, half * MUZZLE_UNITS * wmul, whiten(colour, 0.5), 0.5 * amul);
+        }
+
+        // Contact only when the beam actually stopped on a body. NO_BEAM_TARGET means it reached
+        // full range through empty air, and a bloom hanging out there would read as a hit that
+        // never happened.
+        if (this.lhit[at] === 1) {
+          const x1 = x0 + ux * len;
+          const y1 = y0 + uy * len;
+          const beat = 0.88 + 0.24 * (0.5 + 0.5 * Math.sin(clockSec * IMPACT_BEAT_RATE + ph));
+          // Two flares: a wide bloom in the weapon's hue, and a small near-white contact point.
+          const bloom = beat * wideGlow;
+          flare(flares, x1, y1, half * IMPACT_UNITS * bloom, whiten(colour, 0.45), 0.85 * amul);
+          flare(flares, x1, y1, half * IMPACT_HOT_UNITS * bloom, 0xfff2e0, 0.9 * amul);
+
+          // Debris and scorch are spawned ONLY while the sim is actually publishing the beam, on
+          // a real-seconds throttle so the rate does not change with frame rate. THE THROTTLE IS
+          // PER WEAPON and the debris comes off the FIRST contact: a ten-link chain spitting ten
+          // streams of embers would bury the horde it is drawn over.
+          if (firing && s === 0) {
+            this.emberTimer[w] += dtSec;
+            if (this.emberTimer[w] >= EMBER_INTERVAL) {
+              this.emberTimer[w] = 0;
+              this.fx.beamEmber(x1, y1, -ux, -uy, whiten(colour, 0.35));
+            }
+            this.scorchTimer[w] += dtSec;
+            if (this.scorchTimer[w] >= SCORCH_INTERVAL) {
+              this.scorchTimer[w] = 0;
+              this.fx.scorch(x1, y1, half * 4.5);
+            }
+          }
+        }
+
+        // A beam that has just started firing gets one flash at the emitter, so the ramp reads as
+        // an ignition rather than as a slow reveal.
+        if (firing && before <= 0 && s === 0) this.fx.beamStart(x0, y0, whiten(colour, 0.5));
+
+        n++;
       }
-
-      // A beam that has just started firing gets one flash at the emitter, so the ramp reads as
-      // an ignition rather than as a slow reveal.
-      if (firing && before <= 0) this.fx.beamStart(x0, y0, whiten(colour, 0.5));
-
-      n++;
     }
 
-    // Hide the slots that drew nothing this frame.
-    for (let i = n; i < MAX_WEAPONS; i++) {
+    // Hide the quads that drew nothing this frame.
+    for (let i = n; i < this.core.length; i++) {
       if (!this.core[i].visible) break;
       this.sheath[i].visible = false;
       this.outer[i].visible = false;

@@ -1190,6 +1190,32 @@ describe('chain laser (tier 8)', () => {
     }
   });
 
+  it('publishes ONE connected run, rooted at the muzzle and ordered outwards', () => {
+    // THE INVARIANT THE RENDERER LEANS ON. The beam layer draws the buffer as a polyline: entry 0
+    // is the shot from the emitter and each later entry starts where the one before it stopped.
+    // When the layer kept only one segment per weapon slot it drew the LAST jump alone, which on
+    // screen was a loose beam hanging in the crowd with nothing joining it to the mech - so this
+    // pins both halves: the order, and the joins.
+    const w = makeWorld('laser-medium');
+    setTier(w, 8);
+    line(w, 8, 120, 60);
+    tick(w);
+
+    const b = w.beams;
+    expect(b.count).toBeGreaterThan(2);
+
+    // Entry 0 leaves the mech: within a muzzle offset of the player, not out among the bodies.
+    const def = w.weaponCatalog[w.weapons[0].defId];
+    const fromMech = Math.hypot(b.x0[0] - w.player.x, b.y0[0] - w.player.y);
+    expect(fromMech).toBeLessThanOrEqual(def.muzzleOffset + 1e-6);
+
+    // And every jump starts exactly where the previous segment ended.
+    for (let i = 1; i < b.count; i++) {
+      expect(b.x0[i]).toBeCloseTo(b.x1[i - 1], 6);
+      expect(b.y0[i]).toBeCloseTo(b.y1[i - 1], 6);
+    }
+  });
+
   it('does not chain at tier 7', () => {
     const w = makeWorld('laser-medium');
     setTier(w, WEAPON_MAX_TIER);
