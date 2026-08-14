@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T21:19Z',
+    title: 'One reroll a run',
+    notes: [
+      'EVERY RUN NOW STARTS WITH ONE REROLL. A button under the cards deals a fresh three from the same pool, and the level-up is still owed afterwards - a reroll is not a pick.',
+      'ONE, FOR THE WHOLE RUN. It is not a way to never see a card you dislike; it is a decision about which level-up is worth spending it on. The button says how many you have left and disappears when you have none.',
+      'It will not fire once there is nothing left to fit - the two salvage cards are all that remains at that point, so a reroll there would take your last one and hand back what you already had.',
+      'THE PAUSE MENU HAS AN INFINITE REROLLS SWITCH. It is a cheat, it is remembered between runs, and throwing it mid-run works on the card you are looking at.',
+    ],
+  },
+  {
     at: '2026-08-14T21:05Z',
     title: 'A level-up always has something on it',
     notes: [

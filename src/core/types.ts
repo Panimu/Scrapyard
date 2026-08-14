@@ -268,6 +268,14 @@ export interface LevelUpState {
   readonly stacks: Uint8Array;
   /** Total picks applied. Cheap sanity check for the harness and the summary screen. */
   picksTaken: number;
+  /**
+   * REROLLS LEFT THIS RUN. Seeded from `tuning.xp.rerollsPerRun` at run start and spent one per
+   * re-dealt card. Not per level-up: it is a run-long resource, which is what makes holding it
+   * back for a level that matters an actual decision.
+   */
+  rerolls: number;
+  /** Rerolls spent. Only the summary and the harness read it; nothing branches on it. */
+  rerollsUsed: number;
 }
 
 /**
@@ -410,6 +418,18 @@ export interface World {
   readonly director: SpawnDirector;
   readonly difficulty: DifficultyState;
   readonly levelUp: LevelUpState;
+  /**
+   * INFINITE REROLLS - the pause menu's cheat, and the ONE piece of player intent in this file
+   * that does not arrive through InputFrame.
+   *
+   * It is here rather than in WorldConfig because it is toggled from the pause menu mid-run, and
+   * it is here rather than in the UI because the rule it changes ("a reroll costs one") is the
+   * simulation's. The honest consequence is stated once, here: a run played with this on is NOT
+   * replayable from its seed and input log alone - the reroll count is part of what the offers
+   * depend on. That is acceptable for a cheat and would not be for anything else, which is why
+   * nothing else in the game is allowed to work this way.
+   */
+  infiniteRerolls: boolean;
   readonly stats: RunStats;
   readonly events: EventRing;
 

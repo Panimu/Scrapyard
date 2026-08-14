@@ -21,6 +21,10 @@
  * - replays byte-exactly in CI. An index outside [0, offerCount) simply means "the player has not
  * chosen yet", which is what every tick between the card opening and the tap looks like.
  *
+ * REROLL RIDES THE SAME WIRE. `CHOOSE_REROLL` is a chooseIndex like any other; it deals a fresh
+ * card from the same pool, spends one of the run's rerolls, and leaves the level-up still owed.
+ * See `tryReroll`.
+ *
  * ---------------------------------------------------------------------------------------------
  * ONE GEM CAN GRANT SEVERAL LEVELS, AND NONE MAY BE LOST
  * ---------------------------------------------------------------------------------------------
@@ -99,6 +103,7 @@
 
 import {
   CHEST_REELS,
+  CHOOSE_REROLL,
   MAX_PASSIVES,
   MAX_WEAPONS,
   OFFER_CREDITS,
@@ -116,6 +121,7 @@ import {
   EV_CHEST_OPENED,
   EV_LEVEL_UP,
   EV_PHASE_CHANGED,
+  EV_UPGRADE_REROLLED,
   EV_UPGRADE_TAKEN,
   pushEvent,
 } from '../events/ring.js';
@@ -223,6 +229,10 @@ function openCardIfOwed(world: World): void {
  */
 function serveCard(world: World): void {
   const lu = world.levelUp;
+  if (world.input.chooseIndex === CHOOSE_REROLL) {
+    tryReroll(world);
+    return;
+  }
   if (!applyChoice(world, world.input.chooseIndex)) return;
 
   lu.pending--;
@@ -237,6 +247,31 @@ function serveCard(world: World): void {
   lu.offers.fill(-1);
   world.phase = RUN_PHASE_RUNNING;
   pushEvent(world.events, EV_PHASE_CHANGED, world.tick, RUN_PHASE_RUNNING, 0, 0, 0);
+}
+
+/**
+ * REROLL: throw this card away and deal another from the same pool.
+ *
+ * It spends nothing but the reroll, and in particular it does NOT consume the pending level-up -
+ * the card is still owed after it, which is the whole point. The new offers are drawn from
+ * `rng.upgrade` exactly as the first set was, so a reroll advances that stream by one card's worth
+ * of draws and is fully part of the replay.
+ *
+ * REFUSED, RATHER THAN WASTED, ON THE CONSOLATION PAIR. Once the pool is empty every deal is the
+ * same two cards, so spending the run's only reroll on one would take something from the player
+ * and hand back what they already had. Refusing costs nothing: the card stays open and the reroll
+ * stays in the pocket.
+ */
+function tryReroll(world: World): void {
+  const lu = world.levelUp;
+  if (lu.offerCount > 0 && lu.offers[0] === OFFER_HEAL) return; // nothing left to deal
+  if (!world.infiniteRerolls) {
+    if (lu.rerolls <= 0) return;
+    lu.rerolls--;
+  }
+  lu.rerollsUsed++;
+  generateOffers(world);
+  pushEvent(world.events, EV_UPGRADE_REROLLED, world.tick, lu.rerolls, lu.rerollsUsed, 0, 0);
 }
 
 /**

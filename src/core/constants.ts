@@ -129,6 +129,20 @@ export const UPGRADE_OFFER_COUNT = 3;
  */
 export const OFFER_HEAL = -2;
 export const OFFER_CREDITS = -3;
+
+/**
+ * REROLL, expressed as a `chooseIndex` rather than as a field of its own.
+ *
+ * `InputFrame.chooseIndex` is already "what the player did to the card this tick", and a reroll is
+ * exactly that - one more thing a thumb can do to the card. Sending it down the same wire keeps
+ * InputFrame flat, so a run is still a seed plus a list of frames and the reroll is replayed with
+ * everything else. A second field would have been a second thing every recorder, every fixture and
+ * every bot had to remember to carry.
+ *
+ * It sits below -1 (which means "no choice this tick") in the same negative space the consolation
+ * offers use, and cannot collide with a slot index, which is always 0..offerCount.
+ */
+export const CHOOSE_REROLL = -4;
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;
 /** Length of PlayerState.traitScratch. Slot meanings are documented per trait in data/traits.ts. */

@@ -266,6 +266,14 @@ async function boot(): Promise<void> {
   });
   const pauseOverlay = buildPauseOverlay(
     () => togglePause(),
+    // The cheat is remembered between runs AND pushed into the world that is open right now, so
+    // throwing the switch mid-card takes effect on the card you are looking at.
+    state.settings.infiniteRerolls,
+    (on) => {
+      state.settings.infiniteRerolls = on;
+      state.saveSettings();
+      sim.world.infiniteRerolls = on;
+    },
     // Abandoning goes to the TITLE, not to the mech picker. Quitting a run is a decision to stop
     // playing this one, which is not the same as a decision to start another.
     () => showScreen('title'),
@@ -328,6 +336,7 @@ async function boot(): Promise<void> {
     state.heroId = heroId;
     state.seed = seed;
     sim = new Simulation({ seed, heroId, runLengthSec: RUN_LENGTH_SEC });
+    sim.world.infiniteRerolls = state.settings.infiniteRerolls;
     pendingChoice = -1;
     lastDamageTaken = 0;
 
@@ -625,6 +634,8 @@ async function boot(): Promise<void> {
 
 function buildPauseOverlay(
   onResume: () => void,
+  infiniteRerolls: boolean,
+  onInfiniteRerolls: (on: boolean) => void,
   onQuit: () => void,
   onChangelog: () => void,
 ): { element: HTMLDivElement } {
@@ -658,7 +669,25 @@ function buildPauseOverlay(
   quit.textContent = 'Abandon run';
   quit.addEventListener('click', onQuit);
 
-  el.append(title, resume, changes, quit);
+  // THE ONE CHEAT WITH A SWITCH ON IT, and it lives here rather than in Settings because it is
+  // only meaningful mid-run: this is the menu you are already in when a card you did not want
+  // has just come up.
+  let cheat = infiniteRerolls;
+  const rerolls = document.createElement('button');
+  rerolls.type = 'button';
+  rerolls.className = 'btn';
+  const paintCheat = (): void => {
+    rerolls.textContent = `Infinite rerolls: ${cheat ? 'ON' : 'OFF'}`;
+    rerolls.setAttribute('aria-pressed', cheat ? 'true' : 'false');
+  };
+  paintCheat();
+  rerolls.addEventListener('click', () => {
+    cheat = !cheat;
+    paintCheat();
+    onInfiniteRerolls(cheat);
+  });
+
+  el.append(title, resume, changes, rerolls, quit);
   return { element: el };
 }
 

@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CHOOSE_REROLL,
   DT,
   MAX_PASSIVES,
   MAX_WEAPONS,
@@ -761,6 +762,64 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     expect(w.player.level).toBe(level + 1);
     choose(w, 0);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
+  });
+});
+
+describe('reroll', () => {
+  it('re-deals the card, spends one, and refuses once the run is out', () => {
+    const w = makeWorld(7);
+    expect(w.levelUp.rerolls).toBe(DEFAULT_TUNING.xp.rerollsPerRun);
+
+    bank(w, 20);
+    expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+    const before = offersOf(w).join(',');
+    const pending = w.levelUp.pending;
+
+    choose(w, CHOOSE_REROLL);
+    // THE LEVEL IS STILL OWED. A reroll deals a new card; it does not answer the old one.
+    expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+    expect(w.levelUp.pending).toBe(pending);
+    expect(w.levelUp.picksTaken).toBe(0);
+    expect(w.levelUp.rerolls).toBe(0);
+    expect(w.levelUp.rerollsUsed).toBe(1);
+    // The pool is fourteen cards deep, so a re-deal from a different point in the stream landing
+    // on the identical three would be a coincidence worth knowing about.
+    expect(offersOf(w).join(',')).not.toBe(before);
+
+    // Out of rerolls: the card is untouched and nothing is spent.
+    const held = offersOf(w).join(',');
+    choose(w, CHOOSE_REROLL);
+    expect(offersOf(w).join(',')).toBe(held);
+    expect(w.levelUp.rerollsUsed).toBe(1);
+
+    // And the card still closes on an ordinary pick.
+    choose(w, 0);
+    expect(w.phase).toBe(RUN_PHASE_RUNNING);
+    expect(w.levelUp.picksTaken).toBe(1);
+  });
+
+  it('never runs out with the cheat on, and never fires on the consolation pair', () => {
+    const w = makeWorld(7);
+    w.infiniteRerolls = true;
+    bank(w, 20);
+
+    for (let i = 0; i < 5; i++) choose(w, CHOOSE_REROLL);
+    expect(w.levelUp.rerolls).toBe(DEFAULT_TUNING.xp.rerollsPerRun); // never decremented
+    expect(w.levelUp.rerollsUsed).toBe(5);
+    expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+
+    // With the pool empty every deal is the same two cards, so the reroll is refused even here -
+    // the cheat cannot conjure an upgrade that does not exist.
+    choose(w, 0);
+    for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+      w.levelUp.stacks[i] = UPGRADE_CATALOG[i].maxStacks;
+    }
+    bank(w, 5000);
+    expect(w.levelUp.offers[0]).toBe(OFFER_HEAL);
+    const used = w.levelUp.rerollsUsed;
+    choose(w, CHOOSE_REROLL);
+    expect(w.levelUp.rerollsUsed).toBe(used);
+    expect(w.levelUp.offers[0]).toBe(OFFER_HEAL);
   });
 });
 

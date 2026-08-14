@@ -86,6 +86,14 @@ export const EV_CHEST_CLOSED = 23;
  */
 export const EV_BARREL_GREW = 24;
 
+/**
+ * A level-up card was REROLLED. Payload: (rerolls left after the spend, rerollsUsed, 0, 0).
+ *
+ * Carries what is LEFT rather than what was spent, because that is the number the HUD and the
+ * summary both want and the one a timeline reader is actually asking about.
+ */
+export const EV_UPGRADE_REROLLED = 25;
+
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
   'ENEMY_SPAWNED',
@@ -113,6 +121,7 @@ export const EVENT_NAMES: readonly string[] = [
   'CHEST_OPENED',
   'CHEST_CLOSED',
   'BARREL_GREW',
+  'UPGRADE_REROLLED',
 ];
 
 export interface EventRing {

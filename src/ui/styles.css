@@ -675,6 +675,15 @@ body {
   gap: 10px;
 }
 
+/* Deliberately quieter than the cards and full width beneath them: it is the way OUT of this card,
+   not one of the things on it. */
+.levelup__reroll {
+  pointer-events: auto;
+  align-self: stretch;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
 .card {
   pointer-events: auto;
   display: block;

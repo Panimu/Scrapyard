@@ -40,6 +40,12 @@ export interface Settings {
   /** Whether the on-device debug HUD is showing. Safari Web Inspector needs a Mac we do not have. */
   debug: boolean;
   /**
+   * INFINITE LEVEL-UP REROLLS. A cheat, kept here beside `debug` because it is the same kind of
+   * thing: a switch the player throws for themselves, remembered between runs so it does not have
+   * to be found again every time.
+   */
+  infiniteRerolls: boolean;
+  /**
    * CREDITS BANKED ACROSS EVERY RUN EVER PLAYED. The one number in this file that is a game
    * mechanic rather than a preference.
    *
@@ -59,7 +65,13 @@ export const MAX_BANKED_CREDITS = 9_999_999;
 
 const STORAGE_KEY = 'scrapyard.settings.v1';
 
-const DEFAULTS: Settings = { lastHeroId: 0, dprCap: 2, debug: false, credits: 0 };
+const DEFAULTS: Settings = {
+  lastHeroId: 0,
+  dprCap: 2,
+  debug: false,
+  infiniteRerolls: false,
+  credits: 0,
+};
 
 function loadSettings(): Settings {
   try {
@@ -73,6 +85,7 @@ function loadSettings(): Settings {
       lastHeroId: clampInt(parsed.lastHeroId, 0, HERO_CATALOG.length - 1, DEFAULTS.lastHeroId),
       dprCap: parsed.dprCap === 1 ? 1 : 2,
       debug: parsed.debug === true,
+      infiniteRerolls: parsed.infiniteRerolls === true,
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
       // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
       credits: clampInt(parsed.credits, 0, MAX_BANKED_CREDITS, 0),

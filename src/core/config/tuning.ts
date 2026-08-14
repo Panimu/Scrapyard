@@ -162,6 +162,12 @@ export interface XpTuning {
   readonly tier2Cap: number;
   readonly tier3Base: number;
   readonly tier3Step: number;
+  /**
+   * REROLLS THE RUN STARTS WITH, spent one per re-dealt level-up card. One, on purpose: a reroll
+   * you can only use once is a decision about WHEN, and a decision about when is the whole point
+   * of the mechanic. Make it three and it becomes a way to never see a card you dislike.
+   */
+  readonly rerollsPerRun: number;
 }
 
 export interface PickupTuning {
@@ -285,6 +291,7 @@ const XP: XpTuning = {
   tier2Cap: 25,
   tier3Base: 748,
   tier3Step: 60,
+  rerollsPerRun: 1,
 };
 
 const PICKUPS: PickupTuning = {

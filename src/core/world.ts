@@ -264,7 +264,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       offers: new Int32Array(UPGRADE_OFFER_COUNT).fill(-1),
       stacks: new Uint8Array(catalogs.upgrades.length),
       picksTaken: 0,
+      rerolls: config.tuning.xp.rerollsPerRun,
+      rerollsUsed: 0,
     },
+    infiniteRerolls: false,
     stats: {
       kills: 0,
       killsByArchetype: new Uint32Array(ARCHETYPE_COUNT),

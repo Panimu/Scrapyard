@@ -34,6 +34,7 @@
  */
 
 import {
+  CHOOSE_REROLL,
   OFFER_CREDITS,
   OFFER_HEAL,
   UPGRADE_OFFER_COUNT,
@@ -66,6 +67,7 @@ export class LevelUpOverlay {
   /** The "Tier 4 of 7" line. Separate from the name so the two can be styled independently. */
   private readonly tiers: HTMLDivElement[] = [];
   private readonly title: HTMLDivElement;
+  private readonly reroll: HTMLButtonElement;
 
   /** Identifies the offer set currently on screen, so a re-render is skipped when nothing moved. */
   private signature = '';
@@ -110,6 +112,15 @@ export class LevelUpOverlay {
       this.stacks.push(card.querySelector('[data-stacks]') as HTMLSpanElement);
     }
 
+    // REROLL SITS BELOW THE CARDS, not among them. It is not a fourth option - taking it does not
+    // spend the level - and a thumb reaching for the bottom card must not find it by accident.
+    const reroll = document.createElement('button');
+    reroll.type = 'button';
+    reroll.className = 'btn levelup__reroll';
+    reroll.addEventListener('click', () => this.onChoose(CHOOSE_REROLL));
+    el.appendChild(reroll);
+    this.reroll = reroll;
+
     this.element = el;
   }
 
@@ -129,7 +140,9 @@ export class LevelUpOverlay {
     // COUNT IS PART OF THE SIGNATURE. Without it, a card showing two offers could match the cache
     // of an earlier card whose first two offers were the same, and `render` would be skipped -
     // leaving the third card from the previous level-up on screen. That is the stale card.
-    let sig = `${lv.picksTaken}|${world.player.level}|${count}`;
+    // rerollsUsed is in here because a reroll can legitimately deal the SAME three cards, and the
+    // button's own label changes even when the offers do not.
+    let sig = `${lv.picksTaken}|${lv.rerollsUsed}|${world.player.level}|${count}`;
     for (let i = 0; i < count; i++) sig += `|${lv.offers[i]}`;
     if (sig !== this.signature || this.element.hidden) {
       this.signature = sig;
@@ -146,6 +159,14 @@ export class LevelUpOverlay {
     const lv = world.levelUp;
     const pending = lv.pending;
     this.title.textContent = pending > 1 ? `Choose one (${pending} pending)` : 'Choose one';
+
+    // THE REROLL BUTTON. Hidden rather than disabled when there is nothing it could do: with the
+    // pool empty every deal is the same consolation pair, so the sim refuses the reroll outright
+    // and a button that visibly does nothing when tapped is worse than no button.
+    const dealable = count > 0 && lv.offers[0] !== OFFER_HEAL;
+    const infinite = world.infiniteRerolls;
+    this.reroll.hidden = !dealable || (!infinite && lv.rerolls <= 0);
+    this.reroll.textContent = infinite ? 'Reroll (∞)' : `Reroll (${lv.rerolls})`;
 
     for (let i = 0; i < this.cards.length; i++) {
       if (i >= count) {
