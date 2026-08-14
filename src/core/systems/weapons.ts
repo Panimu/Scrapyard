@@ -719,9 +719,19 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   }
 
   // THE CHAIN. Only a weapon whose ascension has been taken gets here - see WeaponDef.chainsFrom.
+  //
+  // ROOTED AT THE MECH, AND ONLY THERE. The chain is an extension of the shot the player is
+  // already taking: it hangs off the body this beam is burning, which hangs off the muzzle. It is
+  // never rooted anywhere else, and if there is no first body there is no chain - a chain has to
+  // start at the player or it is a beam that came from nothing.
   const chainsFrom = def.chainsFrom ?? 0;
-  if (hit >= 0 && chainsFrom > 0 && inst.level >= chainsFrom) {
-    chainFrom(world, weaponIdx, stats, hit, reach, damage);
+  if (
+    hit >= 0 &&
+    (world.enemies.flags[hit] & ENEMY_FLAG_DEAD) === 0 &&
+    chainsFrom > 0 &&
+    inst.level >= chainsFrom
+  ) {
+    chainFrom(world, weaponIdx, stats, hit, px, py, aim, endT, damage);
   }
 
   // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
@@ -782,7 +792,10 @@ function chainFrom(
   weaponIdx: number,
   stats: WeaponStats,
   firstHit: number,
-  firstReach: number,
+  px: number,
+  py: number,
+  aim: Vec2,
+  endT: number,
   damage: number,
 ): void {
   const p = world.enemies;
@@ -790,9 +803,16 @@ function chainFrom(
   chain[0] = firstHit;
   let links = 1;
 
-  let cx = p.x[firstHit];
-  let cy = p.y[firstHit];
-  let budget = stats.range - firstReach;
+  // THE FIRST JUMP LEAVES FROM WHERE THE BEAM STOPPED, not from the body's centre. The primary
+  // segment is drawn to the ray's contact point - the front of the body - so starting the chain at
+  // the centre left a body-radius gap between the two, and a chain that visibly did not join onto
+  // the beam feeding it. Measured on a swarmer that was thirteen units of daylight.
+  let cx = px + aim.x * endT;
+  let cy = py + aim.y * endT;
+
+  // Range spent so far is the distance the beam has actually travelled from the MECH, which is
+  // exactly `endT`. Everything left is the chain's to spend.
+  let budget = stats.range - endT;
 
   while (links < MAX_CHAIN_LINKS && budget > 0) {
     // Nearest live body inside what is left of the beam, skipping everything already burned.

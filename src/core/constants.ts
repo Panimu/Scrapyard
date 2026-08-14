@@ -111,6 +111,24 @@ export const MAX_CHAIN_LINKS = 10;
  */
 export const MAX_BEAMS_PER_TICK = MAX_WEAPONS * MAX_CHAIN_LINKS;
 export const UPGRADE_OFFER_COUNT = 3;
+
+/**
+ * CONSOLATION OFFERS - what a level-up card or a Cyber Chest hands over once the run has taken
+ * every upgrade it can.
+ *
+ * They are NEGATIVE SENTINELS rather than catalog entries, and that is the whole design. A real
+ * card would need a weight, a tier ladder, an icon in the deck and a rule keeping it out of every
+ * ordinary draw; a sentinel needs one branch at the point of application. Nothing else in the
+ * game can produce a negative offer - every real one is a catalog index - so the two spaces
+ * cannot collide.
+ *
+ * WHY THEY EXIST AT ALL. The pool is 14 cards x 7 tiers and a long run genuinely empties it. The
+ * old behaviour was to open NO card and silently drop the pending level-ups, which is correct and
+ * safe and reads exactly like the game breaking: you level up and nothing happens. A weak heal or
+ * a handful of credits is not a reward, it is an acknowledgement.
+ */
+export const OFFER_HEAL = -2;
+export const OFFER_CREDITS = -3;
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;
 /** Length of PlayerState.traitScratch. Slot meanings are documented per trait in data/traits.ts. */

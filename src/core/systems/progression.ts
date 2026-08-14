@@ -46,9 +46,12 @@
  *   1 or 2 left     `offerCount` is 1 or 2 and the unused `offers` slots hold -1. The card shows
  *                   what exists. The UI must read offerCount, not assume 3 - which is why
  *                   offerCount exists as a separate field at all.
- *   0 left          NO card is opened. The pending level-ups are dropped and the run continues at
- *                   the new level. Opening a card with nothing on it would soft-lock the run
- *                   forever, since the only exit from LEVEL_UP is a valid chooseIndex.
+ *   0 left          THE CONSOLATION PAIR: a small repair (OFFER_HEAL) and a few credits
+ *                   (OFFER_CREDITS), as two cards. They are negative sentinels rather than catalog
+ *                   indices, take no stack, and cost one pick - so the pool stays empty and every
+ *                   later level-up offers the same pair. A card with nothing on it would soft-lock
+ *                   the run forever, since the only exit from LEVEL_UP is a valid chooseIndex;
+ *                   this pair means that card can never be empty.
  *
  * ---------------------------------------------------------------------------------------------
  * A WEAPON CARD IS UNLOCK-THEN-LEVEL. STACKS TAKEN IS THE WEAPON'S TIER.
@@ -95,7 +98,13 @@
  */
 
 import {
-  CHEST_REELS, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../constants.js';
+  CHEST_REELS,
+  MAX_PASSIVES,
+  MAX_WEAPONS,
+  OFFER_CREDITS,
+  OFFER_HEAL,
+  UPGRADE_OFFER_COUNT,
+} from '../constants.js';
 import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
@@ -197,7 +206,9 @@ function openCardIfOwed(world: World): void {
   if (lu.pending <= 0) return;
 
   if (generateOffers(world) === 0) {
-    // Nothing left in the pool. Take the levels, skip the ceremony - never open an empty card.
+    // Unreachable while generateOffers falls back to the consolation pair, and kept as the guard
+    // that makes that fallback load-bearing: an empty card has no valid chooseIndex, so if one is
+    // ever produced the levels are taken silently rather than freezing the run.
     lu.pending = 0;
     return;
   }
@@ -241,7 +252,9 @@ function applyChoice(world: World, choiceIndex: number): boolean {
   const lu = world.levelUp;
   if (choiceIndex < 0 || choiceIndex >= lu.offerCount) return false;
   const idx = lu.offers[choiceIndex];
-  if (idx < 0) return false;
+  // -1 is an EMPTY slot; the consolation sentinels are negative too but are real offers, so the
+  // guard has to name the empty case rather than reject the whole negative half of the range.
+  if (idx === -1) return false;
   return applyUpgrade(world, idx, choiceIndex);
 }
 
@@ -259,6 +272,28 @@ function applyChoice(world: World, choiceIndex: number): boolean {
  */
 function applyUpgrade(world: World, idx: number, slot: number): boolean {
   const lu = world.levelUp;
+
+  // THE CONSOLATION OFFERS. Applied here rather than at the call site because every route into an
+  // upgrade - a card, a chest grant, a tier 8 - comes through this function, so one branch covers
+  // all of them and none can forget. They take no stack, re-resolve nothing, and cost a pick.
+  if (idx === OFFER_HEAL) {
+    const t = world.config.tuning.pickups;
+    const player = world.player;
+    const heal = Math.max(1, Math.round(player.stats.maxHp * t.consolationHealFrac));
+    const hp = player.hp + heal;
+    player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;
+    lu.picksTaken++;
+    pushEvent(world.events, EV_UPGRADE_TAKEN, world.tick, idx, slot, heal, 0);
+    return true;
+  }
+  if (idx === OFFER_CREDITS) {
+    const t = world.config.tuning.pickups;
+    world.stats.credits += t.consolationCredits;
+    lu.picksTaken++;
+    pushEvent(world.events, EV_UPGRADE_TAKEN, world.tick, idx, slot, t.consolationCredits, 0);
+    return true;
+  }
+
   const def = world.upgradeCatalog[idx];
   if (def === undefined) return false;
   // The ceiling is maxStacks, EXCEPT for a weapon whose ascension the run has earned - see
@@ -495,6 +530,16 @@ function generateOffers(world: World): number {
     }
 
     lu.offers[filled++] = chosen;
+  }
+
+  // NOTHING LEFT IN THE POOL. The old answer was to open no card at all and drop the pending
+  // level-ups, which is safe and reads exactly like the game failing to give you your level. Two
+  // consolation offers instead - see OFFER_HEAL / OFFER_CREDITS. They are only ever reached when
+  // `filled` is zero, so a card that could show one real upgrade still shows only that.
+  if (filled === 0) {
+    lu.offers[0] = OFFER_HEAL;
+    lu.offers[1] = OFFER_CREDITS;
+    filled = 2;
   }
 
   lu.offerCount = filled;
@@ -748,8 +793,24 @@ export function openChest(world: World): void {
   }
 
   if (pool.length === 0) {
+    // EVERY UPGRADE IN THE GAME IS TAKEN. A boss must still be worth something, so the chest pays
+    // the same consolation pair a level-up does - both of them, since a chest is a bigger event
+    // than a card and the player does not get to choose out of it.
+    chest.grants[0] = OFFER_HEAL;
+    chest.grants[1] = OFFER_CREDITS;
+    chest.payout = 2;
+    chest.opened++;
+    world.stats.chests++;
     world.phase = RUN_PHASE_CHEST;
-    pushEvent(world.events, EV_CHEST_OPENED, world.tick, world.player.x, world.player.y, 0, 0);
+    pushEvent(
+      world.events,
+      EV_CHEST_OPENED,
+      world.tick,
+      world.player.x,
+      world.player.y,
+      chest.payout,
+      chest.opened,
+    );
     return;
   }
 

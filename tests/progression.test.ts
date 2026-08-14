@@ -12,7 +12,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { DT, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../src/core/constants.js';
+import {
+  DT,
+  MAX_PASSIVES,
+  MAX_WEAPONS,
+  OFFER_CREDITS,
+  OFFER_HEAL,
+  UPGRADE_OFFER_COUNT,
+} from '../src/core/constants.js';
 import { DEFAULT_TUNING, xpToNextLevel } from '../src/core/config/tuning.js';
 import {
   CANNON,
@@ -652,19 +659,34 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     expect(w.levelUp.offers[2]).toBe(-1);
   });
 
-  it('grants the level without a card when nothing is left, rather than locking', () => {
+  it('offers the consolation pair when the pool is empty, rather than nothing at all', () => {
     const catalogs = fixtureCatalogs(PLAIN_HERO, FIXTURE_UPGRADES);
     const w = makeWorld(1, catalogs);
     for (let i = 0; i < FIXTURE_UPGRADES.length; i++) {
       w.levelUp.stacks[i] = FIXTURE_UPGRADES[i].maxStacks;
     }
-
     bank(w, 5000);
 
-    expect(w.phase).toBe(RUN_PHASE_RUNNING);
-    expect(w.levelUp.offerCount).toBe(0);
-    expect(w.levelUp.pending).toBe(0);
-    expect(w.player.level).toBeGreaterThan(1); // the levels were still granted
+    // A card OPENS - it used to grant the level in silence, which reads as the game failing to
+    // give you your level-up.
+    expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+    expect(w.levelUp.offerCount).toBe(2);
+    expect(w.levelUp.offers[0]).toBe(OFFER_HEAL);
+    expect(w.levelUp.offers[1]).toBe(OFFER_CREDITS);
+
+    // And both do something. Neither takes a stack, so the pool stays empty and the next level-up
+    // offers the same pair - which is the no-lock guarantee, now with a reward attached. The
+    // repair is a fraction of MAX hp and cannot overheal, so the hull has to be hurt first or
+    // the clamp hides the grant.
+    w.player.hp = 1;
+    const before = w.player.hp;
+    choose(w, 0);
+    expect(w.player.hp).toBeGreaterThan(before);
+
+    bank(w, 5000);
+    const credits = w.stats.credits;
+    choose(w, 1);
+    expect(w.stats.credits).toBeGreaterThan(credits);
   });
 
   /**
@@ -695,8 +717,11 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     // reachable pool is (5 + 5) cards' worth of tiers, less the one the hero was seeded with.
     expect(TOTAL_AVAILABLE_STACKS).toBe(UPGRADE_CATALOG.length * WEAPON_MAX_TIER);
     const reachable = (MAX_WEAPONS + MAX_PASSIVES) * WEAPON_MAX_TIER;
-    expect(picks).toBe(reachable - seeded);
-    expect(stackTotal(w)).toBe(picks + seeded); // no pick vanished
+    // STACKS, not picks. Once the pool is empty the card keeps opening with the consolation pair
+    // (OFFER_HEAL / OFFER_CREDITS), so `picks` runs on forever - which is the point. What must
+    // stop is the taking of TIERS, and that is what this asserts.
+    expect(stackTotal(w)).toBe(reachable);
+    expect(picks).toBeGreaterThanOrEqual(reachable - seeded);
 
     // The slot caps mean the run CANNOT max every card - it maxes exactly the ones it took, and
     // the cards it never had room for stay untouched. That partition is the property worth
@@ -721,13 +746,21 @@ describe('degrading when the pool runs out - never a soft-lock', () => {
     }
     expect(seen.size).toBe(w.weaponCount);
 
-    // And the run keeps going: more XP, more levels, no card, no lock.
-    const level = w.player.level;
-    bank(w, 100000);
+    // And the run keeps going: more XP, more levels, and a card that now offers the consolation
+    // pair rather than nothing. No lock either way - the exit is still a valid chooseIndex.
+    // The consolation pair keeps the card open for every owed level, and 100k XP owes a great many
+    // of them, so `clearAllCards` has to be run to exhaustion rather than once.
+    for (let i = 0; i < 200 && w.phase === RUN_PHASE_LEVEL_UP; i++) clearAllCards(w);
     expect(w.phase).toBe(RUN_PHASE_RUNNING);
-    expect(w.levelUp.offerCount).toBe(0);
-    expect(w.levelUp.pending).toBe(0);
-    expect(w.player.level).toBeGreaterThan(level);
+    const level = w.player.level;
+    gainOneLevel(w);
+    expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
+    expect(w.levelUp.offerCount).toBe(2);
+    expect(w.levelUp.offers[0]).toBe(OFFER_HEAL);
+    expect(w.levelUp.offers[1]).toBe(OFFER_CREDITS);
+    expect(w.player.level).toBe(level + 1);
+    choose(w, 0);
+    expect(w.phase).toBe(RUN_PHASE_RUNNING);
   });
 });
 

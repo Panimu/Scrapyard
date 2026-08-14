@@ -194,6 +194,15 @@ export interface PickupTuning {
   /** Chance a broken barrel held nothing at all. */
   readonly barrelEmptyChance: number;
   /**
+   * THE CONSOLATION PAIR, offered only once every upgrade in the game has been taken.
+   *
+   * Both are deliberately small. They exist so an emptied pool does not read as the game failing
+   * to hand out a level-up, and a run that has taken all 98 tiers does not need help - anything
+   * generous here would make emptying the pool a goal rather than an ending.
+   */
+  readonly consolationHealFrac: number;
+  readonly consolationCredits: number;
+  /**
    * Seconds of PLAYED time between one destroyed barrel standing back up somewhere in the yard.
    * 0 turns regrowth off entirely and the run is played on the barrels it started with.
    */
@@ -313,6 +322,12 @@ const PICKUPS: PickupTuning = {
   // is real without the yard visibly filling up: a barrel comes back somewhere every eighteen
   // seconds, and the player who has been standing in one place is the one who notices.
   barrelRegrowSec: 18,
+
+  // A tenth of the hull and fifteen credits. The level-up heal alone is 5% per level, so this is
+  // worth about two levels of healing - noticeable, and nowhere near a reason to want the pool
+  // empty.
+  consolationHealFrac: 0.1,
+  consolationCredits: 15,
 };
 
 export const DEFAULT_TUNING: Tuning = Object.freeze({

@@ -40,6 +40,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T21:05Z',
+    title: 'A level-up always has something on it',
+    notes: [
+      'ONCE THERE IS NOTHING LEFT TO FIT, a level-up now pays out anyway: a FIELD REPAIR that patches a tenth of your hull, or SALVAGE RIGHTS for a handful of credits. Two cards, every time, for the rest of the run. It used to hand you the level in silence, which looked exactly like the game forgetting to give you your level-up.',
+      'A CYBER CHEST DOES THE SAME. An empty pool pays a repair and some credits rather than opening on nothing.',
+      'A LEVEL-UP WITH ONLY ONE OR TWO THINGS TO OFFER now shows one or two cards. The empty slots used to keep whatever was on them last time, so a card you had already taken sat there looking pickable.',
+    ],
+  },
+  {
+    at: '2026-08-14T21:05Z',
+    title: 'The Chain Laser starts at the mech, and a tier 8 chest shows its reels',
+    notes: [
+      'THE CHAIN NOW ALWAYS HANGS OFF THE MECH. If the body it was burning dies in the same instant, the chain stops there and the laser picks a fresh target on the next shot instead of leaving a beam floating in the crowd.',
+      'A CHEST THAT IS GIVING A TIER 8 SPINS PROPERLY. The reels roll through the ordinary symbols like any other chest and all three settle on the tier 8 - it was showing three identical symbols flickering past, which gave the answer away before the first reel landed.',
+    ],
+  },
+  {
     at: '2026-08-14T19:55Z',
     title: 'Laser icons wear their own beam colour',
     notes: [

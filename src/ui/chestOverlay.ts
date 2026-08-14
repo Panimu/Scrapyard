@@ -67,8 +67,14 @@
  */
 
 import { upgradeIconAt, upgradeNameAt, type World } from '../core/index.js';
-import { WEAPON_ASCENDED_TIER } from '../core/index.js';
+import { OFFER_CREDITS, OFFER_HEAL, WEAPON_ASCENDED_TIER } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
+
+/** The two non-upgrade grants a chest can pay once the pool is empty. Sprite keys, not ids. */
+const FILLER: Record<number, { name: string; icon: string }> = {
+  [OFFER_HEAL]: { name: 'Field Repair', icon: 'cons_spanner' },
+  [OFFER_CREDITS]: { name: 'Salvage Rights', icon: 'cons_coin1' },
+};
 
 /** Tiles above the result in each strip, BEFORE the per-reel stretch below. */
 const STRIP_LENGTH = 14;
@@ -208,23 +214,22 @@ export class ChestOverlay {
     const chest = world.chest;
     const catalog = world.upgradeCatalog;
     /**
-     * AN ASCENSION IS NOT A SPIN, and the machine should not pretend otherwise. All three reels
-     * hold the same symbol because the simulation put it there - there was never anything else it
-     * could land on - so the decoys are that symbol too. A machine that blurred past the player's
-     * other guns before landing on a foregone conclusion would be theatre about a decision that
-     * did not happen.
+     * All three reels LAND on the same tier-8 symbol because the simulation put it there - there
+     * was never anything else this chest could pay. What travels past on the way is still the
+     * player's ordinary loadout, so the machine reads as a machine right up to the moment all
+     * three windows agree on a symbol that is not in the deck.
      */
     const ascending = chest.ascension >= 0;
 
     // The loadout, exactly as openChest built it: held, and not yet maxed. Recomputed here rather
     // than published on World because it is three lines and the alternative is a second array to
     // keep in step with the one the simulation already has.
+    // THE DECOYS ARE THE ORDINARY LOADOUT, EVEN ON AN ASCENSION. The reels have to look like a
+    // machine that could have landed anywhere; three tier-8 symbols blurring past and then
+    // stopping on a tier-8 symbol is not a spin, it is a slideshow of the answer. What makes an
+    // ascension special is where it STOPS, not what it travels through.
     const pool: string[] = [];
-    if (ascending) {
-      const def = catalog[chest.ascension];
-      if (def !== undefined) pool.push(upgradeIconAt(def, WEAPON_ASCENDED_TIER));
-    }
-    for (let i = 0; i < catalog.length && !ascending; i++) {
+    for (let i = 0; i < catalog.length; i++) {
       const def = catalog[i];
       if (def === undefined) continue;
       const stacks = world.levelUp.stacks[i];
@@ -420,9 +425,12 @@ export class ChestOverlay {
     const n = chest.payout;
 
     const ascended = chest.ascension >= 0 ? catalog[chest.ascension] : undefined;
+    const salvageOnly = n > 0 && FILLER[chest.grants[0]] !== undefined;
     this.payoutEl.textContent =
       ascended !== undefined
         ? `TIER 8 — ${upgradeNameAt(ascended, WEAPON_ASCENDED_TIER)}`
+        : salvageOnly
+          ? 'NOTHING LEFT TO FIT — SALVAGE'
         : n > 0
           ? `${PAYOUT_WORD[n] ?? 'HAUL'} — ${n} power-up${n === 1 ? '' : 's'}`
           : 'Empty';
@@ -432,7 +440,25 @@ export class ChestOverlay {
     // too, because three of these arrive at once and none of them was chosen.
     this.grantsEl.innerHTML = '';
     for (let i = 0; i < n; i++) {
-      const def = catalog[chest.grants[i]];
+      const grant = chest.grants[i];
+      // The consolation pair - see OFFER_HEAL / OFFER_CREDITS. A chest that has nothing left to
+      // give still has to give something, and it says what plainly rather than showing a blank.
+      const filler = FILLER[grant];
+      if (filler !== undefined) {
+        const row = document.createElement('div');
+        row.className = 'chest__grant chest__grant--passive';
+        const img = document.createElement('img');
+        img.src = spriteUrl(filler.icon);
+        img.alt = '';
+        row.appendChild(img);
+        const label = document.createElement('span');
+        label.textContent = filler.name;
+        row.appendChild(label);
+        this.grantsEl.appendChild(row);
+        continue;
+      }
+
+      const def = catalog[grant];
       if (def === undefined) continue;
       const tier = ascended !== undefined ? WEAPON_ASCENDED_TIER : 0;
       const row = document.createElement('div');

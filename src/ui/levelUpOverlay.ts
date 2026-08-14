@@ -33,7 +33,28 @@
  * (what the gun IS) rather than the flat "Unlock." tier string, and a visibly different card.
  */
 
-import { UPGRADE_OFFER_COUNT, upgradeNameAt, type World } from '../core/index.js';
+import {
+  OFFER_CREDITS,
+  OFFER_HEAL,
+  UPGRADE_OFFER_COUNT,
+  upgradeNameAt,
+  type World,
+} from '../core/index.js';
+
+/**
+ * The two offers that are not upgrades, keyed by their sentinel id. They only ever appear on a
+ * card once every real upgrade has been taken - see OFFER_HEAL / OFFER_CREDITS.
+ */
+const FILLER: Record<number, { name: string; desc: string }> = {
+  [OFFER_HEAL]: {
+    name: 'Field Repair',
+    desc: 'Patch the hull. There is nothing left to bolt onto it.',
+  },
+  [OFFER_CREDITS]: {
+    name: 'Salvage Rights',
+    desc: 'Strip what you can and bank it. It will be worth something between runs.',
+  },
+};
 
 export class LevelUpOverlay {
   readonly element: HTMLDivElement;
@@ -105,7 +126,10 @@ export class LevelUpOverlay {
     const lv = world.levelUp;
     const count = Math.min(lv.offerCount, UPGRADE_OFFER_COUNT);
 
-    let sig = `${lv.picksTaken}|${world.player.level}`;
+    // COUNT IS PART OF THE SIGNATURE. Without it, a card showing two offers could match the cache
+    // of an earlier card whose first two offers were the same, and `render` would be skipped -
+    // leaving the third card from the previous level-up on screen. That is the stale card.
+    let sig = `${lv.picksTaken}|${world.player.level}|${count}`;
     for (let i = 0; i < count; i++) sig += `|${lv.offers[i]}`;
     if (sig !== this.signature || this.element.hidden) {
       this.signature = sig;
@@ -125,18 +149,40 @@ export class LevelUpOverlay {
 
     for (let i = 0; i < this.cards.length; i++) {
       if (i >= count) {
+        // Emptied as well as hidden. A hidden card keeps its old text, and any future layout that
+        // shows a card without going through `render` would show the previous level's offer.
         this.cards[i].hidden = true;
+        this.names[i].textContent = '';
+        this.tiers[i].textContent = '';
+        this.descs[i].textContent = '';
+        this.stacks[i].textContent = '';
         continue;
       }
       const defId = lv.offers[i];
-      const def = world.upgradeCatalog[defId];
       const card = this.cards[i];
-      if (def === undefined) {
-        // The sim promised an offer we cannot name. Show the raw id rather than silently
-        // swallowing it: an empty card is a bug that hides itself.
+
+      // THE CONSOLATION OFFERS. Negative ids are not catalog indices - see OFFER_HEAL /
+      // OFFER_CREDITS - and only appear once the run has taken every upgrade in the game.
+      const filler = FILLER[defId];
+      if (filler !== undefined) {
         card.hidden = false;
-        card.classList.remove('card--unlock', 'card--weapon', 'card--passive');
-        this.names[i].textContent = `Upgrade #${defId}`;
+        card.classList.remove('card--unlock');
+        card.classList.toggle('card--weapon', false);
+        card.classList.toggle('card--passive', true);
+        this.names[i].textContent = filler.name;
+        this.stacks[i].textContent = 'SALVAGE';
+        this.tiers[i].textContent = '';
+        this.descs[i].textContent = filler.desc;
+        continue;
+      }
+
+      const def = world.upgradeCatalog[defId];
+      if (def === undefined) {
+        // The sim promised an offer we cannot name. HIDDEN rather than shown as a raw id: an
+        // unnameable card is never a real choice, and leaving one on screen was how a stale card
+        // from the previous level-up survived into a card that had fewer offers than the last.
+        card.hidden = true;
+        this.names[i].textContent = '';
         this.tiers[i].textContent = '';
         this.descs[i].textContent = '';
         this.stacks[i].textContent = '';
