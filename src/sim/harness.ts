@@ -288,6 +288,26 @@ function printSummary(
   console.log(
     `  shots             ${s.shotsFired} fired, ${s.shotsHit} hit (${fixed(s.shotsFired > 0 ? (100 * s.shotsHit) / s.shotsFired : 0, 1)}%)`,
   );
+  // WHERE THE DAMAGE CAME FROM. Printed only when there is more than one source, because on a
+  // single-weapon run the line would just restate `damage dealt` under a different heading.
+  const sources: { name: string; amount: number }[] = [];
+  for (let i = 0; i < s.damageByWeapon.length; i++) {
+    if (s.damageByWeapon[i] > 0) {
+      sources.push({ name: world.weaponCatalog[i]?.name ?? `weapon ${i}`, amount: s.damageByWeapon[i] });
+    }
+  }
+  if (s.damageByShield > 0) sources.push({ name: 'Energy Shield', amount: s.damageByShield });
+  sources.sort((a, b) => b.amount - a.amount);
+  if (sources.length > 1) {
+    const total = s.damageDealt > 0 ? s.damageDealt : 1;
+    console.log('  damage by source');
+    for (const src of sources) {
+      const share = (src.amount / total) * 100;
+      console.log(
+        `    ${src.name.padEnd(17)}${fixed(src.amount, 0).padStart(8)}${fixed(share, 1).padStart(7)}%`,
+      );
+    }
+  }
   console.log(`  gems              ${s.gemsCollected}`);
   console.log(`  peak enemies      ${s.peakEnemies}`);
   console.log(`  level timeline    ${levelTimes.map((t) => clock(t * DT)).join(' ') || '-'}`);

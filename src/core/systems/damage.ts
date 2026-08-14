@@ -105,6 +105,27 @@ import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
 import { KILL_REASON_KILLED } from './enemyAI.js';
 
+/**
+ * Credits `amount` of EFFECTIVE damage to the weapon in loadout slot `slot`, and to the run total.
+ *
+ * ONE FUNCTION, CALLED AT EVERY SITE THAT DEALS DAMAGE, because the breakdown is only worth
+ * having if it adds up: `damageDealt` and the sum of `damageByWeapon` are written here together
+ * and can therefore never drift. A site that incremented the total by hand would produce a
+ * breakdown that silently fails to account for some of it, which is worse than no breakdown.
+ *
+ * The slot is resolved to a CATALOG index here rather than stored as a slot, so the summary can
+ * name the gun. Slots are stable for a run but mean nothing across two.
+ */
+function creditWeapon(world: World, slot: number, amount: number): void {
+  world.stats.damageDealt += amount;
+  const inst = world.weapons[slot];
+  if (inst === undefined) return;
+  const defId = inst.defId;
+  if (defId >= 0 && defId < world.stats.damageByWeapon.length) {
+    world.stats.damageByWeapon[defId] += amount;
+  }
+}
+
 export function updateDamage(world: World, dt: number): void {
   applyBeams(world);
   applyHits(world);
@@ -136,7 +157,6 @@ function applyBeams(world: World): void {
   if (beams.count === 0) return;
 
   const enemies = world.enemies;
-  const stats = world.stats;
 
   for (let i = 0; i < beams.count; i++) {
     const ed = beams.enemyDense[i];
@@ -154,8 +174,9 @@ function applyBeams(world: World): void {
     const hpBefore = enemies.hp[ed];
     enemies.hp[ed] = hpBefore - raw;
     // Effective, not raw: the last tick of a burn that overkills a 0.3 HP swarmer must not
-    // inflate the dps the harness prints.
-    stats.damageDealt += raw < hpBefore ? raw : hpBefore;
+    // inflate the dps the harness prints. The beam buffer carries the firing slot, so a laser's
+    // share of the run's damage costs one array write on top of the one already happening.
+    creditWeapon(world, beams.weaponIdx[i], raw < hpBefore ? raw : hpBefore);
 
     pushEvent(
       world.events,
@@ -195,7 +216,9 @@ function applyHits(world: World): void {
     if (ed === NO_DIRECT_HIT) {
       const r = proj.splashRadius[pd];
       const f = proj.splashFrac[pd];
-      if (r > 0 && f > 0) applySplash(world, hits.x[i], hits.y[i], r, proj.damage[pd] * f, -1);
+      if (r > 0 && f > 0) {
+        applySplash(world, hits.x[i], hits.y[i], r, proj.damage[pd] * f, -1, proj.ownerWeapon[pd]);
+      }
       // The RADIUS, not the dense index. The renderer draws a crater the size of the blast, and
       // by the time it looks the shell has been reaped - this event is the only place that number
       // survives the tick.
@@ -223,7 +246,7 @@ function applyHits(world: World): void {
     enemies.hp[ed] = hpBefore - raw;
 
     // Effective, not raw: overkill on a 3 HP swarmer must not inflate the dps the harness prints.
-    stats.damageDealt += raw < hpBefore ? raw : hpBefore;
+    creditWeapon(world, proj.ownerWeapon[pd], raw < hpBefore ? raw : hpBefore);
     // One per PASS, so a pierce-3 shell registers up to four. This is "hits landed", not
     // "shells that connected" - the harness divides by shotsFired knowing that.
     stats.shotsHit++;
@@ -248,7 +271,7 @@ function applyHits(world: World): void {
     const splashRadius = proj.splashRadius[pd];
     const splashFrac = proj.splashFrac[pd];
     if (splashRadius > 0 && splashFrac > 0) {
-      applySplash(world, hits.x[i], hits.y[i], splashRadius, raw * splashFrac, ed);
+      applySplash(world, hits.x[i], hits.y[i], splashRadius, raw * splashFrac, ed, proj.ownerWeapon[pd]);
     }
 
     // The pass is spent. Falloff decays the carried damage for whatever this shell meets next,
@@ -297,6 +320,8 @@ function applySplash(
   radius: number,
   amount: number,
   exclude: number,
+  /** Loadout slot of the weapon whose shell this was - a blast belongs to the gun that threw it. */
+  slot: number,
 ): void {
   if (amount <= 0) return;
   const enemies = world.enemies;
@@ -314,7 +339,7 @@ function applySplash(
 
     const hpBefore = enemies.hp[ed];
     enemies.hp[ed] = hpBefore - amount;
-    world.stats.damageDealt += amount < hpBefore ? amount : hpBefore;
+    creditWeapon(world, slot, amount < hpBefore ? amount : hpBefore);
     pushEvent(
       world.events,
       EV_ENEMY_DAMAGED,
@@ -394,7 +419,13 @@ function applyShieldBacklash(world: World, ed: number, amount: number): void {
   // Effective, not raw: 30 backlash into a 22 HP Rustling is 22 dealt, not 30. Overkill here
   // would inflate the dps the harness prints by an amount that scales with how often you are hit,
   // which is the last thing that number should measure.
-  world.stats.damageDealt += amount < hpBefore ? amount : hpBefore;
+  //
+  // Credited to the SHIELD, not to a weapon: it is the only damage in the game that no gun dealt,
+  // and folding it into whatever happened to be in slot 0 would hide a build whose second-best
+  // damage source is a defensive passive.
+  const effective = amount < hpBefore ? amount : hpBefore;
+  world.stats.damageDealt += effective;
+  world.stats.damageByShield += effective;
 
   pushEvent(
     world.events,

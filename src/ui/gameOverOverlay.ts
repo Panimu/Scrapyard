@@ -96,6 +96,30 @@ export class GameOverOverlay {
       if (n > 0) byArchetype.push(`${RANKS[r]?.name ?? `rank ${r}`}|${n}`);
     }
 
+    // WHERE THE DAMAGE ACTUALLY CAME FROM, biggest first.
+    //
+    // A run ends with five guns and a total, and the total says nothing about which of the five
+    // was carrying it - which is exactly the question a player asks after a run that went badly.
+    // Sorted descending and shown as a share of the total, because the ranking and the proportion
+    // are the two readings; the raw number is the least useful of the three and still the one a
+    // bare list would lead with.
+    //
+    // Only sources that actually dealt damage appear. A weapon held for thirty seconds and
+    // dropped, or a shield on a build that never took the backlash, would otherwise pad the list
+    // with zeroes and push the answer off a phone screen.
+    const bySource: string[] = [];
+    const total = s.damageDealt > 0 ? s.damageDealt : 1;
+    const sources: { name: string; amount: number }[] = [];
+    for (let i = 0; i < s.damageByWeapon.length; i++) {
+      const amount = s.damageByWeapon[i];
+      if (amount > 0) sources.push({ name: world.weaponCatalog[i]?.name ?? `weapon ${i}`, amount });
+    }
+    if (s.damageByShield > 0) sources.push({ name: 'Energy Shield', amount: s.damageByShield });
+    sources.sort((a, b) => b.amount - a.amount);
+    for (const src of sources) {
+      bySource.push(`${src.name}|${compact(src.amount)}  ${Math.round((src.amount / total) * 100)}%`);
+    }
+
     this.body.innerHTML = `
       <div class="grid">
         ${stat('Survived', formatClock(world.runSec))}
@@ -107,6 +131,10 @@ export class GameOverOverlay {
         ${stat('Accuracy', `${accuracy}%`)}
         ${stat('Gems', String(s.gemsCollected))}
         ${s.damagePrevented > 0 ? stat('Shielded', compact(s.damagePrevented)) : ''}
+      </div>
+      <div class="list">
+        <div class="eyebrow">Damage by source</div>
+        ${bySource.length > 0 ? bySource.map(row).join('') : '<div class="list__row">none dealt</div>'}
       </div>
       <div class="list">
         <div class="eyebrow">Kills by type</div>

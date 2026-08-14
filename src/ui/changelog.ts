@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-13T23:30Z',
+    title: 'The summary says which weapon was carrying the run',
+    notes: [
+      'Damage by source, biggest first, with each weapon’s share of the total. The Energy Shield’s backlash gets its own line rather than being folded into a gun.',
+      'The same breakdown prints in the headless sim, so a balance pass can see which of five weapons a build actually leaned on.',
+    ],
+  },
+  {
     at: '2026-08-13T23:05Z',
     title: 'Every weapon shows what it is waiting on',
     notes: [

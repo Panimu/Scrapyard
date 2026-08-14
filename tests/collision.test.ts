@@ -45,8 +45,15 @@ import { updateCollision } from '../src/core/systems/collision.js';
 import { updateDamage } from '../src/core/systems/damage.js';
 import { updatePickups } from '../src/core/systems/pickups.js';
 import { reapDead } from '../src/core/systems/reap.js';
-import { RUN_PHASE_DEAD, RUN_PHASE_RUNNING, type World } from '../src/core/types.js';
-import { createWorld } from '../src/core/world.js';
+import { heroIndex } from '../src/core/data/heroes.js';
+import {
+  EMPTY_INPUT,
+  RUN_PHASE_DEAD,
+  RUN_PHASE_LEVEL_UP,
+  RUN_PHASE_RUNNING,
+  type World,
+} from '../src/core/types.js';
+import { createWorld, stepWorld } from '../src/core/world.js';
 
 // ---------------------------------------------------------------------------------------------
 // Fixtures
@@ -628,5 +635,71 @@ describe('gem overflow - absorbed, never dropped', () => {
     let total = 0;
     for (let d = 0; d < w.pickups.count; d++) total += w.pickups.value[d];
     expect(total).toBe(GEM_SOFT_CAP + ARCHETYPES[ARCH_ELITE].xp);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Damage attribution
+//
+// The run summary breaks `damageDealt` down by the weapon that dealt it. A breakdown is only
+// worth having if it ADDS UP - a source that deals damage without crediting itself makes the
+// split silently understate one weapon and the reader has no way to notice. So the invariant is
+// stated once, here, and swept over chassis that between them exercise every path into
+// `damageDealt`: a beam, a direct projectile hit, a splash, and a fuse detonation.
+// ---------------------------------------------------------------------------------------------
+
+describe('damage by source accounts for every point dealt', () => {
+  function sumSources(w: World): number {
+    let total = w.stats.damageByShield;
+    for (let i = 0; i < w.stats.damageByWeapon.length; i++) total += w.stats.damageByWeapon[i];
+    return total;
+  }
+
+  it('sums to damageDealt over a real run, on every damage path', () => {
+    // slate  a BEAM, credited from the beam buffer's own weapon slot
+    // amber  a direct projectile HIT, credited through ownerWeapon
+    // fern   artillery: a fuse DETONATION whose entire output is splash
+    // bone   a magazine weapon, two projectiles per burst
+    for (const id of ['slate', 'amber', 'fern', 'bone'] as const) {
+      const w = createWorld({
+        seed: 7,
+        heroId: heroIndex(id),
+        runLengthSec: 900,
+        tuning: DEFAULT_TUNING,
+      });
+      for (let t = 0; t < 60 * 90; t++) {
+        const input =
+          w.phase === RUN_PHASE_LEVEL_UP ? { ...EMPTY_INPUT, chooseIndex: 0 } : EMPTY_INPUT;
+        stepWorld(w, input);
+        if (w.phase === RUN_PHASE_DEAD) break;
+      }
+
+      // Something has to have happened, or the assertion below passes on 0 === 0.
+      expect(w.stats.damageDealt, `${id} dealt nothing`).toBeGreaterThan(0);
+      // Float64 accumulation in a different order, so exact equality is not the claim - but the
+      // two are summed from the same increments, so anything beyond rounding is a missing site.
+      expect(sumSources(w), `${id}`).toBeCloseTo(w.stats.damageDealt, 6);
+    }
+  });
+
+  it('credits the Energy Shield separately from every gun', () => {
+    // Plum opens with the shield and no weapon at all, so every point of damage in its run came
+    // from the backlash and none of it can have been attributed to a gun.
+    const w = createWorld({
+      seed: 7,
+      heroId: heroIndex('plum'),
+      runLengthSec: 900,
+      tuning: DEFAULT_TUNING,
+    });
+    for (let t = 0; t < 60 * 60; t++) {
+      stepWorld(w, EMPTY_INPUT);
+      if (w.phase === RUN_PHASE_DEAD) break;
+    }
+
+    expect(w.stats.damageByShield).toBeGreaterThan(0);
+    expect(w.stats.damageByShield).toBeCloseTo(w.stats.damageDealt, 6);
+    for (let i = 0; i < w.stats.damageByWeapon.length; i++) {
+      expect(w.stats.damageByWeapon[i], `weapon ${i}`).toBe(0);
+    }
   });
 });

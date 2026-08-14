@@ -274,6 +274,23 @@ export interface RunStats {
    * this into a measure of how crowded the player was.
    */
   damagePrevented: number;
+  /**
+   * EFFECTIVE damage dealt, split by the WEAPON that dealt it. Indexed by WEAPON CATALOG index -
+   * not by loadout slot - so a summary can name the gun without knowing what the loadout looked
+   * like, and so two runs are comparable.
+   *
+   * Credited at exactly the sites that credit `damageDealt`, with exactly the same amounts, so
+   * the sum of this array plus `damageByShield` is `damageDealt` to the last float. Anything that
+   * deals damage without crediting a source here would silently make the breakdown lie about the
+   * total, which is the one thing a breakdown must not do.
+   */
+  readonly damageByWeapon: Float64Array;
+  /**
+   * Damage dealt by the Energy Shield's backlash. Not a weapon, and deliberately not folded into
+   * one: a build whose second-best damage source is a defensive passive is worth being able to
+   * see, and attributing it to whatever gun happened to be in slot 0 would hide it.
+   */
+  damageByShield: number;
   gemsCollected: number;
   shotsFired: number;
   shotsHit: number;
