@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T00:05Z',
+    title: 'The arena wraps, and nothing despawns',
+    notes: [
+      'Run far enough in one direction and you come back where you started. The map is a loop about 4100 units across - roughly twenty seconds at a sprint.',
+      'Enemies are never deleted for being outrun. The horde you left behind keeps walking, and it will be in front of you on the next lap.',
+      'Gems you abandoned are still there when you come round again.',
+      'Bosses can no longer be escaped by running in a straight line, which is why they now actually die: two boss kills in a test run that used to end with none.',
+    ],
+  },
+  {
     at: '2026-08-13T23:30Z',
     title: 'The summary says which weapon was carrying the run',
     notes: [

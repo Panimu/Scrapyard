@@ -35,7 +35,6 @@
  * anything catch you.
  */
 
-import { DESPAWN_RADIUS } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
 import { EV_ENEMY_KILLED, pushEvent } from '../events/ring.js';
@@ -222,10 +221,14 @@ function separate(world: World, dt: number): void {
  * snaps to zero below `pushEpsilon` so it cannot dribble forever and keep the pool's bytes - and
  * therefore the world hash - churning after everything has settled.
  *
- * DESPAWN beyond 900 u recycles enemies the player has outrun. No XP, no gem, no death FX - a
- * kill you did not make must not pay. It emits EV_ENEMY_KILLED with reason 1 purely so the render
- * layer can release the sprite; see KILL_REASON_DESPAWNED. The boss is exempt: it is slower than
- * every hero, so it would otherwise be trivially deletable by running in a straight line.
+ * NOTHING DESPAWNS. An enemy the player has outrun keeps walking, forever, and the arena wraps -
+ * so "away" is a direction, not a destination, and a horde left behind is a horde that will be
+ * in front of you in twenty seconds. That is the whole shape of the game now: pressure is
+ * cumulative, and the only way to reduce it is to kill things.
+ *
+ * This used to recycle anything past 900 u, which was the escape hatch: run in a straight line
+ * and the field emptied. `KILL_REASON_DESPAWNED` survives in the event contract because the
+ * render layer still switches on it, but the simulation no longer emits it.
  */
 function integrate(world: World, dt: number): void {
   const p = world.enemies;
@@ -239,10 +242,6 @@ function integrate(world: World, dt: number): void {
   const pushY = p.pushY;
   const flags = p.flags;
   const n = p.count;
-
-  const px = world.player.x;
-  const py = world.player.y;
-  const despawn2 = DESPAWN_RADIUS * DESPAWN_RADIUS;
 
   // Explicit Euler decay. Clamped at 0 so a hostile Tuning cannot make the factor negative and
   // turn knockback into an oscillator.
@@ -269,25 +268,6 @@ function integrate(world: World, dt: number): void {
       }
       pushX[d] = kx;
       pushY[d] = ky;
-    }
-
-    // BOSSES DESPAWN TOO, unlike the old scripted Scraplord. One boss walks in every 120 s and
-    // nothing clears the field at a rollover, so exempting them would let seven simultaneous
-    // bosses trail the player forever - a run that becomes unwinnable from a rule the player
-    // cannot see. Outrunning a boss by 900 u IS the escape; that is what the ring is for.
-    const dx = nx - px;
-    const dy = ny - py;
-    if (dx * dx + dy * dy > despawn2) {
-      markEnemyDead(p, d);
-      pushEvent(
-        world.events,
-        EV_ENEMY_KILLED,
-        world.tick,
-        nx,
-        ny,
-        p.slot[d],
-        KILL_REASON_DESPAWNED,
-      );
     }
   }
 }

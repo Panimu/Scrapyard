@@ -90,6 +90,28 @@ export const WEAPON_SCRATCH_LEN = 4;
 export const SPAWN_RADIUS = 560;
 
 /**
+ * THE ARENA IS A TORUS OF THIS SIZE, in world units, square. Walk off one edge and you come back
+ * on the other; there are no walls and there is nowhere that is not the arena.
+ *
+ * 4096 is chosen against three numbers, not picked for feel:
+ *
+ *   > 2 x THREAT_RADIUS (1800). This is the binding one. The director spawns to hold PRESSURE
+ *     within 900 u of the player, so if the far side of the world were inside that radius it
+ *     would count the entire population as "near me", throttle itself to the cycle's target and
+ *     stop advancing the ladder. At 4096 the far side is 2048 u away - genuinely elsewhere.
+ *   > 4 x SPAWN_RADIUS (2240), so a spawn ring never overlaps itself around the back.
+ *   = 64 spatial cells at SPATIAL_CELL_SIZE 64, which keeps the broad phase's cell coordinates
+ *     small and tidy for anything that later wants to reason about them.
+ *
+ * A lap is 4096 / 195 = 21 seconds at a mech's top speed. That is the number that decides how the
+ * world FEELS: long enough that running away is a real escape, short enough that it is only ever
+ * a loop, and you meet what you left behind.
+ */
+export const ARENA_SIZE = 4096;
+/** Half-extent. The furthest anything can ever be from anything else, per axis. */
+export const ARENA_HALF = ARENA_SIZE / 2;
+
+/**
  * ARTILLERY STRIKE ANNULUS - where a barrage is allowed to land.
  *
  * A long radius about the player, deliberately NOT tied to what is on screen. Trying to define
@@ -110,10 +132,17 @@ export const SPAWN_RADIUS = 560;
  */
 export const STRIKE_RADIUS_MIN = 70;
 export const STRIKE_RADIUS_MAX = 320;
-export const DESPAWN_RADIUS = 900;
-/** Equal to DESPAWN_RADIUS, NOT to SPAWN_RADIUS. At 560 the director could not see enemies
- *  trailing behind a kiting player, read the field as empty and spawn more ahead of them - actual
- *  threat ran at double target. Everything alive counts. */
+/**
+ * How far the director can SEE. Enemies beyond it do not count toward local pressure.
+ *
+ * It used to double as the despawn radius - outrun something by 900 u and it was deleted. Nothing
+ * despawns any more (the arena wraps, so there is no "away" to outrun something to), and the two
+ * numbers have gone their separate ways: this one is now purely the director's field of view.
+ *
+ * NOT SPAWN_RADIUS. At 560 the director could not see enemies trailing behind a kiting player,
+ * read the field as empty and spawned more ahead of them - actual threat ran at double target.
+ * Everything alive and nearby counts.
+ */
 export const THREAT_RADIUS = 900;
 
 /**

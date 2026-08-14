@@ -74,9 +74,11 @@ import {
 } from './assets.js';
 
 /**
- * `EV_ENEMY_KILLED` carries the reason in `d`. 1 means the enemy walked past DESPAWN_RADIUS and
- * was recycled - no death, no puff. Mirrored from src/core/systems/enemyAI.ts, which is not part
- * of the public barrel, so it cannot be imported; the value is part of the event contract.
+ * `EV_ENEMY_KILLED` carries the reason in `d`. 1 means the enemy was recycled rather than killed -
+ * no death, no puff. The simulation no longer emits it: the arena wraps, so there is no distance
+ * at which an enemy stops mattering and nothing despawns any more. The branch stays because the
+ * value is part of the event contract and a future recycler would use it. Mirrored from
+ * src/core/systems/enemyAI.ts, which is not part of the public barrel, so it cannot be imported.
  */
 const KILL_REASON_DESPAWNED = 1;
 
