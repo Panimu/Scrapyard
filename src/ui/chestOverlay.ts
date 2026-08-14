@@ -66,7 +66,8 @@
  * two-second spin, and certainly has not asked for the machine to shake.
  */
 
-import type { World } from '../core/index.js';
+import { upgradeIconAt, upgradeNameAt, type World } from '../core/index.js';
+import { WEAPON_ASCENDED_TIER } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
 
 /** Tiles above the result in each strip, BEFORE the per-reel stretch below. */
@@ -206,12 +207,24 @@ export class ChestOverlay {
 
     const chest = world.chest;
     const catalog = world.upgradeCatalog;
+    /**
+     * AN ASCENSION IS NOT A SPIN, and the machine should not pretend otherwise. All three reels
+     * hold the same symbol because the simulation put it there - there was never anything else it
+     * could land on - so the decoys are that symbol too. A machine that blurred past the player's
+     * other guns before landing on a foregone conclusion would be theatre about a decision that
+     * did not happen.
+     */
+    const ascending = chest.ascension >= 0;
 
     // The loadout, exactly as openChest built it: held, and not yet maxed. Recomputed here rather
     // than published on World because it is three lines and the alternative is a second array to
     // keep in step with the one the simulation already has.
     const pool: string[] = [];
-    for (let i = 0; i < catalog.length; i++) {
+    if (ascending) {
+      const def = catalog[chest.ascension];
+      if (def !== undefined) pool.push(upgradeIconAt(def, WEAPON_ASCENDED_TIER));
+    }
+    for (let i = 0; i < catalog.length && !ascending; i++) {
       const def = catalog[i];
       if (def === undefined) continue;
       const stacks = world.levelUp.stacks[i];
@@ -266,7 +279,15 @@ export class ChestOverlay {
     for (let r = 0; r < this.reelEls.length; r++) {
       const strip = this.reelEls[r];
       const landed = chest.reels[r];
-      const landedId = landed >= 0 ? (catalog[landed]?.id ?? '') : '';
+      const landedDef = landed >= 0 ? catalog[landed] : undefined;
+      // An ascension chest shows the TIER-8 icon on all three reels, because that is the symbol
+      // the spin is about. Everything else shows the card's own.
+      const landedId =
+        landedDef === undefined
+          ? ''
+          : ascending
+            ? upgradeIconAt(landedDef, WEAPON_ASCENDED_TIER)
+            : landedDef.id;
 
       // Tint the landing to the symbol that caused it - amber for a gun, blue for a system. The
       // flash is the only moment the machine has to say WHAT it landed on other than the icon.
@@ -310,7 +331,7 @@ export class ChestOverlay {
 
     if (!reduced) {
       for (let r = 0; r < this.reelEls.length; r++) {
-        this.after(landAt[r], () => this.land(r, heat[r], chest.payout));
+        this.after(landAt[r], () => this.land(r, heat[r], chest.payout, ascending));
       }
     }
 
@@ -335,6 +356,11 @@ export class ChestOverlay {
     const b = chest.reels[1];
     const kindOf = (i: number): string => (i >= 0 ? (catalog[i]?.kind ?? '') : '');
 
+    // AN ASCENSION IS THE BIGGEST THING A CHEST CAN DO, and the ladder below cannot see that -
+    // it reads `payout`, and a tier 8 pays one. So it is answered first: every reel blazes,
+    // because every reel IS the answer and there is nothing being built to.
+    if (chest.ascension >= 0) return [HEAT_BLAZE, HEAT_BLAZE, HEAT_BLAZE];
+
     // REEL ONE says nothing, because it knows nothing. See the header - this is deliberate.
     const first = HEAT_NONE;
 
@@ -356,7 +382,7 @@ export class ChestOverlay {
    * One reel has stopped. Sizes the impact, and runs the anticipation state between reel two
    * landing on something live and reel three answering it.
    */
-  private land(r: number, heat: number, payout: number): void {
+  private land(r: number, heat: number, payout: number, ascended: boolean): void {
     const win = this.windowEls[r];
     win.classList.add('chest__window--land');
     if (heat > HEAT_NONE) win.classList.add(HEAT_CLASS[heat]);
@@ -367,7 +393,7 @@ export class ChestOverlay {
       // THE FUSS, and it is the whole machine rather than the one window: the frame lights and
       // holds while the payout line and the grants arrive under it. A jackpot additionally kicks
       // the machine, because five power-ups should not look like four.
-      if (payout >= 5) this.reelsEl.classList.add('chest__reels--jackpot');
+      if (payout >= 5 || ascended) this.reelsEl.classList.add('chest__reels--jackpot');
       else if (payout >= BIG_PAYOUT) this.reelsEl.classList.add('chest__reels--big');
     }
   }
@@ -393,8 +419,13 @@ export class ChestOverlay {
     const catalog = world.upgradeCatalog;
     const n = chest.payout;
 
+    const ascended = chest.ascension >= 0 ? catalog[chest.ascension] : undefined;
     this.payoutEl.textContent =
-      n > 0 ? `${PAYOUT_WORD[n] ?? 'HAUL'} — ${n} power-up${n === 1 ? '' : 's'}` : 'Empty';
+      ascended !== undefined
+        ? `TIER 8 — ${upgradeNameAt(ascended, WEAPON_ASCENDED_TIER)}`
+        : n > 0
+          ? `${PAYOUT_WORD[n] ?? 'HAUL'} — ${n} power-up${n === 1 ? '' : 's'}`
+          : 'Empty';
     this.payoutEl.classList.add('chest__payout--in');
 
     // The upgrades themselves, named. The reels say WHAT in symbols; a player deserves the words
@@ -403,14 +434,18 @@ export class ChestOverlay {
     for (let i = 0; i < n; i++) {
       const def = catalog[chest.grants[i]];
       if (def === undefined) continue;
+      const tier = ascended !== undefined ? WEAPON_ASCENDED_TIER : 0;
       const row = document.createElement('div');
       row.className = `chest__grant chest__grant--${def.kind}`;
       const img = document.createElement('img');
-      img.src = spriteUrl(`icon_${def.id}`);
+      img.src = spriteUrl(`icon_${upgradeIconAt(def, tier)}`);
       img.alt = '';
       row.appendChild(img);
       const name = document.createElement('span');
-      name.textContent = def.name;
+      name.textContent =
+        ascended !== undefined
+          ? `${upgradeNameAt(def, WEAPON_ASCENDED_TIER)} — ${def.ascension?.description ?? ''}`
+          : def.name;
       row.appendChild(name);
       this.grantsEl.appendChild(row);
     }

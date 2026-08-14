@@ -15,7 +15,12 @@
  * still invalidates layout, and this runs 60 times a second.
  */
 
-import { MAX_WEAPONS, RUN_PHASE_INTRO, type World } from '../core/index.js';
+import {
+  MAX_WEAPONS,
+  RUN_PHASE_INTRO,
+  weaponNameAtTier,
+  type World,
+} from '../core/index.js';
 
 /**
  * THE LOADOUT ROW - one chip per weapon held, carrying its TIER and, for a laser, its HEAT.
@@ -353,7 +358,12 @@ export class Hud {
         // nothing to a magazine or a cooldown.
         chip.classList.toggle('heat--mag', mag);
         chip.classList.toggle('heat--cool', cool);
-        this.heatNames[n].textContent = shortWeaponName(def.name);
+        // The TIER decides the name: a Medium Laser at 8 is a Chain Laser, and the chip is the
+        // one place the player reads what they are carrying. Falls back to the catalog name if
+        // the weapon has no card, which no shipping weapon does.
+        this.heatNames[n].textContent = shortWeaponName(
+          weaponNameAtTier(def.id, inst.level) || def.name,
+        );
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;
         this.heatOut[n] = -1;

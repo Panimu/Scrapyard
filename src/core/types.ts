@@ -292,6 +292,15 @@ export interface ChestState {
   readonly grants: Int32Array;
   /** Chests opened this run. */
   opened: number;
+  /**
+   * Catalog index of the TIER 8 this chest is handing over, or -1 for an ordinary spin.
+   *
+   * Published rather than re-derived by the overlay, because the condition that produced it -
+   * the weapon at seven and its passive held - is state the UI has no business re-checking, and
+   * because the answer must be the one the simulation acted on rather than one the DOM worked
+   * out again a frame later.
+   */
+  ascension: number;
 }
 
 export interface RunStats {

@@ -142,6 +142,16 @@ export interface WeaponDef {
   readonly beamColour: number;
   /** Drawn beam half-width, world units. Purely cosmetic; the beam's HIT test is a ray. */
   readonly beamWidth: number;
+  /**
+   * Tier at which this beam starts CHAINING. Absent on everything that never does, which is every
+   * weapon but one - hence optional rather than a `0` that seven definitions would have to carry.
+   *
+   * A TIER RATHER THAN A BOOLEAN, because the chain is a tier-8 ascension and the same WeaponDef
+   * is the weapon at every tier: the Medium Laser and the Chain Laser are one entry, and this is
+   * the line where they differ. Comparing it against the instance's level keeps that difference in
+   * the catalog instead of putting a "which weapon am I now" branch in the firing code.
+   */
+  readonly chainsFrom?: number;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -387,6 +397,15 @@ function laserTiers(
     { damage: dmgStep, heatPerSec: heatStep }, // T5
     { heatCapacity: 40 }, // T6
     { heatDispersion: dispStep }, // T7
+    // T8 - THE ASCENSION. Reached only through a Cyber Chest and only with the right passive held
+    // (data/upgrades.ts). It is a SMALL rung on purpose: the tier is bought with the mechanic it
+    // switches on, not with its numbers, and a capstone that also handed out a damage tier would
+    // make the mechanic look like a bonus attached to a stat card.
+    //
+    // Dispersion and range, because those are the two the Chain Laser actually spends. Dispersion
+    // buys uptime, which is what a beam that now crosses four bodies wants more of; range is the
+    // literal budget the chain is paid out of - every unit of it is more beam to jump with.
+    { heatDispersion: dispStep * 0.5, range: 30 }, // T8
   ]);
 }
 
@@ -399,6 +418,8 @@ function laser(
   heatDispersion: number,
   beamColour: number,
   beamWidth: number,
+  /** Tier at which this beam starts chaining, or 0 for a beam that never does. */
+  chainsFrom = 0,
 ): WeaponDef {
   return Object.freeze({
     id,
@@ -435,6 +456,7 @@ function laser(
       reloadTime: 0,
     }),
     perLevel: laserTiers(damagePerSec, heatPerSec, heatDispersion),
+    chainsFrom,
     reengageMul: 1,
     visualId: VIS_SHELL,
     muzzleOffset: 22,
@@ -452,7 +474,18 @@ function laser(
 // damage, was what it was short of. Range tiers do not exist on the laser ladder, so the base is
 // the only place this can be bought. `npm run dps` is where to check whether it was enough.
 export const LASER_SHORT = laser('laser-short', 'Short Laser', 165, 46, 10, 8.5, 0x3be86b, 1.6);
-export const LASER_MEDIUM = laser('laser-medium', 'Medium Laser', 302.5, 66, 22, 8.6, 0x4fa8ff, 2.1);
+export const LASER_MEDIUM = laser(
+  'laser-medium',
+  'Medium Laser',
+  302.5,
+  66,
+  22,
+  8.6,
+  0x4fa8ff,
+  2.1,
+  // Chains from tier 8 - the Chain Laser. See WeaponDef.chainsFrom.
+  8,
+);
 export const LASER_LONG = laser('laser-long', 'Long Laser', 473, 92, 34, 8.0, 0xff4d4d, 2.7);
 
 /**

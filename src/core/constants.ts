@@ -95,7 +95,21 @@ export const HEAT_RESUME_FRAC = 0.5;
 /** Default capacity, and the value every weapon's `heatCapacity` base starts from. */
 export const HEAT_CAPACITY_BASE = 100;
 
-export const MAX_BEAMS_PER_TICK = MAX_WEAPONS;
+/**
+ * How many bodies one CHAIN LASER beam may cross, counting the first.
+ *
+ * The real limiter is the range budget - each jump spends the distance it covers, and the chain
+ * stops when the next nearest body will not fit in what is left - so this is a backstop against
+ * a pathological crowd standing shoulder to shoulder, not a balance number. It also bounds the
+ * beam buffer, which is why the two constants are written next to each other.
+ */
+export const MAX_CHAIN_LINKS = 10;
+
+/**
+ * One entry per DRAWN SEGMENT, not per weapon. A chaining beam pushes one segment per jump, so a
+ * full-length chain from every laser slot at once is the worst case - which is what this is.
+ */
+export const MAX_BEAMS_PER_TICK = MAX_WEAPONS * MAX_CHAIN_LINKS;
 export const UPGRADE_OFFER_COUNT = 3;
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;

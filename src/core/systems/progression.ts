@@ -96,6 +96,7 @@
 
 import {
   CHEST_REELS, MAX_PASSIVES, MAX_WEAPONS, UPGRADE_OFFER_COUNT } from '../constants.js';
+import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
 import type { WeaponId } from '../content/weaponCatalog.js';
@@ -260,7 +261,11 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
   const lu = world.levelUp;
   const def = world.upgradeCatalog[idx];
   if (def === undefined) return false;
-  if (lu.stacks[idx] >= def.maxStacks) return false;
+  // The ceiling is maxStacks, EXCEPT for a weapon whose ascension the run has earned - see
+  // `ascensionReady`. `isOfferable` deliberately does not know about this, so tier 8 stays
+  // invisible to the level-up deck and a chest is the only thing that can push past seven.
+  const cap = ascensionReady(world, idx) ? WEAPON_ASCENDED_TIER : def.maxStacks;
+  if (lu.stacks[idx] >= cap) return false;
 
   const hero = world.heroes[world.player.heroId];
   if (hero === undefined) return false;
@@ -578,6 +583,44 @@ function checkVictory(world: World): boolean {
 // The Cyber Chest
 // -------------------------------------------------------------------------------------------
 
+
+/**
+ * Is this weapon one Cyber Chest away from its tier 8?
+ *
+ * TWO CONDITIONS, AND THE SECOND IS THE DESIGN. The weapon must be sitting at exactly tier 7 -
+ * finished, with nothing left the deck can offer it - and the ascension's named passive must be
+ * held at ANY tier. One card of Targeting Optics is enough; the requirement asks whether the run
+ * WENT that way, not how far.
+ *
+ * `=== WEAPON_MAX_TIER` rather than `>=` so that a weapon already at 8 stops being ready, which is
+ * what keeps a second chest from trying to grant a ninth tier that has no numbers behind it.
+ */
+export function ascensionReady(world: World, idx: number): boolean {
+  const def = world.upgradeCatalog[idx];
+  const asc = def?.ascension;
+  if (asc === undefined) return false;
+  if (world.levelUp.stacks[idx] !== WEAPON_MAX_TIER) return false;
+
+  for (let i = 0; i < world.upgradeCatalog.length; i++) {
+    if (world.upgradeCatalog[i]?.id === asc.requires) return world.levelUp.stacks[i] > 0;
+  }
+  return false;
+}
+
+/**
+ * The catalog index of the tier 8 this chest should hand over, or -1.
+ *
+ * LOWEST INDEX WINS when a run has earned two at once. It is arbitrary but it must be TOTAL and
+ * stable - a tie broken by iteration order over a mutable structure would be a replay that
+ * diverges - and catalog order is the one ordering every part of this game already agrees on.
+ */
+function readyAscension(world: World): number {
+  for (let i = 0; i < world.upgradeCatalog.length; i++) {
+    if (ascensionReady(world, i)) return i;
+  }
+  return -1;
+}
+
 /**
  * Spins a chest and freezes the world. Called from S10 the tick the player walks onto one.
  *
@@ -651,6 +694,39 @@ export function openChest(world: World): void {
   chest.reels.fill(-1);
   chest.grants.fill(-1);
   chest.payout = 0;
+  chest.ascension = -1;
+
+  // --- THE ASCENSION SUPERSEDES THE SPIN ----------------------------------------------------
+  // A tier 8 is not one of the things a chest might pay out, it is what the chest IS when the run
+  // has earned one. All three reels are set to the same symbol and the payout is a single grant,
+  // so the machine cannot land on anything else and the player cannot be shown a choice that was
+  // never there. The overlay reads `chest.ascension` to swap in the tier-8 icon and to say what
+  // it is (ui/chestOverlay.ts).
+  //
+  // NO RNG IS DRAWN on this path. A chest that spent three rolls on a foregone conclusion would
+  // shift `rng.loot` for every barrel after it, which would make taking an ascension quietly
+  // change what the rest of the run dropped.
+  const ascended = readyAscension(world);
+  if (ascended >= 0) {
+    chest.ascension = ascended;
+    for (let r = 0; r < CHEST_REELS; r++) chest.reels[r] = ascended;
+    chest.grants[0] = ascended;
+    chest.payout = 1;
+
+    chest.opened++;
+    world.stats.chests++;
+    world.phase = RUN_PHASE_CHEST;
+    pushEvent(
+      world.events,
+      EV_CHEST_OPENED,
+      world.tick,
+      world.player.x,
+      world.player.y,
+      chest.payout,
+      chest.opened,
+    );
+    return;
+  }
 
   // --- the symbol pool: what the player is actually running --------------------------------
   const pool: number[] = [];

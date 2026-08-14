@@ -250,6 +250,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       payout: 0,
       grants: new Int32Array(CHEST_MAX_PAYOUT).fill(-1),
       opened: 0,
+      ascension: -1,
     },
     director: createDirector(),
     difficulty: {

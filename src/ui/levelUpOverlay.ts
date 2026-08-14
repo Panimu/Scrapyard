@@ -33,7 +33,7 @@
  * (what the gun IS) rather than the flat "Unlock." tier string, and a visibly different card.
  */
 
-import { UPGRADE_OFFER_COUNT, type World } from '../core/index.js';
+import { UPGRADE_OFFER_COUNT, upgradeNameAt, type World } from '../core/index.js';
 
 export class LevelUpOverlay {
   readonly element: HTMLDivElement;
@@ -158,7 +158,10 @@ export class LevelUpOverlay {
       const isWeapon = def.kind === 'weapon';
       card.classList.toggle('card--weapon', isWeapon);
       card.classList.toggle('card--passive', !isWeapon);
-      this.names[i].textContent = def.name;
+      // Named at the tier being OFFERED, so a card can never advertise a name the pick does
+      // not grant. Level-ups stop at 7, so today this is always the base name - but the rule is
+      // the rule, and the next ascension will not need this line found again.
+      this.names[i].textContent = upgradeNameAt(def, tier);
       this.stacks[i].textContent = unlock ? 'NEW' : `TIER ${tier}`;
       // "New weapon" only if it IS one. A passive announced as a weapon is the kind of small lie
       // that teaches the player the card text cannot be trusted.

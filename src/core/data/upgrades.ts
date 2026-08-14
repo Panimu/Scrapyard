@@ -40,8 +40,42 @@ export type UpgradeId =
   | 'p-armour'
   | 'p-shield';
 
-/** Tiers per weapon, including the unlock. */
+/** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
+
+/**
+ * TIER 8 - THE ASCENSION. A weapon's capstone, and the only tier no card can offer.
+ *
+ * `maxStacks` stays at WEAPON_MAX_TIER, which is what `isOfferable` reads, so tier 8 is invisible
+ * to the level-up deck by construction rather than by a rule someone has to remember. The only
+ * route to it is a Cyber Chest, and only when `ascensionReady` says the run has earned it: the
+ * weapon sitting at exactly tier 7, AND the ascension's required passive held at any tier.
+ *
+ * That second condition is the point of the whole mechanism. A tier 8 is not "keep taking the
+ * card" - it is a BUILD arriving somewhere, and the requirement names which build. The Chain
+ * Laser needs Targeting Optics because chaining is bought with reach: the passive that was doing
+ * nothing but making a beam longer becomes the passive that decides how many bodies it crosses.
+ */
+export const WEAPON_ASCENDED_TIER = 8;
+
+/**
+ * What a weapon becomes at tier 8, and what it costs to get there.
+ *
+ * The renamed weapon is the SAME `WeaponDef` at level 8 - not a second catalog entry - so every
+ * stat, every targeting rule and every renderer path is inherited rather than re-declared, and
+ * the ladder's `perLevel[6]` supplies the tier-8 numbers exactly as it supplies the other six.
+ * Only the NAME and the ICON change, which is all a rename is.
+ */
+export interface Ascension {
+  /** What the weapon is called from tier 8 onward. */
+  readonly name: string;
+  /** Sprite key for the tier-8 icon, without the `icon_` prefix. */
+  readonly icon: string;
+  /** Held at ANY tier. Nothing here cares how deep the passive is, only that the run took it. */
+  readonly requires: UpgradeId;
+  /** Card text, shown on the chest that grants it. */
+  readonly description: string;
+}
 
 /**
  * One stat change. Retained for passives, which will use it; no weapon card carries effects,
@@ -93,9 +127,45 @@ export interface UpgradeDef {
   readonly tiers: readonly string[];
   /** Equals WEAPON_MAX_TIER for weapon cards: stacks taken IS the weapon's tier. */
   readonly maxStacks: number;
+  /**
+   * Set on weapon cards that have a tier 8. Absent means the weapon tops out at 7 - which is most
+   * of them today, and the reason this is optional rather than a field every card must fill in.
+   */
+  readonly ascension?: Ascension;
   /** Relative draw weight while the card still has tiers left. */
   readonly weight: number;
   readonly effects: readonly UpgradeEffect[];
+}
+
+/**
+ * What a weapon card is CALLED at a given tier, and which icon it draws.
+ *
+ * One helper rather than the same `stacks >= 8 ? ... : ...` in the HUD, the level-up card and the
+ * chest: a rename is exactly the kind of thing that ends up applied in two places out of three,
+ * and the one place it is missing is the one the player screenshots.
+ */
+export function upgradeNameAt(def: UpgradeDef, tier: number): string {
+  const asc = def.ascension;
+  return asc !== undefined && tier >= WEAPON_ASCENDED_TIER ? asc.name : def.name;
+}
+
+/** Sprite key WITHOUT the `icon_` prefix. */
+export function upgradeIconAt(def: UpgradeDef, tier: number): string {
+  const asc = def.ascension;
+  return asc !== undefined && tier >= WEAPON_ASCENDED_TIER ? asc.icon : def.id;
+}
+
+/**
+ * What a HELD weapon is called right now - the HUD's question, asked from the weapon end.
+ *
+ * It goes through the CARD rather than the WeaponDef, because the ascension lives on the card and
+ * putting a second copy of the name on the weapon would be two places to rename from. A weapon
+ * with no card (there is none today) degrades to the catalog name.
+ */
+export function weaponNameAtTier(weapon: WeaponId, tier: number): string {
+  const i = upgradeIndexForWeapon(weapon);
+  const def = i >= 0 ? UPGRADE_CATALOG[i] : undefined;
+  return def !== undefined ? upgradeNameAt(def, tier) : '';
 }
 
 /**
@@ -276,6 +346,13 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   },
   {
     id: 'w-laser-medium',
+    ascension: Object.freeze({
+      name: 'Chain Laser',
+      icon: 'w-chain-laser',
+      requires: 'p-range' as const,
+      description:
+        'The beam jumps. From whatever it burns it reaches the nearest enemy not already in the chain, and keeps going while the whole beam still fits inside its range.',
+    }),
     kind: 'weapon',
     grantsWeapon: 'laser-medium',
     name: 'Medium Laser',

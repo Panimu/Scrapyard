@@ -50,6 +50,10 @@ const ICONS = [
   'w-laser-short',
   'w-laser-medium',
   'w-laser-long',
+  // TIER 8. Not a card in the deck - it is the Medium Laser's ascension - but it needs an icon of
+  // its own, because the whole point of a tier 8 is that the thing in your hands is not the thing
+  // you were carrying.
+  'w-chain-laser',
   'p-range',
   'p-damage',
   'p-rate',
@@ -177,6 +181,27 @@ const DRAW = `(id) => {
     g.globalAlpha = 0.55;
     g.beginPath(); g.arc(104, CY, 13, 0, 6.284); g.fillStyle = KEY; g.fill();
     g.globalAlpha = 1;
+  }
+
+  if (id === 'w-chain-laser') {
+    // THE MEDIUM LASER'S BEAM, BENT. It has to read as the same weapon at a glance - it is the
+    // same gun, at tier 8 - so it keeps the emitter and the first straight run, and then the line
+    // kinks twice through two nodes. The kinks ARE the mechanic: a beam that stopped being
+    // straight is the one thing the player needs to recognise on a reel.
+    beam(30, 9);
+    const NODE = (x, y, r) => {
+      g.beginPath(); g.arc(x, y, r, 0, 6.284); g.fillStyle = KEY; g.fill();
+    };
+    g.strokeStyle = KEY; g.lineWidth = 7; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(CX + 6, CY);
+    g.lineTo(CX + 30, CY - 26);
+    g.lineTo(CX + 52, CY + 16);
+    g.stroke();
+    // The bodies it jumped between, brightest last: the chain is going somewhere.
+    g.globalAlpha = 0.85; NODE(CX + 6, CY, 7);
+    g.globalAlpha = 0.92; NODE(CX + 30, CY - 26, 8);
+    g.globalAlpha = 1;    NODE(CX + 52, CY + 16, 9);
   }
 
   // --- passives ------------------------------------------------------------------------------

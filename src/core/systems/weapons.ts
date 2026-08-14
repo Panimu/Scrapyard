@@ -74,7 +74,12 @@
  * a dispersion tier shortens the silence alone and is the only thing that moves the uptime.
  */
 
-import { MAX_TARGETS, STRIKE_RADIUS_MAX, STRIKE_RADIUS_MIN } from '../constants.js';
+import {
+  MAX_CHAIN_LINKS,
+  MAX_TARGETS,
+  STRIKE_RADIUS_MAX,
+  STRIKE_RADIUS_MIN,
+} from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { destructibleRayHit, sceneryRayHit } from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
@@ -90,6 +95,7 @@ import {
   pushBeam,
   pushEvent,
 } from '../events/ring.js';
+import type { WeaponStats } from '../data/stats.js';
 import { dot, normalizeInto, rotateTowardsInto } from '../math/vec2.js';
 import type { Vec2 } from '../math/vec2.js';
 import { HERO_TRAITS } from '../data/traits.js';
@@ -712,6 +718,12 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     breakBarrelIn(world, world.scenery.x[drum], world.scenery.y[drum], 0);
   }
 
+  // THE CHAIN. Only a weapon whose ascension has been taken gets here - see WeaponDef.chainsFrom.
+  const chainsFrom = def.chainsFrom ?? 0;
+  if (hit >= 0 && chainsFrom > 0 && inst.level >= chainsFrom) {
+    chainFrom(world, weaponIdx, stats, hit, reach, damage);
+  }
+
   // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
   // delivering the shot that overloaded it, so a full burst is exactly
   // heatCapacity / heatPerSec seconds of damage and not one tick less. The ceiling is the
@@ -726,6 +738,98 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     inst.heat = heat;
   }
 };
+
+
+/**
+ * THE CHAIN LASER'S JUMPS. Called after the primary beam has landed, and only for a beam whose
+ * tier-8 ascension is held.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * RANGE IS THE BUDGET, AND IT IS SPENT ALONG THE WHOLE BEAM
+ * ---------------------------------------------------------------------------------------------
+ * The weapon's `range` stops being "how far can it reach" and becomes "how much beam is there".
+ * The primary shot spends the distance from the mech to the first body; every jump spends the
+ * distance it covers; and the chain stops the moment the nearest body left will not fit in what
+ * remains. That is the whole rule, and it is why the ascension requires Targeting Optics - the
+ * passive that was buying a longer beam is now buying MORE JUMPS out of the same beam.
+ *
+ * NEAREST, AND NEVER ONE ALREADY IN THE CHAIN. Nearest keeps the shape legible: the beam visibly
+ * walks through a crowd rather than teleporting across one. Excluding the bodies it has already
+ * touched is what stops two enemies standing next to each other from bouncing the beam between
+ * them forever - and it is a linear scan of a list that is at most MAX_CHAIN_LINKS long, which is
+ * cheaper than any set for a list that size.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * EACH LINK IS A WHOLE BEAM, AND THAT IS DELIBERATE
+ * ---------------------------------------------------------------------------------------------
+ * A link pushes its own entry into the beam buffer: its own endpoints, its own target, its own
+ * damage. So updateDamage bills every body the chain crosses without knowing chains exist, and
+ * the renderer draws the whole zig-zag without knowing either. The one thing that had to change
+ * for chaining was the SIZE of that buffer.
+ *
+ * Damage is the same on every link. A falloff would be the conventional choice and is the wrong
+ * one here: the beam is already paying for each jump in range, which is a harder currency than a
+ * damage multiplier - a chain through five bodies is a chain that found five bodies close enough
+ * together, and that is the play being rewarded.
+ *
+ * NO SCENERY TEST ON A JUMP. The primary shot still refuses to fire into scrap, because that is
+ * the mech aiming; a jump is an arc between two bodies and is allowed to cross a wreck. Testing
+ * every link would also mean a ray cast per jump per tick, which is the one part of this that
+ * would actually cost something.
+ */
+function chainFrom(
+  world: World,
+  weaponIdx: number,
+  stats: WeaponStats,
+  firstHit: number,
+  firstReach: number,
+  damage: number,
+): void {
+  const p = world.enemies;
+  const chain = world.scratch.candidates; // reused as the "already burned" list, MAX_CHAIN_LINKS deep
+  chain[0] = firstHit;
+  let links = 1;
+
+  let cx = p.x[firstHit];
+  let cy = p.y[firstHit];
+  let budget = stats.range - firstReach;
+
+  while (links < MAX_CHAIN_LINKS && budget > 0) {
+    // Nearest live body inside what is left of the beam, skipping everything already burned.
+    let best = -1;
+    let bestD2 = 0;
+    const n = p.count;
+    for (let d = 0; d < n; d++) {
+      if ((p.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+      let already = false;
+      for (let k = 0; k < links; k++) {
+        if (chain[k] === d) {
+          already = true;
+          break;
+        }
+      }
+      if (already) continue;
+      const dx = p.x[d] - cx;
+      const dy = p.y[d] - cy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > budget * budget) continue;
+      if (best < 0 || d2 < bestD2) {
+        best = d;
+        bestD2 = d2;
+      }
+    }
+    if (best < 0) return;
+
+    const nx = p.x[best];
+    const ny = p.y[best];
+    pushBeam(world.beams, weaponIdx, best, damage, cx, cy, nx, ny);
+
+    budget -= Math.sqrt(bestD2);
+    chain[links++] = best;
+    cx = nx;
+    cy = ny;
+  }
+}
 
 /**
  * THE FIRE-PATTERN TABLE. Adding a pattern is one entry here plus one pure function above.

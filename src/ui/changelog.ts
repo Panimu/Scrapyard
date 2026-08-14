@@ -40,6 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T19:43Z',
+    title: 'TIER 8: the Medium Laser becomes the Chain Laser',
+    notes: [
+      'MOST WEAPONS ARE GOING TO GET A TIER 8, and no level-up will ever offer one. A tier 8 needs the weapon finished at tier 7 AND a specific passive in your build - and then it can only come out of a Cyber Chest.',
+      'WHEN A CHEST CAN GIVE YOU ONE, IT DOES. The reels do not spin for a haul: all three land on the tier 8 and that is the whole chest. There was never anything else it could have been, so the machine does not pretend there was.',
+      'THE FIRST ONE IS THE MEDIUM LASER, and it needs Targeting Optics. Take the laser to tier 7, hold Optics at any tier, and the next boss chest turns it into the CHAIN LASER.',
+      'THE BEAM JUMPS. From whatever it is burning it reaches the nearest enemy not already in the chain, and keeps going for as long as the whole beam still fits inside its range. Range stops meaning “how far can it reach” and starts meaning “how much beam is there” - which is why Optics is the price. Every unit of reach it buys is more beam to jump with.',
+      'It keeps everything the Medium Laser had at tier 7, plus a little more heat dispersion and a little more range.',
+      'Measured against the real horde: a tier-7 Medium Laser with maxed Optics does 34 damage a second. The Chain Laser with the same Optics does 84.',
+    ],
+  },
+  {
     at: '2026-08-14T18:01Z',
     title: 'Fuel barrels survive anything you cannot see',
     notes: [

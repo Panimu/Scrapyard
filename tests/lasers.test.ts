@@ -1124,3 +1124,77 @@ describe('determinism with lasers in the loadout', () => {
     expect(short).not.toEqual(long);
   });
 });
+
+/**
+ * THE CHAIN LASER - the Medium Laser's tier 8.
+ *
+ * Two rules carry the whole mechanic, and both are the kind that break silently: the chain is paid
+ * for out of the weapon's RANGE, and it never burns the same body twice. A regression in either
+ * looks like "the laser got better" rather than like a bug, which is why they are pinned here.
+ */
+describe('chain laser (tier 8)', () => {
+  /** Puts the held laser at `tier` and re-resolves, exactly as taking the tier would. */
+  function setTier(world: World, tier: number): void {
+    const inst = world.weapons[0];
+    inst.level = tier;
+    world.levelUp.stacks[upgradeIndexForWeapon('laser-medium')] = tier;
+    resolveWeaponStats(
+      world.weaponCatalog[inst.defId],
+      world.heroes[world.player.heroId],
+      tier,
+      world.levelUp.stacks,
+      world.upgradeCatalog,
+      inst.stats,
+    );
+  }
+
+  /** A line of stationary bodies marching east from the mech, `gap` apart. */
+  function line(world: World, count: number, first: number, gap: number): void {
+    for (let i = 0; i < count; i++) addEnemy(world, first + i * gap, 0, 1e6, 13);
+  }
+
+  it('spends the beam\'s range on its jumps and stops when it runs out', () => {
+    const w = makeWorld('laser-medium');
+    setTier(w, 8);
+    line(w, 8, 120, 60);
+    tick(w);
+
+    const b = w.beams;
+    expect(b.count).toBeGreaterThan(1); // it chained at all
+
+    // Total drawn length must fit inside the weapon's range: the primary run plus every jump.
+    let total = 0;
+    for (let i = 0; i < b.count; i++) {
+      total += Math.hypot(b.x1[i] - b.x0[i], b.y1[i] - b.y0[i]);
+    }
+    expect(total).toBeLessThanOrEqual(w.weapons[0].stats.range);
+
+    // And it stopped because it ran out, not because it ran off the end of the line.
+    expect(b.count).toBeLessThan(8);
+  });
+
+  it('never burns the same enemy twice in one chain', () => {
+    const w = makeWorld('laser-medium');
+    setTier(w, 8);
+    // TWO bodies close together: a chain that did not exclude what it had already hit would
+    // bounce between them until it ran out of budget.
+    line(w, 2, 120, 40);
+    tick(w);
+
+    const b = w.beams;
+    const seen = new Set<number>();
+    for (let i = 0; i < b.count; i++) {
+      if (b.enemyDense[i] === NO_BEAM_TARGET) continue;
+      expect(seen.has(b.enemyDense[i])).toBe(false);
+      seen.add(b.enemyDense[i]);
+    }
+  });
+
+  it('does not chain at tier 7', () => {
+    const w = makeWorld('laser-medium');
+    setTier(w, WEAPON_MAX_TIER);
+    line(w, 8, 120, 60);
+    tick(w);
+    expect(w.beams.count).toBe(1);
+  });
+});
