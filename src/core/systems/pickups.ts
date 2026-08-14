@@ -30,13 +30,25 @@
  * walked away from where the boss happened to fall.
  *
  * ---------------------------------------------------------------------------------------------
- * OVERFLOW IS A DESIGNED BEHAVIOUR, NOT AN ERROR
+ * OVERFLOW RECYCLES THE OLDEST GEM SO THE NEWEST ONE STILL DROPS
  * ---------------------------------------------------------------------------------------------
- * Above GEM_SOFT_CAP (400) a new drop's value is ADDED to the nearest live gem (tie-break: lowest
- * spawnId) and that gem's tier upgrades to match its new total. One linear pass, only on overflow.
- * The alternative - merging nearest PAIRS - would need the gems in a spatial structure of their
- * own; this keeps the pool bounded, keeps the jackpot feel (the field visibly becomes fewer, more
- * valuable gems), and adds no data structure. Nothing is ever silently dropped.
+ * Gems only leave the field when they are picked up, and nobody picks up all of them - a gem
+ * dropped at the far side of the yard at 3:00 is still lying there at 12:00. So the pool climbs
+ * monotonically through a long run and, at GEM_SOFT_CAP, EVERY subsequent kill is at the cap. The
+ * old rule ("above the cap, add the new value to the nearest live gem") therefore did not describe
+ * a rare overflow, it described the whole back half of a run: from the moment the cap was reached
+ * no kill ever produced a gem again, and the player - standing where the fighting is, nowhere near
+ * the ancient gems quietly soaking up their XP - correctly reported that enemies had stopped
+ * dropping anything.
+ *
+ * So the cap now RECYCLES instead of refusing. At the cap the OLDEST live gem (lowest spawnId) is
+ * retired: its value is merged into the live gem nearest to IT, and then the new drop is allocated
+ * exactly as normal. The kill in front of the player always leaves something on the ground; what
+ * collapses is the abandoned corner of the yard, where two old gems becoming one richer gem costs
+ * nobody anything they were ever going to walk back for.
+ *
+ * Two linear passes over the pool, only on overflow. Nothing is destroyed: a retired gem with no
+ * other gem to merge into is left where it is, and the drop absorbs the old way instead.
  *
  * ---------------------------------------------------------------------------------------------
  * GEM spawnId - derived, not stored
@@ -270,15 +282,19 @@ function dropGems(world: World): void {
     const x = feed.x[k];
     const y = feed.y[k];
 
-    if (pool.count >= GEM_SOFT_CAP) {
-      absorbIntoNearest(world, x, y, value);
-      continue;
-    }
-
     // A BOSS LEAVES A CYBER CHEST as well as its core. Dropped here rather than in updateDamage
     // because this is already the stage that turns a KillFeed entry into something on the ground,
     // and the feed carries the flags that say which kills were bosses.
+    //
+    // ABOVE the cap check, deliberately. It used to sit below it, behind a `continue`, so a boss
+    // killed while the field was saturated - which is to say any boss in the back half of a long
+    // run - left no chest at all. The one guaranteed reward in the game must not be contingent on
+    // how many gems happen to be lying in a corner of the yard.
     if ((feed.flags[k] & ENEMY_FLAG_BOSS) !== 0) dropChest(world, x, y);
+
+    // MAKE ROOM RATHER THAN REFUSE THE DROP. See the header: at the cap, every kill is at the cap,
+    // so refusing here is refusing for the rest of the run.
+    if (pool.count >= GEM_SOFT_CAP) recycleOldestGem(world);
 
     const spawnId = 1 + world.tick * MAX_KILLS_PER_TICK + k;
     const tier = gemTierForValue(value, tuning);
@@ -292,6 +308,79 @@ function dropGems(world: World): void {
 
     pushEvent(world.events, EV_GEM_SPAWNED, world.tick, x, y, value, tier);
   }
+}
+
+/**
+ * Retires the OLDEST live gem, merging its value into the live gem nearest to it.
+ *
+ * OLDEST - not furthest, not smallest. Age is the honest proxy for "abandoned": the yard is 12 288
+ * units across and the fighting moves around it, so a gem that has survived a long time is one
+ * nobody went back for. Distance-from-player would eat the gem the player is sprinting towards the
+ * instant they turned around; smallest-value would strip the field of exactly the cheap gems that
+ * make a horde kill look like a horde kill. Age is also free to compute - spawnId is already a
+ * monotonic clock (`1 + tick * MAX_KILLS_PER_TICK + k`) and already unique, so "oldest" is a
+ * minimum over a field the pool has to carry anyway.
+ *
+ * NEAREST TO THE RETIRED GEM, not nearest to the player. The merge is meant to be invisible: two
+ * gems in a forgotten corner become one richer gem in that same corner. Sending the value to the
+ * player's neighbourhood instead would be a slow teleport of XP across the map, and would make the
+ * gems around the player silently swell for reasons nothing on screen explains.
+ *
+ * Consumables and chests are skipped by kind in both passes. They share the pool but not the rule -
+ * a spanner is not spare capacity, and a chest that evaporated because the gem field filled up
+ * would be the boss-reward bug again in a different costume.
+ */
+function recycleOldestGem(world: World): void {
+  const pool = world.pickups;
+  const n = pool.count;
+
+  let oldest = -1;
+  for (let d = 0; d < n; d++) {
+    if ((pool.flags[d] & PICKUP_FLAG_DEAD) !== 0) continue;
+    if (pool.kind[d] !== PICKUP_KIND_GEM) continue;
+    if (oldest < 0 || pool.spawnId[d] < pool.spawnId[oldest]) oldest = d;
+  }
+  if (oldest < 0) return;
+
+  const ox = pool.x[oldest];
+  const oy = pool.y[oldest];
+
+  let best = -1;
+  let bestD2 = 0;
+  for (let d = 0; d < n; d++) {
+    if (d === oldest) continue;
+    if ((pool.flags[d] & PICKUP_FLAG_DEAD) !== 0) continue;
+    if (pool.kind[d] !== PICKUP_KIND_GEM) continue;
+    const dx = pool.x[d] - ox;
+    const dy = pool.y[d] - oy;
+    const d2 = dx * dx + dy * dy;
+    if (best < 0 || d2 < bestD2 || (d2 === bestD2 && pool.spawnId[d] < pool.spawnId[best])) {
+      best = d;
+      bestD2 = d2;
+    }
+  }
+  // The oldest gem is the only gem. Retiring it would delete its XP outright, so it stays and the
+  // caller's drop simply takes another slot - PICKUP_CAP has headroom above the soft cap for
+  // exactly this sort of edge.
+  if (best < 0) return;
+
+  const total = pool.value[best] + pool.value[oldest];
+  const clamped = total > MAX_GEM_VALUE ? MAX_GEM_VALUE : total;
+  pool.value[best] = clamped;
+  pool.tier[best] = gemTierForValue(clamped, world.config.tuning.pickups);
+  pushEvent(
+    world.events,
+    EV_GEM_SPAWNED,
+    world.tick,
+    pool.x[best],
+    pool.y[best],
+    clamped,
+    pool.tier[best],
+  );
+
+  // Marked, not removed - S12 owns removal, so `pool.count` does not fall until the end of the
+  // tick and the caller's allocPickup takes a fresh slot above it. PICKUP_CAP is sized for that.
+  markPickupDead(pool, oldest);
 }
 
 /**

@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T12:11Z',
+    title: 'Enemies never stop dropping XP',
+    notes: [
+      'Kills late in a run were leaving nothing on the ground. Gems only ever leave the yard when you pick them up, so the ones you walked past at three minutes were still lying there at twelve - and once enough of them had piled up, every new kill quietly poured its XP into some gem in a corner you were never going to visit.',
+      'Now the field makes room instead. When it is full, the OLDEST gem out there is recycled into whichever gem is nearest to it, and the kill in front of you drops a real gem as normal. Abandoned corners of the yard collapse into fewer, richer gems; nothing is ever lost.',
+      'The field also holds more: 500 gems, up from 400.',
+      'A boss killed while the field was full used to leave no Cyber Chest at all. It always leaves one now.',
+    ],
+  },
+  {
     at: '2026-08-14T11:44Z',
     title: 'Chest reels show your own loadout, and pay out in it',
     notes: [

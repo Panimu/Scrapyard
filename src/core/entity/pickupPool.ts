@@ -2,10 +2,10 @@
  * Pickup pool (XP gems and repair motes). Same shape as the other two pools.
  *
  * Gems are the one pool that regularly sits near capacity, so overflow is a designed behaviour
- * rather than an error: above GEM_SOFT_CAP a new drop's value is ADDED to the nearest live gem
- * (tie-break: lowest spawnId) and that gem's tier upgrades to match. One linear pass, only on
- * overflow - bounded pool, same jackpot feel, no new data structure. That logic lives in
- * updatePickups; this file only provides the storage and the tie-break field.
+ * rather than an error: above GEM_SOFT_CAP the OLDEST live gem (lowest spawnId) is retired into
+ * the gem nearest to it, and the new drop then allocates normally. Bounded pool, and the kill in
+ * front of the player always leaves something on the ground. That logic lives in updatePickups;
+ * this file only provides the storage, and `spawnId` - which doubles as the age ordering.
  */
 
 import {

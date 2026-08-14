@@ -610,31 +610,41 @@ describe('the magnet - it chases, it does not teleport', () => {
   });
 });
 
-describe('gem overflow - absorbed, never dropped', () => {
-  it('adds a new drop to the nearest live gem above GEM_SOFT_CAP', () => {
+describe('gem overflow - the oldest gem is recycled so the newest still drops', () => {
+  it('retires the oldest gem into its neighbour and drops the kill above GEM_SOFT_CAP', () => {
     const w = makeWorld();
-    // Fill to the cap, well outside the magnet so nothing is collected mid-test.
+    // Fill to the cap, well outside the magnet so nothing is collected mid-test. Ascending
+    // spawnIds, so index 0 is the OLDEST gem and index 1 is the one nearest to it.
     for (let i = 0; i < GEM_SOFT_CAP; i++) {
       allocPickup(w.pickups, PICKUP_KIND_GEM, 1, 0, 1000 + i * 10, 500, i + 1);
     }
     expect(w.pickups.count).toBe(GEM_SOFT_CAP);
 
-    // A kill right next to gem 0.
-    const target = addEnemy(w, 1000, 500, 10, ARCH_ELITE, ARCHETYPES[ARCH_ELITE].radius);
-    addShell(w, { x: 1000, y: 500, damage: 30 });
+    // A kill far from every one of them - this is the point of the rule. The gem has to appear
+    // where the fighting is, not be swallowed by a field the player is nowhere near.
+    const target = addEnemy(w, -3000, -3000, 10, ARCH_ELITE, ARCHETYPES[ARCH_ELITE].radius);
+    addShell(w, { x: -3000, y: -3000, damage: 30 });
     detectAndApply(w);
     updatePickups(w, DT);
 
     expect(w.enemies.flags[target] & ENEMY_FLAG_DEAD).toBe(ENEMY_FLAG_DEAD);
-    // No new gem; the value landed on the nearest one and upgraded its tier.
-    expect(w.pickups.count).toBe(GEM_SOFT_CAP);
-    expect(w.pickups.value[0]).toBe(1 + ARCHETYPES[ARCH_ELITE].xp);
-    expect(w.pickups.tier[0]).toBe(
-      gemTierForValue(1 + ARCHETYPES[ARCH_ELITE].xp, DEFAULT_TUNING.pickups),
-    );
-    // And nothing was silently lost.
+
+    // The oldest gem is gone, its value merged into the gem beside it.
+    expect(w.pickups.flags[0] & PICKUP_FLAG_DEAD).toBe(PICKUP_FLAG_DEAD);
+    expect(w.pickups.value[1]).toBe(2);
+
+    // And the kill left a real gem on the ground, at the kill.
+    const fresh = w.pickups.count - 1;
+    expect(w.pickups.kind[fresh]).toBe(PICKUP_KIND_GEM);
+    expect(w.pickups.value[fresh]).toBe(ARCHETYPES[ARCH_ELITE].xp);
+    expect(w.pickups.x[fresh]).toBe(-3000);
+
+    // Nothing was silently lost: the live gems still hold every point of XP in play. (The dead
+    // slot keeps its old value until S12 reaps it, so the sum has to skip it.)
     let total = 0;
-    for (let d = 0; d < w.pickups.count; d++) total += w.pickups.value[d];
+    for (let d = 0; d < w.pickups.count; d++) {
+      if ((w.pickups.flags[d] & PICKUP_FLAG_DEAD) === 0) total += w.pickups.value[d];
+    }
     expect(total).toBe(GEM_SOFT_CAP + ARCHETYPES[ARCH_ELITE].xp);
   });
 });

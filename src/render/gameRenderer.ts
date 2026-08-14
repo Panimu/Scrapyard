@@ -95,7 +95,7 @@ const KILL_REASON_DESPAWNED = 1;
 
 /** Pool capacities. Sized against the core's caps, not guessed. */
 const ENEMY_SPRITES = 320; // MAX_LIVE_ENEMIES is 300
-const PICKUP_SPRITES = 420; // GEM_SOFT_CAP is 400
+const PICKUP_SPRITES = 560; // GEM_SOFT_CAP is 500, plus the barrels' consumables and a chest
 const PROJECTILE_SPRITES = 256; // PROJECTILE_CAP
 const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;

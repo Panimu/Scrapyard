@@ -17,11 +17,33 @@ export const DT_MS = 1000 / 60;
 // ---------------------------------------------------------------------------------------------
 export const ENEMY_CAP = 512;
 export const PROJECTILE_CAP = 256;
-export const PICKUP_CAP = 512;
+/**
+ * 768, not 512, and the extra room is REQUIRED rather than generous.
+ *
+ * At the gem soft cap the drop path RETIRES a gem and allocates a new one in the same breath, and
+ * a retire is a deferred mark-dead - S12 is the only place a slot is actually freed. So a tick that
+ * lands MAX_KILLS_PER_TICK kills while saturated grows the pool by that many before the reaper
+ * runs: 500 + 128 = 628 in the worst case. 512 would have failed the allocation and silently sent
+ * the XP down the fallback path.
+ */
+export const PICKUP_CAP = 768;
 
 /** Director hard caps, kept below the pool caps so allocation can never silently fail. */
 export const MAX_LIVE_ENEMIES = 300;
-export const GEM_SOFT_CAP = 400;
+/**
+ * How many pickups may lie on the ground before the drop path starts RETIRING the oldest gem to
+ * make room. See `dropGems`.
+ *
+ * 500, up from 400, and the reason 400 was wrong is worth writing down: a gem only leaves the pool
+ * when it is COLLECTED, and nobody collects them all. The reference bot picks up 58% of what it
+ * drops and a player who kites picks up about 25%, so live gems climb by roughly one per second of
+ * survival for the whole run - monotonically, with nothing to drain them.
+ *
+ * At 400 that meant saturation around 6 minutes for a kiting player and 13 for the bot, and
+ * saturation used to mean NO KILL PRODUCED A GEM EVER AGAIN. Raising the number buys time; the
+ * retire-oldest rule is what actually fixes it.
+ */
+export const GEM_SOFT_CAP = 500;
 
 // ---------------------------------------------------------------------------------------------
 // Per-tick scratch sizes. All preallocated; nothing here grows.
