@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T23:22Z',
+    title: 'Artillery and the Cannon both slow down',
+    notes: [
+      'HEAVY ARTILLERY HITS 5% SOFTER AND FIRES 5% LESS OFTEN: 58 damage a shell becomes 55.1, and the barrage rhythm goes from 3.6 seconds to 3.8. Its blast radius, its fuse and its tiers are all untouched.',
+      'THE CANNON FIRES 5% LESS OFTEN. 1.20 seconds a shell becomes 1.26. Same 44 damage, same shell, same pierce - it just lays a little slower.',
+      'BOTH CUTS BITE HARDER ON A FINISHED GUN than on a fresh one, because the tiers that speed these weapons up take off a fixed number of seconds rather than a percentage. A tier-7 Cannon loses 7% of its rate rather than 5%, and a tier-7 Artillery 7.3%.',
+    ],
+  },
+  {
     at: '2026-08-14T23:10Z',
     title: 'Heavy Artillery drops two shells, not three',
     notes: [

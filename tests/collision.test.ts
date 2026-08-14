@@ -679,6 +679,14 @@ describe('damage by source accounts for every point dealt', () => {
         tuning: DEFAULT_TUNING,
       });
       for (let t = 0; t < 60 * 90; t++) {
+        // TOPPED UP EVERY TICK, so the mech cannot die. This suite is about damage ACCOUNTING and
+        // the run is only a way to exercise every crediting path; a hero that dies early exercises
+        // fewer of them, and one that dies before its weapon lands a shot exercises none. Artillery
+        // is the case that made this necessary - it stands still, fires on a 3.8 s rhythm at ground
+        // rather than at bodies, and a balance change to either number could leave a 10 s run with
+        // nothing credited at all. Refilling hp rather than zeroing damageTakenMul because taking
+        // an upgrade re-resolves the player's stats and would restore it.
+        w.player.hp = w.player.stats.maxHp;
         const input =
           w.phase === RUN_PHASE_LEVEL_UP || w.phase === RUN_PHASE_CHEST
             ? { ...EMPTY_INPUT, chooseIndex: 0 }

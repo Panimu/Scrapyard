@@ -236,7 +236,7 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
 /**
  * 220 deg/s = 3.839724354387525 rad/s.
  *
- * Chosen against the cooldown, not by feel: 220 deg/s sweeps 264 deg during one 1.2 s cooldown
+ * Chosen against the cooldown, not by feel: 220 deg/s sweeps 278 deg during one 1.263 s cooldown
  * against a 180 deg worst-case re-lay, so the turret is essentially always laid on when the
  * cooldown expires. That is what makes hold-fire cost nothing and makes a target lock
  * unnecessary (DESIGN.md §0, "biggest design call").
@@ -263,7 +263,7 @@ export const CANNON: WeaponDef = Object.freeze({
   requiresTarget: true,
   base: Object.freeze({
     damage: 44, // no variance, no crit
-    cooldown: 1.2, // 0.833 shots/s - the whole pace of the game is this number
+    cooldown: 1.263, // 0.792 shots/s - the whole pace of the game is this number
     range: 247, // 56% of the visible width at VIEW_MINOR_UNITS 440
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
@@ -301,10 +301,10 @@ export const CANNON: WeaponDef = Object.freeze({
    */
   perLevel: Object.freeze([
     { range: 62 }, // T2  247 -> 309
-    { cooldown: -0.18 }, // T3  1.20 -> 1.02 s
+    { cooldown: -0.18 }, // T3  1.263 -> 1.083 s
     { damage: 18 }, // T4  44 -> 62
     { range: 62 }, // T5  309 -> 371
-    { cooldown: -0.18 }, // T6  1.02 -> 0.84 s
+    { cooldown: -0.18 }, // T6  1.083 -> 0.903 s
     { pierce: 1 }, // T7  punches through one body
   ]),
   reengageMul: 0.55,
@@ -704,7 +704,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // it. Area grows with the square of the radius, so that band is a density dial as much as a reach
 // one - see STRIKE_RADIUS_MIN/MAX in constants.ts for what the tighter and wider versions cost.
 //
-//   2 shells   0.7 s fuse   58 damage   75 u blast   3.6 s reload   -> 3 shells at tier 7
+//   2 shells   0.7 s fuse   55.1 damage   75 u blast   3.789 s reload   -> 3 shells at tier 7
 //
 // The fuse is the weapon. Shells are inert while they fall - flagged NOCONTACT so nothing can set
 // one off early - which gives the player two thirds of a second to read the markers and decide
@@ -722,8 +722,8 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   // Fires into an empty field quite happily. It is not shooting AT anything.
   requiresTarget: false,
   base: Object.freeze({
-    damage: 58,
-    cooldown: 3.6, // slow: this is a rhythm you plan around, not a gun you aim
+    damage: 55.1,
+    cooldown: 3.789, // slow: this is a rhythm you plan around, not a gun you aim
     range: STRIKE_RADIUS_MAX,
     projectileSpeed: 0, // shells do not travel - they arrive
     projectileCount: 2,
@@ -744,10 +744,10 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   }),
   perLevel: Object.freeze([
     { splashRadius: 18 }, // T2  75 -> 93
-    { cooldown: -0.6 }, // T3  3.6 -> 3.0 s
-    { damage: 22 }, // T4  58 -> 80
+    { cooldown: -0.6 }, // T3  3.789 -> 3.189 s
+    { damage: 22 }, // T4  55.1 -> 77.1
     { splashRadius: 18 }, // T5  93 -> 111
-    { cooldown: -0.6 }, // T6  3.0 -> 2.4 s
+    { cooldown: -0.6 }, // T6  3.189 -> 2.589 s
     { projectileCount: 1 }, // T7  a third shell
   ]),
   reengageMul: 1,
