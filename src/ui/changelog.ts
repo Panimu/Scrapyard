@@ -40,6 +40,79 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-14T10:28Z',
+    title: 'Credits are kept between runs',
+    notes: [
+      'Blue credit coins no longer die with the run. The total banks, shows on the mech picker as “N credits banked”, and keeps climbing every time you play.',
+      'The summary reads “+N” for the run you just finished and the lifetime figure beside it.',
+      'Nothing spends credits yet. This is the currency the meta-progression will run on, and it is being collected from now so that whatever it buys, you arrive with something.',
+    ],
+  },
+  {
+    at: '2026-08-14T10:28Z',
+    title: 'There is land beyond the fence again',
+    notes: [
+      'The ground outside the perimeter used to be a flat black void, which made the yard read as the edge of a level. It is ground now - the same barren rust, dimmed and cooled, running off past the wire.',
+    ],
+  },
+  {
+    at: '2026-08-14T10:28Z',
+    title: 'Fuel barrels: smaller, everywhere, and sometimes empty',
+    notes: [
+      'A drum is now comfortably smaller than the mech that walks into it, and no longer an obstacle worth steering around.',
+      'There are roughly three times as many of them. A barrel is something you clip on the way past, not a landmark you cross the map for.',
+      'One in four holds nothing at all. It still goes up - you just get to see that it was empty.',
+    ],
+  },
+  {
+    at: '2026-08-14T09:44Z',
+    title: 'Walk into a barrel and it goes over',
+    notes: [
+      'The mech does not stop for it, and the drop lands where you are already walking - so the pickup usually completes in the same stride.',
+      'Weapons break barrels by accident, aiming at something else. Walking into one is the only way to take a barrel on purpose.',
+      'Enemies still cannot break them, so the horde will not clear the yard for you on its way past.',
+    ],
+  },
+  {
+    at: '2026-08-14T09:13Z',
+    title: 'Fuel barrels, and the three things inside them',
+    notes: [
+      'A lone drum with a hazard band, standing among the scrap. Nothing targets it - the guns will not aim at one - but any weapon that hits it sets it off.',
+      'SPANNER: repairs a quarter of your maximum hull.',
+      'CREDIT COIN: 1 to 50 credits, worth more the later in the run you find it. The pile you can see is the amount - a single coin, a small stack, a large stack, or an overflowing bag.',
+      'MAGNET: every XP gem in the world comes to you for four seconds, at any distance.',
+      'Consumables are walked over, not magnetised. Deciding whether to go and get one is the point of them.',
+      'Lasers hold fire rather than burning into scenery, so they cook themselves for nothing far less often.',
+    ],
+  },
+  {
+    at: '2026-08-14T08:48Z',
+    title: 'Wrecked hulls in the yard',
+    notes: [
+      'Dead enemy vehicles lie burnt and tilted among the scrap - the same hulls you have been shooting all run.',
+      'And, rarely, a wrecked MECH: one chassis on its side with a leg torn off and cockpit glass thrown clear. About one in every thirty piles.',
+    ],
+  },
+  {
+    at: '2026-08-14T08:41Z',
+    title: 'Scrap in the yard, and an endgame that is heavy rather than fast',
+    notes: [
+      'The ground now has crushed cars, barrel clusters, girder heaps and tyre stacks standing on it. You and the horde both have to go around them; shells bury themselves in them; lasers hold fire rather than burning into them.',
+      'Enemies no longer get better at everything every two minutes. Some cycles trade speed for mass and some do the reverse - the Scavenger is quick and flimsy, the Hauler slow and fat, the Prowler the fastest thing in the game, the Dozer the slowest.',
+      'THE LAST TWO CYCLES ARE MUCH SLOWER. At fifteen minutes the fastest thing on the field has dropped by more than a fifth. The endgame closes in on you now rather than chasing you down.',
+    ],
+  },
+  {
+    at: '2026-08-14T07:56Z',
+    title: 'The arena is a fenced scrapyard, not a loop',
+    notes: [
+      'The world no longer wraps. It is a walled yard about 12 000 units across - a minute to cross at a sprint - with a real perimeter fence you can walk up to and cannot pass. Running into it slides you along it.',
+      'Enemies you outrun are picked up and put back in front of you, at the health you left them on. There is no longer any distance at which the horde stops being your problem.',
+      'GEMS STAY WHERE THEY FELL. They no longer come back round to you on their own, so going back for the XP you abandoned is a real decision.',
+      'Fixed: the gem magnet could fling a gem past you and out through the fence, where it could never be picked up. That XP is no longer lost.',
+    ],
+  },
+  {
     at: '2026-08-14T00:05Z',
     title: 'The arena wraps, and nothing despawns',
     notes: [
