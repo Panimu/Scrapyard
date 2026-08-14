@@ -72,7 +72,6 @@ import type { PlayerStats, WeaponStats } from './data/stats.js';
 import { updateDifficulty } from './systems/difficulty.js';
 import { updateSpawning } from './systems/spawning.js';
 import { updatePlayerMovement } from './systems/playerMovement.js';
-import { updateWorldWrap } from './systems/wrap.js';
 import { updateEnemyAI } from './systems/enemyAI.js';
 import { updateWeapons } from './systems/weapons.js';
 import { updateProjectiles } from './systems/projectiles.js';
@@ -422,11 +421,6 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
   // S3 before S4: enemies steer toward the player's CURRENT position, one tick fresher. It is
   // what makes the horde feel like it is actually chasing you.
   updatePlayerMovement(world, DT);
-
-  // S3b, and it has to be exactly here: AFTER the player has moved and BEFORE anything measures a
-  // distance to them. It re-centres the wrapping arena on the player, which is what lets every
-  // system below subtract two positions the ordinary way and still be right on a torus.
-  updateWorldWrap(world);
 
   // S4 seek + separation + integrate. Separation reads the PREVIOUS tick's hash (staleness
   // <= 2.4 u, and the query radius is padded by exactly that) so a soft steering force does not

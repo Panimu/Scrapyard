@@ -55,6 +55,7 @@ import {
 import { BeamLayer } from './beams.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
+import { Fence } from './fence.js';
 import { SpritePool } from './spritePool.js';
 import {
   GEM_SCALE,
@@ -183,6 +184,7 @@ export class GameRenderer {
   };
 
   private readonly floor: TilingSprite;
+  private readonly fence: Fence;
   private readonly world: Container;
   private readonly letterbox: Graphics;
 
@@ -302,10 +304,14 @@ export class GameRenderer {
 
     this.letterbox = new Graphics({ label: 'letterbox' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
+    this.fence = new Fence(tex);
 
     this.world.addChild(
-      // FIRST, so it is under every other thing in the world. It is paint on the floor, and a
-      // marker drawn over the crowd would hide the bodies the player is deciding about.
+      // FIRST, because it is the ground itself - it has to cover the floor tile, which is drawn
+      // screen-space and does not know the yard has an edge.
+      this.fence.container,
+      // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
+      // hide the bodies the player is deciding about.
       this.strikeMarkers,
       this.pickups.container,
       this.enemies.container,
@@ -380,6 +386,9 @@ export class GameRenderer {
     this.camera.follow(px, py);
 
     this.drawFloor();
+    // Static geometry - this only decides which of the four runs are worth submitting, and in the
+    // middle of the yard the answer is none of them.
+    this.fence.update(this.camera);
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);

@@ -90,26 +90,72 @@ export const WEAPON_SCRATCH_LEN = 4;
 export const SPAWN_RADIUS = 560;
 
 /**
- * THE ARENA IS A TORUS OF THIS SIZE, in world units, square. Walk off one edge and you come back
- * on the other; there are no walls and there is nowhere that is not the arena.
+ * THE ARENA IS A FENCED SQUARE OF THIS SIZE, in world units. A real barrier, not a wrap: the
+ * scrapyard has a perimeter fence, you can walk up to it, and you cannot walk through it.
  *
- * 4096 is chosen against three numbers, not picked for feel:
+ * ---------------------------------------------------------------------------------------------
+ * WHY THIS IS NOT A TORUS ANY MORE
+ * ---------------------------------------------------------------------------------------------
+ * It briefly was, at 4096, and the torus was the wrong model twice over. It is not what the genre
+ * does - Vampire Survivors' stages are bounded rectangles, and what it moves is ENEMIES (anything
+ * too far behind is relocated ahead of you) while GEMS stay exactly where they fell. And a 21 s lap
+ * meant the world had no elsewhere: every gem you abandoned came back to you, which is the reward
+ * for going back to fetch it deleted.
  *
- *   > 2 x THREAT_RADIUS (1800). This is the binding one. The director spawns to hold PRESSURE
- *     within 900 u of the player, so if the far side of the world were inside that radius it
- *     would count the entire population as "near me", throttle itself to the cycle's target and
- *     stop advancing the ladder. At 4096 the far side is 2048 u away - genuinely elsewhere.
- *   > 4 x SPAWN_RADIUS (2240), so a spawn ring never overlaps itself around the back.
- *   = 64 spatial cells at SPATIAL_CELL_SIZE 64, which keeps the broad phase's cell coordinates
- *     small and tidy for anything that later wants to reason about them.
+ * So the geometry is now honest - a big walled yard, with the two rules that make it feel endless
+ * living where they belong: RELOCATE_RADIUS moves the horde, and nothing at all moves the gems.
  *
- * A lap is 4096 / 195 = 21 seconds at a mech's top speed. That is the number that decides how the
- * world FEELS: long enough that running away is a real escape, short enough that it is only ever
- * a loop, and you meet what you left behind.
+ * ---------------------------------------------------------------------------------------------
+ * WHY 12288
+ * ---------------------------------------------------------------------------------------------
+ * 63 seconds to cross at a mech's 195 u/s top speed, against a 900 s run. That is the number that
+ * decides how the world feels, and it is chosen to sit between two failures:
+ *
+ *   TOO SMALL and the fence is a cage. At the old 4096 a committed sprint hits a wall in 21 s -
+ *     several times per run, in the middle of fights, with the horde arriving behind you.
+ *   TOO LARGE and the fence is a lie: it exists in the constants and no player ever sees it. The
+ *     barrier is meant to be REAL, which means reachable.
+ *
+ * At 12288 a player who commits to one direction meets the fence about once a run, which is
+ * exactly often enough that the yard has edges and rarely enough that it never has walls.
+ *
+ * It is also 192 SPATIAL_CELL_SIZE cells across. That costs nothing - the broad phase hashes cell
+ * coordinates into SPATIAL_BUCKET_COUNT buckets rather than indexing a dense grid, so the arena
+ * could be any size at all without the hash growing by a byte.
  */
-export const ARENA_SIZE = 4096;
-/** Half-extent. The furthest anything can ever be from anything else, per axis. */
+export const ARENA_SIZE = 12288;
+/**
+ * Half-extent, measured to the INNER FACE of the fence. This is the playable bound: no entity's
+ * CENTRE may pass it, and each is held its own radius short of it.
+ */
 export const ARENA_HALF = ARENA_SIZE / 2;
+
+/**
+ * How deep the fence itself is, drawn OUTWARD from ARENA_HALF. Simulation-side only so the sim and
+ * the renderer agree on where the barrier is; nothing collides with the band itself.
+ *
+ * 56 u is about 13% of the 440 u minor view, so walking up to it fills a real slice of the screen
+ * and reads as a structure rather than a hairline.
+ */
+export const FENCE_DEPTH = 56;
+
+/**
+ * HOW FAR BEHIND AN ENEMY MAY FALL before it is picked up and put back on the spawn ring.
+ *
+ * This is the rule that makes a bounded yard behave like an endless one, and it is Vampire
+ * Survivors' rule rather than a torus: outrun something and it is not deleted and does not come
+ * around the back - it reappears on the ring ahead of you, at the SAME HP, rank and cycle. A horde
+ * you ran away from is a horde you still have to kill.
+ *
+ * 1400 u against a 500.9 u max half-diagonal: relocation always happens well off screen, and never
+ * within 2.5 screens of the player, so nothing is ever seen to jump.
+ *
+ * IT DOES NOT APPLY TO BOSSES. A boss is a tenant, not a wave (systems/spawning.ts), and outrunning
+ * one has always been possible and always cost you - it is still walking toward you, still alive,
+ * and still suppressing six regulars' worth of spawning when it catches up. Relocating bosses would
+ * make a cycle's set-piece inescapable, which is a difficulty change dressed up as a geometry one.
+ */
+export const RELOCATE_RADIUS = 1400;
 
 /**
  * ARTILLERY STRIKE ANNULUS - where a barrage is allowed to land.
@@ -136,8 +182,13 @@ export const STRIKE_RADIUS_MAX = 320;
  * How far the director can SEE. Enemies beyond it do not count toward local pressure.
  *
  * It used to double as the despawn radius - outrun something by 900 u and it was deleted. Nothing
- * despawns any more (the arena wraps, so there is no "away" to outrun something to), and the two
- * numbers have gone their separate ways: this one is now purely the director's field of view.
+ * despawns any more (outrun it far enough and it is RELOCATED ahead of you instead, see
+ * RELOCATE_RADIUS), and the two numbers have gone their separate ways: this one is now purely the
+ * director's field of view.
+ *
+ * The gap between the two is deliberate and is where kiting still pays. Past 900 u an enemy stops
+ * counting toward local pressure, so the director spawns more; past 1400 u it is put back in front
+ * of you. Running therefore buys you a 500 u band of relief and then hands the bill back.
  *
  * NOT SPAWN_RADIUS. At 560 the director could not see enemies trailing behind a kiting player,
  * read the field as empty and spawned more ahead of them - actual threat ran at double target.

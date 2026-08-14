@@ -155,6 +155,24 @@ export const GEM_TINT: readonly number[] = [0x4fd1ff, 0x6fe36f, 0xc77bff, 0xffd3
 export const FLOOR_TILE_UNITS = 64;
 
 // ---------------------------------------------------------------------------------------------
+// THE PERIMETER FENCE. These three restate the layout tools/make-fence.mjs draws to, and the two
+// files have to be edited together: the texture is authored at 2 px per world unit, and the sprite
+// is placed by these numbers rather than by the texture's own size.
+// ---------------------------------------------------------------------------------------------
+/** Repeat length along the run. One tile is four panels and covers most of a screen width. */
+export const FENCE_TILE_UNITS = 256;
+/** How far the strip reaches INSIDE ARENA_HALF: the shadow, and the junk drifted at the foot. */
+export const FENCE_INNER_UNITS = 16;
+/** How far it reaches OUTSIDE: structure, then dead ground fading to VOID. */
+export const FENCE_OUTER_UNITS = 112;
+/**
+ * The colour beyond the fence, and it MUST equal the value the texture's gradient ends on
+ * (`VOID` in make-fence.mjs). The renderer floods the whole exterior with it and the strip fades
+ * into it; a mismatch of even one step draws a visible band along all four runs.
+ */
+export const VOID_COLOUR = 0x151109;
+
+// ---------------------------------------------------------------------------------------------
 // Loading
 // ---------------------------------------------------------------------------------------------
 
@@ -174,6 +192,10 @@ export interface GameTextures {
   /** Sprite scale for each typeId, so the CONTENT measures the archetype's drawSize. */
   readonly enemyScale: Float32Array;
   readonly floor: Texture;
+  /** Perimeter fence strip, tiled along each run. Repeat-wrapped, so it is kept out of any atlas. */
+  readonly fence: Texture;
+  /** Corner pillar, one per corner, capping the two runs that meet there. */
+  readonly fencePost: Texture;
   readonly shell: Texture;
   readonly gem: Texture;
   readonly puff: readonly Texture[];
@@ -262,7 +284,7 @@ export async function loadGameTextures(
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
-  keys.push('floor', 'shell', 'missile', 'slug', 'gem');
+  keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem');
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
 
@@ -281,16 +303,20 @@ export async function loadGameTextures(
     return t;
   };
 
-  const floor = get('floor');
   // WebGL REPEAT wrapping needs a dedicated power-of-two texture; this is exactly why the floor
-  // tile is kept OUT of any atlas (ASSET_MANIFEST gotcha 8).
+  // tile and the fence strip are kept OUT of any atlas (ASSET_MANIFEST gotcha 8).
+  const floor = get('floor');
   floor.source.wrapMode = 'repeat';
   floor.source.scaleMode = 'linear';
+
+  const fence = get('fence');
+  fence.source.wrapMode = 'repeat';
+  fence.source.scaleMode = 'linear';
 
   // Smooth vector-derived art, upscaled. Linear + mipmaps; NEAREST would look worse, not
   // crisper (ASSET_MANIFEST gotcha 6).
   for (const k of keys) {
-    if (k === 'floor') continue;
+    if (k === 'floor' || k === 'fence') continue;
     get(k).source.scaleMode = 'linear';
   }
 
@@ -314,6 +340,8 @@ export async function loadGameTextures(
     enemies,
     enemyScale,
     floor,
+    fence,
+    fencePost: get('fence_post'),
     shell: get('shell'),
     missile: get('missile'),
     slug: get('slug'),

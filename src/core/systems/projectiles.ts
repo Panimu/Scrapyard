@@ -23,6 +23,7 @@
  * until S12).
  */
 
+import { ARENA_HALF } from '../constants.js';
 import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
 import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
 import {
@@ -219,6 +220,41 @@ export function updateProjectiles(world: World, dt: number): void {
   if (world.projectiles.count === 0) return;
   for (let b = 0; b < PROJECTILE_BEHAVIOURS.length; b++) {
     PROJECTILE_BEHAVIOURS[b](world, b, dt);
+  }
+  stopAtTheFence(world);
+}
+
+/**
+ * Anything that leaves the yard expires where it crossed the fence.
+ *
+ * One sweep after every behaviour rather than a bound test inside each: the rule is about the
+ * WORLD, not about how a given round flies, and a straight shell and a homing missile should both
+ * stop at the same wire. A third behaviour added later inherits it for free.
+ *
+ * It expires rather than merely dying, so a shell with `detonateOnExpiry` bursts against the fence
+ * instead of winking out - the barrier reads as something that was hit.
+ *
+ * A round is only ever one tick's travel past the line (at most 15 u for the fastest slug), so the
+ * burst lands ON the fence and never visibly beyond it.
+ */
+function stopAtTheFence(world: World): void {
+  const p = world.projectiles;
+  const n = p.count;
+  const x = p.x;
+  const y = p.y;
+  const flags = p.flags;
+
+  for (let d = 0; d < n; d++) {
+    if ((flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+    if (
+      x[d] >= -ARENA_HALF &&
+      x[d] <= ARENA_HALF &&
+      y[d] >= -ARENA_HALF &&
+      y[d] <= ARENA_HALF
+    ) {
+      continue;
+    }
+    expireProjectile(world, d);
   }
 }
 

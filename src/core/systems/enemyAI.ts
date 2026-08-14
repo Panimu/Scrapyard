@@ -35,10 +35,12 @@
  * anything catch you.
  */
 
+import { ARENA_HALF, RELOCATE_RADIUS } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
 import { EV_ENEMY_KILLED, pushEvent } from '../events/ring.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
+import { rollRingPosition } from './spawning.js';
 import type { World } from '../types.js';
 
 /**
@@ -56,6 +58,7 @@ export function updateEnemyAI(world: World, dt: number): void {
   seek(world);
   separate(world, dt);
   integrate(world, dt);
+  relocateStragglers(world);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -212,7 +215,8 @@ function separate(world: World, dt: number): void {
 // -------------------------------------------------------------------------------------------
 
 /**
- * Position += (steering velocity + knockback velocity) x dt, then decay the knockback.
+ * Position += (steering velocity + knockback velocity) x dt, clamped to the yard, then decay the
+ * knockback.
  *
  * KNOCKBACK IS A SEPARATE CHANNEL from steering, deliberately. If a shell wrote into `vx/vy` the
  * very next seek pass would overwrite it and the punt would be invisible; keeping it in
@@ -221,14 +225,21 @@ function separate(world: World, dt: number): void {
  * snaps to zero below `pushEpsilon` so it cannot dribble forever and keep the pool's bytes - and
  * therefore the world hash - churning after everything has settled.
  *
- * NOTHING DESPAWNS. An enemy the player has outrun keeps walking, forever, and the arena wraps -
- * so "away" is a direction, not a destination, and a horde left behind is a horde that will be
- * in front of you in twenty seconds. That is the whole shape of the game now: pressure is
- * cumulative, and the only way to reduce it is to kill things.
+ * NOTHING DESPAWNS. An enemy the player has outrun keeps walking, forever, and past
+ * RELOCATE_RADIUS it is picked up and put back in front of them (see relocateStragglers below) -
+ * so "away" is a direction, not a destination. That is the whole shape of the game now: pressure
+ * is cumulative, and the only way to reduce it is to kill things.
  *
  * This used to recycle anything past 900 u, which was the escape hatch: run in a straight line
  * and the field emptied. `KILL_REASON_DESPAWNED` survives in the event contract because the
  * render layer still switches on it, but the simulation no longer emits it.
+ *
+ * THE FENCE CLAMP is a plain position clamp with no velocity edit, unlike the player's. An enemy
+ * re-solves its steering from scratch every tick, so there is no stored velocity for a clamp to
+ * leave stale - and the seek vector points at the player, who is inside the yard, so a body held
+ * against the fence walks along it toward them rather than grinding into the wire. The knockback
+ * channel is left alone on purpose: a shell can still shove something into the fence, it just
+ * cannot shove it through.
  */
 function integrate(world: World, dt: number): void {
   const p = world.enemies;
@@ -248,14 +259,23 @@ function integrate(world: World, dt: number): void {
   const decay = Math.max(0, 1 - tune.pushDamping * dt);
   const eps2 = tune.pushEpsilon * tune.pushEpsilon;
 
+  const radius = p.radius;
+
   for (let d = 0; d < n; d++) {
     if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
 
     let kx = pushX[d];
     let ky = pushY[d];
 
-    const nx = x[d] + (vx[d] + kx) * dt;
-    const ny = y[d] + (vy[d] + ky) * dt;
+    let nx = x[d] + (vx[d] + kx) * dt;
+    let ny = y[d] + (vy[d] + ky) * dt;
+
+    const bound = ARENA_HALF - radius[d];
+    if (nx < -bound) nx = -bound;
+    else if (nx > bound) nx = bound;
+    if (ny < -bound) ny = -bound;
+    else if (ny > bound) ny = bound;
+
     x[d] = nx;
     y[d] = ny;
 
@@ -269,5 +289,74 @@ function integrate(world: World, dt: number): void {
       pushX[d] = kx;
       pushY[d] = ky;
     }
+  }
+}
+
+// -------------------------------------------------------------------------------------------
+// (d) Relocation
+// -------------------------------------------------------------------------------------------
+
+/**
+ * THE RULE THAT MAKES A FENCED YARD BEHAVE LIKE AN ENDLESS ONE. Anything more than
+ * RELOCATE_RADIUS from the player is lifted off the ground and set back down on the spawn ring
+ * in front of them, at the same HP, the same rank, the same flavour and the same cycle.
+ *
+ * This is Vampire Survivors' model rather than the torus this replaced, and the difference is
+ * entirely in what MOVES. Enemies move, because a horde is a pressure system and a pressure system
+ * you can walk away from permanently is not one. Gems do not, because the XP you abandoned has to
+ * still be lying where you abandoned it - that is the whole reason to ever double back.
+ *
+ * IT IS NOT A DESPAWN AND IT IS NOT A SPAWN. The body keeps its identity: same slot, same spawnId,
+ * same handle, so the renderer's `spriteBySlot` binding survives and the boss health bar keeps
+ * pointing at the boss. No event is emitted, because nothing was created or destroyed - and there
+ * is no sprite to rebind, which is precisely why the old despawn path needed one.
+ *
+ * WHY IT RUNS AFTER integrate() RATHER THAN INSIDE IT: an enemy must be tested at the position it
+ * actually reached this tick, and moving a body mid-integration would leave the loop's cached
+ * `bound` and knockback decay operating on a body that is no longer where it was.
+ *
+ * PREV IS MOVED WITH IT, and that is the entire correctness risk here - the same one the torus had.
+ * The renderer draws lerp(prev, cur, alpha), so a body teleported 1400 u without its `prev` is
+ * drawn streaking across the whole screen for exactly one frame. Invisible to a hash, invisible to
+ * every other test, extremely visible on a phone.
+ *
+ * KNOCKBACK IS CLEARED. Arriving on the ring still carrying the shove that helped push it out
+ * there would have it slide sideways out of the crowd for the next third of a second.
+ */
+function relocateStragglers(world: World): void {
+  const p = world.enemies;
+  const px = world.player.x;
+  const py = world.player.y;
+  const r2 = RELOCATE_RADIUS * RELOCATE_RADIUS;
+  const t = world.config.tuning.director;
+
+  const x = p.x;
+  const y = p.y;
+  const flags = p.flags;
+  const n = p.count;
+
+  // v0 is the same scratch the director places spawns through. Both run inside one tick and
+  // neither holds it across a call, so they cannot collide.
+  const pos = world.scratch.v0;
+
+  for (let d = 0; d < n; d++) {
+    const f = flags[d];
+    if ((f & ENEMY_FLAG_DEAD) !== 0) continue;
+    // A boss stays where it is. See RELOCATE_RADIUS: outrunning a set-piece has always been
+    // possible and has always cost you, and making it inescapable would be a difficulty change
+    // wearing a geometry change's clothes.
+    if ((f & ENEMY_FLAG_BOSS) !== 0) continue;
+
+    const dx = x[d] - px;
+    const dy = y[d] - py;
+    if (dx * dx + dy * dy <= r2) continue;
+
+    rollRingPosition(world, t, pos);
+    x[d] = pos.x;
+    y[d] = pos.y;
+    p.prevX[d] = pos.x;
+    p.prevY[d] = pos.y;
+    p.pushX[d] = 0;
+    p.pushY[d] = 0;
   }
 }

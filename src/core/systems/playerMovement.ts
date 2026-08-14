@@ -54,6 +54,7 @@
  * gate is 20 u/s.
  */
 
+import { ARENA_HALF } from '../constants.js';
 import { EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
@@ -81,16 +82,47 @@ export function updatePlayerMovement(world: World, dt: number): void {
   // from the old velocity instead would lag the mech half a tick behind its own input and, worse,
   // would put the player one tick stale for updateEnemyAI (S4), which is the stage this one exists
   // to run before.
-  const vx = p.vx + (stick.x * accel - drag * p.vx) * dt;
-  const vy = p.vy + (stick.y * accel - drag * p.vy) * dt;
+  let vx = p.vx + (stick.x * accel - drag * p.vx) * dt;
+  let vy = p.vy + (stick.y * accel - drag * p.vy) * dt;
   p.vx = vx;
   p.vy = vy;
   p.x += vx * dt;
   p.y += vy * dt;
 
+  // THE FENCE. Position is clamped and the velocity INTO the wall is dropped in the same breath;
+  // clamping alone would leave a mech held against the fence carrying 195 u/s of stored speed, and
+  // it would leap the moment the stick turned away. Dropping the component rather than reflecting
+  // it is deliberate too - a mech that bounced off a chain-link fence would be the least heavy
+  // thing in the game.
+  //
+  // The other axis is untouched, so the fence SLIDES: running into it diagonally converts into
+  // running along it, which is what a player expects from a wall and what keeps a corner from
+  // being a trap.
+  const bound = ARENA_HALF - s.radius;
+  if (p.x < -bound) {
+    p.x = -bound;
+    if (vx < 0) vx = 0;
+  } else if (p.x > bound) {
+    p.x = bound;
+    if (vx > 0) vx = 0;
+  }
+  if (p.y < -bound) {
+    p.y = -bound;
+    if (vy < 0) vy = 0;
+  } else if (p.y > bound) {
+    p.y = bound;
+    if (vy > 0) vy = 0;
+  }
+  p.vx = vx;
+  p.vy = vy;
+
   // Facing follows VELOCITY, not the stick: the hull swings around after the mech, which is the
   // visual half of the same weight. It is held through a full stop rather than snapped to +x, so a
   // mech that coasts to rest keeps pointing where it was going.
+  //
+  // Reading the POST-CLAMP velocity matters: a mech pinned against the fence with the stick still
+  // pushing into it faces along the fence, the way it is actually travelling, instead of staring
+  // into the wire.
   const l2 = vx * vx + vy * vy;
   if (l2 > 0) {
     const inv = 1 / Math.sqrt(l2);

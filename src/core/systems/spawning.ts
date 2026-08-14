@@ -73,7 +73,7 @@
  * the order is written down here rather than left to be inferred from the code.
  */
 
-import { MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
+import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
 import { ARCHETYPES, FLAVOURS, FLAV_PLAIN, type Archetype } from '../content/enemyCatalog.js';
 import {
@@ -309,8 +309,21 @@ function drawUnitDirection(rng: Rng, out: Vec2): void {
  * P(ahead) = 0.75, so running is a real choice - you outrun the enemies behind you at the cost
  * of meeting more of them. Redrawing until the sample lands forward would instead be a hard wall
  * you can never break through, and would burn an unbounded number of RNG draws.
+ *
+ * THE FENCE IS HANDLED BY REFLECTION, NOT BY CLAMPING. Fighting with your back to the fence would
+ * otherwise put spawns on top of you: clamping a ring point into the arena shortens the radius, and
+ * a spawn at 200 u instead of 560 u is a spawn that appears ON SCREEN. Negating the offending
+ * component instead keeps the point at EXACTLY SPAWN_RADIUS and merely moves it to the mirrored
+ * direction, so the guarantee that nothing is ever seen to appear survives being cornered.
+ *
+ * The clamp underneath it is unreachable while ARENA_SIZE > 2 x SPAWN_RADIUS (12288 against 1120)
+ * and exists only so that a tuning sweep which shrank the arena to a closet could not place an
+ * enemy outside the world.
+ *
+ * Exported because RELOCATION reuses it - an enemy the player outran is put back on this same ring,
+ * with this same forward bias, which is what makes a relocated horde arrive rather than reappear.
  */
-function rollRingPosition(world: World, t: DirectorTuning, out: Vec2): void {
+export function rollRingPosition(world: World, t: DirectorTuning, out: Vec2): void {
   const rng = world.rng.spawn;
   drawUnitDirection(rng, out);
 
@@ -321,8 +334,12 @@ function rollRingPosition(world: World, t: DirectorTuning, out: Vec2): void {
     if (out.x * p.vx + out.y * p.vy < 0) drawUnitDirection(rng, out);
   }
 
-  out.x = p.x + out.x * SPAWN_RADIUS;
-  out.y = p.y + out.y * SPAWN_RADIUS;
+  let x = p.x + out.x * SPAWN_RADIUS;
+  let y = p.y + out.y * SPAWN_RADIUS;
+  if (x < -ARENA_HALF || x > ARENA_HALF) x = p.x - out.x * SPAWN_RADIUS;
+  if (y < -ARENA_HALF || y > ARENA_HALF) y = p.y - out.y * SPAWN_RADIUS;
+  out.x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
+  out.y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
 }
 
 // -------------------------------------------------------------------------------------------
