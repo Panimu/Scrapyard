@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T09:46Z',
+    title: 'The Scrapopedia gets the mechs, and a Back button that says Back',
+    notes: [
+      'EVERY CHASSIS NOW HAS A PAGE. All sixteen of them, listed under the weapons and the systems, each with its portrait, what the frame is built to do, and the gun it walks in holding - including the one that walks in holding nothing.',
+      'A mech page also names the system already fitted to it before the run begins, so you can tell at a glance which chassis start a step ahead and on what.',
+      'THE BACK BUTTON SAYS "BACK". It used to rename itself "All entries" on a page, which described where it went rather than what it did.',
+    ],
+  },
+  {
     at: '2026-08-15T09:30Z',
     title: 'THE SCRAPOPEDIA - a field manual on the title screen',
     notes: [

@@ -28,14 +28,34 @@
  * changes with it; if a weapon's ladder is reordered, this screen reorders too.
  *
  * ---------------------------------------------------------------------------------------------
+ * THE MECHS ARE HERE TOO, AND THEIR TEXT IS THE PICKER'S OWN
+ * ---------------------------------------------------------------------------------------------
+ * `HeroDef.identity` is already the one line that describes a chassis, written for the mech select
+ * screen. This page shows THAT STRING rather than a second description written beside it: two
+ * descriptions of one chassis is two things to keep true, and the one nobody is looking at is the
+ * one that goes stale.
+ *
+ * The consequence is worth knowing: those lines still carry percentages, because a chassis bonus
+ * is not an upgrade card and was not part of stripping the numbers out of the deck. If they should
+ * read like the rest of this screen, `identity` is the single place to change - and changing it
+ * fixes the picker at the same time.
+ *
+ * ---------------------------------------------------------------------------------------------
  * TWO VIEWS, ONE OVERLAY
  * ---------------------------------------------------------------------------------------------
- * An INDEX of every card, guns then systems, and a DETAIL for whichever was tapped. They are the
- * same element with one swapped child rather than two overlays, so Back is a single behaviour and
- * the screen cannot end up showing both or neither.
+ * An INDEX of every entry - guns, systems, then chassis - and a DETAIL for whichever was tapped.
+ * They are the same element with one swapped child rather than two overlays, so Back is a single
+ * behaviour and the screen cannot end up showing both or neither.
  */
 
-import { UPGRADE_CATALOG, type UpgradeDef, type UpgradeId } from '../core/index.js';
+import {
+  HERO_CATALOG,
+  UPGRADE_CATALOG,
+  weaponNameAtTier,
+  type HeroDef,
+  type UpgradeDef,
+  type UpgradeId,
+} from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
 
 /**
@@ -167,8 +187,13 @@ export class ScrapopediaScreen {
   private readonly detailEl: HTMLDivElement;
   private readonly backBtn: HTMLButtonElement;
 
-  /** Which card is open, or -1 for the index. The only state this screen has. */
-  private open = -1;
+  /**
+   * What is open, or null for the index. The only state this screen has.
+   *
+   * A tagged pair rather than one number, because the two catalogs have their own index spaces and
+   * a bare integer would silently open the wrong page the day either list is reordered.
+   */
+  private open: { readonly kind: 'upgrade' | 'mech'; readonly index: number } | null = null;
 
   constructor(private readonly onExit: () => void) {
     const el = document.createElement('div');
@@ -196,10 +221,12 @@ export class ScrapopediaScreen {
     this.backBtn.type = 'button';
     this.backBtn.className = 'btn btn--primary pedia__back';
     this.backBtn.textContent = 'Back';
-    // ONE BACK BUTTON FOR TWO VIEWS. From a page it returns to the index; from the index it
-    // leaves. A second button would be a second thing to keep in sync with `open`.
+    // ONE BACK BUTTON FOR TWO VIEWS, AND IT ALWAYS SAYS BACK. From a page it returns to the index;
+    // from the index it leaves. It used to relabel itself "All entries" on a page, which was a
+    // second word for the only thing the button has ever done - go back one step - and made the
+    // control read as a different control depending on where you were standing.
     this.backBtn.addEventListener('click', () => {
-      if (this.open >= 0) this.showIndex();
+      if (this.open !== null) this.showIndex();
       else this.onExit();
     });
     el.appendChild(this.backBtn);
@@ -238,6 +265,38 @@ export class ScrapopediaScreen {
       }
       this.indexEl.appendChild(grid);
     }
+
+    const label = document.createElement('div');
+    label.className = 'pedia__group';
+    label.textContent = 'Mechs';
+    this.indexEl.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'pedia__grid';
+    for (let i = 0; i < HERO_CATALOG.length; i++) {
+      grid.appendChild(this.mechButton(HERO_CATALOG[i], i));
+    }
+    this.indexEl.appendChild(grid);
+  }
+
+  private mechButton(hero: HeroDef, index: number): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pedia__entry pedia__entry--mech';
+
+    const icon = document.createElement('img');
+    icon.className = 'pedia__icon pedia__icon--mech';
+    icon.src = spriteUrl(hero.sprite);
+    icon.alt = '';
+    icon.decoding = 'async';
+
+    const name = document.createElement('span');
+    name.className = 'pedia__name';
+    name.textContent = hero.name;
+
+    b.append(icon, name);
+    b.addEventListener('click', () => this.showMech(index));
+    return b;
   }
 
   private entryButton(def: UpgradeDef, index: number): HTMLButtonElement {
@@ -261,25 +320,89 @@ export class ScrapopediaScreen {
   }
 
   private showIndex(): void {
-    this.open = -1;
+    this.open = null;
     this.detailEl.hidden = true;
     this.indexEl.hidden = false;
-    this.backBtn.textContent = 'Back';
     this.element.scrollTop = 0;
+  }
+
+  /** Common to both kinds of page: clear the old one, show the pane, start at the top. */
+  private openPage(kind: 'upgrade' | 'mech', index: number): void {
+    this.open = { kind, index };
+    this.indexEl.hidden = true;
+    this.detailEl.hidden = false;
+    this.detailEl.innerHTML = '';
+    this.element.scrollTop = 0;
+  }
+
+  private showMech(index: number): void {
+    const hero = HERO_CATALOG[index];
+    if (hero === undefined) return;
+    this.openPage('mech', index);
+
+    const head = document.createElement('div');
+    head.className = 'pedia__page-head';
+    const icon = document.createElement('img');
+    icon.className = 'pedia__page-icon pedia__page-icon--mech';
+    icon.src = spriteUrl(hero.sprite);
+    icon.alt = '';
+    const title = document.createElement('div');
+    title.className = 'pedia__page-name';
+    title.textContent = hero.name;
+    const kind = document.createElement('div');
+    kind.className = 'pedia__page-kind pedia__page-kind--mech';
+    kind.textContent = 'Mech';
+    const words = document.createElement('div');
+    words.append(title, kind);
+    head.append(icon, words);
+    this.detailEl.appendChild(head);
+
+    // The picker's own line. See the header for why this is not written twice.
+    this.detailEl.appendChild(para('pedia__desc', hero.identity));
+
+    this.detailEl.appendChild(section('Walks in holding'));
+    const gun = hero.startingWeapon;
+    this.detailEl.appendChild(
+      para(
+        'pedia__aims',
+        gun === null ? 'Nothing at all.' : weaponNameAtTier(gun, 1) || gun,
+      ),
+    );
+    if (gun === null) {
+      this.detailEl.appendChild(
+        para(
+          'pedia__note',
+          'The only chassis that starts unarmed. Everything it kills in the first minute, it kills by being hit - and the first card it is offered is a gun.',
+        ),
+      );
+    }
+
+    const seeded = hero.startingUpgrade;
+    if (seeded !== undefined) {
+      const def = UPGRADE_CATALOG.find((d) => d.id === seeded);
+      if (def !== undefined) {
+        this.detailEl.appendChild(section('And already fitted'));
+        this.detailEl.appendChild(para('pedia__aims', def.name));
+        this.detailEl.appendChild(para('pedia__note', def.description));
+      }
+    }
+
+    this.detailEl.appendChild(section('Frame'));
+    this.detailEl.appendChild(
+      para(
+        'pedia__note',
+        hero.gait === 'hover'
+          ? 'A hover frame. It drifts rather than steps, and it is never quite still.'
+          : 'A walking frame. The legs carry the stride, so it only animates when it is going somewhere.',
+      ),
+    );
   }
 
   private showDetail(index: number): void {
     const def = UPGRADE_CATALOG[index];
     if (def === undefined) return;
-    this.open = index;
+    this.openPage('upgrade', index);
     const manual = MANUAL[def.id];
-
-    this.indexEl.hidden = true;
-    this.detailEl.hidden = false;
-    this.backBtn.textContent = 'All entries';
-    this.element.scrollTop = 0;
-
-    this.detailEl.innerHTML = '';
 
     const head = document.createElement('div');
     head.className = 'pedia__page-head';

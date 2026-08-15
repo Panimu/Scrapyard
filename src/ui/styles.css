@@ -1317,6 +1317,8 @@ body {
 /* Which pool, in the same two colours the level-up cards and the chest reels already use. */
 .pedia__entry--weapon { border-left-color: var(--accent); }
 .pedia__entry--passive { border-left-color: #4fb8ff; }
+/* A chassis is neither pool, so it takes the ink rather than either accent. */
+.pedia__entry--mech { border-left-color: var(--ink-faint); }
 .pedia__entry:active { background: var(--panel-2); }
 
 .pedia__icon {
@@ -1363,6 +1365,21 @@ body {
 
 .pedia__page-kind--weapon { color: var(--accent); }
 .pedia__page-kind--passive { color: #4fb8ff; }
+.pedia__page-kind--mech { color: var(--ink-dim); }
+
+/* The mech art is a full chassis rather than a framed glyph, so it is given more room and no
+   plate around it - the icons are square badges, these are photographs of the thing. */
+.pedia__icon--mech {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.pedia__page-icon--mech {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+}
 
 .pedia__desc {
   margin: 2px 0 0;
