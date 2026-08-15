@@ -67,6 +67,10 @@ async function boot(): Promise<void> {
   const uiRoot = document.getElementById('ui');
   const bootEl = document.getElementById('boot');
   if (host === null || uiRoot === null) throw new Error('main: #app / #ui missing from index.html');
+  // Re-bound after the guard so the NON-NULL type survives into a closure. TypeScript narrows a
+  // const at the point of use in the same scope, but `paintUpdatePrompt` is a nested function and
+  // the analysis does not follow the narrowing in there - this is the one-line way to say it once.
+  const ui: HTMLElement = uiRoot;
 
   const state = new AppState();
   const params = new URLSearchParams(location.search);
@@ -422,6 +426,37 @@ async function boot(): Promise<void> {
     | 'upgrades'
     | 'scrapopedia';
 
+  /**
+   * A newer build is downloaded and waiting to be applied, and the toast that offers to apply it.
+   *
+   * Two variables rather than one, because the ANSWER ("there is an update") outlives the QUESTION
+   * ("is it being shown right now"): the toast is torn down and rebuilt every time the player
+   * leaves and returns to the title screen, and the flag has to survive that.
+   */
+  let updateWaiting = false;
+  let updateToast: HTMLElement | null = null;
+  /** Applies the waiting build and reloads. Null until the service worker hands it over. */
+  let applyUpdate: (() => Promise<void>) | null = null;
+
+  function paintUpdatePrompt(): void {
+    const want = updateWaiting && state.phase === 'title';
+    if (want === (updateToast !== null)) return;
+    if (!want) {
+      updateToast?.remove();
+      updateToast = null;
+      return;
+    }
+    updateToast = buildUpdateToast(() => {
+      void applyUpdate?.();
+    });
+    ui.appendChild(updateToast);
+  }
+
+  // EVERY phase change, not just the menu ones. `showScreen` is not the only thing that moves the
+  // app - a run starting and a run ending both set the phase directly - and the prompt has to come
+  // down when a run begins as surely as it goes up when the title screen returns.
+  state.onChange(() => paintUpdatePrompt());
+
   function showScreen(screen: MenuScreen): void {
     state.set(screen);
     hud.setVisible(false);
@@ -723,7 +758,26 @@ async function boot(): Promise<void> {
 
   requestAnimationFrame(tick);
 
-  void registerServiceWorker(uiRoot);
+  // THE UPDATE PROMPT WAITS FOR THE TITLE SCREEN.
+  //
+  // A service worker finds a new build whenever it finds one, which is usually a minute or two
+  // into a session - i.e. mid-run. The banner it used to raise then was a bottom-anchored button
+  // saying RELOAD, sitting in the thumb zone, over a run it would destroy if pressed. There is no
+  // moment in a fight when the right answer is "throw this away and fetch a new bundle".
+  //
+  // So `onNeedRefresh` only records that an update is waiting; `paintUpdatePrompt` decides when to
+  // say so, and the answer is the title screen and nowhere else. Nothing is lost by waiting - the
+  // new build is already downloaded and sitting there, and it is applied the moment the player is
+  // between runs and has nothing to lose.
+  void registerServiceWorker((apply) => {
+    applyUpdate = apply;
+    updateWaiting = true;
+    paintUpdatePrompt();
+  });
+  // The app is already on the title screen by the time this runs, and `onChange` only fires on a
+  // CHANGE - so without this an update found during boot would wait for the player to navigate away
+  // and come back.
+  paintUpdatePrompt();
   maybeShowInstallBanner(uiRoot);
 
   function seedFromParams(): number | undefined {
@@ -807,15 +861,20 @@ function buildPauseOverlay(
 // whole commit-from-phone loop actively misleading (docs/IPHONE_PLATFORM.md §4.3).
 // -----------------------------------------------------------------------------------------
 
-async function registerServiceWorker(uiRoot: HTMLElement): Promise<void> {
+/**
+ * `onReady` is handed the function that applies the waiting build and reloads. It is NOT told to
+ * show anything: when the player is offered the update is a decision about the app's phase, and
+ * this function knows nothing about phases.
+ */
+async function registerServiceWorker(
+  onReady: (apply: () => Promise<void>) => void,
+): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
   try {
     const { registerSW } = await import('virtual:pwa-register');
     const updateSW = registerSW({
       onNeedRefresh() {
-        showUpdateToast(uiRoot, () => {
-          void updateSW(true);
-        });
+        onReady(() => updateSW(true));
       },
     });
   } catch {
@@ -875,7 +934,8 @@ function maybeShowInstallBanner(uiRoot: HTMLElement): void {
   uiRoot.appendChild(toast);
 }
 
-function showUpdateToast(uiRoot: HTMLElement, onReload: () => void): void {
+/** Built, not shown: the caller decides when it is on screen. See `paintUpdatePrompt`. */
+function buildUpdateToast(onReload: () => void): HTMLElement {
   const toast = document.createElement('div');
   toast.className = 'toast';
   const text = document.createElement('div');
@@ -887,5 +947,5 @@ function showUpdateToast(uiRoot: HTMLElement, onReload: () => void): void {
   btn.textContent = 'Reload';
   btn.addEventListener('click', onReload);
   toast.append(text, btn);
-  uiRoot.appendChild(toast);
+  return toast;
 }

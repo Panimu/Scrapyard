@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:54Z',
+    title: 'The update prompt waits for the title screen',
+    notes: [
+      '"NEW VERSION AVAILABLE" NO LONGER APPEARS MID-RUN. A new build is usually found a minute or two into a session, which is to say during a fight - and what appeared there was a button marked RELOAD, in the thumb zone, over a run it would have thrown away.',
+      'It waits for the title screen now, and comes down again the moment you leave it. Nothing is lost by waiting: the new build is already downloaded and sitting there, and it goes in when you have nothing to lose.',
+    ],
+  },
+  {
     at: '2026-08-15T11:42Z',
     title: 'Back in the Scrapopedia actually closes the entry',
     notes: [
