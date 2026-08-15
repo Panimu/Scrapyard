@@ -40,6 +40,24 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T13:21Z',
+    title: 'The Chain Laser is the mechanic and nothing else',
+    notes: [
+      'TIER 8 NO LONGER CARRIES ANY STATS. It used to hand out half a dispersion rung and extra reach alongside the chain. Those are gone - the tier buys the CHAIN, and that is the whole of it.',
+      'They were the wrong two to give away, because they are precisely the two the chain spends. Reach is the literal budget a chain is paid out of and dispersion is the uptime a beam crossing four bodies wants, so the capstone was quietly scaling its own new behaviour on top of granting it. A tier 8 should be a different weapon, not the same weapon with a stat card stapled on.',
+      'The Medium Laser is untouched at every tier up to seven.',
+    ],
+  },
+  {
+    at: '2026-08-15T13:21Z',
+    title: 'Two more silhouettes can be earned',
+    notes: [
+      'ONE WANTS YOU TO GET HIT. Twenty times in a run, by anything - a rim eating a bite does not count, because nothing touched you.',
+      'THE OTHER WANTS YOU TO LOSE, and to lose to something specific. It is the only condition in the game a winning run can never satisfy.',
+      'Which mech is behind which silhouette is still yours to find out.',
+    ],
+  },
+  {
     at: '2026-08-15T12:05Z',
     title: 'A version number, three more chassis to earn, and a proper unlock notification',
     notes: [

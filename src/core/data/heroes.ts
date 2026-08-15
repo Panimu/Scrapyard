@@ -116,7 +116,7 @@ export interface HeroDef {
    * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. A chassis whose condition is unmet is locked and
    * cannot be picked. See data/unlocks.ts for the vocabulary.
    *
-   * Slate is `always`. Five chassis have real criteria; the remaining ten are `never` -
+   * Slate is `always`. Seven chassis have real criteria; the remaining eight are `never` -
    * locked, with no route - which is how this file says "the condition has not been decided yet"
    * out loud. `never` is not a placeholder: a guessed number would be a design decision made by
    * accident, whereas a plainly locked chassis cannot be mistaken for a considered target.
@@ -246,7 +246,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'amber',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'diedTo', rank: 'boss' },
     name: 'Amber',
     identity:
       'Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.',
@@ -296,7 +296,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'bone',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'contactHits', count: 20 },
     name: 'Bone',
     identity:
       'Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.',

@@ -397,6 +397,25 @@ export interface RunStats {
   /** Bosses by the weapon that landed the killing blow. Same rule, same exclusion. */
   readonly bossKillsByKiller: Uint32Array;
   /**
+   * How many times an enemy's touch actually cost the player hit points.
+   *
+   * COUNT, not amount - `damageTaken` is the amount. Two different questions: one build takes three
+   * enormous bites and another takes forty nibbles for the same total, and "how often were you
+   * touched" is the one that describes how you played.
+   *
+   * A bite the Energy Shield ate, or one that landed inside the immunity window, is NOT counted.
+   * Neither cost the player anything, and a counter that ticked for them would reward standing in a
+   * crowd with a shield up - the opposite of what "took a hit" means.
+   */
+  contactHits: number;
+  /**
+   * Rank of the enemy whose touch killed the player, or -1.
+   *
+   * Set exactly once, on the contact that takes hp to zero, and never cleared - a run has one
+   * death. -1 covers every run that has not ended and every run that ended in victory.
+   */
+  killedByRank: number;
+  /**
    * Damage dealt by the Energy Shield's backlash. Not a weapon, and deliberately not folded into
    * one: a build whose second-best damage source is a defensive passive is worth being able to
    * see, and attributing it to whatever gun happened to be in slot 0 would hide it.

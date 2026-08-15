@@ -75,6 +75,8 @@ export function testRunRecord(over: Partial<RunRecord> = {}): RunRecord {
     bossKillsHolding: [],
     killsWith: {},
     bossKillsBy: [],
+    contactHits: 0,
+    diedTo: '',
     ...over,
   };
 }

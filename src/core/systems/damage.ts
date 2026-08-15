@@ -559,6 +559,9 @@ function applyContacts(world: World): void {
 
     player.hp -= taken;
     world.stats.damageTaken += taken;
+    // AFTER the shield and immunity `continue`s above, so this counts bites that actually cost
+    // hit points - see RunStats.contactHits.
+    world.stats.contactHits++;
     pushEvent(
       world.events,
       EV_PLAYER_DAMAGED,
@@ -570,6 +573,16 @@ function applyContacts(world: World): void {
     );
 
     if (player.hp <= 0) {
+      // WHAT KILLED YOU, read off the flags this loop already has. Recorded before the early
+      // return below, which drops every remaining contact - so it is the body that actually landed
+      // the last bite and not whichever one happened to be next in the buffer.
+      const df = enemies.flags[ed];
+      world.stats.killedByRank =
+        (df & ENEMY_FLAG_BOSS) !== 0
+          ? RANK_BOSS
+          : (df & ENEMY_FLAG_ELITE) !== 0
+            ? RANK_ELITE
+            : RANK_REGULAR;
       // Clamped to exactly 0 so the summary screen and the hashed player struct never carry a
       // negative hp that depends on which runt happened to be last in the buffer.
       player.hp = 0;

@@ -101,6 +101,18 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock(cond, run({ bossKillsHolding: ['missile-long'] }), IDS)).toBe(false);
   });
 
+  it('contactHits counts bites that landed, and diedTo needs the run to have ended in death', () => {
+    expect(meetsUnlock({ kind: 'contactHits', count: 20 }, run({ contactHits: 20 }), IDS)).toBe(true);
+    expect(meetsUnlock({ kind: 'contactHits', count: 20 }, run({ contactHits: 19 }), IDS)).toBe(false);
+
+    const cond = { kind: 'diedTo', rank: 'boss' } as const;
+    expect(meetsUnlock(cond, run({ diedTo: 'boss' }), IDS)).toBe(true);
+    expect(meetsUnlock(cond, run({ diedTo: 'regular' }), IDS)).toBe(false);
+    // '' is every run that has not ended in death - including one that WON, which must never
+    // satisfy a condition whose whole content is losing.
+    expect(meetsUnlock(cond, run({ diedTo: '', won: true }), IDS)).toBe(false);
+  });
+
   it('a chassis that names a REAL condition names one some run could satisfy', () => {
     // `never` is deliberately unsatisfiable - it is how the catalog says "criteria not written
     // yet" - so it is excluded. Everything else is checked against one impossible run: everything
@@ -118,9 +130,16 @@ describe('meetsUnlock', () => {
       // it fails on the fixture rather than shipping a chassis nobody can unlock.
       killsWith: Object.fromEntries(WEAPON_CATALOG.map((w) => [w.id, 1_000_000])),
       bossKillsBy: WEAPON_CATALOG.map((w) => w.id),
+      contactHits: 1_000_000,
     });
+    // `diedTo` is excluded alongside `never` for opposite reasons: `never` cannot be satisfied by
+    // anything, and `diedTo` cannot be satisfied by a run that WON - which this fixture did. It
+    // gets its own assertion above rather than being wedged into a single impossible run.
     const stuck = HERO_CATALOG.filter(
-      (h) => h.unlock.kind !== 'never' && !meetsUnlock(h.unlock, perfect, IDS),
+      (h) =>
+        h.unlock.kind !== 'never' &&
+        h.unlock.kind !== 'diedTo' &&
+        !meetsUnlock(h.unlock, perfect, IDS),
     );
     expect(stuck.map((h) => h.id)).toEqual([]);
   });

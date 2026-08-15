@@ -32,6 +32,7 @@ import {
   RUN_PHASE_VICTORY,
   Simulation,
   UPGRADE_CATALOG,
+  RANKS,
   quantiseAxis,
   type InputFrame,
   type RunRecord,
@@ -387,6 +388,8 @@ async function boot(): Promise<void> {
       bossKillsBy: world.weaponCatalog
         .filter((_, i) => world.stats.bossKillsByKiller[i] > 0)
         .map((w) => w.id),
+      contactHits: world.stats.contactHits,
+      diedTo: RANKS[world.stats.killedByRank]?.name ?? '',
     };
   }
 

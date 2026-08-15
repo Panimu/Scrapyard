@@ -95,6 +95,23 @@ export type UnlockCond =
   | { readonly kind: 'killsWith'; readonly weapons: readonly WeaponId[]; readonly count: number }
   /** Land the KILLING BLOW on a boss with any of `weapons`. Same rule as `killsWith`. */
   | { readonly kind: 'bossKillBy'; readonly weapons: readonly WeaponId[] }
+  /**
+   * Be touched by the horde `count` times in one run, where the touch actually cost hit points.
+   *
+   * A bite the Energy Shield ate, or one absorbed by the immunity window a break opens, is not a
+   * hit taken - neither cost anything, and counting them would make the condition easier for the
+   * build that is least in danger.
+   */
+  | { readonly kind: 'contactHits'; readonly count: number }
+  /**
+   * Die to an enemy of this RANK - `regular`, `elite` or `boss`, matching `RankDef.name`.
+   *
+   * A name rather than the numeric constant, so the catalog entry reads as the sentence it is.
+   * This is the only condition in the vocabulary that a run has to LOSE to satisfy, which is worth
+   * knowing when writing one: it can never be met by a run that wins, and it will be evaluated
+   * exactly once, at the end.
+   */
+  | { readonly kind: 'diedTo'; readonly rank: string }
   /** Win. */
   | { readonly kind: 'win' };
 
@@ -143,6 +160,10 @@ export interface RunRecord {
   readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
   /** Weapons that landed the killing blow on a boss this run. */
   readonly bossKillsBy: readonly WeaponId[];
+  /** Times the horde's touch actually cost hit points. See `RunStats.contactHits`. */
+  readonly contactHits: number;
+  /** Rank name of whatever killed the player, or '' if the run has not ended in death. */
+  readonly diedTo: string;
 }
 
 /**
@@ -179,6 +200,12 @@ export function meetsUnlock(
     }
     case 'bossKillBy':
       return cond.weapons.some((w) => run.bossKillsBy.includes(w));
+    case 'contactHits':
+      return run.contactHits >= cond.count;
+    case 'diedTo':
+      // `diedTo` is '' until the player is killed, so an unfinished run never satisfies this by
+      // accident - and neither does a run that ended in victory.
+      return run.diedTo !== '' && run.diedTo === cond.rank;
     case 'tier': {
       const i = ids.indexOf(cond.id);
       // An id the catalog does not carry can never be satisfied, and must not read as satisfied:
@@ -236,6 +263,10 @@ export function describeUnlockDone(
       return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}.`;
     case 'bossKillBy':
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
+    case 'contactHits':
+      return `Took ${cond.count} hits from the horde in one run.`;
+    case 'diedTo':
+      return `Died to ${cond.rank === 'elite' ? 'an' : 'a'} ${cond.rank}.`;
     case 'tier': {
       const name = names(cond.id) ?? cond.id;
       return cond.tier >= 7 ? `Finished the ${name}.` : `Took the ${name} to tier ${cond.tier}.`;

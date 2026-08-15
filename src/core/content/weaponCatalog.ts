@@ -425,15 +425,18 @@ function laserTiers(
     { damage: dmgStep, heatPerSec: heatStep }, // T5
     { heatCapacity: 40 }, // T6
     { heatDispersion: dispStep }, // T7
-    // T8 - THE ASCENSION. Reached only through a Cyber Chest and only with the right passive held
-    // (data/upgrades.ts). It is a SMALL rung on purpose: the tier is bought with the mechanic it
-    // switches on, not with its numbers, and a capstone that also handed out a damage tier would
-    // make the mechanic look like a bonus attached to a stat card.
+    // T8 - THE ASCENSION, AND IT CARRIES NO STATS AT ALL. Reached only through a Cyber Chest and
+    // only with the right passive held (data/upgrades.ts).
     //
-    // Dispersion and range, because those are the two the Chain Laser actually spends. Dispersion
-    // buys uptime, which is what a beam that now crosses four bodies wants more of; range is the
-    // literal budget the chain is paid out of - every unit of it is more beam to jump with.
-    { heatDispersion: dispStep * 0.5, range: 30 }, // T8
+    // It used to hand out half a dispersion tier and +30 range on top of the chain. Both are gone.
+    // The tier is bought with the MECHANIC it switches on, and the moment it also pays a stat rung
+    // the mechanic starts reading as a bonus attached to a stat card - and worse, the two it paid
+    // were exactly the two that make the chain itself stronger, so the capstone was quietly scaling
+    // its own new behaviour on top of granting it.
+    //
+    // An empty object rather than a missing entry: `perLevel[6]` is the tier-8 slot, and a table
+    // whose length stops at 7 would make "what does tier 8 give" a question about array bounds.
+    {}, // T8
   ]);
 }
 
