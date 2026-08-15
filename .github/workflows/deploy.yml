@@ -57,6 +57,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # FULL HISTORY, for the build number. vite.config.ts derives it from `git rev-list
+          # --count HEAD`, and the default shallow clone would make that 1 on every deploy.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

@@ -297,6 +297,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       damageByWeapon: new Float64Array(catalogs.weapons.length),
       bossKillsByWeapon: new Uint32Array(catalogs.weapons.length),
       killsByFlavour: new Uint32Array(FLAVOUR_COUNT),
+      killsByWeapon: new Uint32Array(catalogs.weapons.length),
+      bossKillsByKiller: new Uint32Array(catalogs.weapons.length),
       damageByShield: 0,
       gemsCollected: 0,
       shotsFired: 0,

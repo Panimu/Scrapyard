@@ -61,6 +61,14 @@ export interface AchievementDef {
   readonly name: string;
   /** One line. Says what was done, in the past tense, because it is only ever read after the fact. */
   readonly description: string;
+  /**
+   * Sprite key for the notification's icon - the same keys `spriteUrl` resolves.
+   *
+   * EVERY ACHIEVEMENT HAS ITS OWN, and none of them is new art: a chassis achievement wears the
+   * chassis, and a weapon achievement wears that weapon's card icon. The picture a player already
+   * associates with the thing is a better badge than a generic trophy, and it costs nothing.
+   */
+  readonly icon: string;
   /** Hidden - name and description withheld - until earned. */
   readonly secret: boolean;
   /** Evaluated against a run by `meetsUnlock`. */
@@ -103,6 +111,7 @@ const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
     // as reorderable, and a platform key that moves when the picker is rearranged is not permanent.
     platformKey: `scrapyard_mech_${h.id}`,
     name: h.name,
+    icon: h.sprite,
     description: describeUnlockDone(
       h.unlock,
       (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
@@ -123,6 +132,9 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     id: 'chain-laser',
     platformKey: 'scrapyard_chain_laser',
     name: 'Arc Welder',
+    // The card icon of the weapon it happens to, which is the picture the player has been staring
+    // at on every level-up that got them here.
+    icon: 'icon_w-laser-medium',
     description: 'Turned a Medium Laser into the Chain Laser.',
     secret: true,
     /**

@@ -116,7 +116,7 @@ export interface HeroDef {
    * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. A chassis whose condition is unmet is locked and
    * cannot be picked. See data/unlocks.ts for the vocabulary.
    *
-   * Slate is `always`. Moss and Ember have real criteria; the remaining thirteen are `never` -
+   * Slate is `always`. Five chassis have real criteria; the remaining ten are `never` -
    * locked, with no route - which is how this file says "the condition has not been decided yet"
    * out loud. `never` is not a placeholder: a guessed number would be a design decision made by
    * accident, whereas a plainly locked chassis cannot be mistaken for a considered target.
@@ -262,7 +262,11 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'onyx',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: {
+      kind: 'killsWith',
+      weapons: ['missile-short', 'missile-long'],
+      count: 100,
+    },
     name: 'Onyx',
     identity:
       'Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.',
@@ -277,7 +281,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ash',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'bossKillBy', weapons: ['missile-short', 'missile-long'] },
     name: 'Ash',
     identity:
       'Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.',
@@ -307,7 +311,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'plum',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'tier', id: 'p-shield', tier: 7 },
     name: 'Plum',
     identity:
       'Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.',

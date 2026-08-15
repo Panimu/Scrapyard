@@ -1057,6 +1057,18 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* A serial number, not a feature: last in the flow, smallest type on the screen, and it never
+   competes with a menu button for attention. */
+.title__version {
+  margin-top: auto;
+  padding-top: 8px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
 .title__bank {
   text-align: center;
   font-size: 13px;
@@ -1910,27 +1922,33 @@ body {
 }
 
 /*
- * THE ACHIEVEMENT BANNER. Distinct from `.toast` above, which is the PWA install/update prompt:
- * that one is interactive, sits at the bottom and has a button in it. This one is inert.
+ * THE ACHIEVEMENT NOTIFICATION - shaped like Steam's. Distinct from `.toast` above, which is the
+ * PWA install/update prompt: that one is interactive, full-width and has a button in it.
  *
- * TOP-ANCHORED AND UNTAPPABLE. It appears mid-fight, so it stays out of the thumb zone entirely
- * and `pointer-events: none` guarantees it cannot swallow a tap even while it is over a card.
+ * BOTTOM RIGHT, and it slides up out of the corner. That corner is the one place on this screen
+ * that is never load-bearing: the HUD owns the top, the level-up cards own the middle, and the
+ * joystick is wherever a thumb lands rather than a fixed control. `pointer-events: none` means it
+ * cannot swallow a tap even so.
+ *
+ * It does not stretch to the full width. A panel that spans the screen is a system message; one
+ * that sits in a corner with a picture on it is a reward, and the difference is entirely in the
+ * shape.
  */
 .achv {
   position: absolute;
-  left: calc(var(--sa-left) + 12px);
   right: calc(var(--sa-right) + 12px);
-  top: calc(var(--sa-top) + 12px);
-  margin: 0 auto;
-  max-width: 420px;
+  bottom: calc(var(--sa-bottom) + 12px);
+  max-width: min(320px, calc(100% - var(--sa-left) - var(--sa-right) - 24px));
   pointer-events: none;
-  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
   border-radius: var(--radius);
   background: var(--panel-2);
   border: 1px solid var(--accent);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  text-align: center;
-  animation: achv-in 260ms ease-out;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  animation: achv-in 320ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 .achv[hidden] {
@@ -1940,26 +1958,43 @@ body {
 @keyframes achv-in {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(22px);
   }
+}
+
+/* The thing you just earned, wearing its own face. Square, so a mech and a card icon sit the same. */
+.achv__icon {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.achv__words {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .achv__eyebrow {
   font-size: 10px;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);
 }
 
 .achv__name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--ink);
 }
 
 .achv__desc {
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.3;
   color: var(--ink-dim);
 }
 

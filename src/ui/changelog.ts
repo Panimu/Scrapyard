@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T12:05Z',
+    title: 'A version number, three more chassis to earn, and a proper unlock notification',
+    notes: [
+      'THE TITLE SCREEN SAYS WHICH BUILD YOU ARE PLAYING, at the bottom - a number and the commit it came from. It goes up once per deploy, so "have you got the fix yet" is now a thing you can answer by looking.',
+      'NOTHING YOU EARNED IS LOST BY ABANDONING A RUN. Achievements, chassis and bestiary entries are written to your save the moment you earn them rather than when the run ends, so quitting - or a phone call, or the browser reloading the tab - keeps what you did. Abandoning banks whatever the run had earned on the way out.',
+      'THE ACHIEVEMENT NOTIFICATION IS A PROPER ONE NOW. It slides up out of the bottom corner with the picture of the thing you just earned on it, says ACHIEVEMENT UNLOCKED, and stays half again as long. It used to be a centred banner in the same slot the update prompt uses, which made a reward look like a system message.',
+      'THREE MORE SILHOUETTES CAN BE EARNED. One wants a hundred things destroyed with a missile. One wants the killing blow on a boss from a missile. One wants a finished Energy Shield. Which mech is behind which is still yours to find out.',
+      'The missile conditions mean the KILLING BLOW, not damage dealt - a rack that softens everything and never finishes anything has not killed with it.',
+    ],
+  },
+  {
     at: '2026-08-15T11:54Z',
     title: 'The update prompt waits for the title screen',
     notes: [

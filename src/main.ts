@@ -295,7 +295,13 @@ async function boot(): Promise<void> {
     },
     // Abandoning goes to the TITLE, not to the mech picker. Quitting a run is a decision to stop
     // playing this one, which is not the same as a decision to start another.
-    () => showScreen('title'),
+    () => {
+      // BANK BEFORE LEAVING. The poll runs on every 60th tick and stops the moment the game is
+      // paused, so up to a second of a run - and the whole of a run paused the instant its
+      // condition was met - would otherwise be thrown away by the player choosing to stop.
+      bankProgress(sim.world);
+      showScreen('title');
+    },
     () => {
       pauseOverlay.element.hidden = true;
       changelogReturn = () => {
@@ -373,7 +379,45 @@ async function boot(): Promise<void> {
       bossKillsHolding: world.weaponCatalog
         .filter((_, i) => world.stats.bossKillsByWeapon[i] > 0)
         .map((w) => w.id),
+      killsWith: Object.fromEntries(
+        world.weaponCatalog
+          .map((w, i) => [w.id, world.stats.killsByWeapon[i]] as const)
+          .filter(([, n]) => n > 0),
+      ),
+      bossKillsBy: world.weaponCatalog
+        .filter((_, i) => world.stats.bossKillsByKiller[i] > 0)
+        .map((w) => w.id),
     };
+  }
+
+  /**
+   * Chassis earned during the run in progress, by name, for the summary to announce.
+   *
+   * IT HAS TO BE ACCUMULATED RATHER THAN ASKED FOR AT THE END, because unlocks are banked while the
+   * run is still going: by the time the summary appears, `recordRun` has long since reported the
+   * chassis as new and will not report it again. Cleared at run start.
+   */
+  let earnedThisRun: string[] = [];
+
+  /**
+   * EVERYTHING A RUN HAS EARNED SO FAR, WRITTEN TO THE SAVE. Called once a second, when the run
+   * ends, and when the player abandons it.
+   *
+   * ALL OF IT IS BANKED MID-RUN, and that is the point. A chassis unlock used to be evaluated only
+   * at the end, so a run that met its condition at wave 3 and was then abandoned - or interrupted
+   * by a phone call, or a tab reload - earned nothing. There is no version of "you did the thing
+   * and the game took it away" that is correct.
+   *
+   * Every call is a set union over short arrays and each reports only what is NEW, so calling it
+   * often costs a scan and records the same facts every time.
+   */
+  function bankProgress(world: World): void {
+    const record = runRecord(world);
+    toast.push(state.recordAchievements(record));
+    state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
+    for (const id of state.recordRun(record)) {
+      earnedThisRun.push(HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
+    }
   }
 
   function startRun(heroId: number, seed: number): void {
@@ -385,6 +429,7 @@ async function boot(): Promise<void> {
     // weapon (and Plum's shield) to tier 1, so this is true rather than generous - and it is the
     // only unlock a player who quits to the title mid-run would otherwise not have banked.
     state.recordHeldUpgrades(sim.world.levelUp.stacks);
+    earnedThisRun = [];
     toast.clear();
     pendingChoice = -1;
     lastDamageTaken = 0;
@@ -655,21 +700,14 @@ async function boot(): Promise<void> {
         // running phase, and the loop only reaches here while running - so the credits are added
         // exactly once per run. Doing it inside summary.show() would pay again on every re-render.
         state.bankCredits(world.stats.credits);
-        // The same once-per-run guarantee the banking relies on, and it needs it for the same
-        // reason: `recordRun` reports what was NEWLY earned, so calling it twice would announce
-        // nothing the second time and the summary would forget what it had to say.
         state.recordHeldUpgrades(world.levelUp.stacks);
-        // CLEAR FIRST, THEN EVALUATE ONCE MORE. Anything still queued belongs to a fight that is
-        // over, but the final evaluation does not - the poll runs on every 60th tick, so a run that
-        // ends on tick 61 would otherwise never test its own final state. The banner sits above the
-        // summary and cannot take a tap, so showing it there costs nothing.
+        // CLEAR FIRST, THEN BANK ONCE MORE. Anything still queued belongs to a fight that is over,
+        // but the final banking does not - the poll runs on every 60th tick, so a run that ends on
+        // tick 61 would otherwise never test its own final state. The banner cannot take a tap, so
+        // showing it over the summary costs nothing.
         toast.clear();
-        toast.push(state.recordAchievements(runRecord(world)));
-        state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
-        const earned = state
-          .recordRun(runRecord(world))
-          .map((id) => HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
-        summary.show(world, state.seed, state.settings.credits, earned);
+        bankProgress(world);
+        summary.show(world, state.seed, state.settings.credits, earnedThisRun);
         state.set('summary');
       }
 
@@ -684,12 +722,7 @@ async function boot(): Promise<void> {
       //
       // A second is the resolution, so a banner can be up to a second late. Against a trophy that
       // stays earned forever, that is not a cost worth a per-frame scan.
-      if (world.tick % 60 === 0) {
-        toast.push(state.recordAchievements(runRecord(world)));
-        // Rides the same poll: the Scrapopedia's bestiary is written by killing things, and the
-        // tallies it reads from are two short arrays the run is already keeping.
-        state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
-      }
+      if (world.tick % 60 === 0) bankProgress(world);
 
       if (world.stats.damageTaken > lastDamageTaken) {
         lastDamageTaken = world.stats.damageTaken;

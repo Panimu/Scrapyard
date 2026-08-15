@@ -17,7 +17,7 @@ import {
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
 
 function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], ...over };
+  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], killsWith: {}, bossKillsBy: [], ...over };
 }
 
 describe('achievements', () => {

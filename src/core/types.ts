@@ -383,6 +383,20 @@ export interface RunStats {
    */
   readonly killsByFlavour: Uint32Array;
   /**
+   * Kills by the weapon that landed the KILLING BLOW, by weapon catalog index.
+   *
+   * A different question from `damageByWeapon` and from `bossKillsByWeapon`, and all three are
+   * needed because all three get asked. Damage is who did the work; `bossKillsByWeapon` is what was
+   * merely in the loadout; this is who finished it. A gun that softens everything and never lands a
+   * last hit scores nothing here, which is the honest answer to "kill a hundred with a missile".
+   *
+   * The shield's backlash lands killing blows too and is credited to NOTHING - it is not a weapon
+   * and there is no slot to name. So this does NOT sum to `kills`.
+   */
+  readonly killsByWeapon: Uint32Array;
+  /** Bosses by the weapon that landed the killing blow. Same rule, same exclusion. */
+  readonly bossKillsByKiller: Uint32Array;
+  /**
    * Damage dealt by the Energy Shield's backlash. Not a weapon, and deliberately not folded into
    * one: a build whose second-best damage source is a defensive passive is worth being able to
    * see, and attributing it to whatever gun happened to be in slot 0 would hide it.

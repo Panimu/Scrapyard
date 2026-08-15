@@ -10,13 +10,24 @@
  * exactly this job and this one can be turned off in one place.
  *
  * ---------------------------------------------------------------------------------------------
+ * SHAPED LIKE A STEAM NOTIFICATION
+ * ---------------------------------------------------------------------------------------------
+ * A panel in the BOTTOM CORNER with the achievement's own icon on the left and two lines beside
+ * it: the eyebrow that says what kind of thing just happened, then the name. It slides up, waits,
+ * and slides away.
+ *
+ * That shape rather than a centred banner because the centred banner read as a system message -
+ * the same slot the PWA update prompt uses - and this is a REWARD. A corner panel with a picture
+ * of the thing you just earned is the visual language every player already knows for "you did a
+ * thing", and it puts the icon where the eye lands first.
+ *
+ * ---------------------------------------------------------------------------------------------
  * IT DOES NOT STOP THE GAME, AND IT IS NOT A MODAL
  * ---------------------------------------------------------------------------------------------
  * The first achievement in the game lands on the frame a Cyber Chest pays out an ascension - which
  * is to say, in the middle of a fight the player has been building toward for ten minutes. Taking
  * the input away at that moment to acknowledge a trophy would be a punishment for earning it. It
- * sits at the top, out of the thumb zone and away from the HUD's own corner, and it expires on its
- * own.
+ * expires on its own and it is inert while it is there.
  *
  * `pointer-events: none` in the stylesheet, so it cannot eat a tap even while it is on screen. It
  * is `.achv` and NOT `.toast` - `.toast` is already the PWA install/update banner, which is
@@ -32,15 +43,23 @@
  */
 
 import type { AchievementDef } from '../core/index.js';
+import { spriteUrl } from '../render/assets.js';
 
-/** Seconds a banner stays up. Long enough to read twice; short enough not to outlive the moment. */
-const SHOW_SEC = 4;
+/**
+ * Seconds a banner stays up.
+ *
+ * Six, not four. Four is long enough to read a line of text you are looking at; this arrives while
+ * the player is looking somewhere else entirely, and the first second or so is spent noticing it at
+ * all. It still expires well inside the lull after a chest.
+ */
+const SHOW_SEC = 6;
 /** Dead time between two banners, so the second reads as a new thing rather than a re-render. */
 const GAP_SEC = 0.35;
 
 export class AchievementToast {
   readonly element: HTMLDivElement;
 
+  private readonly iconEl: HTMLImageElement;
   private readonly nameEl: HTMLDivElement;
   private readonly descEl: HTMLDivElement;
   private readonly queue: AchievementDef[] = [];
@@ -57,9 +76,14 @@ export class AchievementToast {
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
 
+    this.iconEl = document.createElement('img');
+    this.iconEl.className = 'achv__icon';
+    this.iconEl.alt = '';
+    this.iconEl.decoding = 'async';
+
     const eyebrow = document.createElement('div');
     eyebrow.className = 'achv__eyebrow';
-    eyebrow.textContent = 'Achievement';
+    eyebrow.textContent = 'Achievement unlocked';
 
     this.nameEl = document.createElement('div');
     this.nameEl.className = 'achv__name';
@@ -67,7 +91,11 @@ export class AchievementToast {
     this.descEl = document.createElement('div');
     this.descEl.className = 'achv__desc';
 
-    el.append(eyebrow, this.nameEl, this.descEl);
+    const words = document.createElement('div');
+    words.className = 'achv__words';
+    words.append(eyebrow, this.nameEl, this.descEl);
+
+    el.append(this.iconEl, words);
     this.element = el;
   }
 
@@ -97,9 +125,16 @@ export class AchievementToast {
 
     const next = this.queue.shift();
     if (next === undefined) return;
+    this.iconEl.src = spriteUrl(next.icon);
     this.nameEl.textContent = next.name;
     this.descEl.textContent = next.description;
     this.element.hidden = false;
+    // Restarted by hand: the animation only plays on the element ENTERING the layout, and a second
+    // banner reuses the same element, so without this the queue's second entry appears instantly
+    // while the first slid in.
+    this.element.style.animation = 'none';
+    void this.element.offsetWidth;
+    this.element.style.animation = '';
     this.showing = true;
     this.left = SHOW_SEC;
   }

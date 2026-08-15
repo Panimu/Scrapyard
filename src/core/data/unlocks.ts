@@ -81,6 +81,20 @@ export type UnlockCond =
    * to land last, which is not a thing a player can play toward.
    */
   | { readonly kind: 'bossKillHolding'; readonly weapon: WeaponId }
+  /**
+   * Land the KILLING BLOW on `count` enemies with any of `weapons`.
+   *
+   * A LIST rather than one id, because the thing a player is being asked for is usually a KIND of
+   * weapon and not a specific model. "Destroy a hundred with a missile" means either rack: the two
+   * racks are one idea with two ranges, and a condition that accepted only one of them would be
+   * asking for something nobody would guess.
+   *
+   * Killing blow, not damage dealt. "Kill with X" has to mean the thing a player would check on the
+   * screen, and a gun that softens everything and never finishes anything has not killed with it.
+   */
+  | { readonly kind: 'killsWith'; readonly weapons: readonly WeaponId[]; readonly count: number }
+  /** Land the KILLING BLOW on a boss with any of `weapons`. Same rule as `killsWith`. */
+  | { readonly kind: 'bossKillBy'; readonly weapons: readonly WeaponId[] }
   /** Win. */
   | { readonly kind: 'win' };
 
@@ -118,6 +132,17 @@ export interface RunRecord {
    * table threaded through `meetsUnlock`.
    */
   readonly bossKillsHolding: readonly WeaponId[];
+  /**
+   * Killing blows this run, by the weapon that landed them. Absent key = none.
+   *
+   * A record rather than the Uint32Array RunStats keeps, resolved by the caller, for the same
+   * reason `bossKillsHolding` is a list of ids: everything else in here is something a test can
+   * write by hand, and threading a second catalog into `meetsUnlock` to decode an index would make
+   * the interesting conditions the awkward ones.
+   */
+  readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
+  /** Weapons that landed the killing blow on a boss this run. */
+  readonly bossKillsBy: readonly WeaponId[];
 }
 
 /**
@@ -147,6 +172,13 @@ export function meetsUnlock(
       return run.won;
     case 'bossKillHolding':
       return run.bossKillsHolding.includes(cond.weapon);
+    case 'killsWith': {
+      let n = 0;
+      for (const w of cond.weapons) n += run.killsWith[w] ?? 0;
+      return n >= cond.count;
+    }
+    case 'bossKillBy':
+      return cond.weapons.some((w) => run.bossKillsBy.includes(w));
     case 'tier': {
       const i = ids.indexOf(cond.id);
       // An id the catalog does not carry can never be satisfied, and must not read as satisfied:
@@ -200,11 +232,29 @@ export function describeUnlockDone(
       return 'Won a run.';
     case 'bossKillHolding':
       return `Killed a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}.`;
+    case 'killsWith':
+      return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}.`;
+    case 'bossKillBy':
+      return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
     case 'tier': {
       const name = names(cond.id) ?? cond.id;
       return cond.tier >= 7 ? `Finished the ${name}.` : `Took the ${name} to tier ${cond.tier}.`;
     }
   }
+}
+
+/**
+ * "the Short Missiles or the Long Missiles". Written out in full rather than as a group noun,
+ * because the group noun is the thing that would have to be invented and then kept true - "a
+ * missile" is obvious for the two racks and would be a guess for any other pairing.
+ */
+function listNames(
+  ids: readonly WeaponId[],
+  names: (id: WeaponId) => string | undefined,
+): string {
+  const out = ids.map((id) => `the ${names(id) ?? id}`);
+  if (out.length <= 1) return out[0] ?? '';
+  return `${out.slice(0, -1).join(', ')} or ${out[out.length - 1]}`;
 }
 
 /** `90` -> `1:30`, `600` -> `10:00`. Whole seconds; these are authored round numbers. */

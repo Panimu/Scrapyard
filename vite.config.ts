@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -20,9 +21,47 @@ const isTest = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
  */
 const isSingleFile = process.env.SINGLEFILE === '1';
 
+/**
+ * THE BUILD NUMBER, printed on the title screen.
+ *
+ * It is the COMMIT COUNT, not a counter this file increments. A number stored in the repo and
+ * bumped by the build would change on every local `npm run build` - a dozen times in an afternoon
+ * of work that produces one deploy - and every one of those bumps is a diff to commit. The commit
+ * count moves exactly once per commit, which for this project is exactly once per deploy: the
+ * workflow publishes every push.
+ *
+ * The short SHA goes with it because the number alone answers "is my phone newer than yours" and
+ * nothing else. The pair answers "which build is this", which is the question actually being asked
+ * when someone reads a version off a screen.
+ *
+ * REQUIRES REAL HISTORY. `actions/checkout` clones one commit by default, which would make this 1
+ * on every deploy - the workflow sets `fetch-depth: 0` for exactly this reason. If git is missing
+ * or shallow anyway, this degrades to `dev` rather than to a wrong number: a version that lies is
+ * worse than a version that admits it does not know.
+ */
+function git(cmd: string): string {
+  try {
+    return execSync(`git ${cmd}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return '';
+  }
+}
+
+const commitCount = git('rev-list --count HEAD');
+const shortSha = git('rev-parse --short HEAD');
+const buildNumber = /^[0-9]+$/.test(commitCount) && commitCount !== '1' ? commitCount : '';
+const buildLabel =
+  buildNumber !== '' && shortSha !== '' ? `v${buildNumber} · ${shortSha}` : 'dev build';
+
 export default defineConfig({
   // Relative base so the built bundle works from a subpath as well as from a Pages root.
   base: './',
+
+  // Substituted at build time, so the running bundle carries the identity of the commit it was
+  // built from without a source file having to be edited to say so.
+  define: {
+    __BUILD_LABEL__: JSON.stringify(buildLabel),
+  },
 
   server: {
     // The whole point is loading it on a phone on the same network.

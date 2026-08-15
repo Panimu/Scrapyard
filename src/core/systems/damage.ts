@@ -190,7 +190,7 @@ function applyBeams(world: World): void {
       enemies.slot[ed],
     );
 
-    if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+    if (enemies.hp[ed] <= 0) killEnemy(world, ed, beams.weaponIdx[i]);
   }
 }
 
@@ -266,7 +266,7 @@ function applyHits(world: World): void {
 
     applyKnockback(world, ed, proj.vx[pd], proj.vy[pd], proj.knockback[pd]);
 
-    if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+    if (enemies.hp[ed] <= 0) killEnemy(world, ed, proj.ownerWeapon[pd]);
 
     // Splash is centred on the impact point, not on the victim, so a shell that clips the edge of
     // a bruiser still catches the chaff behind it rather than the chaff behind the bruiser.
@@ -375,7 +375,7 @@ function applySplash(
       scaled,
       enemies.slot[ed],
     );
-    if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+    if (enemies.hp[ed] <= 0) killEnemy(world, ed, slot);
   }
 }
 
@@ -391,7 +391,7 @@ function applySplash(
  * The DEAD guard is what makes double-kills free: two shells landing on the same 3 HP runt in
  * one tick produce one kill, one gem and one increment of RunStats.
  */
-function killEnemy(world: World, ed: number): void {
+function killEnemy(world: World, ed: number, killerSlot: number): void {
   const enemies = world.enemies;
   if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) return;
 
@@ -411,8 +411,16 @@ function killEnemy(world: World, ed: number): void {
   // end, because the loadout at the end is not the loadout at the moment - see RunStats. Bosses
   // are the rarest thing in the game and this is five increments when one dies, so the loop costs
   // nothing measurable and buys a fact that is otherwise unrecoverable.
-  if ((kf & ENEMY_FLAG_BOSS) !== 0) {
+  const isBoss = (kf & ENEMY_FLAG_BOSS) !== 0;
+  if (isBoss) {
     for (let i = 0; i < world.weaponCount; i++) stats.bossKillsByWeapon[world.weapons[i].defId]++;
+  }
+
+  // WHO FINISHED IT. -1 is the Energy Shield's backlash, which has no slot - see the call site.
+  const killer = killerSlot >= 0 ? (world.weapons[killerSlot]?.defId ?? -1) : -1;
+  if (killer >= 0) {
+    stats.killsByWeapon[killer]++;
+    if (isBoss) stats.bossKillsByKiller[killer]++;
   }
 
   pushKill(
@@ -472,7 +480,10 @@ function applyShieldBacklash(world: World, ed: number, amount: number): void {
     enemies.slot[ed],
   );
 
-  if (enemies.hp[ed] <= 0) killEnemy(world, ed);
+  // NO KILLING WEAPON: the backlash is the Energy Shield, which is not in a slot. -1 rather than
+  // slot 0, because attributing a shield kill to whatever gun happened to be first would be a lie
+  // in exactly the statistic that exists to answer "what finished it".
+  if (enemies.hp[ed] <= 0) killEnemy(world, ed, -1);
 }
 
 // -------------------------------------------------------------------------------------------

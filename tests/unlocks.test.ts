@@ -16,7 +16,7 @@ import {
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
 
 function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], ...over };
+  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], killsWith: {}, bossKillsBy: [], ...over };
 }
 
 describe('meetsUnlock', () => {
@@ -80,6 +80,31 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock(cond, run({ bossKillsHolding: ['cannon'] }), IDS)).toBe(false);
   });
 
+  it('killsWith sums across every weapon it names, and counts nothing else', () => {
+    const cond = {
+      kind: 'killsWith',
+      weapons: ['missile-short', 'missile-long'],
+      count: 100,
+    } as const;
+    // Split across the two racks: "a missile" means either, so 60 + 40 is a hundred.
+    expect(
+      meetsUnlock(cond, run({ killsWith: { 'missile-short': 60, 'missile-long': 40 } }), IDS),
+    ).toBe(true);
+    expect(
+      meetsUnlock(cond, run({ killsWith: { 'missile-short': 60, 'missile-long': 39 } }), IDS),
+    ).toBe(false);
+    // A weapon the condition does not name contributes nothing, however many it killed.
+    expect(meetsUnlock(cond, run({ killsWith: { cannon: 5000 } }), IDS)).toBe(false);
+  });
+
+  it('bossKillBy wants the killing blow, from any weapon it names', () => {
+    const cond = { kind: 'bossKillBy', weapons: ['missile-short', 'missile-long'] } as const;
+    expect(meetsUnlock(cond, run({ bossKillsBy: ['missile-long'] }), IDS)).toBe(true);
+    expect(meetsUnlock(cond, run({ bossKillsBy: ['cannon'] }), IDS)).toBe(false);
+    // Holding one when a boss died is a DIFFERENT condition - it must not satisfy this.
+    expect(meetsUnlock(cond, run({ bossKillsHolding: ['missile-long'] }), IDS)).toBe(false);
+  });
+
   it('a chassis that names a REAL condition names one some run could satisfy', () => {
     // `never` is deliberately unsatisfiable - it is how the catalog says "criteria not written
     // yet" - so it is excluded. Everything else is checked against one impossible run: everything
@@ -92,6 +117,11 @@ describe('meetsUnlock', () => {
       won: true,
       tiers: new Uint8Array(UPGRADE_CATALOG.length).fill(8),
       bossKillsHolding: WEAPON_CATALOG.map((w) => w.id),
+      // Every weapon, with an absurd count. A new field left out of this fixture makes the
+      // conditions that read it look unsatisfiable, which is exactly how this test earns its keep -
+      // it fails on the fixture rather than shipping a chassis nobody can unlock.
+      killsWith: Object.fromEntries(WEAPON_CATALOG.map((w) => [w.id, 1_000_000])),
+      bossKillsBy: WEAPON_CATALOG.map((w) => w.id),
     });
     const stuck = HERO_CATALOG.filter(
       (h) => h.unlock.kind !== 'never' && !meetsUnlock(h.unlock, perfect, IDS),

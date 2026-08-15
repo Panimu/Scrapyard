@@ -16,6 +16,7 @@
  * been before rather than a splash.
  */
 
+import { BUILD_LABEL } from '../buildInfo.js';
 import { spriteUrl } from '../render/assets.js';
 
 export class TitleScreen {
@@ -73,6 +74,14 @@ export class TitleScreen {
     this.bank.className = 'title__bank';
     this.bank.hidden = true;
     el.appendChild(this.bank);
+
+    // WHICH BUILD YOU ARE PLAYING, and it is here because this is the screen a playtester is on
+    // when they need it: the answer to "have you got the fix yet" has to be readable without
+    // starting a run. Small and dim - it is a serial number, not a feature.
+    const version = document.createElement('div');
+    version.className = 'title__version';
+    version.textContent = BUILD_LABEL;
+    el.appendChild(version);
 
     this.element = el;
   }
