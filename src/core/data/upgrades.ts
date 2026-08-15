@@ -1,6 +1,35 @@
 /**
  * THE UPGRADE POOL.
  *
+ * ---------------------------------------------------------------------------------------------
+ * CARD TEXT CARRIES NO NUMBERS
+ * ---------------------------------------------------------------------------------------------
+ * Every `description` and every entry of `tiers` is qualitative: "reaches further", "a heavier
+ * shell", "burns hotter - and heats itself up faster doing it". The one exception is a COUNT OF
+ * PROJECTILES - "a third missile", "a fourth missile", "a third shell" - because that is not a
+ * magnitude, it is a different thing happening: three warheads in the air instead of two is
+ * visible from the card and visible on the screen, and rounding it to "more missiles" would be
+ * vaguer than the game actually is.
+ *
+ * (Two counts sit just inside that exception on purpose: the Cannon's extra pierce and the
+ * shield's second rim. Both are a discrete +1 that changes what a shot or a hit DOES, and both
+ * read as nonsense without the number - "shells punch through enemies" is not the tier.)
+ *
+ * WHY. A percentage on a card invites arithmetic, and arithmetic is not the decision the card is
+ * asking about. "+7% weapon range" reads as a number to compare against another number; "every
+ * weapon reaches further" reads as a thing that happens to your mech. The second is what a player
+ * with four seconds and a horde closing in can actually use.
+ *
+ * THE SHAPE OF A LADDER STILL HAS TO SURVIVE IT. The passives are back-loaded - the seventh rung
+ * is worth twice the first - and a player who cannot see 5% against 10% must still be able to feel
+ * that, or taking the same card again stops being a decision. So the wording escalates in three
+ * bands (`rampText`), banded where the ramp's own steps fall.
+ *
+ * This is NOT a retreat from "the number on screen is always the number" (DESIGN.md 7.3). That
+ * rule is about ACCURACY - no hidden spread, no fudged rolls, what is displayed is what happens.
+ * Showing fewer numbers is not showing false ones, and every number that IS shown - a heat bar, a
+ * damage figure in the summary - is still exact.
+ *
  * FOURTEEN CARDS: eight weapons and six passives, every one of them SEVEN TIERS deep. Tier 1 puts
  * the thing in your hands; tiers 2-7 change what it does. A run has five weapon slots and five
  * passive slots, so nothing here is a collection to complete - 98 tiers exist and a long run takes
@@ -121,8 +150,10 @@ export interface UpgradeDef {
   readonly description: string;
   /**
    * What each tier does, indexed from 0 = tier 1. The card shows the entry for the tier being
-   * OFFERED, so a player about to take tier 4 reads "Heat dispersion +5/s" rather than a generic
+   * OFFERED, so a player about to take tier 4 reads what THAT rung does rather than a generic
    * "Level up Short Laser". Length must equal maxStacks.
+   *
+   * NO NUMBERS. See the file header.
    */
   readonly tiers: readonly string[];
   /** Equals WEAPON_MAX_TIER for weapon cards: stacks taken IS the weapon's tier. */
@@ -173,23 +204,21 @@ export function weaponNameAtTier(weapon: WeaponId, tier: number): string {
  * quoted are computed from the weapon's own base in weaponCatalog.laserTiers, and repeated here as
  * text only - which is why the multipliers below must match that function.
  */
-function laserTierText(
-  damagePerSec: number,
-  heatPerSec: number,
-  heatDispersion: number,
-): readonly string[] {
-  const dmg = Math.round(damagePerSec * 0.4);
-  const heat = Math.round(heatPerSec * 0.4 * 10) / 10;
-  const disp = Math.round(heatDispersion * 0.5 * 10) / 10;
-  return [
+/**
+ * The laser ladder, said in words. Identical text on the repeated rungs (5 repeats 2, 7 repeats 4)
+ * because they ARE the same rung twice - inventing a difference in the wording would be inventing
+ * a difference in the weapon.
+ */
+function laserTierText(): readonly string[] {
+  return Object.freeze([
     'Unlock.',
-    `Damage +${dmg}/s, but heat +${heat}/s.`,
-    'Heat capacity +40.',
-    `Heat dispersion +${disp}/s.`,
-    `Damage +${dmg}/s, but heat +${heat}/s.`,
-    'Heat capacity +40.',
-    `Heat dispersion +${disp}/s.`,
-  ];
+    'Burns hotter - and heats itself up faster doing it.',
+    'A bigger heat sink: longer bursts before it cuts out.',
+    'Sheds heat faster, so it comes back sooner.',
+    'Burns hotter - and heats itself up faster doing it.',
+    'A bigger heat sink: longer bursts before it cuts out.',
+    'Sheds heat faster, so it comes back sooner.',
+  ]);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -240,8 +269,16 @@ const PASSIVE_RAMP: readonly number[] = [0.05, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1
  */
 const FEED_RELOAD: readonly number[] = [0.15, 0.2, 0.3, 0.4, 0.55, 0.7, 1.2];
 
-function rampText(prefix: string): readonly string[] {
-  return PASSIVE_RAMP.map((v) => `${prefix} +${Math.round(v * 100)}%.`);
+/**
+ * A passive's seven rungs, said in words.
+ *
+ * NO NUMBERS ON A CARD (see the header). The ramp is back-loaded - 5/5/6/7/8/9/10, so the seventh
+ * rung is worth twice the first - and a player who cannot see the percentages still has to be able
+ * to feel that shape, or "take this card again" stops being a decision. So the seven rungs are
+ * banded 2/3/2 onto three phrasings, which is exactly where the ramp's own steps fall.
+ */
+function rampText(small: string, mid: string, big: string): readonly string[] {
+  return Object.freeze([small, small, mid, mid, mid, big, big]);
 }
 
 /** One `mul` effect per tier on a single key, following the ramp. */
@@ -270,12 +307,12 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     description: 'Lobs a heavy shell at the highest-HP enemy in range. One target, hit hard.',
     tiers: Object.freeze([
       'Unlock.',
-      'Range +62.',
-      'Fire rate: cooldown -15%.',
-      'Damage +18 per shell.',
-      'Range +62.',
-      'Fire rate: cooldown -15%.',
-      'Shells pierce one extra enemy.',
+      'Reaches further.',
+      'Lays and fires quicker.',
+      'A heavier shell.',
+      'Reaches further again.',
+      'Lays and fires quicker again.',
+      'Shells punch through one extra enemy.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
@@ -289,11 +326,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     description: 'Two homing missiles fired where you last moved. Slow to rearm, hits hard.',
     tiers: Object.freeze([
       'Unlock.',
-      'Rearm 0.45s faster.',
-      'Turn radius: +0.7 rad/s homing.',
-      'Damage +22 per missile.',
-      'Rearm 0.45s faster.',
-      'Turn radius: +0.7 rad/s homing.',
+      'Rearms sooner.',
+      'Homes more tightly.',
+      'Heavier warheads.',
+      'Rearms sooner again.',
+      'Homes more tightly again.',
       'A third missile.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
@@ -308,11 +345,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     description: 'Three missiles on a long fuse, fired where you last moved. Weak homing, wide reach.',
     tiers: Object.freeze([
       'Unlock.',
-      'Rearm 0.6s faster.',
-      'Turn radius: +0.45 rad/s homing.',
-      'Damage +15 per missile.',
+      'Rearms sooner.',
+      'Homes more tightly.',
+      'Heavier warheads.',
       'A fourth missile.',
-      'Flight time +0.6s.',
+      'A longer fuse, so they fly further before they fall.',
       'A fifth missile.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
@@ -325,15 +362,15 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'machine-gun',
     name: 'Machine Gun',
     description:
-      'Two rounds at a time into the weakest enemy, very close in. 200 rounds, then a long reload.',
+      'Two rounds at a time into the weakest enemy, very close in. A deep belt, then a long reload.',
     tiers: Object.freeze([
       'Unlock.',
-      'Damage +1.5 per round.',
-      'Rate of fire: cycle -0.018s.',
-      'Magazine +80 rounds.',
-      'Range +25.',
-      'Damage +3 per round.',
-      'Reload 4.5s faster.',
+      'A harder-hitting round.',
+      'Spins faster.',
+      'A deeper magazine.',
+      'Reaches further.',
+      'A much harder-hitting round.',
+      'Reloads much faster.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
@@ -348,11 +385,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'Two shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast.',
     tiers: Object.freeze([
       'Unlock.',
-      'Blast radius +18.',
-      'Rate of fire: reload -16.7%.',
-      'Damage +22 per shell.',
-      'Blast radius +18.',
-      'Rate of fire: reload -16.7%.',
+      'A wider blast.',
+      'Shells fall more often.',
+      'Heavier shells.',
+      'A wider blast again.',
+      'Shells fall more often again.',
       'A third shell.',
     ]),
     maxStacks: WEAPON_MAX_TIER,
@@ -365,7 +402,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-short',
     name: 'Short Laser',
     description: 'Green beam. Burns whatever stands between you and the weakest enemy.',
-    tiers: laserTierText(46, 7.5, 8.5),
+    tiers: laserTierText(),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
@@ -383,7 +420,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-medium',
     name: 'Medium Laser',
     description: 'Blue beam. Moderate damage at middling range, and it runs hot.',
-    tiers: laserTierText(66, 16.5, 8.6),
+    tiers: laserTierText(),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
@@ -394,7 +431,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     grantsWeapon: 'laser-long',
     name: 'Long Laser',
     description: 'Red beam. Heavy damage at long range, in short bursts.',
-    tiers: laserTierText(92, 25.5, 8.0),
+    tiers: laserTierText(),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
@@ -405,7 +442,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     kind: 'passive',
     name: 'Targeting Optics',
     description: 'Every weapon reaches further.',
-    tiers: rampText('Weapon range'),
+    tiers: rampText(
+      'Every weapon reaches a little further.',
+      'Every weapon reaches further.',
+      'Every weapon reaches much further.',
+    ),
     tierEffects: rampEffects('weapon', ['range']),
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
@@ -429,7 +470,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     //
     // A NO-OP FOR EVERYTHING ELSE. Projectile weapons declare `heatPerSec: 0` and multiplying
     // zero leaves zero, so no shell-thrower notices this key exists.
-    tiers: rampText('Weapon damage'),
+    tiers: rampText(
+      'Every weapon hits a little harder.',
+      'Every weapon hits harder.',
+      'Every weapon hits much harder.',
+    ),
     tierEffects: rampEffects('weapon', ['damage', 'heatPerSec']),
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
@@ -453,8 +498,12 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // FEED_RELOAD. Rate of fire and reload pull against each other on a magazine weapon: firing
     // faster empties the belt sooner, so the percentage half of this card buys burst and gives
     // back uptime. The seconds half is what buys the uptime back.
-    tiers: PASSIVE_RAMP.map(
-      (v, i) => `Rate of fire +${Math.round(v * 100)}%. Reload ${FEED_RELOAD[i]}s faster.`,
+    // Both halves in every rung, because both halves land in every rung - a card that mentioned
+    // the reload only on the tiers where it happened to be large would be lying by omission.
+    tiers: rampText(
+      'Everything fires a little more often, and reloads a little sooner.',
+      'Everything fires more often, and reloads sooner.',
+      'Everything fires much more often, and reloads much sooner.',
     ),
     tierEffects: PASSIVE_RAMP.map((v, i) => [
       { target: 'weapon' as const, key: 'cooldown' as const, mode: 'mul' as const, amount: -v * (1 / 3 / 0.5) },
@@ -474,7 +523,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // raising only the top speed would lower drag and make the mech float - a higher ceiling it
     // takes noticeably longer to reach. Scaling both keeps time-to-max-speed constant, so the mech
     // feels the same and is simply quicker.
-    tiers: rampText('Movement speed'),
+    tiers: rampText(
+      'The chassis moves a little faster.',
+      'The chassis moves faster.',
+      'The chassis moves much faster.',
+    ),
     tierEffects: rampEffects('player', ['moveMaxSpeed', 'moveAccel']),
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
@@ -484,7 +537,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     id: 'p-armour',
     kind: 'passive',
     name: 'Ablative Plate',
-    description: 'Subtracts from every hit taken, down to a floor of 25% of the original.',
+    description: 'Takes something off every hit you take - never all of it, and never nothing.',
     // FLAT, not a percentage. Base armour is 0, so a multiplier would be worth precisely nothing -
     // the one place the shared ramp cannot be used. The same back-loaded shape by hand: +22 armour
     // in total, seventh tier twice the first.
@@ -493,13 +546,13 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // armour turns a 5-damage runt hit into the 25% floor, and a 28-damage elite hit into 6.
     // It buys tolerance for being SURROUNDED, never for being hit by the big thing.
     tiers: Object.freeze([
-      'Armour +2.',
-      'Armour +2.',
-      'Armour +3.',
-      'Armour +3.',
-      'Armour +4.',
-      'Armour +4.',
-      'Armour +4.',
+      'A little more plating.',
+      'A little more plating.',
+      'More plating.',
+      'More plating.',
+      'Much more plating.',
+      'Much more plating.',
+      'Much more plating.',
     ]),
     tierEffects: Object.freeze(
       [2, 2, 3, 3, 4, 4, 4].map((v) => [
@@ -518,7 +571,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // "Unlock." on its own would put the three numbers that define the card nowhere the player
     // can read them before spending the pick.
     description:
-      'A blue rim absorbs one hit outright and burns what hit it. 0.1s immunity, back in 20s.',
+      'A blue rim absorbs one hit outright and burns whatever broke it. A moment of immunity with it, and then it comes back.',
     // NOT a percentage card, and not on the shared ramp: there is nothing here to take a
     // percentage OF. All three numbers are 0 at base (tuning.ts), so the unlock tier carries the
     // whole mechanism and the six after it move three separate dials.
@@ -544,11 +597,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // contact cycle's worth of a surrounding pile-on.
     tiers: Object.freeze([
       'Unlock.',
-      'Recharge 3s faster: 17s.',
-      'Immunity 0.15s.',
-      'Recharge 3.5s faster: 13.5s.',
-      'Immunity 0.2s.',
-      'Recharge 4.5s faster: 9s.',
+      'Comes back sooner.',
+      'A longer moment of immunity when it breaks.',
+      'Comes back sooner again.',
+      'A longer moment still.',
+      'Comes back much sooner.',
       'A second rim. Each recharges in turn.',
     ]),
     tierEffects: Object.freeze([

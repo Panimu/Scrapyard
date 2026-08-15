@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T09:04Z',
+    title: 'Cards say what they do, not by how much',
+    notes: [
+      'EVERY UPGRADE CARD HAS LOST ITS NUMBERS. "Weapon range +7%" is now "every weapon reaches further". "Damage +26/s, but heat +6.6/s" is "burns hotter - and heats itself up faster doing it". A card is a decision you make in four seconds with a horde closing in, and a percentage invites arithmetic instead.',
+      'EXTRA PROJECTILES STILL COUNT, because that is not a magnitude - it is a different thing happening. A third missile is three warheads in the air where there were two, and you can see it. So can the extra enemy a Cannon shell punches through, and the second rim on the Energy Shield.',
+      'THE LADDERS STILL READ AS LADDERS. A passive gets stronger with every tier taken - the last is worth about twice the first - so the wording climbs with it: a little further, further, much further.',
+      'Nothing about any weapon changed. This is what the cards SAY, not what they do.',
+    ],
+  },
+  {
     at: '2026-08-15T08:50Z',
     title: 'A bigger swarm, and Heavies that stay where you left them',
     notes: [
