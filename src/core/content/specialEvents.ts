@@ -62,10 +62,28 @@
  *     swarm       12   17.1%   UNCHANGED
  *     chest elite  5    7.1%   half the ring, as asked
  *
- * 14 slots a run x 7.1% = 1.0 chest elites in an average run, which is one extra chest on top of
- * the seven the bosses guarantee. Doubling every weight changes nothing about the draw - a
- * weighted table is scale-free - and it means the next event specified as a fraction of an
- * existing one has room to land on an integer too.
+ * Doubling every weight changes nothing about the draw - a weighted table is scale-free - and it
+ * means the next event specified as a fraction of an existing one has room to land on an integer
+ * too.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * AND THEN `nothing` WAS CUT TO 35, WHICH IS THE ONE CHANGE THIS TABLE IS ALLOWED TO MAKE
+ * ---------------------------------------------------------------------------------------------
+ * Everything above is about protecting the set-pieces from each other when a new one arrives.
+ * This is the other axis, and it is a design decision rather than an accident to be corrected:
+ * moving `nothing` alone changes HOW OFTEN ANYTHING HAPPENS without touching the balance BETWEEN
+ * the things that happen. The three events keep their 10 : 12 : 5 ratio exactly; a wave is simply
+ * likelier to get one.
+ *
+ *     nothing     35   56.5%   was 61.4%
+ *     ring        10   16.1%   was 14.3%
+ *     swarm       12   19.4%   was 17.1%
+ *     chest elite  5    8.1%   was  7.1%   - still exactly half the ring
+ *
+ * Over the 14 slots of a full run that is 6.1 set-pieces where it was 5.4: about one more thing
+ * happening per run, spread across all three in proportion. `nothing` is the ONLY weight that
+ * should ever be moved for this purpose - reaching for the events themselves would change what a
+ * run is made of while trying to change how busy it is.
  */
 
 export const EVENT_NOTHING = 0;
@@ -91,7 +109,7 @@ export interface SpecialEventDef {
  * upgrade catalog and the event kinds live under.
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
-  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 43 }),
+  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 35 }),
   Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 10 }),
   Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 12 }),
   Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 5 }),

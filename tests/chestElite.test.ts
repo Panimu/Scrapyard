@@ -7,8 +7,8 @@
  *     tables rather than of any branch in the spawner;
  *   - killing one leaves a Cyber Chest, which crosses three systems (damage writes the flavour
  *     into the kill feed, the feed survives the body being reaped, pickups reads it back);
- *   - the event's share of the table is exactly half the ring's, and adding it did not quietly
- *     re-slice the two events that were already there.
+ *   - the event is drawn exactly half as often as the ring, and the three set-pieces keep their
+ *     proportions to each other however `nothing` is tuned around them.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,6 +26,7 @@ import {
 } from '../src/core/content/enemyCatalog.js';
 import {
   EVENT_CHEST_ELITE,
+  EVENT_NOTHING,
   EVENT_RING_ATTACK,
   EVENT_SWARM,
   SPECIAL_EVENTS,
@@ -134,11 +135,17 @@ describe('the Chest Elite event', () => {
     expect(weightOf(EVENT_CHEST_ELITE) * 2).toBe(weightOf(EVENT_RING_ATTACK));
   });
 
-  it('did not re-slice the events that were already in the table', () => {
-    // `nothing` pays for a new event - see the header of content/specialEvents.ts. The ring shipped
-    // at 1/7 of a slot and the swarm slightly above it, and both numbers are somebody's decision
-    // rather than an accident of what else happens to be in the table.
-    expect(weightOf(EVENT_RING_ATTACK) / SPECIAL_EVENT_TOTAL_WEIGHT).toBeCloseTo(1 / 7, 6);
-    expect(weightOf(EVENT_SWARM) / SPECIAL_EVENT_TOTAL_WEIGHT).toBeCloseTo(6 / 35, 6);
+  it('left the balance BETWEEN the set-pieces alone', () => {
+    // THE RATIO, NOT THE SHARE. `nothing` is the dial for how often anything happens at all, and
+    // it moves - it paid for this event's slice, and it has since been cut again to make a run
+    // busier. What must not move by accident is the proportion the three events stand in to each
+    // other: the swarm was specified as slightly commoner than the ring, and the chest elite as
+    // half of it, and both of those are decisions rather than side effects of the total.
+    expect(weightOf(EVENT_SWARM) / weightOf(EVENT_RING_ATTACK)).toBeCloseTo(6 / 5, 6);
+    expect(weightOf(EVENT_CHEST_ELITE) / weightOf(EVENT_RING_ATTACK)).toBeCloseTo(0.5, 6);
+    // And `nothing` is still the largest entry - a table where a wave more often gets a set-piece
+    // than not would be a different game, and would be worth arriving at deliberately.
+    const events = SPECIAL_EVENT_TOTAL_WEIGHT - weightOf(EVENT_NOTHING);
+    expect(weightOf(EVENT_NOTHING)).toBeGreaterThan(events);
   });
 });

@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:41Z',
+    title: 'Set-pieces happen more often',
+    notes: [
+      'A WAVE IS NOW LIKELIER TO BRING SOMETHING WITH IT. Ring attacks, swarms and chest elites are all about a seventh more common - roughly six a run where it was five - and the quiet stretches between them are shorter.',
+      'All three went up together, in proportion. Which set-piece you get is exactly as likely as it was; there are simply more of them.',
+    ],
+  },
+  {
     at: '2026-08-15T15:34Z',
     title: 'THE CHEST ELITE - one enemy in the yard is worth chasing',
     notes: [
