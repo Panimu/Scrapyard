@@ -122,19 +122,22 @@ const FOLLOW_RATE = 1.05;
  */
 
 /**
- * HOW MUCH OF THE MACHINE GUN'S MAGAZINE A DRONE CARRIES.
+ * WHAT A DRONE'S ROUND IS WORTH, against the Machine Gun's own.
  *
- * Half. A drone's life IS its magazine, so this is the drone's lifespan knob and not an ammo knob -
- * at the full 200 rounds a tier-1 drone could fire for eighteen seconds against a thirty-second
- * rebuild, which made a lost drone a mild inconvenience rather than something you felt.
+ * HALF, AND THE MAGAZINE IS NOW FULL - the two go together and replaced each other. A drone used to
+ * carry half a magazine at full damage, which is the same total damage in half the time; it now
+ * carries the whole magazine at half damage, which is the same total damage over twice as long.
+ * The second shape is the better one for a thing whose magazine IS its life: a drone at 200 rounds
+ * lives about eighteen seconds of sustained fire against a twenty-five second rebuild, so a flight
+ * is something you maintain rather than something that keeps evaporating.
  *
- * Applied HERE rather than by lowering MACHINE_GUN's own `ammoCapacity`, which would nerf the
- * actual Machine Gun for every player holding one. The drone's gun is the Machine Gun; the drone's
- * MAGAZINE is a property of the drone.
+ * Applied HERE rather than by lowering MACHINE_GUN's own numbers, which would nerf the actual
+ * Machine Gun for every player holding one. The drone's gun IS the Machine Gun; what a drone does
+ * with it is a property of the drone.
  *
- * It scales with the tier for free, because it multiplies the gun's already-tiered capacity.
+ * It scales with the tier for free, because it multiplies the gun's already-tiered damage.
  */
-const DRONE_MAG_FRAC = 0.5;
+const DRONE_DAMAGE_FRAC = 0.5;
 
 /**
  * Scratch for the per-tick target query, which asks for the four bodies nearest THE PLAYER.
@@ -198,7 +201,8 @@ export function updateDrones(world: World, dt: number): void {
   const acquire = gun.range * DRONE_ACQUIRE_MUL;
   const acquireSq = acquire * acquire;
   const engageRadius = gun.range * ENGAGE_RADIUS_FRAC;
-  const magazine = Math.max(1, Math.floor(gun.ammoCapacity * DRONE_MAG_FRAC));
+  // THE GUN'S WHOLE MAGAZINE. No drone-specific fraction: the round is what was made cheaper.
+  const magazine = Math.max(1, Math.floor(gun.ammoCapacity));
 
   // ---- the bay: build timers, and deploying what they finish -------------------------------
   //
@@ -370,7 +374,7 @@ function fireRound(world: World, d: number, dirX: number, dirY: number, gun: Wea
   if (handle === NULL_HANDLE) return;
 
   const i = p.count - 1;
-  p.damage[i] = gun.damage;
+  p.damage[i] = gun.damage * DRONE_DAMAGE_FRAC;
   p.knockback[i] = gun.knockback;
   p.splashRadius[i] = 0;
   p.splashFrac[i] = 0;

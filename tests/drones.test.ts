@@ -87,10 +87,9 @@ describe('the drone bay', () => {
     const w = droneWorld();
     tick(w);
     expect(w.drones.count).toBe(1);
-    // HALF the gun's magazine - see DRONE_MAG_FRAC. Loaded from the GUN and not from the bay, which
-    // carries no ammo at all; reading it from there launched drones with one round that detonated
-    // on their first shot.
-    expect(w.drones.ammo[0]).toBe(MACHINE_GUN.base.ammoCapacity / 2);
+    // THE GUN'S WHOLE MAGAZINE. Loaded from the GUN and not from the bay, which carries no ammo at
+    // all; reading it from there launched drones with one round that detonated on their first shot.
+    expect(w.drones.ammo[0]).toBe(MACHINE_GUN.base.ammoCapacity);
     expect(w.weapons[0].cooldownLeft).toBeCloseTo(DRONE.base.cooldown, 5);
   });
 
@@ -133,7 +132,7 @@ describe('the drone bay', () => {
     expect(w.drones.targetDense[0]).toBe(e);
     // It went there. Circling at roughly the engage radius rather than sitting on top of it.
     expect(dist(w.drones.x[0], w.drones.y[0], 220, 0)).toBeLessThan(110);
-    expect(w.drones.ammo[0]).toBeLessThan(MACHINE_GUN.base.ammoCapacity / 2);
+    expect(w.drones.ammo[0]).toBeLessThan(MACHINE_GUN.base.ammoCapacity);
     expect(w.enemies.hp[e]).toBeLessThan(1_000_000);
   });
 
@@ -207,7 +206,7 @@ describe('the drone bay', () => {
     // Read from a deployed drone rather than from MACHINE_GUN.base: the gun tiers WITH the bay, so
     // a tier-5 drone carries the Machine Gun's tier-5 magazine and not its base 200.
     const full = w.drones.ammo[0];
-    expect(full).toBeGreaterThan(MACHINE_GUN.base.ammoCapacity / 2);
+    expect(full).toBeGreaterThan(MACHINE_GUN.base.ammoCapacity);
     for (let d = 0; d < 3; d++) expect(w.drones.ammo[d]).toBe(full);
 
     // THREE DELIBERATELY DIFFERENT MAGAZINES, then one body they can all reach.
@@ -251,16 +250,19 @@ describe('the drone bay', () => {
   it('detonates when the magazine runs dry, and the blast damages what is standing there', () => {
     const w = droneWorld();
     ticks(w, 60);
-    // Fat enough to outlast the whole magazine, so the drone dies of ammo rather than of success -
-    // but NOT so fat that float32 swallows the damage. hp lives in a Float32Array, where 1e9 has an
-    // ulp of 64: a 5.5-damage round subtracted from it rounds straight back to 1e9 and the test
-    // reads as "nothing happened".
+    // Fat enough to outlast the magazine, so the drone dies of ammo rather than of success - but
+    // NOT so fat that float32 swallows the damage. hp lives in a Float32Array, where 1e9 has an ulp
+    // of 64: a 2.75-damage round subtracted from it rounds straight back to 1e9 and the test reads
+    // as "nothing happened".
     const e = addEnemy(w, 200, 0, 50_000);
-    // A drone magazine (half the gun's) at the gun's cadence, plus slack for the slow flight out.
-    // The whole window has to stay under the bay's build time, or it deploys a REPLACEMENT and the
-    // count reads 1 for a reason that has nothing to do with the detonation. 540 ticks of firing
-    // plus 400 of slack is 15.7 s against a 25 s build.
-    ticks(w, Math.ceil((MACHINE_GUN.base.ammoCapacity * 0.5 * MACHINE_GUN.base.cooldown) / DT) + 400);
+
+    // A HANDFUL OF ROUNDS RATHER THAN THE REAL MAGAZINE, and that is the point of this edit. A full
+    // 200 rounds is eighteen seconds of firing plus the flight out, against a twenty-five second
+    // rebuild - so "wait for it to run dry, then check the count is 0" became a race between two
+    // unrelated timings, and the test would have been asserting the gap between them. What is under
+    // test is what happens AT zero, so the magazine is set to a size that gets there quickly.
+    w.drones.ammo[0] = 6;
+    ticks(w, 240);
 
     expect(w.drones.count).toBe(0);
     // The rounds AND the blast both landed on it.

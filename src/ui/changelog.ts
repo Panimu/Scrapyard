@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:07Z',
+    title: 'Drones last twice as long and hit half as hard',
+    notes: [
+      'A DRONE CARRIES A FULL MAGAZINE AGAIN, and each round is worth half what it was. The same damage from a drone over its life - but it takes twice as long to spend, so a drone is something you keep rather than something that keeps evaporating. Its dying blast is unchanged.',
+      'FERN’S TURRET NO LONGER POINTS AT NOTHING. The bay has no barrel, so the drawn turret was locked to it and sat pointing the same way all run. It now tracks the mech until she picks up a real gun and then follows THAT - the same way the missile chassis have always worked.',
+    ],
+  },
+  {
     at: '2026-08-15T15:54Z',
     title: 'More rings, and more chests to chase',
     notes: [

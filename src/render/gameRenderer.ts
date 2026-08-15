@@ -1216,28 +1216,34 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 /**
- * WHICH WEAPON THE BARREL ON TOP OF THE MECH IS SHOWING - the FIRST one that actually aims.
+ * WHICH WEAPON THE BARREL ON TOP OF THE MECH IS SHOWING - the FIRST one that says it has a barrel.
  *
- * There is one turret sprite and up to five weapons, so the renderer has to pick one to draw, and
- * for a long time it drew slot 0 unconditionally. That is fine on a chassis that walks in holding a
- * gun and wrong on the three that do not: a missile rack has no turret at all - it fires along the
- * direction you last MOVED (WeaponDef.fireAlongFacing) - so its `turretX/turretY` is the player's
- * own heading, and the barrel spent the whole run locked to the legs, swinging only when the mech
- * turned. On the unarmed chassis it was worse: nothing in slot 0, so the barrel tracked `faceX`
- * even after a real gun was picked up and was visibly aiming somewhere else.
+ * There is one turret sprite and up to five weapons, so the renderer has to pick one, and it drew
+ * slot 0 unconditionally for a long time. That is fine on a chassis that walks in holding a gun and
+ * wrong on every chassis that does not: a missile rack fires along the direction you last MOVED, so
+ * pointing the barrel at its target is a lie about where the volley is going.
  *
- * So: skip the racks and show the first weapon with an opinion about where to point. FIRST rather
- * than best, because the barrel has to be a stable thing to read - a mount that reassigned itself
- * every time a card was taken would make the one cue that tells you what the mech has decided into
- * a cue about what you most recently picked up.
+ * FIRST rather than best, because the barrel has to be a stable thing to read - a mount that
+ * reassigned itself every time a card was taken would turn the one cue that says what the mech has
+ * decided into a cue about what was most recently picked up.
  *
- * Falls back to slot 0, so a rack-only loadout still slews the barrel with the heading it fires
- * along rather than freezing it pointing east.
+ * IT ASKS THE WEAPON NOW (WeaponDef.drivesTurret) INSTEAD OF INFERRING IT. The test used to be
+ * `fireAlongFacing === false`, which reads as "aims at something" - and a weapon can aim at
+ * something while having no barrel to point. Fern's drone bay is exactly that: it selects targets,
+ * so it passed, and its `turretTraverse` is 0, so the barrel it drove never moved. Her turret sat
+ * pointing east for the whole run. See the flag's own note for why this is written down rather
+ * than derived from a stat.
+ *
+ * FALLING BACK TO NOTHING, NOT TO SLOT 0. A loadout of racks, bays and nothing else leaves the
+ * barrel on the player's heading - which for a rack is precisely where its missiles go, and for a
+ * bay is the only honest answer. Slot 0 was the old fallback and it is what froze Fern's turret:
+ * with one weapon that does not drive the mount, "first that qualifies" and "slot 0" were the same
+ * thing and the flag bought nothing.
  */
 function turretWeapon(world: World): WeaponInstance | undefined {
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
-    if (world.weaponCatalog[inst.defId]?.fireAlongFacing === false) return inst;
+    if (world.weaponCatalog[inst.defId]?.drivesTurret === true) return inst;
   }
-  return world.weaponCount > 0 ? world.weapons[0] : undefined;
+  return undefined;
 }

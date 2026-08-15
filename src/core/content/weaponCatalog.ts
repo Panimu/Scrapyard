@@ -170,6 +170,30 @@ export interface WeaponDef {
    */
   readonly fireAlongFacing: boolean;
   /**
+   * MAY THIS WEAPON DRIVE THE DRAWN TURRET - the one barrel sprite on top of the mech.
+   *
+   * There is one turret and up to five weapons, so the renderer shows the first weapon that
+   * qualifies (render/gameRenderer.ts, `turretWeapon`). This is a FLAG rather than something
+   * inferred, and it is a flag because it was inferred twice and was wrong both times:
+   *
+   *   `fireAlongFacing === false` was the first proxy, on the reasoning that a rack has no turret
+   *   to show. It reads as "aims at something", but a weapon can perfectly well aim at something
+   *   and have no barrel to point - which is exactly what the drone bay is. Fern's turret locked
+   *   to the bay and never moved again, because the bay's `turretTraverse` is 0.
+   *
+   *   Reading `turretTraverse > 0` would be the second proxy and is no better: it is a stat, so a
+   *   future weapon with a fixed mount would silently drop off the turret, and a tuning pass could
+   *   change what the mech looks like while changing how fast a gun slews.
+   *
+   * Whether a weapon has a barrel worth drawing is a fact about the WEAPON, not a consequence of
+   * three of its numbers. So it is written down.
+   *
+   * FALSE ON: the two missile racks (they fire along the heading, so a barrel pointing at their
+   * target would be a lie about where the volley is going) and the drone bay (it is a factory - it
+   * has no barrel at all, and the drones do their own aiming).
+   */
+  readonly drivesTurret: boolean;
+  /**
    * Detonate for splash when the fuse runs out, not only on contact. Only the artillery sets it:
    * its shells are spawned NOCONTACT with no velocity, so the fuse is the ONLY way they can ever
    * do anything. `expireProjectile` additionally requires `splashRadius > 0`, so a weapon with no
@@ -348,6 +372,7 @@ export const CANNON: WeaponDef = Object.freeze({
   beamColour: 0,
   beamWidth: 0,
   fireAlongFacing: false,
+  drivesTurret: true,
   detonateOnExpiry: false,
 });
 
@@ -501,6 +526,7 @@ function laser(
     beamColour,
     beamWidth,
     fireAlongFacing: false,
+    drivesTurret: true,
     detonateOnExpiry: false,
   }) as WeaponDef;
 }
@@ -643,6 +669,7 @@ function missile(
     beamColour: 0,
     beamWidth: 0,
     fireAlongFacing: true,
+    drivesTurret: false,
     // FALSE now that missiles carry no warhead splash: a fuse that detonates a zero-radius blast
     // is a no-op with a puff on it. `expireProjectile` already guards on `splashRadius > 0`, so
     // this is belt and braces - but a flag set true while meaning nothing is exactly the kind of
@@ -742,6 +769,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
   beamColour: 0,
   beamWidth: 0,
   fireAlongFacing: false,
+  drivesTurret: true,
   detonateOnExpiry: false,
 });
 
@@ -819,6 +847,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   beamColour: 0,
   beamWidth: 0,
   fireAlongFacing: false,
+  drivesTurret: true,
   detonateOnExpiry: true,
 });
 
@@ -911,6 +940,10 @@ export const DRONE: WeaponDef = Object.freeze({
   beamColour: 0,
   beamWidth: 0,
   fireAlongFacing: false,
+  // NO BARREL AT ALL. The bay is a factory: it aims at nothing, its `turretTraverse` is 0, and its
+  // turret vector therefore sits at its initial value for the whole run. Fern's drawn turret used
+  // to lock to it and point east until she picked up a real gun. The drones do their own aiming.
+  drivesTurret: false,
   // The dry-magazine blast goes out as a fused projectile with no contact, exactly as an artillery
   // shell does, so it reaches the crater FX and the splash path already written for that.
   detonateOnExpiry: true,
