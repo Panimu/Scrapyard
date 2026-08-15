@@ -263,6 +263,10 @@ export class AppState {
    * gets a real condition is the day the question "had they already earned it" becomes worth being
    * able to answer.
    */
+  hasAchievement(id: AchievementId): boolean {
+    return this.settings.unlockedAchievements.includes(id);
+  }
+
   hasHero(id: HeroId): boolean {
     const hero = HERO_CATALOG.find((h) => h.id === id);
     if (hero === undefined || hero.unlock.kind === 'never') return false;

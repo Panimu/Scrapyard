@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:29Z',
+    title: 'The Scrapopedia gets sections, an enemy manual and an achievement list',
+    notes: [
+      'IT OPENS ON FOUR BUTTONS NOW - Systems, Mechs, Enemies, Achievements - rather than one long list of everything. Back walks one step at a time: page, list, sections, out.',
+      'ENEMIES IS NEW. Every variant the yard has, and what each is FOR: the swift one that arrives ahead of its wave, the spiky one that hits far harder than it looks and that no weapon you carry will prioritise, the wall that walks, the fifty runners that pour past rather than at you. Plus the three ranks, and why a boss cannot be pushed.',
+      'The rows carry the same cues the battlefield does - the size step between a runt and a bruiser, the Heavy’s cold tinge, the Spiky’s red rim, the boss outline - so what you learn here is what you recognise out there.',
+      'ACHIEVEMENTS IS NEW TOO, and it lists them all. An earned one shows what you did. An unearned one is greyed and says nothing - you get the name and not one word about how to get it.',
+    ],
+  },
+  {
     at: '2026-08-15T11:16Z',
     title: 'Unlock criteria are not published anywhere',
     notes: [

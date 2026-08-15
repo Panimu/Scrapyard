@@ -252,6 +252,7 @@ async function boot(): Promise<void> {
   const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
     upgrade: (id) => state.hasUpgrade(id),
     hero: (id) => state.hasHero(id),
+    achievement: (id) => state.hasAchievement(id),
   });
 
   const settings = new SettingsScreen(state.settings, {

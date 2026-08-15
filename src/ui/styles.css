@@ -1366,6 +1366,119 @@ body {
   gap: 8px;
 }
 
+/* ---- the section menu ------------------------------------------------------------------
+ * Four full-width rows rather than a 2x2 grid: this is the first thing the screen shows and a
+ * row has space for a line saying what is behind it, which a tile does not. */
+.pedia__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pedia__sections[hidden] {
+  display: none;
+}
+
+.pedia__section-btn {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: calc(var(--tap) + 14px);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  text-align: left;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.pedia__section-btn:active {
+  background: var(--panel-2);
+}
+
+.pedia__section-name {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.pedia__section-blurb {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* ---- horde entries ---------------------------------------------------------------------
+ * The stand-in body is scaled inline by the variant's own renderScale, so the size difference
+ * between a runt and a bruiser is the same difference the battlefield shows. */
+.pedia__icon--enemy,
+.pedia__page-icon--enemy {
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.pedia__icon--enemy {
+  width: 34px;
+  height: 34px;
+}
+
+.pedia__page-icon--enemy {
+  width: 60px;
+  height: 60px;
+}
+
+.pedia__entry--enemy {
+  border-left: 3px solid var(--hp);
+}
+
+.pedia__page-kind--enemy {
+  color: var(--hp);
+}
+
+/* ---- achievements ----------------------------------------------------------------------
+ * A ROW, NOT A LINK. There is no page behind one - everything there is to say is on the row - so
+ * the button is disabled and spans the grid rather than sitting in a column.
+ *
+ * An UNEARNED one keeps its name and loses its description. That is the deliberate difference
+ * from the rest of this screen, where what you have not got is simply absent: a system you have
+ * never held is a gap in a reference book, but an achievement you have not earned is a thing to
+ * go and do, and a list showing only the finished ones is not a list of goals. */
+.pedia__entry--achv {
+  grid-column: 1 / -1;
+  border-left: 3px solid var(--accent);
+  align-items: flex-start;
+  cursor: default;
+}
+
+.pedia__entry--achv:active {
+  background: var(--panel);
+  transform: none;
+}
+
+.pedia__achv-words {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pedia__achv-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+  white-space: normal;
+}
+
+.pedia__entry--unearned {
+  border-left-color: var(--ink-faint);
+  opacity: 0.45;
+}
+
 /* A row rather than a tile: the NAME is what is being chosen, and a name needs width. */
 .pedia__entry {
   pointer-events: auto;
