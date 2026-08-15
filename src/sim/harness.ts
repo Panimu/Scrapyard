@@ -29,6 +29,7 @@ import {
   type World,
 } from '../core/index.js';
 import { EVENT_NOTHING, SPECIAL_EVENTS } from '../core/content/specialEvents.js';
+import { FLAV_CHEST_DROPPER } from '../core/content/enemyCatalog.js';
 import { botInput, createBot } from './botPolicy.js';
 
 export interface HarnessOptions {
@@ -305,8 +306,15 @@ function printSummary(
   // Chests are the one reward the bot can genuinely miss - it does not detour for pickups - so
   // "bosses killed" against "chests opened" is the number that says how much of this feature a run
   // actually saw.
+  // TWO SOURCES NOW, and the line says which: every boss leaves one, and so does a Chest Dropper -
+  // the elite the CHEST ELITE event walks in. Reporting only the boss count made a run that found
+  // an extra chest read as though the drop rate had broken.
   if (s.chests > 0 || s.killsByRank[2] > 0) {
-    console.log(`  chests            ${s.chests} opened, from ${s.killsByRank[2]} boss kills`);
+    const droppers = s.killsByFlavour[FLAV_CHEST_DROPPER] ?? 0;
+    console.log(
+      `  chests            ${s.chests} opened, from ${s.killsByRank[2]} boss kills` +
+        (droppers > 0 ? ` and ${droppers} chest droppers` : ''),
+    );
   }
   if (s.barrelsBroken > 0) {
     console.log(

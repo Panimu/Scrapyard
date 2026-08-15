@@ -356,6 +356,12 @@ export interface KillFeed {
   readonly y: Float32Array;
   readonly xpValue: Uint16Array;
   readonly archetype: Uint8Array;
+  /**
+   * The dead body's FLAVOUR. Carried for the same reason the position is: the enemy is reaped at
+   * S12 and the drop stage runs after it, so anything a drop depends on has to travel in the feed.
+   * `dropsChest` is read off it - see FLAVOURS in content/enemyCatalog.ts.
+   */
+  readonly flavour: Uint8Array;
   readonly flags: Uint8Array;
 }
 
@@ -367,6 +373,7 @@ export function createKillFeed(capacity: number): KillFeed {
     y: new Float32Array(capacity),
     xpValue: new Uint16Array(capacity),
     archetype: new Uint8Array(capacity),
+    flavour: new Uint8Array(capacity),
     flags: new Uint8Array(capacity),
   };
 }
@@ -377,6 +384,7 @@ export function pushKill(
   y: number,
   xpValue: number,
   archetype: number,
+  flavour: number,
   flags: number,
 ): void {
   if (k.count >= k.capacity) return;
@@ -385,5 +393,6 @@ export function pushKill(
   k.y[i] = y;
   k.xpValue[i] = xpValue;
   k.archetype[i] = archetype;
+  k.flavour[i] = flavour;
   k.flags[i] = flags;
 }

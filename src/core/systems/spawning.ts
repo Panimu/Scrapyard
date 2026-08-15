@@ -75,14 +75,21 @@
 
 import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
-import { EVENT_RING_ATTACK, EVENT_SWARM, pickSpecialEvent } from '../content/specialEvents.js';
+import {
+  EVENT_CHEST_ELITE,
+  EVENT_RING_ATTACK,
+  EVENT_SWARM,
+  pickSpecialEvent,
+} from '../content/specialEvents.js';
 import {
   ARCHETYPES,
   FLAVOURS,
+  FLAV_CHEST_DROPPER,
   FLAV_HEAVY,
   FLAV_SWARMER,
   FLAV_PLAIN,
   type Archetype,
+  type Flavour,
 } from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { pushOutOfScenery } from '../content/scenery.js';
@@ -407,6 +414,7 @@ function rollAndFire(world: World, t: DirectorTuning, index: number, mid: boolea
   const id = pickSpecialEvent(world.rng.event.nextFloat());
   if (id === EVENT_RING_ATTACK) spawnSiege(world, t);
   else if (id === EVENT_SWARM) spawnSwarm(world);
+  else if (id === EVENT_CHEST_ELITE) spawnChestElite(world, t);
   pushEvent(world.events, EV_SPECIAL_EVENT, world.tick, id, index, mid ? 1 : 0, 0);
 }
 
@@ -516,7 +524,7 @@ function spawnSwarm(world: World): void {
     p.knockbackTake[d] = f.knockback;
     p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
     p.contactTimer[d] = 0;
-    p.xpValue[d] = c.xp * r.xp;
+    p.xpValue[d] = c.xp * r.xp * f.xp;
     p.flags[d] = 0;
     p.chargeX[d] = dx / len;
     p.chargeY[d] = dy / len;
@@ -664,7 +672,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
     p.knockbackTake[d] = f.knockback;
     p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
     p.contactTimer[d] = 0;
-    p.xpValue[d] = c.xp * r.xp;
+    p.xpValue[d] = c.xp * r.xp * f.xp;
     p.flags[d] = 0;
 
     pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, x, y, p.slot[d], typeId);
@@ -678,7 +686,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
  *      hp     = cycle.hp     x rank.hp  x flavour.hp    x difficulty.hpRamp
  *      speed  = cycle.speed  x rank.speed x flavour.speed x difficulty.speedRamp
  *      dmg    = cycle.dmg    x rank.dmg x flavour.dmg    (NOT scaled by the ramp)
- *      xp     = cycle.xp     x rank.xp
+ *      xp     = cycle.xp     x rank.xp x flavour.xp
  *      radius = archetype.radius x rank.size             (the hitbox never lies about the sprite)
  *
  * Contact damage deliberately does not take the within-cycle ramp: a cycle should get harder
@@ -688,15 +696,23 @@ function spawnSiege(world: World, t: DirectorTuning): void {
  * changes a contact number, which is exactly the tension the design wants (more dangerous, still
  * invisible to the highest-HP targeting rule).
  */
-function spawnRank(world: World, rank: Rank, t: DirectorTuning): number {
+function spawnRank(world: World, rank: Rank, t: DirectorTuning, forced = -1): number {
   const p = world.enemies;
   const dir = world.director;
   const c = dir.cycle;
   const r = RANKS[rank];
   const archetype = c.archetype;
 
+  // `forced` is how a SET-PIECE names the flavour it wants, and it exists so a scripted body does
+  // not need a fourth copy of the stat block below. It also costs the spawn stream nothing: the
+  // roll is skipped entirely rather than drawn and discarded, so an event cannot shift what the
+  // ordinary drip produces after it.
   const flavourId =
-    rank === RANK_REGULAR ? rollFlavour(world.rng.spawn, archetype, c.variantChance) : FLAV_PLAIN;
+    forced >= 0
+      ? (forced as Flavour)
+      : rank === RANK_REGULAR
+        ? rollFlavour(world.rng.spawn, archetype, c.variantChance)
+        : FLAV_PLAIN;
 
   const pos = world.scratch.v0;
   rollRingPosition(world, t, pos);
@@ -725,7 +741,7 @@ function spawnRank(world: World, rank: Rank, t: DirectorTuning): number {
   p.knockbackTake[d] = f.knockback;
   p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
   p.contactTimer[d] = 0;
-  p.xpValue[d] = c.xp * r.xp;
+  p.xpValue[d] = c.xp * r.xp * f.xp;
   p.flags[d] =
     rank === RANK_BOSS
       ? ENEMY_FLAG_BOSS | ENEMY_FLAG_ANCHORED
@@ -748,4 +764,31 @@ function spawnRank(world: World, rank: Rank, t: DirectorTuning): number {
   }
 
   return d;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * THE CHEST ELITE - one body, and it is a reward rather than a threat.
+ *
+ * The other two set-pieces are FORMATIONS: fifty bodies placed in a shape, where the shape is the
+ * whole idea. This one is a single enemy, and everything interesting about it is in the flavour
+ * table (FLAV_CHEST_DROPPER) rather than in this function - three times an elite's hit points,
+ * 105% of its speed, half its XP, and a Cyber Chest where it falls.
+ *
+ * IT IS `spawnRank` WITH THE FLAVOUR NAMED, and that is the point of this being four lines. There
+ * are already three copies of the enemy stat block in this file, one per placement routine, and
+ * they exist because a ring and a swarm need to compute a position per body. A single enemy on the
+ * ordinary spawn ring needs none of that, so it goes through the one function that is meant to be
+ * THE SINGLE PLACE ENEMY STATS ARE WRITTEN and inherits every rule that lives there - the ring
+ * placement, the scenery push-out, the elite flag, the spawn event, the difficulty ramp.
+ *
+ * AT ELITE RANK, ALWAYS. The chest is worth a fight, and a regular carrying it would be shot in
+ * passing by a build that never noticed. Three times an elite is fifteen times a regular: long
+ * enough that a player who wants the chest has to commit to it while the wave keeps coming.
+ *
+ * IT COSTS THE SPAWN STREAM ONE DRAW, for the ring position - the same draw an ordinary elite
+ * drop-in costs. It does NOT draw a flavour (see `forced` in spawnRank), so the only difference
+ * between a wave that rolled this event and one that did not is one extra body.
+ * ------------------------------------------------------------------------------------------- */
+function spawnChestElite(world: World, t: DirectorTuning): void {
+  spawnRank(world, RANK_ELITE, t, FLAV_CHEST_DROPPER);
 }

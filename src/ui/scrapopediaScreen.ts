@@ -300,6 +300,15 @@ const ENEMY_MANUAL: Readonly<Record<string, EnemyEntry>> = {
       'Then it turns around and loses half its speed doing it. A thing that fast could never be outrun once it actually started following you, so the trade is fixed: terrifying while it ignores you, ordinary once it does not.',
     ],
   },
+  'chest dropper': {
+    lead: 'Gold, and worth every second it takes. It leaves a Cyber Chest where it falls.',
+    notes: [
+      'It only ever arrives as a CHEST ELITE - one body, walking in on its own. Nothing in the drip can produce one, and it is the only enemy in the yard you should want to see.',
+      'Three times the hit points of the elite it otherwise is, which on top of the rank is fifteen times a regular. That is the fight: it takes long enough that you have to commit to it while the wave keeps arriving.',
+      'And it is slightly faster than an elite, which is the part that catches people out. Every other big thing in the yard trades speed away for bulk and can be left standing. This one follows.',
+      'It pays half the usual XP. The chest is the payment.',
+    ],
+  },
 };
 
 /** One body per rank, drawn at the rank\'s own size. See EnemyEntry on why the frame is arbitrary. */

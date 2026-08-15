@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:34Z',
+    title: 'THE CHEST ELITE - one enemy in the yard is worth chasing',
+    notes: [
+      'A NEW SET-PIECE, AND IT IS A REWARD. A single gold elite walks in on its own, and it leaves a CYBER CHEST where it falls. It is the first chest in the game that is not a boss, and the first enemy you should want to see.',
+      'IT IS A REAL FIGHT. Three times the hit points of the elite it otherwise is - fifteen times an ordinary body - so taking it down is something you have to commit to while the wave keeps arriving. Walk away and it stays out there.',
+      'AND IT FOLLOWS. Every other big thing in the yard trades speed for bulk and can be left standing; this one is slightly faster than an elite, which is enough that it will not simply be where you left it.',
+      'It pays half the usual experience. The chest is the payment.',
+      'It arrives half as often as the ring attack - about one a run - and it can never turn up in the ordinary horde. Nothing about how often you see a ring attack or the swarm has changed.',
+    ],
+  },
+  {
     at: '2026-08-15T15:23Z',
     title: 'A Cyber Chest with nothing left to give now shows you that',
     notes: [

@@ -429,6 +429,7 @@ function killEnemy(world: World, ed: number, killerSlot: number): void {
     enemies.y[ed],
     enemies.xpValue[ed],
     enemies.archetype[ed],
+    enemies.flavourId[ed],
     enemies.flags[ed],
   );
 

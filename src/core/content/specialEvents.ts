@@ -51,12 +51,29 @@
  * The rule this is an instance of: when a new event is added, `nothing` pays for it. Every other
  * weight in the table is a frequency somebody already decided on, and re-slicing them by accident
  * is how a table like this stops meaning anything.
+ *
+ * THE CHEST ELITE was added the same way, and was specified against the ring: HALF ITS CHANCE.
+ * That is a ratio between two entries rather than a percentage, so the table was doubled to keep
+ * every weight a whole number, and `nothing` paid for the new slice exactly as it did for the
+ * swarm:
+ *
+ *     nothing     43   61.4%   was 68.6%
+ *     ring        10   14.3%   UNCHANGED
+ *     swarm       12   17.1%   UNCHANGED
+ *     chest elite  5    7.1%   half the ring, as asked
+ *
+ * 14 slots a run x 7.1% = 1.0 chest elites in an average run, which is one extra chest on top of
+ * the seven the bosses guarantee. Doubling every weight changes nothing about the draw - a
+ * weighted table is scale-free - and it means the next event specified as a fraction of an
+ * existing one has room to land on an integer too.
  */
 
 export const EVENT_NOTHING = 0;
 export const EVENT_RING_ATTACK = 1;
 export const EVENT_SWARM = 2;
-export type SpecialEventId = 0 | 1 | 2;
+/** One elite that is worth killing: it leaves a Cyber Chest. See FLAV_CHEST_DROPPER. */
+export const EVENT_CHEST_ELITE = 3;
+export type SpecialEventId = 0 | 1 | 2 | 3;
 
 export interface SpecialEventDef {
   readonly id: SpecialEventId;
@@ -74,9 +91,10 @@ export interface SpecialEventDef {
  * upgrade catalog and the event kinds live under.
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
-  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 24 }),
-  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 5 }),
-  Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 6 }),
+  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 43 }),
+  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 10 }),
+  Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 12 }),
+  Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 5 }),
 ]);
 
 /** Summed once at module init; the draw is one multiply and a linear walk over the table. */

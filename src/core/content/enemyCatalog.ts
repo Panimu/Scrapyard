@@ -115,7 +115,31 @@ export const FLAV_HEAVY = 4;
  * the body warms instead of dimming, which is the opposite of the Heavy's cool, darker lean.
  */
 export const FLAV_SWARMER = 5;
-export type Flavour = 0 | 1 | 2 | 3 | 4 | 5;
+
+/**
+ * CHEST DROPPER - the third unspawnable flavour, and the first one that is a REWARD rather than a
+ * threat. On no archetype's `flavours` list, so the drip cannot produce one; the CHEST ELITE
+ * event is what puts it on the field, always at elite rank (systems/spawning.ts).
+ *
+ * THREE TIMES THE HIT POINTS AT 105% SPEED, ON TOP OF AN ELITE'S OWN MULTIPLIERS. An elite is
+ * already five times a regular, so this is a body with fifteen times a regular's hit points that
+ * walks slightly faster than the elite it is otherwise identical to. The speed is the interesting
+ * half: an elite is "a place on the map" precisely because the rank ladder trades speed away for
+ * bulk, and 1.05 is just enough to stop this one being a stationary target you shoot at leisure -
+ * it follows, slowly, while you deal with everything else it walked in with.
+ *
+ * HALF THE XP. It is a chest that has to be shot, and the chest IS the payment. Paying an elite's
+ * full XP on top would make the event a level as well as a chest, and the two rewards would
+ * compound into the one set-piece a player waits for rather than one they are pleased to see.
+ *
+ * `dropsChest` is what actually pays. See systems/pickups.ts - it rides the kill feed, the same
+ * route a boss's chest takes, so it survives the body being reaped in the tick that killed it.
+ *
+ * The tint is the warm gold the chest itself wears, which is the only warning a player gets and
+ * the only one they need: this is the body worth chasing.
+ */
+export const FLAV_CHEST_DROPPER = 6;
+export type Flavour = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface FlavourDef {
   readonly id: Flavour;
@@ -123,6 +147,21 @@ export interface FlavourDef {
   readonly hp: number;
   readonly speed: number;
   readonly dmg: number;
+  /**
+   * XP multiplier. 1 for everything the director can roll, and it has to be: a variant that paid
+   * differently would make the ordinary drip's XP depend on which flavours a seed happened to
+   * produce, and the levelling curve is tuned against the cycle ladder rather than against luck.
+   *
+   * It exists for the set-piece bodies, which are paid for what they ARE rather than what they
+   * cost to kill - see `chest dropper`, which pays half because the chest is the payment.
+   */
+  readonly xp: number;
+  /**
+   * Leaves a Cyber Chest where it died. FALSE FOR EVERYTHING ELSE, and the flag lives here rather
+   * than as a branch in the drop code for the usual reason: a second body that pays a chest should
+   * be a literal in this table, not a second condition somewhere in pickups.ts.
+   */
+  readonly dropsChest: boolean;
   /** Render hint. `tough` is visibly bigger, which is how Law 1 stays legible to the player. */
   readonly renderScale: number;
   /** Render hint. `spiky` gets a red additive rim - the only cue for a stat the turret ignores. */
@@ -175,10 +214,10 @@ export interface FlavourDef {
 }
 
 export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
-  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, xp: 1, dropsChest: false, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, xp: 1, dropsChest: false, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
   // `renderScale` is a RENDER HINT and does not move the hitbox - the same compromise `tough`
   // already makes at 1.18. Kept to 1.3 for that reason: a Heavy has to read as a different object
   // at a glance, and every unit past that is a unit of lie between the sprite and the circle.
@@ -186,10 +225,15 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.0605, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.0605, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
   // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
   // fragility, and every extra dial turned here is one more thing to explain when it arrives.
-  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),
+  // Contact damage and knockback are left alone deliberately: this is an elite that pays out, not
+  // an elite that hits differently, and the player should recognise it by its colour rather than
+  // have to learn a second bite. `renderScale` is left at 1 for the same reason - the rank already
+  // makes it big, and the gold is the signal.
+  Object.freeze({ id: FLAV_CHEST_DROPPER, name: 'chest dropper', hp: 3, speed: 1.05, dmg: 1, xp: 0.5, dropsChest: true, renderScale: 1, renderGlow: false, renderTint: 0xf0b429, knockback: 1, relocate: 1 }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {

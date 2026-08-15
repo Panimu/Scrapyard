@@ -72,6 +72,7 @@ import { gemTierForValue } from '../config/tuning.js';
 import { destroyScenery, destructibleOverlap, regrowBarrel } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
+import { FLAVOURS } from '../content/enemyCatalog.js';
 import {
   PICKUP_FLAG_AUTO,
   PICKUP_FLAG_DEAD,
@@ -336,15 +337,23 @@ function dropGems(world: World): void {
     const x = feed.x[k];
     const y = feed.y[k];
 
-    // A BOSS LEAVES A CYBER CHEST as well as its core. Dropped here rather than in updateDamage
-    // because this is already the stage that turns a KillFeed entry into something on the ground,
-    // and the feed carries the flags that say which kills were bosses.
+    // A CYBER CHEST as well as a core. Dropped here rather than in updateDamage because this is
+    // already the stage that turns a KillFeed entry into something on the ground, and the feed
+    // carries both the flags and the flavour that say which kills pay one.
     //
     // ABOVE the cap check, deliberately. It used to sit below it, behind a `continue`, so a boss
     // killed while the field was saturated - which is to say any boss in the back half of a long
     // run - left no chest at all. The one guaranteed reward in the game must not be contingent on
     // how many gems happen to be lying in a corner of the yard.
-    if ((feed.flags[k] & ENEMY_FLAG_BOSS) !== 0) dropChest(world, x, y);
+    // A BOSS LEAVES ONE, and so does anything whose FLAVOUR says it does - the Chest Dropper, an
+    // elite that exists to be shot for exactly this. Read off the table rather than tested by id,
+    // so a second body that pays a chest is a literal in FLAVOURS and not a third clause here.
+    if (
+      (feed.flags[k] & ENEMY_FLAG_BOSS) !== 0 ||
+      FLAVOURS[feed.flavour[k]]?.dropsChest === true
+    ) {
+      dropChest(world, x, y);
+    }
 
     // MAKE ROOM RATHER THAN REFUSE THE DROP. See the header: at the cap, every kill is at the cap,
     // so refusing here is refusing for the rest of the run.
