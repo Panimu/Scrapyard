@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:16Z',
+    title: 'Unlock criteria are not published anywhere',
+    notes: [
+      'THE CONDITION IS OFF THE MECH PICKER. A locked chassis is a silhouette and a question mark, and that is the entire tile - no name, no description, and now no hint about what would earn it.',
+      'THE ACHIEVEMENT IS THE ONLY PLACE AN UNLOCK IS EVER STATED, and it says it in the past tense, at the moment you have already done it. "Moss - Reached wave 3." You find out what the criteria were by meeting them.',
+    ],
+  },
+  {
     at: '2026-08-15T11:05Z',
     title: 'Two of the silhouettes can be earned',
     notes: [

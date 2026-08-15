@@ -36,8 +36,10 @@
  * notion of this, so the flag maps straight through when the bridge lands.
  */
 
+import { WEAPON_CATALOG } from '../content/weaponCatalog.js';
 import { HERO_CATALOG, type HeroId } from './heroes.js';
-import type { UnlockCond } from './unlocks.js';
+import { UPGRADE_CATALOG } from './upgrades.js';
+import { describeUnlockDone, type UnlockCond } from './unlocks.js';
 
 /**
  * Internal name. Rename freely - `platformKey` is the one that is permanent.
@@ -80,12 +82,17 @@ export interface AchievementDef {
  * unearnable trophy on a platform's list is a permanent 0% that says the game is broken rather
  * than that the content is unfinished. They appear as their conditions are written.
  *
- * THE NAMING IS DELIBERATELY PLAIN - the chassis' own name, and "Unlocked X." A flavour name is a
- * piece of writing per mech and nobody has written them; inventing sixteen would be putting words
- * in the game's mouth. `AchievementDef.name` is one string per entry when they are wanted.
+ * THE DESCRIPTION IS THE CONDITION, IN THE PAST TENSE, and this is the whole point of it. The
+ * criteria are published NOWHERE - the picker shows a locked chassis as a bare silhouette - so
+ * this banner is the only surface in the game where an unlock condition is ever stated, and by the
+ * time it appears the player has already met it. "Moss / Reached wave 3." tells you what you got
+ * and what got it, at the one moment both are news.
  *
- * SECRET, because the picker shows a locked chassis as a silhouette with no name on it. An
- * achievement list naming Ember would hand back exactly what the silhouette is withholding.
+ * The NAME is the chassis' own. A flavour name is a piece of writing per mech and nobody has
+ * written them; inventing sixteen would be putting words in the game's mouth.
+ *
+ * SECRET, because the picker withholds which silhouette is which. An achievement list naming Ember
+ * up front would hand back exactly what the silhouette is keeping.
  */
 const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
   (h) => h.unlock.kind !== 'never' && h.unlock.kind !== 'always',
@@ -96,7 +103,11 @@ const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
     // as reorderable, and a platform key that moves when the picker is rearranged is not permanent.
     platformKey: `scrapyard_mech_${h.id}`,
     name: h.name,
-    description: `Unlocked ${h.name}.`,
+    description: describeUnlockDone(
+      h.unlock,
+      (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
+      (id) => WEAPON_CATALOG.find((w) => w.id === id)?.name,
+    ),
     secret: true,
     cond: h.unlock,
   }),

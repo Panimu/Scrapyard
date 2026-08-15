@@ -41,9 +41,9 @@
  * One rule does not wait: SLATE IS ALWAYS UNLOCKED. A player with an empty save has to be able to
  * press New Game, and a roster that can lock its own entry point is a roster that can brick itself.
  *
- * Adding a `kind` here is cheap - the union, one case in `meetsUnlock`, one in `describeUnlock` -
- * so the vocabulary is meant to grow to fit the conditions, not the conditions to be bent to fit
- * the vocabulary.
+ * Adding a `kind` here is cheap - the union, one case in `meetsUnlock`, one in
+ * `describeUnlockDone` - so the vocabulary is meant to grow to fit the conditions, not the
+ * conditions to be bent to fit the vocabulary.
  */
 
 import type { WeaponId } from '../content/weaponCatalog.js';
@@ -51,8 +51,8 @@ import type { UpgradeId } from './upgrades.js';
 
 /**
  * What a run has to have done. A tagged union rather than a predicate function, because these are
- * DATA: they are stored per hero in a catalog, they have to be printable on the select screen
- * ("Reach wave 4"), and a closure can be neither.
+ * DATA: they are stored per hero in a catalog, they have to be printable on the achievement that
+ * announces them ("Reached wave 3."), and a closure can be neither.
  */
 export type UnlockCond =
   /** No condition. Slate, and anything else that should simply be there. */
@@ -158,41 +158,51 @@ export function meetsUnlock(
 }
 
 /**
- * The condition as one line for the player, on the locked tile.
+ * The condition as one line, IN THE PAST TENSE - "Reached wave 3", "Killed a boss holding the Long
+ * Laser". What a run DID, not what a run must do.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THERE IS NO IMPERATIVE VERSION OF THIS ANY MORE
+ * ---------------------------------------------------------------------------------------------
+ * There used to be one, printed under the silhouette on the mech picker. It is gone, and with it
+ * the only place a player could read a criterion before meeting it. A locked chassis is now a
+ * silhouette and a question mark and nothing else; the ACHIEVEMENT is the single surface where an
+ * unlock condition is ever stated, and by then it is something you have already done.
+ *
+ * So the tense is not a detail. Every caller is describing a thing that has happened.
  *
  * IT CARRIES NUMBERS, unlike every card in the game. A card's number is a magnitude you cannot act
- * on in the four seconds you have to read it; this is a TARGET, and a target you cannot see is not
- * a target. "Reach wave 4" and "get further" are not the same instruction.
+ * on in the four seconds you have to read it; this is the record of a specific thing you did, and
+ * "Reached wave 3" and "got further" are not the same sentence.
  *
- * `names` maps an upgrade id to its display name, for the same reason `ids` is passed to
- * `meetsUnlock`: this module describes conditions, it does not own the content table.
+ * `names` and `weaponNames` map an id to its display name, for the same reason `ids` is passed to
+ * `meetsUnlock`: this module describes conditions, it does not own the content tables.
  */
-export function describeUnlock(
+export function describeUnlockDone(
   cond: UnlockCond,
   names: (id: UpgradeId) => string | undefined,
   weaponNames: (id: WeaponId) => string | undefined = () => undefined,
 ): string {
   switch (cond.kind) {
+    // Neither is reachable from an achievement - `always` is not an accomplishment and `never`
+    // gets no achievement at all - but a switch over a union has to be total, and returning ''
+    // is what an absent line looks like everywhere else here.
     case 'always':
-      return '';
     case 'never':
-      // EMPTY, and not the word "Locked". The picker already says locked in the only way that
-      // matters - a silhouette with a question mark over it - and a label repeating that is a
-      // caption on a sign. The moment a real condition replaces this, the line appears on its own.
       return '';
     case 'wave':
-      return `Reach wave ${cond.wave}`;
+      return `Reached wave ${cond.wave}.`;
     case 'survive':
-      return `Survive ${formatMinutes(cond.sec)} in one run`;
+      return `Survived ${formatMinutes(cond.sec)} in one run.`;
     case 'kills':
-      return `Wreck ${cond.count} in one run`;
+      return `Wrecked ${cond.count} in one run.`;
     case 'win':
-      return 'Win a run';
+      return 'Won a run.';
     case 'bossKillHolding':
-      return `Kill a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}`;
+      return `Killed a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}.`;
     case 'tier': {
       const name = names(cond.id) ?? cond.id;
-      return cond.tier >= 7 ? `Finish the ${name}` : `Take the ${name} to tier ${cond.tier}`;
+      return cond.tier >= 7 ? `Finished the ${name}.` : `Took the ${name} to tier ${cond.tier}.`;
     }
   }
 }

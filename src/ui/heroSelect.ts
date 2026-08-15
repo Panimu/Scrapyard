@@ -14,13 +14,7 @@
  * decode-off-main-thread and caching for free.
  */
 
-import {
-  HERO_CATALOG,
-  UPGRADE_CATALOG,
-  WEAPON_CATALOG,
-  describeUnlock,
-  type HeroId,
-} from '../core/index.js';
+import { HERO_CATALOG, type HeroId } from '../core/index.js';
 import { MECH_SRC_W, spriteUrl } from '../render/assets.js';
 
 export class HeroSelect {
@@ -72,9 +66,13 @@ export class HeroSelect {
       tile.setAttribute('role', 'radio');
 
       // THE ART SITS IN A WRAPPER so the question mark can be laid over it. A locked chassis is
-      // shown as a SILHOUETTE with a `?` on top and nothing else - no name, no identity line. The
-      // shape is the whole tease: you can see there is a mech there and roughly what it looks like,
-      // and nothing tells you which one it is or what it does.
+      // shown as a SILHOUETTE with a `?` on top and NOTHING ELSE - no name, no identity line, and
+      // no unlock condition either. The shape is the whole tease.
+      //
+      // THE CONDITION IS NOT ON THIS SCREEN, DELIBERATELY. It used to be, on the theory that a
+      // goal you cannot read is not a goal. The opposite call has been made: the criteria are not
+      // published anywhere, and the only place an unlock is ever stated is the ACHIEVEMENT that
+      // fires when you meet it - which means you find out what it was by having done it.
       const portrait = document.createElement('div');
       portrait.className = 'hero__portrait';
 
@@ -102,21 +100,8 @@ export class HeroSelect {
       identity.className = 'hero__identity';
       identity.textContent = hero.identity;
 
-      // THE CONDITION LIVES ON THE TILE, not behind a lock icon. A locked chassis whose price is
-      // hidden is not a goal, it is just an absence - and this is the one place the player is
-      // already looking at the thing they want. Empty while the criteria are unwritten (`never`
-      // describes as ''), and `:empty` hides the element, so today the tile is silhouette and `?`
-      // alone; the day a real condition lands it appears underneath without any other change.
-      const req = document.createElement('div');
-      req.className = 'hero__req';
-      req.textContent = describeUnlock(
-        hero.unlock,
-        (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
-        (id) => WEAPON_CATALOG.find((w) => w.id === id)?.name,
-      );
-
       portrait.append(img, q);
-      tile.append(portrait, name, identity, req);
+      tile.append(portrait, name, identity);
       // One tap selects. Starting the run needs the explicit button below, so a mis-tap while
       // scrolling the grid never drops you straight into a run.
       tile.addEventListener('click', () => this.select(index));
