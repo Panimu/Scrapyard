@@ -111,6 +111,7 @@ const ICONS = [
   'p-speed',
   'p-armour',
   'p-shield',
+  'p-repair',
 ];
 
 const DRAW = `(id) => {
@@ -424,6 +425,28 @@ const DRAW = `(id) => {
     g.fillRect(CX - 4, 40, 8, 52);
     g.fillStyle = KEY_DIM;
     for (const y of [50, 68, 86]) { g.beginPath(); g.arc(CX, y, 4, 0, 6.284); g.fill(); }
+  }
+
+  if (id === 'p-repair') {
+    // A CLOCK FACE WITH A CROSS IN IT. Both halves are load-bearing and neither works alone: a
+    // cross on its own is the spanner's job (heal), and a clock on its own is the rate card's. The
+    // whole point of this passive is that the mending is on a TIMER, so the symbol is the timer
+    // with the mending inside it.
+    g.strokeStyle = KEY;
+    g.lineWidth = 6;
+    g.beginPath(); g.arc(CX, CY, 34, 0, 6.284); g.stroke();
+    // A gap at the top, so the ring reads as a dial rather than as the shield's closed rim.
+    g.strokeStyle = PLATE;
+    g.lineWidth = 9;
+    g.beginPath(); g.arc(CX, CY, 34, -1.9, -1.24); g.stroke();
+    // The cross.
+    g.fillStyle = KEY;
+    g.fillRect(CX - 5, CY - 19, 10, 38);
+    g.fillRect(CX - 19, CY - 5, 38, 10);
+    // A hand at the top of the dial, where the clock sits while nothing is missing.
+    g.strokeStyle = STEEL;
+    g.lineWidth = 4;
+    g.beginPath(); g.moveTo(CX, CY); g.lineTo(CX, CY - 26); g.stroke();
   }
 
   if (id === 'p-shield') {

@@ -59,7 +59,9 @@ export type PlayerStatKey =
   | 'damageTakenMul'
   | 'shieldLayers'
   | 'shieldRecharge'
-  | 'shieldImmune';
+  | 'shieldImmune'
+  | 'repairAmount'
+  | 'repairInterval';
 
 /** Mutable: world.ts allocates one of these per run and resolve* writes into it. */
 export interface PlayerStats {
@@ -87,6 +89,23 @@ export interface PlayerStats {
   shieldLayers: number;
   shieldRecharge: number;
   shieldImmune: number;
+  /**
+   * FIELD REPAIR: hit points restored per tick of the repair clock, and how many seconds that
+   * clock takes to come round.
+   *
+   * TWO NUMBERS RATHER THAN ONE RATE, and the card is why. "1 hp every 7 seconds" is 0.143 hp/s
+   * and could ride `hpRegen`, but then the tier that shortens the INTERVAL would be arithmetically
+   * identical to one that adds hit points - and it is not the same thing to a player. A repair
+   * that lands as a visible tick is a moment; the same hit points smeared across seven seconds is
+   * a number going up. The ladder alternates the two on purpose, so the simulation has to keep
+   * them apart.
+   *
+   * `repairInterval` is a DURATION, so lower is better - the only stat in here where that is true.
+   * Nothing multiplies it today and nothing should: a rate card reaching it would be a fifth way
+   * to spell the same tier.
+   */
+  repairAmount: number;
+  repairInterval: number;
 }
 
 // -------------------------------------------------------------------------------------------
@@ -368,6 +387,22 @@ export function resolvePlayerStats(
     upgrades,
     'player',
     'shieldRecharge',
+  );
+  out.repairAmount = resolveOne(
+    b.repairAmount,
+    1,
+    stacks,
+    upgrades,
+    'player',
+    'repairAmount',
+  );
+  out.repairInterval = resolveOne(
+    b.repairInterval,
+    1,
+    stacks,
+    upgrades,
+    'player',
+    'repairInterval',
   );
   out.shieldImmune = resolveOne(
     b.shieldImmune,

@@ -57,7 +57,7 @@
 import { ARENA_HALF } from '../constants.js';
 import { pushOutOfScenery } from '../content/scenery.js';
 import { breakBarrelIn } from './pickups.js';
-import { EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
+import { EV_PLAYER_REPAIRED, EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
 
@@ -166,7 +166,80 @@ export function updatePlayerMovement(world: World, dt: number): void {
     p.hp = hp > s.maxHp ? s.maxHp : hp;
   }
 
+  updateRepair(world, dt);
   updateShield(world, dt);
+}
+
+/** Hull fraction a run has to drop under before repairing to full counts. See RunStats. */
+const CRITICAL_FRAC = 0.1;
+
+/**
+ * FIELD REPAIR: the clock that puts hit points back, and the watcher that unlocks it.
+ *
+ * A COUNTDOWN, NOT A RATE, and that distinction is the card. `repairInterval` seconds pass and
+ * then `repairAmount` hit points land at once. Smearing the same total across the interval as
+ * regeneration would be arithmetically identical and would delete the two tiers that shorten the
+ * clock - "sooner" and "more" are the choice this ladder offers, and a rate cannot tell them
+ * apart.
+ *
+ * THE TIMER RUNS ONLY WHILE THE CARD IS HELD, and is reset the moment it is not, so a run that
+ * somehow lost the card cannot bank a repair against picking it up again.
+ *
+ * IT DOES NOT TICK AT FULL HEALTH. The clock holds at its full interval instead, which means the
+ * first repair after taking a hit is always a whole interval away rather than arriving instantly
+ * because the timer happened to be about to fire. That is the honest reading of "every N seconds":
+ * N seconds of being hurt, not N seconds of existing.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE ROUND TRIP THAT UNLOCKS THE CARD
+ * ---------------------------------------------------------------------------------------------
+ * Watched here because this is the one stage that already looks at hit points every tick, and
+ * because the condition is not a total: the run has to go UNDER a tenth of its hull and then get
+ * ALL the way back. `criticalArmed` is that memory - set on the way down, spent on arrival - and
+ * it lives on the player rather than in RunStats because it is a latch rather than a tally.
+ *
+ * It is watched whether or not the card is held, obviously: this is how the card is earned.
+ */
+function updateRepair(world: World, dt: number): void {
+  const p = world.player;
+  const s = p.stats;
+  if (p.hp <= 0) return;
+
+  // --- the round trip, which is the unlock ---------------------------------------------------
+  if (p.hp < s.maxHp * CRITICAL_FRAC) p.criticalArmed = 1;
+  else if (p.criticalArmed !== 0 && p.hp >= s.maxHp) {
+    p.criticalArmed = 0;
+    world.stats.fullRepairs++;
+  }
+
+  // --- the clock -------------------------------------------------------------------------------
+  if (s.repairAmount <= 0 || s.repairInterval <= 0) {
+    p.repairLeft = 0;
+    return;
+  }
+  // ARMING, and it is a real case rather than an initialisation detail. `repairLeft` is 0 whenever
+  // the card is not held, so the tick the card is TAKEN would otherwise find a clock already at
+  // zero and pay out instantly - a free repair for levelling up while hurt, which is precisely the
+  // moment a player takes this card. A clock starts full.
+  //
+  // It can only be <= 0 here on that first tick: every path below leaves it at a full interval.
+  if (p.repairLeft <= 0) {
+    p.repairLeft = s.repairInterval;
+    return;
+  }
+  if (p.hp >= s.maxHp) {
+    p.repairLeft = s.repairInterval;
+    return;
+  }
+  p.repairLeft -= dt;
+  if (p.repairLeft > 0) return;
+
+  // Reset from the INTERVAL rather than adding to the overshoot, so a long frame cannot bank
+  // several repairs and fire them in a burst.
+  p.repairLeft = s.repairInterval;
+  const hp = p.hp + s.repairAmount;
+  p.hp = hp > s.maxHp ? s.maxHp : hp;
+  pushEvent(world.events, EV_PLAYER_REPAIRED, world.tick, p.x, p.y, s.repairAmount, 0);
 }
 
 /**

@@ -10,9 +10,14 @@
  * killed a Scraplord walked past it.
  *
  * IT IS DRAWN BIGGER THAN THE CONSUMABLES AND LIT FROM INSIDE. The other drops are objects lying
- * in the dirt; this one is a machine that is waiting for you, and the amber glow leaking out of
- * the lid seam is the whole of how that reads at 30 units. The glow is also the only warm light
- * in the yard's palette that is not an explosion, which is what makes it findable in a crowd.
+ * in the dirt; this one is a machine that is waiting for you, and the light coming off its screen
+ * is the whole of how that reads at 30 units.
+ *
+ * THE FIRST VERSION WAS A PIRATE CHEST. Lid, corner braces, latch, amber glow through the seam -
+ * a perfectly good treasure chest and completely wrong for a thing called a CYBER chest, in a yard
+ * where everything else is panelled steel and thin blue light. It is a data vault now: a chamfered
+ * slab with a lit SCREEN and circuit traces running out of it, in the blue this game already uses
+ * for every system, sight and shield rim.
  *
  * ---------------------------------------------------------------------------------------------
  * THE DICE IS THE RAREST THING A BARREL HOLDS
@@ -75,47 +80,88 @@ const DRAW = `(what) => {
   };
 
   if (what === 'chest') {
-    glow('rgba(240, 180, 41, 0.30)');
+    glow('rgba(79, 168, 255, 0.30)');
 
-    const W = 62, H = 46;
-    const x0 = CX - W / 2, y0 = CY - H / 2 + 4;
-    const lid = 18;
+    // A DATA VAULT, NOT A TREASURE CHEST. The first attempt was a strongbox with a lid and corner
+    // braces - which is a chest, but a pirate's, and this thing is called a CYBER chest. Nothing
+    // else in the yard is medieval; the mechs are panelled steel and the HUD is thin blue light,
+    // so the box has to be made of the same materials as the game it is sitting in.
+    //
+    // Four things do the work, none of them a lid:
+    //   A SCREEN, not a seam. The lit part is a rectangular display with a readout on it, which is
+    //     the single strongest "this is a machine" cue at 30 units.
+    //   CIRCUIT TRACES running out of it into the casing, ending in pads. Traces are the one
+    //     texture that reads as electronics at any size.
+    //   A CHAMFERED SLAB with panel lines, rather than a box with a lid line across the middle.
+    //   BLUE, and that is the substantive change. Amber is the guns; blue is the SYSTEMS - every
+    //     laser sight, every shield rim, every passive icon. A cyber chest is a system.
+    const W = 64, H = 50;
+    const x0 = CX - W / 2, y0 = CY - H / 2 + 3;
+    const ch = 9; // corner chamfer
 
-    // A shadow on the ground, so the box sits in the yard rather than on top of it.
-    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.fillStyle = 'rgba(0,0,0,0.38)';
     g.beginPath();
     g.ellipse(CX, y0 + H + 3, W * 0.46, 5, 0, 0, Math.PI * 2);
     g.fill();
 
-    // BODY. Dark steel, hard rim - the same register as the mech hulls.
-    rr(x0, y0, W, H, 5);
-    g.fillStyle = '#2b3440'; g.fill();
-    g.strokeStyle = '#161b23'; g.lineWidth = 3; g.stroke();
+    // The slab: an octagon rather than a rectangle, so the silhouette is not a crate.
+    g.beginPath();
+    g.moveTo(x0 + ch, y0);
+    g.lineTo(x0 + W - ch, y0);
+    g.lineTo(x0 + W, y0 + ch);
+    g.lineTo(x0 + W, y0 + H - ch);
+    g.lineTo(x0 + W - ch, y0 + H);
+    g.lineTo(x0 + ch, y0 + H);
+    g.lineTo(x0, y0 + H - ch);
+    g.lineTo(x0, y0 + ch);
+    g.closePath();
+    g.fillStyle = '#28313d'; g.fill();
+    g.strokeStyle = '#12161d'; g.lineWidth = 3; g.stroke();
 
-    // LID, a shade lighter so the box has a top rather than being a rectangle.
-    rr(x0, y0, W, lid, 5);
-    g.fillStyle = '#3a4657'; g.fill();
-    g.strokeStyle = '#161b23'; g.lineWidth = 3; g.stroke();
+    // A lighter top band - light comes from above everywhere else in this game.
+    g.save();
+    g.clip();
+    g.fillStyle = '#333f4e';
+    g.fillRect(x0, y0, W, 14);
+    g.restore();
 
-    // THE SEAM, glowing. This is the whole sprite: a dark box does not say "open me", and a lit
-    // line across the middle does.
-    g.fillStyle = 'rgba(255, 214, 122, 0.95)';
-    g.fillRect(x0 + 3, y0 + lid - 2, W - 6, 4);
-    g.fillStyle = 'rgba(240, 180, 41, 0.35)';
-    g.fillRect(x0 + 3, y0 + lid - 6, W - 6, 12);
-
-    // Corner braces, which is what makes it a strongbox rather than a crate.
-    g.fillStyle = '#8f98a6';
+    // CIRCUIT TRACES, out of the screen into the casing. Drawn before the screen so the screen
+    // sits on top of where they begin.
+    g.strokeStyle = '#2f6d9e';
+    g.lineWidth = 2;
+    g.beginPath();
     for (const sx of [-1, 1]) {
-      g.fillRect(CX + sx * (W / 2 - 9) - 3, y0 + 3, 6, lid - 6);
-      g.fillRect(CX + sx * (W / 2 - 9) - 3, y0 + lid + 6, 6, H - lid - 10);
+      g.moveTo(CX + sx * 17, CY - 3);
+      g.lineTo(CX + sx * 25, CY - 3);
+      g.lineTo(CX + sx * 25, CY + 11);
+      g.moveTo(CX + sx * 17, CY + 4);
+      g.lineTo(CX + sx * 21, CY + 8);
+      g.lineTo(CX + sx * 21, CY + 15);
+    }
+    g.stroke();
+    g.fillStyle = '#4fa8ff';
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.arc(CX + sx * 25, CY + 12, 2.4, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(CX + sx * 21, CY + 16, 2.4, 0, Math.PI * 2); g.fill();
     }
 
-    // A LATCH with a lit core, dead centre, so the eye lands on the middle of the object.
-    g.fillStyle = '#8f98a6';
-    rr(CX - 8, y0 + lid - 7, 16, 15, 3); g.fill();
-    g.fillStyle = '#ffd67a';
-    g.beginPath(); g.arc(CX, y0 + lid + 0.5, 3.4, 0, Math.PI * 2); g.fill();
+    // THE SCREEN. Recessed dark, then the lit face, then a readout - three bars of unequal length,
+    // which reads as data at a size where actual glyphs would be mud.
+    rr(CX - 19, CY - 12, 38, 24, 3);
+    g.fillStyle = '#0d1219'; g.fill();
+    g.strokeStyle = '#5cb4ff'; g.lineWidth = 2; g.stroke();
+
+    g.fillStyle = 'rgba(92, 180, 255, 0.20)';
+    g.fillRect(CX - 17, CY - 10, 34, 20);
+    g.fillStyle = '#9ad4ff';
+    g.fillRect(CX - 13, CY - 6, 20, 3);
+    g.fillRect(CX - 13, CY - 0.5, 26, 3);
+    g.fillRect(CX - 13, CY + 5, 14, 3);
+
+    // A hard specular line along the top edge of the screen bezel, which is what makes it read as
+    // glass rather than as a hole.
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    g.fillRect(CX - 17, CY - 11, 34, 1.5);
   }
 
   if (what === 'dice') {

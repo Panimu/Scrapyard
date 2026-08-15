@@ -123,6 +123,8 @@ function createPlayerStats(): PlayerStats {
     shieldLayers: 0,
     shieldRecharge: 0,
     shieldImmune: 0,
+    repairAmount: 0,
+    repairInterval: 0,
   };
 }
 
@@ -227,6 +229,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     heroId: config.heroId,
     stats: createPlayerStats(),
     magnetSec: 0,
+    repairLeft: 0,
+    criticalArmed: 0,
     shieldLayers: 0,
     shieldTimer: 0,
     invulnLeft: 0,
@@ -304,6 +308,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       killsByWeapon: new Uint32Array(catalogs.weapons.length),
       bossKillsByKiller: new Uint32Array(catalogs.weapons.length),
       contactHits: 0,
+      fullRepairs: 0,
       killedByRank: -1,
       damageByShield: 0,
       gemsCollected: 0,

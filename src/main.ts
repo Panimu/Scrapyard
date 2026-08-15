@@ -395,6 +395,7 @@ async function boot(): Promise<void> {
         .filter((_, i) => world.stats.bossKillsByKiller[i] > 0)
         .map((w) => w.id),
       contactHits: world.stats.contactHits,
+      fullRepairs: world.stats.fullRepairs,
       diedTo: RANKS[world.stats.killedByRank]?.name ?? '',
     };
   }

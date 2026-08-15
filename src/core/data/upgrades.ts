@@ -69,7 +69,8 @@ export type UpgradeId =
   | 'p-rate'
   | 'p-speed'
   | 'p-armour'
-  | 'p-shield';
+  | 'p-shield'
+  | 'p-repair';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -600,6 +601,68 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
+  },
+  {
+    id: 'p-repair',
+    kind: 'passive',
+    name: 'Field Repair',
+    // The UNLOCK card carries the whole mechanism, like the Energy Shield's does: both numbers are
+    // 0 at base, so "Unlock." on its own would put the entire card nowhere the player can read it.
+    description:
+      'A repair clock. Every few seconds it puts a little of your hull back - the only thing in the yard that mends you without being picked up.',
+    /**
+     * TWO DIALS ON ONE CLOCK, and the ladder alternates them on purpose: five tiers add hit points
+     * and two shorten the interval. That is not the same card twice. More hit points per tick makes
+     * a repair worth more when it lands; a shorter interval changes how OFTEN you are safe, which
+     * is the thing a player actually feels while being chased.
+     *
+     *   1  unlock   1 hp / 7 s
+     *   2  +1 hp    2 hp / 7 s
+     *   3  +1 hp    3 hp / 7 s
+     *   4  faster   3 hp / 6 s
+     *   5  +1 hp    4 hp / 6 s
+     *   6  +1 hp    5 hp / 6 s
+     *   7  faster   5 hp / 5 s   = 1 hp/s, against a base 120 hp hull
+     *
+     * NO NUMBERS ON THE CARD TEXT, per the house rule - but "sooner" and "more" have to be
+     * distinguishable in words, because they are the whole choice this ladder offers.
+     */
+    tiers: Object.freeze([
+      'Unlock.',
+      'Repairs more each time.',
+      'Repairs more each time.',
+      'Repairs sooner.',
+      'Repairs more each time.',
+      'Repairs more each time.',
+      'Repairs sooner again.',
+    ]),
+    tierEffects: Object.freeze([
+      [
+        { target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 },
+        // The interval is SET at unlock rather than added to, because a base of 0 means "no clock"
+        // and adding to it would make the card's first tier depend on a number that is not there.
+        { target: 'player' as const, key: 'repairInterval' as const, mode: 'add' as const, amount: 7 },
+      ],
+      [{ target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 }],
+      [{ target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 }],
+      [{ target: 'player' as const, key: 'repairInterval' as const, mode: 'add' as const, amount: -1 }],
+      [{ target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 }],
+      [{ target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 }],
+      [{ target: 'player' as const, key: 'repairInterval' as const, mode: 'add' as const, amount: -1 }],
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+    /**
+     * EARNED BY SURVIVING SOMETHING, which is the only kind of condition this card could honestly
+     * have. It is a card about coming back from the edge, so it is unlocked by coming back from the
+     * edge: drop under a tenth of your hull and then get all the way back to full.
+     *
+     * That is a hard thing to do NOW, and deliberately: the level-up heal is gone and a spanner is
+     * the only thing that mends you, so this asks the player to find several while nearly dead. A
+     * run that manages it has earned a repair clock.
+     */
+    unlock: Object.freeze({ kind: 'fullRepair' as const }),
   },
   {
     id: 'p-shield',

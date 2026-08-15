@@ -47,6 +47,7 @@ function BLANK_PLAYER_STATS(): PlayerStats {
   return {
     maxHp: 0, hpRegen: 0, armour: 0, moveAccel: 0, moveMaxSpeed: 0, moveDrag: 0, pickupRadius: 0,
     xpGain: 0, damageTakenMul: 0, radius: 0, shieldLayers: 0, shieldRecharge: 0, shieldImmune: 0,
+    repairAmount: 0, repairInterval: 0,
   };
 }
 

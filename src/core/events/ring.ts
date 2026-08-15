@@ -103,6 +103,14 @@ export const EV_UPGRADE_REROLLED = 25;
  * distinguish a quiet wave from a broken roller.
  */
 export const EV_SPECIAL_EVENT = 26;
+/**
+ * FIELD REPAIR put hit points back. Payload: (x, y, hp restored, 0).
+ *
+ * An event rather than something the renderer infers from the bar going up, because the bar also
+ * goes up for a spanner and the two want different pictures - a spanner is a thing you walked to,
+ * a repair is the mech mending itself.
+ */
+export const EV_PLAYER_REPAIRED = 27;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -133,6 +141,7 @@ export const EVENT_NAMES: readonly string[] = [
   'BARREL_GREW',
   'UPGRADE_REROLLED',
   'SPECIAL_EVENT',
+  'PLAYER_REPAIRED',
 ];
 
 export interface EventRing {

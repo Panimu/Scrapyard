@@ -227,6 +227,14 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'It can never absorb a hit completely. Something always gets through.',
     ],
   },
+  'p-repair': {
+    aims: 'A clock that mends you, slowly, without being asked.',
+    notes: [
+      'Every few seconds it puts a little of the hull back. It is not much at once and it is not meant to be - what it changes is that being hurt is no longer permanent between barrels.',
+      'Half the ladder makes each repair bigger and half makes it come round sooner, which are different things: more is worth having when a repair lands, sooner is worth having while you are still being chased.',
+      'It only mends what is missing. At full hull the clock sits at the top of its dial, so the first repair after a hit is always a whole interval away rather than arriving because the timer happened to be due.',
+    ],
+  },
   'p-shield': {
     aims: 'A rim that eats one hit outright, whatever the size of it.',
     notes: [

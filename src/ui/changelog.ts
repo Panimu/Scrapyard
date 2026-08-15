@@ -40,6 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T19:49Z',
+    title: 'FIELD REPAIR - a system that mends you on a clock',
+    notes: [
+      'A NEW SYSTEM, AND IT IS THE ONLY THING IN THE YARD THAT MENDS YOU WITHOUT BEING PICKED UP. Every few seconds a repair clock comes round and puts a little of your hull back. It is not much at once; what it changes is that being hurt stops being permanent between barrels.',
+      'HALF ITS LADDER MAKES EACH REPAIR BIGGER AND HALF MAKES IT COME ROUND SOONER, which are genuinely different things - more is worth having when a repair lands, sooner is worth having while you are still being chased. Finished, it is repairing every five seconds.',
+      'IT STARTS LOCKED, AND IT IS EARNED BY SURVIVING SOMETHING: drop below a tenth of your hull and then get all the way back to full in the same run. With the level-up heal gone and a spanner the only thing that mends you, that asks a lot - which is the point. A run that manages it has earned a repair clock.',
+      'It only mends what is missing. At full hull the clock sits at the top of its dial, so the first repair after a hit is always a whole interval away rather than arriving because the timer happened to be due.',
+      'The small one-off heal a chest or a card gives you when there is nothing left to fit is now called PATCH JOB, so there are not two different things called Field Repair.',
+      'THE CYBER CHEST LOOKS CYBER NOW. It was a pirate’s treasure chest - lid, corner braces, a latch - which is a fine chest and the wrong one for a yard made of panelled steel and thin blue light. It is a data vault: a chamfered slab with a lit screen and circuit traces running out of it, in the same blue as every sight and shield rim.',
+    ],
+  },
+  {
     at: '2026-08-15T19:38Z',
     title: 'A die in the drums, and gems that actually arrive',
     notes: [

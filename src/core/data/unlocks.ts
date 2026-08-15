@@ -113,6 +113,18 @@ export type UnlockCond =
    */
   | { readonly kind: 'diedTo'; readonly rank: string }
   /** Win. */
+  /**
+   * Recover from under a tenth of your hull all the way back to full, in one run.
+   *
+   * THE ONLY CONDITION IN HERE ABOUT A ROUND TRIP rather than a total or an event. It cannot be
+   * satisfied by being careful and it cannot be satisfied by being lucky once - the run has to go
+   * badly and then be pulled back, which is exactly the story the card it unlocks is about.
+   *
+   * `RunStats.fullRepairs` counts them; the threshold and the "and then reach full" half both live
+   * at the site that watches hit points, because "was under 10% at some point" is not a fact a
+   * total can carry.
+   */
+  | { readonly kind: 'fullRepair' }
   | { readonly kind: 'win' };
 
 /**
@@ -164,6 +176,8 @@ export interface RunRecord {
   readonly contactHits: number;
   /** Rank name of whatever killed the player, or '' if the run has not ended in death. */
   readonly diedTo: string;
+  /** Times the run went under a tenth of its hull and got all the way back. See RunStats. */
+  readonly fullRepairs: number;
 }
 
 /**
@@ -191,6 +205,8 @@ export function meetsUnlock(
       return run.kills >= cond.count;
     case 'win':
       return run.won;
+    case 'fullRepair':
+      return run.fullRepairs > 0;
     case 'bossKillHolding':
       return run.bossKillsHolding.includes(cond.weapon);
     case 'killsWith': {
@@ -263,6 +279,8 @@ export function describeUnlockDone(
       return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}.`;
     case 'bossKillBy':
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
+    case 'fullRepair':
+      return 'Repaired to full hull after dropping below a tenth of it.';
     case 'contactHits':
       return `Took ${cond.count} hits from the horde in one run.`;
     case 'diedTo':

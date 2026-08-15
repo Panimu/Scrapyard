@@ -38,6 +38,12 @@ export interface PlayerBaseTuning {
   readonly shieldLayers: number;
   readonly shieldRecharge: number;
   readonly shieldImmune: number;
+  /**
+   * FIELD REPAIR, both zero at base. The card is the whole mechanism - see p-repair in
+   * data/upgrades.ts - so a run without it has no repair clock at all rather than a slow one.
+   */
+  readonly repairAmount: number;
+  readonly repairInterval: number;
 }
 
 export interface CombatTuning {
@@ -238,6 +244,8 @@ const PLAYER_BASE: PlayerBaseTuning = {
   shieldLayers: 0,
   shieldRecharge: 0,
   shieldImmune: 0,
+  repairAmount: 0,
+  repairInterval: 0,
 };
 
 const COMBAT: CombatTuning = {

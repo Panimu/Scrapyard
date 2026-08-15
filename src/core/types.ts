@@ -158,6 +158,14 @@ export interface PlayerState {
    * shield timers, and because that is where the renderer already looks for player-scoped effects.
    */
   magnetSec: number;
+  /** Seconds left on the Field Repair clock. 0 when the card is not held. */
+  repairLeft: number;
+  /**
+   * LATCH, not a tally: 1 once the run has dropped under a tenth of its hull, cleared when it gets
+   * back to full - which is the tick `RunStats.fullRepairs` counts. A number rather than a boolean
+   * because World is hashed for replay determinism and the hash walks numeric fields.
+   */
+  criticalArmed: number;
   shieldLayers: number;
   shieldTimer: number;
   invulnLeft: number;
@@ -419,6 +427,14 @@ export interface RunStats {
    * crowd with a shield up - the opposite of what "took a hit" means.
    */
   contactHits: number;
+  /**
+   * Times the run dropped under a tenth of its hull and then got ALL THE WAY BACK to full.
+   *
+   * Counted at the moment it completes, in playerMovement's repair clock, because "was under 10%
+   * at some point" is state rather than a total: the flag is armed when hp crosses down and spent
+   * when hp reaches maxHp. Unlocks p-repair - see UnlockCond `fullRepair`.
+   */
+  fullRepairs: number;
   /**
    * Rank of the enemy whose touch killed the player, or -1.
    *
