@@ -116,11 +116,11 @@ export interface HeroDef {
    * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. A chassis whose condition is unmet is locked and
    * cannot be picked. See data/unlocks.ts for the vocabulary.
    *
-   * EVERY ENTRY IS `always` TODAY, WHICH IS NOT A DESIGN - IT IS AN ABSENCE OF ONE. The conditions
-   * are still to be written, and an invented placeholder is worse than none: it locks a chassis
-   * behind a number nobody chose, and the moment it ships it is a thing players have played around
-   * and a thing this file has to be argued out of. `always` locks nothing, so the roster behaves
-   * exactly as it did before unlocks existed until the real conditions land here.
+   * SLATE IS `always` AND THE OTHER FIFTEEN ARE `never` - locked, with no route. The criteria are
+   * still to be written, and `never` is how this file says that out loud. It is not a placeholder:
+   * a guessed number would be a design decision made by accident, whereas a plainly locked chassis
+   * cannot be mistaken for a considered target. Replacing one `never` with a real condition is the
+   * whole of adding an unlock.
    */
   readonly unlock: UnlockCond;
   readonly name: string;
@@ -211,7 +211,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'moss',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Moss',
     identity:
       'Light strider, rotary drums. Opens with the Short Laser at double reach.',
@@ -228,7 +228,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ember',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Ember',
     identity:
       'Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.',
@@ -243,7 +243,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'amber',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Amber',
     identity:
       'Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.',
@@ -259,7 +259,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'onyx',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Onyx',
     identity:
       'Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.',
@@ -274,7 +274,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ash',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Ash',
     identity:
       'Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.',
@@ -289,7 +289,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'bone',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Bone',
     identity:
       'Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.',
@@ -304,7 +304,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'plum',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Plum',
     identity:
       'Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.',
@@ -329,7 +329,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'jade',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Jade',
     identity:
       'Heavy biped, forward claw arms. Opens with the Short Laser.',
@@ -341,7 +341,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'rust',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Rust',
     identity:
       'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
@@ -353,7 +353,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'brass',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Brass',
     identity:
       'Light hover, one heavy cannon. Opens with the Cannon.',
@@ -365,7 +365,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'cobalt',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Cobalt',
     identity:
       'Heavy quad, twin gun pods. Opens with the Medium Laser.',
@@ -377,7 +377,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'vermilion',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Vermilion',
     identity:
       'Light hover, rotary drums. Opens with the Long Missiles.',
@@ -389,7 +389,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'indigo',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Indigo',
     identity:
       'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
@@ -401,7 +401,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'copper',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Copper',
     identity:
       'Heavy quad, rotary drums. Opens with the Machine Gun.',
@@ -413,7 +413,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
-    unlock: { kind: 'always' }, // TODO: condition to be defined
+    unlock: { kind: 'never' }, // criteria to be defined
     name: 'Fern',
     identity:
       'Light hover, forward claw arms. Opens with the Heavy Artillery.',

@@ -50,9 +50,7 @@ describe('meetsUnlock', () => {
     expect(HERO_CATALOG[0].id).toBe('slate');
   });
 
-  it('every chassis names a condition some run could actually satisfy', () => {
-    // The whole roster earned by one impossible run: everything alive, everything finished. A
-    // chassis still locked here is one whose condition can never be met by any run at all.
+  it('never is locked against every run there is', () => {
     const perfect = run({
       wave: 99,
       runSec: 100_000,
@@ -60,7 +58,24 @@ describe('meetsUnlock', () => {
       won: true,
       tiers: new Uint8Array(UPGRADE_CATALOG.length).fill(8),
     });
-    const stuck = HERO_CATALOG.filter((h) => !meetsUnlock(h.unlock, perfect, IDS));
+    expect(meetsUnlock({ kind: 'never' }, perfect, IDS)).toBe(false);
+  });
+
+  it('a chassis that names a REAL condition names one some run could satisfy', () => {
+    // `never` is deliberately unsatisfiable - it is how the catalog says "criteria not written
+    // yet" - so it is excluded. Everything else is checked against one impossible run: everything
+    // alive, everything finished. A chassis still locked here has a condition no run can ever meet,
+    // which is a typo rather than a design, and nothing anywhere would otherwise report it.
+    const perfect = run({
+      wave: 99,
+      runSec: 100_000,
+      kills: 1_000_000,
+      won: true,
+      tiers: new Uint8Array(UPGRADE_CATALOG.length).fill(8),
+    });
+    const stuck = HERO_CATALOG.filter(
+      (h) => h.unlock.kind !== 'never' && !meetsUnlock(h.unlock, perfect, IDS),
+    );
     expect(stuck.map((h) => h.id)).toEqual([]);
   });
 });

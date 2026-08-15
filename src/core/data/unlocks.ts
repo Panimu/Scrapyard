@@ -29,13 +29,17 @@
  * NO CONDITIONS ARE WRITTEN YET, AND NONE WILL BE INVENTED HERE
  * ---------------------------------------------------------------------------------------------
  * This file is the VOCABULARY. What each chassis actually asks for is a design decision that has
- * not been made, and every hero therefore carries `always` until it is. A guessed placeholder
- * would be worse than an empty table: it locks a chassis behind a number nobody chose, and once
- * shipped it is something players have already played around.
+ * not been made, so fifteen of the sixteen carry `never` - LOCKED, WITH NO ROUTE - and Slate
+ * carries `always`.
  *
- * One rule is not a guess and does not wait: SLATE IS ALWAYS UNLOCKED. A player with an empty save
- * has to be able to press New Game, and a roster that can lock its own entry point is a roster
- * that can brick itself.
+ * `never` is the honest state and a guessed number is not. A placeholder condition is a design
+ * decision made by accident: it ships, players play around it, and by the time anyone argues about
+ * it the argument is about changing something rather than about choosing it. A chassis that is
+ * plainly locked says the true thing - this is coming, it is not ready - and cannot be mistaken
+ * for a considered target.
+ *
+ * One rule does not wait: SLATE IS ALWAYS UNLOCKED. A player with an empty save has to be able to
+ * press New Game, and a roster that can lock its own entry point is a roster that can brick itself.
  *
  * Adding a `kind` here is cheap - the union, one case in `meetsUnlock`, one in `describeUnlock` -
  * so the vocabulary is meant to grow to fit the conditions, not the conditions to be bent to fit
@@ -52,6 +56,14 @@ import type { UpgradeId } from './upgrades.js';
 export type UnlockCond =
   /** No condition. Slate, and anything else that should simply be there. */
   | { readonly kind: 'always' }
+  /**
+   * NO ROUTE. Locked, and no run can earn it.
+   *
+   * Not a mistake and not a disabled entry - it is "the condition for this has not been decided
+   * yet", said out loud. `meetsUnlock` returns false for it unconditionally, so it is the one
+   * `kind` that is not a question about the run at all.
+   */
+  | { readonly kind: 'never' }
   /** Reach wave `wave` - i.e. survive into the Nth 120 s cycle. 1 is the opening wave. */
   | { readonly kind: 'wave'; readonly wave: number }
   /** Survive `sec` seconds of RUN time. Intro and level-up pauses do not count; `runSec` is the clock. */
@@ -105,6 +117,8 @@ export function meetsUnlock(
   switch (cond.kind) {
     case 'always':
       return true;
+    case 'never':
+      return false;
     case 'wave':
       return run.wave >= cond.wave;
     case 'survive':
@@ -140,6 +154,10 @@ export function describeUnlock(
   switch (cond.kind) {
     case 'always':
       return '';
+    case 'never':
+      // Deliberately says nothing about HOW, because there is no how yet. "Locked" with no target
+      // is honest; a hint at a criterion that does not exist would not be.
+      return 'Locked';
     case 'wave':
       return `Reach wave ${cond.wave}`;
     case 'survive':

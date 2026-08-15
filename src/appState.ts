@@ -160,8 +160,10 @@ function loadSettings(): Settings {
     // save can point at a chassis this player has not earned - and so can a save whose conditions
     // were retuned underneath it. Fall back to the first chassis they actually hold, which is
     // Slate at worst.
-    if (!s.unlockedHeroes.includes(HERO_CATALOG[s.lastHeroId].id)) {
-      const i = HERO_CATALOG.findIndex((h) => s.unlockedHeroes.includes(h.id));
+    const held = (h: (typeof HERO_CATALOG)[number]): boolean =>
+      h.unlock.kind !== 'never' && s.unlockedHeroes.includes(h.id);
+    if (!held(HERO_CATALOG[s.lastHeroId])) {
+      const i = HERO_CATALOG.findIndex(held);
       s.lastHeroId = i < 0 ? 0 : i;
     }
     return s;
@@ -252,7 +254,18 @@ export class AppState {
     return this.settings.unlockedUpgrades.includes(id);
   }
 
+  /**
+   * `never` OUTRANKS THE SAVE FILE. A chassis whose criteria have not been written is not available,
+   * full stop - including to a player who banked it from a build whose conditions have since been
+   * withdrawn, and including to a hand-edited save.
+   *
+   * The stored id is deliberately NOT deleted. It costs nothing to keep, and the day that chassis
+   * gets a real condition is the day the question "had they already earned it" becomes worth being
+   * able to answer.
+   */
   hasHero(id: HeroId): boolean {
+    const hero = HERO_CATALOG.find((h) => h.id === id);
+    if (hero === undefined || hero.unlock.kind === 'never') return false;
     return this.settings.unlockedHeroes.includes(id);
   }
 

@@ -40,12 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
-    at: '2026-08-15T10:21Z',
-    title: 'All sixteen mechs are available again',
+    at: '2026-08-15T10:31Z',
+    title: 'The roster is down to Slate while the unlocks are written',
     notes: [
-      'THE CHASSIS UNLOCK CONDITIONS ARE WITHDRAWN. Reach wave 2, wreck four hundred, finish the Cannon - none of those were designed, they were placeholders, and a placeholder that ships is something you have already played around by the time anyone argues about it. Every mech is pickable again.',
-      'The machinery stays, and the real conditions land here when they are written. Nothing you had unlocked is lost.',
-      'The Scrapopedia is unaffected: it still fills in as you hold things.',
+      'FIFTEEN CHASSIS ARE LOCKED, AND THERE IS NO WAY TO EARN THEM YET. They read "Locked" rather than naming a target, because there is no target: what each one asks for is still being decided, and inventing a number to fill the gap would only mean picking a design by accident and arguing it out later.',
+      'You can still see all sixteen. The mech you want is on the screen, greyed out, waiting for its criteria.',
+      'The conditions that were briefly here - reach wave 2, wreck four hundred, finish the Cannon - were placeholders and are gone. Anything they granted is gone with them.',
+      'The Scrapopedia is unaffected: it still fills in as you hold things, and it still lists every mech you have.',
     ],
   },
   {
