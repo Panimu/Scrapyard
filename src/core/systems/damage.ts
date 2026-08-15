@@ -406,6 +406,14 @@ function killEnemy(world: World, ed: number): void {
     (kf & ENEMY_FLAG_BOSS) !== 0 ? RANK_BOSS : (kf & ENEMY_FLAG_ELITE) !== 0 ? RANK_ELITE : RANK_REGULAR
   ]++;
 
+  // WHAT WAS IN YOUR HANDS WHEN A BOSS WENT DOWN. Recorded HERE rather than reconstructed at run
+  // end, because the loadout at the end is not the loadout at the moment - see RunStats. Bosses
+  // are the rarest thing in the game and this is five increments when one dies, so the loop costs
+  // nothing measurable and buys a fact that is otherwise unrecoverable.
+  if ((kf & ENEMY_FLAG_BOSS) !== 0) {
+    for (let i = 0; i < world.weaponCount; i++) stats.bossKillsByWeapon[world.weapons[i].defId]++;
+  }
+
   pushKill(
     world.kills,
     enemies.x[ed],

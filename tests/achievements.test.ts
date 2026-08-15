@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENT_CATALOG,
+  HERO_CATALOG,
   UPGRADE_CATALOG,
   WEAPON_ASCENDED_TIER,
   meetsUnlock,
@@ -16,7 +17,7 @@ import {
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
 
 function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], ...over };
+  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], ...over };
 }
 
 describe('achievements', () => {
@@ -56,5 +57,24 @@ describe('achievements', () => {
   it('the Chain Laser achievement is secret, because its name is the spoiler', () => {
     const def = ACHIEVEMENT_CATALOG.find((a) => a.id === 'chain-laser');
     expect(def?.secret).toBe(true);
+  });
+
+  it('every earnable chassis has an achievement, and no unearnable one does', () => {
+    // The rule, asserted rather than trusted: a mech unlock without its trophy - or a trophy for a
+    // chassis nobody can get - is a silent content bug, and the day someone writes a condition by
+    // hand instead of letting it be derived is the day this fails.
+    const earnable = HERO_CATALOG.filter(
+      (h) => h.unlock.kind !== 'never' && h.unlock.kind !== 'always',
+    ).map((h) => `mech-${h.id}`);
+    const present = ACHIEVEMENT_CATALOG.filter((a) => a.id.startsWith('mech-')).map((a) => a.id);
+    expect([...present].sort()).toEqual([...earnable].sort());
+  });
+
+  it('a mech achievement shares the chassis condition by reference, so they cannot drift', () => {
+    for (const hero of HERO_CATALOG) {
+      const def = ACHIEVEMENT_CATALOG.find((a) => a.id === `mech-${hero.id}`);
+      if (def === undefined) continue;
+      expect(def.cond).toBe(hero.unlock);
+    }
   });
 });

@@ -361,6 +361,12 @@ async function boot(): Promise<void> {
       kills: world.stats.kills,
       won: world.phase === RUN_PHASE_VICTORY,
       tiers: world.levelUp.stacks,
+      // Resolved from counts-by-catalog-index to ids here, where the catalog is in hand, so
+      // `meetsUnlock` never needs a second lookup table threaded into it. Allocates a small array
+      // per call - this runs once a second and once at run end, not per frame.
+      bossKillsHolding: world.weaponCatalog
+        .filter((_, i) => world.stats.bossKillsByWeapon[i] > 0)
+        .map((w) => w.id),
     };
   }
 

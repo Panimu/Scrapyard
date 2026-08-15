@@ -287,6 +287,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       // Sized from the INJECTED catalog, not the shipping one: a fixture catalog with two weapons
       // gets a two-entry breakdown rather than an eight-entry array with six permanent zeroes.
       damageByWeapon: new Float64Array(catalogs.weapons.length),
+      bossKillsByWeapon: new Uint32Array(catalogs.weapons.length),
       damageByShield: 0,
       gemsCollected: 0,
       shotsFired: 0,

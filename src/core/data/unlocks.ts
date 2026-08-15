@@ -46,6 +46,7 @@
  * the vocabulary.
  */
 
+import type { WeaponId } from '../content/weaponCatalog.js';
 import type { UpgradeId } from './upgrades.js';
 
 /**
@@ -72,6 +73,14 @@ export type UnlockCond =
   | { readonly kind: 'kills'; readonly count: number }
   /** Take one card to `tier`. Works for a weapon or a system - `tier` 7 means finished. */
   | { readonly kind: 'tier'; readonly id: UpgradeId; readonly tier: number }
+  /**
+   * Kill a boss while `weapon` is EQUIPPED. Not with it - with it in the loadout.
+   *
+   * "Equipped" and "responsible for the kill" are two different conditions and this is the first.
+   * Requiring the killing blow would make the condition a lottery on which of five guns happened
+   * to land last, which is not a thing a player can play toward.
+   */
+  | { readonly kind: 'bossKillHolding'; readonly weapon: WeaponId }
   /** Win. */
   | { readonly kind: 'win' };
 
@@ -100,6 +109,15 @@ export interface RunRecord {
    * this record having to know what the catalog looks like.
    */
   readonly tiers: ArrayLike<number>;
+  /**
+   * Weapons that were in the loadout when at least one boss died this run.
+   *
+   * A LIST OF IDS RATHER THAN THE Uint32Array RunStats KEEPS, resolved by the caller. Everything
+   * else in this record is a plain number a test can write by hand, and a bare counts-by-catalog-
+   * index array would have made the ONE interesting condition the one that needs a second lookup
+   * table threaded through `meetsUnlock`.
+   */
+  readonly bossKillsHolding: readonly WeaponId[];
 }
 
 /**
@@ -127,6 +145,8 @@ export function meetsUnlock(
       return run.kills >= cond.count;
     case 'win':
       return run.won;
+    case 'bossKillHolding':
+      return run.bossKillsHolding.includes(cond.weapon);
     case 'tier': {
       const i = ids.indexOf(cond.id);
       // An id the catalog does not carry can never be satisfied, and must not read as satisfied:
@@ -150,6 +170,7 @@ export function meetsUnlock(
 export function describeUnlock(
   cond: UnlockCond,
   names: (id: UpgradeId) => string | undefined,
+  weaponNames: (id: WeaponId) => string | undefined = () => undefined,
 ): string {
   switch (cond.kind) {
     case 'always':
@@ -167,6 +188,8 @@ export function describeUnlock(
       return `Wreck ${cond.count} in one run`;
     case 'win':
       return 'Win a run';
+    case 'bossKillHolding':
+      return `Kill a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}`;
     case 'tier': {
       const name = names(cond.id) ?? cond.id;
       return cond.tier >= 7 ? `Finish the ${name}` : `Take the ${name} to tier ${cond.tier}`;

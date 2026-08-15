@@ -36,10 +36,16 @@
  * notion of this, so the flag maps straight through when the bridge lands.
  */
 
+import { HERO_CATALOG, type HeroId } from './heroes.js';
 import type { UnlockCond } from './unlocks.js';
 
-/** Internal name. Rename freely - `platformKey` is the one that is permanent. */
-export type AchievementId = 'chain-laser';
+/**
+ * Internal name. Rename freely - `platformKey` is the one that is permanent.
+ *
+ * The `mech-` half is generated: EVERY CHASSIS UNLOCK IS ALSO AN ACHIEVEMENT, and that is a rule
+ * rather than a list, so it is written as one. See MECH_ACHIEVEMENTS below.
+ */
+export type AchievementId = 'chain-laser' | `mech-${HeroId}`;
 
 export interface AchievementDef {
   readonly id: AchievementId;
@@ -60,10 +66,48 @@ export interface AchievementDef {
 }
 
 /**
+ * ---------------------------------------------------------------------------------------------
+ * ONE PER CHASSIS UNLOCK, GENERATED FROM THE UNLOCK ITSELF
+ * ---------------------------------------------------------------------------------------------
+ * Every mech unlock is also an achievement. That is a RULE, so it is written as one rather than as
+ * a hand-copied row per chassis - which would be sixteen chances for the achievement's condition
+ * to drift away from the unlock's, producing the worst possible outcome: a player who has the mech
+ * and not the trophy, or the trophy and not the mech.
+ *
+ * `cond` is the hero's own `unlock`, by reference. They cannot disagree.
+ *
+ * A CHASSIS WITH NO CRITERIA YET GETS NO ACHIEVEMENT. `never` is "not designed", and an
+ * unearnable trophy on a platform's list is a permanent 0% that says the game is broken rather
+ * than that the content is unfinished. They appear as their conditions are written.
+ *
+ * THE NAMING IS DELIBERATELY PLAIN - the chassis' own name, and "Unlocked X." A flavour name is a
+ * piece of writing per mech and nobody has written them; inventing sixteen would be putting words
+ * in the game's mouth. `AchievementDef.name` is one string per entry when they are wanted.
+ *
+ * SECRET, because the picker shows a locked chassis as a silhouette with no name on it. An
+ * achievement list naming Ember would hand back exactly what the silhouette is withholding.
+ */
+const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
+  (h) => h.unlock.kind !== 'never' && h.unlock.kind !== 'always',
+).map((h) =>
+  Object.freeze({
+    id: `mech-${h.id}` as AchievementId,
+    // The hero id, not its index: the catalog's order is a presentation decision and is documented
+    // as reorderable, and a platform key that moves when the picker is rearranged is not permanent.
+    platformKey: `scrapyard_mech_${h.id}`,
+    name: h.name,
+    description: `Unlocked ${h.name}.`,
+    secret: true,
+    cond: h.unlock,
+  }),
+);
+
+/**
  * ORDER IS PRESENTATION ORDER and nothing else. Nothing indexes into this array - the app stores
  * earned achievements by `id` - so it can be reordered freely.
  */
 export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
+  ...MECH_ACHIEVEMENTS,
   {
     id: 'chain-laser',
     platformKey: 'scrapyard_chain_laser',

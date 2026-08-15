@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:05Z',
+    title: 'Two of the silhouettes can be earned',
+    notes: [
+      'TWO LOCKED CHASSIS NOW HAVE CRITERIA, printed under their silhouette. One asks you to reach wave 3. The other asks you to kill a boss with the Long Laser in your loadout - not to land the killing blow with it, just to have it on the mech when the boss goes down.',
+      'Which mech is behind which silhouette is still for you to find out. The condition tells you what to do, not what you get.',
+      'EVERY CHASSIS UNLOCK ALSO CARRIES AN ACHIEVEMENT, so earning one now lands a banner as well.',
+      'The boss condition is judged at the MOMENT THE BOSS DIES, not at the end of the run. Killing a boss bare-handed at wave 2 and picking the laser up at wave 5 does not count - which is the only reading that makes it a thing you play toward rather than a thing that happens to you.',
+    ],
+  },
+  {
     at: '2026-08-15T10:57Z',
     title: 'A locked mech is a silhouette with a question mark',
     notes: [

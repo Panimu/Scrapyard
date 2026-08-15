@@ -894,6 +894,10 @@ body {
 
 .hero--locked {
   border-style: dashed;
+  /* Two children instead of four, in a row whose height is set by an unlocked neighbour's full
+     stat block - so without this the silhouette and its condition hang off the top edge with a
+     tile's worth of nothing underneath. */
+  justify-content: center;
 }
 
 .hero__q {

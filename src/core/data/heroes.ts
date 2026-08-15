@@ -116,11 +116,13 @@ export interface HeroDef {
    * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. A chassis whose condition is unmet is locked and
    * cannot be picked. See data/unlocks.ts for the vocabulary.
    *
-   * SLATE IS `always` AND THE OTHER FIFTEEN ARE `never` - locked, with no route. The criteria are
-   * still to be written, and `never` is how this file says that out loud. It is not a placeholder:
-   * a guessed number would be a design decision made by accident, whereas a plainly locked chassis
-   * cannot be mistaken for a considered target. Replacing one `never` with a real condition is the
-   * whole of adding an unlock.
+   * Slate is `always`. Moss and Ember have real criteria; the remaining thirteen are `never` -
+   * locked, with no route - which is how this file says "the condition has not been decided yet"
+   * out loud. `never` is not a placeholder: a guessed number would be a design decision made by
+   * accident, whereas a plainly locked chassis cannot be mistaken for a considered target.
+   *
+   * REPLACING ONE `never` WITH A REAL CONDITION IS THE WHOLE OF ADDING AN UNLOCK - including its
+   * achievement, which data/achievements.ts derives from this field rather than duplicating.
    */
   readonly unlock: UnlockCond;
   readonly name: string;
@@ -211,7 +213,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'moss',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'wave', wave: 3 },
     name: 'Moss',
     identity:
       'Light strider, rotary drums. Opens with the Short Laser at double reach.',
@@ -228,7 +230,8 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ember',
-    unlock: { kind: 'never' }, // criteria to be defined
+    // The LONG Laser - what the picker and the Scrapopedia call the "Large Laser" is this one.
+    unlock: { kind: 'bossKillHolding', weapon: 'laser-long' },
     name: 'Ember',
     identity:
       'Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.',

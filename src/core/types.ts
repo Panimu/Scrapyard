@@ -359,6 +359,21 @@ export interface RunStats {
    */
   readonly damageByWeapon: Float64Array;
   /**
+   * BOSSES KILLED WHILE EACH WEAPON WAS HELD, by WEAPON CATALOG index.
+   *
+   * EQUIPPED, NOT RESPONSIBLE. Every weapon in the loadout is credited for every boss that dies,
+   * so this sums to `killsByRank[RANK_BOSS] * weaponCount` rather than to the boss count - it is
+   * emphatically not a breakdown of who did the killing (`damageByWeapon` is that). It answers one
+   * question and only one: "was this gun in your hands when a boss went down?"
+   *
+   * WHY IT CANNOT BE INFERRED FROM THE TIERS AT RUN END. A weapon held at the end was not
+   * necessarily held at the moment the boss died - kill the wave-2 boss bare-handed, pick up the
+   * Long Laser at wave 5, and an end-of-run check would say you had killed a boss with it. Nothing
+   * in a run is ever dropped, so the error only ever runs one way, and only ever in favour of the
+   * player: exactly the direction that makes a condition feel unearned.
+   */
+  readonly bossKillsByWeapon: Uint32Array;
+  /**
    * Damage dealt by the Energy Shield's backlash. Not a weapon, and deliberately not folded into
    * one: a build whose second-best damage source is a defensive passive is worth being able to
    * see, and attributing it to whatever gun happened to be in slot 0 would hide it.

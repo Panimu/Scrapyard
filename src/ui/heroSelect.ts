@@ -14,7 +14,13 @@
  * decode-off-main-thread and caching for free.
  */
 
-import { HERO_CATALOG, UPGRADE_CATALOG, describeUnlock, type HeroId } from '../core/index.js';
+import {
+  HERO_CATALOG,
+  UPGRADE_CATALOG,
+  WEAPON_CATALOG,
+  describeUnlock,
+  type HeroId,
+} from '../core/index.js';
 import { MECH_SRC_W, spriteUrl } from '../render/assets.js';
 
 export class HeroSelect {
@@ -106,6 +112,7 @@ export class HeroSelect {
       req.textContent = describeUnlock(
         hero.unlock,
         (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
+        (id) => WEAPON_CATALOG.find((w) => w.id === id)?.name,
       );
 
       portrait.append(img, q);

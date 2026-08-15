@@ -5,12 +5,18 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { HERO_CATALOG, UPGRADE_CATALOG, meetsUnlock, type RunRecord } from '../src/core/index.js';
+import {
+  HERO_CATALOG,
+  UPGRADE_CATALOG,
+  WEAPON_CATALOG,
+  meetsUnlock,
+  type RunRecord,
+} from '../src/core/index.js';
 
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
 
 function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], ...over };
+  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], ...over };
 }
 
 describe('meetsUnlock', () => {
@@ -61,6 +67,19 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock({ kind: 'never' }, perfect, IDS)).toBe(false);
   });
 
+  it('bossKillHolding asks about the loadout at the kill, not at the end', () => {
+    const cond = { kind: 'bossKillHolding', weapon: 'laser-long' } as const;
+    // A boss died and the long laser was NOT in the loadout at that moment. Picking it up
+    // afterwards must not retroactively satisfy this - which is exactly what an end-of-run tier
+    // check would have done, and is why RunStats counts it at the kill.
+    const tiers = new Uint8Array(UPGRADE_CATALOG.length);
+    tiers[IDS.indexOf('w-laser-long')] = 4;
+    expect(meetsUnlock(cond, run({ tiers, bossKillsHolding: [] }), IDS)).toBe(false);
+    expect(meetsUnlock(cond, run({ bossKillsHolding: ['laser-long'] }), IDS)).toBe(true);
+    // Another gun being in the loadout at a boss kill says nothing about this one.
+    expect(meetsUnlock(cond, run({ bossKillsHolding: ['cannon'] }), IDS)).toBe(false);
+  });
+
   it('a chassis that names a REAL condition names one some run could satisfy', () => {
     // `never` is deliberately unsatisfiable - it is how the catalog says "criteria not written
     // yet" - so it is excluded. Everything else is checked against one impossible run: everything
@@ -72,6 +91,7 @@ describe('meetsUnlock', () => {
       kills: 1_000_000,
       won: true,
       tiers: new Uint8Array(UPGRADE_CATALOG.length).fill(8),
+      bossKillsHolding: WEAPON_CATALOG.map((w) => w.id),
     });
     const stuck = HERO_CATALOG.filter(
       (h) => h.unlock.kind !== 'never' && !meetsUnlock(h.unlock, perfect, IDS),
