@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:49Z',
+    title: 'The missile symbols are painted like the missiles',
+    notes: [
+      'BOTH RACKS NOW WEAR THE ART’S OWN COLOURS on the Cyber Chest reels - pale steel bodies with bright blue fins, the same thing you watch fly across the yard, rather than a pair of amber wedges.',
+      'The tile border stays amber, so they still read as guns at a glance and a spin still tells you what it is worth before the words arrive.',
+    ],
+  },
+  {
     at: '2026-08-15T16:44Z',
     title: 'The Long Missiles symbol shows all three of them',
     notes: [
