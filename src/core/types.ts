@@ -374,6 +374,15 @@ export interface RunStats {
    */
   readonly bossKillsByWeapon: Uint32Array;
   /**
+   * Kills by FLAVOUR - the variant, not the body class. Length FLAVOURS.
+   *
+   * `killsByArchetype` and `killsByRank` were already here and neither answers this: an archetype
+   * is the chassis a body is built on and a rank is how decorated it is, while the flavour is the
+   * thing a player actually points at and calls "the fast one". Nothing in the summary reads it;
+   * it exists so the Scrapopedia can gate a variant's page on having actually killed one.
+   */
+  readonly killsByFlavour: Uint32Array;
+  /**
    * Damage dealt by the Energy Shield's backlash. Not a weapon, and deliberately not folded into
    * one: a build whose second-best damage source is a defensive passive is worth being able to
    * see, and attributing it to whatever gun happened to be in slot 0 would hide it.

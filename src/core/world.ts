@@ -34,6 +34,7 @@ import {
 } from './constants.js';
 import { xpToNextLevel } from './config/tuning.js';
 import { RANKS, createResolvedCycle } from './content/cycles.js';
+import { FLAVOURS } from './content/enemyCatalog.js';
 import { createScenery } from './content/scenery.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
@@ -95,6 +96,13 @@ export const DEFAULT_CATALOGS: Catalogs = {
 
 /** Number of archetypes, including the boss - the width of the difficulty scale arrays. */
 const ARCHETYPE_COUNT = 5;
+
+/**
+ * Width of `RunStats.killsByFlavour`. From FLAVOURS rather than from an injected catalog, because
+ * flavours are not injectable - the pool stores a flavour id and the spawner reads the one global
+ * table - so a fixture world counts them on the same axis the shipping one does.
+ */
+const FLAVOUR_COUNT = FLAVOURS.length;
 
 function createPlayerStats(): PlayerStats {
   // Zeroed, then filled by resolvePlayerStats. Written out longhand rather than cast so that
@@ -288,6 +296,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       // gets a two-entry breakdown rather than an eight-entry array with six permanent zeroes.
       damageByWeapon: new Float64Array(catalogs.weapons.length),
       bossKillsByWeapon: new Uint32Array(catalogs.weapons.length),
+      killsByFlavour: new Uint32Array(FLAVOUR_COUNT),
       damageByShield: 0,
       gemsCollected: 0,
       shotsFired: 0,

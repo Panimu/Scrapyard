@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:37Z',
+    title: 'The bestiary is written by killing things',
+    notes: [
+      'AN ENEMY GETS ITS PAGE THE FIRST TIME YOU DESTROY ONE. Not the first time you see one - something that walks past while you run has taught you nothing. The Enemies section starts empty and fills in as the yard sends you things you can handle.',
+      'There is no achievement for it. A first kill is not an accomplishment, it is a note about how far you have got, and nine trophies for meeting the bestiary would drown the ones that mean something.',
+    ],
+  },
+  {
     at: '2026-08-15T11:29Z',
     title: 'The Scrapopedia gets sections, an enemy manual and an achievement list',
     notes: [

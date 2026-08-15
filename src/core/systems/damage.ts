@@ -400,6 +400,7 @@ function killEnemy(world: World, ed: number): void {
   const stats = world.stats;
   stats.kills++;
   stats.killsByArchetype[enemies.archetype[ed]]++;
+  stats.killsByFlavour[enemies.flavourId[ed]]++;
   // Rank comes off the flags the kill path already loaded - no second field in the pool.
   const kf = enemies.flags[ed];
   stats.killsByRank[

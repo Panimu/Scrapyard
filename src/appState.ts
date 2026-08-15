@@ -13,6 +13,7 @@
  * Everything here therefore degrades to a default rather than erroring.
  */
 
+import { FLAVOURS, RANKS } from './core/index.js';
 import { HERO_CATALOG, type HeroId } from './core/data/heroes.js';
 import { UPGRADE_CATALOG, type UpgradeId } from './core/data/upgrades.js';
 import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
@@ -88,6 +89,22 @@ export interface Settings {
    * of identity the same thing and make the internal id un-renameable after all.
    */
   unlockedAchievements: AchievementId[];
+  /**
+   * Enemy VARIANTS and RANKS this player has actually destroyed, by name.
+   *
+   * The same rule the Scrapopedia already applies to a card, applied to the horde: an entry is
+   * written the first time you put one down. Not the first time you SEE one - a variant that walks
+   * past while you run is not something you have learned anything about, and "killed it" is the one
+   * threshold the simulation already counts exactly.
+   *
+   * DELIBERATELY NOT AN ACHIEVEMENT. Sixteen trophies for meeting the bestiary would drown the
+   * three that mean something, and a first kill is not an accomplishment - it is a fact about how
+   * far you have got.
+   *
+   * By NAME rather than by catalog index, for the reason every other list here is: an index is only
+   * meaningful beside the table that produced it.
+   */
+  killedEnemies: string[];
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -117,6 +134,7 @@ const DEFAULTS: Settings = {
   unlockedUpgrades: [SEED_UPGRADE],
   unlockedHeroes: [SEED_HERO],
   unlockedAchievements: [],
+  killedEnemies: [],
 };
 
 function loadSettings(): Settings {
@@ -148,6 +166,16 @@ function loadSettings(): Settings {
       // No seed: an empty save has earned nothing, and `knownIds` always forces one in. Filtered
       // the same way, so an achievement that is retired stops appearing rather than lingering as
       // an id nothing can resolve.
+      // Filtered against the two tables that can name one, so a retired variant stops appearing
+      // rather than lingering as a name nothing resolves.
+      killedEnemies: (Array.isArray(parsed.killedEnemies)
+        ? (parsed.killedEnemies as unknown[])
+        : []
+      ).filter(
+        (n): n is string =>
+          typeof n === 'string' &&
+          (FLAVOURS.some((f) => f.name === n) || RANKS.some((r) => r.name === n)),
+      ),
       unlockedAchievements: (Array.isArray(parsed.unlockedAchievements)
         ? (parsed.unlockedAchievements as unknown[])
         : []
@@ -263,6 +291,30 @@ export class AppState {
    * gets a real condition is the day the question "had they already earned it" becomes worth being
    * able to answer.
    */
+  hasKilled(name: string): boolean {
+    return this.settings.killedEnemies.includes(name);
+  }
+
+  /**
+   * Records every variant and rank this run has put down, from the run's own tallies.
+   *
+   * Same shape and same guarantees as `recordHeldUpgrades`: a set union over two short arrays, so
+   * it is safe to call as often as is convenient and records the same thing every time. main.ts
+   * calls it on the once-a-second poll, which is what makes a variant killed forty minutes into a
+   * run that ends in a tab reload still count.
+   */
+  recordKills(killsByFlavour: ArrayLike<number>, killsByRank: ArrayLike<number>): void {
+    let added = false;
+    const note = (name: string): void => {
+      if (this.settings.killedEnemies.includes(name)) return;
+      this.settings.killedEnemies.push(name);
+      added = true;
+    };
+    for (let i = 0; i < FLAVOURS.length; i++) if ((killsByFlavour[i] ?? 0) > 0) note(FLAVOURS[i].name);
+    for (let i = 0; i < RANKS.length; i++) if ((killsByRank[i] ?? 0) > 0) note(RANKS[i].name);
+    if (added) this.saveSettings();
+  }
+
   hasAchievement(id: AchievementId): boolean {
     return this.settings.unlockedAchievements.includes(id);
   }

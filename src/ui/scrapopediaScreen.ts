@@ -30,8 +30,9 @@
  * ---------------------------------------------------------------------------------------------
  * IT ONLY SHOWS WHAT YOU HAVE ACTUALLY HELD
  * ---------------------------------------------------------------------------------------------
- * A system's page appears once that card has been TAKEN, and a chassis' page once that chassis has
- * been EARNED. An empty save opens on two entries: Slate, and the Medium Laser it walks in holding.
+ * A system's page appears once that card has been TAKEN, a chassis' page once that chassis has been
+ * EARNED, and an enemy's page once you have KILLED one. An empty save opens on two entries: Slate,
+ * and the Medium Laser it walks in holding.
  *
  * That makes this a record rather than a catalogue, and it is worth being clear about what it
  * costs, because it cuts against the section above: a player cannot read how the artillery aims
@@ -321,7 +322,7 @@ const SECTIONS: readonly { readonly id: Section; readonly label: string; readonl
   [
     { id: 'systems', label: 'Systems', blurb: 'Guns and the systems that feed them' },
     { id: 'mechs', label: 'Mechs', blurb: 'Every chassis you have earned' },
-    { id: 'enemies', label: 'Enemies', blurb: 'What the yard sends at you' },
+    { id: 'enemies', label: 'Enemies', blurb: 'Everything you have put down' },
     { id: 'achievements', label: 'Achievements', blurb: 'What you have done' },
   ];
 
@@ -356,6 +357,7 @@ export class ScrapopediaScreen {
       upgrade: (id: UpgradeId) => boolean;
       hero: (id: HeroId) => boolean;
       achievement: (id: AchievementId) => boolean;
+      killed: (name: string) => boolean;
     },
   ) {
     const el = document.createElement('div');
@@ -473,14 +475,24 @@ export class ScrapopediaScreen {
     }
 
     if (section === 'enemies') {
-      // NOT GATED. Everything here is something the game has already thrown at you or will without
-      // asking, and there is no "have I met this" to record - the horde is not a collection.
-      this.indexEl.appendChild(group('Variants', FLAVOURS.length, FLAVOURS.length));
-      this.indexEl.appendChild(
-        grid(FLAVOURS.map((f, i) => this.enemyButton(f, i))),
-      );
-      this.indexEl.appendChild(group('Ranks', RANKS.length, RANKS.length));
-      this.indexEl.appendChild(grid(RANKS.map((r, i) => this.rankButton(r, i))));
+      // GATED ON HAVING KILLED ONE, which is the bestiary's version of the rule the rest of this
+      // screen follows: a page is written the first time you have actually had the thing in your
+      // hands, or in this case put it down. Not on having SEEN one - something that walks past
+      // while you run has taught you nothing, and a kill is the one threshold the simulation
+      // already counts exactly.
+      const variants: HTMLButtonElement[] = [];
+      for (let i = 0; i < FLAVOURS.length; i++) {
+        if (this.has.killed(FLAVOURS[i].name)) variants.push(this.enemyButton(FLAVOURS[i], i));
+      }
+      this.indexEl.appendChild(group('Variants', variants.length, FLAVOURS.length));
+      this.indexEl.appendChild(grid(variants));
+
+      const ranks: HTMLButtonElement[] = [];
+      for (let i = 0; i < RANKS.length; i++) {
+        if (this.has.killed(RANKS[i].name)) ranks.push(this.rankButton(RANKS[i], i));
+      }
+      this.indexEl.appendChild(group('Ranks', ranks.length, RANKS.length));
+      this.indexEl.appendChild(grid(ranks));
       return;
     }
 

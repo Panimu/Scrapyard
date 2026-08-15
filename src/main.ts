@@ -253,6 +253,7 @@ async function boot(): Promise<void> {
     upgrade: (id) => state.hasUpgrade(id),
     hero: (id) => state.hasHero(id),
     achievement: (id) => state.hasAchievement(id),
+    killed: (name) => state.hasKilled(name),
   });
 
   const settings = new SettingsScreen(state.settings, {
@@ -629,6 +630,7 @@ async function boot(): Promise<void> {
         // summary and cannot take a tap, so showing it there costs nothing.
         toast.clear();
         toast.push(state.recordAchievements(runRecord(world)));
+        state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
         const earned = state
           .recordRun(runRecord(world))
           .map((id) => HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
@@ -647,7 +649,12 @@ async function boot(): Promise<void> {
       //
       // A second is the resolution, so a banner can be up to a second late. Against a trophy that
       // stays earned forever, that is not a cost worth a per-frame scan.
-      if (world.tick % 60 === 0) toast.push(state.recordAchievements(runRecord(world)));
+      if (world.tick % 60 === 0) {
+        toast.push(state.recordAchievements(runRecord(world)));
+        // Rides the same poll: the Scrapopedia's bestiary is written by killing things, and the
+        // tallies it reads from are two short arrays the run is already keeping.
+        state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
+      }
 
       if (world.stats.damageTaken > lastDamageTaken) {
         lastDamageTaken = world.stats.damageTaken;
