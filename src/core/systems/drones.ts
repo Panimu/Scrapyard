@@ -128,7 +128,7 @@ const FOLLOW_RATE = 1.05;
  * carry half a magazine at full damage, which is the same total damage in half the time; it now
  * carries the whole magazine at half damage, which is the same total damage over twice as long.
  * The second shape is the better one for a thing whose magazine IS its life: a drone at 200 rounds
- * lives 19.9 seconds of sustained fire against a twenty-five second rebuild, so a flight is
+ * lives 19.9 seconds of sustained fire against a twelve second rebuild, so a flight is
  * something you maintain rather than something that keeps evaporating.
  *
  * 19.9 AND NOT 18, WHICH IS WHAT THE ARITHMETIC SAYS. 200 rounds at the gun's 0.09 s cooldown is

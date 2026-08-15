@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:58Z',
+    title: 'The drone bay builds twice as fast',
+    notes: [
+      'A DRONE TAKES TWELVE SECONDS TO BUILD, DOWN FROM TWENTY-FIVE, and every tier that trims the build trims a share of the smaller number - so a finished bay turns one out every 7.8 seconds, or under 4.5 with the chassis and the rate systems behind it.',
+      'THE POINT IS THE FOURTH DRONE. Tier 7 promises four and you were flying about three: they were dying faster than the bay could replace them, so the last tier of the ladder was buying a number you rarely saw. A finished Fern now has all four up for about nine tenths of a run instead of two fifths.',
+      'It barely touches the early game, and that is deliberate. The first two tiers only ever allow ONE drone, and one drone already outlives its own replacement several times over - what this changes is how fast a FLEET recovers once you are flying three or four.',
+    ],
+  },
+  {
     at: '2026-08-15T16:49Z',
     title: 'The missile symbols are painted like the missiles',
     notes: [

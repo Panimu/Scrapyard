@@ -875,11 +875,42 @@ export const ARTILLERY: WeaponDef = Object.freeze({
  * would be two tables to keep in step for no gain, and "it fires a machine gun" is a sentence a
  * player can actually hold on to.
  */
-export const DRONE_BUILD_SEC = 25;
+/**
+ * HOW LONG A DRONE TAKES TO BUILD, before the ladder and before any bonus.
+ *
+ * SET FROM THE OTHER END: the brief was that a Fern at tier 7 with Feed Systems maxed should hold
+ * four drones MOST OF THE TIME, and this is the number that does it. That build resolves to
+ * 12 x 0.65 x 0.5667 = 4.42 s, and measured across two full runs the fleet sits at its cap of four
+ * for 90% of the run (mean 3.87 of 4).
+ *
+ * THE OBVIOUS ARITHMETIC IS WRONG, and it is worth knowing why before this is retuned. "A drone
+ * lives L seconds, so four of them need a drone every L/4" gives 3.5 s, from a magazine of 280 at
+ * a 0.05 s cadence. That is the CONSTANT-FIRE life, and a drone fires about 41% of the time - so
+ * the real life is 28-34 s, not 14. The measured curve, two seeds, tier 7 + Fern + maxed Feed:
+ *
+ *      base    build     mean fleet    % of the run at 4
+ *       25 s   9.21 s     3.21          39%
+ *       19 s   7.00 s     3.52          56%
+ *       14 s   5.16 s     3.82          84%
+ *       12 s   4.42 s     3.87          90%     <- here
+ *       11 s   4.05 s     3.88          90%
+ *        8 s   2.95 s     3.90          92%
+ *
+ * IT FLATTENS, and 12 is the knee. Below it the base is being spent for nothing: the fleet is not
+ * limited by how fast the bay builds any more, it is limited by the fact that a bigger fleet keeps
+ * the player alive longer, which pushes the run into denser waves, which burns magazines faster.
+ * The last two rows are that loop, not a build time.
+ *
+ * IT BARELY MOVES THE EARLY GAME, which is why cutting it this far is safe. Tiers 1 and 2 cap the
+ * fleet at ONE, and one drone lives ~49 s against a 12 s build - so the build time was never the
+ * binding constraint down there and is not now. What this number actually controls is how fast the
+ * fleet REFILLS at tiers 3 to 7, where the cap is 2, 3 and 4.
+ */
+export const DRONE_BUILD_SEC = 12;
 /**
  * Per-tier build-time cut. Additive off the BASE, the way every other rate tier in this file is,
  * and DERIVED from it - the ladder is specified as percentages, so cutting the base cuts every
- * rung with it. 25 s runs down to 16.25 s by tier 7, where 30 s ran down to 19.5 s.
+ * rung with it. 12 s runs down to 7.8 s by tier 7.
  */
 export const DRONE_BUILD_TIER = -DRONE_BUILD_SEC * 0.1;
 export const DRONE_BUILD_TIER_SMALL = -DRONE_BUILD_SEC * 0.05;
