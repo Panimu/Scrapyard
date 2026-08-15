@@ -67,23 +67,40 @@
  * too.
  *
  * ---------------------------------------------------------------------------------------------
- * AND THEN `nothing` WAS CUT TO 35, WHICH IS THE ONE CHANGE THIS TABLE IS ALLOWED TO MAKE
+ * TWO SEPARATE DIALS, AND EVERY LATER EDIT HAS BEEN ONE OR THE OTHER
  * ---------------------------------------------------------------------------------------------
- * Everything above is about protecting the set-pieces from each other when a new one arrives.
- * This is the other axis, and it is a design decision rather than an accident to be corrected:
- * moving `nothing` alone changes HOW OFTEN ANYTHING HAPPENS without touching the balance BETWEEN
- * the things that happen. The three events keep their 10 : 12 : 5 ratio exactly; a wave is simply
- * likelier to get one.
+ * Everything above is about protecting the set-pieces from each other when a NEW one arrives.
+ * There are two other things a person tuning this table can mean, and they are not the same:
  *
- *     nothing     35   56.5%   was 61.4%
- *     ring        10   16.1%   was 14.3%
- *     swarm       12   19.4%   was 17.1%
- *     chest elite  5    8.1%   was  7.1%   - still exactly half the ring
+ *   HOW OFTEN ANYTHING HAPPENS is `nothing`, alone. Moving only that leaves the balance BETWEEN
+ *   the events exactly as it was; a wave is simply likelier to get one of them.
  *
- * Over the 14 slots of a full run that is 6.1 set-pieces where it was 5.4: about one more thing
- * happening per run, spread across all three in proportion. `nothing` is the ONLY weight that
- * should ever be moved for this purpose - reaching for the events themselves would change what a
- * run is made of while trying to change how busy it is.
+ *   WHAT A RUN IS MADE OF is an event's own weight. Moving one changes which set-piece a run is
+ *   about, and it is the intrusive edit - which is why it is not something to reach for while
+ *   trying to change the pace.
+ *
+ * Both have now been used, in that order:
+ *
+ *                  shipped   +chest    nothing 35   swarm 30
+ *     nothing        24        43          35          30
+ *     ring            5        10          10          10
+ *     swarm           6        12          12          30
+ *     chest elite     -         5           5           5
+ *     ---------------------------------------------------------
+ *     total          35        70          62          75
+ *
+ *     nothing     30   40.0%   was 56.5%
+ *     swarm       30   40.0%   was 19.4%   - now level with `nothing`, and six times the ring
+ *     ring        10   13.3%   was 16.1%
+ *     chest elite  5    6.7%   was  8.1%   - still exactly half the ring
+ *
+ * THE SWARM IS NOW WHAT THE SPECIAL-EVENT SYSTEM IS FOR. Over a run's 14 slots it lands 5.6 times
+ * against the ring's 1.9 - fifty swarmers a throw, so roughly 280 extra fast bodies across a run -
+ * where before it was 2.7. That is a deliberate change to the texture of a run rather than to its
+ * pace, and it is the first edit here that moves an event's own weight.
+ *
+ * A wave now gets a set-piece 60% of the time. `nothing` stopped being the majority entry at this
+ * edit, which had been true since the table was written.
  */
 
 export const EVENT_NOTHING = 0;
@@ -109,9 +126,9 @@ export interface SpecialEventDef {
  * upgrade catalog and the event kinds live under.
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
-  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 35 }),
+  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 30 }),
   Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 10 }),
-  Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 12 }),
+  Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 30 }),
   Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 5 }),
 ]);
 

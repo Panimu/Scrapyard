@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:49Z',
+    title: 'THE SWARM is what the yard does now',
+    notes: [
+      'THE SWARM ARRIVES TWICE AS OFTEN AS EVERYTHING ELSE PUT TOGETHER. It is up from about three a run to nearly six, which is close to three hundred extra runners across a full run. It is no longer the occasional set-piece - it is the thing a run is made of, and a build that cannot handle a front pouring past it will find out quickly.',
+      'MOST WAVES NOW BRING SOMETHING. Six waves in ten get a set-piece where it used to be four - the quiet stretch you could count on between them is gone.',
+      'Ring attacks and chest elites are unchanged in absolute terms - the same two rings and the same one chest elite in an average run. They are simply a smaller share of a busier table.',
+    ],
+  },
+  {
     at: '2026-08-15T15:41Z',
     title: 'Set-pieces happen more often',
     notes: [

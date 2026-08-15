@@ -7,8 +7,8 @@
  *     tables rather than of any branch in the spawner;
  *   - killing one leaves a Cyber Chest, which crosses three systems (damage writes the flavour
  *     into the kill feed, the feed survives the body being reaped, pickups reads it back);
- *   - the event is drawn exactly half as often as the ring, and the three set-pieces keep their
- *     proportions to each other however `nothing` is tuned around them.
+ *   - the event is drawn exactly half as often as the ring, which is the one thing about this
+ *     table that was specified as a relationship rather than picked as a number.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,11 +26,8 @@ import {
 } from '../src/core/content/enemyCatalog.js';
 import {
   EVENT_CHEST_ELITE,
-  EVENT_NOTHING,
   EVENT_RING_ATTACK,
-  EVENT_SWARM,
   SPECIAL_EVENTS,
-  SPECIAL_EVENT_TOTAL_WEIGHT,
 } from '../src/core/content/specialEvents.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
@@ -135,17 +132,15 @@ describe('the Chest Elite event', () => {
     expect(weightOf(EVENT_CHEST_ELITE) * 2).toBe(weightOf(EVENT_RING_ATTACK));
   });
 
-  it('left the balance BETWEEN the set-pieces alone', () => {
-    // THE RATIO, NOT THE SHARE. `nothing` is the dial for how often anything happens at all, and
-    // it moves - it paid for this event's slice, and it has since been cut again to make a run
-    // busier. What must not move by accident is the proportion the three events stand in to each
-    // other: the swarm was specified as slightly commoner than the ring, and the chest elite as
-    // half of it, and both of those are decisions rather than side effects of the total.
-    expect(weightOf(EVENT_SWARM) / weightOf(EVENT_RING_ATTACK)).toBeCloseTo(6 / 5, 6);
-    expect(weightOf(EVENT_CHEST_ELITE) / weightOf(EVENT_RING_ATTACK)).toBeCloseTo(0.5, 6);
-    // And `nothing` is still the largest entry - a table where a wave more often gets a set-piece
-    // than not would be a different game, and would be worth arriving at deliberately.
-    const events = SPECIAL_EVENT_TOTAL_WEIGHT - weightOf(EVENT_NOTHING);
-    expect(weightOf(EVENT_NOTHING)).toBeGreaterThan(events);
-  });
+  // NOTHING ELSE IN THIS TABLE IS PINNED, AND THAT IS THE SECOND ATTEMPT AT GETTING THIS RIGHT.
+  //
+  // Two earlier assertions lived here - the ring's absolute share, then the swarm's ratio to it -
+  // and BOTH were deliberately overridden by the next balance pass, which is exactly what a
+  // weights table is for. A test that fails every time somebody tunes the thing it is testing is
+  // not protecting a decision, it is charging rent on one.
+  //
+  // The half-the-ring rule above survives because it is a RELATIONSHIP that was specified rather
+  // than a number that was chosen: the chest elite has no frequency of its own, it has half of
+  // whatever the ring's is. If that ever stops being true it will be because somebody meant it,
+  // and then this test is the right thing to be looking at.
 });
