@@ -38,6 +38,7 @@
  */
 
 import { ARENA_HALF, RELOCATE_RADIUS, SWARM_SLOW_FRAC } from '../constants.js';
+import { FLAVOURS } from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { pushOutOfScenery } from '../content/scenery.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
@@ -56,6 +57,19 @@ import type { World } from '../types.js';
  */
 export const KILL_REASON_KILLED = 0;
 export const KILL_REASON_DESPAWNED = 1;
+
+/**
+ * RELOCATE_RADIUS squared, per flavour, built once at module init. Squared so the per-enemy test
+ * stays a comparison against a squared distance and never calls sqrt.
+ */
+const RELOCATE_R2_BY_FLAVOUR = (() => {
+  const out = new Float64Array(FLAVOURS.length);
+  for (let i = 0; i < FLAVOURS.length; i++) {
+    const r = RELOCATE_RADIUS * FLAVOURS[i].relocate;
+    out[i] = r * r;
+  }
+  return out;
+})();
 
 export function updateEnemyAI(world: World, dt: number): void {
   seek(world, dt);
@@ -370,12 +384,12 @@ function relocateStragglers(world: World): void {
   const p = world.enemies;
   const px = world.player.x;
   const py = world.player.y;
-  const r2 = RELOCATE_RADIUS * RELOCATE_RADIUS;
   const t = world.config.tuning.director;
 
   const x = p.x;
   const y = p.y;
   const flags = p.flags;
+  const flavourId = p.flavourId;
   const n = p.count;
 
   // v0 is the same scratch the director places spawns through. Both run inside one tick and
@@ -392,7 +406,10 @@ function relocateStragglers(world: World): void {
 
     const dx = x[d] - px;
     const dy = y[d] - py;
-    if (dx * dx + dy * dy <= r2) continue;
+    // PER FLAVOUR, so a set-piece body can be given a longer leash than the horde - see
+    // FlavourDef.relocate. Read from a precomputed table rather than the catalog objects: this is
+    // a per-enemy test every tick, and it should stay a typed-array load.
+    if (dx * dx + dy * dy <= RELOCATE_R2_BY_FLAVOUR[flavourId[d]]) continue;
 
     // NO forward bias. See rollRingPosition: the bias is the tax on running, and this body has
     // already paid it by being outrun.

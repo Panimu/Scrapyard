@@ -439,8 +439,8 @@ function rollAndFire(world: World, t: DirectorTuning, index: number, mid: boolea
  * lives in the event's own stream.
  * ------------------------------------------------------------------------------------------- */
 
-/** Bodies in the swarm. Fewer than the ring's fifty: these arrive as a front, not a wall. */
-const SWARM_COUNT = 40;
+/** Bodies in the swarm. The same fifty the ring uses - a front, not a wall, but just as many. */
+const SWARM_COUNT = 50;
 /**
  * Where the knot is set down, measured from the mech. The same 520 the ring uses and for the same
  * reason: the camera's furthest visible point is its corner at 500.9 u, so anything at 520 is off

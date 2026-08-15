@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T08:50Z',
+    title: 'A bigger swarm, and Heavies that stay where you left them',
+    notes: [
+      'THE SWARM IS FIFTY RUNNERS, up from forty - the same number the ring brings.',
+      'HEAVIES WALK ANOTHER 10% FASTER. Still the slowest thing in the yard by a wide margin.',
+      'AND THEY BARELY MOVE WHEN SHOT. A shell now shoves a Heavy a quarter as far as it would shove anything else, down from half. At half, one Cannon hit was still worth twenty-four seconds of its walking - the wall could be swept aside faster than it could close.',
+      'THEY ALSO STAY BEHIND YOU NOW. Anything that falls too far back gets picked up and put in front of you again, which is what keeps the yard feeling endless - but a Heavy gets twice the leash before that happens. Outrunning a ring is meant to work and to cost you the ground; it should not hand the ring back.',
+    ],
+  },
+  {
     at: '2026-08-15T08:35Z',
     title: 'The chest stops celebrating its second reel',
     notes: [

@@ -71,15 +71,22 @@ export const FLAV_SPIKY = 3;
  * boss. There is no `spawnable: false` field and no branch in the spawner to forget - the only
  * way a Heavy reaches the field is a set-piece that names it (systems/spawning.ts, `spawnSiege`).
  *
- * x10 HP at x0.055 speed is a wall that walks. Both halves matter: ten times the hit points would
+ * x10 HP at x0.0605 speed is a wall that walks. Both halves matter: ten times the hit points would
  * be a wandering roadblock, and a twentieth of the speed alone would be a free kill. Together
  * they are a thing you must either grind down or go around, and it will still be there when you
  * come back.
  *
- * AND IT ONLY TAKES HALF THE KNOCKBACK. A body this slow is one you fight by pushing, and a
- * Cannon shell throwing it as far as it walks in twenty seconds turned the wall into something
- * you could sweep aside for free. Half an impulse still moves it - it is not the Scraplord's
- * outright immunity - it just stops a shell being worth more than a shell.
+ * AND IT TAKES A QUARTER OF THE KNOCKBACK. A body this slow is one you fight by pushing, and a
+ * Cannon shell throwing it as far as it walks in twenty seconds turned the wall into something you
+ * could sweep aside for free. Half was not enough - at 190 impulse on a 0.5-mass body that was
+ * still 95 u/s, twenty-four seconds of its walking per shell. A quarter still moves it visibly; it
+ * is not the Scraplord's outright immunity. It just stops one shell being worth more than the
+ * whole approach.
+ *
+ * IT IS ALSO ALLOWED TO FALL TWICE AS FAR BEHIND before the yard picks it up and puts it back in
+ * front of you (FlavourDef.relocate). Outrunning a ring is supposed to work and to cost you the
+ * ground; relocating those bodies at the ordinary 1000 u was re-dealing the set-piece ahead of a
+ * player who had already paid for their escape.
  */
 export const FLAV_HEAVY = 4;
 
@@ -142,13 +149,24 @@ export interface FlavourDef {
    * a change to how shells land. This multiplier touches only what weapons do to the body.
    */
   readonly knockback: number;
+  /**
+   * Multiplier on RELOCATE_RADIUS - how far behind the player this body may fall before it is
+   * picked up and put back in front of them.
+   *
+   * 1 for everything the director spawns, because the relocation rule is what makes the yard feel
+   * endless and a wave that could simply be walked away from is not a wave. A SET-PIECE is the
+   * exception: fifty bodies placed around you deliberately are a thing you are meant to be able to
+   * escape, at the cost of the ground you gave up doing it. Relocating them at the ordinary radius
+   * quietly undid that - the ring you outran was re-dealt in front of you.
+   */
+  readonly relocate: number;
 }
 
 export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
-  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1 }),
-  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1 }),
-  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1 }),
-  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1 }),
+  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
   // `renderScale` is a RENDER HINT and does not move the hitbox - the same compromise `tough`
   // already makes at 1.18. Kept to 1.3 for that reason: a Heavy has to read as a different object
   // at a glance, and every unit past that is a unit of lie between the sprite and the circle.
@@ -156,10 +174,10 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.055, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.5 }),
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.0605, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 2 }),
   // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
   // fragility, and every extra dial turned here is one more thing to explain when it arrives.
-  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1 }),
+  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {
