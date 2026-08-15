@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T22:25Z',
+    title: 'AN ASCENSION YOU HAVE HELD GETS ITS OWN PAGE',
+    notes: [
+      'THE MANUAL WILL NOW ADMIT TO A TIER 8 - but only one you have actually held, and only after you have held it. It gets an entry of its own under a new ASCENSIONS heading, with its own name, its own icon and its own page, rather than a footnote on the weapon it stopped being.',
+      'The page says what it does, what it used to be, and what it cost you - in the past tense, because the only person who can read it is the person who already paid. It says nothing whatsoever about any other weapon.',
+      'UNTIL THEN THE MANUAL IS EXACTLY WHAT IT WAS. The heading does not exist, the weapon it comes from gives nothing away, and no counter anywhere moves - the Weapons total still reads nine, because a total that quietly grew by one would be the secret announcing itself to somebody who had found nothing.',
+    ],
+  },
+  {
     at: '2026-08-15T20:15Z',
     title: 'THE YARD HAS GROUND NOW, AND THE GROUND HAS ROADS',
     notes: [

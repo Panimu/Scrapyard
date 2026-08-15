@@ -15,7 +15,12 @@
 
 import { FLAVOURS, RANKS } from './core/index.js';
 import { HERO_CATALOG, type HeroId } from './core/data/heroes.js';
-import { UPGRADE_CATALOG, type UpgradeDef, type UpgradeId } from './core/data/upgrades.js';
+import {
+  UPGRADE_CATALOG,
+  WEAPON_ASCENDED_TIER,
+  type UpgradeDef,
+  type UpgradeId,
+} from './core/data/upgrades.js';
 import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
 import { reportSync, reportUnlocked } from './achievements.js';
@@ -116,6 +121,24 @@ export interface Settings {
    * hands without earning it for the deck.
    */
   earnedCards: UpgradeId[];
+  /**
+   * Weapon cards whose TIER 8 this player has actually held, by the weapon card's own id.
+   *
+   * BY THE PARENT WEAPON'S ID, not by a name of its own. An ascension is a field on a weapon card
+   * rather than a card in the catalog, so it has no id of its own to store - and inventing a
+   * synthetic one would break the rule the rest of this file keeps, that every stored id can be
+   * resolved against the current catalog and dropped when it cannot.
+   *
+   * A THIRD LIST, and the three are genuinely different questions. `earnedCards` is "the deck may
+   * offer me this"; `unlockedUpgrades` is "I have held this, so its page is in the manual"; this is
+   * "I have held what this weapon BECOMES". A weapon can be in the second and not this one for a
+   * very long time, which is the whole point of a tier 8.
+   *
+   * It gates the manual and nothing else. The chest decides whether an ascension may be granted
+   * from the run's own state - see `ascensionReady` - and does not consult the save at all, so a
+   * cleared save costs the page rather than the ability to find it again.
+   */
+  heldAscensions: UpgradeId[];
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -147,6 +170,7 @@ const DEFAULTS: Settings = {
   unlockedAchievements: [],
   killedEnemies: [],
   earnedCards: [],
+  heldAscensions: [],
 };
 
 function loadSettings(): Settings {
@@ -182,6 +206,16 @@ function loadSettings(): Settings {
         .filter(
           (id): id is UpgradeId =>
             typeof id === 'string' && UPGRADE_CATALOG.some((d) => d.id === id),
+        ),
+      // Filtered on the id AND on the card still HAVING an ascension. A weapon whose tier 8 is
+      // withdrawn stops claiming a page rather than leaving one that nothing can render - the same
+      // stated-and-accepted trade the rest of this file makes: retire content and the people who
+      // found it lose the entry, which beats a manual that quietly accumulates ghosts.
+      heldAscensions: (Array.isArray(parsed.heldAscensions) ? (parsed.heldAscensions as unknown[]) : [])
+        .filter(
+          (id): id is UpgradeId =>
+            typeof id === 'string' &&
+            UPGRADE_CATALOG.some((d) => d.id === id && d.ascension !== undefined),
         ),
       // Filtered against the two tables that can name one, so a retired variant stops appearing
       // rather than lingering as a name nothing resolves.
@@ -385,18 +419,46 @@ export class AppState {
    * rather than three different things. A player who closes the tab mid-run keeps what they found.
    *
    * Returns the ids that were new, so a caller can say so.
+   *
+   * ASCENSIONS ARE BANKED IN THE SAME PASS, from the same tier array, because they are the same
+   * question asked at a different height: "is this card in your hands" and "is it in your hands at
+   * tier 8". Doing it here rather than at the chest means it inherits every guarantee this method
+   * already has - it is a set union, it is safe to call as often as is convenient, and it is
+   * already called from the once-a-second poll, so a run that ends in a tab reload keeps the page
+   * it earned. A recorder hung off the chest would fire exactly once, at the worst possible moment
+   * to be interrupted.
+   *
+   * They are NOT added to the return value. That list is what the caller announces as newly found,
+   * and an ascension announces itself far more loudly than a toast can - the chest it came out of
+   * is the whole event.
    */
   recordHeldUpgrades(tiers: ArrayLike<number>): UpgradeId[] {
     const found: UpgradeId[] = [];
+    let banked = false;
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
-      if ((tiers[i] ?? 0) <= 0) continue;
-      const id = UPGRADE_CATALOG[i].id;
-      if (this.settings.unlockedUpgrades.includes(id)) continue;
-      this.settings.unlockedUpgrades.push(id);
-      found.push(id);
+      const tier = tiers[i] ?? 0;
+      if (tier <= 0) continue;
+      const def = UPGRADE_CATALOG[i];
+      if (!this.settings.unlockedUpgrades.includes(def.id)) {
+        this.settings.unlockedUpgrades.push(def.id);
+        found.push(def.id);
+      }
+      if (
+        def.ascension !== undefined &&
+        tier >= WEAPON_ASCENDED_TIER &&
+        !this.settings.heldAscensions.includes(def.id)
+      ) {
+        this.settings.heldAscensions.push(def.id);
+        banked = true;
+      }
     }
-    if (found.length > 0) this.saveSettings();
+    if (found.length > 0 || banked) this.saveSettings();
     return found;
+  }
+
+  /** Has this player held what this weapon becomes? Gates its Scrapopedia page and nothing else. */
+  hasAscension(id: UpgradeId): boolean {
+    return this.settings.heldAscensions.includes(id);
   }
 
   /**

@@ -1510,6 +1510,10 @@ body {
 /* Which pool, in the same two colours the level-up cards and the chest reels already use. */
 .pedia__entry--weapon { border-left-color: var(--accent); }
 .pedia__entry--passive { border-left-color: #4fb8ff; }
+/* An ascension is a weapon, but it is not the weapon it came from - so it takes a colour of its
+   own rather than the weapon accent. Gold, because it is the only entry on this screen that is
+   there because of something that happened rather than something that was picked up. */
+.pedia__entry--ascension { border-left-color: #ffc247; }
 /* A chassis is neither pool, so it takes the ink rather than either accent. */
 .pedia__entry--mech { border-left-color: var(--ink-faint); }
 .pedia__entry:active { background: var(--panel-2); }
@@ -1575,6 +1579,7 @@ body {
 
 .pedia__page-kind--weapon { color: var(--accent); }
 .pedia__page-kind--passive { color: #4fb8ff; }
+.pedia__page-kind--ascension { color: #ffc247; }
 .pedia__page-kind--mech { color: var(--ink-dim); }
 
 /* The mech art is a full chassis rather than a framed glyph, so it is given more room and no

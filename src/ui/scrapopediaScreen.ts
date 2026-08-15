@@ -48,17 +48,29 @@
  * it admitted what you found would be worse than no manual.
  *
  * ---------------------------------------------------------------------------------------------
- * IT DOES NOT MENTION TIER 8. ANYWHERE.
+ * IT DOES NOT MENTION TIER 8 UNTIL YOU HAVE HELD ONE
  * ---------------------------------------------------------------------------------------------
  * An ascension is the one thing in this game that is meant to be FOUND. This screen used to print
  * a "Tier 8" section on the weapon that has one - its name, what it does, and the exact recipe -
  * and a note on Targeting Optics explaining what it was really for. Between them a player who
- * opened the manual once knew the whole secret before ever finishing a weapon.
+ * opened the manual once knew the whole secret before ever finishing a weapon. So that went.
  *
- * So no entry names an ascension, its own included, and no entry hints at another entry's. The
- * catalog still carries `UpgradeDef.ascension` and the chest still grants it; this screen simply
- * does not read that field. When the entries become unlockable, the natural home for an ascension
- * page is behind the same gate - shown once you have actually held the thing.
+ * An ascension now gets a page of ITS OWN, behind the same gate every other entry sits behind:
+ * shown once you have actually held the thing. Until then the screen is exactly what it was - no
+ * entry names an ascension, its own parent weapon's page included, and nothing hints that there is
+ * a height above tier 7 at all.
+ *
+ * A SEPARATE ENTRY AND NOT A SECTION ON THE WEAPON, which is the part worth being deliberate
+ * about. A tier 8 renames the gun, redraws its icon and rewrites what it does; folding that into
+ * the parent's page as a footnote would file the most dramatic thing in the game under the card it
+ * stopped being. It is also what keeps the secret: a "Weapons 4/9" counter that silently became
+ * "4/10" the day an ascension existed would announce it to a player who had found nothing.
+ *
+ * THE GROUP DOES NOT EXIST UNTIL IT HAS A MEMBER. Every other group on this screen prints
+ * `found / total`, and a total is exactly the leak this screen was rewritten to close - "0 / 9"
+ * tells a new player both that ascensions exist and how many to go looking for. So the heading is
+ * not rendered at all until the first one is held, and from then on it behaves like every other
+ * group, because by then the secret is one they own.
  *
  * ---------------------------------------------------------------------------------------------
  * THE MECHS ARE HERE TOO, AND THEIR TEXT IS THE PICKER'S OWN
@@ -370,8 +382,10 @@ export class ScrapopediaScreen {
    * silently open the wrong page the day any of them is reordered.
    */
   private section: Section | null = null;
-  private open: { readonly kind: 'upgrade' | 'mech' | 'enemy' | 'rank'; readonly index: number } | null =
-    null;
+  private open: {
+    readonly kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank';
+    readonly index: number;
+  } | null = null;
 
   /**
    * `has` answers "does this player have it" for each catalog that can be unlocked. Predicates
@@ -382,6 +396,8 @@ export class ScrapopediaScreen {
     private readonly onExit: () => void,
     private readonly has: {
       upgrade: (id: UpgradeId) => boolean;
+      /** By the PARENT weapon's id - an ascension has no id of its own. See Settings. */
+      ascension: (id: UpgradeId) => boolean;
       hero: (id: HeroId) => boolean;
       achievement: (id: AchievementId) => boolean;
       killed: (name: string) => boolean;
@@ -486,6 +502,24 @@ export class ScrapopediaScreen {
           group(kind === 'weapon' ? 'Weapons' : 'Systems', entries.length, total),
         );
         this.indexEl.appendChild(grid(entries));
+      }
+
+      // ---- ascensions, and only once one has been held ---------------------------------------
+      // Built AFTER both pools rather than inside the weapon loop, so an ascension never counts
+      // toward the Weapons total. That total is read by a player who has found nothing, and a
+      // count that moves when a secret is added is the secret being announced.
+      const ascended: HTMLButtonElement[] = [];
+      let ascensionsTotal = 0;
+      for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+        const def = UPGRADE_CATALOG[i];
+        if (def.ascension === undefined) continue;
+        ascensionsTotal++;
+        if (this.has.ascension(def.id)) ascended.push(this.ascensionButton(def, i));
+      }
+      // The heading itself is the leak, not the entries under it - see this file's header.
+      if (ascended.length > 0) {
+        this.indexEl.appendChild(group('Ascensions', ascended.length, ascensionsTotal));
+        this.indexEl.appendChild(grid(ascended));
       }
       return;
     }
@@ -637,6 +671,34 @@ export class ScrapopediaScreen {
     return b;
   }
 
+  /**
+   * The row for a weapon's tier 8. `index` is the PARENT weapon's catalog index, which is the only
+   * handle an ascension has - it is a field on a card, not a card.
+   *
+   * Its own name and its own icon, both read from the ascension rather than from the weapon, so
+   * the row shows what the thing is called now and not what it used to be.
+   */
+  private ascensionButton(def: UpgradeDef, index: number): HTMLButtonElement {
+    const asc = def.ascension;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pedia__entry pedia__entry--ascension';
+
+    const icon = document.createElement('img');
+    icon.className = 'pedia__icon';
+    icon.src = spriteUrl(`icon_${asc?.icon ?? def.id}`);
+    icon.alt = '';
+    icon.decoding = 'async';
+
+    const name = document.createElement('span');
+    name.className = 'pedia__name';
+    name.textContent = asc?.name ?? def.name;
+
+    b.append(icon, name);
+    b.addEventListener('click', () => this.showAscension(index));
+    return b;
+  }
+
   private showSections(): void {
     this.section = null;
     this.closePage();
@@ -678,7 +740,7 @@ export class ScrapopediaScreen {
   }
 
   /** Common to every kind of page: clear the old one, show the pane, start at the top. */
-  private openPage(kind: 'upgrade' | 'mech' | 'enemy' | 'rank', index: number): void {
+  private openPage(kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank', index: number): void {
     this.open = { kind, index };
     this.sectionsEl.hidden = true;
     this.indexEl.hidden = true;
@@ -817,6 +879,62 @@ export class ScrapopediaScreen {
       list.appendChild(li);
     }
     this.detailEl.appendChild(list);
+  }
+
+  /**
+   * A weapon's tier 8, as its own page. `index` is the parent weapon's catalog index.
+   *
+   * NO LADDER SECTION, because there is no ladder: an ascension is one rung and the last one. The
+   * page says what it is, what it came from, and what it cost - and it can say the last of those
+   * plainly, in the past tense, because it is only ever read by someone who has already paid it.
+   * That is the same rule the achievement banners follow and the reason there is deliberately no
+   * imperative version of any of this text.
+   *
+   * It states ITS OWN recipe and no other. A page that said "every weapon has one of these" would
+   * hand over eight secrets for the price of one.
+   */
+  private showAscension(index: number): void {
+    const def = UPGRADE_CATALOG[index];
+    const asc = def?.ascension;
+    if (def === undefined || asc === undefined) return;
+    this.openPage('ascension', index);
+
+    const head = document.createElement('div');
+    head.className = 'pedia__page-head';
+    const icon = document.createElement('img');
+    icon.className = 'pedia__page-icon';
+    icon.src = spriteUrl(`icon_${asc.icon}`);
+    icon.alt = '';
+    const title = document.createElement('div');
+    title.className = 'pedia__page-name';
+    title.textContent = asc.name;
+    const kind = document.createElement('div');
+    kind.className = 'pedia__page-kind pedia__page-kind--ascension';
+    kind.textContent = 'Ascension';
+    const words = document.createElement('div');
+    words.append(title, kind);
+    head.append(icon, words);
+    this.detailEl.appendChild(head);
+
+    // The ascension's own words, read from the catalog exactly as every other page reads the
+    // card's - so the chest that grants it and the manual that records it cannot drift apart.
+    this.detailEl.appendChild(para('pedia__desc', asc.description));
+
+    this.detailEl.appendChild(section('What it was'));
+    this.detailEl.appendChild(
+      para('pedia__note', `${def.name}, finished. This is what it became, and it does not go back.`),
+    );
+
+    // The recipe, resolved from the catalog rather than written out, so a change to `requires`
+    // cannot leave this sentence describing the old one.
+    const gate = UPGRADE_CATALOG.find((d) => d.id === asc.requires);
+    this.detailEl.appendChild(section('How it was earned'));
+    this.detailEl.appendChild(
+      para(
+        'pedia__note',
+        `Carried to its last tier alongside ${gate?.name ?? asc.requires}, and opened out of a Cyber Chest.`,
+      ),
+    );
   }
 }
 
