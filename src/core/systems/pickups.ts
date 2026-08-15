@@ -526,8 +526,18 @@ function magnetAndCollect(world: World, dt: number): void {
     // velocity, just a generous contact radius. That is the point of them - a barrel poses a
     // question ("is that spanner worth crossing the field for, right now") and a consumable that
     // flew to the player would answer it for them.
+    //
+    // A SPANNER AT FULL HEALTH IS LEFT WHERE IT LIES rather than consumed for nothing. It used to
+    // clamp to maxHp on collection, which is the same thing as deleting it - and a player at full
+    // health walks over spanners constantly, because full health is the state you spend most of a
+    // good run in. So the one reward that answers "I am about to die" was mostly being destroyed
+    // by people who were fine. It now waits, and the question the barrel posed stays open.
+    //
+    // NOT AN EARLY `continue`: it falls through to the same skip every consumable takes, so the
+    // spanner is simply not TAKEN. It stays in the pool, keeps its position, and is collected the
+    // moment the player comes back to it having lost something.
     if (pool.kind[d] !== PICKUP_KIND_GEM) {
-      if (d2 <= consumableR2) takeConsumable(world, d);
+      if (d2 <= consumableR2 && !wouldBeWasted(world, pool.kind[d])) takeConsumable(world, d);
       continue;
     }
 
@@ -600,6 +610,20 @@ function collect(world: World, d: number): void {
   // Marked, never removed. S12 is the only removal site, so this dense index stays valid for
   // updateProgression and for the renderer's drain after stepWorld returns.
   markPickupDead(pool, d);
+}
+
+/**
+ * Would running over this consumable throw it away?
+ *
+ * ONE KIND ANSWERS YES: a repair at full health. Credits always land, and a magnet is a refresh
+ * rather than a stack, so taking a second one mid-pull genuinely does something.
+ *
+ * `>=` rather than `>`: hp is a float that regen and clamping both write, so "full" is a state the
+ * number reaches exactly and must not be one ulp away from.
+ */
+function wouldBeWasted(world: World, kind: number): boolean {
+  if (kind !== PICKUP_KIND_REPAIR) return false;
+  return world.player.hp >= world.player.stats.maxHp;
 }
 
 /**

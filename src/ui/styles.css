@@ -421,15 +421,6 @@ body {
 /* THE TIER. Every card in the pool is a weapon tier, so this is the one place a player can read
    back what the run has been spent on. It sits between the name and the countdown, never wraps,
    and never shrinks the name away: `flex: 0 0 auto` on both means the NAME is what ellipsises. */
-.heat__tier {
-  flex: 0 0 auto;
-  margin-right: auto;
-  padding: 0 4px;
-  border-radius: 3px;
-  background: rgba(230, 237, 245, 0.12);
-  color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
 
 /* No letter-spacing and tabular figures: the countdown must fit beside the name inside a chip
    that is a third of a 393 px screen, and it must not reflow as the digits tick down. */

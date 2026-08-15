@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:34Z',
+    title: 'Hit points come from one place now',
+    notes: [
+      'LEVELLING UP NO LONGER REPAIRS YOU. It used to hand back a slice of your hull every level, which quietly made a good run a healthier one as well as a stronger one - two rewards on one event, and the quieter of them was carrying the run. A level is power. Nothing else.',
+      'A SPANNER AT FULL HEALTH IS NO LONGER WASTED. Walk over one with a full hull and it stays on the ground waiting for you. It used to be consumed for nothing, which meant the one reward that answers "I am about to die" was mostly being destroyed by people who were fine.',
+      'Between them: the repair spanner is now the ONLY thing in the yard that gives you hit points back, and it keeps until you need it. A barrel you leave standing is a barrel you can come back to.',
+      'THE TIER BADGE IS GONE FROM THE WEAPON CHIPS. "T4" beside the name was a number that only ever went up and never changed what you would do next; the bar beside it answers the question you actually have, which is whether the gun can fire right now.',
+      'A weapon that ascends now correctly renames itself on the chip. A Medium Laser that became a Chain Laser had been reading as a Medium Laser for the rest of the run.',
+    ],
+  },
+  {
     at: '2026-08-15T16:07Z',
     title: 'Drones last twice as long and hit half as hard',
     notes: [

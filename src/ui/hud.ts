@@ -39,8 +39,11 @@ import {
  *      cutting out is a real cost.
  *   3. OFFLINE, AND FOR HOW LONG. Overheating is a hard cut, not a fade, so it gets a hard visual
  *      state - and a countdown, because "it will come back" is useless without "in 2.4 s".
- *   4. WHAT TIER IT IS. Every card in the pool is a weapon tier, so "T4" beside the name is the
- *      only place a player can see what a run has actually been spent on.
+ * IT DOES NOT SAY WHAT TIER IT IS, and used to. A "T4" badge sat beside the name on the grounds
+ * that every card in the pool is a weapon tier, so it was the only place a run's investment was
+ * visible. It is gone: a number that only ever goes up is not information a player acts on
+ * mid-fight, and the chip's job is to answer "can I shoot right now", which the bar already does.
+ * The NAME still carries the one tier that changes what the weapon is - an ascension renames it.
  *
  * THE BAR IS SCALED TO THE WEAPON, NOT TO 100. Capacity is a per-weapon stat that tiers 3 and 6
  * raise, so the fill is `heat / stats.heatCapacity` and the notch sits at
@@ -137,7 +140,6 @@ export class Hud {
   private readonly heatChips: HTMLDivElement[] = [];
   private readonly heatFills: HTMLDivElement[] = [];
   private readonly heatNames: HTMLSpanElement[] = [];
-  private readonly heatTiers: HTMLSpanElement[] = [];
   private readonly heatStatus: HTMLSpanElement[] = [];
   /** Catalog index currently bound to each chip, or -1. Rebinding is what rewrites name/colour. */
   private readonly heatDefId = new Int32Array(WEAPON_SLOTS).fill(-1);
@@ -155,7 +157,7 @@ export class Hud {
    */
   private readonly heatStatusMode = new Int32Array(WEAPON_SLOTS).fill(-1);
   /** Last written tier and resume-notch percent - both move only on a level-up. */
-  private readonly heatTier = new Int32Array(WEAPON_SLOTS).fill(-1);
+  private readonly heatLevel = new Int32Array(WEAPON_SLOTS).fill(-1);
   private readonly heatResumePct = new Int32Array(WEAPON_SLOTS).fill(-1);
   private heatShown = -1;
 
@@ -221,13 +223,11 @@ export class Hud {
       chip.innerHTML = `
         <div class="heat__track"><div class="heat__fill" data-fill></div></div>
         <div class="heat__foot"><span class="heat__name" data-name></span><span
-          class="heat__tier" data-tier></span><span
           class="heat__status" data-status></span></div>`;
       heatRow.appendChild(chip);
       this.heatChips.push(chip);
       this.heatFills.push(query(chip, '[data-fill]'));
       this.heatNames.push(query<HTMLSpanElement>(chip, '[data-name]'));
-      this.heatTiers.push(query<HTMLSpanElement>(chip, '[data-tier]'));
       this.heatStatus.push(query<HTMLSpanElement>(chip, '[data-status]'));
     }
 
@@ -344,10 +344,18 @@ export class Hud {
 
       const chip = this.heatChips[n];
 
-      // Rebind: only when this chip is showing a different weapon than it was, which happens
-      // once, on the level-up that granted the gun.
-      if (this.heatDefId[n] !== inst.defId) {
+      // Rebind: when this chip is showing a different weapon than it was, OR when the one it is
+      // showing has changed tier.
+      //
+      // THE TIER HALF IS NOT DECORATION. A weapon's NAME is a function of its tier - a Medium
+      // Laser at 8 is a Chain Laser - and rebinding on `defId` alone never re-derives it, because
+      // an ascension is the same WeaponDef at a higher level. The chip read MED LASER for the
+      // rest of the run. It went unnoticed because the tier badge beside it was tracked
+      // separately and did update, so the chip said "MED LASER T8" and only half of that was
+      // wrong. Removing the badge is what made it worth fixing rather than merely true.
+      if (this.heatDefId[n] !== inst.defId || this.heatLevel[n] !== inst.level) {
         this.heatDefId[n] = inst.defId;
+        this.heatLevel[n] = inst.level;
         // The bar carries the beam's own colour, so bar and beam are visibly one weapon. A
         // projectile weapon has no beam colour at all (0x000000 would paint the chip black), so
         // the property is removed and the stylesheet's neutral default applies.
@@ -364,26 +372,21 @@ export class Hud {
         this.heatNames[n].textContent = shortWeaponName(
           weaponNameAtTier(def.id, inst.level) || def.name,
         );
+        // The chip's spoken identity. NO TIER IN IT: the badge that used to carry the number is
+        // gone from the chip, and a label that announces something the screen does not show is a
+        // readout of a different HUD.
+        chip.setAttribute(
+          'aria-label',
+          `${def.name}${beam ? ' heat' : mag ? ' ammunition' : ''}`,
+        );
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;
         this.heatOut[n] = -1;
         this.heatTenths[n] = -1;
         this.heatStatusMode[n] = -1;
-        this.heatTier[n] = -1;
         this.heatResumePct[n] = -1;
       }
 
-      // The tier the run has invested in this gun. Moves only on a level-up, and the aria label
-      // moves with it so the readout is not purely visual.
-      const tier = inst.level;
-      if (tier !== this.heatTier[n]) {
-        this.heatTier[n] = tier;
-        this.heatTiers[n].textContent = `T${tier}`;
-        chip.setAttribute(
-          'aria-label',
-          `${def.name}, tier ${tier}${beam ? ' heat' : mag ? ' ammunition' : ''}`,
-        );
-      }
 
       // CAPACITY IS THE WEAPON'S OWN, so the bar means "how close is this gun to cutting out"
       // rather than "how many points of heat" - and a capacity tier lengthens the burst instead

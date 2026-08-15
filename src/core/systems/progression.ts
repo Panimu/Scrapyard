@@ -177,20 +177,11 @@ function drainBankedXp(world: World): void {
     player.xpToNext = xpToNextLevel(player.level, xpTuning);
     world.levelUp.pending++;
 
-    // THE ONLY HEALING IN THE GAME. Applied per LEVEL rather than per card, so a boss core that
-    // crosses three thresholds at once pays out three times - the levels are what was earned; the
-    // cards are only how they get spent.
+    // A LEVEL HEALS NOTHING. It used to return 5% of maxHp per level, which made levelling the
+    // run's attrition budget as well as its power curve - two rewards on one event, and the
+    // quieter of the two was doing the load-bearing work. Hit points now come from ONE place: a
+    // repair spanner, which you have to see, decide about and walk to.
     //
-    // No death check is needed: stepWorld returns before S11 once the phase is DEAD, so a level
-    // gained on the tick you died cannot resurrect you. Clamped rather than allowed to overshoot,
-    // because `hp > maxHp` would show as an over-full bar and quietly bank damage the player
-    // cannot see.
-    const heal = player.stats.maxHp * playerTuning.levelUpHealFrac;
-    if (heal > 0) {
-      const hp = player.hp + heal;
-      player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;
-    }
-
     pushEvent(
       world.events,
       EV_LEVEL_UP,

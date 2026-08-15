@@ -128,8 +128,15 @@ const FOLLOW_RATE = 1.05;
  * carry half a magazine at full damage, which is the same total damage in half the time; it now
  * carries the whole magazine at half damage, which is the same total damage over twice as long.
  * The second shape is the better one for a thing whose magazine IS its life: a drone at 200 rounds
- * lives about eighteen seconds of sustained fire against a twenty-five second rebuild, so a flight
- * is something you maintain rather than something that keeps evaporating.
+ * lives 19.9 seconds of sustained fire against a twenty-five second rebuild, so a flight is
+ * something you maintain rather than something that keeps evaporating.
+ *
+ * 19.9 AND NOT 18, WHICH IS WHAT THE ARITHMETIC SAYS. 200 rounds at the gun's 0.09 s cooldown is
+ * 18.0 s, but 0.09 does not divide into the 1/60 s tick: the cooldown is decremented once per tick
+ * and fires when it reaches zero, so 5.4 ticks becomes 6 and the real cadence is 0.1 s. Every
+ * magazine weapon in the game is quantised this way; the drone is only the one where it shows up
+ * as a lifespan. Measured, not derived - a drone deployed beside a target it cannot kill dies at
+ * tick 1195.
  *
  * Applied HERE rather than by lowering MACHINE_GUN's own numbers, which would nerf the actual
  * Machine Gun for every player holding one. The drone's gun IS the Machine Gun; what a drone does

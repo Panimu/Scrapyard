@@ -42,6 +42,8 @@ import {
   type UpgradeDef,
   type UpgradeId,
 } from '../src/core/data/upgrades.js';
+import { NULL_HANDLE } from '../src/core/entity/handle.js';
+import { PICKUP_KIND_REPAIR, allocPickup } from '../src/core/entity/pickupPool.js';
 import {
   ENEMY_FLAG_BOSS,
   allocEnemy,
@@ -907,48 +909,53 @@ describe('stat resolution after a pick', () => {
   });
 });
 
-describe('the level-up heal', () => {
-  const FRAC = DEFAULT_TUNING.player.levelUpHealFrac;
-
-  it('restores a fraction of MAX hp for each level gained', () => {
+describe('levelling, and hp', () => {
+  it('a level heals NOTHING - levelling is power, not repair', () => {
+    // It used to return 5% of maxHp per level. That made the run's attrition budget a function of
+    // its XP curve, so a good run was quietly healthier as well as stronger; hit points now come
+    // from the repair spanner and nowhere else.
     const w = makeWorld();
-    const max = w.player.stats.maxHp;
-    w.player.hp = max * 0.4;
-    const before = w.player.hp;
-
-    bank(w, 12); // exactly one level at the tier-1 base
-    expect(w.player.level).toBe(2);
-    expect(w.player.hp).toBeCloseTo(before + max * FRAC, 6);
-  });
-
-  it('pays out PER LEVEL, not per card', () => {
-    // A boss core crossing several thresholds at once earns several heals. The levels are what
-    // was earned; the cards are only how they get spent.
-    const w = makeWorld();
-    const max = w.player.stats.maxHp;
-    w.player.hp = max * 0.2;
-    const before = w.player.hp;
+    const before = w.player.stats.maxHp * 0.4;
+    w.player.hp = before;
 
     bank(w, 400);
-    const levels = w.player.level - 1;
-    expect(levels).toBeGreaterThan(1);
-    expect(w.player.hp).toBeCloseTo(Math.min(max, before + max * FRAC * levels), 6);
+    expect(w.player.level).toBeGreaterThan(2); // several levels crossed at once
+    expect(w.player.hp).toBe(before);
   });
 
-  it('never overheals', () => {
+  it('a spanner at full health is left on the ground rather than spent for nothing', () => {
     const w = makeWorld();
     const max = w.player.stats.maxHp;
     w.player.hp = max;
 
-    bank(w, 400);
-    expect(w.player.level).toBeGreaterThan(2);
+    // Dropped right on top of the mech, so contact is not in question.
+    const handle = allocPickup(
+      w.pickups,
+      PICKUP_KIND_REPAIR,
+      max * DEFAULT_TUNING.pickups.repairFrac,
+      0,
+      w.player.x,
+      w.player.y,
+      1,
+    );
+    expect(handle).not.toBe(NULL_HANDLE);
+
+    // Stood on it for two seconds at full health: still there.
+    for (let i = 0; i < 120; i++) stepWorld(w, EMPTY_INPUT);
+    expect(w.pickups.count).toBe(1);
     expect(w.player.hp).toBe(max);
+
+    // Take a wound, and the same spanner - the one that has been under the mech the whole time -
+    // is collected on the next tick.
+    w.player.hp = max * 0.5;
+    stepWorld(w, EMPTY_INPUT);
+    expect(w.player.hp).toBeGreaterThan(max * 0.5);
   });
 
-  it('is the only healing in the game - nothing else moves hp upward', () => {
-    // hpRegen is 0 and there is no other heal source, so this assertion is what keeps the run's
-    // whole attrition budget equal to "damage taken between level-ups". If a regen dial or a
-    // pickup ever arrives, this test is the one that should be updated deliberately.
+  it('nothing at all moves hp upward on its own', () => {
+    // hpRegen is 0 and the level heal is gone, so the only thing left that can raise hp is a
+    // spanner the player walks over. If a regen dial ever arrives, this is the test to update
+    // deliberately.
     expect(DEFAULT_TUNING.player.hpRegen).toBe(0);
 
     const w = makeWorld();

@@ -14,17 +14,6 @@
 export interface PlayerBaseTuning {
   readonly maxHp: number;
   readonly hpRegen: number;
-  /**
-   * Fraction of MAX HP restored by each level gained. Per LEVEL, not per card: a boss core that
-   * crosses three thresholds at once pays out three times, because the levels are what was
-   * earned and the cards are just how they are spent.
-   *
-   * It is the only healing in the game (`hpRegen` is 0), which makes it load-bearing rather than
-   * a rounding error: the run's entire attrition budget is "how much damage can I take between
-   * level-ups", and that is a number the player can actually feel getting tighter as the curve
-   * decelerates.
-   */
-  readonly levelUpHealFrac: number;
   readonly armour: number;
   readonly moveAccel: number;
   readonly moveMaxSpeed: number;
@@ -239,7 +228,6 @@ export interface Tuning {
 const PLAYER_BASE: PlayerBaseTuning = {
   maxHp: 120, // six runts in contact is ~50 dps: dead in 2.4 s. Being encircled should kill you.
   hpRegen: 0,
-  levelUpHealFrac: 0.05, // 6 HP at base maxHp - one runt bite and a bit. FEEL.
   armour: 0,
   moveAccel: 700,
   moveMaxSpeed: 195, // tau = 195/700 = 0.279 s; releasing the stick coasts 54 u, about one mech length
