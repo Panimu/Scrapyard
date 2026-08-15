@@ -82,7 +82,30 @@ export const FLAV_SPIKY = 3;
  * outright immunity - it just stops a shell being worth more than a shell.
  */
 export const FLAV_HEAVY = 4;
-export type Flavour = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * SWARMER - the Heavy's opposite, and unspawnable for the same reason: it is on no archetype's
+ * `flavours` list, so the drip, the elite drop-in and the boss cannot produce one. Nothing places
+ * it yet; a set-piece that names it will be what puts it on the field.
+ *
+ * DOUBLE SPEED AT 60% HP. The Heavy is a thing you go around; this is a thing you cannot outrun
+ * and do not have to shoot twice. Against a hero cruising 1.08x above the fastest regular (see
+ * Invariant K in cycles.ts), a x2 flavour is the first body in the game that closes on a KITING
+ * player rather than merely following them - which is exactly why it is off the ordinary spawn
+ * tables and belongs in a set-piece with a shape and an end.
+ *
+ * A NOTE ON THE NAME: `swarmer` is ALREADY the name of the smallest CHASSIS (ARCHETYPE_NAMES[0]),
+ * so "a swarmer swarmer" is now sayable and the harness can print `swarmer` for two different
+ * things. The flavour is named as asked; if the collision bites, this is the line to change.
+ *
+ * The tint was checked against the actual sprites rather than guessed at, and it is honest about
+ * what it can do: a multiply cannot ADD yellow, only take blue away. On the grey-hulled bodies
+ * (#99a3a3) it lands as khaki, #999871 - clearly warm at a glance. On the blue-panelled ones
+ * (#1ea7e1) there is no red to keep, so it goes teal rather than yellow. Red is left at 100% so
+ * the body warms instead of dimming, which is the opposite of the Heavy's cool, darker lean.
+ */
+export const FLAV_SWARMER = 5;
+export type Flavour = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface FlavourDef {
   readonly id: Flavour;
@@ -133,6 +156,9 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
   Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.055, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.5 }),
+  // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
+  // fragility, and every extra dial turned here is one more thing to explain when it arrives.
+  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1 }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {
