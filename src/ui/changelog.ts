@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T14:37Z',
+    title: 'A drone carries half the ammunition, and flies half as fast again',
+    notes: [
+      'A DRONE NOW LAUNCHES WITH HALF THE ROUNDS. Its magazine is its life, so this is its life: it detonates in about half the time it used to, and the blast has to be a bigger part of what you get out of it. The bay builds them just as quickly, so what changes is how much each one is worth rather than how many you have.',
+      'AND HALF THE SPEED AGAIN. A drone at full stretch now trails a running mech by about three escort radii - it catches up when you stop, but it will not keep station with you across the yard. Standing still is worth something to a drone pilot.',
+    ],
+  },
+  {
     at: '2026-08-15T14:22Z',
     title: 'Drones fly at half speed, and stay in the fight',
     notes: [

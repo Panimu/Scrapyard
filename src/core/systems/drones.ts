@@ -70,15 +70,22 @@ const ESCORT_RADIUS = 62;
 const ENGAGE_RADIUS_FRAC = 0.55;
 /**
  * Radians per second around the circle, and how fast the drone closes on where that circle says it
- * should be. Both HALVED from the numbers this shipped with: at 2.1 and 4.2 a drone crossed the
- * screen faster than the mech could and the orbit was a blur rather than a circle you could watch.
+ * should be. QUARTERED from the numbers this shipped with (2.1 / 4.2), in two halvings: a drone
+ * crossed the screen faster than the mech could and the orbit was a blur rather than a circle you
+ * could watch.
  *
- * They are halved TOGETHER on purpose. One is tangential speed and the other is transit speed, so
+ * They are scaled TOGETHER on purpose. One is tangential speed and the other is transit speed, so
  * moving only one changes the SHAPE of the flight - a slow orbit with a fast transit darts and
  * parks, a fast orbit with a slow transit spirals. Scaling both keeps the path and slows the film.
+ *
+ * WHAT FOLLOW_RATE COSTS, stated because it is not obvious from the number. The follow is an
+ * exponential approach, so a player running flat out leaves the drone a steady `speed /
+ * FOLLOW_RATE` behind - about 186 units at 1.05 against a 195 u/s mech, which is three escort
+ * radii. Drones trail a sprinting player rather than staying on his shoulder. That is the price of
+ * a readable orbit, and it is only paid while actually running.
  */
-const ORBIT_RATE = 1.05;
-const FOLLOW_RATE = 2.1;
+const ORBIT_RATE = 0.525;
+const FOLLOW_RATE = 1.05;
 
 /**
  * HOW FAR FROM THE PLAYER a drone will chase, in world units. Nothing beyond this is a target,
@@ -94,6 +101,21 @@ const FOLLOW_RATE = 2.1;
  */
 const DRONE_LEASH = 1000;
 const DRONE_LEASH_SQ = DRONE_LEASH * DRONE_LEASH;
+
+/**
+ * HOW MUCH OF THE MACHINE GUN'S MAGAZINE A DRONE CARRIES.
+ *
+ * Half. A drone's life IS its magazine, so this is the drone's lifespan knob and not an ammo knob -
+ * at the full 200 rounds a tier-1 drone could fire for eighteen seconds against a thirty-second
+ * rebuild, which made a lost drone a mild inconvenience rather than something you felt.
+ *
+ * Applied HERE rather than by lowering MACHINE_GUN's own `ammoCapacity`, which would nerf the
+ * actual Machine Gun for every player holding one. The drone's gun is the Machine Gun; the drone's
+ * MAGAZINE is a property of the drone.
+ *
+ * It scales with the tier for free, because it multiplies the gun's already-tiered capacity.
+ */
+const DRONE_MAG_FRAC = 0.5;
 
 /**
  * Scratch for the per-tick target query.
@@ -156,7 +178,7 @@ export function updateDrones(world: World, dt: number): void {
   const acquire = gun.range * DRONE_ACQUIRE_MUL;
   const acquireSq = acquire * acquire;
   const engageRadius = gun.range * ENGAGE_RADIUS_FRAC;
-  const magazine = gun.ammoCapacity > 0 ? gun.ammoCapacity : 1;
+  const magazine = Math.max(1, Math.floor(gun.ammoCapacity * DRONE_MAG_FRAC));
 
   // ---- the bay: build timers, and deploying what they finish -------------------------------
   //
