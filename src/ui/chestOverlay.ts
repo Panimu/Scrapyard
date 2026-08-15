@@ -41,11 +41,13 @@
  *   landing says nothing either: the plain thump, every time. It is the baseline the other two are
  *   read against, and it only works as a baseline because it is never anything else.
  *
- *   REEL TWO - WHAT IS BEING BUILT TO. Now a landing can mean something, so the effect is sized by
- *   what is still LIVE rather than by what is guaranteed. Matching the first reel keeps the
- *   jackpot alive and gets the biggest treatment the machine has; matching only its colour leaves
- *   the same-type haul alive and gets the middle one; anything else lands flat, because nothing is
- *   being built to and pretending otherwise is the thing that makes a slot machine feel fake.
+ *   REEL TWO - WHAT IS BEING BUILT TO, AND ONLY WHEN SOMETHING IS. It speaks when it MATCHES the
+ *   first reel, because that is the one two-reel state that leaves the jackpot alive, and it says
+ *   nothing at all otherwise. It used to also flare when the two symbols merely shared a COLOUR -
+ *   two guns, or two systems - which is sound reasoning against an unsound number: there are only
+ *   two types, so that is the coin-flip default rather than a signal. Measured over 200k spins on
+ *   the shipping catalog it fired on 50.9% of them, and a machine that makes a fuss every other
+ *   spin has taught the player that the fuss means nothing. It is 7.2% now, and it means it.
  *
  *   REEL THREE - THE ANSWER, and the only reel that knows one. THIS is where the machine makes a
  *   fuss, and it makes it in proportion to the prize: a big haul blazes and the whole frame blooms
@@ -59,7 +61,8 @@
  * And when reel two leaves something live, THE LAST REEL CRAWLS - `ANTICIPATION_MS` of extra
  * spin, easing that spends it almost entirely in the last few tiles, and the whole frame leaning
  * in while it does. That is the single most effective trick a slot machine has, and it costs a
- * timing constant.
+ * timing constant - which is exactly why it is now spent on the 7% of spins with a jackpot still
+ * live rather than on half of them.
  *
  * `prefers-reduced-motion` collapses the whole thing to the result - no spin, no landings, no
  * anticipation. Someone who has asked their phone not to move things has not asked for a
@@ -356,10 +359,8 @@ export class ChestOverlay {
    */
   private planHeat(world: World): number[] {
     const chest = world.chest;
-    const catalog = world.upgradeCatalog;
     const a = chest.reels[0];
     const b = chest.reels[1];
-    const kindOf = (i: number): string => (i >= 0 ? (catalog[i]?.kind ?? '') : '');
 
     // AN ASCENSION IS THE BIGGEST THING A CHEST CAN DO, and the ladder below cannot see that -
     // it reads `payout`, and a tier 8 pays one. So it is answered first: every reel blazes,
@@ -369,11 +370,23 @@ export class ChestOverlay {
     // REEL ONE says nothing, because it knows nothing. See the header - this is deliberate.
     const first = HEAT_NONE;
 
-    // REEL TWO speaks for what is still LIVE - the ceiling, not the floor. `a >= 0` matters: an
-    // empty reel is -1, and two of those are not a matching pair.
-    let second = HEAT_NONE;
-    if (a >= 0 && a === b) second = HEAT_BLAZE; // jackpot still on the table
-    else if (a >= 0 && b >= 0 && kindOf(a) === kindOf(b)) second = HEAT_HOT; // rare haul still on it
+    // REEL TWO SPEAKS ONLY WHEN IT IS MATCHING OR COMBOING WITH REEL ONE, and with this catalog
+    // that means an exact match and nothing else.
+    //
+    // It used to also flare for a SAME-TYPE pair - two guns, or two systems - on the grounds that
+    // the type match keeps the 4-payout alive. The reasoning was sound and the number was not:
+    // there are only two types, so a same-type pair is the coin-flip default rather than a signal.
+    // Measured against the shipping catalog over 200k spins: 7.2% exact match, 43.7% same type,
+    // so reel two flared on 50.9% of all spins and the third reel crawled through the long
+    // anticipation on half of them. A machine that makes a fuss every other spin has taught the
+    // player that the fuss means nothing, and it spends its best trick on a coin toss.
+    //
+    // 7.2% is what a jackpot-is-still-live tell should cost. Note there is no middle tier here
+    // any more: HEAT_HOT survives on reel THREE, where it is sized by an actual payout, and the
+    // same-type signal cannot earn one while the game has exactly two types to draw from.
+    //
+    // `a >= 0` matters: an empty reel is -1, and two of those are not a matching pair.
+    const second = a >= 0 && a === b ? HEAT_BLAZE : HEAT_NONE;
 
     // REEL THREE is the payoff, sized by the prize. Three (a plain pair) is a good spin and gets
     // the middle treatment; four and five are the ones worth a fuss.

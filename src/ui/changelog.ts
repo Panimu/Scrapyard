@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T08:35Z',
+    title: 'The chest stops celebrating its second reel',
+    notes: [
+      'THE MIDDLE REEL ONLY FLARES WHEN IT MATCHES THE FIRST ONE now. That is the one thing two reels can say: the jackpot is still live.',
+      'IT USED TO FLARE FOR TWO SYMBOLS OF THE SAME COLOUR TOO - two guns, or two systems. There are only two colours, so that happened on about half of all spins, and so did the long slow crawl of the third reel that comes with it. A machine that makes a fuss every other spin has taught you that the fuss means nothing.',
+      'It now happens on about one spin in fourteen, and the third reel only drags when there is genuinely something to drag out.',
+    ],
+  },
+  {
     at: '2026-08-15T08:02Z',
     title: 'THE SWARM - forty runners crossing the yard',
     notes: [
