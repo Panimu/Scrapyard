@@ -189,22 +189,71 @@ const DRAW = `(id) => {
   if (id === 'w-missile-short' || id === 'w-missile-long') {
     // TWO squat missiles against ONE long thin one - the same contrast the projectiles themselves
     // are drawn with in assets.ts, so the icon teaches the silhouette the player will see fly.
+    //
+    // AND IT IS THE SAME SHAPE NOW. These used to be flat-sided pentagons with a pair of grey tabs
+    // at the base, which is a picture of the WORD missile rather than of the thing that comes off
+    // the rack: the art in flight has a rounded ogive nose and a pair of big swept delta fins that
+    // flare well past the body. Nose and fins are the whole silhouette, and neither was here.
+    //
+    // THE FINS ARE DIM AMBER AND NOT THE SPRITE'S BLUE, which is the one place this deliberately
+    // does not copy the art. Blue is the PASSIVE category on these reels and the chest pays by
+    // matching kinds, so an amber weapon wearing blue fins would blur the one cue that tells a
+    // player what a spin is worth before the word appears. The shape is what reads at 64 px in
+    // motion; the colour stays with the category.
     const long = id === 'w-missile-long';
     const draw = (x, h, w) => {
+      const top = CY - h / 2;
+      const bot = CY + h / 2;
+      const hw = w / 2;
+      // EVERY LANDMARK IS A FRACTION OF THE LENGTH, not of the width, and that is what stops the
+      // fat one turning into an egg: a nose measured off the width grows as the body widens, so
+      // the short missile's dome ate half its body and the silhouette stopped being a missile at
+      // exactly the proportion this icon exists to show.
+      const shoulder = top + h * 0.3;
+      const tailHw = hw * 0.55;
+      const finTop = top + h * 0.55;
+      const finBot = bot - h * 0.02;
+      // 1.95 rather than the sprite's ~2.1: the SHORT icon draws two of these side by side, and at
+      // a fuller span the two inner fins merged into one dark bar across the tile - which is a
+      // picture of a wedge, not of two missiles.
+      const finSpan = hw * 1.95;
+
+      // FINS FIRST, so the body sits over their roots exactly as it does in the sprite.
+      g.fillStyle = KEY_DIM;
+      for (const sx of [-1, 1]) {
+        g.beginPath();
+        g.moveTo(x + sx * hw * 0.9, finTop);
+        g.lineTo(x + sx * finSpan, finBot);
+        g.lineTo(x + sx * tailHw, finBot);
+        g.closePath();
+        g.fill();
+      }
+
+      // BODY: ogive nose, parallel flanks, tapering to the tail.
       g.fillStyle = KEY;
       g.beginPath();
-      g.moveTo(x, CY - h / 2);
-      g.lineTo(x + w / 2, CY - h / 2 + w * 0.9);
-      g.lineTo(x + w / 2, CY + h / 2);
-      g.lineTo(x - w / 2, CY + h / 2);
-      g.lineTo(x - w / 2, CY - h / 2 + w * 0.9);
-      g.closePath(); g.fill();
+      g.moveTo(x, top);
+      // Control point out at the full half-width and NEARLY HALF WAY DOWN THE NOSE, which leaves
+      // the tip steeply and flattens to vertical at the shoulder - an ogive. A control point up
+      // near the tip gives a dome, which is a pill with fins on it.
+      g.quadraticCurveTo(x + hw, top + (shoulder - top) * 0.45, x + hw, shoulder);
+      g.lineTo(x + tailHw, bot);
+      g.lineTo(x - tailHw, bot);
+      g.lineTo(x - hw, shoulder);
+      g.quadraticCurveTo(x - hw, top + (shoulder - top) * 0.45, x, top);
+      g.closePath();
+      g.fill();
+
+      // The shoulder band the art carries, which is what stops the body reading as a plain lozenge.
       g.fillStyle = STEEL;
-      g.fillRect(x - w / 2 - 5, CY + h / 2 - 12, 5, 12);
-      g.fillRect(x + w / 2, CY + h / 2 - 12, 5, 12);
+      g.fillRect(x - hw * 0.72, shoulder + h * 0.06, hw * 1.44, Math.max(3, h * 0.055));
     };
-    if (long) draw(CX, 62, 20);
-    else { draw(CX - 15, 40, 24); draw(CX + 17, 40, 24); }
+    // THE ICONS CARRY THE PROJECTILES' OWN ASPECT RATIOS, now that those have been pushed apart:
+    // 42 x 24 is 1.75 : 1 and 66 x 17 is 3.9 : 1, against the 20 x 11.4 and 25 x 6.3 the two racks
+    // actually fly at. An icon fatter than the thing it is teaching is a worse icon even when it
+    // reads better on its own.
+    if (long) draw(CX, 66, 17);
+    else { draw(CX - 25, 42, 24); draw(CX + 25, 42, 24); }
   }
 
   if (id === 'w-machine-gun') {

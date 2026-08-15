@@ -104,19 +104,29 @@ export const MISSILE_SCALE = MISSILE_DRAW_LEN / MISSILE_SRC_H;
 /**
  * THE TWO RACKS, drawn from the one missile texture at different proportions.
  *
- * Short is SQUAT AND FAT, long is LONGER AND THINNER, and the pair is deliberately modest: about
- * 20 u x 10 u against 25 u x 7.5 u. Enough that a screen carrying both volleys reads as two
- * weapons rather than one, small enough that neither stops looking like a missile - the source
- * art is a single body with a nose and fins, and pushing the aspect much further turns one of
- * them into a dart and the other into a barrel.
+ * Short is SQUAT AND FAT, long is LONGER AND THINNER: about 20 u x 11.4 u against 25 u x 6.3 u,
+ * which is 1.75 : 1 against 3.9 : 1. Enough that a screen carrying both volleys reads as two
+ * weapons rather than one, small enough that neither stops looking like a missile - the source art
+ * is a single body with a nose and fins, and pushing the aspect much further turns one of them
+ * into a dart and the other into a barrel.
+ *
+ * THE SPLIT WAS WIDENED. It shipped at 10 u and 7.5 u wide, which is a 33% difference in the one
+ * dimension that tells the two racks apart, on objects 20-odd units long moving at 300 u/s. The
+ * lengths already differed and the widths were doing almost nothing; short is now 13% fatter and
+ * long 15% thinner, which is 80% between them. ONLY THE WIDTHS MOVED - the lengths are what say
+ * "missile" at all, and they were already carrying their share.
+ *
+ * The reel icons are drawn to these same ratios (tools/make-icons.mjs). That matters more than it
+ * sounds: the icon is where a player learns which silhouette is which, so an icon whose
+ * proportions flatter the art is teaching the wrong thing.
  *
  * Non-uniform scale rather than two textures, because the alternative is a second 16x40 PNG that
  * differs from the first only in how wide it was drawn. That is a texture bind and a file to keep
  * in sync for a difference the GPU can make for free.
  */
-export const MISSILE_SHORT_SCALE_X = MISSILE_SCALE * 1.15;
+export const MISSILE_SHORT_SCALE_X = MISSILE_SCALE * 1.3;
 export const MISSILE_SHORT_SCALE_Y = MISSILE_SCALE * 0.9;
-export const MISSILE_LONG_SCALE_X = MISSILE_SCALE * 0.85;
+export const MISSILE_LONG_SCALE_X = MISSILE_SCALE * 0.72;
 export const MISSILE_LONG_SCALE_Y = MISSILE_SCALE * 1.15;
 
 /** Machine gun slug: drawn ~9 u long - small enough that a stream of them reads as a stream. */

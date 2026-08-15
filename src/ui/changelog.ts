@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:40Z',
+    title: 'The two missile racks look like two different weapons',
+    notes: [
+      'SHORT MISSILES ARE FATTER AND LONG MISSILES ARE THINNER. The two racks were always different lengths and almost the same width, which is a hard thing to tell apart on something 20 units long crossing the screen. The gap between them is now more than twice what it was, so a volley says which rack fired it.',
+      'AND THEIR REEL SYMBOLS ARE ACTUALLY MISSILES NOW. They were flat-sided wedges with two little tabs at the bottom - a picture of the word rather than of the thing. They have the rounded nose and the big swept fins the real ones fly with, drawn at the same proportions, so the symbol on the machine teaches the silhouette you will be reading in a fight.',
+    ],
+  },
+  {
     at: '2026-08-15T16:34Z',
     title: 'Hit points come from one place now',
     notes: [
