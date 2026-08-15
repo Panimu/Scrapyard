@@ -22,7 +22,7 @@ Where the two proposals disagreed, or where either was wrong, the resolution and
 | 4 | Stat resolution | **B's `(base × heroMul + Σadd) × Πmul`** over A's flat/pct/mul | two op kinds instead of three, and the hero layer is explicit rather than smuggled into flat |
 | 5 | Targeting return | **B's top-K into a preallocated `Int32Array`** over A's single index | Twin Mount sends shells 2..n at the 2nd/3rd-highest-HP targets; K=1 is the degenerate case |
 | 6 | Tie-break "entity id" | **`spawnId`** (monotonic), not slot | slot is recycled by the free list, so a slot tie-break makes targeting depend on the pool's kill history |
-| 7 | Target lock | **Dropped.** Re-evaluate every tick; traverse every tick; hold fire (without resetting cooldown) until laid on | a lock contradicts the specced rule ("fires at the enemy with the highest current HP"); the turret sweeps 264° per cooldown vs 180° worst case, so it is *always* laid on and the lock solved nothing |
+| 7 | Target lock | **Dropped.** Re-evaluate every tick; traverse every tick; hold fire (without resetting cooldown) until laid on | a lock contradicts the specced rule ("fires at the enemy with the highest current HP"), and a lock cannot fix what hold-fire cannot: at 90°/s the turret sweeps 114° per cooldown vs a 180° worst case, so tracking genuinely costs shots — which is a balance decision, not a reason to reintroduce a lock |
 | 8 | Trig in core | **Banned** (`Math.sin/cos/tan/atan2/pow/exp/log/hypot`). Turret rotation uses **precomputed cos/sin of the step angle** + dot/cross; `dsin`/`dcos` exist for stat-resolution only | implementation-defined precision differs V8 (Node harness) vs JSC (phone), which would break "record on phone, replay in CI" |
 | 9 | Difficulty growth | **Per-second literal multipliers applied at whole-second boundaries** | `growth ** minutes` needs the banned `pow`; 900 exact IEEE multiplies are drift-free and identical on every engine |
 | 10 | i-frames | **B's per-enemy contact cooldown**, no global i-frames | global i-frames let one swarmer tank all damage from a bruiser |
@@ -1322,10 +1322,15 @@ export function updateWeapons(w: World, dt: number): void {
 }
 ```
 
-**Why hold-fire beats a target lock.** At 220°/s the turret sweeps 264° during a 1.2 s cooldown against
-a 180° worst case, so it is essentially always laid on when the cooldown expires. Hold-fire therefore
-costs almost nothing, while a lock would contradict the specced rule outright. The visible swing *is*
-the readability mechanism, and it is the tutorial for the whole targeting rule.
+**Why hold-fire beats a target lock.** A lock would contradict the specced rule outright, and the
+visible swing *is* the readability mechanism — it is the tutorial for the whole targeting rule.
+
+Hold-fire used to be nearly free: at 220°/s the turret swept 264° during a 1.2 s cooldown against a
+180° worst case, so it was essentially always laid on when the cooldown expired. **That is no longer
+true and no longer meant to be.** At 90°/s the sweep is 114° per cooldown at tier 1 and 80° at tier 7,
+so a target on the far side of the mech costs the Cannon shots. That was the lever chosen to bring it
+down from the top of the damage table; the rule and the hold-fire mechanism are unchanged, only the
+price of a re-lay.
 
 ### 7.2 The targeting rule — unambiguous
 
@@ -1380,7 +1385,7 @@ So Twin Mount is a **battery, not a damage multiplier**.
 | `knockback` | 190 impulse | applied as `impulse / mass` |
 | `reengageMul` | 0.55 | |
 | `muzzleOffset` | 30 u | shell spawns at the barrel tip, not the chassis centre |
-| `turretTraverse` | 220 °/s = 3.83972 rad/s | `cosTraverseStep` 0.99795299, `sinTraverseStep` 0.06395173 |
+| `turretTraverse` | 90 °/s = 1.57080 rad/s | `cosTraverseStep` 0.99965732, `sinTraverseStep` 0.02617695 |
 | `fireArc` | 12 ° = 0.20944 rad | `cosFireArc` 0.97814760 |
 | `sweep` | not needed | 520 u/s = 8.67 u/tick, well under the 13 u smallest enemy radius, so point-in-circle is sound |
 

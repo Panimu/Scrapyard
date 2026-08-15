@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T07:03Z',
+    title: 'The Cannon has to turn its turret now',
+    notes: [
+      'THE CANNON TRAVERSES AT 90 DEGREES A SECOND, DOWN FROM 220. It used to swing far enough between shots that switching targets cost it nothing at all - it simply fired every time its cooldown came up, wherever the biggest thing happened to be standing.',
+      'NOW IT HAS TO TRACK. It covers about 114 degrees between shots, and a target behind you is half a turn away - so a Cannon fighting a crowd spread all around the mech will miss shots that a Cannon facing a line never would.',
+      'IT COSTS MOST WHEN THE GUN IS FASTEST. Its own fire-rate tiers shorten the gap between shots without speeding up the turret, so a finished Cannon covers only 80 degrees between them.',
+      'Nothing else changed: same 44 damage a shell, same reach, same pierce at tier 7, and it still commits to the highest-HP enemy in range. The swing is also how you read that decision - now you get longer to see it.',
+    ],
+  },
+  {
     at: '2026-08-15T00:19Z',
     title: 'A blast is strongest where it lands',
     notes: [

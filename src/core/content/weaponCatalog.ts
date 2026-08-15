@@ -234,17 +234,31 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
 // ---------------------------------------------------------------------------------------------
 
 /**
- * 220 deg/s = 3.839724354387525 rad/s.
+ * 90 deg/s = 1.5707963267948966 rad/s, DOWN FROM 220.
  *
- * Chosen against the cooldown, not by feel: 220 deg/s sweeps 278 deg during one 1.263 s cooldown
- * against a 180 deg worst-case re-lay, so the turret is essentially always laid on when the
- * cooldown expires. That is what makes hold-fire cost nothing and makes a target lock
- * unnecessary (DESIGN.md §0, "biggest design call").
+ * THE OLD NUMBER WAS CHOSEN SO THE TURRET WAS ALWAYS LAID ON: 220 deg/s sweeps 278 deg during a
+ * 1.263 s cooldown against a 180 deg worst-case re-lay, so switching targets cost the Cannon
+ * nothing and it fired on essentially every cooldown expiry. That is most of why a single-target
+ * gun with no splash, no heat and no magazine sat at the top of the damage table - measured with
+ * every weapon in the game held at tier 7, it took 18.9% of a run's damage against a four-way
+ * cluster at 14.2%.
+ *
+ * At 90 deg/s the sweep is 114 deg per cooldown at tier 1 and 80 deg at tier 7, against that same
+ * 180 deg worst case. So the gun now HAS TO TRACK, and it loses shots exactly when the horde is
+ * spread around the mech rather than in front of it - a situational cost rather than a flat one,
+ * and one that grows as its own fire-rate tiers land.
+ *
+ * WHAT THIS DOES NOT CHANGE: hold-fire still does not reset the cooldown, and a target lock is
+ * still wrong - it would contradict the specced highest-HP rule (DESIGN.md §0, "biggest design
+ * call"). What has changed is that hold-fire is no longer free, which is the point of it.
+ *
+ * The visible swing is also the READABILITY mechanism for the whole highest-HP rule, and a slower
+ * one shows the decision for longer.
  *
  * `degToRad` is a single exactly-rounded multiply, evaluated once at module init - not a trig
  * call, and not in a loop.
  */
-const CANNON_TURRET_TRAVERSE = degToRad(220);
+const CANNON_TURRET_TRAVERSE = degToRad(90);
 
 /**
  * 12 deg. A PERMISSION gate, not a dispersion cone: within this arc the weapon is allowed to
