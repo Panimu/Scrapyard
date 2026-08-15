@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T10:19Z',
+    title: 'Achievements',
+    notes: [
+      'THERE ARE ACHIEVEMENTS NOW. One of them, and it is a secret, so you will find out what it is by earning it. A banner drops in at the top of the screen the moment you do - it does not stop the game, it cannot be tapped by accident, and it goes away on its own.',
+      'It is remembered forever once earned, and it is checked while you play rather than at the end, so it lands on the moment rather than on the summary screen.',
+    ],
+  },
+  {
     at: '2026-08-15T10:10Z',
     title: 'A roster you earn, and a manual you fill in',
     notes: [

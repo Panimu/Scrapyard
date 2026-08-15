@@ -44,4 +44,5 @@ export * from './content/scenery.js';
 export * from './data/heroes.js';
 export * from './data/upgrades.js';
 export * from './data/unlocks.js';
+export * from './data/achievements.js';
 export * from './data/traits.js';

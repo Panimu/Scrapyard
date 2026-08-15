@@ -34,6 +34,8 @@ import {
   UPGRADE_CATALOG,
   quantiseAxis,
   type InputFrame,
+  type RunRecord,
+  type World,
 } from './core/index.js';
 
 import { AppState, codeToSeed, newSeed } from './appState.js';
@@ -46,6 +48,7 @@ import { LevelSelect } from './ui/levelSelect.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
 import { ScrapopediaScreen } from './ui/scrapopediaScreen.js';
 import { UpgradesScreen } from './ui/upgradesScreen.js';
+import { AchievementToast } from './ui/achievementToast.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
@@ -244,6 +247,8 @@ async function boot(): Promise<void> {
   );
 
   const upgrades = new UpgradesScreen(() => showScreen('title'));
+  const toast = new AchievementToast();
+
   const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
     upgrade: (id) => state.hasUpgrade(id),
     hero: (id) => state.hasHero(id),
@@ -311,6 +316,9 @@ async function boot(): Promise<void> {
     title.element,
     // LAST, so it covers the settings screen that can open it as well as the pause menu.
     changelog.element,
+    // ABOVE EVEN THAT, and `pointer-events: none` so it cannot eat a tap. A banner that can be
+    // hidden behind whatever happens to be open is a banner that is sometimes not shown at all.
+    toast.element,
   );
 
   // ---------------------------------------------------------------------------------------
@@ -341,6 +349,21 @@ async function boot(): Promise<void> {
     return frame;
   };
 
+  /**
+   * The run as a flat record, for `meetsUnlock`. Cheap enough to build on demand - it copies
+   * nothing, it just names five fields - so there is one shape and no cached copy to go stale.
+   */
+  function runRecord(world: World): RunRecord {
+    return {
+      // Waves are 1-based to the player: `cycleIndex` 0 is "wave 1" on the HUD.
+      wave: world.director.cycleIndex + 1,
+      runSec: world.runSec,
+      kills: world.stats.kills,
+      won: world.phase === RUN_PHASE_VICTORY,
+      tiers: world.levelUp.stacks,
+    };
+  }
+
   function startRun(heroId: number, seed: number): void {
     state.heroId = heroId;
     state.seed = seed;
@@ -350,6 +373,7 @@ async function boot(): Promise<void> {
     // weapon (and Plum's shield) to tier 1, so this is true rather than generous - and it is the
     // only unlock a player who quits to the title mid-run would otherwise not have banked.
     state.recordHeldUpgrades(sim.world.levelUp.stacks);
+    toast.clear();
     pendingChoice = -1;
     lastDamageTaken = 0;
 
@@ -592,19 +616,31 @@ async function boot(): Promise<void> {
         // reason: `recordRun` reports what was NEWLY earned, so calling it twice would announce
         // nothing the second time and the summary would forget what it had to say.
         state.recordHeldUpgrades(world.levelUp.stacks);
+        // CLEAR FIRST, THEN EVALUATE ONCE MORE. Anything still queued belongs to a fight that is
+        // over, but the final evaluation does not - the poll runs on every 60th tick, so a run that
+        // ends on tick 61 would otherwise never test its own final state. The banner sits above the
+        // summary and cannot take a tap, so showing it there costs nothing.
+        toast.clear();
+        toast.push(state.recordAchievements(runRecord(world)));
         const earned = state
-          .recordRun({
-            // Waves are 1-based to the player: `cycleIndex` 0 is "wave 1" on the HUD.
-            wave: world.director.cycleIndex + 1,
-            runSec: world.runSec,
-            kills: world.stats.kills,
-            won: world.phase === RUN_PHASE_VICTORY,
-            tiers: world.levelUp.stacks,
-          })
+          .recordRun(runRecord(world))
           .map((id) => HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
         summary.show(world, state.seed, state.settings.credits, earned);
         state.set('summary');
       }
+
+      // ACHIEVEMENTS ARE POLLED, ONCE A SECOND, RATHER THAN PUSHED FROM AN EVENT.
+      //
+      // Every condition is a predicate over the run's own state, so there is nothing an event
+      // could tell us that reading that state does not - and a poll costs one small object and a
+      // scan of a table with one entry in it. What it buys is that a NEW achievement needs a row
+      // in the catalog and nothing else: no hook inside the system that happens to satisfy it, no
+      // second place that can be forgotten. The first one lands the moment a Cyber Chest pays out
+      // an ascension without the chest knowing achievements exist.
+      //
+      // A second is the resolution, so a banner can be up to a second late. Against a trophy that
+      // stays earned forever, that is not a cost worth a per-frame scan.
+      if (world.tick % 60 === 0) toast.push(state.recordAchievements(runRecord(world)));
 
       if (world.stats.damageTaken > lastDamageTaken) {
         lastDamageTaken = world.stats.damageTaken;
@@ -616,6 +652,11 @@ async function boot(): Promise<void> {
     // Rendering continues in every phase, including paused and summary: a frozen battlefield
     // behind the menu is the whole reason the level-up card feels tense.
     renderer.draw(world, sim.alpha, dtSec);
+
+    // With the draw, not with the phase reactions: the banner counts down in WALL-CLOCK seconds
+    // the player is actually present for, which includes the summary screen and excludes a
+    // backgrounded tab. Ticking it beside the simulation would freeze it whenever the game paused.
+    toast.update(dtSec);
 
     if (!hud.element.hidden) {
       if (state.settings.debug) {
@@ -651,6 +692,11 @@ async function boot(): Promise<void> {
   setBootProgress(1);
   stopWatchdog();
   bootEl?.remove();
+
+  // Hand the platform bridge everything already earned. A no-op with the default sink; the point is
+  // that it happens at a fixed place, so installing a bridge is one call in a wrapper's bootstrap
+  // rather than a hunt for where to reconcile from.
+  state.syncAchievements();
 
   const autoHero = Number.parseInt(params.get('hero') ?? '', 10);
   if (params.get('start') === '1') {

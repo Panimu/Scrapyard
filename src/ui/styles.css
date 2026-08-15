@@ -1743,6 +1743,60 @@ body {
   flex: 1 1 auto;
 }
 
+/*
+ * THE ACHIEVEMENT BANNER. Distinct from `.toast` above, which is the PWA install/update prompt:
+ * that one is interactive, sits at the bottom and has a button in it. This one is inert.
+ *
+ * TOP-ANCHORED AND UNTAPPABLE. It appears mid-fight, so it stays out of the thumb zone entirely
+ * and `pointer-events: none` guarantees it cannot swallow a tap even while it is over a card.
+ */
+.achv {
+  position: absolute;
+  left: calc(var(--sa-left) + 12px);
+  right: calc(var(--sa-right) + 12px);
+  top: calc(var(--sa-top) + 12px);
+  margin: 0 auto;
+  max-width: 420px;
+  pointer-events: none;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  animation: achv-in 260ms ease-out;
+}
+
+.achv[hidden] {
+  display: none;
+}
+
+@keyframes achv-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.achv__eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.achv__name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.achv__desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
+
 .toast .btn {
   min-height: 38px;
   padding: 0 14px;

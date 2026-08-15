@@ -16,6 +16,8 @@
 import { HERO_CATALOG, type HeroId } from './core/data/heroes.js';
 import { UPGRADE_CATALOG, type UpgradeId } from './core/data/upgrades.js';
 import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
+import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
+import { reportSync, reportUnlocked } from './achievements.js';
 import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
 
 /**
@@ -77,6 +79,15 @@ export interface Settings {
   unlockedUpgrades: UpgradeId[];
   /** Every chassis earned, by id. A chassis not in here cannot be picked. See core/data/unlocks.ts. */
   unlockedHeroes: HeroId[];
+  /**
+   * Every achievement earned, by internal id.
+   *
+   * BY INTERNAL ID AND NOT BY `platformKey`, even though the platform key is the one that is
+   * permanent. This file is OUR record; a rename of the internal id is a change we control and can
+   * migrate, whereas storing the platform key here would quietly make two different systems' notion
+   * of identity the same thing and make the internal id un-renameable after all.
+   */
+  unlockedAchievements: AchievementId[];
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -105,6 +116,7 @@ const DEFAULTS: Settings = {
   credits: 0,
   unlockedUpgrades: [SEED_UPGRADE],
   unlockedHeroes: [SEED_HERO],
+  unlockedAchievements: [],
 };
 
 function loadSettings(): Settings {
@@ -132,6 +144,16 @@ function loadSettings(): Settings {
         parsed.unlockedHeroes,
         HERO_CATALOG.map((h) => h.id),
         SEED_HERO,
+      ),
+      // No seed: an empty save has earned nothing, and `knownIds` always forces one in. Filtered
+      // the same way, so an achievement that is retired stops appearing rather than lingering as
+      // an id nothing can resolve.
+      unlockedAchievements: (Array.isArray(parsed.unlockedAchievements)
+        ? (parsed.unlockedAchievements as unknown[])
+        : []
+      ).filter(
+        (id): id is AchievementId =>
+          typeof id === 'string' && ACHIEVEMENT_CATALOG.some((a) => a.id === id),
       ),
     };
     // A REMEMBERED PREFERENCE CANNOT OUTRANK A LOCK. `lastHeroId` predates unlocks, so an existing
@@ -276,6 +298,44 @@ export class AppState {
     }
     if (earned.length > 0) this.saveSettings();
     return earned;
+  }
+
+  /**
+   * Tests every unearned achievement against the run as it stands and banks the ones it just met.
+   *
+   * SAFE TO CALL OFTEN AND CHEAP TO DO SO: it is a linear scan of a table with one entry in it,
+   * skipping anything already earned, and it reports only what was NEW. main.ts calls it once a
+   * second while a run is in progress and again when the run ends, which is what lets an
+   * achievement land on the frame it is earned rather than being noticed on the summary screen.
+   *
+   * The sink is told from HERE rather than from the caller, so no future call site can bank an
+   * achievement locally and forget to report it onward.
+   */
+  recordAchievements(run: RunRecord): AchievementDef[] {
+    const ids = UPGRADE_CATALOG.map((d) => d.id);
+    const earned: AchievementDef[] = [];
+    for (const def of ACHIEVEMENT_CATALOG) {
+      if (this.settings.unlockedAchievements.includes(def.id)) continue;
+      if (!meetsUnlock(def.cond, run, ids)) continue;
+      this.settings.unlockedAchievements.push(def.id);
+      earned.push(def);
+    }
+    if (earned.length > 0) {
+      this.saveSettings();
+      for (const def of earned) reportUnlocked(def);
+    }
+    return earned;
+  }
+
+  /**
+   * Hands the sink everything already earned. Called once at boot - see achievements.ts for why a
+   * bridge that only ever hears `unlock` loses every achievement earned before it was installed.
+   */
+  syncAchievements(): void {
+    const earned = ACHIEVEMENT_CATALOG.filter((a) =>
+      this.settings.unlockedAchievements.includes(a.id),
+    );
+    reportSync(earned);
   }
 
   saveSettings(): void {
