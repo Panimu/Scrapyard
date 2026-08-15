@@ -16,6 +16,7 @@ import {
   META_CATALOG,
   accumulateMeta,
   metaEffectText,
+  metaEffectValue,
   metaIndex,
   metaSpent,
   type MetaDef,
@@ -97,31 +98,42 @@ describe('what the screen says a tier is worth', () => {
   });
 
   it('reports rate of fire as rate, not as the cooldown behind it', () => {
+    expect(metaEffectText(byId('m-rate'), 1)).toBe('+3.3% rate of fire');
+    expect(metaEffectText(byId('m-rate'), 2)).toBe('+6.7% rate of fire');
     expect(metaEffectText(byId('m-rate'), 3)).toBe('+10% rate of fire');
   });
 
-  it('every tier of one upgrade is worth the same as every other', () => {
-    // The property the whole ladder is built on, checked on the STAT rather than on the wording:
-    // n tiers is exactly n times one tier, for every upgrade in the catalog.
+  it('every tier of every upgrade is worth exactly the same as every other', () => {
+    // THE PROPERTY THE WHOLE WORKSHOP PROMISES, asserted in the units the player is shown rather
+    // than in the units the engine stores. They are the same thing for six of the seven; for rate
+    // of fire they are reciprocals, and it is the shown one that has to be linear - a first tier
+    // worth 3.1% and a third worth 3.5% for the same 40 credits is not an equal ladder however the
+    // cooldown behind it is spaced.
     for (const def of META_CATALOG) {
-      const { target, key } = def.effects[0];
-      // COPIED, NOT HELD. accumulateMeta returns a reused accumulator - the same object every
-      // call, like `ACC` in stats.ts - so keeping the first result and then asking for a second
-      // compares the second to itself. Every real caller reads it before calling again.
-      const one = { ...accumulateMeta(tiersOf(def.id, 1), target, key, 'drone') };
-      const all = { ...accumulateMeta(tiersOf(def.id, def.tiers), target, key, 'drone') };
-      expect(all.add).toBeCloseTo(one.add * def.tiers, 10);
-      expect(all.mul - 1).toBeCloseTo((one.mul - 1) * def.tiers, 10);
+      const one = metaEffectValue(def, 1);
+      for (let n = 1; n <= def.tiers; n++) {
+        expect(metaEffectValue(def, n)).toBeCloseTo(one * n, 10);
+      }
     }
   });
 
-  it('is read out of the effects, so a retune cannot leave the words behind', () => {
-    // The full-ladder string is derived, never authored - this is what makes that observable.
-    const dmg = byId('m-damage');
-    const share = dmg.effects.find((e) => e.key === 'damage')?.amount ?? 0;
-    expect(metaEffectText(dmg, dmg.tiers)).toBe(
-      `+${(share * dmg.tiers * 100).toFixed(1).replace(/\.0$/, '')}% damage`,
-    );
+  it('the shaped rate ladder still lands the cooldown exactly where it should', () => {
+    // The stored side of the same ladder: whatever shape the deltas take, three tiers must still
+    // come to a cooldown of 1/1.1 and not one step more or less.
+    const mul = 1 + accumulateMeta(tiersOf('m-rate', 3), 'weapon', 'cooldown', 'cannon').mul - 1;
+    expect(1 / mul).toBeCloseTo(1.1, 10);
+  });
+
+  it('the words are the number, so a retune cannot leave them behind', () => {
+    // Nothing on this screen is authored: every string is the value formatted. Asserted for the
+    // whole catalog rather than one row, because the failure is per-upgrade.
+    for (const def of META_CATALOG) {
+      const v = metaEffectValue(def, def.tiers);
+      const text = metaEffectText(def, def.tiers);
+      const shown = Number(text.replace(/[^0-9.]/g, ''));
+      const expected = def.display.as === 'percent' || def.display.as === 'rateOfFire' ? v * 100 : v;
+      expect(shown).toBeCloseTo(Number(expected.toFixed(1)), 10);
+    }
   });
 });
 

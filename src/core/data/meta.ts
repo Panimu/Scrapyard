@@ -20,6 +20,14 @@
  * opposite deliberately: every tier of an upgrade is worth exactly the same, `max / tiers`, and
  * every tier costs the same.
  *
+ * EQUAL IN WHAT THE PLAYER FEELS, which is not always equal in what the engine stores. For six of
+ * the seven those are the same thing and a tier is a flat `max / tiers` of the stat. Rate of fire
+ * is the exception: it is stored as a cooldown share, rate is that share's reciprocal, and only one
+ * of the two can be linear. The ladder is authored in RATE and converted - see `rateLadder` - so a
+ * third of the tiers is a third of the shots per second, which is the thing the price is paying
+ * for. `metaEffectValue` is the number that is linear for every upgrade, and the test suite asserts
+ * exactly that for the whole catalog.
+ *
  * That is because these are bought rather than found. A ramp makes the first purchase the worst
  * value and the last the best, which in a shop means "save up" is always right and buying early is
  * always a mistake - a decision with one answer is not a decision. Flat tiers make the question the
@@ -75,8 +83,16 @@ export interface MetaEffect {
   readonly key: PlayerStatKey | WeaponStatKey;
   /** 'add' is absolute units; 'mul' is a share of base, summed with every other share. */
   readonly mode: 'add' | 'mul';
-  /** PER TIER. Owning n tiers applies this n times. */
-  readonly amount: number;
+  /**
+   * PER TIER. A number is that much for every tier - owning n applies it n times.
+   *
+   * AN ARRAY IS PER-TIER DELTAS, for the one ladder whose steps are not equal in the STAT because
+   * they have to be equal in what the player feels. Rate of fire is stored as a cooldown share and
+   * the two are reciprocals: equal steps down the cooldown are accelerating steps up the rate. See
+   * `rateLadder`. Everything else is a plain number, because for everything else the stat and the
+   * felt effect are the same shape.
+   */
+  readonly amount: number | readonly number[];
   /** Weapon-scoped effects apply only when resolving that weapon. Omitted means every weapon. */
   readonly weapon?: WeaponId;
 }
@@ -128,6 +144,41 @@ export interface MetaDef {
  */
 function rateToCooldown(rate: number): number {
   return 1 / (1 + rate) - 1;
+}
+
+/**
+ * Per-tier cooldown deltas whose running sum lands the RATE OF FIRE on equal steps.
+ *
+ * THE LADDER IS AUTHORED IN RATE AND STORED AS COOLDOWN, because those are the two different things
+ * this upgrade is. What the player buys and feels is shots per second: a third of the ladder should
+ * be a third of the DPS, and three tiers of 3.33% should read 3.33, 6.67, 10. What the engine
+ * stores is the gap between shots, and rate is its reciprocal - so a ladder of equal cooldown steps
+ * produces 3.1, 6.5, 10 instead, which is a ladder whose first tier is quietly the worst buy.
+ *
+ * Only one of the two can be linear. This picks the one the player experiences, and pays for it by
+ * making the stored deltas shrink slightly as they go - which nothing but this function needs to
+ * know, because they are summed rather than compared.
+ *
+ * Computed rather than written out: the deltas are numbers like -0.0322581 that no reader could
+ * check by eye, and the rate they are derived FROM is the number the design is actually about.
+ */
+function rateLadder(fullRate: number, tiers: number): readonly number[] {
+  const out: number[] = [];
+  let prev = 0;
+  for (let i = 1; i <= tiers; i++) {
+    const total = rateToCooldown((fullRate * i) / tiers);
+    out.push(total - prev);
+    prev = total;
+  }
+  return Object.freeze(out);
+}
+
+/** The summed contribution of `tiers` tiers of one effect, whichever shape its amount is. */
+function effectTotal(fx: MetaEffect, tiers: number): number {
+  if (typeof fx.amount === 'number') return fx.amount * tiers;
+  let sum = 0;
+  for (let i = 0; i < tiers && i < fx.amount.length; i++) sum += fx.amount[i];
+  return sum;
 }
 
 export const META_CATALOG: readonly MetaDef[] = Object.freeze([
@@ -182,12 +233,16 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     // workshop sells those separately - dispersion IS Coolant Baffles - and one upgrade that
     // quietly contained another would make the cheaper one pointless.
     cost: 40,
+    // A SHAPED LADDER, and the only one here. Equal cooldown steps would advertise 3.1 / 6.5 / 10
+    // because rate is cooldown's reciprocal, which makes the first tier the worst buy of the three
+    // for the same money. `rateLadder` authors it in rate instead: 3.3 / 6.7 / 10, equal thirds of
+    // the DPS it promises, at the cost of stored deltas that shrink slightly as they go.
     effects: Object.freeze([
       {
         target: 'weapon' as const,
         key: 'cooldown' as const,
         mode: 'mul' as const,
-        amount: rateToCooldown(0.1) / 3,
+        amount: rateLadder(0.1, 3),
       },
     ]),
     display: { key: 'cooldown', as: 'rateOfFire', noun: 'rate of fire' },
@@ -277,35 +332,51 @@ function oneDecimal(v: number): string {
 }
 
 /**
- * What `tiers` tiers of this upgrade are worth, in words.
+ * What `tiers` tiers of this upgrade are worth, as a NUMBER in the units the player is shown:
+ * a fraction for a percentage, absolute units for a flat one, seconds for the drone bay.
  *
  * READ BACK OUT OF `effects`, never restated beside them - see MetaDisplay. Pass `def.tiers` for
  * the full-ladder figure and the owned count for what the player has right now.
  *
- * RATE OF FIRE IS NOT A CLEAN MULTIPLE OF ITS TIERS, and that is arithmetic rather than a bug. The
- * ladder buys equal reductions of COOLDOWN, and rate is cooldown's reciprocal, so equal steps down
- * are slightly accelerating steps up: three tiers read +3.1%, +6.5%, +10%. Making the advertised
- * rate linear instead would make the underlying stat's steps unequal, and the stat is the thing
- * that is actually the same size every time. The gap is a tenth of a percent either way.
+ * EVERY LADDER IS LINEAR IN THIS NUMBER. That is the property the workshop promises - a third of
+ * the tiers is a third of the effect - and it is why rate of fire is converted here rather than
+ * left as the cooldown share it is stored as. See `rateLadder` for the half of that which lives in
+ * the catalog.
+ */
+export function metaEffectValue(def: MetaDef, tiers: number): number {
+  const fx = def.effects.find((e) => e.key === def.display.key);
+  if (fx === undefined || tiers <= 0) return 0;
+  const total = effectTotal(fx, tiers > def.tiers ? def.tiers : tiers);
+  switch (def.display.as) {
+    case 'percent':
+      return total;
+    // `total` is the cooldown share, which is negative. 1/(1+m) - 1 is the rate it produces.
+    case 'rateOfFire':
+      return 1 / (1 + total) - 1;
+    case 'flat':
+      return total;
+    case 'secondsFaster':
+      return -total;
+  }
+}
+
+/**
+ * The same thing in words. `bare` drops the noun, for the "· +30% at full" tail on a row whose
+ * headline has just said it.
  */
 export function metaEffectText(def: MetaDef, tiers: number, bare = false): string {
   const d = def.display;
-  const fx = def.effects.find((e) => e.key === d.key);
-  if (fx === undefined || tiers <= 0) return '';
-  const total = fx.amount * (tiers > def.tiers ? def.tiers : tiers);
+  if (tiers <= 0 || def.effects.find((e) => e.key === d.key) === undefined) return '';
+  const v = metaEffectValue(def, tiers);
 
   switch (d.as) {
     case 'percent':
-      return bare ? `+${oneDecimal(total * 100)}%` : `+${oneDecimal(total * 100)}% ${d.noun}`;
-    case 'rateOfFire': {
-      // `total` is the cooldown share, which is negative. 1/(1+m) - 1 is the rate it produces.
-      const rate = oneDecimal((1 / (1 + total) - 1) * 100);
-      return bare ? `+${rate}%` : `+${rate}% ${d.noun}`;
-    }
+    case 'rateOfFire':
+      return bare ? `+${oneDecimal(v * 100)}%` : `+${oneDecimal(v * 100)}% ${d.noun}`;
     case 'flat':
-      return bare ? oneDecimal(total) : `${oneDecimal(total)} ${d.noun}`;
+      return bare ? oneDecimal(v) : `${oneDecimal(v)} ${d.noun}`;
     case 'secondsFaster':
-      return bare ? `${oneDecimal(-total)}s` : `Drones build ${oneDecimal(-total)}s faster`;
+      return bare ? `${oneDecimal(v)}s` : `Drones build ${oneDecimal(v)}s faster`;
   }
 }
 
@@ -371,8 +442,9 @@ export function accumulateMeta(
     for (const fx of def.effects) {
       if (fx.target !== target || fx.key !== key) continue;
       if (fx.weapon !== undefined && fx.weapon !== weapon) continue;
-      if (fx.mode === 'add') META_ACC.add += fx.amount * held;
-      else META_ACC.mul += fx.amount * held;
+      const total = effectTotal(fx, held);
+      if (fx.mode === 'add') META_ACC.add += total;
+      else META_ACC.mul += total;
     }
   }
   return META_ACC;
