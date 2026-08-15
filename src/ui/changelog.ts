@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T20:15Z',
+    title: 'THE YARD HAS GROUND NOW, AND THE GROUND HAS ROADS',
+    notes: [
+      'THE FLOOR HAS STOPPED REPEATING IN YOUR FACE. It was one small square of rust laid down two hundred times across the arena, and at that spacing the eye finds the loop within about a second and never unsees it. The ground is now a much larger patch of the same rust, arranged so no part of it lines up with any other part - so it reads as dirt rather than as wallpaper.',
+      'SERVICE ROADS RUN THROUGH THE YARD. Pale worn plating somebody laid down long before you got here, crossing at junctions, a few hundred units apart. They are not cover and nothing about them changes how you move: they are there so that every direction stops looking like every other direction. Chasing an arrow off the edge of the screen is a different job when you can tell you have crossed the same road twice.',
+      'RUBBLE AND BOULDERS ARE SCATTERED OVER IT, dim and still and firmly underfoot. You walk straight through them - they are ground, not scenery, and nothing about them will ever block a shot. They exist so the floor has things on it to measure your own speed against.',
+      'None of it spawns on top of you. A run still opens on a clear patch of yard with nothing under the mech, and what the yard holds is decided by the run’s seed, so the same seed lays out the same roads and the same rocks every time.',
+    ],
+  },
+  {
     at: '2026-08-15T19:49Z',
     title: 'FIELD REPAIR - a system that mends you on a clock',
     notes: [

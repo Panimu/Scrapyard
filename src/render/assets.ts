@@ -178,8 +178,19 @@ export const MUZZLE_ANCHOR_Y = 0.883;
 /** Gem tint per tier (0..4). `spaceParts_035` is verified pure greyscale, so tint is clean. */
 export const GEM_TINT: readonly number[] = [0x4fd1ff, 0x6fe36f, 0xc77bff, 0xffd34f, 0xff7ad9];
 
-/** Ground tile is 64x64 and seamless on both axes (wrap delta measured at exactly 0.00). */
-export const FLOOR_TILE_UNITS = 64;
+/**
+ * Ground tile size, world units. PACKAGE A raised it from 64 to 512: `npm run floor` bakes an 8x8
+ * patchwork of the pack's two plain rust tiles into one seamless texture, so the ground repeats
+ * every 512 units instead of every 64. Seam measured at a worst-case channel delta of 7 out of
+ * 255, which is invisible - the tool prints it on every bake.
+ */
+export const FLOOR_TILE_UNITS = 512;
+
+/**
+ * PACKAGE B: how many `cover_*` pieces prepare_assets vendors. Only referenced here and by the
+ * texture loader, so removing the package is removing three lines.
+ */
+export const GROUND_COVER_VARIANTS = 8;
 
 // ---------------------------------------------------------------------------------------------
 // THE PERIMETER FENCE. These three restate the layout tools/make-fence.mjs draws to, and the two
@@ -263,6 +274,10 @@ export interface GameTextures {
   /** The gem magnet - PICKUP_KIND_MAGNET. */
   readonly consMagnet: Texture;
   readonly consDice: Texture;
+  /** PACKAGE B - ground cover. See src/render/groundCover.ts. */
+  readonly cover: readonly Texture[];
+  /** PACKAGE C - ground paths, INDEXED BY CONNECTIVITY MASK 1..15. See groundPaths.ts. */
+  readonly pathByMask: readonly Texture[];
   readonly chest: Texture;
   readonly shell: Texture;
   readonly gem: Texture;
@@ -357,6 +372,10 @@ export async function loadGameTextures(
   keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
   keys.push('cons_spanner', 'cons_magnet', 'cons_dice', 'chest');
+  // PACKAGE B. Remove this line and the `cover` field with the layer.
+  for (let i = 0; i < GROUND_COVER_VARIANTS; i++) keys.push(`cover_${i}`);
+  // PACKAGE C. Masks 1..15; there is no `path_0` because an empty cell draws nothing.
+  for (let m = 1; m <= 15; m++) keys.push(`path_${m}`);
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
@@ -421,6 +440,10 @@ export async function loadGameTextures(
     consCoin: Array.from({ length: 4 }, (_, i) => get(`cons_coin${i}`)),
     consMagnet: get('cons_magnet'),
     consDice: get('cons_dice'),
+    cover: Array.from({ length: GROUND_COVER_VARIANTS }, (_, i) => get(`cover_${i}`)),
+    // Index 0 is a deliberate hole - a cell with no neighbours is not drawn - so the array can be
+    // indexed by the mask directly with no arithmetic at the call site.
+    pathByMask: Array.from({ length: 16 }, (_, m) => (m === 0 ? get('path_1') : get(`path_${m}`))),
     chest: get('chest'),
     shell: get('shell'),
     missile: get('missile'),

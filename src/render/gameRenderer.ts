@@ -70,6 +70,10 @@ import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { Fence } from './fence.js';
 import { SpritePool } from './spritePool.js';
+// PACKAGE B and PACKAGE C - two independent decoration layers. Each is one import, one field, one
+// construction, one addChild and one draw call; removing either touches nothing else.
+import { GroundCover } from './groundCover.js';
+import { GroundPaths } from './groundPaths.js';
 import {
   GEM_SCALE,
   GEM_TINT,
@@ -262,6 +266,8 @@ export class GameRenderer {
   };
 
   private readonly floor: TilingSprite;
+  private readonly groundPaths: GroundPaths;
+  private readonly groundCover: GroundCover;
   private readonly fence: Fence;
   private readonly scrap: SpritePool;
   private readonly world: Container;
@@ -321,6 +327,8 @@ export class GameRenderer {
     private readonly tex: GameTextures,
   ) {
     this.floor = new TilingSprite({ texture: tex.floor, width: 1, height: 1, label: 'floor' });
+    this.groundPaths = new GroundPaths(tex.pathByMask);
+    this.groundCover = new GroundCover(tex.cover);
 
     // isRenderGroup: camera movement becomes one GPU-side transform instead of re-walking every
     // child's world transform each frame.
@@ -400,8 +408,13 @@ export class GameRenderer {
     this.scrap = new SpritePool({ capacity: SCRAP_SPRITES, label: 'scrap' });
 
     this.world.addChild(
-      // FIRST, because it is the ground itself - it has to cover the floor tile, which is drawn
-      // screen-space and does not know the yard has an edge.
+      // PACKAGE C then PACKAGE B, both before everything: a road is painted ON the ground, and a
+      // rock sits ON the road. Both are below the fence, which is a structure and correctly hides
+      // whatever is under it at the yard's edge.
+      this.groundPaths.container,
+      this.groundCover.container,
+      // Then the fence - it has to cover the floor tile, which is drawn screen-space and does not
+      // know the yard has an edge.
       this.fence.container,
       // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
       // hide the bodies the player is deciding about.
@@ -464,6 +477,10 @@ export class GameRenderer {
     this.strikeMarkers.clear();
     this.bossArrows.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
+    // The two decoration layers are pure functions of the seed - see their own headers. This is
+    // the only thing either of them is ever told.
+    this.groundPaths.begin(world.config.seed);
+    this.groundCover.begin(world.config.seed);
     this.camera.snapTo(world.player.x, world.player.y);
     // Drop anything the previous run left in the ring so its explosions do not play now.
     world.events.readCursor = world.events.writeCursor;
@@ -494,6 +511,10 @@ export class GameRenderer {
     // middle of the yard the answer is none of them.
     this.fence.update(this.camera);
     this.drawScenery(world);
+    // PACKAGE C and PACKAGE B. Drawn before anything that moves, and after the camera is known -
+    // both derive what is on screen from the camera rect rather than storing a world of scenery.
+    this.groundPaths.draw(this.camera);
+    this.groundCover.draw(this.camera);
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);

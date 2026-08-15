@@ -62,9 +62,38 @@ for (let n = 1; n <= 48; n++) {
   COPIES.push([`sci-fi-rts/PNG/Retina/Unit/scifiUnit_${nn}.png`, `enemy_${nn}.png`]);
 }
 
-// -- 3. Ground tile. Stays a standalone 64x64 power-of-two texture so WebGL REPEAT works;
-//       a sub-rect of an atlas cannot wrap (ASSET_MANIFEST gotcha 8). ---------------------------
-COPIES.push(['sci-fi-rts/PNG/Default size/Tile/scifiTile_42.png', 'floor.png']);
+// -- 3. Ground tile. NOT COPIED ANY MORE: floor.png is BAKED by `npm run floor` (package A), which
+//       assembles an 8x8 patchwork of the two plain rust tiles into one 512x512 seamless texture
+//       so the ground stops repeating every 64 units. Copying scifiTile_42 over the top here would
+//       silently undo that the next time anybody ran `npm run assets`.
+//
+//       It stays a standalone power-of-two texture for the original reason: WebGL REPEAT needs
+//       one, and a sub-rect of an atlas cannot wrap (ASSET_MANIFEST gotcha 8).
+
+// -- 3b. GROUND COVER, package B. Rocks and rubble scattered as decoration - see
+//        src/render/groundCover.ts. Only the pieces that belong in a RUST yard: the two rust
+//        clusters, the two rust boulders, and four grey rocks for contrast. The pack's cacti,
+//        spires and mushrooms are deliberately left out - they are a different planet, and that is
+//        a decision about what this game is rather than about variety.
+const COVER = ['01', '02', '19', '20', '03', '04', '05', '06'];
+COVER.forEach((n, i) => {
+  COPIES.push([`sci-fi-rts/PNG/Default size/Environment/scifiEnvironment_${n}.png`, `cover_${i}.png`]);
+});
+
+// -- 3c. GROUND PATHS, package C. The pack's fifteen TRANSPARENT path tiles - see
+//        src/render/groundPaths.ts. They are vendored BY CONNECTIVITY MASK rather than by pack
+//        number, which is the whole trick: bit 1 = connects north, 2 = east, 4 = south, 8 = west,
+//        so `path_<mask>.png` is a direct array lookup from a cell's neighbours and the renderer
+//        never rotates anything. The pack happens to ship all fifteen non-empty orientations as
+//        separate art, which is why no rotation is needed - verified by measuring where each
+//        tile's path crosses each edge.
+const PATH_BY_MASK = {
+  1: '39', 2: '38', 3: '36', 4: '40', 5: '08', 6: '22', 7: '26', 8: '24',
+  9: '37', 10: '09', 11: '12', 12: '23', 13: '25', 14: '11', 15: '10',
+};
+for (const [mask, n] of Object.entries(PATH_BY_MASK)) {
+  COPIES.push([`sci-fi-rts/PNG/Default size/Tile/scifiTile_${n}.png`, `path_${mask}.png`]);
+}
 
 // -- 4. Shell and gem. ASSET_MANIFEST §3.2 / §3.5 ----------------------------------------------
 COPIES.push(['space-shooter-extension/PNG/Sprites/Missiles/spaceMissiles_012.png', 'shell.png']);
