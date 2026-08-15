@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T17:40Z',
+    title: 'Drone build time settles at sixteen seconds',
+    notes: [
+      'A DRONE TAKES SIXTEEN SECONDS TO BUILD, up from twelve. Twelve was set while the rate systems were still quietly shortening a drone’s life - now that they are not, drones last half again as long and the bay does not need to work as hard to keep a full flight in the air.',
+      'A finished Fern still has all four up for about nine tenths of a run. What changes is that the chassis and the rate systems are visibly worth something again: a pilot with neither now has to work for their fourth drone.',
+    ],
+  },
+  {
     at: '2026-08-15T17:26Z',
     title: 'Feed Systems no longer shortens a drone’s life',
     notes: [

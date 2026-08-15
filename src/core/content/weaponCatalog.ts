@@ -879,38 +879,53 @@ export const ARTILLERY: WeaponDef = Object.freeze({
  * HOW LONG A DRONE TAKES TO BUILD, before the ladder and before any bonus.
  *
  * SET FROM THE OTHER END: the brief was that a Fern at tier 7 with Feed Systems maxed should hold
- * four drones MOST OF THE TIME, and this is the number that does it. That build resolves to
- * 12 x 0.65 x 0.5667 = 4.42 s, and measured across two full runs the fleet sits at its cap of four
- * for 90% of the run (mean 3.87 of 4).
+ * four drones MOST OF THE TIME. That build resolves to 16 x 0.65 x 0.5667 = 5.89 s, and measured
+ * across two full runs the fleet is at its cap of four for 88% of the run, mean 3.84 of 4.
  *
- * THE OBVIOUS ARITHMETIC IS WRONG, and it is worth knowing why before this is retuned. "A drone
- * lives L seconds, so four of them need a drone every L/4" gives 3.5 s, from a magazine of 280 at
- * a 0.05 s cadence. That is the CONSTANT-FIRE life, and a drone fires about 41% of the time - so
- * the real life is 28-34 s, not 14. The measured curve, two seeds, tier 7 + Fern + maxed Feed:
+ * THE OBVIOUS ARITHMETIC IS WRONG, TWICE OVER, and it is worth knowing both ways before retuning.
+ *
+ *   "A drone lives L seconds, so four need one every L/4" wants the CONSTANT-FIRE life - 23.3 s
+ *   from a 280-round magazine at a 0.083 s cadence. A drone fires about 41% of the time, so its
+ *   real life is around 47 s.
+ *
+ *   Even with the right L the threshold is optimistic: 47/4 = 11.75 s would predict a full fleet
+ *   at any build under that, and an 11.05 s build measures 57%. Deaths CLUSTER in dense waves
+ *   rather than arriving evenly, and the fleet has to refill after each cluster.
+ *
+ * So it was swept rather than solved. Two seeds, tier 7 + Fern + maxed Feed:
  *
  *      base    build     mean fleet    % of the run at 4
- *       25 s   9.21 s     3.21          39%
- *       19 s   7.00 s     3.52          56%
- *       14 s   5.16 s     3.82          84%
- *       12 s   4.42 s     3.87          90%     <- here
- *       11 s   4.05 s     3.88          90%
- *        8 s   2.95 s     3.90          92%
+ *       12 s   4.42 s     3.91          93%
+ *       16 s   5.89 s     3.84          88%     <- here
+ *       20 s   7.37 s     3.74          81%
+ *       25 s   9.21 s     3.66          72%
+ *       30 s  11.05 s     3.50          57%
+ *       36 s  13.26 s     3.10          32%
  *
- * IT FLATTENS, and 12 is the knee. Below it the base is being spent for nothing: the fleet is not
- * limited by how fast the bay builds any more, it is limited by the fact that a bigger fleet keeps
- * the player alive longer, which pushes the run into denser waves, which burns magazines faster.
- * The last two rows are that loop, not a build time.
+ * 16 IS THE KNEE. The curve costs about 1.5 points per second of base between 12 and 20, 2.4
+ * between 20 and 30, and 4.2 between 30 and 36 - so below 16 the base is being spent for very
+ * little, and 12 bought five points for four seconds.
  *
- * IT BARELY MOVES THE EARLY GAME, which is why cutting it this far is safe. Tiers 1 and 2 cap the
- * fleet at ONE, and one drone lives ~49 s against a 12 s build - so the build time was never the
- * binding constraint down there and is not now. What this number actually controls is how fast the
- * fleet REFILLS at tiers 3 to 7, where the cap is 2, 3 and 4.
+ * IT LEAVES ROOM FOR THE CHASSIS AND THE CARD, which is the other half of choosing 16 over 12. A
+ * player at tier 7 with neither builds at 10.4 s, which lands near 62% - so Fern's bay and a maxed
+ * Feed Systems visibly buy something. At a 12 s base that gap nearly closes and the tier-7 fleet
+ * is full for everyone regardless of what they built.
+ *
+ * THIS TABLE SUPERSEDES AN EARLIER ONE, and the difference is the whole reason to re-measure after
+ * a mechanical change rather than trusting a number that was right last week. The first sweep ran
+ * while Feed Systems still accelerated the drone's GUN, which shortened a drone's life to ~30 s;
+ * a 25 s base measured 39% there and measures 72% here. Most of what that sweep was measuring was
+ * a bug in what the rate card did to drones (see systems/drones.ts, DRONE_GUN_IGNORES).
+ *
+ * IT BARELY MOVES THE EARLY GAME. Tiers 1 and 2 cap the fleet at ONE, and one drone lives ~47 s
+ * against a 16 s build - so the build time is not the binding constraint down there. What this
+ * number controls is how fast a fleet of two, three or four REFILLS.
  */
-export const DRONE_BUILD_SEC = 12;
+export const DRONE_BUILD_SEC = 16;
 /**
  * Per-tier build-time cut. Additive off the BASE, the way every other rate tier in this file is,
  * and DERIVED from it - the ladder is specified as percentages, so cutting the base cuts every
- * rung with it. 12 s runs down to 7.8 s by tier 7.
+ * rung with it. 16 s runs down to 10.4 s by tier 7.
  */
 export const DRONE_BUILD_TIER = -DRONE_BUILD_SEC * 0.1;
 export const DRONE_BUILD_TIER_SMALL = -DRONE_BUILD_SEC * 0.05;
