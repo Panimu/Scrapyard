@@ -79,6 +79,23 @@ const FILLER: Record<number, { name: string; icon: string }> = {
   [OFFER_CREDITS]: { name: 'Salvage Rights', icon: 'cons_coin1' },
 };
 
+/**
+ * The sprite a reel value draws with. NEGATIVE VALUES ARE THE CONSOLATION SENTINELS, not errors -
+ * `openChest` lands all three reels on one of them when the run has taken every upgrade in the
+ * game, so this is the only thing standing between that chest and three empty windows.
+ */
+function symbolSprite(
+  catalog: World['upgradeCatalog'],
+  idx: number,
+  ascending: boolean,
+): string {
+  const filler = FILLER[idx];
+  if (filler !== undefined) return filler.icon;
+  const def = idx >= 0 ? catalog[idx] : undefined;
+  if (def === undefined) return '';
+  return `icon_${ascending ? upgradeIconAt(def, WEAPON_ASCENDED_TIER) : def.id}`;
+}
+
 /** Tiles above the result in each strip, BEFORE the per-reel stretch below. */
 const STRIP_LENGTH = 14;
 /** How long a reel spins before it lands, and how far apart the three landings are. */
@@ -236,18 +253,36 @@ export class ChestOverlay {
       const def = catalog[i];
       if (def === undefined) continue;
       const stacks = world.levelUp.stacks[i];
-      if (stacks > 0 && stacks < def.maxStacks) pool.push(def.id);
+      if (stacks > 0 && stacks < def.maxStacks) pool.push(`icon_${def.id}`);
     }
-    // A late run with everything maxed rolls from the offerable pool instead, and the reels can
-    // then show a symbol this list does not have. Seed the decoys with the landed symbols so the
-    // strip is never empty and never blurs past something the spin could not produce.
+    // ONCE EVERYTHING HELD IS MAXED there is nothing un-maxed to blur past, and both halves of
+    // this fallback are needed - it used to be only the first.
+    //
+    // THE LANDED SYMBOLS COME FIRST, so the strip always contains what it stops on: a machine
+    // that blurs past symbols it could not have produced is lying about its own odds. But that
+    // alone is circular, and it is where this broke. A chest with nothing left to give landed on
+    // nothing, so seeding the blur from the landing produced a strip of blanks - three windows
+    // scrolling through empty tiles.
+    //
+    // THEN THE MAXED LOADOUT, which is the honest thing to fill the rest with: it is the actual
+    // reason the chest has nothing to add. The machine looks through what you are carrying, finds
+    // every one of them full, and pays salvage. It also stops the fallback strip being one icon
+    // repeated ninety times, which is what a single-entry pool produced.
     if (pool.length === 0) {
+      const add = (sprite: string): void => {
+        if (sprite !== '' && !pool.includes(sprite)) pool.push(sprite);
+      };
       for (let r = 0; r < chest.reels.length; r++) {
-        const def = catalog[chest.reels[r]];
-        if (def !== undefined) pool.push(def.id);
+        add(symbolSprite(catalog, chest.reels[r], ascending));
+      }
+      for (let i = 0; i < catalog.length; i++) {
+        const def = catalog[i];
+        if (def !== undefined && world.levelUp.stacks[i] > 0) add(`icon_${def.id}`);
       }
     }
-    if (pool.length === 0) pool.push('');
+    // Last resort, and it should be unreachable: a chest that landed on nothing, held by a run
+    // carrying nothing. A salvage symbol rather than a blank tile.
+    if (pool.length === 0) pool.push(FILLER[OFFER_CREDITS].icon);
 
     this.payoutEl.textContent = '';
     this.payoutEl.classList.remove('chest__payout--in');
@@ -287,19 +322,15 @@ export class ChestOverlay {
     for (let r = 0; r < this.reelEls.length; r++) {
       const strip = this.reelEls[r];
       const landed = chest.reels[r];
-      const landedDef = landed >= 0 ? catalog[landed] : undefined;
       // An ascension chest shows the TIER-8 icon on all three reels, because that is the symbol
-      // the spin is about. Everything else shows the card's own.
-      const landedId =
-        landedDef === undefined
-          ? ''
-          : ascending
-            ? upgradeIconAt(landedDef, WEAPON_ASCENDED_TIER)
-            : landedDef.id;
+      // the spin is about. Everything else shows the card's own - or a salvage symbol, on the
+      // chest that had nothing left to give.
+      const landedId = symbolSprite(catalog, landed, ascending);
 
       // Tint the landing to the symbol that caused it - amber for a gun, blue for a system. The
       // flash is the only moment the machine has to say WHAT it landed on other than the icon.
-      const kind = landed >= 0 ? (catalog[landed]?.kind ?? '') : '';
+      // Salvage takes the system tint, the same as its row does in the payout list below.
+      const kind = landed >= 0 ? (catalog[landed]?.kind ?? '') : 'passive';
       this.windowEls[r].style.setProperty(
         '--land-key',
         kind === 'passive' ? 'var(--accent-sys)' : 'var(--accent)',
@@ -509,12 +540,19 @@ export class ChestOverlay {
   }
 }
 
-function tile(id: string): HTMLDivElement {
+/**
+ * One tile, from a SPRITE KEY rather than an upgrade id.
+ *
+ * It used to take the id and prepend `icon_` itself, which quietly made "every symbol on a reel is
+ * an upgrade" a rule of the markup. The salvage symbols are not upgrades and are not named
+ * `icon_*`, so a machine that had nothing left to give could not draw its own result.
+ */
+function tile(sprite: string): HTMLDivElement {
   const d = document.createElement('div');
   d.className = 'chest__tile';
-  if (id !== '') {
+  if (sprite !== '') {
     const img = document.createElement('img');
-    img.src = spriteUrl(`icon_${id}`);
+    img.src = spriteUrl(sprite);
     img.alt = '';
     d.appendChild(img);
   }

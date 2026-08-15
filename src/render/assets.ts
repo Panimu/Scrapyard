@@ -416,7 +416,11 @@ export async function loadGameTextures(
 }
 
 /**
- * Warms the browser cache for every upgrade icon.
+ * Warms the browser cache for every reel symbol.
+ *
+ * SPRITE KEYS, NOT UPGRADE IDS. It used to prepend `icon_` itself, which made "every symbol the
+ * chest can show is an upgrade" an assumption baked into three separate places - and it is not
+ * true: a chest with nothing left to give lands on the salvage symbols, which are `cons_*`.
  *
  * THE ICONS ARE NOT IN THE ATLAS AND MUST NOT BE. They are drawn as DOM `<img>` by the level-up
  * card and the chest overlay - never by Pixi - so loading them as textures would pay for a second
@@ -433,12 +437,12 @@ export async function loadGameTextures(
  */
 const iconCache: HTMLImageElement[] = [];
 
-export function preloadUpgradeIcons(ids: readonly string[]): void {
+export function preloadUpgradeIcons(sprites: readonly string[]): void {
   if (iconCache.length > 0) return;
-  for (const id of ids) {
+  for (const sprite of sprites) {
     const img = new Image();
     img.decoding = 'async';
-    img.src = spriteUrl(`icon_${id}`);
+    img.src = spriteUrl(sprite);
     iconCache.push(img);
   }
 }

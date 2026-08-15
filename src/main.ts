@@ -174,7 +174,13 @@ async function boot(): Promise<void> {
   // The upgrade icons are DOM images rather than atlas textures, so nothing above has fetched
   // them. Warmed here, once, so the first level-up card and the first chest of a run are not the
   // ones that pay for it. See preloadUpgradeIcons.
-  preloadUpgradeIcons(UPGRADE_CATALOG.map((d) => d.id));
+  // The salvage pair is on the end because a chest that has run out of upgrades lands on it, and
+  // that chest is exactly the one nobody has warmed by seeing it earlier in the run.
+  preloadUpgradeIcons([
+    ...UPGRADE_CATALOG.map((d) => `icon_${d.id}`),
+    'cons_spanner',
+    'cons_coin1',
+  ]);
 
   // ---------------------------------------------------------------------------------------
   // UI

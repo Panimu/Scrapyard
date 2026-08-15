@@ -842,8 +842,18 @@ export function openChest(world: World): void {
     // EVERY UPGRADE IN THE GAME IS TAKEN. A boss must still be worth something, so the chest pays
     // the same consolation pair a level-up does - both of them, since a chest is a bigger event
     // than a card and the player does not get to choose out of it.
+    //
+    // THE REELS ARE SET TOO, and they were not: they stayed at the -1 this function filled them
+    // with, and the overlay dutifully spun three strips of nothing and landed on three blank
+    // windows. A machine with no symbols is not a consolation, it is a bug that looks like one.
+    //
+    // ALL THREE SHOW THE SAME SALVAGE SYMBOL, for the reason the ascension above does: this is a
+    // FOREGONE OUTCOME, not a spin. A machine that could not have landed anywhere else should not
+    // pretend it rolled - and three matching symbols is the language this machine already uses for
+    // "the result was decided before the reels moved".
     chest.grants[0] = OFFER_HEAL;
     chest.grants[1] = OFFER_CREDITS;
+    for (let r = 0; r < CHEST_REELS; r++) chest.reels[r] = OFFER_CREDITS;
     chest.payout = 2;
     chest.opened++;
     world.stats.chests++;

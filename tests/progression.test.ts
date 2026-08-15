@@ -35,6 +35,7 @@ import type { WeaponStats } from '../src/core/data/stats.js';
 import {
   TOTAL_AVAILABLE_STACKS,
   UPGRADE_CATALOG,
+  WEAPON_ASCENDED_TIER,
   WEAPON_MAX_TIER,
   upgradeIndex,
   upgradeIndexForWeapon,
@@ -47,7 +48,7 @@ import {
   markEnemyDead,
   enemyHandleAt,
 } from '../src/core/entity/enemyPool.js';
-import { updateProgression } from '../src/core/systems/progression.js';
+import { openChest, updateProgression } from '../src/core/systems/progression.js';
 import { reapDead } from '../src/core/systems/reap.js';
 import {
   EMPTY_INPUT,
@@ -1065,4 +1066,45 @@ describe('the level-up freeze', () => {
     expect(w.player.xp).toBe(snapshot.xp);
     expect(w.player.x).toBe(snapshot.x);
   });
+});
+
+describe('the Cyber Chest with nothing left to give', () => {
+  /**
+   * The end of the ladder: every upgrade in the game held, every one of them at its cap. The chest
+   * pays the consolation pair, and the interesting part is what the MACHINE does - it still has to
+   * be a slot machine rather than three blank windows scrolling past nothing.
+   */
+  function everythingTaken(): World {
+    const w = makeWorld();
+    for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+      const def = UPGRADE_CATALOG[i];
+      // The ascendable card sits at TIER 8, not 7. A run that has taken everything has already
+      // been handed its tier 8 by an earlier chest - and at 7 it would still be READY for one, so
+      // the ascension branch would supersede the spin and this fixture would test that instead.
+      w.levelUp.stacks[i] = def.ascension !== undefined ? WEAPON_ASCENDED_TIER : def.maxStacks;
+    }
+    return w;
+  }
+
+  it('pays the consolation pair', () => {
+    const w = everythingTaken();
+    openChest(w);
+    expect(w.chest.payout).toBe(2);
+    expect(w.chest.grants[0]).toBe(OFFER_HEAL);
+    expect(w.chest.grants[1]).toBe(OFFER_CREDITS);
+  });
+
+  it('still lands its reels on a symbol', () => {
+    const w = everythingTaken();
+    openChest(w);
+
+    // THE BUG THIS PINS: the reels were left at the -1 openChest fills them with, so the overlay
+    // built three strips of empty tiles and landed on three empty windows. Every reel must carry
+    // something the overlay can draw - here the salvage sentinel, which it maps to a sprite.
+    for (let r = 0; r < w.chest.reels.length; r++) {
+      expect(w.chest.reels[r]).not.toBe(-1);
+      expect(w.chest.reels[r]).toBe(OFFER_CREDITS);
+    }
+  });
+
 });

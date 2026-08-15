@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:23Z',
+    title: 'A Cyber Chest with nothing left to give now shows you that',
+    notes: [
+      'THE REELS NO LONGER SPIN THROUGH NOTHING. Open a chest once every upgrade in the game is taken and the machine ran three strips of empty tiles and stopped on three empty windows. It still paid out - the repair and the salvage were always there underneath - but it looked broken, which for a slot machine is the same as being broken.',
+      'It now lands all three reels on the salvage symbol, the same way an ascension puts its own symbol on all three: this is a result that was decided before the reels moved, and the machine says so rather than pretending to roll.',
+      'AND THE SPIN ITSELF HAS SOMETHING TO SHOW. A late chest with your whole loadout maxed used to blur past one icon repeated over and over. It now spins through the kit you are carrying - the actual reason it has nothing to add.',
+    ],
+  },
+  {
     at: '2026-08-15T15:11Z',
     title: 'Drones arrive sooner, shoot bullets, and have a face on the reels',
     notes: [
