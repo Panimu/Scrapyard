@@ -105,16 +105,32 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
   {
     id: 'm-damage',
     name: 'Ordnance Stores',
-    blurb: 'Every gun the yard hands you hits harder, from the first second of the run.',
+    blurb:
+      'Every gun the yard hands you hits harder, from the first second of the run. A hotter-running laser burns through its heat faster.',
     summary: '+30% damage at full',
     tiers: 7,
     cost: 50,
-    // NO HEAT COST, unlike the Ordnance card, which pairs damage with heatPerSec so that raw power
-    // on a beam still costs burst. That pairing was not asked for here and is not applied - see
-    // the note in the changelog. It means workshop damage is worth strictly more on a laser than
-    // the in-run card is, which is worth knowing before the next balance pass.
+    // HEAT RIDES WITH DAMAGE, exactly as it does on the Ordnance card and on the lasers' own damage
+    // rungs. The rule in this game is that raw power on a beam costs burst - you buy the burst back
+    // with capacity and dispersion tiers, and in this shop that is Coolant Baffles.
+    //
+    // Shipping this without the heat clause made it strictly better on a laser than the in-run card
+    // that says the same words, which is the exact trap the Ordnance comment warns about: a bonus
+    // that quietly adds "and on these three, ignore the mechanic they are built around". A
+    // permanent upgrade is the worst possible place for that exemption, because unlike a card it is
+    // in play from the first second of every run.
+    //
+    // PROPORTIONAL AND PAIRED AT THE SAME AMOUNT, so it lands in line with whatever that laser's
+    // heat profile already is. A no-op for everything else: projectile weapons declare
+    // `heatPerSec: 0`, and a share of zero is zero.
     effects: Object.freeze([
       { target: 'weapon' as const, key: 'damage' as const, mode: 'mul' as const, amount: 0.3 / 7 },
+      {
+        target: 'weapon' as const,
+        key: 'heatPerSec' as const,
+        mode: 'mul' as const,
+        amount: 0.3 / 7,
+      },
     ]),
   },
   {

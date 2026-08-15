@@ -43,6 +43,17 @@ describe('a full ladder is worth what its summary says', () => {
     expect(fullMul('m-laser', 'weapon', 'heatDispersion')).toBeCloseTo(0.1, 10);
   });
 
+  it('damage drags heat with it, at the same share, like the card it mirrors', () => {
+    // Shipping this pair broken made workshop damage strictly better on a laser than the Ordnance
+    // card that says the same words - the one bonus in the game that could ignore the mechanic the
+    // beams are built around. The two amounts being EQUAL is the whole assertion.
+    expect(fullMul('m-damage', 'weapon', 'heatPerSec')).toBeCloseTo(
+      fullMul('m-damage', 'weapon', 'damage'),
+      12,
+    );
+    expect(fullMul('m-damage', 'weapon', 'heatPerSec')).toBeCloseTo(0.3, 10);
+  });
+
   it('rate of fire is a cooldown reduction, not a cooldown percentage', () => {
     // +10% rate means the gap between shots is 1/1.1 of what it was. The naive -0.10 would be
     // +11.1% rate, which is the mistake this asserts against.
