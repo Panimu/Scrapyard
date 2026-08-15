@@ -46,7 +46,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
       'THE SWARM IS FIFTY RUNNERS, up from forty - the same number the ring brings.',
       'HEAVIES WALK ANOTHER 10% FASTER. Still the slowest thing in the yard by a wide margin.',
       'AND THEY BARELY MOVE WHEN SHOT. A shell now shoves a Heavy a quarter as far as it would shove anything else, down from half. At half, one Cannon hit was still worth twenty-four seconds of its walking - the wall could be swept aside faster than it could close.',
-      'THEY ALSO STAY BEHIND YOU NOW. Anything that falls too far back gets picked up and put in front of you again, which is what keeps the yard feeling endless - but a Heavy gets twice the leash before that happens. Outrunning a ring is meant to work and to cost you the ground; it should not hand the ring back.',
+      'THEY ALSO STAY EXACTLY WHERE THEY WERE PUT. Anything that falls too far behind you normally gets picked up and re-dealt in front of you, which is what keeps the yard feeling endless - a Heavy is now exempt, the same way a boss is. So a ring you walk away from stays a ring, standing where it closed, until you go back to it or something kills it. Outrunning a set-piece is meant to work and to cost you the ground; it should not quietly hand the set-piece back.',
     ],
   },
   {
