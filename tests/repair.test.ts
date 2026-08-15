@@ -97,11 +97,13 @@ describe('the Field Repair ladder', () => {
 });
 
 describe('the round trip that unlocks it', () => {
-  it('counts a run that fell under a tenth and got all the way back', () => {
+  it('counts a run that fell under a fifth and got all the way back', () => {
     const w = world(0);
     const max = w.player.stats.maxHp;
 
-    w.player.hp = max * 0.05;
+    // 15% - under the fifth this asks for, and deliberately ABOVE the tenth it used to ask for,
+    // so this assertion fails if the threshold ever creeps back down.
+    w.player.hp = max * 0.15;
     ticks(w, 2);
     expect(w.stats.fullRepairs).toBe(0); // being nearly dead is not the achievement
 
@@ -121,11 +123,25 @@ describe('the round trip that unlocks it', () => {
   it('does not count a run that was merely hurt and healed', () => {
     const w = world(0);
     const max = w.player.stats.maxHp;
-    w.player.hp = max * 0.5; // never under a tenth
+    w.player.hp = max * 0.25; // hurt, but never under the fifth
     ticks(w, 2);
     w.player.hp = max;
     ticks(w, 2);
     expect(w.stats.fullRepairs).toBe(0);
+  });
+
+  it('lets the two halves be a whole run apart', () => {
+    const w = world(0);
+    const max = w.player.stats.maxHp;
+    w.player.hp = max * 0.05;
+    ticks(w, 2);
+    // A long stretch of ordinary play in between, nowhere near either end of the range.
+    w.player.hp = max * 0.6;
+    ticks(w, 60 * 60);
+    expect(w.stats.fullRepairs).toBe(0);
+    w.player.hp = max;
+    ticks(w, 2);
+    expect(w.stats.fullRepairs).toBe(1);
   });
 
   it('is what the card asks for', () => {

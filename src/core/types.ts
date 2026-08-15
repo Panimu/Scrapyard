@@ -161,7 +161,7 @@ export interface PlayerState {
   /** Seconds left on the Field Repair clock. 0 when the card is not held. */
   repairLeft: number;
   /**
-   * LATCH, not a tally: 1 once the run has dropped under a tenth of its hull, cleared when it gets
+   * LATCH, not a tally: 1 once the run has dropped under a fifth of its hull, cleared when it gets
    * back to full - which is the tick `RunStats.fullRepairs` counts. A number rather than a boolean
    * because World is hashed for replay determinism and the hash walks numeric fields.
    */
@@ -428,11 +428,11 @@ export interface RunStats {
    */
   contactHits: number;
   /**
-   * Times the run dropped under a tenth of its hull and then got ALL THE WAY BACK to full.
+   * Times the run dropped under a fifth of its hull and then got ALL THE WAY BACK to full.
    *
-   * Counted at the moment it completes, in playerMovement's repair clock, because "was under 10%
-   * at some point" is state rather than a total: the flag is armed when hp crosses down and spent
-   * when hp reaches maxHp. Unlocks p-repair - see UnlockCond `fullRepair`.
+   * Counted at the moment it completes, in playerMovement's repair clock, because "was under a
+   * fifth at some point" is state rather than a total: the flag is armed when hp crosses down and
+   * spent when hp reaches maxHp. Unlocks p-repair - see UnlockCond `fullRepair`.
    */
   fullRepairs: number;
   /**

@@ -669,11 +669,12 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     /**
      * EARNED BY SURVIVING SOMETHING, which is the only kind of condition this card could honestly
      * have. It is a card about coming back from the edge, so it is unlocked by coming back from the
-     * edge: drop under a tenth of your hull and then get all the way back to full.
+     * edge: drop under a fifth of your hull at any point in a run, and reach full hull in that
+     * same run.
      *
-     * That is a hard thing to do NOW, and deliberately: the level-up heal is gone and a spanner is
-     * the only thing that mends you, so this asks the player to find several while nearly dead. A
-     * run that manages it has earned a repair clock.
+     * That is still a hard thing to do: the level-up heal is gone and a spanner is the only thing
+     * that mends you, so it asks the player to find several after a bad patch. A run that manages
+     * it has earned a repair clock.
      */
     unlock: Object.freeze({ kind: 'fullRepair' as const }),
   },

@@ -114,14 +114,18 @@ export type UnlockCond =
   | { readonly kind: 'diedTo'; readonly rank: string }
   /** Win. */
   /**
-   * Recover from under a tenth of your hull all the way back to full, in one run.
+   * Drop under a fifth of your hull at any point in a run, then reach full hull in that same run.
    *
    * THE ONLY CONDITION IN HERE ABOUT A ROUND TRIP rather than a total or an event. It cannot be
    * satisfied by being careful and it cannot be satisfied by being lucky once - the run has to go
    * badly and then be pulled back, which is exactly the story the card it unlocks is about.
    *
+   * THE TWO HALVES NEED NOT BE ADJACENT. Going under the threshold arms the run for the rest of
+   * it, so the recovery can take one spanner or twenty minutes; what is being asked for is that
+   * both things happened, not that they happened together.
+   *
    * `RunStats.fullRepairs` counts them; the threshold and the "and then reach full" half both live
-   * at the site that watches hit points, because "was under 10% at some point" is not a fact a
+   * at the site that watches hit points, because "was under a fifth at some point" is not a fact a
    * total can carry.
    */
   | { readonly kind: 'fullRepair' }
@@ -280,7 +284,7 @@ export function describeUnlockDone(
     case 'bossKillBy':
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
     case 'fullRepair':
-      return 'Repaired to full hull after dropping below a tenth of it.';
+      return 'Repaired to full hull after dropping below a fifth of it.';
     case 'contactHits':
       return `Took ${cond.count} hits from the horde in one run.`;
     case 'diedTo':

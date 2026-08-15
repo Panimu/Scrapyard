@@ -170,8 +170,15 @@ export function updatePlayerMovement(world: World, dt: number): void {
   updateShield(world, dt);
 }
 
-/** Hull fraction a run has to drop under before repairing to full counts. See RunStats. */
-const CRITICAL_FRAC = 0.1;
+/**
+ * Hull fraction a run has to drop under before repairing to full counts. See RunStats.
+ *
+ * A FIFTH RATHER THAN A TENTH. At a tenth this asked the player to be one contact hit from dead
+ * and then find several spanners, which is not a hard condition so much as a lucky one - the
+ * window where it can be armed at all is the window where the run usually ends. A fifth is still
+ * a run that went badly, and it is a state a player can notice they are in and decide to survive.
+ */
+const CRITICAL_FRAC = 0.2;
 
 /**
  * FIELD REPAIR: the clock that puts hit points back, and the watcher that unlocks it.
@@ -194,9 +201,10 @@ const CRITICAL_FRAC = 0.1;
  * THE ROUND TRIP THAT UNLOCKS THE CARD
  * ---------------------------------------------------------------------------------------------
  * Watched here because this is the one stage that already looks at hit points every tick, and
- * because the condition is not a total: the run has to go UNDER a tenth of its hull and then get
- * ALL the way back. `criticalArmed` is that memory - set on the way down, spent on arrival - and
- * it lives on the player rather than in RunStats because it is a latch rather than a tally.
+ * because the condition is not a total: the run has to go UNDER a fifth of its hull AT SOME POINT
+ * and then get ALL the way back, with any amount of run in between. `criticalArmed` is that memory
+ * - set on the way down, spent on arrival - and it lives on the player rather than in RunStats
+ * because it is a latch rather than a tally.
  *
  * It is watched whether or not the card is held, obviously: this is how the card is earned.
  */
