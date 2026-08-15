@@ -945,9 +945,19 @@ export const DRONE: WeaponDef = Object.freeze({
   // The bay builds whether or not anything is in range. It is a factory, not a gun.
   requiresTarget: false,
   base: Object.freeze({
-    // Not the drone's damage - the blast it leaves when its magazine runs dry. Its shooting is the
+    // NOT THE DRONE'S DAMAGE - the blast it leaves when its magazine runs dry. Its shooting is the
     // Machine Gun's damage, resolved at this weapon's tier.
-    damage: 55,
+    //
+    // DELIBERATELY SMALL, and it used to be 55 - which was one artillery shell, and wrong for two
+    // reasons. It made the drone's DEATH the payoff on a weapon whose whole point is the twenty
+    // seconds of shooting before it, and at 55 over a 70 u circle a drone dying in a crowd of ten
+    // early runts was worth 550 damage: an entire magazine, for free, by waiting. Anything a
+    // player can farm by NOT using the weapon properly is the wrong number.
+    //
+    // 12 is about four of the drone's own rounds at tier 1 and two and a half at tier 7 - under a
+    // second of its shooting. It still finishes a wounded runt standing next to it, which is all a
+    // parting blast should do. The RADIUS is untouched: the drawn crater has to be the real one.
+    damage: 12,
     cooldown: DRONE_BUILD_SEC,
     // Acquisition range BEFORE the x2. 130 is the Machine Gun's own reach, so a drone hunts twice
     // as far as it shoots and closes the rest.

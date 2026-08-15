@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T17:48Z',
+    title: 'A dying drone goes off with a pop, not a bang',
+    notes: [
+      'THE DETONATION IS MUCH WEAKER - it was worth a full artillery shell and is now worth about four of the drone’s own rounds. It will still finish something wounded that happens to be standing there, and that is all it is for.',
+      'A DRONE IS THE TWENTY SECONDS OF SHOOTING, not the explosion at the end. The old blast was strong enough that letting one die in a crowd paid better than flying it properly, which is the opposite of what the weapon is about.',
+      'The blast radius has not changed, so the crater on screen is still the crater that hurts.',
+    ],
+  },
+  {
     at: '2026-08-15T17:40Z',
     title: 'Drone build time settles at sixteen seconds',
     notes: [
