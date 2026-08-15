@@ -612,11 +612,10 @@ export class ScrapopediaScreen {
 
   private showSections(): void {
     this.section = null;
-    this.open = null;
+    this.closePage();
     this.titleEl.textContent = 'Scrapopedia';
     this.sectionsEl.hidden = false;
     this.indexEl.hidden = true;
-    this.detailEl.hidden = true;
     this.element.scrollTop = 0;
   }
 
@@ -628,12 +627,27 @@ export class ScrapopediaScreen {
 
   /** Back to the current section's list. Never rebuilt here - `showSection` owns that. */
   private showIndex(): void {
-    this.open = null;
+    this.closePage();
     this.titleEl.textContent = SECTIONS.find((s) => s.id === this.section)?.label ?? 'Scrapopedia';
     this.sectionsEl.hidden = true;
-    this.detailEl.hidden = true;
     this.indexEl.hidden = false;
     this.element.scrollTop = 0;
+  }
+
+  /**
+   * Puts the open entry away: hidden AND emptied.
+   *
+   * EMPTIED, not merely hidden. Hiding it was already meant to be enough and was not - a `display`
+   * on the pane's own class outranks the `hidden` attribute, so the page the player had just left
+   * went on rendering below the list they had gone back to. That is fixed in the stylesheet, but a
+   * pane holding a page nobody asked for is a pane that can be revealed again by the next styling
+   * change, and there is nothing worth keeping in it: every page is rebuilt from the catalog when
+   * it is opened.
+   */
+  private closePage(): void {
+    this.open = null;
+    this.detailEl.hidden = true;
+    this.detailEl.innerHTML = '';
   }
 
   /** Common to every kind of page: clear the old one, show the pane, start at the top. */

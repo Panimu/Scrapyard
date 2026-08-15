@@ -684,6 +684,16 @@ body {
   opacity: 0.85;
 }
 
+/*
+ * `display` HERE OUTRANKS THE `hidden` ATTRIBUTE - see the note on .pedia__detail. levelUpOverlay
+ * hides a card when the level-up has fewer offers than there are slots, and without the guard below
+ * the card stayed on screen as an empty bordered box. The text-clearing beside those `hidden = true`
+ * lines is what kept it from being an empty box with the PREVIOUS level's offer in it.
+ */
+.card[hidden] {
+  display: none;
+}
+
 .card {
   pointer-events: auto;
   display: block;
@@ -1378,10 +1388,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.pedia__sections[hidden] {
-  display: none;
-}
-
 .pedia__section-btn {
   pointer-events: auto;
   display: flex;
@@ -1522,6 +1528,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/*
+ * `display` ON A CLASS BEATS THE `hidden` ATTRIBUTE, and that is a bug factory.
+ *
+ * The UA sheet's `[hidden] { display: none }` is the weakest rule there is, so any class that sets
+ * `display` silently makes `el.hidden = true` do nothing. That is exactly what happened here: Back
+ * from an entry set `hidden` on this pane, the pane kept its `display: flex`, and the page the
+ * player had just left stayed on screen UNDERNEATH the list they had gone back to.
+ *
+ * Anything in this screen that toggles `hidden` needs a matching rule, so they are written together
+ * rather than one per block where the next one can be forgotten.
+ */
+.pedia__detail[hidden],
+.pedia__index[hidden],
+.pedia__sections[hidden] {
+  display: none;
 }
 
 .pedia__page-head {

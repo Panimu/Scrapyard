@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T11:42Z',
+    title: 'Back in the Scrapopedia actually closes the entry',
+    notes: [
+      'GOING BACK FROM AN ENTRY LEFT IT ON SCREEN, sitting underneath the list you had just returned to. It closes now.',
+      'THE SAME BUG WAS ON THE LEVEL-UP CARDS. A level-up with fewer offers than there are slots left an empty bordered card in the gap. Both were one missing line of stylesheet - the code was hiding them correctly and the hiding was being ignored.',
+    ],
+  },
+  {
     at: '2026-08-15T11:37Z',
     title: 'The bestiary is written by killing things',
     notes: [
