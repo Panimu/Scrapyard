@@ -68,13 +68,42 @@ const ESCORT_RADIUS = 62;
  * drone flickering in and out of being able to shoot.
  */
 const ENGAGE_RADIUS_FRAC = 0.55;
-/** Radians per second around the circle. Fast enough to read as buzzing, slow enough to track. */
-const ORBIT_RATE = 2.1;
-/** Units per second the drone closes on where its orbit says it should be. */
-const FOLLOW_RATE = 4.2;
+/**
+ * Radians per second around the circle, and how fast the drone closes on where that circle says it
+ * should be. Both HALVED from the numbers this shipped with: at 2.1 and 4.2 a drone crossed the
+ * screen faster than the mech could and the orbit was a blur rather than a circle you could watch.
+ *
+ * They are halved TOGETHER on purpose. One is tangential speed and the other is transit speed, so
+ * moving only one changes the SHAPE of the flight - a slow orbit with a fast transit darts and
+ * parks, a fast orbit with a slow transit spirals. Scaling both keeps the path and slows the film.
+ */
+const ORBIT_RATE = 1.05;
+const FOLLOW_RATE = 2.1;
 
-/** Scratch for the per-tick target query. One drone at a time, so one slot is enough. */
-const DRONE_TARGETS = new Int32Array(1);
+/**
+ * HOW FAR FROM THE PLAYER a drone will chase, in world units. Nothing beyond this is a target,
+ * however close it is to the drone itself.
+ *
+ * Without it the leash is transitive and unbounded: a drone engages something at the edge of its
+ * own reach, flies out to it, and from there something further out is now within reach. Chained
+ * across a spread-out wave that walks the drone off the screen and out of the run.
+ *
+ * Measured from the PLAYER rather than from the drone, because the thing being bounded is how far
+ * the player's own firepower can wander - and 1000 is the same distance the horde uses to decide an
+ * enemy has been left behind (RELOCATE_RADIUS), which makes it the natural edge of "your fight".
+ */
+const DRONE_LEASH = 1000;
+const DRONE_LEASH_SQ = DRONE_LEASH * DRONE_LEASH;
+
+/**
+ * Scratch for the per-tick target query.
+ *
+ * FOUR, not one: the nearest body to the DRONE may be outside the leash from the PLAYER while a
+ * slightly further one is inside it, and asking for a single candidate would make the drone idle
+ * next to something it is allowed to shoot. `selectTopK` returns its list sorted, so the first
+ * candidate that passes the leash is the nearest legal one.
+ */
+const DRONE_TARGETS = new Int32Array(4);
 
 /**
  * The drone's gun, resolved once per tick rather than per drone.
@@ -184,18 +213,35 @@ export function updateDrones(world: World, dt: number): void {
     let target = drones.targetDense[d];
     if (target >= 0) {
       // A dense index is only valid within a tick: the enemy it pointed at last tick may be dead,
-      // reaped, or a different body entirely after a swap-remove. Everything below re-earns it.
+      // reaped, or a different body entirely after a swap-remove. Everything below re-earns it,
+      // INCLUDING the leash - a target that walks out past 1000 units is dropped mid-engagement
+      // rather than towed along behind it.
       if (
         target >= enemies.count ||
         (enemies.flags[target] & ENEMY_FLAG_DEAD) !== 0 ||
-        distSq(enemies.x[target], enemies.y[target], drones.x[d], drones.y[d]) > acquireSq
+        distSq(enemies.x[target], enemies.y[target], drones.x[d], drones.y[d]) > acquireSq ||
+        distSq(enemies.x[target], enemies.y[target], player.x, player.y) > DRONE_LEASH_SQ
       ) {
         target = -1;
       }
     }
     if (target < 0) {
-      const n = TARGETING.nearest(world, drones.x[d], drones.y[d], acquireSq, 1, DRONE_TARGETS);
-      target = n > 0 ? DRONE_TARGETS[0] : -1;
+      const n = TARGETING.nearest(
+        world,
+        drones.x[d],
+        drones.y[d],
+        acquireSq,
+        DRONE_TARGETS.length,
+        DRONE_TARGETS,
+      );
+      target = -1;
+      for (let k = 0; k < n; k++) {
+        const cand = DRONE_TARGETS[k];
+        if (distSq(enemies.x[cand], enemies.y[cand], player.x, player.y) <= DRONE_LEASH_SQ) {
+          target = cand;
+          break;
+        }
+      }
     }
     drones.targetDense[d] = target;
     drones.state[d] = target >= 0 ? DRONE_STATE_ENGAGE : DRONE_STATE_ESCORT;

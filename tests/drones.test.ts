@@ -145,6 +145,44 @@ describe('the drone bay', () => {
     expect(w.drones.targetDense[0]).toBe(-1);
   });
 
+  it('will not chase past 1000 units from the player, however close it is to the drone', () => {
+    const w = droneWorld();
+    ticks(w, 60);
+
+    // Walk the drone out to the leash edge by giving it a chain of targets to follow. Simpler:
+    // park the drone itself out there and put a body right beside it. The body is 40 u from the
+    // drone - well inside the 260 it can reach - and 1100 from the player, which is not.
+    w.drones.x[0] = 1100;
+    w.drones.y[0] = 0;
+    const far = addEnemy(w, 1140, 0, 1_000_000);
+    tick(w);
+    expect(w.drones.targetDense[0]).toBe(-1);
+    expect(w.drones.state[0]).toBe(DRONE_STATE_ESCORT);
+    void far;
+
+    // The same body inside the leash IS a target, so this is the leash refusing it and not the
+    // acquisition range.
+    w.enemies.x[far] = 900;
+    w.drones.x[0] = 940;
+    tick(w);
+    expect(w.drones.targetDense[0]).toBe(far);
+  });
+
+  it('drops a target that walks out past the leash mid-engagement', () => {
+    const w = droneWorld();
+    ticks(w, 60);
+    const e = addEnemy(w, 200, 0, 1_000_000);
+    ticks(w, 120);
+    expect(w.drones.targetDense[0]).toBe(e);
+
+    // It is still right next to the drone - only its distance from the PLAYER has changed.
+    w.enemies.x[e] = 1400;
+    w.drones.x[0] = 1400;
+    w.drones.y[0] = 0;
+    tick(w);
+    expect(w.drones.targetDense[0]).toBe(-1);
+  });
+
   it('comes home once the target is dead', () => {
     const w = droneWorld();
     ticks(w, 60);

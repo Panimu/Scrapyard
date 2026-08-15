@@ -340,6 +340,22 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weapon: {},
   },
   {
+    id: 'fern',
+    // AVAILABLE FROM THE START, alongside Slate. It is the chassis that opens with Drones, and the
+    // only way to fly them before the yard has been beaten - the card itself is locked.
+    unlock: { kind: 'always' },
+    name: 'Fern',
+    identity:
+      'Light hover, forward claw arms. Opens with Drones, and builds them 10% faster.',
+    sprite: 'mech_fern',
+    gait: 'hover',
+    startingWeapon: 'drone',
+    player: {},
+    weapon: {},
+    // `cooldown` on a drone bay IS the build time, so a multiplier below 1 is a faster factory.
+    weaponBonus: { drone: { mul: { cooldown: 0.9 } } },
+  },
+  {
     id: 'jade',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Jade',
@@ -425,22 +441,6 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     startingWeapon: 'machine-gun',
     player: {},
     weapon: {},
-  },
-  {
-    id: 'fern',
-    // AVAILABLE FROM THE START, alongside Slate. It is the chassis that opens with Drones, and the
-    // only way to fly them before the yard has been beaten - the card itself is locked.
-    unlock: { kind: 'always' },
-    name: 'Fern',
-    identity:
-      'Light hover, forward claw arms. Opens with Drones, and builds them 10% faster.',
-    sprite: 'mech_fern',
-    gait: 'hover',
-    startingWeapon: 'drone',
-    player: {},
-    weapon: {},
-    // `cooldown` on a drone bay IS the build time, so a multiplier below 1 is a faster factory.
-    weaponBonus: { drone: { mul: { cooldown: 0.9 } } },
   },
 ] as const) as readonly HeroDef[];
 

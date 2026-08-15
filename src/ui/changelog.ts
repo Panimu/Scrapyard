@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T14:22Z',
+    title: 'Drones fly at half speed, and stay in the fight',
+    notes: [
+      'DRONES MOVE HALF AS FAST. Both halves of it - the orbit and the flight between targets - so the path is the same shape and you can now actually watch one work rather than seeing a streak.',
+      'AND THEY WILL NOT WANDER OFF. Nothing more than about two screens from YOU is a target any more, however close it is to the drone. A drone hunts from where it is standing, which meant a spread-out wave could hand it one target after another and walk it clean off the edge of your fight.',
+      'A target that walks out past that line is dropped mid-engagement rather than towed along.',
+      'FERN NOW SITS NINTH ON THE MECH PICKER, just under Plum, instead of last.',
+    ],
+  },
+  {
     at: '2026-08-15T14:12Z',
     title: 'Drones look like drones',
     notes: [
