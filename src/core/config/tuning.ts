@@ -39,7 +39,7 @@ export interface PlayerBaseTuning {
   readonly shieldRecharge: number;
   readonly shieldImmune: number;
   /**
-   * FIELD REPAIR, both zero at base. The card is the whole mechanism - see p-repair in
+   * THE ARC WELDER, both zero at base. The card is the whole mechanism - see p-repair in
    * data/upgrades.ts - so a run without it has no repair clock at all rather than a slow one.
    */
   readonly repairAmount: number;

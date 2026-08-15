@@ -90,7 +90,7 @@ export interface PlayerStats {
   shieldRecharge: number;
   shieldImmune: number;
   /**
-   * FIELD REPAIR: hit points restored per tick of the repair clock, and how many seconds that
+   * THE ARC WELDER: hit points restored per tick of its clock, and how many seconds that
    * clock takes to come round.
    *
    * TWO NUMBERS RATHER THAN ONE RATE, and the card is why. "1 hp every 7 seconds" is 0.143 hp/s

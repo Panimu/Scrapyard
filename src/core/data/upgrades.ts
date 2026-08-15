@@ -605,7 +605,21 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   {
     id: 'p-repair',
     kind: 'passive',
-    name: 'Field Repair',
+    /**
+     * NOT "Field Repair", WHICH IS ALREADY TAKEN - it is the one-off patch a chest or a card hands
+     * over when there is nothing left to fit (OFFER_HEAL). A permanent system and a consolation
+     * prize sharing a name is a player wondering which of the two they just got.
+     *
+     * "Repair" is deliberately not in this name at all, rather than being reworded around: there
+     * are already two rewards in the game about repairing, and a third one whose name is a third
+     * arrangement of the same word would keep the muddle rather than end it. A welder is a
+     * different object, and it is the one a scrapyard would actually bolt on.
+     *
+     * THE ID IS UNTOUCHED. `p-repair` is what a save file stores (Settings.earnedCards), so
+     * renaming it would take the card away from everyone who had unlocked it - see CLAUDE.md.
+     * The id is a union member we rename freely; this one has shipped, so we do not.
+     */
+    name: 'Arc Welder',
     // The UNLOCK card carries the whole mechanism, like the Energy Shield's does: both numbers are
     // 0 at base, so "Unlock." on its own would put the entire card nowhere the player can read it.
     description:

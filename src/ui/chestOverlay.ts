@@ -73,16 +73,9 @@ import { upgradeIconAt, upgradeNameAt, type World } from '../core/index.js';
 import { OFFER_CREDITS, OFFER_HEAL, WEAPON_ASCENDED_TIER } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
 
-/**
- * The two non-upgrade grants a chest can pay once the pool is empty. Sprite keys, not ids.
- *
- * "Patch Job" rather than the "Field Repair" it used to be: that name now belongs to the PASSIVE
- * that mends you on a clock, and one of these is a permanent card while the other is a one-off
- * patch on a chest that had nothing better. Two rewards with one name is a player wondering which
- * of them they just got.
- */
+/** The two non-upgrade grants a chest can pay once the pool is empty. Sprite keys, not ids. */
 const FILLER: Record<number, { name: string; icon: string }> = {
-  [OFFER_HEAL]: { name: 'Patch Job', icon: 'cons_spanner' },
+  [OFFER_HEAL]: { name: 'Field Repair', icon: 'cons_spanner' },
   [OFFER_CREDITS]: { name: 'Salvage Rights', icon: 'cons_coin1' },
 };
 

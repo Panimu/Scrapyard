@@ -48,7 +48,7 @@ import {
  */
 const FILLER: Record<number, { name: string; desc: string }> = {
   [OFFER_HEAL]: {
-    name: 'Patch Job',
+    name: 'Field Repair',
     desc: 'Patch the hull. There is nothing left to bolt onto it.',
   },
   [OFFER_CREDITS]: {
