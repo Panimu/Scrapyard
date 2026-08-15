@@ -223,6 +223,12 @@ export const SCRAP_SRC_RADIUS = 96;
  * is the complaint.
  */
 export const CONSUMABLE_SCALE = 38 / 96;
+/**
+ * THE CHEST IS DRAWN BIGGER THAN THE OTHER DROPS, and deliberately so: it is the reward a whole
+ * boss fight was for, and it spent its entire life so far being drawn as a single COIN - the
+ * smallest thing in the game - because the pickup renderer had no branch for it.
+ */
+export const CHEST_SCALE = 54 / 96;
 
 // ---------------------------------------------------------------------------------------------
 // Loading
@@ -256,6 +262,8 @@ export interface GameTextures {
   readonly consCoin: readonly Texture[];
   /** The gem magnet - PICKUP_KIND_MAGNET. */
   readonly consMagnet: Texture;
+  readonly consDice: Texture;
+  readonly chest: Texture;
   readonly shell: Texture;
   readonly gem: Texture;
   readonly puff: readonly Texture[];
@@ -348,7 +356,7 @@ export async function loadGameTextures(
 
   keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
-  keys.push('cons_spanner', 'cons_magnet');
+  keys.push('cons_spanner', 'cons_magnet', 'cons_dice', 'chest');
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
@@ -412,6 +420,8 @@ export async function loadGameTextures(
     consSpanner: get('cons_spanner'),
     consCoin: Array.from({ length: 4 }, (_, i) => get(`cons_coin${i}`)),
     consMagnet: get('cons_magnet'),
+    consDice: get('cons_dice'),
+    chest: get('chest'),
     shell: get('shell'),
     missile: get('missile'),
     slug: get('slug'),

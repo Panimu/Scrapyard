@@ -60,7 +60,7 @@ const SCENERY_JITTER = 230;
  * unbreakable piles come out at exactly the count they had before and the drums come out at twice
  * theirs. Measured, not derived: see the note on VARIANT_CDF.
  */
-const SCENERY_FILL = 0.671;
+const SCENERY_FILL = 0.7315;
 
 const RADIUS_MIN = 45;
 const RADIUS_MAX = 90;
@@ -128,14 +128,25 @@ const BARREL_RADIUS = 20;
  *   drums         32 -> 64,  26 -> 60,  34 -> 70     (2.11x over the three)
  *   unbreakables 116 -> 115, 112 -> 107, 100 -> 99   (unchanged, to within a pile)
  */
+/**
+ * AND THEN DRUMS WENT UP ANOTHER QUARTER, by exactly the same manoeuvre, so this table now records
+ * two edits with one method. `SCENERY_FILL` 0.671 -> 0.7315 and every unbreakable cutoff times
+ * 0.9173, which holds `fill x unbreakableShare` at 0.4290 - the count those six were measured at -
+ * while `fill x barrelShare` goes 0.2420 -> 0.3025.
+ *
+ * THE POINT OF DOING IT THIS WAY rather than just raising the fill: the six piles are COVER and
+ * COLLISION, and their density is a fact about how the yard plays that somebody measured. A drum
+ * is loot. Making loot commoner should not quietly make the map more cluttered as well, and a bare
+ * fill increase would have added 9% more girders to pay for 9% more barrels.
+ */
 const VARIANT_CDF: readonly number[] = Object.freeze([
-  0.1393, // 0 crushed cars    13.93%
-  0.2787, // 1 barrels         13.93%
-  0.418, // 2 girders          13.93%
-  0.541, // 3 tyres            12.29%
-  0.6148, // 4 enemy wrecks     7.38%
-  0.6393, // 5 mech wreck       2.46%
-  1.0, // 6 FUEL BARREL        36.07%
+  0.1278, // 0 crushed cars    12.78%
+  0.2556, // 1 barrels         12.78%
+  0.3834, // 2 girders         12.78%
+  0.4963, // 3 tyres           11.29%
+  0.5639, // 4 enemy wrecks     6.76%
+  0.5864, // 5 mech wreck       2.25%
+  1.0, // 6 FUEL BARREL        41.36%
 ]);
 
 /**

@@ -352,6 +352,8 @@ export interface RunStats {
   credits: number;
   /** Consumables walked over, all kinds. */
   consumables: number;
+  /** Dice found. Counted separately because one a run is the point, and a total of 0 is a story. */
+  dice: number;
   /** Fuel barrels broken. Not the same number - a barrel you never walked back to still counts. */
   barrelsBroken: number;
   /** Cyber Chests opened. */

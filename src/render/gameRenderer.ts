@@ -49,6 +49,9 @@ import {
   RANKS,
   RANK_BOSS,
   RANK_ELITE,
+  PICKUP_FLAG_DEAD,
+  PICKUP_KIND_CHEST,
+  PICKUP_KIND_DICE,
   PICKUP_KIND_GEM,
   PICKUP_KIND_MAGNET,
   PICKUP_KIND_REPAIR,
@@ -79,6 +82,7 @@ import {
   MISSILE_LONG_SCALE_Y,
   MISSILE_SHORT_SCALE_X,
   MISSILE_SHORT_SCALE_Y,
+  CHEST_SCALE,
   CONSUMABLE_SCALE,
   DRONE_SCALE,
   SCRAP_SRC_RADIUS,
@@ -205,7 +209,26 @@ const STRIKE_MIN_FRAC = 0.12;
  * SCREEN SPACE, in CSS px, on the stage rather than in the world container - it is furniture on
  * the glass, so it must not scale, rotate or scroll with the yard.
  * ------------------------------------------------------------------------------------------- */
-const BOSS_ARROW_TINT = BOSS_OUTLINE_TINT;
+/**
+ * RED FOR A BOSS, BLUE FOR A CHEST, BLACK AROUND BOTH.
+ *
+ * It used to take the boss's own outline tint, which is a muted steel - correct for a rim drawn
+ * ON a body, wrong for furniture on the glass. A pointer competing with a screen full of amber
+ * shells and green gems has to be a colour that means one thing, and red means the thing that can
+ * kill you.
+ *
+ * THE OUTLINE IS NOT DECORATION. The arrow sits on the edge of the yard, which is rust-orange
+ * ground, sometimes a fence, sometimes fifty Heavies - and a flat red triangle on rust is nearly
+ * invisible. A thin black rim gives it an edge against every one of those without making it
+ * heavier, which is the same trick the HUD's own text already uses.
+ */
+const BOSS_ARROW_TINT = 0xe23b3b;
+const CHEST_ARROW_TINT = 0x4fa8ff;
+const ARROW_OUTLINE_TINT = 0x000000;
+/** Thin: enough to separate the shape from the ground, not enough to read as a second shape. */
+const ARROW_OUTLINE_WIDTH = 2;
+/** A chest's drawn half-size, for the same "is it on screen yet" test the boss uses its radius for. */
+const CHEST_ARROW_RADIUS = 16;
 /** Distance from the drawn rect's edge to the arrow's tip, CSS px. Clear of the HUD's own gutter. */
 const BOSS_ARROW_INSET = 18;
 /** Tip-to-base length and half-width of the head, CSS px. */
@@ -632,10 +655,6 @@ export class GameRenderer {
     const g = this.bossArrows;
     g.clear();
 
-    const e = world.enemies;
-    const n = e.count;
-    if (n === 0) return;
-
     const cam = this.camera;
     const cx = cam.viewW * 0.5;
     const cy = cam.viewH * 0.5;
@@ -644,12 +663,13 @@ export class GameRenderer {
     const limY = cam.halfH * cam.scale - BOSS_ARROW_INSET;
     if (limX <= 0 || limY <= 0) return;
 
-    // One phase for every arrow this frame, so two bosses pulse together rather than beating
+    // One phase for every arrow this frame, so two pointers pulse together rather than beating
     // against each other.
     const pulse = 0.5 + 0.5 * Math.sin(this.clock * BOSS_ARROW_PULSE_HZ * Math.PI * 2);
     const alphaNow = BOSS_ARROW_ALPHA_MIN + (BOSS_ARROW_ALPHA_MAX - BOSS_ARROW_ALPHA_MIN) * pulse;
 
-    for (let d = 0; d < n; d++) {
+    const e = world.enemies;
+    for (let d = 0; d < e.count; d++) {
       if ((e.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
       if ((e.flags[d] & ENEMY_FLAG_BOSS) === 0) continue;
 
@@ -657,58 +677,115 @@ export class GameRenderer {
       // against a body drawn at 120 would visibly disagree with the boss when it came into view.
       const bx = lerp(e.prevX[d], e.x[d], alpha);
       const by = lerp(e.prevY[d], e.y[d], alpha);
-
-      // Offset from screen centre, in CSS px.
-      const dx = (bx - cam.x) * cam.scale;
-      const dy = (by - cam.y) * cam.scale;
-
-      // In view: no arrow. Measured against the boss's own drawn radius so the pointer survives
-      // exactly as long as the body is genuinely hidden, and not a moment past it.
-      const r = e.radius[d] * cam.scale;
-      if (Math.abs(dx) <= limX + r && Math.abs(dy) <= limY + r) continue;
-
-      // Where the ray from centre leaves the inset rect. Both axes are tested and the NEARER
-      // crossing wins, which is what puts a boss that is off the top-left corner in the corner
-      // rather than off the side of the screen it is less far past.
-      const ax = Math.abs(dx);
-      const ay = Math.abs(dy);
-      const tx = ax > 1e-4 ? limX / ax : Infinity;
-      const ty = ay > 1e-4 ? limY / ay : Infinity;
-      const t = tx < ty ? tx : ty;
-      if (!Number.isFinite(t)) continue; // boss exactly under the camera: nothing to point at
-
-      const ex = cx + dx * t;
-      const ey = cy + dy * t;
-
-      // Unit vector along the arrow. `t` scales dx/dy to the edge, so dividing by that length is
-      // one sqrt rather than a second atan2 plus a cos and a sin.
-      const len = Math.sqrt(dx * dx + dy * dy);
-      const ux = dx / len;
-      const uy = dy / len;
-      // Perpendicular, for the base corners.
-      const nx = -uy;
-      const ny = ux;
-
-      // Head: tip on the edge, base BOSS_ARROW_LEN back along the ray.
-      const bxp = ex - ux * BOSS_ARROW_LEN;
-      const byp = ey - uy * BOSS_ARROW_LEN;
-      g.moveTo(ex, ey)
-        .lineTo(bxp + nx * BOSS_ARROW_HALF, byp + ny * BOSS_ARROW_HALF)
-        .lineTo(bxp - nx * BOSS_ARROW_HALF, byp - ny * BOSS_ARROW_HALF)
-        .closePath()
-        .fill({ color: BOSS_ARROW_TINT, alpha: alphaNow });
-
-      // Tail. A stub behind the head, which is the whole difference between "an arrow" and "a
-      // triangle stuck to the edge of the screen".
-      const t0x = bxp - ux * BOSS_ARROW_TAIL;
-      const t0y = byp - uy * BOSS_ARROW_TAIL;
-      g.moveTo(bxp + nx * BOSS_ARROW_TAIL_HALF, byp + ny * BOSS_ARROW_TAIL_HALF)
-        .lineTo(t0x + nx * BOSS_ARROW_TAIL_HALF, t0y + ny * BOSS_ARROW_TAIL_HALF)
-        .lineTo(t0x - nx * BOSS_ARROW_TAIL_HALF, t0y - ny * BOSS_ARROW_TAIL_HALF)
-        .lineTo(bxp - nx * BOSS_ARROW_TAIL_HALF, byp - ny * BOSS_ARROW_TAIL_HALF)
-        .closePath()
-        .fill({ color: BOSS_ARROW_TINT, alpha: alphaNow * 0.85 });
+      this.edgeArrow(
+        cx,
+        cy,
+        limX,
+        limY,
+        (bx - cam.x) * cam.scale,
+        (by - cam.y) * cam.scale,
+        // Measured against the boss's own drawn radius so the pointer survives exactly as long as
+        // the body is genuinely hidden, and not a moment past it.
+        e.radius[d] * cam.scale,
+        BOSS_ARROW_TINT,
+        alphaNow,
+      );
     }
+
+    // CHESTS GET THE SAME POINTER IN BLUE, and they need it more than the boss does. A boss is
+    // enormous, loud and coming towards you; a chest is a silent box that stays exactly where the
+    // boss happened to die - which, after a fight that moved across half the yard, is nowhere near
+    // where the fight ended. The one guaranteed reward in a run was routinely walked away from.
+    //
+    // BLUE BECAUSE RED IS TAKEN, and taken by the thing that kills you. Two pointers of the same
+    // colour would make the player look at both with the same urgency, and exactly one of them is
+    // urgent.
+    const p = world.pickups;
+    for (let d = 0; d < p.count; d++) {
+      if (p.kind[d] !== PICKUP_KIND_CHEST) continue;
+      if ((p.flags[d] & PICKUP_FLAG_DEAD) !== 0) continue;
+      const bx = lerp(p.prevX[d], p.x[d], alpha);
+      const by = lerp(p.prevY[d], p.y[d], alpha);
+      this.edgeArrow(
+        cx,
+        cy,
+        limX,
+        limY,
+        (bx - cam.x) * cam.scale,
+        (by - cam.y) * cam.scale,
+        CHEST_ARROW_RADIUS,
+        CHEST_ARROW_TINT,
+        alphaNow,
+      );
+    }
+  }
+
+  /**
+   * One pointer on the edge of the drawn rect, aimed at an off-screen thing.
+   *
+   * `dx`/`dy` are the target's offset from screen centre in CSS px, and `r` is its drawn radius -
+   * the arrow is suppressed while any part of the thing is on screen, which is what stops a
+   * pointer sitting over something the player can already see.
+   */
+  private edgeArrow(
+    cx: number,
+    cy: number,
+    limX: number,
+    limY: number,
+    dx: number,
+    dy: number,
+    r: number,
+    tint: number,
+    alphaNow: number,
+  ): void {
+    if (Math.abs(dx) <= limX + r && Math.abs(dy) <= limY + r) return;
+
+    // Where the ray from centre leaves the inset rect. Both axes are tested and the NEARER
+    // crossing wins, which is what puts a target that is off the top-left corner in the corner
+    // rather than off the side of the screen it is less far past.
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    const tx = ax > 1e-4 ? limX / ax : Infinity;
+    const ty = ay > 1e-4 ? limY / ay : Infinity;
+    const t = tx < ty ? tx : ty;
+    if (!Number.isFinite(t)) return; // exactly under the camera: nothing to point at
+
+    const ex = cx + dx * t;
+    const ey = cy + dy * t;
+
+    // Unit vector along the arrow. `t` scales dx/dy to the edge, so dividing by that length is
+    // one sqrt rather than a second atan2 plus a cos and a sin.
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len;
+    const uy = dy / len;
+    // Perpendicular, for the base corners.
+    const nx = -uy;
+    const ny = ux;
+
+    const g = this.bossArrows;
+
+    // Head: tip on the edge, base BOSS_ARROW_LEN back along the ray. Filled AND stroked, so the
+    // shape keeps an edge against rust ground, a fence, or a wall of bodies.
+    const bxp = ex - ux * BOSS_ARROW_LEN;
+    const byp = ey - uy * BOSS_ARROW_LEN;
+    g.moveTo(ex, ey)
+      .lineTo(bxp + nx * BOSS_ARROW_HALF, byp + ny * BOSS_ARROW_HALF)
+      .lineTo(bxp - nx * BOSS_ARROW_HALF, byp - ny * BOSS_ARROW_HALF)
+      .closePath()
+      .fill({ color: tint, alpha: alphaNow })
+      .stroke({ width: ARROW_OUTLINE_WIDTH, color: ARROW_OUTLINE_TINT, alpha: alphaNow });
+
+    // Tail. A stub behind the head, which is the whole difference between "an arrow" and "a
+    // triangle stuck to the edge of the screen".
+    const t0x = bxp - ux * BOSS_ARROW_TAIL;
+    const t0y = byp - uy * BOSS_ARROW_TAIL;
+    g.moveTo(bxp + nx * BOSS_ARROW_TAIL_HALF, byp + ny * BOSS_ARROW_TAIL_HALF)
+      .lineTo(t0x + nx * BOSS_ARROW_TAIL_HALF, t0y + ny * BOSS_ARROW_TAIL_HALF)
+      .lineTo(t0x - nx * BOSS_ARROW_TAIL_HALF, t0y - ny * BOSS_ARROW_TAIL_HALF)
+      .lineTo(bxp - nx * BOSS_ARROW_TAIL_HALF, byp - ny * BOSS_ARROW_TAIL_HALF)
+      .closePath()
+      .fill({ color: tint, alpha: alphaNow * 0.85 })
+      .stroke({ width: ARROW_OUTLINE_WIDTH, color: ARROW_OUTLINE_TINT, alpha: alphaNow * 0.85 });
   }
 
   private drawLetterbox(): void {
@@ -816,12 +893,23 @@ export class GameRenderer {
     pool.end();
   }
 
+  /**
+   * Gems, consumables and chests.
+   *
+   * TWO PASSES, AND THE CHESTS GO SECOND. Every pickup shares one sprite pool, so draw order is
+   * dense-pool order - and `dropGems` allocates a boss's CHEST before its core, because the chest
+   * must not be lost to the gem cap. That put the chest underneath the biggest gem in the game, at
+   * the exact spot where the two always land together. A second pass over the same pool is two
+   * lines and puts the chest on top of everything, which is where the one guaranteed reward in a
+   * run belongs.
+   */
   private drawPickups(world: World, alpha: number): void {
     const p = world.pickups;
     const pool = this.pickups;
     pool.begin();
 
     for (let d = 0; d < p.count; d++) {
+      if (p.kind[d] === PICKUP_KIND_CHEST) continue;
       const x = lerp(p.prevX[d], p.x[d], alpha);
       const y = lerp(p.prevY[d], p.y[d], alpha);
       if (!this.camera.isVisible(x, y, 12)) continue;
@@ -852,10 +940,30 @@ export class GameRenderer {
           ? this.tex.consSpanner
           : kind === PICKUP_KIND_MAGNET
             ? this.tex.consMagnet
-            : (this.tex.consCoin[p.tier[d]] ?? this.tex.consCoin[0]);
+            : kind === PICKUP_KIND_DICE
+              ? this.tex.consDice
+              : (this.tex.consCoin[p.tier[d]] ?? this.tex.consCoin[0]);
       s.position.set(x, y + Math.sin(this.clock * 1.8 + phase) * 1.8);
       s.rotation = 0;
       s.scale.set(CONSUMABLE_SCALE);
+      s.tint = 0xffffff;
+      s.alpha = 1;
+    }
+
+    // PASS TWO: the chests, over the top of everything above. It bobs on the same slow rhythm the
+    // consumables use - a chest is an object on the ground, not a floating crystal - but wider and
+    // a little further, because it is the thing on this screen the player is meant to walk to.
+    for (let d = 0; d < p.count; d++) {
+      if (p.kind[d] !== PICKUP_KIND_CHEST) continue;
+      const x = lerp(p.prevX[d], p.x[d], alpha);
+      const y = lerp(p.prevY[d], p.y[d], alpha);
+      if (!this.camera.isVisible(x, y, 20)) continue;
+      const s = pool.acquire();
+      if (s === undefined) break;
+      s.texture = this.tex.chest;
+      s.position.set(x, y + Math.sin(this.clock * 1.5 + p.spawnId[d] * 0.7) * 2.2);
+      s.rotation = 0;
+      s.scale.set(CHEST_SCALE);
       s.tint = 0xffffff;
       s.alpha = 1;
     }

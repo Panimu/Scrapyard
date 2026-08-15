@@ -31,12 +31,18 @@ export const PICKUP_KIND_GEM = 0;
  *   CREDIT  a blue coin. `value` is 1..50 and `tier` picks which of the four coin sprites is
  *           drawn, so the pile you can see IS the amount you are about to bank.
  *   MAGNET  drags every gem in the world to the player for a few seconds.
+ *   DICE    one extra REROLL, banked for the rest of the run. The rarest thing a drum holds.
  */
 export const PICKUP_KIND_REPAIR = 1;
 export const PICKUP_KIND_CREDIT = 2;
 export const PICKUP_KIND_MAGNET = 3;
 /** A CYBER CHEST, left behind by a dead boss. Walk over it and the slot machine opens. */
 export const PICKUP_KIND_CHEST = 4;
+/**
+ * A DIE. Banks one reroll, and it is the only drop in the game whose value is a CHOICE later
+ * rather than a number now - which is exactly why it is the rare one.
+ */
+export const PICKUP_KIND_DICE = 5;
 
 export interface PickupPool {
   readonly capacity: number;

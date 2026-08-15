@@ -293,6 +293,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       damagePrevented: 0,
       credits: 0,
       consumables: 0,
+      dice: 0,
       barrelsBroken: 0,
       chests: 0,
       // Sized from the INJECTED catalog, not the shipping one: a fixture catalog with two weapons

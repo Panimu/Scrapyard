@@ -78,6 +78,7 @@ import {
   PICKUP_FLAG_DEAD,
   PICKUP_KIND_CHEST,
   PICKUP_KIND_CREDIT,
+  PICKUP_KIND_DICE,
   PICKUP_KIND_GEM,
   PICKUP_KIND_MAGNET,
   PICKUP_KIND_REPAIR,
@@ -97,6 +98,17 @@ import type { World } from '../types.js';
 
 /** Uint16Array ceiling. An absorbed gem saturates here rather than wrapping to a white gem. */
 const MAX_GEM_VALUE = 65535;
+
+/**
+ * How fast the SIDEWAYS half of a magnetised gem's velocity is bled off, per second.
+ *
+ * 6 is a time constant of about 0.17 s: fast enough that no gem completes a lap, slow enough that
+ * a gem thrown sideways by a blast still visibly curves rather than snapping onto the radius.
+ * Above about 12 the arc disappears and gems appear to change direction; below about 3 the orbits
+ * come back. It is in this file rather than in Tuning because it is not a balance dial - it is the
+ * difference between the magnet working and not.
+ */
+const MAGNET_TANGENT_DAMP = 6;
 
 export function updatePickups(world: World, dt: number): void {
   const p = world.player;
@@ -236,6 +248,10 @@ function dropConsumable(world: World, x: number, y: number): void {
     kind = PICKUP_KIND_MAGNET;
     value = 0;
     tier = 0;
+  } else if (held < CONSUMABLE_REPAIR_CHANCE + CONSUMABLE_MAGNET_CHANCE + CONSUMABLE_DICE_CHANCE) {
+    kind = PICKUP_KIND_DICE;
+    value = 1; // one reroll. A field rather than a constant, so a future big die is a value change.
+    tier = 0;
   } else {
     kind = PICKUP_KIND_CREDIT;
     // VALUE RIDES THE CLOCK. A coin found in the first minute is worth about 1 and one found at
@@ -305,6 +321,20 @@ function creditTier(value: number, thresholds: readonly number[]): number {
  */
 const CONSUMABLE_REPAIR_CHANCE = 0.45;
 const CONSUMABLE_MAGNET_CHANCE = 0.15;
+/**
+ * THE DICE, and it is the rarest thing a drum can hold by a wide margin: one barrel in twenty that
+ * is not empty, against nine for a spanner and three for a magnet.
+ *
+ * RARE BECAUSE OF WHAT IT IS, not because it is strong. A reroll is worth whatever the worst card
+ * you are about to be offered is worth, which is sometimes a run and usually nothing - so it cannot
+ * be priced like a heal. What it CAN be is the drop you remember finding, and that only works if
+ * finding one is an event. Five percent is about one a run.
+ *
+ * It comes out of the coin's share rather than the spanner's. Credits are the filler outcome and
+ * the one a player is least attached to; taking the die's slice from the heal would have made
+ * barrels measurably worse at the job they are mostly there for.
+ */
+const CONSUMABLE_DICE_CHANCE = 0.05;
 
 /**
  * Consumable spawnIds live above every gem's. A gem's is `1 + tick * MAX_KILLS_PER_TICK + k`, so
@@ -557,8 +587,35 @@ function magnetAndCollect(world: World, dt: number): void {
     }
 
     const inv = 1 / Math.sqrt(d2);
-    let vx = pool.vx[d] + dx * inv * accel * dt;
-    let vy = pool.vy[d] + dy * inv * accel * dt;
+    const ux = dx * inv;
+    const uy = dy * inv;
+
+    // SPLIT THE VELOCITY AND DAMP THE SIDEWAYS HALF. This is the whole fix for gems that ORBITED.
+    //
+    // Acceleration toward a point, with no damping, is not a magnet - it is gravity, and gravity
+    // makes satellites. Any gem with a sideways component kept it forever: it swung round the
+    // player instead of arriving, and the moment its circle carried it past `pickupRadius` the
+    // field let go and the velocity was zeroed, which is the "flung away and lands still" half of
+    // the same bug. Both halves are one missing term.
+    //
+    // So the velocity is resolved into RADIAL (toward the player) and TANGENTIAL (around him). The
+    // radial part accelerates exactly as before. The tangential part is what makes an orbit, and it
+    // is damped away in about a sixth of a second - so a gem curves in hard and lands, and nothing
+    // can ever settle into a stable circle.
+    //
+    // NOT A GLOBAL DRAG, which is the other way to kill an orbit and the wrong one: drag would also
+    // slow the approach, and the approach is the feedback the whole magnet exists to give.
+    const vr = pool.vx[d] * ux + pool.vy[d] * uy;
+    let tx = pool.vx[d] - vr * ux;
+    let ty = pool.vy[d] - vr * uy;
+    const keep = 1 - MAGNET_TANGENT_DAMP * dt;
+    const damp = keep > 0 ? keep : 0;
+    tx *= damp;
+    ty *= damp;
+
+    const nvr = vr + accel * dt;
+    let vx = ux * nvr + tx;
+    let vy = uy * nvr + ty;
 
     const s2 = vx * vx + vy * vy;
     if (s2 > maxSpeed2) {
@@ -657,6 +714,12 @@ function takeConsumable(world: World, d: number): void {
     player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;
   } else if (kind === PICKUP_KIND_CREDIT) {
     world.stats.credits += value;
+  } else if (kind === PICKUP_KIND_DICE) {
+    // BANKED, NOT SPENT. It sits on the run until the player chooses to burn it on a card they do
+    // not like, which is the whole point: every other consumable resolves the instant you touch
+    // it, and this one is the only thing in the yard you can decide what to do with later.
+    world.levelUp.rerolls += value;
+    world.stats.dice++;
   } else if (kind === PICKUP_KIND_MAGNET) {
     // Refreshed, not stacked. Two magnets inside four seconds is a longer pull, not a double one -
     // there is nothing for a second copy of "every gem is attracted" to do.

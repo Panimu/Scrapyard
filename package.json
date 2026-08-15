@@ -18,6 +18,7 @@
     "fence": "node tools/make-fence.mjs",
     "scrap": "node tools/make-scrap.mjs",
     "drone": "node tools/make-drone.mjs",
+    "drops": "node tools/make-drops.mjs",
     "icons": "tsx tools/make-icons.mjs",
     "screenshot": "tsx tools/screenshot.ts",
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",

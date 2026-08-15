@@ -40,6 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T19:38Z',
+    title: 'A die in the drums, and gems that actually arrive',
+    notes: [
+      'BARRELS CAN HOLD A DIE. It is the rarest thing in a drum by a wide margin - about one a run - and it banks an extra REROLL for the rest of the run. Everything else a barrel gives you resolves the moment you touch it; this is the only one you get to decide what to do with later.',
+      'AND THERE ARE MORE DRUMS TO BREAK, about a quarter more. The wrecks and girders are exactly as thick on the ground as they were: only the barrels went up, so the yard is more generous without being more cluttered.',
+      'XP GEMS NO LONGER ORBIT YOU. A gem flung sideways would swing round and round instead of arriving, and if its circle carried it out of range the pull let go and it stopped dead somewhere behind you. Both were the same missing piece. They now curve in hard and land - a gem thrown sideways at full speed is in your pocket in half a second, where before it never arrived at all.',
+      'THE OFF-SCREEN BOSS POINTER IS RED with a black edge, instead of the muted steel it borrowed from the boss outline. It has to be findable against rust ground, a fence, and a wall of bodies.',
+      'AND CHESTS GET THE SAME POINTER IN BLUE. A boss is enormous and coming towards you; a chest is a silent box left wherever the fight happened to end, which after a long boss is nowhere near where you are standing.',
+      'THE CYBER CHEST HAS A SPRITE AT LAST. It was being drawn as a single COIN - the smallest thing in the game - because nothing had ever given it art. It is now a strongbox with a lit seam, drawn bigger than the other drops, and it sits ON TOP of the boss core rather than underneath it.',
+    ],
+  },
+  {
     at: '2026-08-15T19:15Z',
     title: 'The Cyber Chest calls out what you just hit',
     notes: [
