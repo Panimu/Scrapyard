@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T07:13Z',
+    title: 'Heavies walk faster and shrug off shells',
+    notes: [
+      'A HEAVY MOVES 10% FASTER. Still the slowest thing in the yard by a distance - it is a wall that walks, and it walks slightly less slowly now.',
+      'AND IT TAKES HALF THE KNOCKBACK. Punting one out of your way used to be free: a Cannon shell threw it further than it walks in twenty seconds, so the ring you were meant to fight through could be swept aside instead. Half an impulse still moves it - this is not the Scraplord\'s outright immunity - a shell is just worth a shell now.',
+      'It shoves the crowd exactly as hard as it did before. Only what your weapons do to it changed.',
+    ],
+  },
+  {
     at: '2026-08-15T07:03Z',
     title: 'The Cannon has to turn its turret now',
     notes: [

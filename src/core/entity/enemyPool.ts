@@ -65,6 +65,12 @@ export interface EnemyPool {
   readonly radius: Float32Array;
   readonly speed: Float32Array;
   readonly mass: Float32Array;
+  /**
+   * Fraction of an incoming impulse this body actually takes, resolved from its flavour at spawn.
+   * 1 for everything except a Heavy. Separate from `mass` so halving what a shell does to a body
+   * does not also change how that body shoves the crowd - see FlavourDef.knockback.
+   */
+  readonly knockbackTake: Float32Array;
   readonly contactDamage: Float32Array;
   /** Per-enemy contact cooldown. Replaces global i-frames: one swarmer must not be able to
    *  soak the player's invulnerability window on behalf of a bruiser. */
@@ -113,6 +119,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oRadius = L.f32(capacity);
   const oSpeed = L.f32(capacity);
   const oMass = L.f32(capacity);
+  const oKnockbackTake = L.f32(capacity);
   const oContactDamage = L.f32(capacity);
   const oContactTimer = L.f32(capacity);
   const oSpawnId = L.u32(capacity);
@@ -155,6 +162,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
     radius: f32(oRadius),
     speed: f32(oSpeed),
     mass: f32(oMass),
+    knockbackTake: f32(oKnockbackTake),
     contactDamage: f32(oContactDamage),
     contactTimer: f32(oContactTimer),
     xpValue: u16(oXpValue),
@@ -179,7 +187,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
   // pure copy of the previous tick's x/y, so hashing them would only double the cost.
   denseViews.push(
     p.x, p.y, p.vx, p.vy, p.pushX, p.pushY,
-    p.hp, p.maxHp, p.radius, p.speed, p.mass,
+    p.hp, p.maxHp, p.radius, p.speed, p.mass, p.knockbackTake,
     p.contactDamage, p.contactTimer,
     p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags,
     p.spawnId, p.slot,
@@ -239,6 +247,7 @@ export function allocEnemy(
   p.radius[d] = 1;
   p.speed[d] = 0;
   p.mass[d] = 1;
+  p.knockbackTake[d] = 1;
   p.contactDamage[d] = 0;
   p.contactTimer[d] = 0;
   p.xpValue[d] = 0;
@@ -291,6 +300,7 @@ export function reapEnemies(p: EnemyPool): void {
       p.radius[d] = p.radius[last];
       p.speed[d] = p.speed[last];
       p.mass[d] = p.mass[last];
+      p.knockbackTake[d] = p.knockbackTake[last];
       p.contactDamage[d] = p.contactDamage[last];
       p.contactTimer[d] = p.contactTimer[last];
       p.xpValue[d] = p.xpValue[last];

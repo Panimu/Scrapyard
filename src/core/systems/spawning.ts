@@ -517,6 +517,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
     p.speed[d] = speed;
     p.radius[d] = bodyRadius;
     p.mass[d] = a.mass * r.mass;
+    p.knockbackTake[d] = f.knockback;
     p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
     p.contactTimer[d] = 0;
     p.xpValue[d] = c.xp * r.xp;
@@ -577,6 +578,7 @@ function spawnRank(world: World, rank: Rank, t: DirectorTuning): number {
   p.speed[d] = c.speed * r.speed * f.speed * diff.speedRamp;
   p.radius[d] = a.radius * r.size;
   p.mass[d] = a.mass * r.mass;
+  p.knockbackTake[d] = f.knockback;
   p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
   p.contactTimer[d] = 0;
   p.xpValue[d] = c.xp * r.xp;

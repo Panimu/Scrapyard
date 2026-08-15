@@ -301,7 +301,10 @@ function applyKnockback(world: World, ed: number, vx: number, vy: number, amount
   if ((enemies.flags[ed] & ENEMY_FLAG_ANCHORED) !== 0) return;
   const l2 = vx * vx + vy * vy;
   if (l2 === 0) return;
-  const k = amount / enemies.mass[ed] / Math.sqrt(l2);
+  // knockbackTake is the body's own resistance (a Heavy takes half); mass is the shared 1/mass
+  // that separation also uses. Two numbers because they answer two different questions - see
+  // FlavourDef.knockback.
+  const k = (amount * enemies.knockbackTake[ed]) / enemies.mass[ed] / Math.sqrt(l2);
   enemies.pushX[ed] += vx * k;
   enemies.pushY[ed] += vy * k;
 }
