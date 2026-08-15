@@ -35,6 +35,20 @@ import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
 import type { HeroDef, HeroWeaponBonus } from './heroes.js';
 import type { UpgradeDef } from './upgrades.js';
+import type { WeaponId } from '../content/definitions.js';
+import { accumulateMeta } from './meta.js';
+
+/**
+ * The workshop's contribution to a resolve, as the resolvers see it: the tiers the player owns and
+ * which weapon is being resolved. `weapon` is undefined for a player stat.
+ *
+ * A parameter rather than something core reads for itself, because core does not know what a save
+ * is. The app builds this from `Settings.metaTiers` and hands it to `createWorld`.
+ */
+export interface MetaSource {
+  readonly tiers: ArrayLike<number>;
+  readonly weapon?: WeaponId;
+}
 
 // -------------------------------------------------------------------------------------------
 // Player
@@ -314,12 +328,27 @@ function resolveOne(
   key: string,
   /** HeroDef.weaponBonus for THIS weapon, or undefined. Ignored for player stats. */
   bonus?: HeroWeaponBonus,
+  /** Workshop tiers and the weapon being resolved. See data/meta.ts. */
+  meta?: MetaSource,
 ): number {
   accumulate(stacks, catalog, target, key, ACC);
   const add = bonus?.add?.[key as WeaponStatKey] ?? 0;
   const mul = bonus?.mul?.[key as WeaponStatKey] ?? 1;
-  const scale = heroMul + mul + ACC.mul - 2;
-  return (base + add + ACC.add) * (scale > 0 ? scale : 0);
+  // A FOURTH POOL, folded by the same rule as the other three: each multiplier's distance from one
+  // is summed, never multiplied. So a workshop +30% and a maxed Ordnance +100% is +130% of base and
+  // not x2.6 - a permanent upgrade that compounded with a run's own cards would be worth several
+  // times more to a finished build than to a fresh one, and nothing on either screen would say so.
+  const m = meta === undefined ? undefined : accumulateMeta(meta.tiers, target, key, meta.weapon);
+  const metaAdd = m?.add ?? 0;
+  const metaMul = m?.mul ?? 1;
+  // WRITTEN AS `- 2 + (metaMul - 1)` RATHER THAN `+ metaMul - 3`, and that is not a style choice.
+  // The two are algebraically identical and NOT identical in floating point: the second reorders
+  // the sum and moves the last bit of the result. A run with no workshop tiers must resolve to the
+  // bit-exact numbers it did before this pool existed, or every recorded replay and every
+  // measurement baseline shifts underneath us. This form adds an exact zero in that case, which is
+  // an identity. Two tests caught it; they were right to.
+  const scale = heroMul + mul + ACC.mul - 2 + (metaMul - 1);
+  return (base + add + ACC.add + metaAdd) * (scale > 0 ? scale : 0);
 }
 
 /**
@@ -334,84 +363,37 @@ export function resolvePlayerStats(
   upgrades: readonly UpgradeDef[],
   out: PlayerStats,
   tuning: Tuning = DEFAULT_TUNING,
+  meta?: MetaSource,
 ): void {
   const b = tuning.player;
   const h = hero.player;
 
-  out.maxHp = resolveOne(b.maxHp, h.maxHp ?? 1, stacks, upgrades, 'player', 'maxHp');
-  out.hpRegen = resolveOne(b.hpRegen, h.hpRegen ?? 1, stacks, upgrades, 'player', 'hpRegen');
-  out.armour = resolveOne(b.armour, h.armour ?? 1, stacks, upgrades, 'player', 'armour');
-  out.moveAccel = resolveOne(b.moveAccel, h.moveAccel ?? 1, stacks, upgrades, 'player', 'moveAccel');
-  out.moveMaxSpeed = resolveOne(
-    b.moveMaxSpeed,
-    h.moveMaxSpeed ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'moveMaxSpeed',
-  );
-  out.pickupRadius = resolveOne(
-    b.pickupRadius,
-    h.pickupRadius ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'pickupRadius',
-  );
-  out.xpGain = resolveOne(b.xpGain, h.xpGain ?? 1, stacks, upgrades, 'player', 'xpGain');
+  // ONE BINDING RATHER THAN THIRTEEN CALL SITES. Every player stat resolves through exactly the
+  // same five arguments, and the day a fourteenth source of modifiers is added (the workshop was
+  // the third) it has to reach all of them. Threading it by hand through thirteen argument lists
+  // is how one stat quietly ends up not hearing about it - and the stat that gets missed is the
+  // one nobody has a test for.
+  const P = (base: number, heroMul: number, key: PlayerStatKey): number =>
+    resolveOne(base, heroMul, stacks, upgrades, 'player', key, undefined, meta);
+
+  out.maxHp = P(b.maxHp, h.maxHp ?? 1, 'maxHp');
+  out.hpRegen = P(b.hpRegen, h.hpRegen ?? 1, 'hpRegen');
+  out.armour = P(b.armour, h.armour ?? 1, 'armour');
+  out.moveAccel = P(b.moveAccel, h.moveAccel ?? 1, 'moveAccel');
+  out.moveMaxSpeed = P(b.moveMaxSpeed, h.moveMaxSpeed ?? 1, 'moveMaxSpeed');
+  out.pickupRadius = P(b.pickupRadius, h.pickupRadius ?? 1, 'pickupRadius');
+  out.xpGain = P(b.xpGain, h.xpGain ?? 1, 'xpGain');
 
   // damageTakenMul is the one stat where LOWER IS BETTER, so its cards carry negative `add`
   // amounts and the floor lives here rather than in each card.
-  const dtm = resolveOne(
-    b.damageTakenMul,
-    h.damageTakenMul ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'damageTakenMul',
-  );
+  const dtm = P(b.damageTakenMul, h.damageTakenMul ?? 1, 'damageTakenMul');
   out.damageTakenMul = dtm < 0.25 ? 0.25 : dtm;
 
-  out.shieldLayers = resolveOne(
-    b.shieldLayers,
-    h.shieldLayers ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'shieldLayers',
-  );
-  out.shieldRecharge = resolveOne(
-    b.shieldRecharge,
-    h.shieldRecharge ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'shieldRecharge',
-  );
-  out.repairAmount = resolveOne(
-    b.repairAmount,
-    1,
-    stacks,
-    upgrades,
-    'player',
-    'repairAmount',
-  );
-  out.repairInterval = resolveOne(
-    b.repairInterval,
-    1,
-    stacks,
-    upgrades,
-    'player',
-    'repairInterval',
-  );
-  out.shieldImmune = resolveOne(
-    b.shieldImmune,
-    h.shieldImmune ?? 1,
-    stacks,
-    upgrades,
-    'player',
-    'shieldImmune',
-  );
+  out.shieldLayers = P(b.shieldLayers, h.shieldLayers ?? 1, 'shieldLayers');
+  out.shieldRecharge = P(b.shieldRecharge, h.shieldRecharge ?? 1, 'shieldRecharge');
+  out.repairAmount = P(b.repairAmount, 1, 'repairAmount');
+  out.repairInterval = P(b.repairInterval, 1, 'repairInterval');
+  out.shieldImmune = P(b.shieldImmune, h.shieldImmune ?? 1, 'shieldImmune');
   // Layers are a COUNT of rims: floor it so a fractional card can never produce two-and-a-bit.
   out.shieldLayers = Math.max(0, Math.floor(out.shieldLayers));
   // A zero recharge would restore a layer every tick and make the shield total immunity. The
@@ -446,12 +428,17 @@ export function resolveWeaponStats(
   stacks: Uint8Array,
   upgrades: readonly UpgradeDef[],
   out: WeaponStats,
+  meta?: MetaSource,
 ): void {
   const h = hero.weapon;
   // The chassis' bonus for THIS weapon, looked up once. `undefined` for every hero that
   // has nothing to say about this gun, which is most of them - resolveOne then reads two
   // optional chains that short-circuit on the first `?.`.
   const bonus = hero.weaponBonus?.[def.id];
+  // The workshop, scoped to THIS weapon so an upgrade that names one gun - the drone bay's build
+  // time is the only one today - reaches that gun and no other. See data/meta.ts.
+  const metaHere: MetaSource | undefined =
+    meta === undefined ? undefined : { tiers: meta.tiers, weapon: def.id };
 
   // base + per-level deltas
   const lvl = (key: WeaponStatKey): number => {
@@ -464,94 +451,31 @@ export function resolveWeaponStats(
     return v;
   };
 
-  out.damage = resolveOne(lvl('damage'), h.damage ?? 1, stacks, upgrades, 'weapon', 'damage', bonus);
-  out.cooldown = resolveOne(lvl('cooldown'), h.cooldown ?? 1, stacks, upgrades, 'weapon', 'cooldown', bonus);
-  out.range = resolveOne(lvl('range'), h.range ?? 1, stacks, upgrades, 'weapon', 'range', bonus);
-  out.projectileSpeed = resolveOne(
-    lvl('projectileSpeed'),
-    h.projectileSpeed ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'projectileSpeed',
-    bonus,
-  );
-  out.projectileCount = resolveOne(
-    lvl('projectileCount'),
-    h.projectileCount ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'projectileCount',
-    bonus,
-  );
-  out.pierce = resolveOne(lvl('pierce'), h.pierce ?? 1, stacks, upgrades, 'weapon', 'pierce', bonus);
-  out.knockback = resolveOne(
-    lvl('knockback'),
-    h.knockback ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'knockback',
-    bonus,
-  );
-  out.splashRadius = resolveOne(
-    lvl('splashRadius'),
-    h.splashRadius ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'splashRadius',
-    bonus,
-  );
-  out.splashFrac = resolveOne(
-    lvl('splashFrac'),
-    h.splashFrac ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'splashFrac',
-    bonus,
-  );
-  out.turretTraverse = resolveOne(
-    lvl('turretTraverse'),
-    h.turretTraverse ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'turretTraverse',
-    bonus,
-  );
-  out.fireArc = resolveOne(lvl('fireArc'), h.fireArc ?? 1, stacks, upgrades, 'weapon', 'fireArc', bonus);
-  out.heatPerSec = resolveOne(
-    lvl('heatPerSec'),
-    h.heatPerSec ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'heatPerSec',
-    bonus,
-  );
+  /**
+   * ONE BINDING RATHER THAN NINETEEN CALL SITES, for the reason `resolvePlayerStats` gives: every
+   * weapon stat resolved through the identical seven arguments, and a new source of modifiers has
+   * to reach all nineteen or one stat silently does not hear about it. It also collapsed a great
+   * deal of repetition - each of these used to be a seven-line call that differed in one word.
+   */
+  const W = (key: WeaponStatKey): number =>
+    resolveOne(lvl(key), h[key] ?? 1, stacks, upgrades, 'weapon', key, bonus, metaHere);
+
+  out.damage = W('damage');
+  out.cooldown = W('cooldown');
+  out.range = W('range');
+  out.projectileSpeed = W('projectileSpeed');
+  out.projectileCount = W('projectileCount');
+  out.pierce = W('pierce');
+  out.knockback = W('knockback');
+  out.splashRadius = W('splashRadius');
+  out.splashFrac = W('splashFrac');
+  out.turretTraverse = W('turretTraverse');
+  out.fireArc = W('fireArc');
+  out.heatPerSec = W('heatPerSec');
   if (out.heatPerSec < 0) out.heatPerSec = 0;
-  out.heatCapacity = resolveOne(
-    lvl('heatCapacity'),
-    h.heatCapacity ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'heatCapacity',
-    bonus,
-  );
+  out.heatCapacity = W('heatCapacity');
   if (out.heatCapacity < 1) out.heatCapacity = 1;
-  out.heatDispersion = resolveOne(
-    lvl('heatDispersion'),
-    h.heatDispersion ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'heatDispersion',
-    bonus,
-  );
+  out.heatDispersion = W('heatDispersion');
   if (out.heatDispersion < 0) out.heatDispersion = 0;
   out.heatResume = out.heatCapacity * HEAT_RESUME_FRAC;
 
@@ -567,26 +491,10 @@ export function resolveWeaponStats(
   out.projectileCount = Math.max(1, Math.floor(out.projectileCount));
   out.pierce = Math.max(0, Math.floor(out.pierce));
 
-  out.turnRate = resolveOne(lvl('turnRate'), h.turnRate ?? 1, stacks, upgrades, 'weapon', 'turnRate', bonus);
+  out.turnRate = W('turnRate');
   if (out.turnRate < 0) out.turnRate = 0;
-  out.spreadAngle = resolveOne(
-    lvl('spreadAngle'),
-    h.spreadAngle ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'spreadAngle',
-    bonus,
-  );
-  out.flightTime = resolveOne(
-    lvl('flightTime'),
-    h.flightTime ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'flightTime',
-    bonus,
-  );
+  out.spreadAngle = W('spreadAngle');
+  out.flightTime = W('flightTime');
   if (out.flightTime < 0) out.flightTime = 0;
 
   // ---- derived ----
@@ -595,18 +503,10 @@ export function resolveWeaponStats(
   out.projectileLifetime =
     out.flightTime > 0 ? out.flightTime : (out.range / out.projectileSpeed) * LIFETIME_MARGIN;
   out.ammoCapacity = Math.floor(
-    resolveOne(lvl('ammoCapacity'), h.ammoCapacity ?? 1, stacks, upgrades, 'weapon', 'ammoCapacity', bonus),
+    W('ammoCapacity'),
   );
   if (out.ammoCapacity < 0) out.ammoCapacity = 0;
-  out.reloadTime = resolveOne(
-    lvl('reloadTime'),
-    h.reloadTime ?? 1,
-    stacks,
-    upgrades,
-    'weapon',
-    'reloadTime',
-    bonus,
-  );
+  out.reloadTime = W('reloadTime');
   // Feed Systems takes FLAT SECONDS off this, so a weapon with no magazine - base reload 0 -
   // resolves to a negative number. Nothing reads it (the reload path is gated on ammoCapacity),
   // but a stat block holding -3.5 seconds is a trap for the next weapon that grows a magazine.

@@ -206,7 +206,18 @@ function droneGunStats(world: World, level: number): void {
     if (def !== undefined && DRONE_GUN_IGNORES.indexOf(def.id) >= 0) stacks[i] = 0;
   }
 
-  resolveWeaponStats(MACHINE_GUN, hero, level, stacks, world.upgradeCatalog, world.droneGun);
+  // The workshop reaches the drone's gun too. Note this resolves MACHINE_GUN rather than the
+  // drone bay, so `m-drone` - which is scoped to the bay's build time - correctly does NOT apply
+  // here, while the unscoped damage and range upgrades do.
+  resolveWeaponStats(
+    MACHINE_GUN,
+    hero,
+    level,
+    stacks,
+    world.upgradeCatalog,
+    world.droneGun,
+    world.meta,
+  );
 }
 
 export function updateDrones(world: World, dt: number): void {

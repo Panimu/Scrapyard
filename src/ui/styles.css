@@ -1276,9 +1276,11 @@ body {
  * Upgrades - a bank statement until there is something to buy.
  * ----------------------------------------------------------------------------------------- */
 
+/* Was centred when this screen was a single figure and a sentence. It now holds a list that has to
+   be allowed to grow and scroll, so the column starts at the top and the list takes the slack. */
 .upgrades {
-  gap: 16px;
-  justify-content: center;
+  gap: 10px;
+  justify-content: flex-start;
 }
 
 .upgrades__head {
@@ -1299,8 +1301,10 @@ body {
   gap: 4px;
 }
 
+/* Smaller than it was: the total shared the screen with nothing when this was a bank statement,
+   and now it is competing with seven rows that the player actually came here to read. */
 .upgrades__figure {
-  font-size: clamp(44px, 16vw, 72px);
+  font-size: clamp(30px, 10vw, 44px);
   font-weight: 800;
   line-height: 1;
   color: #4fb8ff;
@@ -1320,6 +1324,126 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink-faint);
+}
+
+/* ---- the workshop list -----------------------------------------------------------------
+ * THE LIST IS THE ONLY THING THAT SCROLLS. The credit total above it and the refund and back
+ * buttons below it stay put, because the total is the number every decision on this screen is
+ * measured against and a player scrolled to the bottom of a seven-row list should not have to
+ * scroll back up to find out what they can afford. */
+.upgrades__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px;
+}
+
+.upgrades__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid #4fb8ff;
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+/* Maxed reads as done rather than as disabled: it keeps its text and loses its accent. */
+.upgrades__row--full {
+  border-left-color: var(--ink-faint);
+}
+
+.upgrades__words {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.upgrades__name {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.upgrades__blurb {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}
+
+.upgrades__summary {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #4fb8ff;
+}
+
+.upgrades__pips {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.upgrades__pip {
+  width: 14px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.upgrades__pip--on {
+  background: #4fb8ff;
+}
+
+.upgrades__buy {
+  flex: 0 0 auto;
+  min-width: 84px;
+  min-height: var(--tap);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.upgrades__price {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* A price you cannot meet stays legible rather than fading out - the number is the information,
+   and a greyed-out button whose text cannot be read tells you nothing about what to save for. */
+.upgrades__buy:disabled {
+  opacity: 1;
+  color: var(--ink-faint);
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.upgrades__refund-note {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4fb8ff;
+  min-height: 18px;
+}
+
+.upgrades__refund {
+  flex: 0 0 auto;
+  width: min(100%, 340px);
+  margin: 0 auto;
+  height: 46px;
+  font-size: 15px;
 }
 
 .upgrades__back {

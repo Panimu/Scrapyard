@@ -257,7 +257,13 @@ async function boot(): Promise<void> {
     state.levelId,
   );
 
-  const upgrades = new UpgradesScreen(() => showScreen('title'));
+  const upgrades = new UpgradesScreen(() => showScreen('title'), {
+    tierOf: (id) => state.metaTier(id),
+    buy: (id) => state.buyMeta(id),
+    refund: () => state.refundMeta(),
+    credits: () => state.settings.credits,
+    spent: () => state.metaSpent(),
+  });
   const toast = new AchievementToast();
 
   const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
@@ -437,7 +443,14 @@ async function boot(): Promise<void> {
   function startRun(heroId: number, seed: number): void {
     state.heroId = heroId;
     state.seed = seed;
-    sim = new Simulation({ seed, heroId, runLengthSec: RUN_LENGTH_SEC });
+    // THE WORKSHOP, read from the save exactly here. Core is handed a dense array of tier counts
+    // and never learns where they came from - the same treatment `tuning` gets.
+    sim = new Simulation({
+      seed,
+      heroId,
+      runLengthSec: RUN_LENGTH_SEC,
+      metaTiers: state.metaTiersArray(),
+    });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
     // THE DECK'S GATE, pushed in at run start. Core never reads the save; it is handed a mask.
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
@@ -556,7 +569,8 @@ async function boot(): Promise<void> {
         settings.show();
         break;
       case 'upgrades':
-        upgrades.setCredits(state.settings.credits);
+        // `show` re-reads everything through its hooks, so a run banked since the last visit is
+        // already spendable without the caller pushing a total in.
         upgrades.show();
         break;
       case 'scrapopedia':

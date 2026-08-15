@@ -22,6 +22,7 @@ import {
   type UpgradeId,
 } from './core/data/upgrades.js';
 import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
+import { META_CATALOG, metaSpent, type MetaId } from './core/data/meta.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
 import { reportSync, reportUnlocked } from './achievements.js';
 import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
@@ -139,6 +140,18 @@ export interface Settings {
    * cleared save costs the page rather than the ability to find it again.
    */
   heldAscensions: UpgradeId[];
+  /**
+   * Workshop tiers owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
+   *
+   * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
+   * uses ids: an index is only meaningful beside the version of the table that produced it, and
+   * reordering META_CATALOG must not silently hand somebody a different upgrade at full tier. The
+   * array core wants is built from this at run start, where the catalog is in hand.
+   *
+   * NO SEPARATE "SPENT" TOTAL. What the refund pays back is derived from these tiers by
+   * `metaSpent`, so the two cannot disagree - see the note on that function.
+   */
+  metaTiers: Partial<Record<MetaId, number>>;
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -171,6 +184,7 @@ const DEFAULTS: Settings = {
   killedEnemies: [],
   earnedCards: [],
   heldAscensions: [],
+  metaTiers: {},
 };
 
 function loadSettings(): Settings {
@@ -217,6 +231,12 @@ function loadSettings(): Settings {
             typeof id === 'string' &&
             UPGRADE_CATALOG.some((d) => d.id === id && d.ascension !== undefined),
         ),
+      // Clamped per upgrade against the CURRENT catalog: an unknown id is dropped, and a tier
+      // count past what that upgrade now offers is trimmed to the new ceiling. Shortening an
+      // upgrade's ladder must not leave somebody holding tier 9 of a seven-tier card - and it must
+      // not silently eat the credits either, which is why the refund is derived from the clamped
+      // tiers rather than from anything banked at the time of purchase.
+      metaTiers: readMetaTiers(parsed.metaTiers),
       // Filtered against the two tables that can name one, so a retired variant stops appearing
       // rather than lingering as a name nothing resolves.
       killedEnemies: (Array.isArray(parsed.killedEnemies)
@@ -250,6 +270,24 @@ function loadSettings(): Settings {
     // Private browsing, quota, corrupt JSON - all the same answer.
     return { ...DEFAULTS };
   }
+}
+
+/**
+ * Workshop tiers out of storage: unknown ids dropped, counts clamped to each upgrade's ceiling.
+ *
+ * Storage is script-writable and this round-trips through JSON, so every value here is treated as
+ * hostile - a hand-edited "damage: 900" becomes the seven it is allowed to be rather than a
+ * multiplier nothing downstream expects.
+ */
+function readMetaTiers(v: unknown): Partial<Record<MetaId, number>> {
+  const out: Partial<Record<MetaId, number>> = {};
+  if (typeof v !== 'object' || v === null) return out;
+  const raw = v as Record<string, unknown>;
+  for (const def of META_CATALOG) {
+    const n = clampInt(raw[def.id], 0, def.tiers, 0);
+    if (n > 0) out[def.id] = n;
+  }
+  return out;
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
@@ -331,6 +369,74 @@ export class AppState {
 
   hasUpgrade(id: UpgradeId): boolean {
     return this.settings.unlockedUpgrades.includes(id);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // THE WORKSHOP
+  // -------------------------------------------------------------------------------------------
+
+  /** Tiers owned of one upgrade. */
+  metaTier(id: MetaId): number {
+    return this.settings.metaTiers[id] ?? 0;
+  }
+
+  /**
+   * The tier counts as core wants them: dense, by META_CATALOG index.
+   *
+   * Built here rather than stored this way, because the SAVE is keyed by id and core is handed
+   * indices - this function is the one place that conversion happens, and it happens where the
+   * catalog is in hand.
+   */
+  metaTiersArray(): Uint8Array {
+    const out = new Uint8Array(META_CATALOG.length);
+    for (let i = 0; i < META_CATALOG.length; i++) out[i] = this.metaTier(META_CATALOG[i].id);
+    return out;
+  }
+
+  /** Everything sunk into the workshop, in credits. What `refundMeta` pays back. */
+  metaSpent(): number {
+    return metaSpent(this.metaTiersArray());
+  }
+
+  /**
+   * Buys the next tier of one upgrade. Returns true if it was bought.
+   *
+   * REFUSES RATHER THAN CLAMPS on both failure modes - already at full tier, or not enough credits.
+   * A purchase that silently did nothing and a purchase that silently did half are both worse than
+   * a button that does not light up, which is what the screen shows instead.
+   */
+  buyMeta(id: MetaId): boolean {
+    const def = META_CATALOG.find((d) => d.id === id);
+    if (def === undefined) return false;
+    const owned = this.metaTier(id);
+    if (owned >= def.tiers) return false;
+    if (this.settings.credits < def.cost) return false;
+    this.settings.credits -= def.cost;
+    this.settings.metaTiers[id] = owned + 1;
+    this.saveSettings();
+    return true;
+  }
+
+  /**
+   * Sets every workshop upgrade back to zero and returns every credit spent on them.
+   *
+   * FULL PRICE, NO FEE. A refund that charged for the privilege would make experimenting with a
+   * build something to be careful about, and the entire reason to offer one is so that trying a
+   * loadout is not a decision a player has to be careful about.
+   *
+   * The amount is DERIVED from the tiers being cleared rather than from a running total banked at
+   * purchase time - see `metaSpent`. Those two could disagree after a catalog change, and the day
+   * they did the refund would either invent credits or eat them.
+   *
+   * Returns what was paid back, so the screen can say so.
+   */
+  refundMeta(): number {
+    const owed = this.metaSpent();
+    if (owed <= 0) return 0;
+    this.settings.metaTiers = {};
+    this.settings.credits = Math.min(MAX_BANKED_CREDITS, this.settings.credits + owed);
+    this.saveSettings();
+    return owed;
   }
 
   /**

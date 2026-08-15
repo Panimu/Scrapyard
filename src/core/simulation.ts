@@ -50,6 +50,12 @@ export interface SimulationOptions {
   readonly heroId: number;
   readonly runLengthSec?: number;
   readonly tuning?: Tuning;
+  /**
+   * Workshop tiers owned, by META_CATALOG index. Omitted means none - which is what the
+   * measurement rig, the determinism suite and every test pass, so a purchase cannot move a
+   * benchmark or a replay hash unless it was deliberately handed over.
+   */
+  readonly metaTiers?: ArrayLike<number>;
   /** Substitute catalogs, for fixture-driven tests. */
   readonly catalogs?: Catalogs;
 }
@@ -68,6 +74,7 @@ export class Simulation {
       heroId: options.heroId | 0,
       runLengthSec: options.runLengthSec ?? RUN_LENGTH_SEC,
       tuning: options.tuning ?? DEFAULT_TUNING,
+      metaTiers: options.metaTiers,
     };
     this.world = createWorld(config, options.catalogs ?? DEFAULT_CATALOGS);
   }

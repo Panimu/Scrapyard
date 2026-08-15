@@ -73,6 +73,7 @@ import { ENEMY_CATALOG } from './data/enemies.js';
 import { WEAPON_CATALOG } from './data/weapons.js';
 import { UPGRADE_CATALOG } from './data/upgrades.js';
 import { resolvePlayerStats, resolveWeaponStats } from './data/stats.js';
+import { META_CATALOG } from './data/meta.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
 
 // ---- the ten mandated systems (sim agents) ------------------------------------------------
@@ -244,6 +245,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
 
   const world: World = {
     config,
+    // Copied into a dense array once rather than read through `config.metaTiers` at every resolve:
+    // the config field is an optional ArrayLike a caller may not have passed at all, and five
+    // resolve sites each doing `?? EMPTY` is five chances to get the fallback wrong.
+    meta: { tiers: Uint8Array.from(META_CATALOG.map((_, i) => config.metaTiers?.[i] ?? 0)) },
     rng: createRngStreams(config.seed),
 
     tick: 0,
@@ -405,7 +410,14 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   // config.tuning is passed explicitly: omitting it silently falls back to DEFAULT_TUNING, so a
   // swept tuning would apply from the first upgrade pick onward but NOT at run start - the run
   // would start on one set of numbers and quietly change to another.
-  resolvePlayerStats(hero, world.levelUp.stacks, world.upgradeCatalog, player.stats, config.tuning);
+  resolvePlayerStats(
+    hero,
+    world.levelUp.stacks,
+    world.upgradeCatalog,
+    player.stats,
+    config.tuning,
+    world.meta,
+  );
   player.hp = player.stats.maxHp;
   // A shield starts UP, the same way hp starts full. No shipping hero carries one at tier 0, so
   // this is normally 0 - but a hero that did would otherwise spend its first 20 seconds charging
@@ -429,6 +441,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       world.levelUp.stacks,
       world.upgradeCatalog,
       inst.stats,
+      world.meta,
     );
     world.weaponCount = 1;
   }

@@ -351,7 +351,14 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
   const player = world.player;
   const maxHpBefore = player.stats.maxHp;
   const shieldCapBefore = player.stats.shieldLayers;
-  resolvePlayerStats(hero, lu.stacks, world.upgradeCatalog, player.stats, world.config.tuning);
+  resolvePlayerStats(
+    hero,
+    lu.stacks,
+    world.upgradeCatalog,
+    player.stats,
+    world.config.tuning,
+    world.meta,
+  );
 
   // A card that adds a shield layer RAISES IT IMMEDIATELY, for the same reason a card that adds
   // max HP heals for what it added: the player took the card to have the thing, and a rim that
@@ -380,6 +387,7 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
       lu.stacks,
       world.upgradeCatalog,
       inst.stats,
+      world.meta,
     );
   }
 

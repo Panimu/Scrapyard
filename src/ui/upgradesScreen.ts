@@ -1,23 +1,63 @@
 /**
- * UPGRADES. The permanent-progression screen, and at the moment it is a bank statement.
+ * THE WORKSHOP. Permanent upgrades, bought between runs with the credits a run banks.
  *
- * IT SHIPS EMPTY ON PURPOSE. Blue credit coins have been banking across runs since the day they
- * were added, and the total has so far only appeared as a line of small text on the mech picker.
- * A player who has spent fifteen minutes collecting coins deserves a screen that admits the coins
- * exist, tells them what the number is, and says plainly that nothing spends it yet - which is a
- * better answer than a menu entry that is not there at all, and a far better one than a shop
- * mocked up with buttons that do nothing.
+ * ---------------------------------------------------------------------------------------------
+ * WHAT IT IS AND WHAT IT IS NOT
+ * ---------------------------------------------------------------------------------------------
+ * This screen spends credits and nothing else does. The CONTENT - what can be bought, what a tier
+ * does, what it costs - is `src/core/data/meta.ts`, and this file reads it rather than restating
+ * any of it, the same rule the Scrapopedia follows: a name or a price written in two places is a
+ * name or a price that will one day disagree with itself.
  *
- * What goes here later is the thing credits buy: a starting tier, a chassis unlock, a rerolled
- * card. When it does, this file grows a grid and the placeholder below goes away.
+ * ---------------------------------------------------------------------------------------------
+ * THE NUMBERS ARE ON SCREEN, DELIBERATELY
+ * ---------------------------------------------------------------------------------------------
+ * Level-up cards carry no magnitudes on purpose - four seconds to read, horde closing in, and a
+ * percentage invites arithmetic instead of a decision. None of that applies here. Nothing is
+ * chasing the player, the currency was earned rather than offered, and comparing "+30% damage for
+ * 350" against "+15% range for 150" IS the activity. See meta.ts for the longer version.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * A BUTTON THAT CANNOT BE PRESSED SAYS WHY
+ * ---------------------------------------------------------------------------------------------
+ * There are two reasons a tier cannot be bought - it is already full, or there are not enough
+ * credits - and they want completely different things from the player. So the button says MAXED or
+ * it says the price and is disabled, rather than both failing the same silent way. `disabled` is
+ * used rather than hiding, because a row that vanished when you could not afford it would make the
+ * shop's contents depend on your balance.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT REBUILDS THE WHOLE LIST ON EVERY CHANGE
+ * ---------------------------------------------------------------------------------------------
+ * Buying one tier changes the credit total, which changes whether EVERY OTHER row is affordable.
+ * Patching the one row that was clicked is how a shop ends up with three buttons still lit that
+ * cannot be pressed. The list is seven rows; rebuilding it is free and cannot drift.
  */
+
+import { META_CATALOG, type MetaDef, type MetaId } from '../core/data/meta.js';
+
+export interface UpgradesHooks {
+  /** Tiers currently owned of one upgrade. */
+  tierOf: (id: MetaId) => number;
+  /** Attempts a purchase. Returns whether it happened; the screen re-reads state either way. */
+  buy: (id: MetaId) => boolean;
+  /** Clears every upgrade and returns the credits paid back. */
+  refund: () => number;
+  /** Credits available right now. */
+  credits: () => number;
+  /** Everything sunk into the workshop so far. */
+  spent: () => number;
+}
 
 export class UpgradesScreen {
   readonly element: HTMLDivElement;
 
   private readonly total: HTMLDivElement;
+  private readonly list: HTMLDivElement;
+  private readonly refundBtn: HTMLButtonElement;
+  private readonly refundNote: HTMLDivElement;
 
-  constructor(onBack: () => void) {
+  constructor(onBack: () => void, private readonly hooks: UpgradesHooks) {
     const el = document.createElement('div');
     el.className = 'overlay upgrades';
     el.hidden = true;
@@ -27,18 +67,34 @@ export class UpgradesScreen {
     const head = document.createElement('div');
     head.className = 'upgrades__head';
     head.innerHTML = `<div class="eyebrow">Between runs</div>
-      <h1 class="upgrades__title">Upgrades</h1>`;
+      <h1 class="upgrades__title">Workshop</h1>`;
     el.appendChild(head);
 
     this.total = document.createElement('div');
     this.total.className = 'upgrades__total';
     el.appendChild(this.total);
 
-    const note = document.createElement('div');
-    note.className = 'upgrades__note';
-    note.textContent =
-      'Nothing spends credits yet. They keep banking every run, so whatever this becomes, you will arrive at it with something in your pocket.';
-    el.appendChild(note);
+    this.list = document.createElement('div');
+    this.list.className = 'upgrades__list';
+    el.appendChild(this.list);
+
+    this.refundNote = document.createElement('div');
+    this.refundNote.className = 'upgrades__refund-note';
+    el.appendChild(this.refundNote);
+
+    this.refundBtn = document.createElement('button');
+    this.refundBtn.type = 'button';
+    this.refundBtn.className = 'btn upgrades__refund';
+    this.refundBtn.addEventListener('click', () => {
+      const paid = this.hooks.refund();
+      this.render();
+      // Said out loud rather than left to be inferred from the total moving. A refund is the one
+      // action here that changes several rows at once, and "nothing happened" and "everything was
+      // undone" look far too similar if the screen says nothing.
+      this.refundNote.textContent =
+        paid > 0 ? `Refunded ${paid} credits. Every upgrade is back to zero.` : '';
+    });
+    el.appendChild(this.refundBtn);
 
     const back = document.createElement('button');
     back.type = 'button';
@@ -50,11 +106,81 @@ export class UpgradesScreen {
     this.element = el;
   }
 
-  setCredits(credits: number): void {
+  private row(def: MetaDef): HTMLDivElement {
+    const owned = this.hooks.tierOf(def.id);
+    const full = owned >= def.tiers;
+    const credits = this.hooks.credits();
+
+    const row = document.createElement('div');
+    row.className = `upgrades__row${full ? ' upgrades__row--full' : ''}`;
+
+    const words = document.createElement('div');
+    words.className = 'upgrades__words';
+
+    const name = document.createElement('div');
+    name.className = 'upgrades__name';
+    name.textContent = def.name;
+
+    const blurb = document.createElement('div');
+    blurb.className = 'upgrades__blurb';
+    blurb.textContent = def.blurb;
+
+    const summary = document.createElement('div');
+    summary.className = 'upgrades__summary';
+    summary.textContent = def.summary;
+
+    words.append(name, blurb, summary);
+
+    // PIPS RATHER THAN "3 / 7". A ladder's length is the thing worth seeing at a glance - how much
+    // is left is a shape, not a fraction - and it is the same reading whether the ladder is one
+    // tier long or seven.
+    const pips = document.createElement('div');
+    pips.className = 'upgrades__pips';
+    pips.setAttribute('aria-label', `${owned} of ${def.tiers} bought`);
+    for (let i = 0; i < def.tiers; i++) {
+      const pip = document.createElement('span');
+      pip.className = `upgrades__pip${i < owned ? ' upgrades__pip--on' : ''}`;
+      pips.appendChild(pip);
+    }
+    words.appendChild(pips);
+
+    const buy = document.createElement('button');
+    buy.type = 'button';
+    buy.className = 'btn upgrades__buy';
+    if (full) {
+      buy.textContent = 'MAXED';
+      buy.disabled = true;
+    } else {
+      buy.innerHTML = `<span class="upgrades__price">${def.cost}</span><span class="upgrades__unit">cr</span>`;
+      buy.disabled = credits < def.cost;
+      buy.addEventListener('click', () => {
+        if (this.hooks.buy(def.id)) {
+          this.refundNote.textContent = '';
+          this.render();
+        }
+      });
+    }
+
+    row.append(words, buy);
+    return row;
+  }
+
+  /** Rebuilt from scratch on every change - see this file's header. */
+  private render(): void {
+    const credits = this.hooks.credits();
     this.total.innerHTML = `<span class="upgrades__figure">${credits}</span><span class="upgrades__unit">credits banked</span>`;
+
+    this.list.innerHTML = '';
+    for (const def of META_CATALOG) this.list.appendChild(this.row(def));
+
+    const spent = this.hooks.spent();
+    this.refundBtn.textContent = spent > 0 ? `Refund all (${spent} cr)` : 'Nothing to refund';
+    this.refundBtn.disabled = spent <= 0;
   }
 
   show(): void {
+    this.refundNote.textContent = '';
+    this.render();
     this.element.hidden = false;
   }
 

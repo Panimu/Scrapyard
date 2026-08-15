@@ -20,7 +20,7 @@ import type { SpatialHash } from './spatial/hashGrid.js';
 import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
 import type { ResolvedCycle } from './content/cycles.js';
-import type { PlayerStats, WeaponStats } from './data/stats.js';
+import type { MetaSource, PlayerStats, WeaponStats } from './data/stats.js';
 import type { DronePool } from './entity/dronePool.js';
 import type { HeroDef } from './data/heroes.js';
 import type { EnemyDef } from './data/enemies.js';
@@ -112,6 +112,18 @@ export interface WorldConfig {
   readonly runLengthSec: number;
   /** Frozen; part of the determinism key. NO VIEWPORT FIELDS - deliberate (DESIGN.md §0 #16). */
   readonly tuning: Tuning;
+  /**
+   * Workshop tiers owned, by META_CATALOG index. See core/data/meta.ts.
+   *
+   * PART OF THE DETERMINISM KEY, like `tuning`, and for the same reason: these change the resolved
+   * stats a run starts with, so a replay recorded with them has to be replayed with them. It is a
+   * plain array of counts rather than anything that knows about a save - the app reads the save and
+   * hands the numbers over, which is the whole of core's involvement with permanent progression.
+   *
+   * Optional, and absent means all zeros. The measurement rig and the determinism suite pass
+   * nothing, so a workshop purchase can never move a benchmark.
+   */
+  readonly metaTiers?: ArrayLike<number>;
 }
 
 export interface PlayerState {
@@ -476,6 +488,15 @@ export interface WorldScratch {
 
 export interface World {
   readonly config: WorldConfig;
+  /**
+   * The workshop tiers, in the shape the stat resolvers want.
+   *
+   * Built once in `createWorld` from `config.metaTiers` and held here so that all five resolve
+   * sites - run start, each upgrade applied, and the drone's own gun - read the same object. They
+   * are five places that must never disagree about what the player owns, and the way that goes
+   * wrong is one of them being written without the argument.
+   */
+  readonly meta: MetaSource;
   readonly rng: RngStreams;
 
   /** 0-based index of the step currently executing. endTick advances it. */

@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T22:40Z',
+    title: 'THE WORKSHOP OPENS - CREDITS FINALLY BUY SOMETHING',
+    notes: [
+      'EVERY BLUE COIN YOU HAVE EVER PICKED UP IS NOW SPENDABLE. The Upgrades screen was a bank statement that admitted, politely, that nothing spent the number on it. It is a workshop now, with seven permanent upgrades that apply from the first second of every run you start afterwards.',
+      'HARDER, FURTHER, FASTER, TOUGHER. Ordnance Stores buys damage on every gun, Optical Array buys range, Autoloaders buys rate of fire, Hull Plating buys armour and Servo Tuning buys movement. Two are for particular builds: Coolant Baffles cools the beams, and Fabricator Feed turns the drone bay around sooner.',
+      'EVERY TIER OF ONE UPGRADE COSTS THE SAME AND IS WORTH THE SAME. The cards you find mid-run get better as they go, so the last rung is the best one - the workshop deliberately does not, because a shop where saving up is always correct is a shop with no decision in it. The only question here is WHICH, never when.',
+      'REFUND ALL, AT FULL PRICE, ANY TIME. Every upgrade goes back to zero and every credit comes back - no fee, nothing lost. Trying a build is not supposed to be something you have to be careful about, and a refund that charged for the privilege would make it exactly that.',
+      'IT ADDS WITH YOUR CARDS RATHER THAN MULTIPLYING WITH THEM. A maxed Ordnance card and a maxed Ordnance Stores is the two of them added together, the same way every other percentage in this game stacks. A permanent upgrade that compounded would be quietly worth several times more to a finished build than to a fresh one, and nothing on either screen would have said so.',
+    ],
+  },
+  {
     at: '2026-08-15T22:25Z',
     title: 'AN ASCENSION YOU HAVE HELD GETS ITS OWN PAGE',
     notes: [
