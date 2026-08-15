@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T13:30Z',
+    title: 'Two lasers no longer burn the same body',
+    notes: [
+      'EVERY LASER PICKS THE WEAKEST THING IN RANGE, which meant two of them picked the SAME thing and the second one spent its beam on hit points the first was already removing. Three lasers meant three beams into one runt.',
+      'A body another laser has already chosen is now invisible to the next one, so they spread across the crowd instead of stacking. Measured over five headless runs with every weapon fitted: the lasers put out about 3% more damage per second, runs lasted 4% longer, and the Long Laser gained most.',
+      'THE COST, AND IT IS A REAL ONE: on a nearly empty field there may be fewer bodies than you have lasers, and the surplus ones now hold fire rather than piling on. Overlap is only waste when there is a crowd, and a crowd is where a run is actually decided.',
+      'A laser that has overheated reserves nothing. It has cut out; it does not get to hold a target hostage from the one still working.',
+    ],
+  },
+  {
     at: '2026-08-15T13:21Z',
     title: 'The Chain Laser is the mechanic and nothing else',
     notes: [

@@ -193,6 +193,22 @@ export function updateWeapons(world: World, dt: number): void {
   // renderer has not drawn yet on any tick where the pipeline exits early.)
   world.beams.count = 0;
 
+  // WHICH BODIES THE LASERS HAVE ALREADY TAKEN THIS TICK.
+  //
+  // Every laser picks by the same rule - the weakest thing in range - so two of them left to
+  // themselves choose the SAME body, and the second one's damage is spent on hit points the first
+  // was already going to remove. Three lasers meant three beams into one runt.
+  //
+  // Claims are taken in SLOT ORDER, which makes the outcome deterministic: the laser in the lower
+  // slot gets first refusal, the next takes the best of what is left. Nothing here reorders the
+  // loop, so a replay is unaffected.
+  //
+  // The cost, stated: on a nearly empty field there may be fewer bodies than lasers, and the
+  // lasers that miss out idle rather than piling on. That is the trade being made - overlap is
+  // wasted damage in a crowd, which is where a run is actually decided.
+  const claims = world.scratch.beamClaims;
+  let claimCount = 0;
+
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
     const def = world.weaponCatalog[inst.defId];
@@ -240,7 +256,9 @@ export function updateWeapons(world: World, dt: number): void {
     }
 
     // Step 1: a laser that has cut out is not engaging anything. It cools, it holds no target,
-    // and it does not traverse - an emitter with the breaker tripped is not tracking you.
+    // and it does not traverse - an emitter with the breaker tripped is not tracking you. It also
+    // claims nothing, which is the point: an overheated laser must not reserve a body it cannot
+    // shoot while the one beside it goes hungry.
     if (beam && inst.overheated) {
       coolBeam(world, i, inst, dt);
       inst.targetDense = -1;
@@ -251,11 +269,34 @@ export function updateWeapons(world: World, dt: number): void {
     // the turret track smoothly across the 1.2 s between shots - and the visible traverse IS the
     // readability mechanism for the whole highest-HP rule (DESIGN.md §7.4 requirement 1).
     const want = stats.projectileCount < MAX_TARGETS ? stats.projectileCount : MAX_TARGETS;
-    let n = TARGETING[def.targeting](world, player.x, player.y, stats.rangeSq, want, targets);
+    // BEAMS DO NOT DOUBLE UP. Ask for one extra candidate per body another laser has already
+    // claimed this tick, so that after the claimed ones are dropped there is still a full list
+    // left. Since `selectTopK` returns its result SORTED by the strategy's own order, the first
+    // survivor of that drop is exactly the best target nobody else is burning.
+    const ask =
+      beam && claimCount > 0
+        ? want + claimCount < MAX_TARGETS
+          ? want + claimCount
+          : MAX_TARGETS
+        : want;
+    let n = TARGETING[def.targeting](world, player.x, player.y, stats.rangeSq, ask, targets);
+    if (beam && claimCount > 0) {
+      n = dropClaimed(targets, n, claims, claimCount);
+      // Back to what this weapon actually fires. `fireBeam` reads only `targets[0]` today, so the
+      // surplus is currently harmless - but a volley pattern that trusted the count would fire one
+      // beam per inflated slot, and that is not a bug worth leaving armed.
+      if (n > want) n = want;
+    }
     if (trait !== undefined && trait.modifyTargets !== undefined) {
       n = trait.modifyTargets(world, targets, n);
     }
     inst.targetDense = n > 0 ? targets[0] : -1;
+    // CLAIMED AT SELECTION, not at firing. A laser that has chosen a body and is still slewing
+    // onto it, or that refuses the shot because scrap is in the way, has still decided - and the
+    // next laser along should be looking elsewhere rather than queueing behind it.
+    if (beam && inst.targetDense >= 0 && claimCount < claims.length) {
+      claims[claimCount++] = inst.targetDense;
+    }
 
     if (n === 0 && def.requiresTarget) {
       // idle: no shot, and NO cooldown reset
@@ -292,6 +333,37 @@ export function updateWeapons(world: World, dt: number): void {
     FIRE_PATTERNS[def.pattern](world, i, inst, targets, n);
     if (!beam) inst.cooldownLeft = stats.cooldown;
   }
+}
+
+/**
+ * Compacts `claimed` entries out of a SORTED target list, in place, preserving order.
+ *
+ * Order is the whole point: `selectTopK` returns its list already sorted by the strategy's own
+ * comparator, so dropping the taken ones leaves the best untaken body at index 0 without a second
+ * pass over the candidate set.
+ *
+ * `claimCount` is at most WEAPON_SLOTS and `n` at most MAX_TARGETS, so the inner scan is a handful
+ * of integer compares on a list that is already in cache.
+ */
+function dropClaimed(
+  targets: Int32Array,
+  n: number,
+  claims: Int32Array,
+  claimCount: number,
+): number {
+  let out = 0;
+  for (let i = 0; i < n; i++) {
+    const d = targets[i];
+    let taken = false;
+    for (let c = 0; c < claimCount; c++) {
+      if (claims[c] === d) {
+        taken = true;
+        break;
+      }
+    }
+    if (!taken) targets[out++] = d;
+  }
+  return out;
 }
 
 // -------------------------------------------------------------------------------------------

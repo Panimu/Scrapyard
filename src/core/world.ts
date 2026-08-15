@@ -317,6 +317,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     scratch: {
       candidates: new Uint16Array(MAX_QUERY_CANDIDATES),
       targets: new Int32Array(MAX_TARGETS),
+      beamClaims: new Int32Array(WEAPON_SLOTS),
       v0: { x: 0, y: 0 },
       v1: { x: 0, y: 0 },
       v2: { x: 0, y: 0 },

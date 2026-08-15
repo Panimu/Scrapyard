@@ -914,8 +914,15 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     expect(inst.stats.heatPerSec).toBe(LASER_LONG.base.heatPerSec);
 
     // And it is live in the pipeline, not just present in the array.
+    //
+    // ONE BODY PER SLOT, not one body. Lasers no longer double up - a body another laser has
+    // already claimed this tick is skipped - so a single enemy on the field is burned by whichever
+    // laser sits in the lowest slot and every other laser correctly idles. `takeCard` blind-picks
+    // its way here and may well have installed a second beam, so a one-enemy fixture would be
+    // asserting that the new rule does not work.
     w.phase = RUN_PHASE_RUNNING;
     const target = addEnemy(w, 300, 0, TOUGH_HP); // past the Cannon's 260, inside the laser's 430
+    for (let i = 1; i < w.weaponCount; i++) addEnemy(w, 300, i * 40, TOUGH_HP);
     ticks(w, 30);
     // Other guns picked up on the way may also be firing, so assert THIS laser produced a beam
     // rather than that it was the only thing on the field.
@@ -1221,6 +1228,90 @@ describe('chain laser (tier 8)', () => {
     setTier(w, WEAPON_MAX_TIER);
     line(w, 8, 120, 60);
     tick(w);
+    expect(w.beams.count).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Two lasers do not burn the same body
+// ---------------------------------------------------------------------------------------------
+
+describe('lasers spread out: a body one laser has claimed is invisible to the next', () => {
+  /**
+   * A world holding two beams, fitted by hand.
+   *
+   * By hand rather than through the card path for the same reason `setTier` exists: these tests
+   * are about what the weapon system does with two lasers in two slots, and earning the second one
+   * would put a dozen level-ups and the upgrade RNG between the setup and the assertion.
+   */
+  function twoLaserWorld(): World {
+    const w = makeWorld('laser-long');
+    const hero = w.heroes[w.player.heroId];
+    const second = w.weapons[1];
+    second.defId = weaponDefIndex('laser-medium');
+    second.level = 1;
+    resolveWeaponStats(
+      w.weaponCatalog[second.defId],
+      hero,
+      1,
+      w.levelUp.stacks,
+      w.upgradeCatalog,
+      second.stats,
+    );
+    w.weaponCount = 2;
+    return w;
+  }
+
+  it('sends the second laser to the second-weakest rather than piling on', () => {
+    const w = twoLaserWorld();
+    // Two bodies, one weak. Left alone BOTH lasers pick the weak one - lowest-hp does not care
+    // how far away it is.
+    //
+    // PLACED IN DIFFERENT DIRECTIONS, not one behind the other. A beam stops on the first body its
+    // ray touches, so a collinear pair would have the second laser aim past the weak one and burn
+    // it anyway - correct beam behaviour, and it would make this test pass or fail for a reason
+    // that has nothing to do with target selection.
+    // Fat enough that neither dies while the turrets come round - this is about who is CHOSEN.
+    const weak = addEnemy(w, 200, 0, 5_000);
+    const strong = addEnemy(w, 0, 200, 50_000);
+
+    // Both turrets start pointing +x, so the one sent 90 degrees away needs a moment to lay on
+    // before it fires. Target selection is settled on tick one; firing is not.
+    tick(w);
+    expect(w.weapons[0].targetDense).toBe(weak);
+    expect(w.weapons[1].targetDense).toBe(strong);
+
+    for (let i = 0; i < 40; i++) tick(w);
+    expect(w.weapons[0].targetDense).toBe(weak);
+    expect(w.weapons[1].targetDense).toBe(strong);
+    // And both are now actually firing, at different bodies.
+    expect(w.beams.count).toBe(2);
+    expect(w.beams.enemyDense[0]).not.toBe(w.beams.enemyDense[1]);
+  });
+
+  it('leaves the surplus laser idle when there is only one body to burn', () => {
+    // The stated cost of the rule: on an empty field the lasers do not double up, so the second
+    // one holds no target rather than adding its damage to the first one's.
+    const w = twoLaserWorld();
+    const only = addEnemy(w, 200, 0, 400);
+    tick(w);
+
+    expect(w.weapons[0].targetDense).toBe(only);
+    expect(w.weapons[1].targetDense).toBe(-1);
+    expect(w.beams.count).toBe(1);
+  });
+
+  it('does not reserve a body for a laser that has cut out', () => {
+    const w = twoLaserWorld();
+    const only = addEnemy(w, 200, 0, 400);
+    // Slot 0 is overheated, so it engages nothing at all - and must not hold the one body hostage
+    // while the working laser beside it goes hungry.
+    w.weapons[0].overheated = true;
+    w.weapons[0].heat = w.weapons[0].stats.heatCapacity;
+    tick(w);
+
+    expect(w.weapons[0].targetDense).toBe(-1);
+    expect(w.weapons[1].targetDense).toBe(only);
     expect(w.beams.count).toBe(1);
   });
 });

@@ -437,6 +437,11 @@ export interface WorldScratch {
   readonly candidates: Uint16Array;
   /** Top-K targeting output; length MAX_TARGETS. */
   readonly targets: Int32Array;
+  /**
+   * Dense indices already claimed by a BEAM this tick, so two lasers do not burn the same body.
+   * Length WEAPON_SLOTS - one claim per weapon at most. Refilled from zero every `updateWeapons`.
+   */
+  readonly beamClaims: Int32Array;
   readonly v0: Vec2;
   readonly v1: Vec2;
   readonly v2: Vec2;
