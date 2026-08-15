@@ -216,6 +216,12 @@ export function updateWeapons(world: World, dt: number): void {
     const stats = inst.stats;
     const beam = def.kind === 'beam';
 
+    // A DRONE BAY IS NOT FIRED HERE. It has no target, no volley and no muzzle; what it has is a
+    // build timer, and systems/drones.ts owns that clock. Letting it fall through would run the
+    // cooldown down twice a tick - once here and once there - and reset it on a shot that has no
+    // meaning.
+    if (def.pattern === 'factory') continue;
+
     // Runs down to <= 0 and stops there: exactly one banked shot. See the file header.
     // A beam has no cooldown at all - heat is its limiter, and `stats.cooldown` is floored at
     // 0.05 by resolveWeaponStats, so letting a beam through this gate would silently throttle it
@@ -1089,4 +1095,9 @@ export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Objec
   spread: fireSpread,
   barrage: fireBarrage,
   beam: fireBeam,
+  // A drone bay has no volley. Everything it does - the build timer, deploying, and the drones
+  // themselves - lives in systems/drones.ts, which runs as its own stage. This entry exists so the
+  // pattern table stays exhaustive over FirePatternId rather than being a partial record with a
+  // lookup that can return undefined.
+  factory: () => {},
 });

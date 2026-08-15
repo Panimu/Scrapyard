@@ -101,6 +101,12 @@ const PICKUP_SPRITES = 560; // GEM_SOFT_CAP is 500, plus the barrels' consumable
 const PROJECTILE_SPRITES = 256; // PROJECTILE_CAP
 const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;
+/** DRONE_CAP is 8. Sixteen is slack for a second drone source. */
+const DRONE_SPRITES = 16;
+/** Drone art: the missile sprite, shrunk and tinted. See the pool's construction for why. */
+const DRONE_SCALE_X = 0.5;
+const DRONE_SCALE_Y = 0.5;
+const DRONE_TINT = 0xffd24a;
 /** Scrap on screen. The camera reaches 500.9 u against a 768 u scenery cell, so it can see at
  *  most a 3x3 block of cells and therefore at most nine piles. Sixteen is slack. */
 const SCRAP_SPRITES = 16;
@@ -254,6 +260,7 @@ export class GameRenderer {
   private readonly strikeMarkers: Graphics;
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
+  private readonly drones: SpritePool;
   private readonly glows: SpritePool;
   private readonly beams: BeamLayer;
   private readonly effects: Effects;
@@ -326,6 +333,16 @@ export class GameRenderer {
     // the only thing on screen that says where the shot is going before it arrives.
     this.playerLayer.addChild(this.legs, this.mech, this.barrel, this.shieldRim);
 
+    // DRONES WEAR THE MISSILE SPRITE, tinted. They are the one thing in this game with no art of
+    // its own: it is the only small airframe in the atlas and at drone scale it reads as a little
+    // machine rather than as a warhead. This is a stand-in and should be replaced by a drawn sprite
+    // (tools/make-*.mjs) the moment drones are worth one.
+    this.drones = new SpritePool({
+      capacity: DRONE_SPRITES,
+      texture: tex.missile,
+      label: 'drones',
+    });
+
     this.trails = new SpritePool({
       capacity: PROJECTILE_SPRITES,
       texture: tex.fxTrail,
@@ -374,6 +391,9 @@ export class GameRenderer {
       this.enemies.container,
       this.hpBars.container,
       this.playerLayer,
+      // Drones ABOVE the player: they fly, and something flying that passes behind the mech it is
+      // escorting reads as being under the floor.
+      this.drones.container,
       this.projectiles.container,
       this.effects.normalPool.container,
       // The beams' dark sheath is NORMAL blended, so it goes here, at the tail of the normal
@@ -454,6 +474,7 @@ export class GameRenderer {
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);
     this.drawProjectiles(world, alpha);
+    this.drawDrones(world, alpha);
     // NOT interpolated, unlike everything above it: the endpoints are the ones the simulation
     // published this tick, so the line and the damage can never disagree. `dtSec` drives the
     // render-only fire/fade envelope; `px, py` only place the emitter's heat glow on a weapon
@@ -759,6 +780,40 @@ export class GameRenderer {
         sp.tint = 0xffffff;
       }
     }
+    pool.end();
+  }
+
+  /**
+   * Drones. Small, tinted, and rotated to face the way they are actually moving.
+   *
+   * FACING COMES FROM THE INTERPOLATED DELTA rather than from the orbit phase the sim keeps. The
+   * two agree while a drone is circling, and disagree exactly when it is flying between centres -
+   * which is the moment a drone pointing the wrong way looks most wrong.
+   */
+  private drawDrones(world: World, alpha: number): void {
+    const p = world.drones;
+    const pool = this.drones;
+    pool.begin();
+
+    for (let d = 0; d < p.count; d++) {
+      const x = lerp(p.prevX[d], p.x[d], alpha);
+      const y = lerp(p.prevY[d], p.y[d], alpha);
+      if (!this.camera.isVisible(x, y, 20)) continue;
+
+      const s = pool.acquire();
+      if (s === undefined) break;
+
+      const dx = p.x[d] - p.prevX[d];
+      const dy = p.y[d] - p.prevY[d];
+      s.position.set(x, y);
+      // A stationary drone keeps whatever heading it had rather than snapping to zero, which a
+      // near-zero delta would otherwise do every time it reached its orbit point exactly.
+      if (dx !== 0 || dy !== 0) s.rotation = Math.atan2(dy, dx) + ROT_OFFSET.shell;
+      s.scale.set(DRONE_SCALE_X, DRONE_SCALE_Y);
+      s.tint = DRONE_TINT;
+      s.alpha = 1;
+    }
+
     pool.end();
   }
 

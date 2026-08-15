@@ -36,6 +36,7 @@ import { xpToNextLevel } from './config/tuning.js';
 import { RANKS, createResolvedCycle } from './content/cycles.js';
 import { FLAVOURS } from './content/enemyCatalog.js';
 import { createScenery } from './content/scenery.js';
+import { createDronePool } from './entity/dronePool.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
@@ -81,6 +82,7 @@ import { updatePlayerMovement } from './systems/playerMovement.js';
 import { updateEnemyAI } from './systems/enemyAI.js';
 import { updateWeapons } from './systems/weapons.js';
 import { updateProjectiles } from './systems/projectiles.js';
+import { updateDrones } from './systems/drones.js';
 import { updateCollision } from './systems/collision.js';
 import { updateDamage } from './systems/damage.js';
 import { updatePickups } from './systems/pickups.js';
@@ -167,6 +169,7 @@ function createWeaponInstance(): WeaponInstance {
     turretY: 0,
     targetDense: -1,
     stats: createWeaponStats(),
+    droneBanked: false,
     heat: 0,
     overheated: false,
     ammo: -1,
@@ -308,6 +311,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       peakEnemies: 0,
       endTick: 0,
     },
+    drones: createDronePool(),
+    droneGun: createWeaponStats(),
+    // ALL OFFERABLE unless the app says otherwise. See World.cardUnlocked.
+    cardUnlocked: new Uint8Array(catalogs.upgrades.length).fill(1),
     events: createEventRing(EVENT_RING_CAPACITY),
 
     hits: createHitBuffer(MAX_HITS_PER_TICK),
@@ -476,6 +483,11 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
 
   // S6 after S5: targeting queries are exact. ONLY projectile allocation site.
   updateWeapons(world, DT);
+
+  // S6b between S6 and S7: a drone allocates projectiles, and the pipeline's contract is that
+  // every shell in flight was allocated before S7 integrates it. It also reads the hash rebuilt at
+  // S5, so a drone's own target query is exact.
+  updateDrones(world, DT);
 
   // S7
   updateProjectiles(world, DT);

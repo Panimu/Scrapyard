@@ -19,9 +19,14 @@
  *     Long Laser      ember, rust
  *     Cannon          amber, brass
  *     Short Missiles  ash                            <- one
- *     Long Missiles   onyx, vermilion, indigo        <- three
+ *     Long Missiles   onyx, vermilion
  *     Machine Gun     bone, copper
- *     Heavy Artillery plum, fern
+ *     Heavy Artillery plum, indigo
+ *     Drones          fern                           <- and nobody else, by design
+ *
+ * FERN IS THE ONLY WAY INTO DRONES until the yard has been beaten - the card is locked in the deck
+ * (data/upgrades.ts), so the chassis is the door. That is why Fern is `always` alongside Slate, and
+ * it is also why the Heavy Artillery now has only one opener.
  *
  * Two-per-weapon was a real property and it is worth naming what replaced it: a player who has
  * used one green mech knows what the other green mech does, and that no longer holds for the
@@ -398,11 +403,14 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     id: 'indigo',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Indigo',
-    identity:
-      'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
+    identity: 'Heavy strider, boxed racks. Opens with the Heavy Artillery.',
     sprite: 'mech_indigo',
     gait: 'walk',
-    startingWeapon: 'missile-long',
+    // MOVED OFF THE LONG MISSILES when Fern took up Drones, because that left the Heavy Artillery
+    // with no opener at all - and every gun being somebody's opener is an invariant this roster
+    // holds (tests/heroes.test.ts). The long rack had three chassis and the header above has been
+    // grumbling about it since; this is the one-line rebalance it predicted.
+    startingWeapon: 'artillery',
     player: {},
     weapon: {},
   },
@@ -420,15 +428,19 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
-    unlock: { kind: 'never' }, // criteria to be defined
+    // AVAILABLE FROM THE START, alongside Slate. It is the chassis that opens with Drones, and the
+    // only way to fly them before the yard has been beaten - the card itself is locked.
+    unlock: { kind: 'always' },
     name: 'Fern',
     identity:
-      'Light hover, forward claw arms. Opens with the Heavy Artillery.',
+      'Light hover, forward claw arms. Opens with Drones, and builds them 10% faster.',
     sprite: 'mech_fern',
     gait: 'hover',
-    startingWeapon: 'artillery',
+    startingWeapon: 'drone',
     player: {},
     weapon: {},
+    // `cooldown` on a drone bay IS the build time, so a multiplier below 1 is a faster factory.
+    weaponBonus: { drone: { mul: { cooldown: 0.9 } } },
   },
 ] as const) as readonly HeroDef[];
 

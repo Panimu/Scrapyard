@@ -94,7 +94,8 @@ describe('the roster', () => {
       'missile-short': 'Short Missiles',
       'missile-long': 'Long Missiles',
       'machine-gun': 'Machine Gun',
-      artillery: 'Heavy Artillery',
+      drone: 'Drones',
+  artillery: 'Heavy Artillery',
     };
     for (const h of HERO_CATALOG) {
       if (h.startingWeapon === null) continue;

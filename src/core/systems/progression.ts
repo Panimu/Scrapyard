@@ -602,6 +602,14 @@ function isOfferable(
   const stacks = world.levelUp.stacks[index];
   if (stacks >= def.maxStacks) return false;
 
+  // NOT EARNED YET. Set by the app from the save file (World.cardUnlocked); every card is offerable
+  // unless it says otherwise, which is all of them but one.
+  //
+  // The test is `stacks === 0` deliberately: a card ALREADY IN YOUR HANDS keeps offering its tiers.
+  // The only way to hold a locked card is a chassis that opens with it, and a run where the gun you
+  // started with could never be levelled would be a worse bug than the lock is a feature.
+  if (stacks === 0 && world.cardUnlocked[index] === 0) return false;
+
   // A card offered to a player with nothing to shoot with has to put something in their hands.
   // Note this deliberately hides the Energy Shield's tier 2 from Plum's opening card - a shield
   // tier is a fine pick, but not at the price of the only card an unarmed run is guaranteed.

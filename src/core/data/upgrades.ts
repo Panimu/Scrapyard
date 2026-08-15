@@ -51,6 +51,7 @@
  */
 
 import type { WeaponId } from '../content/weaponCatalog.js';
+import type { UnlockCond } from './unlocks.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
 
 export type UpgradeId =
@@ -62,6 +63,7 @@ export type UpgradeId =
   | 'w-missile-long'
   | 'w-machine-gun'
   | 'w-artillery'
+  | 'w-drone'
   | 'p-range'
   | 'p-damage'
   | 'p-rate'
@@ -158,6 +160,19 @@ export interface UpgradeDef {
   readonly tiers: readonly string[];
   /** Equals WEAPON_MAX_TIER for weapon cards: stacks taken IS the weapon's tier. */
   readonly maxStacks: number;
+  /**
+   * WHAT A PLAYER MUST HAVE DONE BEFORE THIS CARD IS EVER OFFERED. Absent = offered from the first
+   * run, which is every card but one.
+   *
+   * The SAME condition language the chassis roster uses (data/unlocks.ts), evaluated by the app
+   * against the save file and pushed into `World.cardUnlocked` at run start - core never learns
+   * what a save is. A locked card is invisible to the deck; it is not a dimmed offer.
+   *
+   * This is a heavier thing to add than a chassis lock, and worth being reluctant about: a locked
+   * chassis costs a player one of sixteen ways to start, while a locked card is content missing
+   * from every run they play until they earn it.
+   */
+  readonly unlock?: UnlockCond;
   /**
    * Set on weapon cards that have a tier 8. Absent means the weapon tops out at 7 - which is most
    * of them today, and the reason this is optional rather than a field every card must fill in.
@@ -394,6 +409,29 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-drone',
+    kind: 'weapon',
+    grantsWeapon: 'drone',
+    name: 'Drones',
+    description:
+      'Builds a drone that flies escort, hunts anything that comes close, and shoots it with a machine gun until its magazine is dry. Then it detonates.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'Builds faster.',
+      'A second drone.',
+      'Builds faster again.',
+      'A third drone.',
+      'Builds faster again.',
+      'A fourth drone, and faster still.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    // LOCKED UNTIL THE YARD IS BEATEN. The one card in the deck that has to be earned - see
+    // `unlock` above, and the chassis that opens with it for the way in that does not.
+    unlock: { kind: 'win' },
     effects: [],
   },
   {

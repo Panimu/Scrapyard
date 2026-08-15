@@ -421,6 +421,9 @@ async function boot(): Promise<void> {
     for (const id of state.recordRun(record)) {
       earnedThisRun.push(HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
     }
+    // A card earned by this run joins the same list the summary announces. It is not a chassis, but
+    // it is the same kind of news - something the next run can do that this one could not.
+    for (const def of state.recordCards(record)) earnedThisRun.push(def.name);
   }
 
   function startRun(heroId: number, seed: number): void {
@@ -428,6 +431,10 @@ async function boot(): Promise<void> {
     state.seed = seed;
     sim = new Simulation({ seed, heroId, runLengthSec: RUN_LENGTH_SEC });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
+    // THE DECK'S GATE, pushed in at run start. Core never reads the save; it is handed a mask.
+    for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+      sim.world.cardUnlocked[i] = state.hasCard(UPGRADE_CATALOG[i].id) ? 1 : 0;
+    }
     // THE OPENER COUNTS AS HELD THE MOMENT THE RUN STARTS. `createWorld` seeds the chassis' starting
     // weapon (and Plum's shield) to tier 1, so this is true rather than generous - and it is the
     // only unlock a player who quits to the title mid-run would otherwise not have banked.

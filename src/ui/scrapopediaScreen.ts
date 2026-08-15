@@ -174,6 +174,15 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'It fires two rounds at a time at the lowest-HP body it can see, which makes it a finisher - it cleans up what the heavier guns leave standing.',
     ],
   },
+  'w-drone': {
+    aims: 'The BAY aims at nothing. Each DRONE picks the nearest thing to ITSELF.',
+    notes: [
+      'It is a factory, not a gun. Every thirty seconds it finishes a drone, and the drone does the rest - so the card does nothing at all for the first half minute you hold it.',
+      'A drone flies escort until something comes within twice its reach, then goes and circles THAT and empties a machine gun into it. When the target dies it comes home, picking up anything it passes on the way. It hunts from where it is standing, not from where you are, so a drone already out on a kill will chain across a crowd without ever coming back.',
+      'ITS MAGAZINE IS ITS LIFE. There is no reloading - when the last round is gone it detonates, and the blast is worth about as much as one artillery shell. A drone is a thing you spend, not a thing you keep.',
+      'Finish the bay and four fly at once. It also keeps building at full strength: one finished drone is held in reserve, so a loss is replaced the instant it happens.',
+    ],
+  },
   'w-artillery': {
     aims: 'NOTHING AT ALL. Shells fall on random ground near you.',
     notes: [

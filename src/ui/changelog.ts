@@ -40,6 +40,19 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T14:03Z',
+    title: 'DRONES - a weapon that builds things instead of firing them',
+    notes: [
+      'A NINTH WEAPON, AND IT IS NOT A GUN. The bay builds a drone, and the drone does the fighting. It flies escort around you until something comes within twice its reach, then goes and circles THAT and empties a machine gun into it. When the target dies it comes home - picking up anything it passes on the way, so a drone out on a kill will chain across a crowd without ever coming back to you.',
+      'ITS MAGAZINE IS ITS LIFE. There is no reload. When the last round is gone it detonates, and the blast is worth about one artillery shell. A drone is something you spend.',
+      'THE BAY KEEPS BUILDING AT FULL STRENGTH. One finished drone is held in reserve, so a loss is replaced the instant it happens rather than thirty seconds later. Only one, though - you cannot stockpile a squadron through a quiet minute.',
+      'It levels into more drones and shorter builds: one at first, four when it is finished, and the build comes down from thirty seconds to about twenty.',
+      'FERN OPENS WITH THEM, builds them 10% faster, and is available from the start alongside Slate.',
+      'THE DRONE CARD ITSELF IS LOCKED until you beat the yard. It is the first card in the game you have to earn - every other one has always been in the deck from your first run. Fern is the way in until then.',
+      'Indigo now opens with the Heavy Artillery, which Fern used to. The long missile racks had three chassis and the artillery would otherwise have had none.',
+    ],
+  },
+  {
     at: '2026-08-15T13:30Z',
     title: 'Two lasers no longer burn the same body',
     notes: [

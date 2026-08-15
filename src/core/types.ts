@@ -21,6 +21,7 @@ import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from '
 import type { Tuning } from './config/tuning.js';
 import type { ResolvedCycle } from './content/cycles.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
+import type { DronePool } from './entity/dronePool.js';
 import type { HeroDef } from './data/heroes.js';
 import type { EnemyDef } from './data/enemies.js';
 import type { WeaponDef } from './data/weapons.js';
@@ -185,6 +186,14 @@ export interface WeaponInstance {
    */
   targetDense: number;
   readonly stats: WeaponStats;
+  /**
+   * A DRONE BAY WITH A FINISHED DRONE AND NOWHERE TO PUT IT. Drone weapons only.
+   *
+   * The build timer keeps running at full strength - see systems/drones.ts - and exactly one
+   * completed drone is held back, so a loss is replaced instantly and the next build starts clean.
+   * One and not a queue: banking a squadron through a quiet minute is a different weapon.
+   */
+  droneBanked: boolean;
   /**
    * HEAT, 0..`stats.heatCapacity`. Beam weapons only; a projectile weapon leaves it at 0.
    * Rises at `stats.heatPerSec` while firing and falls at `stats.heatDispersion` while not.
@@ -512,6 +521,22 @@ export interface World {
    */
   noAscension: boolean;
   readonly stats: RunStats;
+  /** Drones currently flying. See entity/dronePool.ts. */
+  readonly drones: DronePool;
+  /**
+   * The drone gun's resolved stats - the Machine Gun at the drone bay's tier. Re-resolved once per
+   * tick by updateDrones and read by every drone, rather than stored per drone: they all share one
+   * tier, so a copy each would be four identical stat blocks kept in step by hand.
+   */
+  readonly droneGun: WeaponStats;
+  /**
+   * WHICH CARDS THE LEVEL-UP DECK MAY OFFER, by upgrade catalog index. 1 = offerable.
+   *
+   * Set by the APP at run start from the save file, never by core: a card unlocked by beating the
+   * game is persistent state, and core does not know what a save is. Defaulting to all-1 is what
+   * keeps every test, fixture and headless run offering the whole deck without having to say so.
+   */
+  readonly cardUnlocked: Uint8Array;
   readonly events: EventRing;
 
   readonly hits: HitBuffer;

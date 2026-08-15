@@ -15,7 +15,7 @@
 
 import { FLAVOURS, RANKS } from './core/index.js';
 import { HERO_CATALOG, type HeroId } from './core/data/heroes.js';
-import { UPGRADE_CATALOG, type UpgradeId } from './core/data/upgrades.js';
+import { UPGRADE_CATALOG, type UpgradeDef, type UpgradeId } from './core/data/upgrades.js';
 import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
 import { reportSync, reportUnlocked } from './achievements.js';
@@ -105,6 +105,17 @@ export interface Settings {
    * meaningful beside the table that produced it.
    */
   killedEnemies: string[];
+  /**
+   * Cards this player has EARNED THE RIGHT TO BE OFFERED, by id. Only cards with an
+   * `UpgradeDef.unlock` are ever listed - everything else is offerable from the first run and does
+   * not need recording.
+   *
+   * A different list from `unlockedUpgrades`, and the difference matters: that one is "I have held
+   * this, so its page is in the manual", this one is "the deck may show me this at all". A card can
+   * be in the first and not the second - a chassis that opens with a locked gun puts it in your
+   * hands without earning it for the deck.
+   */
+  earnedCards: UpgradeId[];
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -135,6 +146,7 @@ const DEFAULTS: Settings = {
   unlockedHeroes: [SEED_HERO],
   unlockedAchievements: [],
   killedEnemies: [],
+  earnedCards: [],
 };
 
 function loadSettings(): Settings {
@@ -166,6 +178,11 @@ function loadSettings(): Settings {
       // No seed: an empty save has earned nothing, and `knownIds` always forces one in. Filtered
       // the same way, so an achievement that is retired stops appearing rather than lingering as
       // an id nothing can resolve.
+      earnedCards: (Array.isArray(parsed.earnedCards) ? (parsed.earnedCards as unknown[]) : [])
+        .filter(
+          (id): id is UpgradeId =>
+            typeof id === 'string' && UPGRADE_CATALOG.some((d) => d.id === id),
+        ),
       // Filtered against the two tables that can name one, so a retired variant stops appearing
       // rather than lingering as a name nothing resolves.
       killedEnemies: (Array.isArray(parsed.killedEnemies)
@@ -291,6 +308,35 @@ export class AppState {
    * gets a real condition is the day the question "had they already earned it" becomes worth being
    * able to answer.
    */
+  /** May the level-up deck offer this card? True for everything without an `unlock`. */
+  hasCard(id: UpgradeId): boolean {
+    const def = UPGRADE_CATALOG.find((d) => d.id === id);
+    if (def === undefined) return false;
+    if (def.unlock === undefined) return true;
+    return this.settings.earnedCards.includes(id);
+  }
+
+  /**
+   * Tests every locked card against the run and banks the ones it earned. Returns the newly earned
+   * definitions so the caller can say so.
+   *
+   * Same shape as `recordRun` for chassis, and for the same reason: one evaluator, one condition
+   * language, no second opinion about what "win" means.
+   */
+  recordCards(run: RunRecord): UpgradeDef[] {
+    const ids = UPGRADE_CATALOG.map((d) => d.id);
+    const earned: UpgradeDef[] = [];
+    for (const def of UPGRADE_CATALOG) {
+      if (def.unlock === undefined) continue;
+      if (this.settings.earnedCards.includes(def.id)) continue;
+      if (!meetsUnlock(def.unlock, run, ids)) continue;
+      this.settings.earnedCards.push(def.id);
+      earned.push(def);
+    }
+    if (earned.length > 0) this.saveSettings();
+    return earned;
+  }
+
   hasKilled(name: string): boolean {
     return this.settings.killedEnemies.includes(name);
   }
@@ -322,6 +368,10 @@ export class AppState {
   hasHero(id: HeroId): boolean {
     const hero = HERO_CATALOG.find((h) => h.id === id);
     if (hero === undefined || hero.unlock.kind === 'never') return false;
+    // `always` MEANS ALWAYS, without consulting the save. It was falling through to the stored
+    // list, which made an unconditional chassis locked until something wrote it there - Slate only
+    // worked because it is force-seeded, so adding a second `always` chassis exposed it.
+    if (hero.unlock.kind === 'always') return true;
     return this.settings.unlockedHeroes.includes(id);
   }
 

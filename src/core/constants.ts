@@ -86,9 +86,13 @@ export const MAX_PASSIVES = 5;
  * others. A rig writes the loadout directly and never goes through `isOfferable`, so the rule is
  * untouched by it - no card, no chest and no ascension can put a sixth gun in a player's hands.
  *
- * Sized to the catalog rather than to a literal, so a ninth weapon needs no edit here.
+ * IT MUST BE >= WEAPON_CATALOG.length, and it is a literal rather than derived from the catalog
+ * because deriving it would make this module import content and content import this module. The
+ * comment above once claimed it was "sized to the catalog, so a ninth weapon needs no edit here" -
+ * that was simply wrong, and the ninth weapon (Drones) arrived and broke `npm run loadout` on the
+ * missing slot. tests/loadout.test.ts now asserts the relationship rather than trusting a comment.
  */
-export const WEAPON_SLOTS = 8;
+export const WEAPON_SLOTS = 9;
 
 /**
  * HEAT - the lasers' limiter, in place of a cooldown.

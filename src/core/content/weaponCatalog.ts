@@ -35,7 +35,8 @@ export type WeaponId =
   | 'missile-short'
   | 'missile-long'
   | 'machine-gun'
-  | 'artillery';
+  | 'artillery'
+  | 'drone';
 
 /**
  * WHAT A PROJECTILE LOOKS LIKE. Named rather than numbered at the use site, because a bare `3` in
@@ -55,6 +56,8 @@ export const VIS_SLUG = 2;
 /** Artillery: no shell at all. A red targeting ring on the ground, counting its own fuse down. */
 export const VIS_STRIKE_MARKER = 3;
 export const VIS_MISSILE_LONG = 4;
+/** A drone's round. A slug like the Machine Gun's, because that is literally what it fires. */
+export const VIS_DRONE_ROUND = 5;
 
 /**
  * Target-selection strategies.
@@ -65,7 +68,7 @@ export const VIS_MISSILE_LONG = 4;
  */
 export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp'; // grows: | 'densest'
 
-export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage';
+export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage' | 'factory';
 
 export type BehaviourId = 'straight' | 'homing'; // grows: | 'arc'
 
@@ -816,6 +819,93 @@ export const ARTILLERY: WeaponDef = Object.freeze({
   detonateOnExpiry: true,
 });
 
+// ---------------------------------------------------------------------------------------------
+// DRONES - a weapon that builds things instead of firing them
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * THE DRONE BAY. It has no muzzle, no shot and no target of its own; what it has is a BUILD TIMER.
+ *
+ * The stats are reused rather than invented, and each reuse is load-bearing:
+ *
+ *   cooldown         SECONDS TO BUILD ONE DRONE. Reusing the cooldown means Feed Systems - "every
+ *                    weapon fires more often" - shortens the build, which is the same promise that
+ *                    card makes everywhere else. A drone bay that ignored the rate passive would be
+ *                    the one weapon in the game where it did nothing.
+ *   projectileCount  MAX DRONES ALIVE. A drone IS this weapon's projectile; the tier ladder adding
+ *                    one is the same shape as the artillery's third shell.
+ *   range            ACQUISITION, doubled - see DRONE_ACQUIRE_MUL. Targeting Optics therefore
+ *                    widens the patrol, which is what a player would expect it to do.
+ *   splashRadius     THE DEATH BLAST, when a drone runs its magazine dry.
+ *
+ * WHAT IT SHOOTS IS NOT HERE. A drone fires the MACHINE GUN, one round at a time, resolved at this
+ * weapon's own tier - see systems/drones.ts. Duplicating the Machine Gun's numbers into this def
+ * would be two tables to keep in step for no gain, and "it fires a machine gun" is a sentence a
+ * player can actually hold on to.
+ */
+export const DRONE_BUILD_SEC = 30;
+/** Per-tier build-time cut. Additive off the BASE, the way every other rate tier in this file is. */
+export const DRONE_BUILD_TIER = -DRONE_BUILD_SEC * 0.1;
+export const DRONE_BUILD_TIER_SMALL = -DRONE_BUILD_SEC * 0.05;
+/** A drone engages anything inside this multiple of its gun's range. */
+export const DRONE_ACQUIRE_MUL = 2;
+
+export const DRONE: WeaponDef = Object.freeze({
+  id: 'drone',
+  name: 'Drones',
+  kind: 'projectile',
+  // Unused: the bay never selects a target. Each DRONE picks its own, by proximity, from where it
+  // is standing rather than from where the player is - which is the whole point of sending it out.
+  targeting: 'nearest',
+  pattern: 'factory',
+  behaviour: 'straight',
+  // The bay builds whether or not anything is in range. It is a factory, not a gun.
+  requiresTarget: false,
+  base: Object.freeze({
+    // Not the drone's damage - the blast it leaves when its magazine runs dry. Its shooting is the
+    // Machine Gun's damage, resolved at this weapon's tier.
+    damage: 55,
+    cooldown: DRONE_BUILD_SEC,
+    // Acquisition range BEFORE the x2. 130 is the Machine Gun's own reach, so a drone hunts twice
+    // as far as it shoots and closes the rest.
+    range: 130,
+    projectileSpeed: 0,
+    projectileCount: 1, // MAX DRONES
+    pierce: 0,
+    knockback: 0,
+    splashRadius: 70,
+    splashFrac: 1,
+    turretTraverse: 0,
+    fireArc: -1,
+    heatPerSec: 0,
+    heatCapacity: 0,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: 0,
+    flightTime: 0,
+    ammoCapacity: 0,
+    reloadTime: 0,
+  }),
+  perLevel: Object.freeze([
+    { cooldown: DRONE_BUILD_TIER }, // T2 - builds faster
+    { projectileCount: 1 }, // T3 - a second drone
+    { cooldown: DRONE_BUILD_TIER }, // T4
+    { projectileCount: 1 }, // T5 - a third
+    { cooldown: DRONE_BUILD_TIER }, // T6
+    { projectileCount: 1, cooldown: DRONE_BUILD_TIER_SMALL }, // T7 - a fourth, and a last trim
+  ]),
+  reengageMul: 1,
+  visualId: VIS_DRONE_ROUND,
+  muzzleOffset: 0,
+  shellRadius: 5,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: false,
+  // The dry-magazine blast goes out as a fused projectile with no contact, exactly as an artillery
+  // shell does, so it reaches the crater FX and the splash path already written for that.
+  detonateOnExpiry: true,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -825,6 +915,7 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   MISSILE_LONG,
   MACHINE_GUN,
   ARTILLERY,
+  DRONE,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */
