@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T09:53Z',
+    title: 'The barrel shows the gun that is aiming, and the manual stops spoiling tier 8',
+    notes: [
+      'THE TURRET ON TOP OF YOUR MECH NOW FOLLOWS THE FIRST WEAPON THAT ACTUALLY AIMS. A missile rack does not aim - it fires along the direction you last moved - so on a chassis that walks in holding one, the barrel used to be welded to the legs and swung only when you turned. Pick up a cannon or a laser and it now swings onto that instead, which means the barrel is once again the cue that tells you what your mech has decided to shoot.',
+      'It follows the FIRST such weapon and keeps following it. A mount that jumped to whatever you most recently picked up would be a cue about your last card rather than about the fight.',
+      'THE SCRAPOPEDIA NO LONGER MENTIONS TIER 8 AT ALL. It used to print the ascension in full - its name, what it does, and the exact recipe - and drop a hint about it on an unrelated system page. That is the one thing in this game meant to be found rather than read, and a player who opened the manual once had it handed to them.',
+    ],
+  },
+  {
     at: '2026-08-15T09:46Z',
     title: 'The Scrapopedia gets the mechs, and a Back button that says Back',
     notes: [

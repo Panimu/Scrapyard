@@ -28,6 +28,19 @@
  * changes with it; if a weapon's ladder is reordered, this screen reorders too.
  *
  * ---------------------------------------------------------------------------------------------
+ * IT DOES NOT MENTION TIER 8. ANYWHERE.
+ * ---------------------------------------------------------------------------------------------
+ * An ascension is the one thing in this game that is meant to be FOUND. This screen used to print
+ * a "Tier 8" section on the weapon that has one - its name, what it does, and the exact recipe -
+ * and a note on Targeting Optics explaining what it was really for. Between them a player who
+ * opened the manual once knew the whole secret before ever finishing a weapon.
+ *
+ * So no entry names an ascension, its own included, and no entry hints at another entry's. The
+ * catalog still carries `UpgradeDef.ascension` and the chest still grants it; this screen simply
+ * does not read that field. When the entries become unlockable, the natural home for an ascension
+ * page is behind the same gate - shown once you have actually held the thing.
+ *
+ * ---------------------------------------------------------------------------------------------
  * THE MECHS ARE HERE TOO, AND THEIR TEXT IS THE PICKER'S OWN
  * ---------------------------------------------------------------------------------------------
  * `HeroDef.identity` is already the one line that describes a chassis, written for the mech select
@@ -92,7 +105,7 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
     notes: [
       'A beam burns continuously into one body until that body dies or leaves. There is no shot to miss and no travel time; if the line is clear, the damage is already landing.',
       'Scrap blocks it, and it runs hot for what it does. Heat is the whole limiter on every laser: fire until it cuts out, then wait while it sheds.',
-      'The only weapon in the game that can become something else. Finish it, hold Targeting Optics, and a Cyber Chest can turn it into the CHAIN LASER - a beam that jumps from what it is burning to the nearest body not already in the chain, for as long as its total length still fits inside its reach.',
+      'The middle of the three: reaches further than the short laser, cools better than the long one, and is the beam you take if you do not want to build the run around it.',
     ],
   },
   'w-laser-long': {
@@ -139,7 +152,7 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
     aims: 'Every weapon reaches further.',
     notes: [
       'Reach decides what a weapon can even consider shooting, so this is worth most to the guns that are starved of targets and least to the ones already swimming in them.',
-      'It is also the price of the Chain Laser. For a chaining beam, reach stops meaning "how far can it hit" and becomes "how much beam is there" - every extra unit is another jump it can afford.',
+      'It does nothing for the missile racks, which fire whether or not anything is in range - but it is worth a great deal to a short-ranged gun that spends its life waiting for something to walk into it.',
     ],
   },
   'p-damage': {
@@ -441,22 +454,6 @@ export class ScrapopediaScreen {
       list.appendChild(li);
     }
     this.detailEl.appendChild(list);
-
-    const asc = def.ascension;
-    if (asc !== undefined) {
-      this.detailEl.appendChild(section('Tier 8'));
-      const name = document.createElement('div');
-      name.className = 'pedia__asc-name';
-      name.textContent = asc.name;
-      this.detailEl.append(name, para('pedia__note', asc.description));
-      const req = UPGRADE_CATALOG.find((d) => d.id === asc.requires);
-      this.detailEl.appendChild(
-        para(
-          'pedia__req',
-          `Needs this weapon finished and ${req?.name ?? asc.requires} held. Only a Cyber Chest can grant it.`,
-        ),
-      );
-    }
   }
 }
 

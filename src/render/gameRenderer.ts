@@ -59,6 +59,7 @@ import {
   VIS_MISSILE_SHORT,
   VIS_SLUG,
   VIS_STRIKE_MARKER,
+  type WeaponInstance,
   type World,
 } from '../core/index.js';
 import { BeamLayer } from './beams.js';
@@ -991,7 +992,7 @@ export class GameRenderer {
     this.mech.tint = tint;
 
     // --- turret ----------------------------------------------------------------------------
-    const w = world.weaponCount > 0 ? world.weapons[0] : undefined;
+    const w = turretWeapon(world);
     const tx = w?.turretX ?? pl.faceX;
     const ty = w?.turretY ?? pl.faceY;
     const aim = Math.atan2(ty, tx);
@@ -1158,4 +1159,31 @@ export class GameRenderer {
 /** Linear interpolation between the previous tick's value and this tick's. */
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
+}
+
+/**
+ * WHICH WEAPON THE BARREL ON TOP OF THE MECH IS SHOWING - the FIRST one that actually aims.
+ *
+ * There is one turret sprite and up to five weapons, so the renderer has to pick one to draw, and
+ * for a long time it drew slot 0 unconditionally. That is fine on a chassis that walks in holding a
+ * gun and wrong on the three that do not: a missile rack has no turret at all - it fires along the
+ * direction you last MOVED (WeaponDef.fireAlongFacing) - so its `turretX/turretY` is the player's
+ * own heading, and the barrel spent the whole run locked to the legs, swinging only when the mech
+ * turned. On the unarmed chassis it was worse: nothing in slot 0, so the barrel tracked `faceX`
+ * even after a real gun was picked up and was visibly aiming somewhere else.
+ *
+ * So: skip the racks and show the first weapon with an opinion about where to point. FIRST rather
+ * than best, because the barrel has to be a stable thing to read - a mount that reassigned itself
+ * every time a card was taken would make the one cue that tells you what the mech has decided into
+ * a cue about what you most recently picked up.
+ *
+ * Falls back to slot 0, so a rack-only loadout still slews the barrel with the heading it fires
+ * along rather than freezing it pointing east.
+ */
+function turretWeapon(world: World): WeaponInstance | undefined {
+  for (let i = 0; i < world.weaponCount; i++) {
+    const inst = world.weapons[i];
+    if (world.weaponCatalog[inst.defId]?.fireAlongFacing === false) return inst;
+  }
+  return world.weaponCount > 0 ? world.weapons[0] : undefined;
 }

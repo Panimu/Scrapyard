@@ -1442,20 +1442,6 @@ body {
   opacity: 0.7;
 }
 
-.pedia__asc-name {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--accent);
-}
-
-.pedia__req {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--ink-faint);
-  font-style: italic;
-}
-
 .pedia__back {
   flex: 0 0 auto;
   width: min(100%, 340px);
