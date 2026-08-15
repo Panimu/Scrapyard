@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T17:26Z',
+    title: 'Feed Systems no longer shortens a drone’s life',
+    notes: [
+      'FEED SYSTEMS WAS SECRETLY A DRONE NERF. A drone’s magazine is its life, so making it fire faster only made it die sooner - the card that says "everything fires more often" was quietly buying you fewer drones. Drone rounds ignore it now. The BAY still takes it and builds faster, which is where a rate bonus belongs on a weapon that is a factory.',
+      'TARGETING OPTICS NO LONGER TOUCHES DRONES EITHER. A drone’s reach is not just how far it shoots - it also sets how close something has to come to YOU before a drone will go after it, and how far out it is then allowed to be. A range card was moving all three at once, including the leash that keeps drones on your screen.',
+      'ORDNANCE STILL WORKS. A damage build makes your drones hit harder, exactly as you would expect from something that fires a machine gun.',
+    ],
+  },
+  {
     at: '2026-08-15T16:58Z',
     title: 'The drone bay builds twice as fast',
     notes: [

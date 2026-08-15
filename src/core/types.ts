@@ -530,6 +530,13 @@ export interface World {
    */
   readonly droneGun: WeaponStats;
   /**
+   * Scratch for the drone gun's resolution: `levelUp.stacks` with the cards a drone does not
+   * benefit from zeroed. Rewritten from scratch every tick, so it carries nothing between ticks
+   * and is not part of the hash - it sits on World rather than in the module only because its
+   * length comes from the injected upgrade catalog. See systems/drones.ts, DRONE_GUN_IGNORES.
+   */
+  readonly droneStacks: Uint8Array;
+  /**
    * WHICH CARDS THE LEVEL-UP DECK MAY OFFER, by upgrade catalog index. 1 = offerable.
    *
    * Set by the APP at run start from the save file, never by core: a card unlocked by beating the

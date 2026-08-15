@@ -247,6 +247,38 @@ describe('the drone bay', () => {
     }
   });
 
+  it('gives its drones a gun that Feed Systems and Targeting Optics cannot touch', () => {
+    const w = droneWorld();
+    tick(w);
+    const plain = { cd: w.droneGun.cooldown, range: w.droneGun.range, dmg: w.droneGun.damage };
+
+    // Max out both excluded cards AND the one that is allowed through.
+    const idx = (id: string): number => UPGRADE_CATALOG.findIndex((d) => d.id === id);
+    for (const id of ['p-rate', 'p-range', 'p-damage']) {
+      w.levelUp.stacks[idx(id)] = UPGRADE_CATALOG[idx(id)].maxStacks;
+    }
+    tick(w);
+
+    // The gun is untouched by the two that are masked out...
+    expect(w.droneGun.cooldown).toBeCloseTo(plain.cd, 6);
+    expect(w.droneGun.range).toBeCloseTo(plain.range, 6);
+    // ...and still takes the one that is not. Ordnance reaches a drone; that is deliberate.
+    expect(w.droneGun.damage).toBeGreaterThan(plain.dmg);
+  });
+
+  it('still lets Feed Systems speed up the BAY, which is a factory and not a gun', () => {
+    // The exclusion is about the round, not the weapon. What a rate card should pace on this
+    // system is how fast drones are built - the one place a rate bonus is not secretly a nerf.
+    const w = droneWorld();
+    tick(w);
+    const before = w.weapons[0].stats.cooldown;
+
+    const rate = UPGRADE_CATALOG.findIndex((d) => d.id === 'p-rate');
+    w.levelUp.stacks[rate] = UPGRADE_CATALOG[rate].maxStacks;
+    resolveWeaponStats(DRONE, w.heroes[0], 1, w.levelUp.stacks, w.upgradeCatalog, w.weapons[0].stats);
+    expect(w.weapons[0].stats.cooldown).toBeLessThan(before);
+  });
+
   it('detonates when the magazine runs dry, and the blast damages what is standing there', () => {
     const w = droneWorld();
     ticks(w, 60);

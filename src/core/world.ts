@@ -313,6 +313,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     },
     drones: createDronePool(),
     droneGun: createWeaponStats(),
+    droneStacks: new Uint8Array(catalogs.upgrades.length),
     // ALL OFFERABLE unless the app says otherwise. See World.cardUnlocked.
     cardUnlocked: new Uint8Array(catalogs.upgrades.length).fill(1),
     events: createEventRing(EVENT_RING_CAPACITY),

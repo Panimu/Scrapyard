@@ -158,24 +158,55 @@ const DRONE_DAMAGE_FRAC = 0.5;
 const DRONE_TARGETS = new Int32Array(4);
 
 /**
+ * PASSIVE CARDS A DRONE'S GUN DOES NOT GET, by upgrade id.
+ *
+ * Everything else still reaches it - Ordnance in particular, so a damage build makes drones hit
+ * harder, which is the interaction a player would expect from "it fires a machine gun".
+ *
+ * FEED SYSTEMS, because on a drone it is not a rate card at all - it is a LIFESPAN card, pointing
+ * the wrong way. A drone's magazine is its life, so firing faster only means dying sooner: at tier
+ * 7 it took the cadence from 0.083 s to 0.05 s and cut a drone's constant-fire life from 23 s to
+ * 14. The bay's own build time still takes the card, which is where a rate bonus belongs on this
+ * weapon - the thing being paced is the FACTORY, not the gun it hands out.
+ *
+ * TARGETING OPTICS, because the drone's range is not a reach. It is doing three jobs at once:
+ * how close a body has to be to YOU before a drone will go (x DRONE_ACQUIRE_MUL), how far from
+ * that body the drone then orbits (x ENGAGE_RADIUS_FRAC), and how far it may shoot. A card that
+ * says "every weapon reaches further" would silently widen the leash the whole system is built on
+ * - the one that stops a drone walking off the screen - and it would do it invisibly, because
+ * nothing about a range card suggests it moves where your drones are allowed to be.
+ *
+ * BY ID AND NOT BY STAT KEY. "Ignore anything that touches cooldown" would be the same thing
+ * today and the wrong rule tomorrow: it would silently swallow the next card that happens to
+ * mention a key, and this list is a design decision about two specific cards.
+ */
+const DRONE_GUN_IGNORES: readonly string[] = ['p-rate', 'p-range'];
+
+/**
  * The drone's gun, resolved once per tick rather than per drone.
  *
  * IT IS THE MACHINE GUN AT THE DRONE WEAPON'S OWN TIER, which is the whole specification - so it
  * is resolved from MACHINE_GUN with the drone's level rather than copied into the drone's def. A
  * chassis bonus to the Machine Gun therefore reaches the drones too, which is a real interaction
  * and the honest consequence of "it fires a machine gun".
+ *
+ * The stacks it resolves against are a MASKED COPY (World.droneStacks), rebuilt here every tick.
+ * Masking at the input rather than unpicking the output means the exclusion cannot drift from
+ * whatever those cards happen to modify: zero stacks of a card is zero effect from it, whatever
+ * keys it grows later.
  */
 function droneGunStats(world: World, level: number): void {
   const hero = world.heroes[world.player.heroId];
   if (hero === undefined) return;
-  resolveWeaponStats(
-    MACHINE_GUN,
-    hero,
-    level,
-    world.levelUp.stacks,
-    world.upgradeCatalog,
-    world.droneGun,
-  );
+
+  const stacks = world.droneStacks;
+  stacks.set(world.levelUp.stacks);
+  for (let i = 0; i < world.upgradeCatalog.length; i++) {
+    const def = world.upgradeCatalog[i];
+    if (def !== undefined && DRONE_GUN_IGNORES.indexOf(def.id) >= 0) stacks[i] = 0;
+  }
+
+  resolveWeaponStats(MACHINE_GUN, hero, level, stacks, world.upgradeCatalog, world.droneGun);
 }
 
 export function updateDrones(world: World, dt: number): void {
