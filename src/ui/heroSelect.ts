@@ -65,6 +65,18 @@ export class HeroSelect {
       tile.className = 'hero';
       tile.setAttribute('role', 'radio');
 
+      // THE ART SITS IN A WRAPPER so the question mark can be laid over it. A locked chassis is
+      // shown as a SILHOUETTE with a `?` on top and nothing else - no name, no identity line. The
+      // shape is the whole tease: you can see there is a mech there and roughly what it looks like,
+      // and nothing tells you which one it is or what it does.
+      const portrait = document.createElement('div');
+      portrait.className = 'hero__portrait';
+
+      const q = document.createElement('div');
+      q.className = 'hero__q';
+      q.textContent = '?';
+      q.setAttribute('aria-hidden', 'true');
+
       const img = document.createElement('img');
       img.className = 'hero__art';
       // spriteUrl, NOT a hand-built path: in the single-file build the sprites live in
@@ -86,7 +98,9 @@ export class HeroSelect {
 
       // THE CONDITION LIVES ON THE TILE, not behind a lock icon. A locked chassis whose price is
       // hidden is not a goal, it is just an absence - and this is the one place the player is
-      // already looking at the thing they want.
+      // already looking at the thing they want. Empty while the criteria are unwritten (`never`
+      // describes as ''), and `:empty` hides the element, so today the tile is silhouette and `?`
+      // alone; the day a real condition lands it appears underneath without any other change.
       const req = document.createElement('div');
       req.className = 'hero__req';
       req.textContent = describeUnlock(
@@ -94,7 +108,8 @@ export class HeroSelect {
         (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
       );
 
-      tile.append(img, name, identity, req);
+      portrait.append(img, q);
+      tile.append(portrait, name, identity, req);
       // One tap selects. Starting the run needs the explicit button below, so a mis-tap while
       // scrolling the grid never drops you straight into a run.
       tile.addEventListener('click', () => this.select(index));
@@ -155,10 +170,16 @@ export class HeroSelect {
 
   private refreshLocks(): void {
     for (let i = 0; i < this.tiles.length; i++) {
-      const on = this.isUnlocked(HERO_CATALOG[i].id);
+      const hero = HERO_CATALOG[i];
+      const on = this.isUnlocked(hero.id);
       this.unlocked[i] = on;
       this.tiles[i].classList.toggle('hero--locked', !on);
       this.tiles[i].setAttribute('aria-disabled', on ? 'false' : 'true');
+      // The tile has no readable text at all while locked - the name and the identity line are
+      // both hidden - so the label has to come from here or a screen reader reaches sixteen
+      // identical empty buttons.
+      if (on) this.tiles[i].removeAttribute('aria-label');
+      else this.tiles[i].setAttribute('aria-label', 'Locked chassis');
     }
   }
 

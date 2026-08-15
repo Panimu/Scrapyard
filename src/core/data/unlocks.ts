@@ -155,9 +155,10 @@ export function describeUnlock(
     case 'always':
       return '';
     case 'never':
-      // Deliberately says nothing about HOW, because there is no how yet. "Locked" with no target
-      // is honest; a hint at a criterion that does not exist would not be.
-      return 'Locked';
+      // EMPTY, and not the word "Locked". The picker already says locked in the only way that
+      // matters - a silhouette with a question mark over it - and a label repeating that is a
+      // caption on a sign. The moment a real condition replaces this, the line appears on its own.
+      return '';
     case 'wave':
       return `Reach wave ${cond.wave}`;
     case 'survive':

@@ -860,23 +860,67 @@ body {
   color: var(--ink-faint);
 }
 
+/* Holds the art and, on a locked tile, the question mark laid over it. */
+.hero__portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
 /*
- * A LOCKED CHASSIS IS DIMMED, NOT HIDDEN. You should be able to see the mech you have not earned
- * and read what it would take - a roster that hides its own contents cannot be a set of goals.
- * The tile stays tappable so a screen reader still reaches it; `select` is what refuses.
+ * A LOCKED CHASSIS IS A SILHOUETTE WITH A QUESTION MARK, AND NOTHING ELSE.
+ *
+ * Not dimmed art with the name still legible - that tells you exactly what you are missing and
+ * leaves nothing to find out. The SHAPE is the whole tease: you can see there is a mech there and
+ * roughly what it is built like, and not one word about which one it is or what it does.
+ *
+ * `brightness(0)` flattens every pixel to black while leaving the PNG's alpha alone, so what
+ * survives is the outline and only the outline; `invert` lifts that black to a grey that reads
+ * against the panel. Two filters rather than a hand-drawn silhouette per chassis, which would be
+ * sixteen more assets to keep in step with the art.
+ *
+ * The tile stays tappable so a screen reader still reaches it - `select` is what refuses - and it
+ * carries an aria-label, because with the name and identity hidden there is otherwise no text on
+ * it at all.
  */
-.hero--locked .hero__art,
+.hero--locked .hero__art {
+  filter: brightness(0) invert(0.26);
+}
+
 .hero--locked .hero__name,
 .hero--locked .hero__identity {
-  opacity: 0.32;
-  filter: grayscale(1);
+  display: none;
 }
 
 .hero--locked {
   border-style: dashed;
 }
 
-/* Only a locked tile shows its condition - on an earned one it is a fact about the past. */
+.hero__q {
+  position: absolute;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  /* Full-strength ink, not dimmed: the glyph sits ON the silhouette, and a grey mark on a grey
+     shape is the one place on this screen where contrast has to be deliberate. The dark halo is
+     what separates the two - without it the ? reads as a hole in the mech. */
+  color: var(--ink);
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(0, 0, 0, 0.9);
+  display: none;
+  pointer-events: none;
+}
+
+.hero--locked .hero__q {
+  display: block;
+}
+
+/*
+ * The unlock condition, under the silhouette. Empty while the criteria are unwritten - `never`
+ * describes as '' - and `:empty` collapses the element, so today it contributes nothing and the
+ * day a real condition lands it simply appears.
+ */
 .hero__req {
   display: none;
   font-size: 11px;
@@ -888,6 +932,10 @@ body {
 
 .hero--locked .hero__req {
   display: block;
+}
+
+.hero__req:empty {
+  display: none;
 }
 
 .heroes__go {

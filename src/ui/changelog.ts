@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T10:57Z',
+    title: 'A locked mech is a silhouette with a question mark',
+    notes: [
+      'NO NAME, NO DESCRIPTION, JUST A SHAPE. A chassis you have not earned is now a blacked-out outline with a ? over it. You can see there is a mech there and roughly how it is built - two legs or four, boxy or lean, what it carries on its shoulders - and nothing at all about which one it is or what it does.',
+      'It used to show the art greyed out with the name and the identity line still readable, which told you exactly what you were missing and left nothing to find out.',
+      'The word "Locked" is gone from the tile too. The silhouette says that already.',
+    ],
+  },
+  {
     at: '2026-08-15T10:31Z',
     title: 'The roster is down to Slate while the unlocks are written',
     notes: [
