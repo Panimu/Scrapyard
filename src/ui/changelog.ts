@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T10:21Z',
+    title: 'All sixteen mechs are available again',
+    notes: [
+      'THE CHASSIS UNLOCK CONDITIONS ARE WITHDRAWN. Reach wave 2, wreck four hundred, finish the Cannon - none of those were designed, they were placeholders, and a placeholder that ships is something you have already played around by the time anyone argues about it. Every mech is pickable again.',
+      'The machinery stays, and the real conditions land here when they are written. Nothing you had unlocked is lost.',
+      'The Scrapopedia is unaffected: it still fills in as you hold things.',
+    ],
+  },
+  {
     at: '2026-08-15T10:19Z',
     title: 'Achievements',
     notes: [

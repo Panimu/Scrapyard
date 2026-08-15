@@ -43,9 +43,11 @@ describe('meetsUnlock', () => {
   });
 
   it('an empty save can always press New Game', () => {
-    const fresh = run();
-    const openers = HERO_CATALOG.filter((h) => meetsUnlock(h.unlock, fresh, IDS));
-    expect(openers.map((h) => h.id)).toEqual(['slate']);
+    // Slate specifically, whatever the rest of the roster ends up asking for. Written as a
+    // membership check rather than an exact list so it keeps meaning this once the real conditions
+    // land and the other fifteen stop being `always`.
+    expect(meetsUnlock(HERO_CATALOG[0].unlock, run(), IDS)).toBe(true);
+    expect(HERO_CATALOG[0].id).toBe('slate');
   });
 
   it('every chassis names a condition some run could actually satisfy', () => {

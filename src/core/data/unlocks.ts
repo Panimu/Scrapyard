@@ -26,16 +26,20 @@
  * to make this one impure now.
  *
  * ---------------------------------------------------------------------------------------------
- * THE CONDITIONS IN HERO_CATALOG ARE PROVISIONAL
+ * NO CONDITIONS ARE WRITTEN YET, AND NONE WILL BE INVENTED HERE
  * ---------------------------------------------------------------------------------------------
- * The MACHINERY is settled; the numbers on each chassis are a first pass, chosen to open the
- * roster steadily rather than to be a grind, and to exercise every `kind` so none of them is a
- * code path nobody has run. They are one field per hero in one table and are meant to be rewritten
- * as the roster gets its real personality.
+ * This file is the VOCABULARY. What each chassis actually asks for is a design decision that has
+ * not been made, and every hero therefore carries `always` until it is. A guessed placeholder
+ * would be worse than an empty table: it locks a chassis behind a number nobody chose, and once
+ * shipped it is something players have already played around.
  *
- * One rule is not provisional: SLATE IS ALWAYS UNLOCKED. A player with an empty save has to be
- * able to press New Game, and a roster that can lock its own entry point is a roster that can
- * brick itself.
+ * One rule is not a guess and does not wait: SLATE IS ALWAYS UNLOCKED. A player with an empty save
+ * has to be able to press New Game, and a roster that can lock its own entry point is a roster
+ * that can brick itself.
+ *
+ * Adding a `kind` here is cheap - the union, one case in `meetsUnlock`, one in `describeUnlock` -
+ * so the vocabulary is meant to grow to fit the conditions, not the conditions to be bent to fit
+ * the vocabulary.
  */
 
 import type { UpgradeId } from './upgrades.js';

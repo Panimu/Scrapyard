@@ -113,9 +113,14 @@ export interface HeroWeaponBonus {
 export interface HeroDef {
   readonly id: HeroId;
   /**
-   * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. Slate's is `always`; everything else is locked and
-   * unpickable until one finished run satisfies it. See data/unlocks.ts - the machinery is settled
-   * and the numbers here are a first pass.
+   * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. A chassis whose condition is unmet is locked and
+   * cannot be picked. See data/unlocks.ts for the vocabulary.
+   *
+   * EVERY ENTRY IS `always` TODAY, WHICH IS NOT A DESIGN - IT IS AN ABSENCE OF ONE. The conditions
+   * are still to be written, and an invented placeholder is worse than none: it locks a chassis
+   * behind a number nobody chose, and the moment it ships it is a thing players have played around
+   * and a thing this file has to be argued out of. `always` locks nothing, so the roster behaves
+   * exactly as it did before unlocks existed until the real conditions land here.
    */
   readonly unlock: UnlockCond;
   readonly name: string;
@@ -206,7 +211,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'moss',
-    unlock: { kind: 'wave', wave: 2 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Moss',
     identity:
       'Light strider, rotary drums. Opens with the Short Laser at double reach.',
@@ -223,7 +228,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ember',
-    unlock: { kind: 'wave', wave: 3 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Ember',
     identity:
       'Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.',
@@ -238,7 +243,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'amber',
-    unlock: { kind: 'kills', count: 400 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Amber',
     identity:
       'Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.',
@@ -254,7 +259,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'onyx',
-    unlock: { kind: 'wave', wave: 4 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Onyx',
     identity:
       'Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.',
@@ -269,7 +274,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ash',
-    unlock: { kind: 'kills', count: 900 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Ash',
     identity:
       'Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.',
@@ -284,7 +289,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'bone',
-    unlock: { kind: 'survive', sec: 480 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Bone',
     identity:
       'Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.',
@@ -299,7 +304,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'plum',
-    unlock: { kind: 'tier', id: 'p-shield', tier: 3 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Plum',
     identity:
       'Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.',
@@ -324,7 +329,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'jade',
-    unlock: { kind: 'tier', id: 'w-laser-short', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Jade',
     identity:
       'Heavy biped, forward claw arms. Opens with the Short Laser.',
@@ -336,7 +341,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'rust',
-    unlock: { kind: 'tier', id: 'w-laser-long', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Rust',
     identity:
       'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
@@ -348,7 +353,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'brass',
-    unlock: { kind: 'tier', id: 'w-cannon', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Brass',
     identity:
       'Light hover, one heavy cannon. Opens with the Cannon.',
@@ -360,7 +365,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'cobalt',
-    unlock: { kind: 'tier', id: 'w-laser-medium', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Cobalt',
     identity:
       'Heavy quad, twin gun pods. Opens with the Medium Laser.',
@@ -372,7 +377,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'vermilion',
-    unlock: { kind: 'tier', id: 'w-missile-long', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Vermilion',
     identity:
       'Light hover, rotary drums. Opens with the Long Missiles.',
@@ -384,7 +389,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'indigo',
-    unlock: { kind: 'tier', id: 'w-missile-short', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Indigo',
     identity:
       'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
@@ -396,7 +401,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'copper',
-    unlock: { kind: 'tier', id: 'w-machine-gun', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Copper',
     identity:
       'Heavy quad, rotary drums. Opens with the Machine Gun.',
@@ -408,7 +413,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
-    unlock: { kind: 'tier', id: 'w-artillery', tier: 7 },
+    unlock: { kind: 'always' }, // TODO: condition to be defined
     name: 'Fern',
     identity:
       'Light hover, forward claw arms. Opens with the Heavy Artillery.',
