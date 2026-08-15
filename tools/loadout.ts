@@ -15,6 +15,16 @@
  * LOWEST-HP body in range, so it finishes what others started and flatters itself in company.
  * The absolute column is the honest one; the share column is about the shape of the fight.
  *
+ * WHICH IS WHY THE TABLE ALSO COUNTS KILLS. Damage says who did the work; killing blows say who
+ * was pointed at things that were about to die anyway. A finisher scores kills well above its
+ * damage share and a softener well below, and `dmg/kill` is that gap as one number - what it cost
+ * each gun to actually finish something. Neither column is the truth on its own: a weapon can top
+ * the damage table while another quietly takes the bodies it created.
+ *
+ * KILLS DO NOT SUM TO THE RUN'S KILL COUNT. The Energy Shield's backlash has no loadout slot to
+ * credit, so its kills are counted against no weapon at all. The share column is therefore taken
+ * against the CREDITED total, not against `stats.kills`.
+ *
  * ---------------------------------------------------------------------------------------------
  * EVERY DISTORTION IN HERE IS DELIBERATE, AND EACH IS A DECISION
  * ---------------------------------------------------------------------------------------------
@@ -78,6 +88,16 @@ interface Outcome {
   damageTaken: number;
   /** Indexed by WEAPON_CATALOG index. */
   byWeapon: number[];
+  /**
+   * KILLING BLOWS by WEAPON_CATALOG index. A different question from damage and worth both
+   * columns: damage says who did the work, kills say who was pointed at things that were about to
+   * die. A finisher scores kills far above its damage share and a softener far below, and the gap
+   * between the two columns is the only place that shows up.
+   *
+   * IT DOES NOT SUM TO THE RUN'S KILLS. The Energy Shield's backlash has no loadout slot to
+   * credit, so those kills are counted nowhere - see RunStats.killsByWeapon.
+   */
+  killsByWeapon: number[];
   byShield: number;
   /**
    * BOSSES STILL STANDING when the run ended. Victory needs the clock AND an empty yard, so this
@@ -152,6 +172,7 @@ function runOne(seed: number): Outcome {
     damageDealt: s.damageDealt,
     damageTaken: s.damageTaken,
     byWeapon: Array.from(s.damageByWeapon),
+    killsByWeapon: Array.from(s.killsByWeapon),
     byShield: s.damageByShield,
     bossesAlive,
   };
@@ -170,16 +191,32 @@ function printRun(o: Outcome): void {
   );
 }
 
-function printTable(title: string, rows: { name: string; amount: number }[], total: number): void {
+function printTable(
+  title: string,
+  rows: { name: string; amount: number; kills: number }[],
+  total: number,
+  totalKills: number,
+): void {
   console.log(`\n  ${title}`);
-  console.log(`    ${'weapon'.padEnd(18)}${'damage'.padStart(10)}${'share'.padStart(8)}`);
+  console.log(
+    `    ${'weapon'.padEnd(18)}${'damage'.padStart(10)}${'share'.padStart(8)}` +
+      `${'kills'.padStart(9)}${'share'.padStart(8)}${'dmg/kill'.padStart(10)}`,
+  );
   for (const r of rows) {
     const share = total > 0 ? (r.amount / total) * 100 : 0;
+    const kShare = totalKills > 0 ? (r.kills / totalKills) * 100 : 0;
+    // What it cost this gun to finish something. A blunt way to see who softens and who finishes.
+    const per = r.kills > 0 ? r.amount / r.kills : 0;
     console.log(
-      `    ${r.name.padEnd(18)}${Math.round(r.amount).toLocaleString('en-US').padStart(10)}${`${share.toFixed(1)}%`.padStart(8)}`,
+      `    ${r.name.padEnd(18)}${Math.round(r.amount).toLocaleString('en-US').padStart(10)}` +
+        `${`${share.toFixed(1)}%`.padStart(8)}${r.kills.toLocaleString('en-US').padStart(9)}` +
+        `${`${kShare.toFixed(1)}%`.padStart(8)}${(r.kills > 0 ? per.toFixed(0) : '--').padStart(10)}`,
     );
   }
-  console.log(`    ${'TOTAL'.padEnd(18)}${Math.round(total).toLocaleString('en-US').padStart(10)}${'100.0%'.padStart(8)}`);
+  console.log(
+    `    ${'TOTAL'.padEnd(18)}${Math.round(total).toLocaleString('en-US').padStart(10)}${'100.0%'.padStart(8)}` +
+      `${totalKills.toLocaleString('en-US').padStart(9)}${'100.0%'.padStart(8)}${''.padStart(10)}`,
+  );
 }
 
 function main(argv: readonly string[]): void {
@@ -204,30 +241,49 @@ function main(argv: readonly string[]): void {
   // how much to trust it.
   for (const o of outcomes) {
     const rows = o.byWeapon
-      .map((amount, i) => ({ name: WEAPON_CATALOG[i]?.name ?? `weapon ${i}`, amount }))
+      .map((amount, i) => ({
+        name: WEAPON_CATALOG[i]?.name ?? `weapon ${i}`,
+        amount,
+        kills: o.killsByWeapon[i] ?? 0,
+      }))
       .filter((r) => r.amount > 0);
-    if (o.byShield > 0) rows.push({ name: 'Energy Shield', amount: o.byShield });
+    if (o.byShield > 0) rows.push({ name: 'Energy Shield', amount: o.byShield, kills: 0 });
     rows.sort((a, b) => b.amount - a.amount);
     // `damageDealt` ALREADY INCLUDES the shield's burn - types.ts guarantees the weapon array
     // plus damageByShield sums to it - so the total is that figure, not that figure plus shield.
-    printTable(`seed 0x${(o.seed >>> 0).toString(16)}`, rows, o.damageDealt);
+    // The KILL total is the credited sum rather than `o.kills`, so the share column adds to 100.
+    const credited = rows.reduce((a, r) => a + r.kills, 0);
+    printTable(`seed 0x${(o.seed >>> 0).toString(16)}`, rows, o.damageDealt, credited);
   }
 
   if (outcomes.length > 1) {
     const pooled = new Array<number>(WEAPON_CATALOG.length).fill(0);
+    const pooledKills = new Array<number>(WEAPON_CATALOG.length).fill(0);
     let shield = 0;
     let total = 0;
     for (const o of outcomes) {
-      for (let i = 0; i < pooled.length; i++) pooled[i] += o.byWeapon[i] ?? 0;
+      for (let i = 0; i < pooled.length; i++) {
+        pooled[i] += o.byWeapon[i] ?? 0;
+        pooledKills[i] += o.killsByWeapon[i] ?? 0;
+      }
       shield += o.byShield;
       total += o.damageDealt;
     }
     const rows = pooled
-      .map((amount, i) => ({ name: WEAPON_CATALOG[i]?.name ?? `weapon ${i}`, amount }))
+      .map((amount, i) => ({
+        name: WEAPON_CATALOG[i]?.name ?? `weapon ${i}`,
+        amount,
+        kills: pooledKills[i],
+      }))
       .filter((r) => r.amount > 0);
-    if (shield > 0) rows.push({ name: 'Energy Shield', amount: shield });
+    if (shield > 0) rows.push({ name: 'Energy Shield', amount: shield, kills: 0 });
     rows.sort((a, b) => b.amount - a.amount);
-    printTable(`ALL ${outcomes.length} SEEDS POOLED`, rows, total);
+    printTable(
+      `ALL ${outcomes.length} SEEDS POOLED`,
+      rows,
+      total,
+      rows.reduce((a, r) => a + r.kills, 0),
+    );
 
     const wins = outcomes.filter((o) => o.won).length;
     console.log(
