@@ -252,7 +252,13 @@ const DRAW = `(id) => {
     // 42 x 24 is 1.75 : 1 and 66 x 17 is 3.9 : 1, against the 20 x 11.4 and 25 x 6.3 the two racks
     // actually fly at. An icon fatter than the thing it is teaching is a worse icon even when it
     // reads better on its own.
-    if (long) draw(CX, 66, 17);
+    //
+    // THE COUNT IS THE VOLLEY. Two for the short rack and THREE for the long, because that is what
+    // each one actually puts in the air - the same rule the level-up cards follow, where a third
+    // missile is written out as a third missile and a percentage never is. The long rack drew one
+    // missile for as long as it existed, which quietly made "two against one" the difference
+    // between the racks when the real difference is two against three.
+    if (long) { draw(CX - 34, 64, 16); draw(CX, 64, 16); draw(CX + 34, 64, 16); }
     else { draw(CX - 25, 42, 24); draw(CX + 25, 42, 24); }
   }
 

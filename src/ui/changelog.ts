@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T16:44Z',
+    title: 'The Long Missiles symbol shows all three of them',
+    notes: [
+      'IT DREW ONE MISSILE, AND THE RACK FIRES THREE. Beside the short rack’s two that made the difference between them look like two against one, when it is two fat missiles against three thin ones. The reel now shows what actually leaves the rack.',
+    ],
+  },
+  {
     at: '2026-08-15T16:40Z',
     title: 'The two missile racks look like two different weapons',
     notes: [
