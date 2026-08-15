@@ -11,14 +11,10 @@ import {
   UPGRADE_CATALOG,
   WEAPON_ASCENDED_TIER,
   meetsUnlock,
-  type RunRecord,
 } from '../src/core/index.js';
+import { testRunRecord as run } from './fixtures.js';
 
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
-
-function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], killsWith: {}, bossKillsBy: [], ...over };
-}
 
 describe('achievements', () => {
   it('every platform key is unique and safe to send to a platform verbatim', () => {
@@ -37,7 +33,7 @@ describe('achievements', () => {
     expect(def).toBeDefined();
     if (def === undefined) return;
 
-    const at = (tier: number): RunRecord => {
+    const at = (tier: number) => {
       const tiers = new Uint8Array(UPGRADE_CATALOG.length);
       tiers[IDS.indexOf('w-laser-medium')] = tier;
       return run({ tiers });

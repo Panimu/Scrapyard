@@ -12,6 +12,8 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { testHero } from './fixtures.js';
+
 import {
   CHOOSE_REROLL,
   DT,
@@ -188,17 +190,11 @@ function clearAllCards(world: World): number {
 
 // A hero with a real, non-1 multiplier. The shipping catalog is all 1.0 while hero variety is
 // deferred, so the layer-1 path has to be exercised with an explicit fixture or not at all.
-const HEAVY_HERO: HeroDef = {
+const HEAVY_HERO = testHero({
   id: HERO_CATALOG[0].id,
-  unlock: { kind: 'always' },
-  name: 'Fixture Chassis',
-  identity: 'fixture',
   sprite: HERO_CATALOG[0].sprite,
-  gait: 'walk',
-  startingWeapon: 'cannon',
   player: { maxHp: 1.5 },
-  weapon: {},
-};
+});
 
 const PLAIN_HERO: HeroDef = { ...HEAVY_HERO, player: {}, weapon: {} };
 

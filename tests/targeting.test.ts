@@ -9,6 +9,8 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { testHero } from './fixtures.js';
+
 import { DT, MAX_TARGETS } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { createWorld } from '../src/core/world.js';
@@ -33,7 +35,6 @@ import {
 import { updateWeapons } from '../src/core/systems/weapons.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
 import { EMPTY_INPUT, type Catalogs, type World } from '../src/core/types.js';
-import type { HeroDef } from '../src/core/data/heroes.js';
 
 // ---------------------------------------------------------------------------------------------
 // Fixtures. A hero with EMPTY multiplier maps, so the Cannon resolves to exactly its catalog base
@@ -45,17 +46,7 @@ import type { HeroDef } from '../src/core/data/heroes.js';
 // perturbing these expectations the moment hero variety returns.
 // ---------------------------------------------------------------------------------------------
 
-const FIXTURE_HERO: HeroDef = {
-  id: 'jade',
-  unlock: { kind: 'always' },
-  name: 'Test Chassis',
-  identity: 'fixture',
-  sprite: 'mech_3dgreen',
-  gait: 'walk' as const,
-  startingWeapon: 'cannon',
-  player: {},
-  weapon: {},
-};
+const FIXTURE_HERO = testHero();
 
 const FIXTURE_CATALOGS: Catalogs = {
   heroes: [FIXTURE_HERO],

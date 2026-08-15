@@ -17,6 +17,8 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { testHero } from './fixtures.js';
+
 import {
   DT,
   HEAT_CAPACITY_BASE,
@@ -75,17 +77,7 @@ import { createWorld, stepWorld } from '../src/core/world.js';
  * them automatically.
  */
 function heroWith(startingWeapon: WeaponId): HeroDef {
-  return {
-    id: 'jade',
-    unlock: { kind: 'always' },
-    name: 'Test Chassis',
-    identity: 'fixture',
-    sprite: 'mech_3dgreen',
-    gait: 'walk' as const,
-    startingWeapon,
-    player: {},
-    weapon: {},
-  };
+  return testHero({ startingWeapon });
 }
 
 /** No enemy catalog and no upgrades: nothing spawns, nothing levels, only the weapon runs. */

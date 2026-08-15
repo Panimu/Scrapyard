@@ -10,14 +10,10 @@ import {
   UPGRADE_CATALOG,
   WEAPON_CATALOG,
   meetsUnlock,
-  type RunRecord,
 } from '../src/core/index.js';
+import { testRunRecord as run } from './fixtures.js';
 
 const IDS = UPGRADE_CATALOG.map((d) => d.id);
-
-function run(over: Partial<RunRecord> = {}): RunRecord {
-  return { wave: 1, runSec: 0, kills: 0, won: false, tiers: [], bossKillsHolding: [], killsWith: {}, bossKillsBy: [], ...over };
-}
 
 describe('meetsUnlock', () => {
   it('always is unconditional', () => {
