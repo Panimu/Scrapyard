@@ -174,7 +174,7 @@ export function updatePlayerMovement(world: World, dt: number): void {
 const CRITICAL_FRAC = 0.1;
 
 /**
- * THE ARC WELDER: the clock that puts hit points back, and the watcher that unlocks it.
+ * FIELD REPAIR: the clock that puts hit points back, and the watcher that unlocks it.
  *
  * A COUNTDOWN, NOT A RATE, and that distinction is the card. `repairInterval` seconds pass and
  * then `repairAmount` hit points land at once. Smearing the same total across the interval as

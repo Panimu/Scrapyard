@@ -1,5 +1,5 @@
 /**
- * THE ARC WELDER - the clock, and the round trip that unlocks it.
+ * FIELD REPAIR - the clock, and the round trip that unlocks it.
  *
  * The ladder is table data and speaks for itself; what is worth pinning is the behaviour a table
  * cannot show: that the clock is a COUNTDOWN rather than a rate, that it holds at full health, and
@@ -34,7 +34,7 @@ function ticks(w: World, n: number): void {
   for (let i = 0; i < n; i++) updatePlayerMovement(w, DT);
 }
 
-describe('the Arc Welder ladder', () => {
+describe('the Field Repair ladder', () => {
   it('carries the amounts and intervals it was specified with', () => {
     const want: [number, number][] = [
       [1, 7],

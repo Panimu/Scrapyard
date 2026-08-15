@@ -158,7 +158,7 @@ export interface PlayerState {
    * shield timers, and because that is where the renderer already looks for player-scoped effects.
    */
   magnetSec: number;
-  /** Seconds left on the Arc Welder's clock. 0 when the card is not held. */
+  /** Seconds left on the Field Repair clock. 0 when the card is not held. */
   repairLeft: number;
   /**
    * LATCH, not a tally: 1 once the run has dropped under a tenth of its hull, cleared when it gets

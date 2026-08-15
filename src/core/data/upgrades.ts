@@ -606,20 +606,19 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     id: 'p-repair',
     kind: 'passive',
     /**
-     * NOT "Field Repair", WHICH IS ALREADY TAKEN - it is the one-off patch a chest or a card hands
-     * over when there is nothing left to fit (OFFER_HEAL). A permanent system and a consolation
-     * prize sharing a name is a player wondering which of the two they just got.
+     * THE NAME WAS CONTESTED AND THIS SIDE WON IT. "Field Repair" was the one-off patch a chest or
+     * a card hands over when there is nothing left to fit (OFFER_HEAL); that is now PATCH REPAIR,
+     * and the permanent system has the name. It is the right way round - a consolation prize is
+     * the thing that should be described by what it is, and a system the player builds a run
+     * around is the thing that should own the name.
      *
-     * "Repair" is deliberately not in this name at all, rather than being reworded around: there
-     * are already two rewards in the game about repairing, and a third one whose name is a third
-     * arrangement of the same word would keep the muddle rather than end it. A welder is a
-     * different object, and it is the one a scrapyard would actually bolt on.
-     *
-     * THE ID IS UNTOUCHED. `p-repair` is what a save file stores (Settings.earnedCards), so
-     * renaming it would take the card away from everyone who had unlocked it - see CLAUDE.md.
-     * The id is a union member we rename freely; this one has shipped, so we do not.
+     * THE ID IS UNTOUCHED THROUGHOUT. `p-repair` is what a save file stores
+     * (Settings.earnedCards), so renaming it would take the card away from everyone who had
+     * unlocked it - see CLAUDE.md. The icon file is keyed off it too. The id is a union member we
+     * rename freely in principle; this one has shipped, so it does not move however often the
+     * display name does.
      */
-    name: 'Arc Welder',
+    name: 'Field Repair',
     // The UNLOCK card carries the whole mechanism, like the Energy Shield's does: both numbers are
     // 0 at base, so "Unlock." on its own would put the entire card nowhere the player can read it.
     description:

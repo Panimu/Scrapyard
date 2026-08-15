@@ -41,7 +41,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
     at: '2026-08-15T19:49Z',
-    title: 'THE ARC WELDER - a system that mends you on a clock',
+    title: 'FIELD REPAIR - a system that mends you on a clock',
     notes: [
       'A NEW SYSTEM, AND IT IS THE ONLY THING IN THE YARD THAT MENDS YOU WITHOUT BEING PICKED UP. Every few seconds a repair clock comes round and puts a little of your hull back. It is not much at once; what it changes is that being hurt stops being permanent between barrels.',
       'HALF ITS LADDER MAKES EACH REPAIR BIGGER AND HALF MAKES IT COME ROUND SOONER, which are genuinely different things - more is worth having when a repair lands, sooner is worth having while you are still being chased. Finished, it is repairing every five seconds.',

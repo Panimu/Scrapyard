@@ -75,7 +75,7 @@ import { spriteUrl } from '../render/assets.js';
 
 /** The two non-upgrade grants a chest can pay once the pool is empty. Sprite keys, not ids. */
 const FILLER: Record<number, { name: string; icon: string }> = {
-  [OFFER_HEAL]: { name: 'Field Repair', icon: 'cons_spanner' },
+  [OFFER_HEAL]: { name: 'Patch Repair', icon: 'cons_spanner' },
   [OFFER_CREDITS]: { name: 'Salvage Rights', icon: 'cons_coin1' },
 };
 
