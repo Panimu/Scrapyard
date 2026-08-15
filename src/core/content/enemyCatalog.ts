@@ -83,11 +83,12 @@ export const FLAV_SPIKY = 3;
  * is not the Scraplord's outright immunity. It just stops one shell being worth more than the
  * whole approach.
  *
- * AND IT NEVER MOVES ITSELF. Every other body that falls more than RELOCATE_RADIUS behind you is
- * picked up and re-dealt in front of you; a Heavy is not, exactly as a boss is not. That rule
- * dissolves formations rather than moving them - each straggler is re-placed independently - so a
- * ring that crossed the threshold used to come back as fifty unrelated bodies around you. The ring
- * now stays a ring, standing where it was set down, until something kills it or you go back.
+ * AND IT HAS FOUR TIMES THE LEASH. Every body that falls more than RELOCATE_RADIUS behind you is
+ * picked up and re-dealt in front of you; that rule dissolves formations rather than moving them,
+ * so at 1000 u a ring you stepped away from came back as fifty unrelated bodies a few seconds
+ * later. At 4000 u the ring survives being LEFT - walk off, deal with something else, come back,
+ * and it is still standing where it closed - while a player who genuinely crosses the yard still
+ * brings it with them rather than towing an abandoned set-piece behind them all run.
  */
 export const FLAV_HEAVY = 4;
 
@@ -152,18 +153,23 @@ export interface FlavourDef {
   readonly knockback: number;
   /**
    * Multiplier on RELOCATE_RADIUS - how far behind the player this body may fall before it is
-   * picked up and put back in front of them. ZERO MEANS NEVER.
+   * picked up and put back in front of them.
    *
    * 1 for everything the director spawns, because the relocation rule is what makes the yard feel
    * endless and a wave that could simply be walked away from is not a wave.
    *
-   * A SET-PIECE IS THE EXCEPTION, and 0 rather than a big number is the point. Relocation does not
-   * move a formation, it DISSOLVES one: each straggler is re-dealt independently at a fresh ring
-   * position, so a ring that crosses the threshold does not follow you, it comes back as fifty
-   * unrelated bodies scattered around you. Any finite leash only sets the delay before the ring
-   * you were meant to fight through stops being a ring. A Heavy therefore stays exactly where it
-   * was set down, for the same reason and by the same rule a boss does - outrunning a set-piece
-   * has always been possible, and has always cost you the ground rather than the set-piece.
+   * A SET-PIECE WANTS A MUCH LONGER LEASH, AND STILL WANTS ONE. Relocation does not move a
+   * formation, it DISSOLVES one - each straggler is re-dealt independently at a fresh ring
+   * position - so at the ordinary 1000 u a ring you stepped away from came back as fifty unrelated
+   * bodies scattered around you a few seconds later. It has to survive being LEFT: walk off, deal
+   * with something else, come back, and the ring is still standing where it closed.
+   *
+   * But exempting it outright was the other extreme, and wrong for a different reason - a player
+   * who genuinely crosses the yard should not tow an abandoned set-piece behind them for the rest
+   * of the run, parked forever in a corner they will never revisit while it eats the live-enemy
+   * budget the horde is drawn from. So the Heavy's leash is FOUR TIMES the horde's: 4000 u, about
+   * twenty seconds of sustained running, which no kiting circle reaches and no deliberate journey
+   * across the yard misses.
    */
   readonly relocate: number;
 }
@@ -180,7 +186,7 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.0605, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 0 }),
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.0605, dmg: 1, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
   // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
   // fragility, and every extra dial turned here is one more thing to explain when it arrives.
   Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),

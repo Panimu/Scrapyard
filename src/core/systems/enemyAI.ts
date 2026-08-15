@@ -62,10 +62,10 @@ export const KILL_REASON_DESPAWNED = 1;
  * RELOCATE_RADIUS squared, per flavour, built once at module init. Squared so the per-enemy test
  * stays a comparison against a squared distance and never calls sqrt.
  *
- * A `relocate` of 0 becomes INFINITY, not 0: the flavour means "never relocated", and turning it
- * into a distance nothing can exceed expresses that in the same comparison the others use. As a
- * literal 0 it would have meant the exact opposite - every body past zero units, which is all of
- * them - and that is the kind of sentinel that fails silently.
+ * A non-positive multiplier becomes INFINITY rather than 0 - "never relocated" rather than
+ * "relocated always". No flavour asks for it today; the guard is here because the failure it
+ * prevents is silent and total: as a literal 0 the radius would catch every body past zero units,
+ * which is all of them, and the whole horde would teleport every tick.
  */
 const RELOCATE_R2_BY_FLAVOUR = (() => {
   const out = new Float64Array(FLAVOURS.length);
@@ -412,9 +412,9 @@ function relocateStragglers(world: World): void {
 
     const dx = x[d] - px;
     const dy = y[d] - py;
-    // PER FLAVOUR, so a set-piece body can be exempted the way a boss is - see FlavourDef.relocate,
-    // where the Heavy's Infinity comes from. Read from a precomputed table rather than the catalog
-    // objects: this is a per-enemy test every tick, and it should stay a typed-array load.
+    // PER FLAVOUR, so a set-piece body can be given a far longer leash than the horde - see
+    // FlavourDef.relocate. Read from a precomputed table rather than the catalog objects: this is
+    // a per-enemy test every tick, and it should stay a typed-array load.
     if (dx * dx + dy * dy <= RELOCATE_R2_BY_FLAVOUR[flavourId[d]]) continue;
 
     // NO forward bias. See rollRingPosition: the bias is the tax on running, and this body has
