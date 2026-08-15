@@ -1234,16 +1234,30 @@ function lerp(a: number, b: number, t: number): number {
  * pointing east for the whole run. See the flag's own note for why this is written down rather
  * than derived from a stat.
  *
- * FALLING BACK TO NOTHING, NOT TO SLOT 0. A loadout of racks, bays and nothing else leaves the
- * barrel on the player's heading - which for a rack is precisely where its missiles go, and for a
- * bay is the only honest answer. Slot 0 was the old fallback and it is what froze Fern's turret:
- * with one weapon that does not drive the mount, "first that qualifies" and "slot 0" were the same
- * thing and the flag bought nothing.
+ * THE FALLBACK IS A WEAPON THAT AT LEAST SLEWS, AND SKIPPING IT WAS A REGRESSION. When nothing in
+ * the loadout has a barrel to show, the mount still has to point somewhere, and the first version
+ * of this rule fell straight through to the player's heading - which welded the barrel to the legs
+ * on every missile chassis. A rack fires along the heading, but its MOUNT still traverses onto
+ * targets at 720 deg/s, and Onyx and Ash had been sweeping their barrels at the horde since they
+ * shipped. Handing them a barrel that only moves when the mech turns was a downgrade nobody asked
+ * for, made while fixing something else.
+ *
+ * So: a weapon with a barrel, else a weapon whose mount MOVES, else the heading.
+ *
+ * THE MIDDLE RUNG READS A STAT, and that is the one place it is the right thing to read. The
+ * primary rule must not (see the flag's own note - `turretTraverse` is a tuning number and must
+ * not decide what the mech looks like), but the question this rung asks is literally "does this
+ * mount slew", and traverse is that property by definition. It is also why Fern alone still falls
+ * through to the heading: her bay's traverse is 0 because a factory has nothing to aim.
  */
 function turretWeapon(world: World): WeaponInstance | undefined {
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
     if (world.weaponCatalog[inst.defId]?.drivesTurret === true) return inst;
+  }
+  for (let i = 0; i < world.weaponCount; i++) {
+    const inst = world.weapons[i];
+    if (inst.stats.turretTraverse > 0) return inst;
   }
   return undefined;
 }

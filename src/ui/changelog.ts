@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T19:02Z',
+    title: 'The missile chassis get their swinging barrel back',
+    notes: [
+      'ONYX, ASH AND THE OTHER RACK MECHS had their barrel welded to their legs a few builds ago - it only moved when the whole machine turned. That was a mistake made while fixing Fern’s turret, and it is undone: the mount sweeps onto the horde again, the way it always did.',
+      'A rack still fires where you are RUNNING, not where the barrel points. The barrel was never the aiming cue on those chassis - it is the mech looking at what is about to be a problem.',
+      'Fern is unchanged and correct: the drone bay has nothing to aim, so her barrel rides the chassis until she picks up a real gun, and then follows that.',
+    ],
+  },
+  {
     at: '2026-08-15T17:48Z',
     title: 'A dying drone goes off with a pop, not a bang',
     notes: [
