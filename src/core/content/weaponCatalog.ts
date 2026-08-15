@@ -296,11 +296,11 @@ export const CANNON: WeaponDef = Object.freeze({
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
     pierce: 0,
-    knockback: 190, // applied as impulse/mass: swarmer 380 u/s, elite 27, boss immune
+    knockback: 190, // applied as impulse/mass: runt 380 u/s, elite 27, boss immune
     // NO SPLASH. The Cannon is a single heavy shell into a single body, and that is the whole
     // weapon: it commits to the highest-HP enemy in range and pays for that commitment by
     // ignoring everything else on the field. It used to carry a 54 u blast at 0.62, sized so 27
-    // splash exceeded a 20 HP swarmer - which quietly made the "shoots the biggest thing" rule
+    // splash exceeded a 20 HP runt - which quietly made the "shoots the biggest thing" rule
     // free, because the chaff died anyway. Without it the rule has teeth, and the answer to a
     // crowd is a different weapon rather than a bigger number on this one.
     //
@@ -465,7 +465,7 @@ function laser(
       projectileSpeed: 0,
       projectileCount: 1,
       pierce: 0,
-      // A continuous beam applying knockback every tick would launch a swarmer into orbit.
+      // A continuous beam applying knockback every tick would launch a runt into orbit.
       knockback: 0,
       splashRadius: 0,
       splashFrac: 0,
@@ -704,7 +704,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     projectileSpeed: 900, // near-hitscan; at this range travel time is not the point
     projectileCount: 2,
     pierce: 0,
-    knockback: 14, // barely a nudge, but 22 a second adds up against a swarmer
+    knockback: 14, // barely a nudge, but 22 a second adds up against a runt
     splashRadius: 0,
     splashFrac: 0,
     turretTraverse: degToRad(900), // whips around; it has to keep up with its own rate of fire

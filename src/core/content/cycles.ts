@@ -36,7 +36,7 @@
  * `ArchetypeDef` still supplies radius, mass, contact interval and draw size - the PHYSICAL facts
  * of a chassis. It no longer supplies HP, speed, contact damage or XP: those are authored per
  * cycle below, because "how tough is minute 7" is a pacing question and reading it off a
- * swarmer/grunt/bruiser table made it one.
+ * runt/grunt/bruiser table made it one.
  *
  * It does not decide the HP BAR either. Rank does, alone - a bar means "a rank above you" and
  * never "drawn on a wide hull".
@@ -83,7 +83,7 @@
  */
 
 import {
-  ARCH_SWARMER,
+  ARCH_RUNT,
   ARCHETYPES,
   ENEMY_CATALOG,
   FLAVOURS,
@@ -230,7 +230,7 @@ export interface CycleDef {
  * Prowler at 75.5 u/s against a 195 u/s mech, and the last cycle tops out at 53.
  */
 export const CYCLE_LADDER: readonly CycleDef[] = Object.freeze([
-  // hull 1,2,3 = infantry (swarmer) | 6,8 = trucks (grunt) | 7,11 = rigs (bruiser)
+  // hull 1,2,3 = infantry (runt) | 6,8 = trucks (grunt) | 7,11 = rigs (bruiser)
   Object.freeze({ name: 'Rustling', hull: 1, tier: 0 as const, hp: 22, speed: 56, contactDamage: 5, xp: 1, variantChance: 0 }),
   Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 68, contactDamage: 6, xp: 2, variantChance: 0.1 }),
   Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 56, speed: 54, contactDamage: 9, xp: 3, variantChance: 0.16 }),
@@ -283,7 +283,7 @@ export function createResolvedCycle(): ResolvedCycle {
   const c: ResolvedCycle = {
     index: -1,
     name: '',
-    archetype: ARCH_SWARMER as Archetype,
+    archetype: ARCH_RUNT as Archetype,
     hp: 0,
     speed: 0,
     contactDamage: 0,

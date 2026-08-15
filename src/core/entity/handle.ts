@@ -2,7 +2,7 @@
  * Entity handles: `(generation << 16) | slot`, packed into one u32.
  *
  * WHY HANDLES EXIST AT ALL: a Cannon shell has up to 0.5 s of flight. Its target can die and
- * its slot be recycled by a fresh swarmer mid-flight. Without the generation check the shell
+ * its slot be recycled by a fresh runt mid-flight. Without the generation check the shell
  * deals its 30 damage to the wrong enemy - a bug that reproduces once every few minutes and is
  * undebuggable on a phone with no Web Inspector.
  *

@@ -15,7 +15,7 @@
  * two things: enemies have different SPEEDS, and they PUSH EACH OTHER APART.
  *
  * Because speeds differ by archetype, a mixed wave sorts itself into a gradient in flight -
- * swarmers arrive first, then grunts, with bruisers and elites trailing. That is the shape the
+ * runts arrive first, then grunts, with bruisers and elites trailing. That is the shape the
  * Cannon's highest-HP targeting needs to be interesting: the thing it insists on shooting is
  * reliably at the BACK, behind a wall of the things actually hurting you. The player's answers
  * (pierce down the line of fire, splash, knockback) all only make sense against that geometry,
@@ -29,7 +29,7 @@
  * on the roster - a 1.94x margin. It is widest of all at the END of a run, where the ladder now
  * slows down rather than speeding up: the last cycle tops out at 67.9 u/s, so the fifteenth minute
  * is the most kiteable minute in the game and its threat is mass instead. That is a CONTENT
- * property, enforced by the catalog (no `swift` swarmers) and asserted by the tests, not by a
+ * property, enforced by the catalog (no `swift` runts) and asserted by the tests, not by a
  * clamp in this file. A runtime clamp would hide the regression instead of failing it.
  *
  * Separation can transiently push an enemy above its own steering speed, which is fine and
@@ -116,7 +116,7 @@ function seek(world: World): void {
  * spreads into a crescent and the player can see, and thread, gaps.
  *
  * The impulse is scaled by 1/mass, which is the same number knockback uses. Mass doing double
- * duty is what makes bruisers act as MOVING WALLS: a 0.5-mass swarmer is shoved 6x harder than
+ * duty is what makes bruisers act as MOVING WALLS: a 0.5-mass runt is shoved 6x harder than
  * the 3.0-mass bruiser it walks into, so chaff visibly parts around the big things instead of
  * clipping through them. That is the readable version of "heavy".
  *

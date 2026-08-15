@@ -25,7 +25,7 @@ Where the two proposals disagreed, or where either was wrong, the resolution and
 | 7 | Target lock | **Dropped.** Re-evaluate every tick; traverse every tick; hold fire (without resetting cooldown) until laid on | a lock contradicts the specced rule ("fires at the enemy with the highest current HP"), and a lock cannot fix what hold-fire cannot: at 90°/s the turret sweeps 114° per cooldown vs a 180° worst case, so tracking genuinely costs shots — which is a balance decision, not a reason to reintroduce a lock |
 | 8 | Trig in core | **Banned** (`Math.sin/cos/tan/atan2/pow/exp/log/hypot`). Turret rotation uses **precomputed cos/sin of the step angle** + dot/cross; `dsin`/`dcos` exist for stat-resolution only | implementation-defined precision differs V8 (Node harness) vs JSC (phone), which would break "record on phone, replay in CI" |
 | 9 | Difficulty growth | **Per-second literal multipliers applied at whole-second boundaries** | `growth ** minutes` needs the banned `pow`; 900 exact IEEE multiplies are drift-free and identical on every engine |
-| 10 | i-frames | **B's per-enemy contact cooldown**, no global i-frames | global i-frames let one swarmer tank all damage from a bruiser |
+| 10 | i-frames | **B's per-enemy contact cooldown**, no global i-frames | global i-frames let one runt tank all damage from a bruiser |
 | 11 | Crit / damage variance | **Removed entirely** (B) | "the number on screen is always the number" is the whole heaviness thesis; also deletes the `combat` RNG stream |
 | 12 | Gem overflow | **Absorb into the nearest live gem** (not B's nearest-pair merge) | merging needs gems in a spatial structure; absorb is one linear pass on overflow only, same jackpot feel |
 | 13 | Director | **B's threat-density director, retuned** (see #17) | self-balancing and assertable in the harness; A's fixed wave weights are not |
@@ -38,7 +38,7 @@ Where the two proposals disagreed, or where either was wrong, the resolution and
 
 1. **Drag terminal velocity, not `moveMaxSpeed`, was the binding constraint** (neither proposal caught
    this). With B's independent `accel`/`drag`/`maxSpeed`, six of eight heroes never reach their stated
-   top speed, and **BULWARK's real top speed is 155.6 u/s against a 144.4 u/s swarmer — a 1.077× ratio
+   top speed, and **BULWARK's real top speed is 155.6 u/s against a 144.4 u/s runt — a 1.077× ratio
    that fails the kiting invariant.** Fix: **`moveDrag` is derived as `moveAccel / moveMaxSpeed`**, so
    terminal velocity equals `moveMaxSpeed` exactly, for every hero, always. Bonus: the time constant
    `τ = maxSpeed / accel` then falls out per hero, and heavier mechs are naturally floatier
@@ -48,11 +48,11 @@ Where the two proposals disagreed, or where either was wrong, the resolution and
    makes the design self-consistent: a 4:00 elite becomes 564 HP ≈ **10.8 s to kill**, which is exactly
    B's stated intent of "a genuine 10-second commitment" (260 HP gave 5 s).
 3. **B's threat director produced ~43 live enemies at minute 15**, against the platform doc's 150–250
-   budget — because live population skews to tanks (swarmers die fast) so threat-per-entity is high.
+   budget — because live population skews to tanks (runts die fast) so threat-per-entity is high.
    Fix: flatten the threat weights (elite 25→14, bruiser 7→5, grunt 2.5→2) and raise the target curve
    to `20 + 12.7 × minutes`, landing **~120 live enemies** at endgame.
-4. **B's kiting invariant failed on its own numbers** (swift swarmers at 170 u/s). B's own fix — no
-   `swift` flavour on swarmers — is adopted, and Invariant K is restated **per hero** against
+4. **B's kiting invariant failed on its own numbers** (swift runts at 170 u/s). B's own fix — no
+   `swift` flavour on runts — is adopted, and Invariant K is restated **per hero** against
    *effective* top speed.
 5. **A fed kill events to the drop system through the event ring**, which the renderer owns the read
    cursor of. Fix: a dedicated per-tick `KillFeed`.
@@ -354,7 +354,7 @@ export function handleGen(h: number): number;
 ```
 
 **Why handles exist at all:** the Cannon's shell has up to 0.5 s of travel. Its target can die and its
-slot be reused by a fresh swarmer; without the generation check the shell deals 30 damage to the wrong
+slot be reused by a fresh runt; without the generation check the shell deals 30 damage to the wrong
 enemy — a bug that reproduces once every few minutes and is undebuggable on a phone.
 
 **Generation wrap:** 16 bits = 65 535 recycles per slot. A 900 s run kills ~2 700 enemies over 512
@@ -997,7 +997,7 @@ Three orthogonal axes. This is the structure the asset manifest's "12 hulls × 4
 possible, and neither proposal used it.
 
 ```ts
-export const ARCH_SWARMER = 0;
+export const ARCH_RUNT = 0;
 export const ARCH_GRUNT   = 1;
 export const ARCH_BRUISER = 2;
 export const ARCH_ELITE   = 3;
@@ -1060,7 +1060,7 @@ sprite a bruiser:
 
 | Archetype | Hulls | `scifiUnit_` files | Count | Draw | Radius |
 |---|---|---|---|---|---|
-| swarmer | 1,2,3,4,5,12 | 01 02 03 04 05 12 · 13 14 15 16 17 24 · 25 26 27 28 29 36 · 37 38 39 40 41 48 | 24 | 26 u | 13 |
+| runt | 1,2,3,4,5,12 | 01 02 03 04 05 12 · 13 14 15 16 17 24 · 25 26 27 28 29 36 · 37 38 39 40 41 48 | 24 | 26 u | 13 |
 | grunt | 6,8 | 06 08 · 18 20 · 30 32 · 42 44 | 8 | 34 u | 18 |
 | bruiser | 7,11 | 07 11 · 19 23 · 31 35 · 43 47 | 8 | 42 u | 26 |
 | elite | 9,10 | 09 10 · 21 22 · 33 34 · 45 46 | 8 | 52 u | 34 |
@@ -1389,7 +1389,7 @@ So Twin Mount is a **battery, not a damage multiplier**.
 | `fireArc` | 12 ° = 0.20944 rad | `cosFireArc` 0.97814760 |
 | `sweep` | not needed | 520 u/s = 8.67 u/tick, well under the 13 u smallest enemy radius, so point-in-circle is sound |
 
-**Knockback is the secret heaviness weapon.** `190/mass`: swarmer (0.5) takes a 380 u/s punt, grunt
+**Knockback is the secret heaviness weapon.** `190/mass`: runt (0.5) takes a 380 u/s punt, grunt
 (1.2) 158, bruiser (3.0) 63, elite (7.0) 27, boss immune. One shell physically shoves the front rank
 backwards, which reads as mass far more convincingly than any particle effect, and it is free crowd
 control that scales *inversely* with target importance.
@@ -1397,9 +1397,9 @@ control that scales *inversely* with target importance.
 ### 7.4 What highest-HP targeting means for everything else
 
 The cannon always shoots the biggest thing in range. Elites and bruisers are the slowest archetypes and
-spawn at the ring, so they are almost always at the *back* of a formation with swarmers in front. The
+spawn at the ring, so they are almost always at the *back* of a formation with runts in front. The
 cannon therefore consistently picks a target that is far away, behind a wall of things actively killing
-you, and not going to die this shot — while the swarmers eating your legs are ignored entirely.
+you, and not going to die this shot — while the runts eating your legs are ignored entirely.
 
 **That is the game, and it is fun only if three things hold.** These are requirements on other agents'
 work, not commentary:
@@ -1419,26 +1419,26 @@ work, not commentary:
 **Law 1 — HP is the aggro stat.** Enemy HP must correlate with being worth killing first. Any enemy
 that is high-HP and low-threat is a **deliberate decoy** and a difficulty lever spent consciously, never
 an accident of stat-blocking. `tough` (×1.30 HP) is exactly this mild fire-magnet, which is why it is
-permitted on swarmers only — on a bruiser it would create a 700-HP tarpit that hijacks your entire output.
+permitted on runts only — on a bruiser it would create a 700-HP tarpit that hijacks your entire output.
 
 **Law 2 — archetype HP bands must never overlap, at any `t`.** If they overlap, the highest-HP target
 flips as enemies take damage, the turret thrashes and the weapon appears broken.
 Formally: `minHP(tier n+1, t) ≥ 1.85 × maxHP(tier n, t)` for all `t ∈ [60, 900]`, where min/max range
-over the archetype's permitted flavours. **Verified minimum separation is 1.92× (swarmer→grunt at
+over the archetype's permitted flavours. **Verified minimum separation is 1.92× (runt→grunt at
 t=60).** B's proposed 2.2× threshold is *not* achievable with any sane elite HP and was already failing
 at bruiser→elite on B's own numbers (1.61×); 1.85 is the derived, honest, passing bound.
 
 **Consequences for enemy design, all already reflected in §8:**
-- Swarmers are dangerous through contact DPS and count, **never** through HP. 20 base and 4.5%/min
-  growth keeps them under the "the cannon might waste a shell" line all run. A swarmer is never the
-  highest-HP target, so it is never shot deliberately — every swarmer death is collateral from splash,
+- Runts are dangerous through contact DPS and count, **never** through HP. 20 base and 4.5%/min
+  growth keeps them under the "the cannon might waste a shell" line all run. A runt is never the
+  highest-HP target, so it is never shot deliberately — every runt death is collateral from splash,
   pierce, or walking into a shell. That is a coherent, readable identity.
-- **Swarmer share never drops below ~49% of the spawn mix.** Late difficulty comes from density of
+- **Runt share never drops below ~49% of the spawn mix.** Late difficulty comes from density of
   things the cannon *ignores*. If the mix drifted toward bruisers the game would become "shoot one
   bruiser for six seconds while nothing else happens" — the least interesting version of itself.
 - **`spiky` (×1.35 contact damage, no HP change) is the sharpest tool in the kit**: more dangerous
   without becoming higher priority. Pure positioning pressure, invisible to the targeting rule.
-  Restricted to swarmers and grunts, and given a red rim glow so it is at least visible to the *player*.
+  Restricted to runts and grunts, and given a red rim glow so it is at least visible to the *player*.
 - **Elites must be slow.** 66.9 u/s at t=900 is 0.34× the player. An elite that could chase you would be
   unfair, because your cannon is already committed to it and you have no way to disengage. An elite is
   a *place on the map*, not a pursuer.
@@ -1447,9 +1447,9 @@ at bruiser→elite on B's own numbers (1.61×); 1.85 is the derived, honest, pas
   range while adds converge.
 
 **The honest risk**, named so playtest knows what to watch: minutes 10–13 with a defence-heavy build —
-three 550-HP bruisers on screen, the cannon grinding one at ~6 s per kill while 40 swarmers chew through
+three 550-HP bruisers on screen, the cannon grinding one at ~6 s per kill while 40 runts chew through
 your plating. Mitigations already in the design: the offence-tag guarantee in offer generation, the
-deliberately slow swarmer HP growth, and pierce/splash. **If it still bites, the tuning lever is bruiser
+deliberately slow runt HP growth, and pierce/splash. **If it still bites, the tuning lever is bruiser
 `hpGrowthPerMin` 1.075 → 1.06 — not a change to the targeting rule. The rule is the game.**
 
 ---
@@ -1463,7 +1463,7 @@ the harness can sweep without editing code.
 
 | param | value | note |
 |---|---|---|
-| `maxHp` | 120 | six swarmers in contact = ~50 dps = dead in 2.4 s. Being encircled by trash is supposed to kill you |
+| `maxHp` | 120 | six runts in contact = ~50 dps = dead in 2.4 s. Being encircled by trash is supposed to kill you |
 | `hpRegen` | 0 | |
 | `armour` | 0 | |
 | `moveAccel` | 700 u/s² | |
@@ -1484,7 +1484,7 @@ can *see* yourself overshoot by a body length, and it is small enough that you d
 on ice. Reversing direction takes ~0.55 s, so committing to a kite direction is a real commitment.
 
 Contact damage: `taken = max(raw × 0.25, raw − armour) × damageTakenMul`. Flat armour with a 25% floor
-makes armour **strong against swarmers and weak against elites** — 8 armour turns a 5-damage swarmer hit
+makes armour **strong against runts and weak against elites** — 8 armour turns a 5-damage runt hit
 into 1.25 but a 28-damage elite hit into 20. That asymmetry is intentional: armour buys tolerance for
 being *surrounded*, never for being *hit by the big thing*.
 
@@ -1545,7 +1545,7 @@ Base values at `runSec = 0`, before flavour.
 
 | archetype | HP | HP/min | speed | spd/min | contact | interval | radius | mass | XP | threat | HP bar | flavours |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **swarmer** | 20 | ×1.045 | 132 | ×1.006 | 5 | 0.6 s | 13 | 0.5 | 1 | **1** | no | plain, tough, spiky |
+| **runt** | 20 | ×1.045 | 132 | ×1.006 | 5 | 0.6 s | 13 | 0.5 | 1 | **1** | no | plain, tough, spiky |
 | **grunt** | 58 | ×1.060 | 98 | ×1.005 | 9 | 0.6 s | 18 | 1.2 | 3 | **2** | no | plain, swift, spiky |
 | **bruiser** | 185 | ×1.075 | 76 | ×1.004 | 17 | 0.7 s | 26 | 3.0 | 9 | **5** | **yes** | plain, spiky |
 | **elite** | **407** | ×1.085 | 64 | ×1.003 | 28 | 0.8 s | 34 | 7.0 | 45 | **14** | **yes** | plain |
@@ -1554,16 +1554,16 @@ Base values at `runSec = 0`, before flavour.
 Flavour deltas: `plain` 1.00/1.00/1.00 · `swift` hp 0.85 / spd 1.18 / dmg 0.90 ·
 `tough` hp 1.30 / spd 0.88 / dmg 1.00 · `spiky` hp 0.95 / spd 1.00 / dmg **1.35**.
 
-> **`swift` is not permitted on swarmers** — that is what makes Invariant K hold. B's own draft had
-> swift swarmers at 170 u/s against a 152 u/s ceiling.
-> **`tough` is permitted on swarmers only** — Law 1: a tough bruiser is a 700-HP tarpit that hijacks
+> **`swift` is not permitted on runts** — that is what makes Invariant K hold. B's own draft had
+> swift runts at 170 u/s against a 152 u/s ceiling.
+> **`tough` is permitted on runts only** — Law 1: a tough bruiser is a 700-HP tarpit that hijacks
 > your entire output.
 
 Per-second growth literals (`growthPerMin ** (1/60)`, precomputed because `pow` is banned):
 
 | archetype | `hpGrowthPerSec` | `speedGrowthPerSec` |
 |---|---|---|
-| swarmer | 1.00073388 | 1.00009970 |
+| runt | 1.00073388 | 1.00009970 |
 | grunt | 1.00097162 | 1.00008313 |
 | bruiser | 1.00120607 | 1.00006654 |
 | elite | 1.00136059 | 1.00004993 |
@@ -1574,13 +1574,13 @@ IEEE multiplies over a run, drift ~1e-13, identical on every engine. A test asse
 
 Resulting HP at 15:00 and verified band separation:
 
-| | swarmer | grunt | bruiser | elite | boss |
+| | runt | grunt | bruiser | elite | boss |
 |---|---|---|---|---|---|
 | HP @ 15:00 | 38.7 | 139.0 | 547.4 | 1383.7 | 4000 |
 | speed @ 15:00 | 144.4 | 105.6 (swift 124.6) | 80.7 | 66.9 | 58 |
 | min band ratio over `t ∈ [60,900]` | — | **1.92×** | **3.07×** | **2.22×** | **2.89×** |
 
-`maxEnemySpeed(900) = 144.4 u/s` (plain swarmer), against the slowest hero at 163.8 u/s.
+`maxEnemySpeed(900) = 144.4 u/s` (plain runt), against the slowest hero at 163.8 u/s.
 
 ### 8.4 The director
 
@@ -1594,7 +1594,7 @@ targetThreat(runSec) = 20 + 12.7 × (runSec / 60)        // 20 at 0:00 -> 210.5 
 
 > **Retuned from B.** B's weights (elite 25, bruiser 7) plus `18 + 5.2×min` produced **~43 live enemies
 > at minute 15** against the platform doc's 150–250 budget, because live population skews to tanks
-> (swarmers die fast) so threat-per-entity is high. Flattening the weights and raising the curve lands
+> (runts die fast) so threat-per-entity is high. Flattening the weights and raising the curve lands
 > **~120 live enemies** at endgame — a real horde, comfortably inside the render budget.
 
 Resulting density: ~11 live at 0:00, ~40 at 4:00, ~69 at 8:00, ~98 at 12:00, **~120 at 15:00.**
@@ -1610,16 +1610,16 @@ the pool, no XP).
 
 **Tier ramp (visual only):** `tier = clamp(floor(runSec / 225), 0, 3)` — blue → orange → green → grey.
 
-| min | targetThreat | mix swarmer/grunt/bruiser/elite | events |
+| min | targetThreat | mix runt/grunt/bruiser/elite | events |
 |---|---|---|---|
-| 0–1 | 20–33 | 100 / 0 / 0 / 0 | teaching beat: swarmers only |
+| 0–1 | 20–33 | 100 / 0 / 0 / 0 | teaching beat: runts only |
 | 1–2 | 33–45 | 88 / 12 / 0 / 0 | grunts enter |
 | 2–3 | 45–58 | 74 / 24 / 2 / 0 | **first bruiser ~2:10** — the turret visibly swings away from what is chewing on you. This is the tutorial for the whole game and must happen while there is still room to move |
 | 3–4 | 58–71 | 68 / 27 / 5 / 0 | |
 | 4–5 | 71–84 | 62 / 30 / 8 / 0 | **ELITE ×1 @ 4:00** — 564 HP vs ~52 DPS ≈ 10.8 s |
 | 5–6 | 84–96 | 60 / 30 / 10 / 0 | |
 | 6–7 | 96–109 | 58 / 30 / 11 / 1 | elites join the mix |
-| 7–8 | 109–122 | 56 / 30 / 12 / 2 | **SWARM SURGE @ 7:30** (30 s, swarmer share ×3, target ×1.3) |
+| 7–8 | 109–122 | 56 / 30 / 12 / 2 | **SWARM SURGE @ 7:30** (30 s, runt share ×3, target ×1.3) |
 | 8–9 | 122–134 | 55 / 30 / 13 / 2 | **ELITE ×2 @ 8:00** |
 | 9–11 | 134–160 | 54 / 30 / 14 / 2 | |
 | 11–12 | 160–172 | 52 / 30 / 15 / 3 | **ELITE ×3 @ 12:00** |
@@ -1641,7 +1641,7 @@ export function xpToNext(level: number): number {
 }
 ```
 
-Gem tiers by XP value: **1** white (swarmer), **3** green (grunt), **9** blue (bruiser), **45** gold
+Gem tiers by XP value: **1** white (runt), **3** green (grunt), **9** blue (bruiser), **45** gold
 (elite), **500** (boss, auto-collected). Base `pickupRadius` 70 u; inside it a gem accelerates toward
 the player at 1400 u/s² capped at 600 u/s — it *chases*, it does not teleport, which is both more
 legible and its own reward feedback.
@@ -1797,7 +1797,7 @@ projectiles → additive FX → HUD**.
 - **Health bars must be atlas sprites, not `Graphics`.** A `Graphics` bar drawn between two enemy
   sprites starts a new batch for every enemy after it.
 - **Draw all additive FX last** — a blend-mode change always flushes, so keep it to exactly one.
-- **Enemies require `PNG/Retina/Unit/`.** Default size means a 3.3× upscale for swarmers; Retina cuts
+- **Enemies require `PNG/Retina/Unit/`.** Default size means a 3.3× upscale for runts; Retina cuts
   it to 1.6×. Keep **linear** filtering and mipmaps — this is smooth vector art and `NEAREST` would
   look worse, not crisper.
 - **Do not downscale the mech PNGs.** At DPR 3, 52 CSS px = 156 device px against 148 px source —
@@ -1939,7 +1939,7 @@ Not smoke tests. Each of these has failed in some version of this genre.
   derived drag is `maxSpeed` — this test is what catches a future regression that decouples them.
 - **Invariant B — bands.** `minHP(tier n+1, t) ≥ 1.85 × maxHP(tier n, t)` for all `t ∈ [60, 900]`,
   ranging over each archetype's permitted flavours.
-- **Invariant O — one-shot.** A build with ≥2 `slug` stacks one-shots the toughest swarmer at t=900.
+- **Invariant O — one-shot.** A build with ≥2 `slug` stacks one-shots the toughest runt at t=900.
 - **Invariant P — order independence.** 200 random permutations of the same 15 picks produce
   bit-identical resolved stats.
 - **Invariant N — no domination.** For every hero pair, both directions of strict stat advantage exist.

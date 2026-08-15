@@ -624,7 +624,7 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
  * a few ticks after every retarget.
  *
  * NO KNOCKBACK, EVER. A continuous beam applying an impulse sixty times a second would launch a
- * swarmer into orbit; the buffer carries no knockback field at all, so this is structural rather
+ * runt into orbit; the buffer carries no knockback field at all, so this is structural rather
  * than a number set to zero.
  */
 export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
@@ -647,7 +647,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   //
   // Casting from the muzzle makes the weapon blind at point-blank range: the ray only looks
   // forward, so any body whose centre is nearer than `muzzleOffset - radius` sits entirely BEHIND
-  // the origin and is skipped. At a 22 u offset against a 13 u swarmer that is everything inside
+  // the origin and is skipped. At a 22 u offset against a 13 u runt that is everything inside
   // 9 u - which is to say, everything actually pressed against the mech. Measured standing in a
   // crowd, 84.7% of the Short Laser's beams hit nothing at all and 100% of those had their target
   // inside that blind spot: it fired over the top of the bodies touching it, into open ground,
@@ -806,7 +806,7 @@ function chainFrom(
   // THE FIRST JUMP LEAVES FROM WHERE THE BEAM STOPPED, not from the body's centre. The primary
   // segment is drawn to the ray's contact point - the front of the body - so starting the chain at
   // the centre left a body-radius gap between the two, and a chain that visibly did not join onto
-  // the beam feeding it. Measured on a swarmer that was thirteen units of daylight.
+  // the beam feeding it. Measured on a runt that was thirteen units of daylight.
   let cx = px + aim.x * endT;
   let cy = py + aim.y * endT;
 

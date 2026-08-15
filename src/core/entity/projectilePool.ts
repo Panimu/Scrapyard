@@ -22,7 +22,7 @@ export const PROJECTILE_FLAG_DEAD = 1 << 0;
  * Never collides with a body; only its fuse can end it.
  *
  * Artillery shells land where the barrage aimed, not where something happened to be standing. A
- * shell that detonated on contact would fire early and off-centre the moment it clipped a swarmer
+ * shell that detonated on contact would fire early and off-centre the moment it clipped a runt
  * on the way in, which would quietly turn an area-denial weapon into a very slow homing one.
  */
 export const PROJECTILE_FLAG_NOCONTACT = 1 << 1;

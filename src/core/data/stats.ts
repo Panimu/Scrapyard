@@ -44,7 +44,7 @@ import type { UpgradeDef } from './upgrades.js';
  * The upgradeable player stats. `moveDrag` and `radius` are deliberately absent:
  *   - moveDrag is DERIVED (moveAccel / moveMaxSpeed) so terminal velocity always equals
  *     moveMaxSpeed. Letting a card touch it independently is exactly the bug tuning.ts documents,
- *     where a hero's real top speed drifted above a swarmer's and kiting silently broke.
+ *     where a hero's real top speed drifted above a runt's and kiting silently broke.
  *   - radius is the collision size. A card that changed your hitbox would be invisible and
  *     miserable to reason about.
  */

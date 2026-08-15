@@ -148,7 +148,7 @@ export function betterNearest(
  * ordering, so a loadout carrying both is genuinely covering two problems rather than
  * double-tapping one.
  *
- * Keys 2 and 3 are not decoration. Swarmers spawn at identical hp by the dozen, so key 1 ties
+ * Keys 2 and 3 are not decoration. Runts spawn at identical hp by the dozen, so key 1 ties
  * constantly - far more often than it does for the Cannon, where the interesting target is
  * usually the unique big one. Without a total order the beam would flicker between equal-hp
  * enemies in spatial-hash visit order, which is deterministic but arbitrary, would make the

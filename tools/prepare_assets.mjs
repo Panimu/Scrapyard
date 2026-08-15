@@ -56,7 +56,7 @@ const COPIES = [];
 //       re-adding that loop would quietly resurrect the old art alongside the new. ------------
 
 // -- 2. All 48 enemies, RETINA (128x128). ASSET_MANIFEST §2 + gotcha 6: the Default size art is
-//       a 3.3x upscale for swarmers on a DPR-3 screen; Retina cuts it to 1.6x. -----------------
+//       a 3.3x upscale for runts on a DPR-3 screen; Retina cuts it to 1.6x. -----------------
 for (let n = 1; n <= 48; n++) {
   const nn = String(n).padStart(2, '0');
   COPIES.push([`sci-fi-rts/PNG/Retina/Unit/scifiUnit_${nn}.png`, `enemy_${nn}.png`]);

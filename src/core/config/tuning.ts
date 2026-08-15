@@ -54,8 +54,8 @@ export interface PlayerBaseTuning {
 export interface CombatTuning {
   /**
    * taken = max(raw * armourMinFrac, raw - armour) * damageTakenMul.
-   * Flat armour with a 25% floor is strong against swarmers and weak against elites: 8 armour
-   * turns a 5-damage swarmer hit into 1.25 but a 28-damage elite hit into 20. That asymmetry is
+   * Flat armour with a 25% floor is strong against runts and weak against elites: 8 armour
+   * turns a 5-damage runt hit into 1.25 but a 28-damage elite hit into 20. That asymmetry is
    * the point - armour buys tolerance for being SURROUNDED, never for being hit by the big thing.
    */
   readonly armourMinFrac: number;
@@ -228,12 +228,12 @@ export interface Tuning {
  * DESIGN.md §8.1. moveDrag is DELIBERATELY ABSENT: it is derived as moveAccel / moveMaxSpeed,
  * which is what makes terminal velocity EQUAL moveMaxSpeed for every hero. Making it an
  * independent number is the bug that put BULWARK's real top speed at 155.6 u/s against a
- * 144.4 u/s swarmer and broke kiting on the one hero whose identity is being slow.
+ * 144.4 u/s runt and broke kiting on the one hero whose identity is being slow.
  */
 const PLAYER_BASE: PlayerBaseTuning = {
-  maxHp: 120, // six swarmers in contact is ~50 dps: dead in 2.4 s. Being encircled should kill you.
+  maxHp: 120, // six runts in contact is ~50 dps: dead in 2.4 s. Being encircled should kill you.
   hpRegen: 0,
-  levelUpHealFrac: 0.05, // 6 HP at base maxHp - one swarmer bite and a bit. FEEL.
+  levelUpHealFrac: 0.05, // 6 HP at base maxHp - one runt bite and a bit. FEEL.
   armour: 0,
   moveAccel: 700,
   moveMaxSpeed: 195, // tau = 195/700 = 0.279 s; releasing the stick coasts 54 u, about one mech length
@@ -301,7 +301,7 @@ const PICKUPS: PickupTuning = {
   collectRadius: 18,
 
   consumableRadius: 34,
-  // 30 HP at base maxHp - six swarmer bites, and six times what a level-up heals. A barrel is a
+  // 30 HP at base maxHp - six runt bites, and six times what a level-up heals. A barrel is a
   // real decision to walk to, so it has to pay like one.
   repairFrac: 0.25,
   creditMin: 1,

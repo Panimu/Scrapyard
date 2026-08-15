@@ -148,7 +148,7 @@ genuine **full recolours**, not token accents:
 | 4 | 37–48 | pale grey `#A4BBC3` |
 
 This is a gift for tiering: **hull shape = archetype, faction colour = tier/difficulty band**, so a
-"veteran swarmer" is the same silhouette in a hotter colour and reads instantly.
+"veteran runt" is the same silhouette in a hotter colour and reads instantly.
 
 ### The 12 hulls (measured content bbox, Default size)
 
@@ -171,14 +171,14 @@ This is a gift for tiering: **hull shape = archetype, faction colour = tier/diff
 
 | Archetype | Hulls | Area range | Count | Suggested draw size |
 |---|---|---|---|---|
-| **swarmer** | 1,2,3,4,5,12 | 320–379 | 24 | 26 u |
+| **runt** | 1,2,3,4,5,12 | 320–379 | 24 | 26 u |
 | **grunt** | 6,8 | 1004–1206 | 8 | 34 u |
 | **bruiser** | 7,11 | 1362–1532 | 8 | 42 u |
 | **elite** | 9,10 | 1624–1740 | 8 | 52 u |
 
 The bands do not overlap, so "bigger sprite = bigger enemy" holds exactly.
 
-**swarmer (24)** — `scifiUnit_` `01 02 03 04 05 12 13 14 15 16 17 24 25 26 27 28 29 36 37 38 39 40 41 48`
+**runt (24)** — `scifiUnit_` `01 02 03 04 05 12 13 14 15 16 17 24 25 26 27 28 29 36 37 38 39 40 41 48`
 
 **grunt (8)** — `scifiUnit_` `06 08 18 20 30 32 42 44`
 
@@ -186,7 +186,7 @@ The bands do not overlap, so "bigger sprite = bigger enemy" holds exactly.
 
 **elite (8)** — `scifiUnit_` `09 10 21 22 33 34 45 46`
 
-24 swarmer variants is the right skew: swarmers are 80% of what the player looks at, so the variety
+24 runt variants is the right skew: runts are 80% of what the player looks at, so the variety
 belongs there.
 
 ### Facing — **do not rotate enemies**
@@ -349,7 +349,7 @@ must stay **outside** the atlas.
 5. **Enemy sprites have baked drop shadows** (pure black at alpha 26) and fixed 3/4 headings. Never
    rotate them — see §2. Horizontal flip only.
 
-6. **Enemy content is small relative to draw size.** A swarmer is 16×24 px of art in a 64×64 canvas.
+6. **Enemy content is small relative to draw size.** A runt is 16×24 px of art in a 64×64 canvas.
    Drawn at 26 u on a DPR-3 screen that is 78 device px from 24 source px = **3.3× upscale**. Using
    `PNG/Retina/Unit/` (48 px content) cuts it to **1.6×**, which is why Retina is mandatory here.
    The remaining softness is acceptable because this is smooth vector-derived art, not pixel art —

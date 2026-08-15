@@ -72,7 +72,7 @@ export interface EnemyPool {
    */
   readonly knockbackTake: Float32Array;
   readonly contactDamage: Float32Array;
-  /** Per-enemy contact cooldown. Replaces global i-frames: one swarmer must not be able to
+  /** Per-enemy contact cooldown. Replaces global i-frames: one runt must not be able to
    *  soak the player's invulnerability window on behalf of a bruiser. */
   readonly contactTimer: Float32Array;
   readonly xpValue: Uint16Array;

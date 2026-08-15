@@ -433,7 +433,7 @@ const SIEGE_RING_RADIUS = 520;
  * `2R sin(pi/n)` apart, so they just touch at `R = r / sin(pi/n)`. That is the tightest legal
  * ring, and it is what the geometry below solves for.
  *
- * At fifty bodies the out-of-sight rule wins by a distance: the tight ring for a swarmer is 207 u
+ * At fifty bodies the out-of-sight rule wins by a distance: the tight ring for a runt is 207 u
  * and for a grunt 287 u, both well inside the camera. So the ring ships at 520 and the bodies
  * stand about 65 u apart. The `max` is still written out rather than folded away, because it is
  * the rule that keeps the ring legal if the count ever doubles or the waves ever move to a

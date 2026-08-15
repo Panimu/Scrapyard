@@ -18,7 +18,7 @@
  * nothing reads them at runtime.
  *
  * ARCH_ELITE and ARCH_BOSS are vestigial as body classes: elite and boss are RANKS now, and the
- * ladder only uses swarmer/grunt/bruiser chassis. They stay in the table because ARCHETYPE_COUNT
+ * ladder only uses runt/grunt/bruiser chassis. They stay in the table because ARCHETYPE_COUNT
  * sizes `killsByArchetype` and the difficulty arrays, and renumbering five typed arrays to delete
  * two unused rows buys nothing.
  *
@@ -28,7 +28,7 @@
  *   LAW 1 - HP IS THE AGGRO STAT. Anything high-HP must be worth killing first. That is why every
  *   rank multiplies HP up and speed down: the thing your cannon commits to is always the thing
  *   least able to reach you. `tough` (x1.30 HP) is the one deliberate decoy and is permitted on
- *   swarmer chassis only.
+ *   runt chassis only.
  *
  *   INVARIANT K - KITING. Every hero must stay at least 1.08x faster than the fastest enemy at
  *   every t. `swift` is therefore FORBIDDEN ON SWARMER CHASSIS, which are the fastest bodies on
@@ -46,7 +46,7 @@
 // Archetypes
 // -----------------------------------------------------------------------------------------
 
-export const ARCH_SWARMER = 0;
+export const ARCH_RUNT = 0;
 export const ARCH_GRUNT = 1;
 export const ARCH_BRUISER = 2;
 export const ARCH_ELITE = 3;
@@ -56,7 +56,7 @@ export type Archetype = 0 | 1 | 2 | 3 | 4;
 /** Width of DifficultyState.hpScale / speedScale and RunStats.killsByArchetype. */
 export const ARCHETYPE_COUNT = 5;
 
-export const ARCHETYPE_NAMES: readonly string[] = ['swarmer', 'grunt', 'bruiser', 'elite', 'boss'];
+export const ARCHETYPE_NAMES: readonly string[] = ['runt', 'grunt', 'bruiser', 'elite', 'boss'];
 
 export const FLAV_PLAIN = 0;
 export const FLAV_SWIFT = 1;
@@ -94,9 +94,10 @@ export const FLAV_HEAVY = 4;
  * player rather than merely following them - which is exactly why it is off the ordinary spawn
  * tables and belongs in a set-piece with a shape and an end.
  *
- * A NOTE ON THE NAME: `swarmer` is ALREADY the name of the smallest CHASSIS (ARCHETYPE_NAMES[0]),
- * so "a swarmer swarmer" is now sayable and the harness can print `swarmer` for two different
- * things. The flavour is named as asked; if the collision bites, this is the line to change.
+ * THE SMALLEST CHASSIS USED TO BE CALLED `swarmer` AND IS NOW `runt`, renamed to make room for
+ * this. That is the right way round: a chassis is a body plan and a flavour is what a body does,
+ * and "swarms you" describes behaviour far better than it describes a silhouette. Runt sits
+ * beside grunt and bruiser, which is the register those names were always in.
  *
  * The tint was checked against the actual sprites rather than guessed at, and it is honest about
  * what it can do: a multiply cannot ADD yellow, only take blue away. On the grey-hulled bodies
@@ -172,7 +173,7 @@ export interface ArchetypeDef {
   readonly hp: number;
   readonly speed: number;
   readonly contactDamage: number;
-  /** Seconds between contact ticks from THIS enemy. Per-enemy, not global i-frames: one swarmer
+  /** Seconds between contact ticks from THIS enemy. Per-enemy, not global i-frames: one runt
    *  must not be able to soak the player's invulnerability on behalf of a bruiser. */
   readonly contactInterval: number;
   readonly radius: number;
@@ -199,8 +200,8 @@ export interface ArchetypeDef {
  */
 export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
   Object.freeze({
-    id: ARCH_SWARMER as Archetype,
-    name: 'swarmer',
+    id: ARCH_RUNT as Archetype,
+    name: 'runt',
     hp: 20,
     speed: 103,
     contactDamage: 5,
@@ -208,7 +209,7 @@ export const ARCHETYPES: readonly ArchetypeDef[] = Object.freeze([
     radius: 13,
     mass: 0.5,
     xp: 1,
-    // NO `swift` - Invariant K. A swift swarmer outruns BULWARK by t=900.
+    // NO `swift` - Invariant K. A swift runt outruns BULWARK by t=900.
     flavours: Object.freeze([FLAV_PLAIN, FLAV_TOUGH, FLAV_SPIKY]) as readonly Flavour[],
     drawSize: 26,
   }),
@@ -298,7 +299,7 @@ export interface EnemyDef {
  * Hull -> archetype, indexed by hull-1. THIS IS THE ONLY PLACE THE MAPPING IS DECIDED.
  *
  * Taken from ASSET_MANIFEST.md §2, which grouped the hulls by MEASURED OPAQUE PIXEL AREA
- * (swarmer 320-379, grunt 1004-1206, bruiser 1362-1532, elite 1624-1740 - non-overlapping
+ * (runt 320-379, grunt 1004-1206, bruiser 1362-1532, elite 1624-1740 - non-overlapping
  * bands). It is NOT the naive `01..16 / 17..32 / 33..48` split, which would have made hull 1 -
  * a 16x24 px infantry sprite - a bruiser, so the game would have shown the player a foot
  * soldier and asked them to believe it had 185 HP. "Bigger sprite = bigger enemy" holds exactly.
@@ -307,18 +308,18 @@ export interface EnemyDef {
  * reads as:   inf inf inf inf inf truck truck truck TANK BUS RIG inf
  */
 const HULL_ARCHETYPE: readonly Archetype[] = [
-  ARCH_SWARMER, // 1  infantry, plain          338 px
-  ARCH_SWARMER, // 2  infantry, helmet         338 px
-  ARCH_SWARMER, // 3  infantry, arms out       379 px
-  ARCH_SWARMER, // 4  infantry, shoulder pads  372 px
-  ARCH_SWARMER, // 5  infantry, bulky          320 px
+  ARCH_RUNT, // 1  infantry, plain          338 px
+  ARCH_RUNT, // 2  infantry, helmet         338 px
+  ARCH_RUNT, // 3  infantry, arms out       379 px
+  ARCH_RUNT, // 4  infantry, shoulder pads  372 px
+  ARCH_RUNT, // 5  infantry, bulky          320 px
   ARCH_GRUNT, //   6  light truck             1004 px
   ARCH_BRUISER, // 7  long truck              1362 px
   ARCH_GRUNT, //   8  boxy truck              1206 px
   ARCH_ELITE, //   9  tank, gun barrel        1624 px
   ARCH_ELITE, //  10  heavy hover-bus         1740 px
   ARCH_BRUISER, //11  rig with cylinder       1532 px
-  ARCH_SWARMER, //12  infantry, orange         320 px
+  ARCH_RUNT, //12  infantry, orange         320 px
 ] as Archetype[];
 
 /** The Scraplord reuses `enemy_46` (hull 10, grey) at 112 u - the only sprite reuse in the game. */

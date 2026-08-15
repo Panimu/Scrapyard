@@ -68,8 +68,8 @@ export const MUZZLE_OFFSET = 24;
  * Largest content dimension of each enemy hull, in DEFAULT-size pixels, indexed by `hull - 1`.
  * Straight from the measured bbox table in ASSET_MANIFEST §2.
  *
- * This table is why the renderer does not simply scale the 64 px canvas to `drawSize`: a swarmer
- * is 16x24 px of art inside a 64x64 canvas, so canvas-scaling would draw a 26 u swarmer as a
+ * This table is why the renderer does not simply scale the 64 px canvas to `drawSize`: a runt
+ * is 16x24 px of art inside a 64x64 canvas, so canvas-scaling would draw a 26 u runt as a
  * 6.5 u speck inside its own 26 u collision circle. We scale so the CONTENT measures `drawSize`.
  */
 const HULL_CONTENT_PX: readonly number[] = [

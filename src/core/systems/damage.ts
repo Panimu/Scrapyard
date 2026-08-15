@@ -45,8 +45,8 @@
  * ---------------------------------------------------------------------------------------------
  *     taken = max(raw * armourMinFrac, raw - armour) * damageTakenMul
  *
- * Flat subtraction with a 25% floor is strong against swarmers and weak against elites BY DESIGN:
- * 8 armour turns a 5-damage swarmer bite into 1.25 (the floor) but a 28-damage elite slam into 20
+ * Flat subtraction with a 25% floor is strong against runts and weak against elites BY DESIGN:
+ * 8 armour turns a 5-damage runt bite into 1.25 (the floor) but a 28-damage elite slam into 20
  * (the subtraction). Armour buys tolerance for being SURROUNDED, never for being hit by the big
  * thing - which is exactly the shape of problem a flat-armour build should have.
  *
@@ -54,7 +54,7 @@
  * THE ENERGY SHIELD - the other half of that trade
  * ---------------------------------------------------------------------------------------------
  * A shield layer prevents ONE hit outright, whatever its size, so it is worth most against exactly
- * the big thing armour is worst against: a boss slam and a swarmer nibble cost the same one rim.
+ * the big thing armour is worst against: a boss slam and a runt nibble cost the same one rim.
  * The two defensive passives are deliberately not interchangeable, and a build that wants to
  * survive both has to spend two of its five passive slots.
  *
@@ -166,7 +166,7 @@ function applyBeams(world: World): void {
     // still draws it; there is nothing to bill.
     if (ed === NO_BEAM_TARGET) continue;
 
-    // Killed by an earlier beam this tick (two lasers finishing the same swarmer), or by
+    // Killed by an earlier beam this tick (two lasers finishing the same runt), or by
     // anything else that ran before S9. Overkill is not charged.
     if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) continue;
 
@@ -175,7 +175,7 @@ function applyBeams(world: World): void {
 
     const hpBefore = enemies.hp[ed];
     enemies.hp[ed] = hpBefore - raw;
-    // Effective, not raw: the last tick of a burn that overkills a 0.3 HP swarmer must not
+    // Effective, not raw: the last tick of a burn that overkills a 0.3 HP runt must not
     // inflate the dps the harness prints. The beam buffer carries the firing slot, so a laser's
     // share of the run's damage costs one array write on top of the one already happening.
     creditWeapon(world, beams.weaponIdx[i], raw < hpBefore ? raw : hpBefore);
@@ -247,7 +247,7 @@ function applyHits(world: World): void {
     const hpBefore = enemies.hp[ed];
     enemies.hp[ed] = hpBefore - raw;
 
-    // Effective, not raw: overkill on a 3 HP swarmer must not inflate the dps the harness prints.
+    // Effective, not raw: overkill on a 3 HP runt must not inflate the dps the harness prints.
     creditWeapon(world, proj.ownerWeapon[pd], raw < hpBefore ? raw : hpBefore);
     // One per PASS, so a pierce-3 shell registers up to four. This is "hits landed", not
     // "shells that connected" - the harness divides by shotsFired knowing that.
@@ -289,7 +289,7 @@ function applyHits(world: World): void {
  * Knockback goes into `pushX/pushY`, never into `vx/vy`: the next tick's seek pass overwrites
  * steering velocity from scratch, so a punt written there would be invisible. Impulse is scaled by
  * 1/mass, the same number separation uses - which is what makes a 190-knockback shell throw a
- * 0.5-mass swarmer at 380 u/s and shove a 7-mass elite by 27.
+ * 0.5-mass runt at 380 u/s and shove a 7-mass elite by 27.
  *
  * ANCHORED bodies (the Scraplord) are immune. Its mass is 1e9 rather than Infinity precisely so
  * that a missed flag check would produce a harmless ~0 rather than a NaN that would poison the
@@ -388,7 +388,7 @@ function applySplash(
  * exists but by the time the renderer looks it will not - and because reading them here is one
  * cache line that is already hot.
  *
- * The DEAD guard is what makes double-kills free: two shells landing on the same 3 HP swarmer in
+ * The DEAD guard is what makes double-kills free: two shells landing on the same 3 HP runt in
  * one tick produce one kill, one gem and one increment of RunStats.
  */
 function killEnemy(world: World, ed: number): void {
@@ -551,7 +551,7 @@ function applyContacts(world: World): void {
 
     if (player.hp <= 0) {
       // Clamped to exactly 0 so the summary screen and the hashed player struct never carry a
-      // negative hp that depends on which swarmer happened to be last in the buffer.
+      // negative hp that depends on which runt happened to be last in the buffer.
       player.hp = 0;
       world.phase = RUN_PHASE_DEAD;
       pushEvent(world.events, EV_PHASE_CHANGED, world.tick, RUN_PHASE_DEAD, 0, 0, 0);

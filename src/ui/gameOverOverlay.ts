@@ -93,7 +93,7 @@ export class GameOverOverlay {
     }
 
     // BY RANK, not by chassis: under the cycle ladder every enemy in a cycle shares one body
-    // class, so a swarmer/grunt/bruiser split says nothing the clock did not already say.
+    // class, so a runt/grunt/bruiser split says nothing the clock did not already say.
     const byArchetype: string[] = [];
     for (let r = 0; r < s.killsByRank.length; r++) {
       const n = s.killsByRank[r];

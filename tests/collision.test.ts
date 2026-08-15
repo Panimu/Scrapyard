@@ -21,7 +21,7 @@ import {
   ARCH_BRUISER,
   ARCH_ELITE,
   ARCH_GRUNT,
-  ARCH_SWARMER,
+  ARCH_RUNT,
 } from '../src/core/content/enemyCatalog.js';
 import {
   ENEMY_FLAG_DEAD,
@@ -148,7 +148,7 @@ describe('the broad phase - identical to brute force, on every scene', () => {
     const rng = new Rng(0xb0a7);
     // Every archetype radius in the roster, so the MAX_ENEMY_RADIUS pad is genuinely exercised.
     const radii = [
-      ARCHETYPES[ARCH_SWARMER].radius,
+      ARCHETYPES[ARCH_RUNT].radius,
       ARCHETYPES[ARCH_GRUNT].radius,
       ARCHETYPES[ARCH_BRUISER].radius,
       ARCHETYPES[ARCH_ELITE].radius,
@@ -357,7 +357,7 @@ describe('contact damage - gated per enemy, never by player i-frames', () => {
     const w = makeWorld();
     w.player.hp = 1e9; // survive the experiment; this test is about the total, not about death
     for (let i = 0; i < N; i++) {
-      addEnemy(w, 8 + i, 0, 500, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
+      addEnemy(w, 8 + i, 0, 500, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
     }
 
     for (let t = 0; t < ticks; t++) {
@@ -365,7 +365,7 @@ describe('contact damage - gated per enemy, never by player i-frames', () => {
       detectAndApply(w);
     }
 
-    const arch = ARCHETYPES[ARCH_SWARMER];
+    const arch = ARCHETYPES[ARCH_RUNT];
     const perEnemy = expectedContacts(ticks, arch.contactInterval);
     // 0.6 s at 60 Hz is a 36-tick cadence: one bite on tick 0, then ticks 36, 72, ... The literal
     // is asserted as well as the model, so a change to either is caught by the other.
@@ -373,22 +373,22 @@ describe('contact damage - gated per enemy, never by player i-frames', () => {
     expect(w.stats.damageTaken).toBeCloseTo(N * perEnemy * arch.contactDamage, 6);
   });
 
-  it('gives each enemy its own cooldown, so a swarmer cannot soak it for a bruiser', () => {
+  it('gives each enemy its own cooldown, so a runt cannot soak it for a bruiser', () => {
     const w = makeWorld();
     w.player.hp = 1e9;
-    const swarmer = addEnemy(w, 8, 0, 500, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
+    const runt = addEnemy(w, 8, 0, 500, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
     const bruiser = addEnemy(w, -8, 0, 500, ARCH_BRUISER, ARCHETYPES[ARCH_BRUISER].radius);
 
     detectAndApply(w);
     // Both bite on the same tick. Global i-frames would have billed only one of them.
     expect(w.contacts.count).toBe(2);
     expect(w.stats.damageTaken).toBeCloseTo(
-      ARCHETYPES[ARCH_SWARMER].contactDamage + ARCHETYPES[ARCH_BRUISER].contactDamage,
+      ARCHETYPES[ARCH_RUNT].contactDamage + ARCHETYPES[ARCH_BRUISER].contactDamage,
       6,
     );
     // Float32Array storage, so compare against the frounded interval rather than the literal.
-    expect(w.enemies.contactTimer[swarmer]).toBe(
-      Math.fround(ARCHETYPES[ARCH_SWARMER].contactInterval),
+    expect(w.enemies.contactTimer[runt]).toBe(
+      Math.fround(ARCHETYPES[ARCH_RUNT].contactInterval),
     );
     expect(w.enemies.contactTimer[bruiser]).toBe(
       Math.fround(ARCHETYPES[ARCH_BRUISER].contactInterval),
@@ -404,7 +404,7 @@ describe('contact damage - gated per enemy, never by player i-frames', () => {
 
   it('does not bill a contact from an enemy a shell killed earlier in the same tick', () => {
     const w = makeWorld();
-    const biter = addEnemy(w, 8, 0, 10, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
+    const biter = addEnemy(w, 8, 0, 10, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
     addShell(w, { x: 8, y: 0, pierce: 0, damage: 30 });
 
     detectAndApply(w);
@@ -417,15 +417,15 @@ describe('contact damage - gated per enemy, never by player i-frames', () => {
   it('kills the player and sets RUN_PHASE_DEAD exactly once', () => {
     const w = makeWorld();
     w.player.hp = 4;
-    addEnemy(w, 8, 0, 500, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
-    addEnemy(w, -8, 0, 500, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
+    addEnemy(w, 8, 0, 500, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
+    addEnemy(w, -8, 0, 500, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
 
     detectAndApply(w);
 
     expect(w.player.hp).toBe(0);
     expect(w.phase).toBe(RUN_PHASE_DEAD);
     // The second contact was dropped rather than driving hp negative - so damageTaken cannot
-    // depend on which swarmer happened to be last in the buffer.
+    // depend on which runt happened to be last in the buffer.
     expect(w.stats.damageTaken).toBe(5);
   });
 });
@@ -447,16 +447,16 @@ describe('the armour formula - exact at both branches', () => {
     expect(billOnce(8, 1, ARCH_ELITE)).toBe(20);
   });
 
-  it('floors at 25% of raw when armour would take more (swarmer, 5 -> 1.25)', () => {
-    expect(ARCHETYPES[ARCH_SWARMER].contactDamage).toBe(5);
+  it('floors at 25% of raw when armour would take more (runt, 5 -> 1.25)', () => {
+    expect(ARCHETYPES[ARCH_RUNT].contactDamage).toBe(5);
     expect(DEFAULT_TUNING.combat.armourMinFrac).toBe(0.25);
     // 5 - 8 = -3, so the floor wins. Armour can never heal you.
-    expect(billOnce(8, 1, ARCH_SWARMER)).toBe(1.25);
+    expect(billOnce(8, 1, ARCH_RUNT)).toBe(1.25);
   });
 
   it('applies damageTakenMul after the armour step, on both branches', () => {
     expect(billOnce(8, 0.5, ARCH_ELITE)).toBe(10);
-    expect(billOnce(8, 0.5, ARCH_SWARMER)).toBe(0.625);
+    expect(billOnce(8, 0.5, ARCH_RUNT)).toBe(0.625);
   });
 
   it('is a no-op at zero armour', () => {
@@ -487,14 +487,14 @@ describe('application - kills, knockback, splash', () => {
 
   it('scales knockback by 1/mass and leaves anchored bodies alone', () => {
     const w = makeWorld();
-    const light = addEnemy(w, 0, 0, 500, ARCH_SWARMER, ARCHETYPES[ARCH_SWARMER].radius);
+    const light = addEnemy(w, 0, 0, 500, ARCH_RUNT, ARCHETYPES[ARCH_RUNT].radius);
     const heavy = addEnemy(w, 0, 200, 500, ARCH_ELITE, ARCHETYPES[ARCH_ELITE].radius);
     addShell(w, { x: 0, y: 0, vx: 520, vy: 0, knockback: 190 });
     addShell(w, { x: 0, y: 200, vx: 520, vy: 0, knockback: 190 });
 
     detectAndApply(w);
 
-    expect(w.enemies.pushX[light]).toBeCloseTo(190 / ARCHETYPES[ARCH_SWARMER].mass, 4);
+    expect(w.enemies.pushX[light]).toBeCloseTo(190 / ARCHETYPES[ARCH_RUNT].mass, 4);
     expect(w.enemies.pushX[heavy]).toBeCloseTo(190 / ARCHETYPES[ARCH_ELITE].mass, 4);
     expect(w.enemies.pushY[light]).toBe(0);
   });

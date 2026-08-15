@@ -28,7 +28,7 @@ import {
 /** Enemies further than this are ignored - beyond it they cannot influence this tick's move. */
 const AWARENESS_RADIUS = 320;
 const AWARENESS_RADIUS_SQ = AWARENESS_RADIUS * AWARENESS_RADIUS;
-/** Softening term: without it, a single adjacent swarmer dominates the whole flee vector. */
+/** Softening term: without it, a single adjacent runt dominates the whole flee vector. */
 const FLEE_SOFTENING = 40;
 /** How hard to chase gems relative to fleeing. Under ~1 the bot never suicides for a gem. */
 const GEM_WEIGHT = 0.6;
@@ -129,7 +129,7 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
     if (d2 > AWARENESS_RADIUS_SQ || d2 === 0) continue;
     const dist = Math.sqrt(d2);
     // WEIGHTED by rank for the DIRECTION, but the standoff is measured off the raw nearest body:
-    // a swarmer with its teeth in you is as much a reason to move as a boss at the same distance.
+    // a runt with its teeth in you is as much a reason to move as a boss at the same distance.
     if (dist < nearest) nearest = dist;
     const ef = e.flags[d];
     const pressure =

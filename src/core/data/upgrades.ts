@@ -490,7 +490,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // in total, seventh tier twice the first.
     //
     // Flat armour is strong against the swarm and weak against elites by design (tuning.ts): 22
-    // armour turns a 5-damage swarmer hit into the 25% floor, and a 28-damage elite hit into 6.
+    // armour turns a 5-damage runt hit into the 25% floor, and a 28-damage elite hit into 6.
     // It buys tolerance for being SURROUNDED, never for being hit by the big thing.
     tiers: Object.freeze([
       'Armour +2.',
@@ -524,7 +524,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // whole mechanism and the six after it move three separate dials.
     //
     // WHY IT IS NOT REDUNDANT WITH ABLATIVE PLATE. Armour subtracts a flat amount from every hit,
-    // so it is worth 22 HP against a swarmer nibble and 22 HP against a boss slam - which means
+    // so it is worth 22 HP against a runt nibble and 22 HP against a boss slam - which means
     // it is worth EVERYTHING against the swarm and almost nothing against the big thing. A shield
     // layer prevents one hit whatever its size, so it is worth 5 HP against a nibble and 42
     // against a slam. They are the same slot cost and opposite shapes, which is the point.

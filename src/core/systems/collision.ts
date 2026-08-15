@@ -40,7 +40,7 @@
  * When a shell straddles MORE bodies in one tick than it has passes left, the ones it takes are
  * the NEAREST ones, ordered nearest-first, ties broken by lower spawnId. That ordering is visible
  * in the game because updateDamage applies pierceFalloff per pass: without it, "which of the three
- * swarmers under the shell takes full damage" would be decided by the cell-walk order of a hash,
+ * runts under the shell takes full damage" would be decided by the cell-walk order of a hash,
  * which is deterministic but arbitrary and untestable as a rule.
  *
  * The selection is a partial selection sort over the compacted candidate list - O(passes x k) with
@@ -51,10 +51,10 @@
  * CONTACT IS GATED PER ENEMY, NOT BY PLAYER I-FRAMES
  * ---------------------------------------------------------------------------------------------
  * Every enemy carries its own `contactTimer`, rearmed by S9 to its archetype's `contactInterval`
- * each time it actually bills the player. Global invulnerability frames would let one swarmer soak
+ * each time it actually bills the player. Global invulnerability frames would let one runt soak
  * the window on behalf of the bruiser arriving half a second later - being surrounded would be
- * SAFER than being cornered, which inverts the entire threat model. Here, six swarmers in contact
- * genuinely deal six swarmers' worth of damage (~50 dps, dead in 2.4 s at base HP), which is what
+ * SAFER than being cornered, which inverts the entire threat model. Here, six runts in contact
+ * genuinely deal six runts' worth of damage (~50 dps, dead in 2.4 s at base HP), which is what
  * tuning.ts promises.
  *
  * OWNERSHIP OF `contactTimer`, stated exactly, because two stages touch it:

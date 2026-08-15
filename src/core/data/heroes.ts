@@ -34,7 +34,7 @@
  *   - `HeroTrait` and the HERO_TRAITS registry in data/traits.ts are already wired into
  *     updateWeapons. Register a trait and the hook fires.
  * The two things to preserve at that point: no hero may be strictly dominated by another, and
- * every hero's resolved moveMaxSpeed must stay above the worst-case late-game swarmer speed
+ * every hero's resolved moveMaxSpeed must stay above the worst-case late-game runt speed
  * (~144.4 u/s at t=900, see tuning.ts) or kiting - the whole genre - quietly breaks.
  */
 

@@ -314,7 +314,7 @@ export interface ChestState {
 export interface RunStats {
   kills: number;
   /** Length 5, indexed by Archetype - the enemy's BODY CLASS. Elite and boss rows stay 0: the
-   *  ladder only spawns swarmer/grunt/bruiser chassis, and rank is a separate axis. */
+   *  ladder only spawns runt/grunt/bruiser chassis, and rank is a separate axis. */
   readonly killsByArchetype: Uint32Array;
   /** Length 3, indexed by Rank. THE breakdown that means something under the cycle ladder. */
   readonly killsByRank: Uint32Array;

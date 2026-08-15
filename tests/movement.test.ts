@@ -4,7 +4,7 @@
  * The load-bearing assertion in this file is the one about terminal velocity. Everything else is
  * feel; that one is a CONTENT LAW. `moveDrag` is derived as moveAccel / moveMaxSpeed precisely so
  * that the mech's real top speed equals the number in the tuning table, and the kiting invariant -
- * every hero outruns the worst-case late-game swarmer - is checked against that table. If drag ever
+ * every hero outruns the worst-case late-game runt - is checked against that table. If drag ever
  * becomes independently authored, the table starts lying and the genre quietly breaks; the test
  * below is what refuses to let that happen silently.
  *
