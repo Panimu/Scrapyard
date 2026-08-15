@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { DT, GEM_SOFT_CAP } from '../src/core/constants.js';
+import { DT, GEM_SOFT_CAP, SPLASH_RIM_FRAC } from '../src/core/constants.js';
 import { DEFAULT_TUNING, gemTierForValue } from '../src/core/config/tuning.js';
 import {
   ARCHETYPES,
@@ -499,10 +499,11 @@ describe('application - kills, knockback, splash', () => {
     expect(w.enemies.pushY[light]).toBe(0);
   });
 
-  it('splashes a fraction of the shell damage onto neighbours, but not onto the body it hit', () => {
+  it('splashes a fraction of the shell damage onto neighbours, falling off to the rim', () => {
     const w = makeWorld();
     const direct = addEnemy(w, 0, 0, 500);
     const near = addEnemy(w, 25, 0, 500);
+    const rim = addEnemy(w, 34, 0, 500); // exactly on the edge: inclusive, and worth the least
     const outside = addEnemy(w, 120, 0, 500);
     addShell(w, { x: 0, y: 0, damage: 30, splashRadius: 34, splashFrac: 0.4 });
 
@@ -510,7 +511,15 @@ describe('application - kills, knockback, splash', () => {
 
     // The direct hit takes the full shell and nothing more.
     expect(500 - w.enemies.hp[direct]).toBeCloseTo(30, 6);
-    expect(500 - w.enemies.hp[near]).toBeCloseTo(12, 6);
+    // 30 x 0.4 = 12 AT THE EPICENTRE, scaled down linearly by distance: at 25 of 34 units out the
+    // body keeps 1 - (25/34) x (1 - SPLASH_RIM_FRAC) of it.
+    const atCentre = 30 * 0.4;
+    // 4 places, not 6: enemy hp is a Float32Array, so subtracting a scaled value from 500 and
+    // reading it back costs about 1e-5. Demanding more would be asserting the storage format.
+    expect(500 - w.enemies.hp[near]).toBeCloseTo(atCentre * (1 - (25 / 34) * (1 - SPLASH_RIM_FRAC)), 4);
+    // ON the rim it is worth exactly SPLASH_RIM_FRAC - not nothing, which is what keeps the drawn
+    // circle and the damaging circle the same size.
+    expect(500 - w.enemies.hp[rim]).toBeCloseTo(atCentre * SPLASH_RIM_FRAC, 4);
     expect(w.enemies.hp[outside]).toBe(500);
   });
 });

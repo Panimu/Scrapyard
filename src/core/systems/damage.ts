@@ -101,6 +101,7 @@ import {
   pushKill,
   NO_DIRECT_HIT,
 } from '../events/ring.js';
+import { SPLASH_RIM_FRAC } from '../constants.js';
 import { breakBarrelIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
@@ -313,6 +314,13 @@ function applyKnockback(world: World, ed: number, vx: number, vy: number, amount
  * 34 u circle, which is also exactly the circle the renderer draws. It carries no knockback - a
  * shell should shove what it HITS, and a blast that punted the whole crowd would undo the
  * separation gradient that makes the horde readable.
+ *
+ * IT FALLS OFF. `amount` is what a body AT THE EPICENTRE takes; a body at the rim takes
+ * SPLASH_RIM_FRAC of it, linearly interpolated by distance. See that constant for why the edge is
+ * worth something rather than nothing.
+ *
+ * The credited figure is the scaled one, not `amount`, so the harness's damage-by-source table
+ * still sums to `damageDealt` - the overkill clamp stays on the same line it always was.
  */
 function applySplash(
   world: World,
@@ -338,23 +346,30 @@ function applySplash(
   if (found === 0) return;
 
   const r2 = radius * radius;
+  // Precomputed so the per-body work is one sqrt, one multiply and one add.
+  const falloff = (1 - SPLASH_RIM_FRAC) / radius;
   for (let i = 0; i < found; i++) {
     const ed = candidates[i];
     if (ed === exclude) continue;
     const dx = enemies.x[ed] - x;
     const dy = enemies.y[ed] - y;
-    if (dx * dx + dy * dy > r2) continue;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > r2) continue;
+
+    // Math.sqrt only - exactly rounded by IEEE-754 and therefore safe in core, unlike pow/sin/cos.
+    const scaled = amount * (1 - Math.sqrt(d2) * falloff);
+    if (scaled <= 0) continue;
 
     const hpBefore = enemies.hp[ed];
-    enemies.hp[ed] = hpBefore - amount;
-    creditWeapon(world, slot, amount < hpBefore ? amount : hpBefore);
+    enemies.hp[ed] = hpBefore - scaled;
+    creditWeapon(world, slot, scaled < hpBefore ? scaled : hpBefore);
     pushEvent(
       world.events,
       EV_ENEMY_DAMAGED,
       world.tick,
       enemies.x[ed],
       enemies.y[ed],
-      amount,
+      scaled,
       enemies.slot[ed],
     );
     if (enemies.hp[ed] <= 0) killEnemy(world, ed);

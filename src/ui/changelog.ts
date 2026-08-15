@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T00:19Z',
+    title: 'A blast is strongest where it lands',
+    notes: [
+      'EXPLOSIONS NOW FALL OFF FROM THE CENTRE. A body standing on the impact point takes the full blast, one on the edge of the circle takes 40% of it, and everything between is on a straight line from one to the other. Until now a blast was a flat disc: a body at the very rim took exactly what a body at ground zero took.',
+      'THIS IS HEAVY ARTILLERY\'S CHANGE, since it is the only weapon in the game with a blast. Landing a shell on top of a body still hurts it exactly as much as it always did - what has gone is the free damage to everything else standing inside the circle.',
+      'THE EDGE IS STILL WORTH SOMETHING, deliberately. A blast whose rim did nothing would have a real radius smaller than the ring you can see, and the ring you can see should be the truth.',
+      'It applies to any weapon with a blast, not just this one - there is one blast rule and every explosion in the game now follows it.',
+    ],
+  },
+  {
     at: '2026-08-14T23:58Z',
     title: 'Every laser runs 25% cooler',
     notes: [

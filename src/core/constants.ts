@@ -160,6 +160,27 @@ export const OFFER_CREDITS = -3;
  * offers use, and cannot collide with a slot index, which is always 0..offerCount.
  */
 export const CHOOSE_REROLL = -4;
+/**
+ * WHAT A BLAST IS WORTH AT ITS RIM, as a fraction of what it is worth at the epicentre.
+ *
+ * A blast used to be a step function: full damage everywhere inside the circle and nothing one
+ * unit outside it. That is the cheapest thing to implement and the most generous thing a splash
+ * weapon can be handed - the whole shell lands on every body in the circle, so its output scales
+ * with the AREA of the blast and with how crowded the yard is, with no cost for being at the edge
+ * of it. Measured with every weapon in the game held at tier 7, that made Heavy Artillery the top
+ * of the damage table by a distance while being one of eight weapons.
+ *
+ * Damage now falls LINEARLY IN DISTANCE from 1.0 at the centre to this at the rim. Linear in
+ * distance rather than in area, because it is the picture a player has of an explosion and
+ * because a squared curve spends almost the whole blast near full value and barely changes
+ * anything.
+ *
+ * It is not zero at the rim, and that matters: a blast whose edge does nothing is a blast whose
+ * real radius is smaller than the circle the renderer draws, and "the number on screen is the
+ * number" applies to a radius as much as to a damage figure.
+ */
+export const SPLASH_RIM_FRAC = 0.4;
+
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;
 /** Length of PlayerState.traitScratch. Slot meanings are documented per trait in data/traits.ts. */
