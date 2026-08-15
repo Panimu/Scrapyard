@@ -2450,3 +2450,16 @@ body {
   }
   /* --big is glow only, so it has nothing to disarm and stays as it is. */
 }
+
+/* The "· +30% at full" tail on a partly-bought upgrade. Quieter than the current figure beside it:
+   what you are running with is the answer, and what it maxes at is the context. */
+.upgrades__summary-full {
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+
+/* Owning none, this line is a promise rather than a description of your mech, so it reads as one. */
+.upgrades__summary--none {
+  font-weight: 400;
+  color: var(--ink-dim);
+}

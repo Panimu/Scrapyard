@@ -34,7 +34,7 @@
  * cannot be pressed. The list is seven rows; rebuilding it is free and cannot drift.
  */
 
-import { META_CATALOG, type MetaDef, type MetaId } from '../core/data/meta.js';
+import { META_CATALOG, metaEffectText, type MetaDef, type MetaId } from '../core/data/meta.js';
 
 export interface UpgradesHooks {
   /** Tiers currently owned of one upgrade. */
@@ -125,9 +125,33 @@ export class UpgradesScreen {
     blurb.className = 'upgrades__blurb';
     blurb.textContent = def.blurb;
 
+    /**
+     * WHAT YOU ARE RUNNING WITH RIGHT NOW, and what it comes to if you finish the ladder.
+     *
+     * Both, because they answer different questions and the screen is asked both. The current
+     * figure is what a run will actually be played with; the full one is the anchor a price is
+     * judged against, and dropping it would make "50 credits" unanswerable until after the
+     * purchase. Owning none, there is no current effect to state and only the promise is shown.
+     */
     const summary = document.createElement('div');
     summary.className = 'upgrades__summary';
-    summary.textContent = def.summary;
+    if (owned <= 0) {
+      // Nothing owned: there is no current effect to state, so the promise is the whole line - and
+      // it is dimmed, because it is the one row state where this text is not describing your mech.
+      summary.textContent = `${metaEffectText(def, def.tiers)} at full`;
+      summary.classList.add('upgrades__summary--none');
+    } else {
+      summary.textContent = metaEffectText(def, owned);
+      if (!full) {
+        // The tail drops the noun the head just said: "+12.9% damage · +30% at full" rather than
+        // saying "damage" twice in nine words. It is one line on a phone either way, and the
+        // repetition read as a stutter.
+        const rest = document.createElement('span');
+        rest.className = 'upgrades__summary-full';
+        rest.textContent = ` · ${metaEffectText(def, def.tiers, true)} at full`;
+        summary.appendChild(rest);
+      }
+    }
 
     words.append(name, blurb, summary);
 

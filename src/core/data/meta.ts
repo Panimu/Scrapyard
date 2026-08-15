@@ -34,7 +34,11 @@
  * damage for 350" against "+15% range for 150" IS the activity. Withholding the numbers here would
  * not preserve the feel of a card, it would just make the prices unanswerable.
  *
- * So `summary` states the full-price effect plainly, and the screen shows the per-tier cost.
+ * So `metaEffectText` states the effect plainly and the screen shows the per-tier cost. It is asked
+ * for WHAT THE PLAYER OWNS rather than only what a full ladder comes to, because "what am I
+ * actually running with" is the other half of the question a shop is there to answer - and with
+ * every tier worth the same, the current figure is also the clearest possible statement of what the
+ * next one buys.
  *
  * ---------------------------------------------------------------------------------------------
  * PERCENTAGES ADD, HERE TOO
@@ -77,17 +81,42 @@ export interface MetaEffect {
   readonly weapon?: WeaponId;
 }
 
+/**
+ * How to say out loud what a given number of tiers is worth.
+ *
+ * NAMES THE HEADLINE EFFECT RATHER THAN RESTATING ITS SIZE. An upgrade may touch more than one stat
+ * - damage drags heat, speed drags acceleration - and only one of those is what the player is
+ * buying. So this names the KEY, and the magnitude is read back out of `effects`.
+ *
+ * That is the whole reason it is shaped this way. A hand-written "+30% damage at full" beside an
+ * amount of `0.3 / 7` is two places to keep true, and the day somebody retunes the ladder the
+ * string is the half that gets forgotten - on a shop screen, where the string IS the offer.
+ */
+export interface MetaDisplay {
+  /** Which of `effects` is the headline. */
+  readonly key: PlayerStatKey | WeaponStatKey;
+  /**
+   *   percent         a share of base, shown as +X%
+   *   rateOfFire      a cooldown REDUCTION, shown as the increase in shots per second it produces
+   *   flat            absolute units, shown as a bare number
+   *   secondsFaster   a negative `add` in seconds, shown as how much sooner
+   */
+  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'secondsFaster';
+  /** The thing being bought, as the player would name it. */
+  readonly noun: string;
+}
+
 export interface MetaDef {
   readonly id: MetaId;
   readonly name: string;
   /** What it does, in the player's words. */
   readonly blurb: string;
-  /** What owning every tier comes to. Stated with its magnitude - see this file's header. */
-  readonly summary: string;
   readonly tiers: number;
   /** Credits per tier. Flat: every tier of one upgrade costs the same. */
   readonly cost: number;
   readonly effects: readonly MetaEffect[];
+  /** How `metaEffectText` phrases this upgrade. See MetaDisplay. */
+  readonly display: MetaDisplay;
 }
 
 /**
@@ -107,7 +136,6 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     name: 'Ordnance Stores',
     blurb:
       'Every gun the yard hands you hits harder, from the first second of the run. A hotter-running laser burns through its heat faster.',
-    summary: '+30% damage at full',
     tiers: 7,
     cost: 50,
     // HEAT RIDES WITH DAMAGE, exactly as it does on the Ordnance card and on the lasers' own damage
@@ -132,23 +160,23 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
         amount: 0.3 / 7,
       },
     ]),
+    display: { key: 'damage', as: 'percent', noun: 'damage' },
   },
   {
     id: 'm-range',
     name: 'Optical Array',
     blurb: 'Everything reaches further, so the horde is dying before it arrives.',
-    summary: '+15% range at full',
     tiers: 5,
     cost: 30,
     effects: Object.freeze([
       { target: 'weapon' as const, key: 'range' as const, mode: 'mul' as const, amount: 0.15 / 5 },
     ]),
+    display: { key: 'range', as: 'percent', noun: 'range' },
   },
   {
     id: 'm-rate',
     name: 'Autoloaders',
     blurb: 'Shorter gaps between shots on everything that has a gap.',
-    summary: '+10% rate of fire at full',
     tiers: 3,
     // COOLDOWN ONLY, unlike Feed Systems, which also buys heat dispersion and reload seconds. The
     // workshop sells those separately - dispersion IS Coolant Baffles - and one upgrade that
@@ -162,6 +190,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
         amount: rateToCooldown(0.1) / 3,
       },
     ]),
+    display: { key: 'cooldown', as: 'rateOfFire', noun: 'rate of fire' },
   },
   {
     id: 'm-armour',
@@ -169,18 +198,17 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     blurb: 'Takes a little off every hit you take, for the whole run.',
     // FLAT, because base armour is 0 and a percentage of nothing is nothing - the same reason
     // Ablative Plate is flat. Two armour is small against an elite and real against a swarm.
-    summary: '2 armour at full',
     tiers: 2,
     cost: 50,
     effects: Object.freeze([
       { target: 'player' as const, key: 'armour' as const, mode: 'add' as const, amount: 1 },
     ]),
+    display: { key: 'armour', as: 'flat', noun: 'armour' },
   },
   {
     id: 'm-speed',
     name: 'Servo Tuning',
     blurb: 'The chassis walks quicker, whichever chassis it is.',
-    summary: '+15% movement speed at full',
     tiers: 3,
     cost: 45,
     // BOTH KEYS, for the reason Servo Drive gives: moveDrag is derived as accel / maxSpeed, so
@@ -200,12 +228,12 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
         amount: 0.15 / 3,
       },
     ]),
+    display: { key: 'moveMaxSpeed', as: 'percent', noun: 'movement speed' },
   },
   {
     id: 'm-laser',
     name: 'Coolant Baffles',
     blurb: 'The beams shed heat faster, so they cut out for less of the fight.',
-    summary: '+10% heat dispersion',
     tiers: 1,
     cost: 100,
     // A NO-OP FOR EVERYTHING ELSE, and it needs no scoping to be one: projectile weapons declare
@@ -219,12 +247,12 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
         amount: 0.1,
       },
     ]),
+    display: { key: 'heatDispersion', as: 'percent', noun: 'heat dispersion' },
   },
   {
     id: 'm-drone',
     name: 'Fabricator Feed',
     blurb: 'The drone bay turns a new drone around sooner.',
-    summary: 'Drones build 2s faster at full',
     tiers: 2,
     cost: 80,
     // SCOPED TO THE DRONE, and it has to be: build time IS the drone weapon's `cooldown`, so an
@@ -238,8 +266,48 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
         weapon: 'drone' as const,
       },
     ]),
+    display: { key: 'cooldown', as: 'secondsFaster', noun: 'drone build time' },
   },
 ]);
+
+/** Trims a trailing `.0` so a whole number reads as one. 12.857 -> "12.9", 30 -> "30". */
+function oneDecimal(v: number): string {
+  const s = v.toFixed(1);
+  return s.endsWith('.0') ? s.slice(0, -2) : s;
+}
+
+/**
+ * What `tiers` tiers of this upgrade are worth, in words.
+ *
+ * READ BACK OUT OF `effects`, never restated beside them - see MetaDisplay. Pass `def.tiers` for
+ * the full-ladder figure and the owned count for what the player has right now.
+ *
+ * RATE OF FIRE IS NOT A CLEAN MULTIPLE OF ITS TIERS, and that is arithmetic rather than a bug. The
+ * ladder buys equal reductions of COOLDOWN, and rate is cooldown's reciprocal, so equal steps down
+ * are slightly accelerating steps up: three tiers read +3.1%, +6.5%, +10%. Making the advertised
+ * rate linear instead would make the underlying stat's steps unequal, and the stat is the thing
+ * that is actually the same size every time. The gap is a tenth of a percent either way.
+ */
+export function metaEffectText(def: MetaDef, tiers: number, bare = false): string {
+  const d = def.display;
+  const fx = def.effects.find((e) => e.key === d.key);
+  if (fx === undefined || tiers <= 0) return '';
+  const total = fx.amount * (tiers > def.tiers ? def.tiers : tiers);
+
+  switch (d.as) {
+    case 'percent':
+      return bare ? `+${oneDecimal(total * 100)}%` : `+${oneDecimal(total * 100)}% ${d.noun}`;
+    case 'rateOfFire': {
+      // `total` is the cooldown share, which is negative. 1/(1+m) - 1 is the rate it produces.
+      const rate = oneDecimal((1 / (1 + total) - 1) * 100);
+      return bare ? `+${rate}%` : `+${rate}% ${d.noun}`;
+    }
+    case 'flat':
+      return bare ? oneDecimal(total) : `${oneDecimal(total)} ${d.noun}`;
+    case 'secondsFaster':
+      return bare ? `${oneDecimal(-total)}s` : `Drones build ${oneDecimal(-total)}s faster`;
+  }
+}
 
 /** Catalog index for an id, or -1. */
 export function metaIndex(id: MetaId): number {
@@ -282,6 +350,10 @@ const META_ACC = { add: 0, mul: 1 };
  *
  * `weapon` is the id of the weapon being resolved, or undefined for a player stat. A scoped effect
  * that names a different weapon is skipped; an unscoped one always applies.
+ *
+ * THE RETURNED OBJECT IS REUSED - the same instance on every call, like `ACC` in stats.ts. Read it
+ * before calling again, or copy it. Holding two results and comparing them compares the second to
+ * itself, which is a mistake that looks completely reasonable on the page.
  */
 export function accumulateMeta(
   tiers: ArrayLike<number>,

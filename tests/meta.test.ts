@@ -12,7 +12,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { META_CATALOG, accumulateMeta, metaIndex, metaSpent } from '../src/core/data/meta.js';
+import {
+  META_CATALOG,
+  accumulateMeta,
+  metaEffectText,
+  metaIndex,
+  metaSpent,
+  type MetaDef,
+} from '../src/core/data/meta.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { resolvePlayerStats, type PlayerStats } from '../src/core/data/stats.js';
@@ -71,6 +78,50 @@ describe('a full ladder is worth what its summary says', () => {
     // price by taking a second off every gun in the game.
     expect(accumulateMeta(maxed(), 'weapon', 'cooldown', 'cannon').add).toBe(0);
     expect(accumulateMeta(maxed(), 'weapon', 'cooldown', 'drone').add).toBe(-2);
+  });
+});
+
+describe('what the screen says a tier is worth', () => {
+  const byId = (id: string): MetaDef => META_CATALOG[metaIndex(id as never)];
+
+  it('states the effect you own, not only the one you could own', () => {
+    expect(metaEffectText(byId('m-damage'), 0)).toBe('');
+    expect(metaEffectText(byId('m-damage'), 3)).toBe('+12.9% damage');
+    expect(metaEffectText(byId('m-damage'), 7)).toBe('+30% damage');
+    expect(metaEffectText(byId('m-range'), 2)).toBe('+6% range');
+    expect(metaEffectText(byId('m-armour'), 1)).toBe('1 armour');
+    expect(metaEffectText(byId('m-speed'), 3)).toBe('+15% movement speed');
+    expect(metaEffectText(byId('m-laser'), 1)).toBe('+10% heat dispersion');
+    expect(metaEffectText(byId('m-drone'), 1)).toBe('Drones build 1s faster');
+    expect(metaEffectText(byId('m-drone'), 2)).toBe('Drones build 2s faster');
+  });
+
+  it('reports rate of fire as rate, not as the cooldown behind it', () => {
+    expect(metaEffectText(byId('m-rate'), 3)).toBe('+10% rate of fire');
+  });
+
+  it('every tier of one upgrade is worth the same as every other', () => {
+    // The property the whole ladder is built on, checked on the STAT rather than on the wording:
+    // n tiers is exactly n times one tier, for every upgrade in the catalog.
+    for (const def of META_CATALOG) {
+      const { target, key } = def.effects[0];
+      // COPIED, NOT HELD. accumulateMeta returns a reused accumulator - the same object every
+      // call, like `ACC` in stats.ts - so keeping the first result and then asking for a second
+      // compares the second to itself. Every real caller reads it before calling again.
+      const one = { ...accumulateMeta(tiersOf(def.id, 1), target, key, 'drone') };
+      const all = { ...accumulateMeta(tiersOf(def.id, def.tiers), target, key, 'drone') };
+      expect(all.add).toBeCloseTo(one.add * def.tiers, 10);
+      expect(all.mul - 1).toBeCloseTo((one.mul - 1) * def.tiers, 10);
+    }
+  });
+
+  it('is read out of the effects, so a retune cannot leave the words behind', () => {
+    // The full-ladder string is derived, never authored - this is what makes that observable.
+    const dmg = byId('m-damage');
+    const share = dmg.effects.find((e) => e.key === 'damage')?.amount ?? 0;
+    expect(metaEffectText(dmg, dmg.tiers)).toBe(
+      `+${(share * dmg.tiers * 100).toFixed(1).replace(/\.0$/, '')}% damage`,
+    );
   });
 });
 
