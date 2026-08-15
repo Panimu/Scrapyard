@@ -76,7 +76,14 @@ export class GameOverOverlay {
    * `banked` is the LIFETIME credit total, already including this run's take. Passed in rather
    * than read from storage here, so this overlay stays a pure function of what it is handed.
    */
-  show(world: World, seed: number, banked = 0): void {
+  /**
+   * `earned` is the chassis this run just unlocked, by name.
+   *
+   * IT GOES AT THE TOP, above every statistic. A run that earned a mech has produced exactly one
+   * piece of news, and burying it under the damage breakdown means a player finds out by noticing
+   * a tile has changed on the picker three runs later - which is not finding out.
+   */
+  show(world: World, seed: number, banked = 0, earned: readonly string[] = []): void {
     const won = world.phase === RUN_PHASE_VICTORY;
     this.eyebrow.textContent = won ? 'Scraplord down' : 'Run over';
     this.title.textContent = won ? 'SURVIVED' : 'SCRAPPED';
@@ -125,6 +132,14 @@ export class GameOverOverlay {
     }
 
     this.body.innerHTML = `
+      ${
+        earned.length > 0
+          ? `<div class="list summary__earned">
+        <div class="eyebrow">Chassis earned</div>
+        ${earned.map((n) => `<div class="list__row"><span>${escapeHtml(n)}</span><span>unlocked</span></div>`).join('')}
+      </div>`
+          : ''
+      }
       <div class="grid">
         ${stat('Survived', formatClock(world.runSec))}
         ${stat('Level', String(world.player.level))}

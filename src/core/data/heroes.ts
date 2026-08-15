@@ -41,6 +41,7 @@
 import type { WeaponId } from '../content/weaponCatalog.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
 import type { UpgradeId } from './upgrades.js';
+import type { UnlockCond } from './unlocks.js';
 import type { World } from '../types.js';
 
 export type HeroId =
@@ -111,6 +112,12 @@ export interface HeroWeaponBonus {
 
 export interface HeroDef {
   readonly id: HeroId;
+  /**
+   * WHAT A RUN HAS TO DO TO EARN THIS CHASSIS. Slate's is `always`; everything else is locked and
+   * unpickable until one finished run satisfies it. See data/unlocks.ts - the machinery is settled
+   * and the numbers here are a first pass.
+   */
+  readonly unlock: UnlockCond;
   readonly name: string;
   /** One line for the select screen. Says what the chassis is and what its bonus does. */
   readonly identity: string;
@@ -183,6 +190,7 @@ export interface HeroDef {
 export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'slate',
+    unlock: { kind: 'always' },
     name: 'Slate',
     identity:
       'Light biped, twin gun pods. Opens with the Medium Laser, and vents its heat 50% faster.',
@@ -198,6 +206,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'moss',
+    unlock: { kind: 'wave', wave: 2 },
     name: 'Moss',
     identity:
       'Light strider, rotary drums. Opens with the Short Laser at double reach.',
@@ -214,6 +223,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ember',
+    unlock: { kind: 'wave', wave: 3 },
     name: 'Ember',
     identity:
       'Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.',
@@ -228,6 +238,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'amber',
+    unlock: { kind: 'kills', count: 400 },
     name: 'Amber',
     identity:
       'Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.',
@@ -243,6 +254,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'onyx',
+    unlock: { kind: 'wave', wave: 4 },
     name: 'Onyx',
     identity:
       'Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.',
@@ -257,6 +269,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'ash',
+    unlock: { kind: 'kills', count: 900 },
     name: 'Ash',
     identity:
       'Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.',
@@ -271,6 +284,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'bone',
+    unlock: { kind: 'survive', sec: 480 },
     name: 'Bone',
     identity:
       'Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.',
@@ -285,6 +299,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'plum',
+    unlock: { kind: 'tier', id: 'p-shield', tier: 3 },
     name: 'Plum',
     identity:
       'Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.',
@@ -309,6 +324,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'jade',
+    unlock: { kind: 'tier', id: 'w-laser-short', tier: 7 },
     name: 'Jade',
     identity:
       'Heavy biped, forward claw arms. Opens with the Short Laser.',
@@ -320,6 +336,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'rust',
+    unlock: { kind: 'tier', id: 'w-laser-long', tier: 7 },
     name: 'Rust',
     identity:
       'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
@@ -331,6 +348,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'brass',
+    unlock: { kind: 'tier', id: 'w-cannon', tier: 7 },
     name: 'Brass',
     identity:
       'Light hover, one heavy cannon. Opens with the Cannon.',
@@ -342,6 +360,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'cobalt',
+    unlock: { kind: 'tier', id: 'w-laser-medium', tier: 7 },
     name: 'Cobalt',
     identity:
       'Heavy quad, twin gun pods. Opens with the Medium Laser.',
@@ -353,6 +372,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'vermilion',
+    unlock: { kind: 'tier', id: 'w-missile-long', tier: 7 },
     name: 'Vermilion',
     identity:
       'Light hover, rotary drums. Opens with the Long Missiles.',
@@ -364,6 +384,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'indigo',
+    unlock: { kind: 'tier', id: 'w-missile-short', tier: 7 },
     name: 'Indigo',
     identity:
       'Heavy strider, boxed missile racks. Opens with the Long Missiles.',
@@ -375,6 +396,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'copper',
+    unlock: { kind: 'tier', id: 'w-machine-gun', tier: 7 },
     name: 'Copper',
     identity:
       'Heavy quad, rotary drums. Opens with the Machine Gun.',
@@ -386,6 +408,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
+    unlock: { kind: 'tier', id: 'w-artillery', tier: 7 },
     name: 'Fern',
     identity:
       'Light hover, forward claw arms. Opens with the Heavy Artillery.',

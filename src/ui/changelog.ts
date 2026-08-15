@@ -40,6 +40,19 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T10:10Z',
+    title: 'A roster you earn, and a manual you fill in',
+    notes: [
+      'THE SCRAPOPEDIA STARTS ALMOST EMPTY. One mech and one gun: Slate, and the Medium Laser it walks in holding. Every other page is written the first time you actually hold the thing - take the artillery once and its page is yours forever, whatever happens to that run.',
+      'IT IS A RECORD, NOT A CATALOGUE. Each group says how much of it you have found - "3 of 8" - so you can see the shape of what is left without being told what it is.',
+      'THIS GATES THE MANUAL AND NOTHING ELSE. Every card is still offered in every run from the first minute. Nothing is harder to find than it was; the reading is what you unlock.',
+      'FIFTEEN OF THE SIXTEEN CHASSIS NOW HAVE TO BE EARNED, and each one asks for something different. Reach wave 2. Wreck four hundred things in a run. Finish the Cannon. The condition is printed on the locked mech itself, because a mech you cannot have and cannot find out how to get is not a goal, it is just a gap.',
+      'A locked chassis cannot be picked. It is still there to look at.',
+      'AND THE RUN THAT EARNS ONE SAYS SO, at the top of the summary, above every statistic. That is the news; the damage breakdown can wait.',
+      'These conditions are a first pass and will be retuned. If your save is wiped - the browser does that on its own after a week or two of not playing, which is why installing to the home screen matters - your roster goes with it.',
+    ],
+  },
+  {
     at: '2026-08-15T09:53Z',
     title: 'The barrel shows the gun that is aiming, and the manual stops spoiling tier 8',
     notes: [

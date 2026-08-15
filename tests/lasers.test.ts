@@ -77,6 +77,7 @@ import { createWorld, stepWorld } from '../src/core/world.js';
 function heroWith(startingWeapon: WeaponId): HeroDef {
   return {
     id: 'jade',
+    unlock: { kind: 'always' },
     name: 'Test Chassis',
     identity: 'fixture',
     sprite: 'mech_3dgreen',

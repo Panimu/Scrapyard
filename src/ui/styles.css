@@ -860,6 +860,36 @@ body {
   color: var(--ink-faint);
 }
 
+/*
+ * A LOCKED CHASSIS IS DIMMED, NOT HIDDEN. You should be able to see the mech you have not earned
+ * and read what it would take - a roster that hides its own contents cannot be a set of goals.
+ * The tile stays tappable so a screen reader still reaches it; `select` is what refuses.
+ */
+.hero--locked .hero__art,
+.hero--locked .hero__name,
+.hero--locked .hero__identity {
+  opacity: 0.32;
+  filter: grayscale(1);
+}
+
+.hero--locked {
+  border-style: dashed;
+}
+
+/* Only a locked tile shows its condition - on an earned one it is a fact about the past. */
+.hero__req {
+  display: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--accent);
+}
+
+.hero--locked .hero__req {
+  display: block;
+}
+
 .heroes__go {
   flex: 0 0 auto;
   width: 100%;
@@ -1282,11 +1312,22 @@ body {
 }
 
 .pedia__group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-faint);
   margin: 6px 0 2px;
+}
+
+/* "3 of 8". Tabular so the three group tallies line up down the right edge. */
+.pedia__tally {
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 
 .pedia__grid {
@@ -1533,6 +1574,16 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* The one piece of NEWS on a summary otherwise made of statistics. It gets the accent. */
+.summary__earned {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.summary__earned .eyebrow {
+  color: var(--accent);
 }
 
 .summary__seed {

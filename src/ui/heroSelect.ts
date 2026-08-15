@@ -14,22 +14,30 @@
  * decode-off-main-thread and caching for free.
  */
 
-import { HERO_CATALOG } from '../core/index.js';
+import { HERO_CATALOG, UPGRADE_CATALOG, describeUnlock, type HeroId } from '../core/index.js';
 import { MECH_SRC_W, spriteUrl } from '../render/assets.js';
 
 export class HeroSelect {
   readonly element: HTMLDivElement;
 
   private readonly tiles: HTMLButtonElement[] = [];
+  /** Length HERO_CATALOG, refreshed on every `show()`. Empty until the first one. */
+  private readonly unlocked: boolean[] = [];
   private selected = 0;
 
   /** Lifetime credit readout. Hidden until the player has banked a coin. */
   private readonly bank: HTMLDivElement;
 
+  /**
+   * `isUnlocked` is asked once per tile on every `show()`, not once at construction: a run happens
+   * between two visits to this screen, and a chassis earned by that run has to be pickable on the
+   * way back in without restarting the app.
+   */
   constructor(
     private readonly onNext: (heroId: number) => void,
     onBack: () => void,
     initialHeroId = 0,
+    private readonly isUnlocked: (id: HeroId) => boolean = () => true,
   ) {
     const el = document.createElement('div');
     el.className = 'overlay heroes';
@@ -76,7 +84,17 @@ export class HeroSelect {
       identity.className = 'hero__identity';
       identity.textContent = hero.identity;
 
-      tile.append(img, name, identity);
+      // THE CONDITION LIVES ON THE TILE, not behind a lock icon. A locked chassis whose price is
+      // hidden is not a goal, it is just an absence - and this is the one place the player is
+      // already looking at the thing they want.
+      const req = document.createElement('div');
+      req.className = 'hero__req';
+      req.textContent = describeUnlock(
+        hero.unlock,
+        (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
+      );
+
+      tile.append(img, name, identity, req);
       // One tap selects. Starting the run needs the explicit button below, so a mis-tap while
       // scrolling the grid never drops you straight into a run.
       tile.addEventListener('click', () => this.select(index));
@@ -126,8 +144,27 @@ export class HeroSelect {
   }
 
   show(heroId?: number): void {
+    this.refreshLocks();
     if (heroId !== undefined) this.select(clampHeroId(heroId));
+    // Whatever was selected last time may since have been locked out from under it - only really
+    // possible if the conditions are retuned, but a picker that can hand `startRun` a chassis the
+    // player does not own is a picker that will one day do it.
+    if (!this.unlocked[this.selected]) this.select(this.firstUnlocked());
     this.element.hidden = false;
+  }
+
+  private refreshLocks(): void {
+    for (let i = 0; i < this.tiles.length; i++) {
+      const on = this.isUnlocked(HERO_CATALOG[i].id);
+      this.unlocked[i] = on;
+      this.tiles[i].classList.toggle('hero--locked', !on);
+      this.tiles[i].setAttribute('aria-disabled', on ? 'false' : 'true');
+    }
+  }
+
+  private firstUnlocked(): number {
+    const i = this.unlocked.indexOf(true);
+    return i < 0 ? 0 : i;
   }
 
   hide(): void {
@@ -135,6 +172,10 @@ export class HeroSelect {
   }
 
   private select(index: number): void {
+    // A LOCKED TILE IS INERT RATHER THAN DISABLED. `disabled` would take it out of the tab order
+    // and stop it being read, and the condition printed on it is the reason it is on screen at
+    // all - it has to stay reachable, it just must not become the selection.
+    if (this.unlocked[index] === false) return;
     this.selected = index;
     for (let i = 0; i < this.tiles.length; i++) {
       const on = i === index;

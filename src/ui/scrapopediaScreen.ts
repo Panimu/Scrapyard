@@ -28,6 +28,25 @@
  * changes with it; if a weapon's ladder is reordered, this screen reorders too.
  *
  * ---------------------------------------------------------------------------------------------
+ * IT ONLY SHOWS WHAT YOU HAVE ACTUALLY HELD
+ * ---------------------------------------------------------------------------------------------
+ * A system's page appears once that card has been TAKEN, and a chassis' page once that chassis has
+ * been EARNED. An empty save opens on two entries: Slate, and the Medium Laser it walks in holding.
+ *
+ * That makes this a record rather than a catalogue, and it is worth being clear about what it
+ * costs, because it cuts against the section above: a player cannot read how the artillery aims
+ * before deciding whether to take it. The manual is the reward for having played, not the briefing
+ * before you do - and the tension is real rather than an oversight.
+ *
+ * IT GATES THIS SCREEN AND NOTHING ELSE. The level-up deck keeps offering all fourteen cards
+ * whatever is unlocked; see `Settings.unlockedUpgrades`. A screen that could not be filled in
+ * except by a deck that would not offer what filled it is a screen that stays empty forever.
+ *
+ * The index is therefore REBUILT ON EVERY `show()` rather than once in the constructor. Between two
+ * visits the player has usually finished a run, and a manual that needed the app restarted before
+ * it admitted what you found would be worse than no manual.
+ *
+ * ---------------------------------------------------------------------------------------------
  * IT DOES NOT MENTION TIER 8. ANYWHERE.
  * ---------------------------------------------------------------------------------------------
  * An ascension is the one thing in this game that is meant to be FOUND. This screen used to print
@@ -66,6 +85,7 @@ import {
   UPGRADE_CATALOG,
   weaponNameAtTier,
   type HeroDef,
+  type HeroId,
   type UpgradeDef,
   type UpgradeId,
 } from '../core/index.js';
@@ -208,7 +228,18 @@ export class ScrapopediaScreen {
    */
   private open: { readonly kind: 'upgrade' | 'mech'; readonly index: number } | null = null;
 
-  constructor(private readonly onExit: () => void) {
+  /**
+   * `has` answers "is this id unlocked" for both catalogs. A pair of predicates rather than the
+   * AppState itself, so this screen depends on the question it is asking rather than on where the
+   * save file lives.
+   */
+  constructor(
+    private readonly onExit: () => void,
+    private readonly has: {
+      upgrade: (id: UpgradeId) => boolean;
+      hero: (id: HeroId) => boolean;
+    },
+  ) {
     const el = document.createElement('div');
     el.className = 'overlay pedia';
     el.hidden = true;
@@ -244,11 +275,11 @@ export class ScrapopediaScreen {
     });
     el.appendChild(this.backBtn);
 
-    this.buildIndex();
     this.element = el;
   }
 
   show(): void {
+    this.buildIndex();
     this.showIndex();
     this.element.hidden = false;
   }
@@ -258,38 +289,39 @@ export class ScrapopediaScreen {
   }
 
   /**
-   * Built once. Guns first, then systems, each group behind its own heading - the two halves
-   * compete for different slots in a run and a player thinking about one is not thinking about
-   * the other.
+   * Rebuilt on every `show()` - see the header. Guns first, then systems, then chassis, each group
+   * behind its own heading with a count of how much of it has been found.
+   *
+   * THE COUNT NAMES THE TOTAL, which is the one number this screen prints. It has to: a manual
+   * showing two entries and no denominator reads as a manual with two things in it, and the whole
+   * point of a collection is knowing there is more of it. What is missing stays missing - there is
+   * no dimmed row hinting at a shape - so the total says how many without saying which.
    */
   private buildIndex(): void {
-    for (const kind of ['weapon', 'passive'] as const) {
-      const label = document.createElement('div');
-      label.className = 'pedia__group';
-      label.textContent = kind === 'weapon' ? 'Weapons' : 'Systems';
-      this.indexEl.appendChild(label);
+    this.indexEl.innerHTML = '';
 
-      const grid = document.createElement('div');
-      grid.className = 'pedia__grid';
+    for (const kind of ['weapon', 'passive'] as const) {
+      const entries: HTMLButtonElement[] = [];
+      let total = 0;
       for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
         const def = UPGRADE_CATALOG[i];
         if (def.kind !== kind) continue;
-        grid.appendChild(this.entryButton(def, i));
+        total++;
+        if (this.has.upgrade(def.id)) entries.push(this.entryButton(def, i));
       }
-      this.indexEl.appendChild(grid);
+      this.indexEl.appendChild(
+        group(kind === 'weapon' ? 'Weapons' : 'Systems', entries.length, total),
+      );
+      this.indexEl.appendChild(grid(entries));
     }
 
-    const label = document.createElement('div');
-    label.className = 'pedia__group';
-    label.textContent = 'Mechs';
-    this.indexEl.appendChild(label);
-
-    const grid = document.createElement('div');
-    grid.className = 'pedia__grid';
+    const mechs: HTMLButtonElement[] = [];
     for (let i = 0; i < HERO_CATALOG.length; i++) {
-      grid.appendChild(this.mechButton(HERO_CATALOG[i], i));
+      const hero = HERO_CATALOG[i];
+      if (this.has.hero(hero.id)) mechs.push(this.mechButton(hero, i));
     }
-    this.indexEl.appendChild(grid);
+    this.indexEl.appendChild(group('Mechs', mechs.length, HERO_CATALOG.length));
+    this.indexEl.appendChild(grid(mechs));
   }
 
   private mechButton(hero: HeroDef, index: number): HTMLButtonElement {
@@ -462,6 +494,26 @@ function para(cls: string, text: string): HTMLParagraphElement {
   p.className = cls;
   p.textContent = text;
   return p;
+}
+
+/** A group heading with its "3 of 8 recorded" tally. */
+function group(text: string, found: number, total: number): HTMLDivElement {
+  const d = document.createElement('div');
+  d.className = 'pedia__group';
+  const name = document.createElement('span');
+  name.textContent = text;
+  const tally = document.createElement('span');
+  tally.className = 'pedia__tally';
+  tally.textContent = `${found} of ${total}`;
+  d.append(name, tally);
+  return d;
+}
+
+function grid(entries: readonly HTMLButtonElement[]): HTMLDivElement {
+  const d = document.createElement('div');
+  d.className = 'pedia__grid';
+  for (const e of entries) d.appendChild(e);
+  return d;
 }
 
 function section(text: string): HTMLDivElement {

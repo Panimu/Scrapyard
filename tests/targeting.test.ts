@@ -47,6 +47,7 @@ import type { HeroDef } from '../src/core/data/heroes.js';
 
 const FIXTURE_HERO: HeroDef = {
   id: 'jade',
+  unlock: { kind: 'always' },
   name: 'Test Chassis',
   identity: 'fixture',
   sprite: 'mech_3dgreen',

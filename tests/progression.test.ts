@@ -190,6 +190,7 @@ function clearAllCards(world: World): number {
 // deferred, so the layer-1 path has to be exercised with an explicit fixture or not at all.
 const HEAVY_HERO: HeroDef = {
   id: HERO_CATALOG[0].id,
+  unlock: { kind: 'always' },
   name: 'Fixture Chassis',
   identity: 'fixture',
   sprite: HERO_CATALOG[0].sprite,

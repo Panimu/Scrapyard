@@ -23,6 +23,7 @@
 
 import { Application } from 'pixi.js';
 import {
+  HERO_CATALOG,
   MAX_FRAME_MS,
   RUN_LENGTH_SEC,
   RUN_PHASE_CHEST,
@@ -230,6 +231,7 @@ async function boot(): Promise<void> {
     },
     () => showScreen('title'),
     state.settings.lastHeroId,
+    (id) => state.hasHero(id),
   );
 
   const levelSelect = new LevelSelect(
@@ -242,7 +244,10 @@ async function boot(): Promise<void> {
   );
 
   const upgrades = new UpgradesScreen(() => showScreen('title'));
-  const scrapopedia = new ScrapopediaScreen(() => showScreen('title'));
+  const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
+    upgrade: (id) => state.hasUpgrade(id),
+    hero: (id) => state.hasHero(id),
+  });
 
   const settings = new SettingsScreen(state.settings, {
     onBack: () => showScreen('title'),
@@ -341,6 +346,10 @@ async function boot(): Promise<void> {
     state.seed = seed;
     sim = new Simulation({ seed, heroId, runLengthSec: RUN_LENGTH_SEC });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
+    // THE OPENER COUNTS AS HELD THE MOMENT THE RUN STARTS. `createWorld` seeds the chassis' starting
+    // weapon (and Plum's shield) to tier 1, so this is true rather than generous - and it is the
+    // only unlock a player who quits to the title mid-run would otherwise not have banked.
+    state.recordHeldUpgrades(sim.world.levelUp.stacks);
     pendingChoice = -1;
     lastDamageTaken = 0;
 
@@ -538,10 +547,21 @@ async function boot(): Promise<void> {
       // `show` is a no-op while already visible, so these fire once per card or chest even though
       // the phase persists for however many frames the overlay is up.
       if (world.phase === RUN_PHASE_CHEST) chest.show(world);
-      else if (chest.visible) chest.hide();
+      else if (chest.visible) {
+        chest.hide();
+        state.recordHeldUpgrades(world.levelUp.stacks);
+      }
 
       if (world.phase === RUN_PHASE_LEVEL_UP) levelUp.show(world);
-      else if (levelUp.visible) levelUp.hide();
+      else if (levelUp.visible) {
+        levelUp.hide();
+        // A CARD TAKEN IS A PAGE UNLOCKED, banked the moment the overlay closes rather than at the
+        // end of the run. These two branches fire exactly once per card and per chest, and the
+        // call is a set union, so recording here costs a fourteen-int scan a few times a minute
+        // and buys the one thing that matters: a forty-minute run that ends in a tab reload still
+        // leaves the player everything it found.
+        state.recordHeldUpgrades(world.levelUp.stacks);
+      }
 
       // THE STICK IS DRIVEN BY THE WORLD PHASE, NOT BY WHETHER AN OVERLAY HAPPENS TO BE UP.
       //
@@ -568,7 +588,21 @@ async function boot(): Promise<void> {
         // running phase, and the loop only reaches here while running - so the credits are added
         // exactly once per run. Doing it inside summary.show() would pay again on every re-render.
         state.bankCredits(world.stats.credits);
-        summary.show(world, state.seed, state.settings.credits);
+        // The same once-per-run guarantee the banking relies on, and it needs it for the same
+        // reason: `recordRun` reports what was NEWLY earned, so calling it twice would announce
+        // nothing the second time and the summary would forget what it had to say.
+        state.recordHeldUpgrades(world.levelUp.stacks);
+        const earned = state
+          .recordRun({
+            // Waves are 1-based to the player: `cycleIndex` 0 is "wave 1" on the HUD.
+            wave: world.director.cycleIndex + 1,
+            runSec: world.runSec,
+            kills: world.stats.kills,
+            won: world.phase === RUN_PHASE_VICTORY,
+            tiers: world.levelUp.stacks,
+          })
+          .map((id) => HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
+        summary.show(world, state.seed, state.settings.credits, earned);
         state.set('summary');
       }
 

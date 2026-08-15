@@ -13,7 +13,9 @@
  * Everything here therefore degrades to a default rather than erroring.
  */
 
-import { HERO_CATALOG } from './core/data/heroes.js';
+import { HERO_CATALOG, type HeroId } from './core/data/heroes.js';
+import { UPGRADE_CATALOG, type UpgradeId } from './core/data/upgrades.js';
+import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
 import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
 
 /**
@@ -59,6 +61,22 @@ export interface Settings {
    * number that has stopped being an integer is a number that will one day render as 1.0000001e21.
    */
   credits: number;
+  /**
+   * EVERY CARD THIS PLAYER HAS EVER HELD, by id. The Scrapopedia shows exactly these and nothing
+   * else, so the manual is a record of what has been in your hands rather than a catalogue of what
+   * exists.
+   *
+   * It gates the MANUAL and NOT THE DECK. A run keeps offering all fourteen cards whatever this
+   * says - it has to, or a fresh save could only ever be offered the one weapon it starts with and
+   * nothing could bootstrap. Reading the pedia is the reward for playing; it is not a tech tree.
+   *
+   * Ids rather than catalog indices, here and in `unlockedHeroes`: an index is only meaningful
+   * next to the version of the table that produced it, and reordering a content array must not
+   * silently hand someone a different collection.
+   */
+  unlockedUpgrades: UpgradeId[];
+  /** Every chassis earned, by id. A chassis not in here cannot be picked. See core/data/unlocks.ts. */
+  unlockedHeroes: HeroId[];
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -66,12 +84,27 @@ export const MAX_BANKED_CREDITS = 9_999_999;
 
 const STORAGE_KEY = 'scrapyard.settings.v1';
 
+/**
+ * WHAT AN EMPTY SAVE STARTS WITH: one chassis and the gun it walks in holding.
+ *
+ * They are not two independent choices - Slate's `startingWeapon` IS the medium laser - so this is
+ * really one decision written twice, and the pair is the smallest thing the game can open with
+ * that still lets someone press New Game and read about what they are holding.
+ *
+ * Forced back in on every load rather than merely defaulted, because a save that has lost Slate is
+ * a save with no playable mech, and that has to be unreachable however the storage got mangled.
+ */
+const SEED_HERO: HeroId = 'slate';
+const SEED_UPGRADE: UpgradeId = 'w-laser-medium';
+
 const DEFAULTS: Settings = {
   lastHeroId: 0,
   dprCap: 2,
   debug: false,
   infiniteRerolls: false,
   credits: 0,
+  unlockedUpgrades: [SEED_UPGRADE],
+  unlockedHeroes: [SEED_HERO],
 };
 
 function loadSettings(): Settings {
@@ -79,7 +112,7 @@ function loadSettings(): Settings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return {
+    const s: Settings = {
       // Bounded by the CATALOG, not by a literal. This read 0..7 while sixteen chassis shipped,
       // so choosing any of the last eight silently came back as Brass on the next launch - the
       // clamp was quietly overwriting the preference it exists to restore.
@@ -90,7 +123,26 @@ function loadSettings(): Settings {
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
       // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
       credits: clampInt(parsed.credits, 0, MAX_BANKED_CREDITS, 0),
+      unlockedUpgrades: knownIds(
+        parsed.unlockedUpgrades,
+        UPGRADE_CATALOG.map((d) => d.id),
+        SEED_UPGRADE,
+      ),
+      unlockedHeroes: knownIds(
+        parsed.unlockedHeroes,
+        HERO_CATALOG.map((h) => h.id),
+        SEED_HERO,
+      ),
     };
+    // A REMEMBERED PREFERENCE CANNOT OUTRANK A LOCK. `lastHeroId` predates unlocks, so an existing
+    // save can point at a chassis this player has not earned - and so can a save whose conditions
+    // were retuned underneath it. Fall back to the first chassis they actually hold, which is
+    // Slate at worst.
+    if (!s.unlockedHeroes.includes(HERO_CATALOG[s.lastHeroId].id)) {
+      const i = HERO_CATALOG.findIndex((h) => s.unlockedHeroes.includes(h.id));
+      s.lastHeroId = i < 0 ? 0 : i;
+    }
+    return s;
   } catch {
     // Private browsing, quota, corrupt JSON - all the same answer.
     return { ...DEFAULTS };
@@ -101,6 +153,28 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number): number 
   if (typeof v !== 'number' || !Number.isFinite(v)) return fallback;
   const i = Math.round(v);
   return i < lo ? lo : i > hi ? hi : i;
+}
+
+/**
+ * A stored id list, filtered to ids the CURRENT catalog carries and deduped, with `seed` forced in.
+ *
+ * Dropping unknown ids is what makes a removed or renamed card a non-event rather than a crash on
+ * the next launch, and it means a hand-edited save cannot inject a page that does not exist. The
+ * cost is deliberate and worth stating: rename a card and everyone who had unlocked it loses it.
+ * The alternative - keeping ids nothing can resolve - is a collection that quietly accumulates
+ * ghosts, and there is no way to tell a typo from a rename after the fact.
+ */
+function knownIds<T extends string>(v: unknown, catalog: readonly T[], seed: T): T[] {
+  const out: T[] = [seed];
+  if (Array.isArray(v)) {
+    for (const raw of v as unknown[]) {
+      if (typeof raw !== 'string') continue;
+      const id = raw as T;
+      if (!catalog.includes(id) || out.includes(id)) continue;
+      out.push(id);
+    }
+  }
+  return out;
 }
 
 export class AppState {
@@ -150,6 +224,58 @@ export class AppState {
     this.settings.credits = after;
     this.saveSettings();
     return after - before;
+  }
+
+  hasUpgrade(id: UpgradeId): boolean {
+    return this.settings.unlockedUpgrades.includes(id);
+  }
+
+  hasHero(id: HeroId): boolean {
+    return this.settings.unlockedHeroes.includes(id);
+  }
+
+  /**
+   * Records every card currently held, by reading the run's own tier array.
+   *
+   * `tiers` is `world.levelUp.stacks` - tier by catalog index, 0 for never taken - so this is
+   * "whatever is in your hands right now", not "whatever was just chosen". That is what makes it
+   * safe to call OFTEN and from more than one place: it is a set union, so calling it after a
+   * level-up, after a chest and again at the end of the run records the same thing three times
+   * rather than three different things. A player who closes the tab mid-run keeps what they found.
+   *
+   * Returns the ids that were new, so a caller can say so.
+   */
+  recordHeldUpgrades(tiers: ArrayLike<number>): UpgradeId[] {
+    const found: UpgradeId[] = [];
+    for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+      if ((tiers[i] ?? 0) <= 0) continue;
+      const id = UPGRADE_CATALOG[i].id;
+      if (this.settings.unlockedUpgrades.includes(id)) continue;
+      this.settings.unlockedUpgrades.push(id);
+      found.push(id);
+    }
+    if (found.length > 0) this.saveSettings();
+    return found;
+  }
+
+  /**
+   * Tests every locked chassis against the run that just ended and banks the ones it earned.
+   *
+   * Called ONCE per run, beside `bankCredits`, for the same reason: it is cheap but it is not free
+   * and it is not idempotent in what it reports. Re-running it would re-announce chassis the player
+   * has already been told about.
+   */
+  recordRun(run: RunRecord): HeroId[] {
+    const ids = UPGRADE_CATALOG.map((d) => d.id);
+    const earned: HeroId[] = [];
+    for (const hero of HERO_CATALOG) {
+      if (this.settings.unlockedHeroes.includes(hero.id)) continue;
+      if (!meetsUnlock(hero.unlock, run, ids)) continue;
+      this.settings.unlockedHeroes.push(hero.id);
+      earned.push(hero.id);
+    }
+    if (earned.length > 0) this.saveSettings();
+    return earned;
   }
 
   saveSettings(): void {
