@@ -71,6 +71,18 @@ export interface EnemyPool {
    * does not also change how that body shoves the crowd - see FlavourDef.knockback.
    */
   readonly knockbackTake: Float32Array;
+  /**
+   * THE CHARGE - a fixed heading an enemy walks along INSTEAD of chasing the player, and the
+   * seconds left of it. Zero on everything the ordinary director spawns; written only by the
+   * SWARM special event.
+   *
+   * A unit vector rather than a target point, because a point would be reached and then what? The
+   * behaviour is "commit to a direction and cross the yard", so the direction is the state and it
+   * is decided once, at spawn, from where the body is standing to where it is aiming.
+   */
+  readonly chargeX: Float32Array;
+  readonly chargeY: Float32Array;
+  readonly chargeLeft: Float32Array;
   readonly contactDamage: Float32Array;
   /** Per-enemy contact cooldown. Replaces global i-frames: one runt must not be able to
    *  soak the player's invulnerability window on behalf of a bruiser. */
@@ -120,6 +132,9 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oSpeed = L.f32(capacity);
   const oMass = L.f32(capacity);
   const oKnockbackTake = L.f32(capacity);
+  const oChargeX = L.f32(capacity);
+  const oChargeY = L.f32(capacity);
+  const oChargeLeft = L.f32(capacity);
   const oContactDamage = L.f32(capacity);
   const oContactTimer = L.f32(capacity);
   const oSpawnId = L.u32(capacity);
@@ -163,6 +178,9 @@ export function createEnemyPool(capacity: number): EnemyPool {
     speed: f32(oSpeed),
     mass: f32(oMass),
     knockbackTake: f32(oKnockbackTake),
+    chargeX: f32(oChargeX),
+    chargeY: f32(oChargeY),
+    chargeLeft: f32(oChargeLeft),
     contactDamage: f32(oContactDamage),
     contactTimer: f32(oContactTimer),
     xpValue: u16(oXpValue),
@@ -188,6 +206,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
   denseViews.push(
     p.x, p.y, p.vx, p.vy, p.pushX, p.pushY,
     p.hp, p.maxHp, p.radius, p.speed, p.mass, p.knockbackTake,
+    p.chargeX, p.chargeY, p.chargeLeft,
     p.contactDamage, p.contactTimer,
     p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags,
     p.spawnId, p.slot,
@@ -248,6 +267,9 @@ export function allocEnemy(
   p.speed[d] = 0;
   p.mass[d] = 1;
   p.knockbackTake[d] = 1;
+  p.chargeX[d] = 0;
+  p.chargeY[d] = 0;
+  p.chargeLeft[d] = 0;
   p.contactDamage[d] = 0;
   p.contactTimer[d] = 0;
   p.xpValue[d] = 0;
@@ -301,6 +323,9 @@ export function reapEnemies(p: EnemyPool): void {
       p.speed[d] = p.speed[last];
       p.mass[d] = p.mass[last];
       p.knockbackTake[d] = p.knockbackTake[last];
+      p.chargeX[d] = p.chargeX[last];
+      p.chargeY[d] = p.chargeY[last];
+      p.chargeLeft[d] = p.chargeLeft[last];
       p.contactDamage[d] = p.contactDamage[last];
       p.contactTimer[d] = p.contactTimer[last];
       p.xpValue[d] = p.xpValue[last];

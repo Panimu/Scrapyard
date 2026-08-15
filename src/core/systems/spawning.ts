@@ -75,11 +75,12 @@
 
 import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
-import { EVENT_RING_ATTACK, pickSpecialEvent } from '../content/specialEvents.js';
+import { EVENT_RING_ATTACK, EVENT_SWARM, pickSpecialEvent } from '../content/specialEvents.js';
 import {
   ARCHETYPES,
   FLAVOURS,
   FLAV_HEAVY,
+  FLAV_SWARMER,
   FLAV_PLAIN,
   type Archetype,
 } from '../content/enemyCatalog.js';
@@ -405,12 +406,125 @@ function rollAndFire(world: World, t: DirectorTuning, index: number, mid: boolea
   if (index < 1) return;
   const id = pickSpecialEvent(world.rng.event.nextFloat());
   if (id === EVENT_RING_ATTACK) spawnSiege(world, t);
+  else if (id === EVENT_SWARM) spawnSwarm(world);
   pushEvent(world.events, EV_SPECIAL_EVENT, world.tick, id, index, mid ? 1 : 0, 0);
 }
 
 // -------------------------------------------------------------------------------------------
 // Spawning
 // -------------------------------------------------------------------------------------------
+
+
+/* ---------------------------------------------------------------------------------------------
+ * THE SWARM - a crowd of Swarmers that crosses the yard rather than converging on it.
+ *
+ * A ring is a thing you are INSIDE and have to break out of. This is the opposite shape: a knot of
+ * bodies set down off-screen in one direction, each aimed at its own point in a small circle
+ * around wherever you are standing, running at double speed for twenty seconds. They do not track
+ * you and they do not turn - they pour through the space you occupy and out the other side.
+ *
+ * THE AIM SCATTER IS THE WHOLE EFFECT. Aiming every body at the player exactly would rebuild the
+ * ring's problem in a straight line: one column, arriving as a single point, trivially sidestepped.
+ * Aiming each at its own point in a circle around you turns the same bodies into a FRONT with gaps
+ * in it - the thing you thread rather than the thing you dodge.
+ *
+ * WHAT HAPPENS AFTER TWENTY SECONDS is in enemyAI's `seek`: the charge expires, the body starts
+ * chasing like anything else, and its speed is halved once (SWARM_SLOW_FRAC). It has to be halved,
+ * because a x2 body that ACTUALLY chases you is faster than every chassis on the roster and
+ * Invariant K - kiting always works - is not negotiable. So the swarm is terrifying while it is
+ * ignoring you and ordinary the moment it turns around.
+ *
+ * EVERY DRAW COMES OUT OF `rng.event`, not `rng.spawn`. Whether a wave rolled a swarm must not
+ * change which enemy the director picks next, and that is only true if the event's own randomness
+ * lives in the event's own stream.
+ * ------------------------------------------------------------------------------------------- */
+
+/** Bodies in the swarm. Fewer than the ring's fifty: these arrive as a front, not a wall. */
+const SWARM_COUNT = 40;
+/**
+ * Where the knot is set down, measured from the mech. The same 520 the ring uses and for the same
+ * reason: the camera's furthest visible point is its corner at 500.9 u, so anything at 520 is off
+ * screen on every supported viewport. A swarm that materialised in view would be a spawn, not an
+ * arrival.
+ */
+const SWARM_ORIGIN_DIST = 520;
+/** How far bodies scatter around that point - the knot's own size before it starts moving. */
+const SWARM_ORIGIN_SCATTER = 110;
+/** Radius of the circle around the PLAYER each body picks its own aim point from. */
+const SWARM_AIM_RADIUS = 150;
+/** Seconds of committed running before the charge expires. */
+const SWARM_CHARGE_SEC = 20;
+
+function spawnSwarm(world: World): void {
+  const p = world.enemies;
+  const dir = world.director;
+  const c = dir.cycle;
+  const r = RANKS[RANK_REGULAR];
+  const a = ARCHETYPES[c.archetype];
+  const f = FLAVOURS[FLAV_SWARMER];
+  const diff = world.difficulty;
+  const rng = world.rng.event;
+
+  const px = world.player.x;
+  const py = world.player.y;
+  const typeId = c.typeByRank[RANK_REGULAR];
+
+  const hp = c.hp * r.hp * f.hp * diff.hpRamp;
+  const speed = c.speed * r.speed * f.speed * diff.speedRamp;
+  const bodyRadius = a.radius * r.size;
+  const bound = ARENA_HALF - bodyRadius;
+
+  // ONE direction for the whole swarm: it comes from somewhere, and that somewhere is a place the
+  // player can turn to face. `dcos`/`dsin`, never Math.cos/sin - core bans the built-ins because
+  // they are implementation-defined, and a run recorded on a phone has to reproduce in Node.
+  const originTurn = rng.nextFloat();
+  const ox = px + dcos(originTurn * TWO_PI) * SWARM_ORIGIN_DIST;
+  const oy = py + dsin(originTurn * TWO_PI) * SWARM_ORIGIN_DIST;
+
+  for (let i = 0; i < SWARM_COUNT; i++) {
+    // Scattered around the knot's centre. sqrt on the radius so the bodies are spread evenly over
+    // the disc rather than piled in the middle, which is what a uniform radius would do.
+    const scatterTurn = rng.nextFloat();
+    const scatterDist = Math.sqrt(rng.nextFloat()) * SWARM_ORIGIN_SCATTER;
+    const x = ox + dcos(scatterTurn * TWO_PI) * scatterDist;
+    const y = oy + dsin(scatterTurn * TWO_PI) * scatterDist;
+    // Outside the yard the body is simply not placed - the same rule the ring follows. A swarm
+    // with a thin edge is a swarm; a body standing in the void is a bug.
+    if (x < -bound || x > bound || y < -bound || y > bound) continue;
+
+    // Its own aim point, in a small circle about the player.
+    const aimTurn = rng.nextFloat();
+    const aimDist = Math.sqrt(rng.nextFloat()) * SWARM_AIM_RADIUS;
+    const ax = px + dcos(aimTurn * TWO_PI) * aimDist;
+    const ay = py + dsin(aimTurn * TWO_PI) * aimDist;
+
+    const dx = ax - x;
+    const dy = ay - y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) continue; // no direction to commit to; drop the body rather than freeze it
+
+    const handle = allocEnemy(p, typeId, FLAV_SWARMER, c.archetype, x, y, dir.nextSpawnId);
+    const d = enemyIndex(p, handle);
+    if (d < 0) return; // pool exhausted: take the short swarm rather than spinning
+
+    dir.nextSpawnId++;
+    p.hp[d] = hp;
+    p.maxHp[d] = hp;
+    p.speed[d] = speed;
+    p.radius[d] = bodyRadius;
+    p.mass[d] = a.mass * r.mass;
+    p.knockbackTake[d] = f.knockback;
+    p.contactDamage[d] = c.contactDamage * r.dmg * f.dmg;
+    p.contactTimer[d] = 0;
+    p.xpValue[d] = c.xp * r.xp;
+    p.flags[d] = 0;
+    p.chargeX[d] = dx / len;
+    p.chargeY[d] = dy / len;
+    p.chargeLeft[d] = SWARM_CHARGE_SEC;
+
+    pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, x, y, p.slot[d], typeId);
+  }
+}
 
 /* ---------------------------------------------------------------------------------------------
  * THE SIEGE - a scripted ring of Heavies, fired by the RING ATTACK special event.

@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T08:02Z',
+    title: 'THE SWARM - forty runners crossing the yard',
+    notes: [
+      'A THIRD SPECIAL EVENT. Forty Swarmers are set down off screen in one direction, and they come through at DOUBLE SPEED - faster than any mech on the roster.',
+      'THEY ARE NOT CHASING YOU. Each one picks its own point in a small circle around where you were standing and runs at THAT, in a straight line, for twenty seconds. So the swarm arrives as a front with gaps in it rather than a column aimed at your head, and it pours through the space you are in and out the other side.',
+      'THEN THEY TURN AROUND, and lose half their speed doing it. A thing that fast could never be outrun once it started actually following you, so the trade is fixed: terrifying while it ignores you, ordinary once it does not.',
+      'They are yellow-tinged, they die fast - 60% of the usual hull - and there are enough of them that the ones you miss are the problem.',
+      'IT IS SLIGHTLY MORE COMMON THAN THE RING ATTACK: about 2.4 swarms an average run against the ring\'s 2.0. The ring\'s odds are exactly what they were - the quiet rolls paid for the new event, not the ring.',
+    ],
+  },
+  {
     at: '2026-08-15T07:51Z',
     title: 'Special Events: the ring can come for you at any time now',
     notes: [

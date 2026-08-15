@@ -37,7 +37,7 @@
  * anything catch you.
  */
 
-import { ARENA_HALF, RELOCATE_RADIUS } from '../constants.js';
+import { ARENA_HALF, RELOCATE_RADIUS, SWARM_SLOW_FRAC } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { pushOutOfScenery } from '../content/scenery.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD, markEnemyDead } from '../entity/enemyPool.js';
@@ -58,7 +58,7 @@ export const KILL_REASON_KILLED = 0;
 export const KILL_REASON_DESPAWNED = 1;
 
 export function updateEnemyAI(world: World, dt: number): void {
-  seek(world);
+  seek(world, dt);
   separate(world, dt);
   integrate(world, dt);
   relocateStragglers(world);
@@ -74,7 +74,7 @@ export function updateEnemyAI(world: World, dt: number): void {
  * orbit. Heavy things are heavy because they are SLOW, not because they turn badly - turn lag on
  * a horde reads as bugged pathing, not weight.
  */
-function seek(world: World): void {
+function seek(world: World, dt: number): void {
   const p = world.enemies;
   const px = world.player.x;
   const py = world.player.y;
@@ -84,10 +84,32 @@ function seek(world: World): void {
   const vy = p.vy;
   const speed = p.speed;
   const flags = p.flags;
+  const chargeLeft = p.chargeLeft;
   const n = p.count;
 
   for (let d = 0; d < n; d++) {
     if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    // A CHARGING BODY IGNORES THE PLAYER ENTIRELY. It walks the heading it was given until the
+    // clock runs out, which is what makes a swarm read as something that WASHES OVER you rather
+    // than something that converges on you - the crowd crosses the yard and you are somewhere in
+    // the middle of it.
+    const left = chargeLeft[d];
+    if (left > 0) {
+      const rest = left - dt;
+      if (rest > 0) {
+        chargeLeft[d] = rest;
+        vx[d] = p.chargeX[d] * speed[d];
+        vy[d] = p.chargeY[d] * speed[d];
+        continue;
+      }
+      // THE CHARGE ENDS ONCE. Clearing the timer before halving the speed is what stops this
+      // branch running twice and quartering it - the whole reason the slow lives here, on the
+      // transition, rather than being re-applied while `left <= 0`.
+      chargeLeft[d] = 0;
+      speed[d] *= SWARM_SLOW_FRAC;
+    }
+
     const dx = px - x[d];
     const dy = py - y[d];
     const l2 = dx * dx + dy * dy;

@@ -27,18 +27,36 @@
  * ---------------------------------------------------------------------------------------------
  * Rings used to fire at the start of cycle 3 and cycle 6: exactly TWO a run, always the same two
  * waves. The new system rolls on waves 2 through 8 (never the first - see below), twice each, so
- * a 960 s run offers 7 x 2 = 14 slots. A ring weight of 1 against `nothing` at 6 is p = 1/7 a
- * slot, and 14/7 = 2.0 rings in an average run. The number a player experiences is unchanged; WHEN
- * it happens no longer is, which is the entire point.
+ * a 960 s run offers 7 x 2 = 14 slots. The ring's share of the table is 1/7 of a slot, and
+ * 14/7 = 2.0 rings in an average run. The number a player experiences is unchanged; WHEN it
+ * happens no longer is, which is the entire point.
  *
  * NEVER ON THE FIRST WAVE. A run opens with three seconds of empty yard to feel the controls and
  * a first cycle you are meant to learn the game in. Fifty Heavies at 00:00 is not a difficulty
  * spike, it is a different game, and the rule is cheaper to state here than to discover.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * ADDING AN EVENT RE-SLICES THE PIE, SO THE OLD SLICE HAS TO BE PROTECTED DELIBERATELY
+ * ---------------------------------------------------------------------------------------------
+ * The Swarm arrived wanting to be "slightly more common than the ring", which is one number - but
+ * naively adding it at weight 2 against nothing:6, ring:1 would have quietly cut the ring from
+ * 14.3% of a slot to 11.1%. Nothing about the ring was meant to change.
+ *
+ * So the whole table was scaled up and `nothing` absorbed the difference:
+ *
+ *     nothing 24    68.6%   was 85.7%
+ *     ring     5    14.3%   UNCHANGED - still 2.0 rings in an average run
+ *     swarm    6    17.1%   slightly more than the ring, as asked
+ *
+ * The rule this is an instance of: when a new event is added, `nothing` pays for it. Every other
+ * weight in the table is a frequency somebody already decided on, and re-slicing them by accident
+ * is how a table like this stops meaning anything.
  */
 
 export const EVENT_NOTHING = 0;
 export const EVENT_RING_ATTACK = 1;
-export type SpecialEventId = 0 | 1;
+export const EVENT_SWARM = 2;
+export type SpecialEventId = 0 | 1 | 2;
 
 export interface SpecialEventDef {
   readonly id: SpecialEventId;
@@ -56,11 +74,12 @@ export interface SpecialEventDef {
  * upgrade catalog and the event kinds live under.
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
-  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 6 }),
-  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 1 }),
+  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 24 }),
+  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 5 }),
+  Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 6 }),
 ]);
 
-/** Summed once at module init; the draw is one multiply and a linear walk over two entries. */
+/** Summed once at module init; the draw is one multiply and a linear walk over the table. */
 export const SPECIAL_EVENT_TOTAL_WEIGHT = SPECIAL_EVENTS.reduce((n, e) => n + e.weight, 0);
 
 /**

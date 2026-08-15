@@ -181,6 +181,16 @@ export const CHOOSE_REROLL = -4;
  */
 export const SPLASH_RIM_FRAC = 0.4;
 
+/**
+ * What a SWARM body's speed is multiplied by when its charge ends.
+ *
+ * A Swarmer runs at x2 while it is crossing the yard, which is faster than any hero and is only
+ * survivable because it is not aiming at you. Once it turns and starts actually chasing, that
+ * speed would break Invariant K - kiting has to work - so the same body that was terrifying for
+ * twenty seconds becomes an ordinary-speed pursuer for the rest of its life.
+ */
+export const SWARM_SLOW_FRAC = 0.5;
+
 /** Length of World.scratch.targets: the largest top-K any fire pattern may request. */
 export const MAX_TARGETS = 8;
 /** Length of PlayerState.traitScratch. Slot meanings are documented per trait in data/traits.ts. */
