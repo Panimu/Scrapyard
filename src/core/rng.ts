@@ -25,6 +25,12 @@ export const RNG_SALT_UPGRADE = 0x27d4eb2f;
  * would silently reshuffle the entire spawn sequence and make two runs incomparable.
  */
 export const RNG_SALT_WEAPON = 0x9e3779b1;
+/**
+ * Special events. Its OWN stream for the reason every stream here has one: an event roll must not
+ * shift which enemy the director picks next, and adding a second event to the table must not
+ * change the horde a seed produces. Both would be true if this drew from `spawn`.
+ */
+export const RNG_SALT_EVENT = 0x85ebca6b;
 
 /**
  * splitmix32: seeds the four sfc32 words from one 32-bit seed. Its job is avalanche - seeds 1
@@ -170,6 +176,8 @@ export interface RngStreams {
   readonly upgrade: Rng;
   /** Weapon-side randomness. Isolated so a weapon cannot perturb spawns or loot. */
   readonly weapon: Rng;
+  /** Special-event draws, one per wave start and one per wave + 30 s. See content/specialEvents. */
+  readonly event: Rng;
 }
 
 export function createRngStreams(seed: number): RngStreams {
@@ -178,6 +186,7 @@ export function createRngStreams(seed: number): RngStreams {
     loot: new Rng((seed ^ RNG_SALT_LOOT) | 0),
     upgrade: new Rng((seed ^ RNG_SALT_UPGRADE) | 0),
     weapon: new Rng((seed ^ RNG_SALT_WEAPON) | 0),
+    event: new Rng((seed ^ RNG_SALT_EVENT) | 0),
   };
 }
 

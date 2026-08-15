@@ -14,6 +14,7 @@ import {
   DT,
   EVENT_NAMES,
   EV_BOSS_SPAWNED,
+  EV_SPECIAL_EVENT,
   EV_LEVEL_UP,
   EV_PHASE_CHANGED,
   EV_UPGRADE_TAKEN,
@@ -27,6 +28,7 @@ import {
   hashWorld,
   type World,
 } from '../core/index.js';
+import { EVENT_NOTHING, SPECIAL_EVENTS } from '../core/content/specialEvents.js';
 import { botInput, createBot } from './botPolicy.js';
 
 export interface HarnessOptions {
@@ -227,6 +229,15 @@ function drainEvents(
     if (!quiet) {
       if (kind === EV_BOSS_SPAWNED) {
         console.log(`  [${clock(world.runSec)}]  ** BOSS ** ${world.director.cycle.name} hp=${fixed(r.d[i], 0)}`);
+      } else if (kind === EV_SPECIAL_EVENT) {
+        // Only the ones that DID something. Every wave rolls twice and most of those rolls are
+        // `nothing`; printing fourteen "nothing" lines a run would bury the two that matter.
+        if (r.a[i] !== EVENT_NOTHING) {
+          const name = SPECIAL_EVENTS[r.a[i]]?.name ?? `event ${r.a[i]}`;
+          console.log(
+            `  [${clock(world.runSec)}]  ** ${name.toUpperCase()} ** wave ${r.b[i]}${r.c[i] === 1 ? ' +30s' : ' start'}`,
+          );
+        }
       } else if (kind === EV_PHASE_CHANGED) {
         const phase = RUN_PHASE_NAMES[r.a[i]] ?? String(r.a[i]);
         if (phase === 'DEAD' || phase === 'VICTORY' || phase === 'RUNNING') {

@@ -75,6 +75,7 @@
 
 import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
+import { EVENT_RING_ATTACK, pickSpecialEvent } from '../content/specialEvents.js';
 import {
   ARCHETYPES,
   FLAVOURS,
@@ -101,7 +102,7 @@ import {
   enemyHandleAt,
   enemyIndex,
 } from '../entity/enemyPool.js';
-import { EV_BOSS_SPAWNED, EV_ENEMY_SPAWNED, pushEvent } from '../events/ring.js';
+import { EV_BOSS_SPAWNED, EV_ENEMY_SPAWNED, EV_SPECIAL_EVENT, pushEvent } from '../events/ring.js';
 import { PI, TWO_PI, dcos, dsin } from '../math/trig.js';
 import type { Vec2 } from '../math/vec2.js';
 import type { Rng } from '../rng.js';
@@ -135,12 +136,19 @@ export function updateSpawning(world: World, dt: number): void {
     dir.cycleIndex = index;
     // Zero, not `interval`: the elite phase opens with an arrival rather than with a wait.
     dir.eliteTimer = 0;
-    // The set-piece waves. Fired from inside the rollover branch, which runs exactly once per
-    // cycle change, so the siege cannot repeat and needs no "already done" flag.
-    if (SIEGE_CYCLES.includes(index)) spawnSiege(world, t);
+    // THE WAVE'S OPENING ROLL. Inside the rollover branch, which runs exactly once per cycle
+    // change, so it needs no "already done" flag - unlike the mid-wave roll below.
+    rollAndFire(world, t, index, false);
   }
   const cycleTime = runSec - index * t.cycleSeconds;
   dir.cyclePhase = cycleTime >= t.bossFromSec ? 2 : cycleTime >= t.eliteFromSec ? 1 : 0;
+
+  // THE WAVE'S SECOND ROLL, thirty seconds in. A threshold test stays true for the rest of the
+  // wave, so it carries a marker in exactly the shape `bossCycle` uses below.
+  if (dir.eventCycle !== index && cycleTime >= t.specialEventMidSec) {
+    dir.eventCycle = index;
+    rollAndFire(world, t, index, true);
+  }
 
   // --- local pressure ---------------------------------------------------------------------
   dir.localPressure = measureLocalPressure(world);
@@ -377,24 +385,46 @@ export function rollRingPosition(
 }
 
 // -------------------------------------------------------------------------------------------
+// Special events
+// -------------------------------------------------------------------------------------------
+
+/**
+ * Draws this wave's special event and makes it happen.
+ *
+ * NEVER ON THE FIRST WAVE, and the guard is here rather than in the table because it is a rule
+ * about the SCHEDULE rather than about any one event: a run's opening cycle is where the game is
+ * learned, and nothing in the table should be able to opt into it.
+ *
+ * AN INELIGIBLE WAVE COSTS THE STREAM NOTHING - the guard returns before the draw - so the
+ * sequence of draws is exactly the sequence of eligible slots, and "what did wave 4 roll" is
+ * answerable from a seed alone.
+ *
+ * An event is pushed for `nothing` too. See EV_SPECIAL_EVENT.
+ */
+function rollAndFire(world: World, t: DirectorTuning, index: number, mid: boolean): void {
+  if (index < 1) return;
+  const id = pickSpecialEvent(world.rng.event.nextFloat());
+  if (id === EVENT_RING_ATTACK) spawnSiege(world, t);
+  pushEvent(world.events, EV_SPECIAL_EVENT, world.tick, id, index, mid ? 1 : 0, 0);
+}
+
+// -------------------------------------------------------------------------------------------
 // Spawning
 // -------------------------------------------------------------------------------------------
 
 /* ---------------------------------------------------------------------------------------------
- * THE SIEGE - a scripted ring of Heavies at the top of waves 4 and 7.
+ * THE SIEGE - a scripted ring of Heavies, fired by the RING ATTACK special event.
  *
  * Nothing else in this file is scripted. The director is a feedback loop - it measures the
- * pressure near the player and opens the tap - and a loop cannot produce a MOMENT. Two of them
- * are hand-placed for exactly that reason: at 06:00 and at 12:00 a ring closes around wherever
- * the player happens to be standing, and it is the same ring every run, in the same place
- * relative to them, at the same second.
+ * pressure near the player and opens the tap - and a loop cannot produce a MOMENT.
  *
- * WAVES 4 AND 7 IN THE PLAYER'S COUNTING, cycle index 3 and 6 in the code's. The HUD and the
- * ladder are both zero-based; the waves as a player counts them are not.
+ * WHEN IT HAPPENS IS NO LONGER WRITTEN HERE. It used to be two cycle indices in a literal, which
+ * meant every run on every seed took its rings at 06:00 and 12:00. It is now one entry in the
+ * SPECIAL_EVENTS table, drawn twice a wave - see content/specialEvents.ts for the weights and for
+ * why `nothing` is an entry rather than an absence. The ring itself is unchanged: fifty Heavies,
+ * set down around wherever the player is standing, at the same radius, in the same second.
  * ------------------------------------------------------------------------------------------- */
 
-/** Cycle INDICES, so 3 and 6 are the fourth and seventh waves. */
-const SIEGE_CYCLES: readonly number[] = [3, 6];
 /** Bodies in the ring. */
 const SIEGE_COUNT = 50;
 /**

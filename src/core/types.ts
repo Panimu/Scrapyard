@@ -233,6 +233,14 @@ export interface SpawnDirector {
   eliteTimer: number;
   /** Cycle index whose boss has already walked in, or -1. Exactly one boss per cycle. */
   bossCycle: number;
+  /**
+   * Cycle index whose MID-WAVE special event has already rolled, or -1.
+   *
+   * The opening roll needs no marker - it lives inside the rollover branch, which runs exactly
+   * once per cycle change - but the 30 s one is a threshold test that is true for the rest of the
+   * wave, so it needs the same "already done" shape `bossCycle` uses.
+   */
+  eventCycle: number;
   /** How many bosses this run has produced. */
   bossSpawned: number;
   /** EnemyHandle of the MOST RECENT boss, or NULL_HANDLE. Older bosses are not tracked - they

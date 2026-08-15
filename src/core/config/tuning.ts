@@ -111,6 +111,12 @@ export interface DirectorTuning {
   readonly eliteFromSec: number;
   /** Seconds into a cycle at which that cycle's single boss walks in. */
   readonly bossFromSec: number;
+  /**
+   * Seconds into a wave that its SECOND special-event roll happens. The first is the rollover
+   * itself. 30 against a 120 s cycle puts it inside the regulars-only opening rather than on top
+   * of the elite phase, so a set-piece and the elites are two separate things to deal with.
+   */
+  readonly specialEventMidSec: number;
 
   /**
    * Live PRESSURE the director tries to hold near the player: `base + perCycle * cycleIndex`.
@@ -264,6 +270,7 @@ const STEERING: SteeringTuning = {
 const DIRECTOR: DirectorTuning = {
   cycleSeconds: 120,
   eliteFromSec: 60,
+  specialEventMidSec: 30,
   bossFromSec: 90,
   // DOUBLED, 14/4.5 -> 28/9: the target rises 28 -> 91 across the eight cycles instead of
   // 14 -> 45.5. Pressure is the only lever for headcount - `maxSpawnsPerSec` is a rate limit, not

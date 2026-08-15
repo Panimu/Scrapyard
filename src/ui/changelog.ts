@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T07:51Z',
+    title: 'Special Events: the ring can come for you at any time now',
+    notes: [
+      'EVERY WAVE NOW ROLLS FOR A SPECIAL EVENT TWICE - once as it begins and once thirty seconds in. The first wave never rolls; that one is still yours to settle into.',
+      'THERE ARE TWO EVENTS SO FAR. Most rolls come up NOTHING. The other is the RING ATTACK - the ring of Heavies closing around wherever you happen to be standing, exactly as it was.',
+      'IT USED TO BE AN APPOINTMENT. The ring arrived at 6:00 and again at 12:00, in every run, on every seed, forever. Now it can arrive at any wave but the first, at the top of it or half a minute in, and you will not know which run is the quiet one until it is over.',
+      'THE ODDS ARE SET SO IT HAPPENS AS OFTEN AS IT DID: two rings in an average run. Measured over 40 full runs it came out at 1.8, and the spread is the point - six of those runs saw none at all, and one saw five.',
+    ],
+  },
+  {
     at: '2026-08-15T07:13Z',
     title: 'Heavies walk faster and shrug off shells',
     notes: [

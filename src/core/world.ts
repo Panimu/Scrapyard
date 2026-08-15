@@ -180,6 +180,7 @@ function createDirector(): SpawnDirector {
     eliteTimer: 0,
     // -1, not 0: cycle 0's boss has not spawned yet, and 0 is a real cycle index.
     bossCycle: -1,
+    eventCycle: -1,
     bossSpawned: 0,
     bossHandle: NULL_HANDLE,
     cycle: createResolvedCycle(),

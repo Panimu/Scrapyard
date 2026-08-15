@@ -94,6 +94,16 @@ export const EV_BARREL_GREW = 24;
  */
 export const EV_UPGRADE_REROLLED = 25;
 
+/**
+ * A wave rolled a SPECIAL EVENT. Payload: (event id, cycle index, 1 if this was the wave's
+ * mid-point roll rather than its opening one, 0).
+ *
+ * Pushed for `nothing` as well as for a set-piece, deliberately: the timeline is meant to answer
+ * "what did this wave roll", and an entry that only appears when something happens cannot
+ * distinguish a quiet wave from a broken roller.
+ */
+export const EV_SPECIAL_EVENT = 26;
+
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
   'ENEMY_SPAWNED',
@@ -122,6 +132,7 @@ export const EVENT_NAMES: readonly string[] = [
   'CHEST_CLOSED',
   'BARREL_GREW',
   'UPGRADE_REROLLED',
+  'SPECIAL_EVENT',
 ];
 
 export interface EventRing {
