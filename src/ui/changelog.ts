@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T19:15Z',
+    title: 'The Cyber Chest calls out what you just hit',
+    notes: [
+      'EVERY RESULT HAS A NAME NOW, and it lands above the reels the instant the third one stops - ODDMENTS, MATCHED SET, DOUBLE UP, PAIR AND SPARE, and MOTHERLODE for three of a kind.',
+      'THE NAMES DESCRIBE THE COMBINATION rather than just shouting louder. The old words were four ways of saying "bigger", which told you nothing you could not read off the number underneath; these tell you WHY it paid what it did, so the machine teaches its own rules while you watch it.',
+      'The two best results say so in the type: a pair and spare glows, and a motherlode burns.',
+      'It sits above the reels rather than over them, so the symbols that earned the word are still there to look at while you read it.',
+    ],
+  },
+  {
     at: '2026-08-15T19:02Z',
     title: 'The missile chassis get their swinging barrel back',
     notes: [

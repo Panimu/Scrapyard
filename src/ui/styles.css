@@ -2224,6 +2224,45 @@ body {
 }
 .chest__tile img { width: 100%; height: 100%; display: block; }
 
+/*
+ * THE HEADLINE, above the reels. It reserves its full height from the very first frame - an
+ * `opacity` reveal rather than an insertion - so the reels never slide down the screen at the
+ * moment the player is watching the third one land.
+ */
+.chest__name {
+  min-height: 30px;
+  margin-bottom: 2px;
+  text-align: center;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 30px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transform: scale(.92);
+  white-space: nowrap;
+}
+.chest__name--in {
+  opacity: 1;
+  transform: none;
+  /* Overshoots slightly on the way in - the word arrives with the reel rather than fading up. */
+  transition: opacity .16s ease, transform .26s cubic-bezier(.2, 1.5, .4, 1);
+}
+/* The two escalations. A pair-and-spare glows; a motherlode glows harder and warms the letters. */
+.chest__name--big {
+  text-shadow: 0 0 14px rgba(240, 180, 41, .55);
+}
+.chest__name--jackpot {
+  color: #ffdf7a;
+  text-shadow: 0 0 10px rgba(255, 223, 122, .9), 0 0 30px rgba(240, 180, 41, .6);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chest__name--in {
+    transition: none;
+  }
+}
+
 .chest__payout {
   text-align: center;
   font-size: 19px;

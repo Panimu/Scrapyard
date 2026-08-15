@@ -147,18 +147,44 @@ const SPIN_EASE = 'cubic-bezier(.3,.32,.42,1)';
  */
 const CRAWL_EASE = 'cubic-bezier(.26,.4,.06,1)';
 
-const PAYOUT_WORD: readonly string[] = [
+/**
+ * WHAT THE MACHINE JUST DID, in one word, indexed by payout.
+ *
+ * They used to be a severity ladder - SALVAGE, GOOD HAUL, STRONG HAUL, RARE HAUL - which is four
+ * ways of saying "bigger" and tells a player nothing they cannot already read off the number
+ * underneath. Each name now describes the COMBINATION that produced it, so the word teaches the
+ * payout table:
+ *
+ *   1  ODDMENTS        three different symbols, and not even the same kind.  56.7% of spins
+ *   2  MATCHED SET     three different, but all guns or all systems.         11.8%
+ *   3  DOUBLE UP       a pair.                                              16.7%
+ *   4  PAIR AND SPARE  a pair, and the odd one out is the same kind.         13.6%
+ *   5  MOTHERLODE      three of a kind.                                       1.3%
+ *
+ * (Frequencies for a mid-run pool of nine symbols, which is what a chest actually finds; they are
+ * exact rather than sampled - the reels draw uniformly, so the distribution is enumerable.)
+ *
+ * ODDMENTS IS THE ONE WORTH GETTING RIGHT, because it is what more than half of all chests say. It
+ * has to be honest without being a boo: a word like SCRAPS reads as a failure, and the machine
+ * still handed over an upgrade. "Oddments" is a shop word for a tray of unrelated small things,
+ * which is exactly what three mismatched symbols are.
+ */
+const PAYOUT_NAME: readonly string[] = [
   '',
-  'SALVAGE',
-  'GOOD HAUL',
-  'STRONG HAUL',
-  'RARE HAUL',
-  'JACKPOT',
+  'ODDMENTS',
+  'MATCHED SET',
+  'DOUBLE UP',
+  'PAIR AND SPARE',
+  'MOTHERLODE',
 ];
 
 export class ChestOverlay {
   readonly element: HTMLDivElement;
 
+  private readonly nameEl: HTMLDivElement;
+  /** This spin's headline and how hard to shout it. Decided in `show`, revealed on reel three. */
+  private name = '';
+  private nameHeat = 0;
   private readonly reelEls: HTMLDivElement[] = [];
   /** The clipping frames. The STRIP moves; the WINDOW is what reacts when the strip stops. */
   private readonly windowEls: HTMLDivElement[] = [];
@@ -181,6 +207,15 @@ export class ChestOverlay {
     head.className = 'chest__head';
     head.innerHTML = `<div class="eyebrow">Cyber Chest</div>`;
     el.appendChild(head);
+
+    // ABOVE THE REELS, AND IN FLOW RATHER THAN OVER THEM. The name is the loudest thing on this
+    // screen and it must not cover the symbols that earned it - a player who reads MOTHERLODE and
+    // cannot see the three matching icons behind it has been told the answer without being shown
+    // the working. It reserves its own height from the start (see .chest__name), so the reels do
+    // not jump down the screen when it arrives.
+    this.nameEl = document.createElement('div');
+    this.nameEl.className = 'chest__name';
+    el.appendChild(this.nameEl);
 
     const reels = document.createElement('div');
     reels.className = 'chest__reels';
@@ -283,6 +318,17 @@ export class ChestOverlay {
     // Last resort, and it should be unreachable: a chest that landed on nothing, held by a run
     // carrying nothing. A salvage symbol rather than a blank tile.
     if (pool.length === 0) pool.push(FILLER[OFFER_CREDITS].icon);
+
+    // THE NAME IS DECIDED HERE AND SHOWN LATER. Everything it depends on is already settled - this
+    // is the same "the sim rolled it before the first frame" property the whole overlay rests on.
+    this.name = ascending
+      ? 'ASCENSION'
+      : FILLER[chest.grants[0]] !== undefined
+        ? 'SALVAGE'
+        : (PAYOUT_NAME[chest.payout] ?? 'HAUL');
+    this.nameHeat = ascending || chest.payout >= 5 ? 2 : chest.payout >= BIG_PAYOUT ? 1 : 0;
+    this.nameEl.textContent = '';
+    this.nameEl.className = 'chest__name';
 
     this.payoutEl.textContent = '';
     this.payoutEl.classList.remove('chest__payout--in');
@@ -439,12 +485,28 @@ export class ChestOverlay {
     if (r === 1 && heat > HEAT_NONE) this.reelsEl.classList.add('chest__reels--anticipating');
     if (r === 2) {
       this.reelsEl.classList.remove('chest__reels--anticipating');
+      // WITH THE LAST REEL, NOT AFTER IT. The grants list still waits out PAYOUT_DELAY_MS, so the
+      // beat is spent on the detail rather than on the headline - the word lands on the same frame
+      // as the symbol that earned it, which is the moment the player is already looking at.
+      this.revealName();
       // THE FUSS, and it is the whole machine rather than the one window: the frame lights and
       // holds while the payout line and the grants arrive under it. A jackpot additionally kicks
       // the machine, because five power-ups should not look like four.
       if (payout >= 5 || ascended) this.reelsEl.classList.add('chest__reels--jackpot');
       else if (payout >= BIG_PAYOUT) this.reelsEl.classList.add('chest__reels--big');
     }
+  }
+
+  /**
+   * Puts the headline up. Idempotent, because reduced motion reaches it through `settle` without
+   * ever running a landing.
+   */
+  private revealName(): void {
+    if (this.nameEl.textContent === this.name) return;
+    this.nameEl.textContent = this.name;
+    this.nameEl.classList.add('chest__name--in');
+    if (this.nameHeat === 2) this.nameEl.classList.add('chest__name--jackpot');
+    else if (this.nameHeat === 1) this.nameEl.classList.add('chest__name--big');
   }
 
   /** Every class the spin adds, off. Called on show and on hide, so a re-open starts cold. */
@@ -464,19 +526,23 @@ export class ChestOverlay {
     if (this.settled) return;
     this.settled = true;
 
+    this.revealName();
+
     const chest = world.chest;
     const catalog = world.upgradeCatalog;
     const n = chest.payout;
 
     const ascended = chest.ascension >= 0 ? catalog[chest.ascension] : undefined;
     const salvageOnly = n > 0 && FILLER[chest.grants[0]] !== undefined;
+    // The line under the reels is the DETAIL now - the headline above them carries the name, and
+    // repeating it here would be the same word twice on one screen.
     this.payoutEl.textContent =
       ascended !== undefined
         ? `TIER 8 — ${upgradeNameAt(ascended, WEAPON_ASCENDED_TIER)}`
         : salvageOnly
-          ? 'NOTHING LEFT TO FIT — SALVAGE'
+          ? 'Nothing left to fit'
         : n > 0
-          ? `${PAYOUT_WORD[n] ?? 'HAUL'} — ${n} power-up${n === 1 ? '' : 's'}`
+          ? `${n} power-up${n === 1 ? '' : 's'}`
           : 'Empty';
     this.payoutEl.classList.add('chest__payout--in');
 
