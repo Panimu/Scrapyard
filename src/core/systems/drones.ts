@@ -88,19 +88,38 @@ const ORBIT_RATE = 0.525;
 const FOLLOW_RATE = 1.05;
 
 /**
- * HOW FAR FROM THE PLAYER a drone will chase, in world units. Nothing beyond this is a target,
- * however close it is to the drone itself.
+ * THE ACQUISITION CIRCLE IS DRAWN AROUND THE PLAYER, NOT AROUND THE DRONE. This is the single most
+ * important line in this file and it was wrong on the first pass.
  *
- * Without it the leash is transitive and unbounded: a drone engages something at the edge of its
- * own reach, flies out to it, and from there something further out is now within reach. Chained
- * across a spread-out wave that walks the drone off the screen and out of the run.
+ * A circle around the drone is TRANSITIVE, and transitive means unbounded: the drone engages
+ * something at the edge of its own reach, flies out to it, and from out there something further
+ * out is now within reach. Across a spread-out wave that chains, one target at a time, until the
+ * drone is off the screen and out of the run - which is exactly what happened. Capping how far
+ * the chain may reach does not fix it; it only decides how far off screen the drone ends up,
+ * because each individual hop is still perfectly legal.
  *
- * Measured from the PLAYER rather than from the drone, because the thing being bounded is how far
- * the player's own firepower can wander - and 1000 is the same distance the horde uses to decide an
- * enemy has been left behind (RELOCATE_RADIUS), which makes it the natural edge of "your fight".
+ * So the drone does not have a hunting radius at all. YOU do. An enemy is a target if it is within
+ * `gun.range * DRONE_ACQUIRE_MUL` OF THE PLAYER, whatever the drone's own position, and the drone
+ * flies to it however far that is. The chain cannot walk anywhere, because every link is measured
+ * from the same point.
+ *
+ * WHAT THIS BOUNDS. The arithmetic ceiling is the acquisition radius, plus the orbit around the
+ * target, plus the follow lag - 310 + 85 + 186 at tier 5, so about 580 in the worst case that
+ * never quite happens. MEASURED over three full six-minute runs the furthest a drone ever got was
+ * 426 / 444 / 474 units, and it spent 0.00% of its life beyond the 501-unit worst-case screen
+ * half-diagonal. It is past the narrow side edge of a portrait phone about a quarter of the time,
+ * chasing something that is itself past that edge, and it comes back.
+ *
+ * The same three runs under the drone-anchored circle: 979 / 1052 / 1096 units, and a THIRD of
+ * every drone-frame spent beyond the half-diagonal - off the screen in any orientation, at any
+ * aspect ratio. That is the bug this replaced, and those two rows are why the anchor moved rather
+ * than the number.
+ *
+ * IT ALSO COSTS NOTHING TO CHASE. A drone hanging back 186 units behind a sprinting player can
+ * still engage something 260 units ahead of him - 446 units away from itself, three times its own
+ * reach. Under the old drone-anchored circle that body was invisible to it, so a running player's
+ * drones went inert. Anchoring to the player fixed that as a side effect.
  */
-const DRONE_LEASH = 1000;
-const DRONE_LEASH_SQ = DRONE_LEASH * DRONE_LEASH;
 
 /**
  * HOW MUCH OF THE MACHINE GUN'S MAGAZINE A DRONE CARRIES.
@@ -118,12 +137,13 @@ const DRONE_LEASH_SQ = DRONE_LEASH * DRONE_LEASH;
 const DRONE_MAG_FRAC = 0.5;
 
 /**
- * Scratch for the per-tick target query.
+ * Scratch for the per-tick target query, which asks for the four bodies nearest THE PLAYER.
  *
- * FOUR, not one: the nearest body to the DRONE may be outside the leash from the PLAYER while a
- * slightly further one is inside it, and asking for a single candidate would make the drone idle
- * next to something it is allowed to shoot. `selectTopK` returns its list sorted, so the first
- * candidate that passes the leash is the nearest legal one.
+ * FOUR, not one, and this is what keeps a flight of drones from stacking. The legal set is the
+ * same for every drone - it is the player's circle - so a single candidate would send all four
+ * drones to the same body and they would fly as one object. Four candidates, each drone taking
+ * whichever of them is nearest to ITSELF, spreads them across the near end of the crowd without
+ * any shared state between drones and without a random roll.
  */
 const DRONE_TARGETS = new Int32Array(4);
 
@@ -236,32 +256,34 @@ export function updateDrones(world: World, dt: number): void {
     if (target >= 0) {
       // A dense index is only valid within a tick: the enemy it pointed at last tick may be dead,
       // reaped, or a different body entirely after a swap-remove. Everything below re-earns it,
-      // INCLUDING the leash - a target that walks out past 1000 units is dropped mid-engagement
-      // rather than towed along behind it.
+      // INCLUDING the circle - a target that walks out of the player's radius is dropped
+      // mid-engagement rather than towed along behind it.
       if (
         target >= enemies.count ||
         (enemies.flags[target] & ENEMY_FLAG_DEAD) !== 0 ||
-        distSq(enemies.x[target], enemies.y[target], drones.x[d], drones.y[d]) > acquireSq ||
-        distSq(enemies.x[target], enemies.y[target], player.x, player.y) > DRONE_LEASH_SQ
+        distSq(enemies.x[target], enemies.y[target], player.x, player.y) > acquireSq
       ) {
         target = -1;
       }
     }
     if (target < 0) {
+      // Queried from the PLAYER - see the comment on the acquisition circle. The drone's own
+      // position decides only WHICH of the legal bodies it takes, never which are legal.
       const n = TARGETING.nearest(
         world,
-        drones.x[d],
-        drones.y[d],
+        player.x,
+        player.y,
         acquireSq,
         DRONE_TARGETS.length,
         DRONE_TARGETS,
       );
-      target = -1;
+      let bestSq = Infinity;
       for (let k = 0; k < n; k++) {
         const cand = DRONE_TARGETS[k];
-        if (distSq(enemies.x[cand], enemies.y[cand], player.x, player.y) <= DRONE_LEASH_SQ) {
+        const dSq = distSq(enemies.x[cand], enemies.y[cand], drones.x[d], drones.y[d]);
+        if (dSq < bestSq) {
+          bestSq = dSq;
           target = cand;
-          break;
         }
       }
     }

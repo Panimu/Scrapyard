@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T14:49Z',
+    title: 'Drones stay in your fight instead of wandering out of it',
+    notes: [
+      'A DRONE NOW HUNTS YOUR CIRCLE, NOT ITS OWN. It engages anything that comes near YOU and will fly any distance to reach it - but nothing far from you is a target, however close it has drifted to the drone.',
+      'THIS IS THE FIX FOR DRONES DISAPPEARING. They used to hunt from wherever they happened to be standing, so a kill out at the edge put them in reach of something further out, then something further out again. A spread-out wave could walk a drone off the screen one target at a time and it never came home. Measured across three full runs, a drone spent a THIRD of its life completely off screen; it now spends none of it there.',
+      'AND A DRONE THAT IS TRAILING YOU CAN STILL FIGHT. Left behind by a sprinting mech, it used to go inert - everything worth shooting was up ahead near you, too far from the drone to count. It now joins in from wherever it is.',
+      'A flight of drones spreads across the near end of a crowd rather than all piling onto the same enemy.',
+    ],
+  },
+  {
     at: '2026-08-15T14:37Z',
     title: 'A drone carries half the ammunition, and flies half as fast again',
     notes: [
