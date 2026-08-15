@@ -1257,6 +1257,204 @@ body {
   font-size: 18px;
 }
 
+/* -------------------------------------------------------------------------------------------
+ * Scrapopedia - the field manual. Two views in one overlay; both scroll.
+ * ----------------------------------------------------------------------------------------- */
+
+.pedia {
+  gap: 12px;
+  justify-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: calc(var(--sa-top) + 16px);
+}
+
+.pedia__head {
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.pedia__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 0;
+}
+
+.pedia__group {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 6px 0 2px;
+}
+
+.pedia__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* A row rather than a tile: the NAME is what is being chosen, and a name needs width. */
+.pedia__entry {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* Which pool, in the same two colours the level-up cards and the chest reels already use. */
+.pedia__entry--weapon { border-left-color: var(--accent); }
+.pedia__entry--passive { border-left-color: #4fb8ff; }
+.pedia__entry:active { background: var(--panel-2); }
+
+.pedia__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  image-rendering: auto;
+}
+
+.pedia__name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pedia__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pedia__page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pedia__page-icon {
+  width: 52px;
+  height: 52px;
+}
+
+.pedia__page-name {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.pedia__page-kind {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.pedia__page-kind--weapon { color: var(--accent); }
+.pedia__page-kind--passive { color: #4fb8ff; }
+
+.pedia__desc {
+  margin: 2px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.pedia__section {
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* The one sentence this screen exists for. */
+.pedia__aims {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.pedia__note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+/* AN ORDERED LIST WITH NO VISIBLE NUMBERS. The order is real - you take these rungs in sequence -
+   so the element stays an <ol> for anything reading the page aloud. But the digits it draws would
+   be 1..6 against tiers 2..7, which is a number that is WRONG, on the one screen built to explain
+   things. Position says the order; the marker says nothing. */
+.pedia__tiers {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-faint);
+}
+
+.pedia__tiers li {
+  padding-left: 14px;
+  position: relative;
+}
+
+.pedia__tiers li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 7px;
+  height: 1px;
+  background: var(--ink-faint);
+  opacity: 0.7;
+}
+
+.pedia__asc-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.pedia__req {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.pedia__back {
+  flex: 0 0 auto;
+  width: min(100%, 340px);
+  margin: 10px auto calc(var(--sa-bottom) + 8px);
+  height: 50px;
+  font-size: 17px;
+  position: sticky;
+  bottom: 0;
+}
+
+@media (min-width: 700px) {
+  .pedia__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* ============================================================================================
  * Summary
  * ========================================================================================== */

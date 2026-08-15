@@ -1,0 +1,352 @@
+/**
+ * THE SCRAPOPEDIA - what every gun and every system actually does, read from the title screen.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY IT EXISTS, GIVEN THE CARDS
+ * ---------------------------------------------------------------------------------------------
+ * A level-up card is read in about four seconds with a horde closing in, which is why its text
+ * carries no numbers and says what happens rather than how much (data/upgrades.ts). That is the
+ * right trade at that moment and the wrong one everywhere else: the single most confusing thing in
+ * this game is that every weapon picks its target by a DIFFERENT RULE, and a card has no room to
+ * say so. The Cannon insists on the biggest thing in range while the Machine Gun finishes the
+ * smallest; the missile racks do not aim at all and fire where you last MOVED; the artillery does
+ * not even look at the horde.
+ *
+ * None of that is discoverable from a card, all of it changes how you play, and this is the screen
+ * with time to explain it.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT NEVER RESTATES A NUMBER, AND IT NEVER RESTATES A CARD
+ * ---------------------------------------------------------------------------------------------
+ * The same rule the cards follow applies here: no magnitudes, only counts of projectiles. A
+ * reference screen is exactly where the temptation to print the whole stat block lives, and a
+ * stat block is the thing most likely to go quietly stale.
+ *
+ * For the same reason the description and the tier ladder are READ FROM UPGRADE_CATALOG rather
+ * than retyped. The only text this file owns is the part the catalog has no room for - how the
+ * weapon chooses what to shoot, and what that costs you. If a card's wording changes, this screen
+ * changes with it; if a weapon's ladder is reordered, this screen reorders too.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * TWO VIEWS, ONE OVERLAY
+ * ---------------------------------------------------------------------------------------------
+ * An INDEX of every card, guns then systems, and a DETAIL for whichever was tapped. They are the
+ * same element with one swapped child rather than two overlays, so Back is a single behaviour and
+ * the screen cannot end up showing both or neither.
+ */
+
+import { UPGRADE_CATALOG, type UpgradeDef, type UpgradeId } from '../core/index.js';
+import { spriteUrl } from '../render/assets.js';
+
+/**
+ * The part the catalog cannot say. Keyed by card id so a new card is a compile error here rather
+ * than a silently blank page.
+ *
+ *   aims   HOW IT CHOOSES. The single most useful sentence about any weapon in this game.
+ *   notes  what follows from that - the cost, the quirk, the thing that surprises people.
+ */
+interface ManualEntry {
+  readonly aims: string;
+  readonly notes: readonly string[];
+}
+
+const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
+  'w-cannon': {
+    aims: 'The HIGHEST-HP enemy in range. Not the nearest - the biggest.',
+    notes: [
+      'It commits. The turret swings onto whatever it has chosen and holds fire until it is laid on, so a target behind you costs shots while the barrel comes round. Watching where the barrel goes is how you know what it has decided.',
+      'The thing with the most hit points is usually at the BACK, behind the chaff that is actually biting you. That is the whole geometry of the weapon: the shell travels through the crowd to reach it, which is why punching through an extra body matters so much once it can.',
+      'One heavy shell at a time, and it shoves what it hits. Nothing else in the yard moves a body the way this does.',
+    ],
+  },
+  'w-laser-short': {
+    aims: 'The WEAKEST enemy in range - it finishes rather than starts.',
+    notes: [
+      'A beam burns continuously into one body until that body dies or leaves. There is no shot to miss and no travel time; if the line is clear, the damage is already landing.',
+      'Scrap blocks it. A beam refuses a shot it cannot make cleanly rather than firing into a wreck, which also means it is not paying heat for nothing.',
+      'The shortest reach of the four, so it only works if you are willing to be close.',
+    ],
+  },
+  'w-laser-medium': {
+    aims: 'The WEAKEST enemy in range - it finishes rather than starts.',
+    notes: [
+      'A beam burns continuously into one body until that body dies or leaves. There is no shot to miss and no travel time; if the line is clear, the damage is already landing.',
+      'Scrap blocks it, and it runs hot for what it does. Heat is the whole limiter on every laser: fire until it cuts out, then wait while it sheds.',
+      'The only weapon in the game that can become something else. Finish it, hold Targeting Optics, and a Cyber Chest can turn it into the CHAIN LASER - a beam that jumps from what it is burning to the nearest body not already in the chain, for as long as its total length still fits inside its reach.',
+    ],
+  },
+  'w-laser-long': {
+    aims: 'The WEAKEST enemy in range - it finishes rather than starts.',
+    notes: [
+      'A beam burns continuously into one body until that body dies or leaves. There is no shot to miss and no travel time; if the line is clear, the damage is already landing.',
+      'The longest reach in the game, and the steepest heat bill to go with it. It fires in short bursts and spends most of a fight cooling, so what it is really buying you is the right to pick a target from a long way off.',
+      'Scrap blocks it, and at this range there is a lot of scrap between you and the far end of the beam.',
+    ],
+  },
+  'w-missile-short': {
+    aims: 'NOTHING. The rack fires along the direction you last MOVED.',
+    notes: [
+      'This is the weapon that makes running a decision. It has no turret and picks no target - the volley leaves along your own heading, so kiting backwards means firing backwards, and turning to face something is how you aim it.',
+      'Once away, each missile steers weakly toward whatever body happens to be nearest to ITSELF, re-judged the whole way. So they fan out and find their own victims rather than converging on one.',
+      'Two warheads at a time, slow to rearm, and each one hits hard enough to matter.',
+    ],
+  },
+  'w-missile-long': {
+    aims: 'NOTHING. The rack fires along the direction you last MOVED.',
+    notes: [
+      'Same rule as the short rack: no turret, no target, the volley goes where you were going. Turning to face something is how you aim it.',
+      'Weaker homing than the short rack and a much longer fuse, so these travel a long way before they come down. They are the rack you fire into ground you have not reached yet.',
+      'Three missiles to start with, and a finished rack throws five.',
+    ],
+  },
+  'w-machine-gun': {
+    aims: 'The WEAKEST enemy in range, very close in.',
+    notes: [
+      'The shortest reach of any weapon here. It only does anything at all when you are inside the crowd, which is exactly where its magazine is most likely to run dry.',
+      'A magazine is the third kind of limiter in the game and the one that hurts. A cooldown paces you evenly and heat trades burst against silence every few seconds; a belt gives you a long uninterrupted stream and then takes the weapon away entirely. Every round is a slice of that silence you have already bought.',
+      'It fires two rounds at a time at the lowest-HP body it can see, which makes it a finisher - it cleans up what the heavier guns leave standing.',
+    ],
+  },
+  'w-artillery': {
+    aims: 'NOTHING AT ALL. Shells fall on random ground near you.',
+    notes: [
+      'It is the only weapon that never consults the horde. It does not pick a target, it does not need one, and it will happily bombard an empty yard. Think of it as weather you fight underneath rather than a gun you fire.',
+      'Shells land in a ring of ground around you - past the bodies actually touching you, onto the ground the next wave is crossing. You cannot aim it, but you can decide where you are standing when it lands.',
+      'THE FUSE IS THE WEAPON. A marker sits on the ground before each shell arrives, which is time enough to read it and choose whether to walk into that circle or away from it. The blast is strongest at the centre and weakest at the rim.',
+    ],
+  },
+  'p-range': {
+    aims: 'Every weapon reaches further.',
+    notes: [
+      'Reach decides what a weapon can even consider shooting, so this is worth most to the guns that are starved of targets and least to the ones already swimming in them.',
+      'It is also the price of the Chain Laser. For a chaining beam, reach stops meaning "how far can it hit" and becomes "how much beam is there" - every extra unit is another jump it can afford.',
+    ],
+  },
+  'p-damage': {
+    aims: 'Every weapon hits harder.',
+    notes: [
+      'The straightforward one, and it applies to everything you are holding at once.',
+      'It costs the lasers something. Raw power on a beam runs it hotter - that is the trade the whole laser ladder is built around - so this makes them hit harder and cut out sooner. Capacity and dispersion are how you buy that back.',
+    ],
+  },
+  'p-rate': {
+    aims: 'Everything fires more often.',
+    notes: [
+      'Three limiters, three effects: shorter cooldowns for the guns, faster heat dispersion for the beams, and a quicker reload for anything with a magazine. Whatever you are holding, some part of this card is doing something.',
+      'Careful with a magazine weapon: firing faster empties a belt sooner, so the rate on its own gives back in silence what it bought in burst. The reload half is what actually makes it worth taking there.',
+    ],
+  },
+  'p-speed': {
+    aims: 'The chassis moves faster.',
+    notes: [
+      'It raises how fast you can go AND how fast you get there, so the mech feels the same and is simply quicker. A higher top speed on its own would just make it float.',
+      'Everything in this game is downstream of being able to leave: the horde is escapable by walking, gems have to be walked onto, and the missile racks fire wherever you are heading.',
+    ],
+  },
+  'p-armour': {
+    aims: 'Takes something off every hit you take.',
+    notes: [
+      'A flat subtraction, so it is worth the same against a nibble and against a slam - which means it is worth EVERYTHING against a swarm of small things and very little against one big one.',
+      'It can never absorb a hit completely. Something always gets through.',
+    ],
+  },
+  'p-shield': {
+    aims: 'A rim that eats one hit outright, whatever the size of it.',
+    notes: [
+      'The opposite shape to plating. Plating shaves a little off everything; a rim stops one hit dead - so it is worth almost nothing against a nibble and everything against the thing that would have killed you.',
+      'Breaking one burns whatever broke it, and buys a moment where nothing can touch you at all. In a crowd that window absorbs the whole simultaneous pile-on rather than the single bite that broke the rim.',
+      'They come back on their own, and a finished shield carries a second rim that recharges in its turn.',
+    ],
+  },
+};
+
+export class ScrapopediaScreen {
+  readonly element: HTMLDivElement;
+
+  private readonly indexEl: HTMLDivElement;
+  private readonly detailEl: HTMLDivElement;
+  private readonly backBtn: HTMLButtonElement;
+
+  /** Which card is open, or -1 for the index. The only state this screen has. */
+  private open = -1;
+
+  constructor(private readonly onExit: () => void) {
+    const el = document.createElement('div');
+    el.className = 'overlay pedia';
+    el.hidden = true;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', 'Scrapopedia');
+
+    const head = document.createElement('div');
+    head.className = 'pedia__head';
+    head.innerHTML = `<div class="eyebrow">Field manual</div>
+      <h1 class="pedia__title">Scrapopedia</h1>`;
+    el.appendChild(head);
+
+    this.indexEl = document.createElement('div');
+    this.indexEl.className = 'pedia__index';
+    el.appendChild(this.indexEl);
+
+    this.detailEl = document.createElement('div');
+    this.detailEl.className = 'pedia__detail';
+    this.detailEl.hidden = true;
+    el.appendChild(this.detailEl);
+
+    this.backBtn = document.createElement('button');
+    this.backBtn.type = 'button';
+    this.backBtn.className = 'btn btn--primary pedia__back';
+    this.backBtn.textContent = 'Back';
+    // ONE BACK BUTTON FOR TWO VIEWS. From a page it returns to the index; from the index it
+    // leaves. A second button would be a second thing to keep in sync with `open`.
+    this.backBtn.addEventListener('click', () => {
+      if (this.open >= 0) this.showIndex();
+      else this.onExit();
+    });
+    el.appendChild(this.backBtn);
+
+    this.buildIndex();
+    this.element = el;
+  }
+
+  show(): void {
+    this.showIndex();
+    this.element.hidden = false;
+  }
+
+  hide(): void {
+    this.element.hidden = true;
+  }
+
+  /**
+   * Built once. Guns first, then systems, each group behind its own heading - the two halves
+   * compete for different slots in a run and a player thinking about one is not thinking about
+   * the other.
+   */
+  private buildIndex(): void {
+    for (const kind of ['weapon', 'passive'] as const) {
+      const label = document.createElement('div');
+      label.className = 'pedia__group';
+      label.textContent = kind === 'weapon' ? 'Weapons' : 'Systems';
+      this.indexEl.appendChild(label);
+
+      const grid = document.createElement('div');
+      grid.className = 'pedia__grid';
+      for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+        const def = UPGRADE_CATALOG[i];
+        if (def.kind !== kind) continue;
+        grid.appendChild(this.entryButton(def, i));
+      }
+      this.indexEl.appendChild(grid);
+    }
+  }
+
+  private entryButton(def: UpgradeDef, index: number): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `pedia__entry pedia__entry--${def.kind}`;
+
+    const icon = document.createElement('img');
+    icon.className = 'pedia__icon';
+    icon.src = spriteUrl(`icon_${def.id}`);
+    icon.alt = '';
+    icon.decoding = 'async';
+
+    const name = document.createElement('span');
+    name.className = 'pedia__name';
+    name.textContent = def.name;
+
+    b.append(icon, name);
+    b.addEventListener('click', () => this.showDetail(index));
+    return b;
+  }
+
+  private showIndex(): void {
+    this.open = -1;
+    this.detailEl.hidden = true;
+    this.indexEl.hidden = false;
+    this.backBtn.textContent = 'Back';
+    this.element.scrollTop = 0;
+  }
+
+  private showDetail(index: number): void {
+    const def = UPGRADE_CATALOG[index];
+    if (def === undefined) return;
+    this.open = index;
+    const manual = MANUAL[def.id];
+
+    this.indexEl.hidden = true;
+    this.detailEl.hidden = false;
+    this.backBtn.textContent = 'All entries';
+    this.element.scrollTop = 0;
+
+    this.detailEl.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'pedia__page-head';
+    const icon = document.createElement('img');
+    icon.className = 'pedia__page-icon';
+    icon.src = spriteUrl(`icon_${def.id}`);
+    icon.alt = '';
+    const title = document.createElement('div');
+    title.className = 'pedia__page-name';
+    title.textContent = def.name;
+    const kind = document.createElement('div');
+    kind.className = `pedia__page-kind pedia__page-kind--${def.kind}`;
+    kind.textContent = def.kind === 'weapon' ? 'Weapon' : 'System';
+    const words = document.createElement('div');
+    words.append(title, kind);
+    head.append(icon, words);
+    this.detailEl.appendChild(head);
+
+    // The card's own words, so the two can never say different things.
+    this.detailEl.appendChild(para('pedia__desc', def.description));
+
+    if (manual !== undefined) {
+      this.detailEl.appendChild(section('Targeting'));
+      this.detailEl.appendChild(para('pedia__aims', manual.aims));
+      for (const n of manual.notes) this.detailEl.appendChild(para('pedia__note', n));
+    }
+
+    // THE LADDER, READ FROM THE CATALOG. Tier 1 is the unlock and says nothing worth a row, so the
+    // list starts at the first rung that changes something.
+    this.detailEl.appendChild(section('As it levels'));
+    const list = document.createElement('ol');
+    list.className = 'pedia__tiers';
+    for (let t = 1; t < def.tiers.length; t++) {
+      const li = document.createElement('li');
+      li.textContent = def.tiers[t];
+      list.appendChild(li);
+    }
+    this.detailEl.appendChild(list);
+
+    const asc = def.ascension;
+    if (asc !== undefined) {
+      this.detailEl.appendChild(section('Tier 8'));
+      const name = document.createElement('div');
+      name.className = 'pedia__asc-name';
+      name.textContent = asc.name;
+      this.detailEl.append(name, para('pedia__note', asc.description));
+      const req = UPGRADE_CATALOG.find((d) => d.id === asc.requires);
+      this.detailEl.appendChild(
+        para(
+          'pedia__req',
+          `Needs this weapon finished and ${req?.name ?? asc.requires} held. Only a Cyber Chest can grant it.`,
+        ),
+      );
+    }
+  }
+}
+
+function para(cls: string, text: string): HTMLParagraphElement {
+  const p = document.createElement('p');
+  p.className = cls;
+  p.textContent = text;
+  return p;
+}
+
+function section(text: string): HTMLDivElement {
+  const d = document.createElement('div');
+  d.className = 'pedia__section';
+  d.textContent = text;
+  return d;
+}

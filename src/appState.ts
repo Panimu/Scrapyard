@@ -17,9 +17,9 @@ import { HERO_CATALOG } from './core/data/heroes.js';
 import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
 
 /**
- * `title`, `levelSelect`, `settings` and `upgrades` join the list for the same reason
- * `heroSelect` was already on it: they are places the player can be that the simulation has no
- * opinion about. None of them steps the world.
+ * `title`, `levelSelect`, `settings`, `upgrades` and `scrapopedia` join the list for the same
+ * reason `heroSelect` was already on it: they are places the player can be that the simulation has
+ * no opinion about. None of them steps the world.
  */
 export type AppPhase =
   | 'boot'
@@ -28,6 +28,7 @@ export type AppPhase =
   | 'levelSelect'
   | 'settings'
   | 'upgrades'
+  | 'scrapopedia'
   | 'running'
   | 'paused'
   | 'summary';

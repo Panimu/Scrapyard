@@ -2,7 +2,7 @@
  * THE TITLE SCREEN. Where the game starts, and the only screen that exists purely to say what
  * the game is called.
  *
- * It is deliberately three buttons and a name. A title screen earns its place by being the thing
+ * It is deliberately four buttons and a name. A title screen earns its place by being the thing
  * a player sees before they have decided to play - it has to load instantly, say what this is,
  * and get out of the way. Everything that could live here and does not (a hero preview, a run
  * history, an animated background) is a thing that would delay the first tap.
@@ -26,6 +26,7 @@ export class TitleScreen {
   constructor(actions: {
     onNewGame: () => void;
     onUpgrades: () => void;
+    onScrapopedia: () => void;
     onSettings: () => void;
   }) {
     const el = document.createElement('div');
@@ -63,6 +64,8 @@ export class TitleScreen {
 
     menu.appendChild(button('New Game', 'btn btn--primary title__go', actions.onNewGame));
     menu.appendChild(button('Upgrades', 'btn', actions.onUpgrades));
+    // Above Settings on purpose: it is about the GAME, and Settings is about the device.
+    menu.appendChild(button('Scrapopedia', 'btn', actions.onScrapopedia));
     menu.appendChild(button('Settings', 'btn', actions.onSettings));
     el.appendChild(menu);
 

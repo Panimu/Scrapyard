@@ -43,6 +43,7 @@ import { HeroSelect } from './ui/heroSelect.js';
 import { TitleScreen } from './ui/titleScreen.js';
 import { LevelSelect } from './ui/levelSelect.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
+import { ScrapopediaScreen } from './ui/scrapopediaScreen.js';
 import { UpgradesScreen } from './ui/upgradesScreen.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
@@ -217,6 +218,7 @@ async function boot(): Promise<void> {
   const title = new TitleScreen({
     onNewGame: () => showScreen('heroSelect'),
     onUpgrades: () => showScreen('upgrades'),
+    onScrapopedia: () => showScreen('scrapopedia'),
     onSettings: () => showScreen('settings'),
   });
 
@@ -240,6 +242,7 @@ async function boot(): Promise<void> {
   );
 
   const upgrades = new UpgradesScreen(() => showScreen('title'));
+  const scrapopedia = new ScrapopediaScreen(() => showScreen('title'));
 
   const settings = new SettingsScreen(state.settings, {
     onBack: () => showScreen('title'),
@@ -298,6 +301,7 @@ async function boot(): Promise<void> {
     heroSelect.element,
     levelSelect.element,
     upgrades.element,
+    scrapopedia.element,
     settings.element,
     title.element,
     // LAST, so it covers the settings screen that can open it as well as the pause menu.
@@ -369,7 +373,13 @@ async function boot(): Promise<void> {
    * this that had each entry point doing that by hand grew a missed hide every time a screen was
    * added. This closes over all of them once.
    */
-  type MenuScreen = 'title' | 'heroSelect' | 'levelSelect' | 'settings' | 'upgrades';
+  type MenuScreen =
+    | 'title'
+    | 'heroSelect'
+    | 'levelSelect'
+    | 'settings'
+    | 'upgrades'
+    | 'scrapopedia';
 
   function showScreen(screen: MenuScreen): void {
     state.set(screen);
@@ -386,6 +396,7 @@ async function boot(): Promise<void> {
     levelSelect.hide();
     settings.hide();
     upgrades.hide();
+    scrapopedia.hide();
 
     // The banked total is read fresh on every showing rather than cached: a run finishes between
     // one visit and the next, and a stale figure on the screen whose whole subject is that
@@ -408,6 +419,9 @@ async function boot(): Promise<void> {
       case 'upgrades':
         upgrades.setCredits(state.settings.credits);
         upgrades.show();
+        break;
+      case 'scrapopedia':
+        scrapopedia.show();
         break;
     }
   }

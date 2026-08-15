@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T09:30Z',
+    title: 'THE SCRAPOPEDIA - a field manual on the title screen',
+    notes: [
+      'A NEW ENTRY ON THE TITLE SCREEN. Every weapon and every system, tap one for a page on what it actually does.',
+      'IT EXISTS TO ANSWER ONE QUESTION: how does this thing choose what to shoot? Every weapon in the game answers differently and a level-up card has no room to say so. The Cannon insists on the BIGGEST enemy in range while the Machine Gun finishes the smallest. The missile racks do not aim at all - they fire along the direction you last moved, so turning to face something is how you point them. The artillery never even looks at the horde.',
+      'None of that is on a card, all of it changes how you play, and now there is somewhere with room to explain it.',
+      'Each page also lists what the thing does as it levels, and names the tier 8 for the weapon that has one.',
+    ],
+  },
+  {
     at: '2026-08-15T09:04Z',
     title: 'Cards say what they do, not by how much',
     notes: [
