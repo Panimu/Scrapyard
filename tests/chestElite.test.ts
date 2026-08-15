@@ -7,8 +7,8 @@
  *     tables rather than of any branch in the spawner;
  *   - killing one leaves a Cyber Chest, which crosses three systems (damage writes the flavour
  *     into the kill feed, the feed survives the body being reaped, pickups reads it back);
- *   - the event is drawn exactly half as often as the ring, which is the one thing about this
- *     table that was specified as a relationship rather than picked as a number.
+ *   - the event is actually on the weights table and stays rarer than the ring - the two things
+ *     about its frequency that would be BUGS rather than balance opinions. See the note below.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -128,19 +128,21 @@ describe('the Chest Elite event', () => {
   const weightOf = (id: number): number =>
     SPECIAL_EVENTS.find((e) => e.id === id)?.weight ?? 0;
 
-  it('is drawn exactly half as often as the ring attack', () => {
-    expect(weightOf(EVENT_CHEST_ELITE) * 2).toBe(weightOf(EVENT_RING_ATTACK));
+  it('is on the table at all, and is rarer than the ring it walks in beside', () => {
+    // ALL THAT IS LEFT TO PIN, and getting here took three tries. The assertions that used to be
+    // in this block were, in order: the ring's absolute share; the swarm's ratio to the ring; and
+    // the chest elite being exactly half the ring. Every one of them was deliberately overridden
+    // by the balance pass that came next, which is exactly what a weights table is FOR.
+    //
+    // The last of those looked safe - it was a RELATIONSHIP the event was specified with rather
+    // than a number somebody picked - and it still went, because a flat "+2 to both" is not a
+    // scaling and there was no reason it should have been. So the lesson is the stronger one: a
+    // frequency in this table is a design opinion, and a test that asserts one is charging rent
+    // on a decision rather than protecting an invariant.
+    //
+    // What survives is only what would be a BUG: an event with no weight never fires, and a chest
+    // that arrived more often than the hardest set-piece in the game would be a different feature.
+    expect(weightOf(EVENT_CHEST_ELITE)).toBeGreaterThan(0);
+    expect(weightOf(EVENT_CHEST_ELITE)).toBeLessThan(weightOf(EVENT_RING_ATTACK));
   });
-
-  // NOTHING ELSE IN THIS TABLE IS PINNED, AND THAT IS THE SECOND ATTEMPT AT GETTING THIS RIGHT.
-  //
-  // Two earlier assertions lived here - the ring's absolute share, then the swarm's ratio to it -
-  // and BOTH were deliberately overridden by the next balance pass, which is exactly what a
-  // weights table is for. A test that fails every time somebody tunes the thing it is testing is
-  // not protecting a decision, it is charging rent on one.
-  //
-  // The half-the-ring rule above survives because it is a RELATIONSHIP that was specified rather
-  // than a number that was chosen: the chest elite has no frequency of its own, it has half of
-  // whatever the ring's is. If that ever stops being true it will be because somebody meant it,
-  // and then this test is the right thing to be looking at.
 });

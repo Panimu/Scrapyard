@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:54Z',
+    title: 'More rings, and more chests to chase',
+    notes: [
+      'RING ATTACKS AND CHEST ELITES BOTH TURN UP MORE OFTEN. A little over two rings and a little over one chest elite in an average run, up from two and one.',
+      'The chest elite gained the most. It used to arrive exactly half as often as a ring attack; it now arrives closer to six times for every ten rings, so a run that goes the distance can expect more than one.',
+      'The swarm did not change. It is a slightly smaller share of the table only because there is more else in it.',
+    ],
+  },
+  {
     at: '2026-08-15T15:49Z',
     title: 'THE SWARM is what the yard does now',
     notes: [

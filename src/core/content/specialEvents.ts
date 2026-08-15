@@ -79,28 +79,37 @@
  *   about, and it is the intrusive edit - which is why it is not something to reach for while
  *   trying to change the pace.
  *
- * Both have now been used, in that order:
+ * Both have now been used, and the whole history is worth keeping in one place because the SHAPE
+ * of the table is what a reader needs, not the current column:
  *
- *                  shipped   +chest    nothing 35   swarm 30
- *     nothing        24        43          35          30
- *     ring            5        10          10          10
- *     swarm           6        12          12          30
- *     chest elite     -         5           5           5
- *     ---------------------------------------------------------
- *     total          35        70          62          75
+ *                  shipped   +chest   nothing 35   swarm 30   ring +2
+ *     nothing        24        43         35          30         30
+ *     ring            5        10         10          10         12
+ *     swarm           6        12         12          30         30
+ *     chest elite     -         5          5           5          7
+ *     -------------------------------------------------------------
+ *     total          35        70         62          75         79
  *
- *     nothing     30   40.0%   was 56.5%
- *     swarm       30   40.0%   was 19.4%   - now level with `nothing`, and six times the ring
- *     ring        10   13.3%   was 16.1%
- *     chest elite  5    6.7%   was  8.1%   - still exactly half the ring
+ *     nothing     30   38.0%   was 40.0%
+ *     swarm       30   38.0%   was 40.0%   - still the event a run is mostly made of
+ *     ring        12   15.2%   was 13.3%
+ *     chest elite  7    8.9%   was  6.7%
  *
- * THE SWARM IS NOW WHAT THE SPECIAL-EVENT SYSTEM IS FOR. Over a run's 14 slots it lands 5.6 times
- * against the ring's 1.9 - fifty swarmers a throw, so roughly 280 extra fast bodies across a run -
- * where before it was 2.7. That is a deliberate change to the texture of a run rather than to its
- * pace, and it is the first edit here that moves an event's own weight.
+ * THE SWARM IS WHAT THE SPECIAL-EVENT SYSTEM IS FOR. Over a run's 14 slots it lands 5.3 times
+ * against the ring's 2.1 - fifty swarmers a throw, so roughly 265 extra fast bodies across a run.
+ * A wave gets a set-piece 62% of the time; `nothing` stopped being the majority entry two edits
+ * ago, which it had been since the table was written.
  *
- * A wave now gets a set-piece 60% of the time. `nothing` stopped being the majority entry at this
- * edit, which had been true since the table was written.
+ * ---------------------------------------------------------------------------------------------
+ * THE CHEST ELITE IS NO LONGER HALF THE RING, AND THAT IS DELIBERATE
+ * ---------------------------------------------------------------------------------------------
+ * It ARRIVED as "half the chance of a ring attack" - a relationship rather than a number, which is
+ * why it was the one thing about this table worth a test. Both were then raised by two, which is
+ * a flat step rather than a scaling, so 7 against 12 is 58%.
+ *
+ * The relationship is gone rather than broken: the chest elite now has a frequency of its own, and
+ * the next person to move the ring should not feel obliged to drag it along. Recorded here because
+ * a reader who finds 7 beside 12 would otherwise reasonably assume one of them is a typo.
  */
 
 export const EVENT_NOTHING = 0;
@@ -127,9 +136,9 @@ export interface SpecialEventDef {
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
   Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 30 }),
-  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 10 }),
+  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 12 }),
   Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 30 }),
-  Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 5 }),
+  Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 7 }),
 ]);
 
 /** Summed once at module init; the draw is one multiply and a linear walk over the table. */
