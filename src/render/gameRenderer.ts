@@ -80,6 +80,7 @@ import {
   MISSILE_SHORT_SCALE_X,
   MISSILE_SHORT_SCALE_Y,
   CONSUMABLE_SCALE,
+  DRONE_SCALE,
   SCRAP_SRC_RADIUS,
   SHELL_SCALE,
   TURRET_SCALE,
@@ -103,10 +104,14 @@ const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;
 /** DRONE_CAP is 8. Sixteen is slack for a second drone source. */
 const DRONE_SPRITES = 16;
-/** Drone art: the missile sprite, shrunk and tinted. See the pool's construction for why. */
-const DRONE_SCALE_X = 0.5;
-const DRONE_SCALE_Y = 0.5;
-const DRONE_TINT = 0xffd24a;
+/**
+ * A DRONE SPINS, IT DOES NOT POINT. The sprite is circular (tools/make-drone.mjs) precisely so its
+ * facing carries no information, so the renderer gives it a steady rotation of its own rather than
+ * aiming it along its travel. That reads as rotors turning; aiming a round thing at its heading
+ * would be invisible, and aiming a POINTED thing at a heading that sweeps a full circle every three
+ * seconds is what the missile-sprite stand-in got wrong.
+ */
+const DRONE_SPIN_RATE = 3.4;
 /** Scrap on screen. The camera reaches 500.9 u against a 768 u scenery cell, so it can see at
  *  most a 3x3 block of cells and therefore at most nine piles. Sixteen is slack. */
 const SCRAP_SPRITES = 16;
@@ -333,13 +338,9 @@ export class GameRenderer {
     // the only thing on screen that says where the shot is going before it arrives.
     this.playerLayer.addChild(this.legs, this.mech, this.barrel, this.shieldRim);
 
-    // DRONES WEAR THE MISSILE SPRITE, tinted. They are the one thing in this game with no art of
-    // its own: it is the only small airframe in the atlas and at drone scale it reads as a little
-    // machine rather than as a warhead. This is a stand-in and should be replaced by a drawn sprite
-    // (tools/make-*.mjs) the moment drones are worth one.
     this.drones = new SpritePool({
       capacity: DRONE_SPRITES,
-      texture: tex.missile,
+      texture: tex.drone,
       label: 'drones',
     });
 
@@ -803,14 +804,12 @@ export class GameRenderer {
       const s = pool.acquire();
       if (s === undefined) break;
 
-      const dx = p.x[d] - p.prevX[d];
-      const dy = p.y[d] - p.prevY[d];
       s.position.set(x, y);
-      // A stationary drone keeps whatever heading it had rather than snapping to zero, which a
-      // near-zero delta would otherwise do every time it reached its orbit point exactly.
-      if (dx !== 0 || dy !== 0) s.rotation = Math.atan2(dy, dx) + ROT_OFFSET.shell;
-      s.scale.set(DRONE_SCALE_X, DRONE_SCALE_Y);
-      s.tint = DRONE_TINT;
+      // Each drone spins on its own phase, keyed off its slot, so four of them are not a
+      // synchronised formation of identical objects.
+      s.rotation = this.clock * DRONE_SPIN_RATE + d * 1.31;
+      s.scale.set(DRONE_SCALE);
+      s.tint = 0xffffff;
       s.alpha = 1;
     }
 

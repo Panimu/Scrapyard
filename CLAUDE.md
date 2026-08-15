@@ -154,5 +154,6 @@ npm run loadout     all 8 weapons at T7, damage share by gun   }
 npm run mechs       redraw the chassis sprites
 npm run fence       redraw the perimeter fence
 npm run scrap       redraw the scenery
+npm run drone       redraw the drone
 npm run icons       redraw the upgrade card icons
 ```

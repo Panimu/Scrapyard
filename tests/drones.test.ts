@@ -16,6 +16,7 @@ import { DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { WEAPON_CATALOG, DRONE, MACHINE_GUN } from '../src/core/content/weaponCatalog.js';
+import { resolveWeaponStats } from '../src/core/data/stats.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
 import { DRONE_STATE_ENGAGE, DRONE_STATE_ESCORT } from '../src/core/entity/dronePool.js';
@@ -73,6 +74,13 @@ function addEnemy(w: World, x: number, y: number, hp: number): number {
 
 const dist = (ax: number, ay: number, bx: number, by: number): number =>
   Math.hypot(ax - bx, ay - by);
+
+/** Tier 5: three drones at once, which is the fewest that can show one behaving unlike another. */
+function tierFive(w: World): void {
+  w.levelUp.stacks[UPGRADE_CATALOG.findIndex((d) => d.id === 'w-drone')] = 5;
+  w.weapons[0].level = 5;
+  resolveWeaponStats(DRONE, w.heroes[0], 5, w.levelUp.stacks, w.upgradeCatalog, w.weapons[0].stats);
+}
 
 describe('the drone bay', () => {
   it('deploys its first drone immediately and its next on the build timer', () => {
@@ -148,6 +156,56 @@ describe('the drone bay', () => {
     ticks(w, 240);
     expect(w.drones.state[0]).toBe(DRONE_STATE_ESCORT);
     expect(dist(w.drones.x[0], w.drones.y[0], w.player.x, w.player.y)).toBeLessThan(90);
+  });
+
+  it('gives every drone its own magazine, and spending one does not touch another', () => {
+    const w = droneWorld();
+    tierFive(w);
+    ticks(w, Math.ceil(w.weapons[0].stats.cooldown / DT) * 2 + 20);
+    expect(w.drones.count).toBe(3);
+
+    // Read from a deployed drone rather than from MACHINE_GUN.base: the gun tiers WITH the bay, so
+    // a tier-5 drone carries the Machine Gun's tier-5 magazine and not its base 200.
+    const full = w.drones.ammo[0];
+    expect(full).toBeGreaterThan(MACHINE_GUN.base.ammoCapacity);
+    for (let d = 0; d < 3; d++) expect(w.drones.ammo[d]).toBe(full);
+
+    // THREE DELIBERATELY DIFFERENT MAGAZINES, then one body they can all reach.
+    //
+    // Distinct starting values are what makes this a test of independence rather than of
+    // arithmetic: a shared pool would converge them, and three counters that keep their own offsets
+    // while all three drones shoot the same enemy cannot be one number in disguise.
+    const before = [full, full - 40, full - 90];
+    for (let d = 0; d < 3; d++) w.drones.ammo[d] = before[d];
+
+    addEnemy(w, 120, 0, 1_000_000);
+    ticks(w, 200);
+
+    const spent = [0, 1, 2].map((d) => before[d] - w.drones.ammo[d]);
+    for (const n of spent) expect(n).toBeGreaterThan(0); // all three were shooting
+    // Each spent only its OWN rounds: they fire on the same cadence, so the amounts match within a
+    // round or two of each other rather than one draining at three times the rate.
+    expect(Math.max(...spent) - Math.min(...spent)).toBeLessThanOrEqual(3);
+    // And the offsets survived. A pooled magazine could not keep these apart.
+    expect(new Set([w.drones.ammo[0], w.drones.ammo[1], w.drones.ammo[2]]).size).toBe(3);
+  });
+
+  it('destroys only the drone whose own magazine ran out', () => {
+    const w = droneWorld();
+    tierFive(w);
+    ticks(w, Math.ceil(w.weapons[0].stats.cooldown / DT) * 2 + 20);
+    expect(w.drones.count).toBe(3);
+
+    // Hand ONE of them a nearly-empty magazine and give it something to shoot.
+    w.drones.ammo[0] = 1;
+    addEnemy(w, 60, 0, 1_000_000);
+    ticks(w, 120);
+
+    // It died; the other two are untouched and still carrying full magazines.
+    expect(w.drones.count).toBe(2);
+    for (let d = 0; d < w.drones.count; d++) {
+      expect(w.drones.ammo[d]).toBeGreaterThan(1);
+    }
   });
 
   it('detonates when the magazine runs dry, and the blast damages what is standing there', () => {

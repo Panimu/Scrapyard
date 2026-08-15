@@ -124,6 +124,23 @@ const SLUG_SRC_H = 26;
 const SLUG_DRAW_LEN = 9;
 export const SLUG_SCALE = SLUG_DRAW_LEN / SLUG_SRC_H;
 
+/**
+ * The drone source is 64x64 at two pixels per world unit, so it is 32 world units of canvas - but
+ * the machine inside it is the 13 u body plus its rotor discs, which is what the number below is
+ * measured against. Drawn ~19 u across: bigger than a gem, comfortably smaller than a mech, and
+ * large enough that the blue lens is still a lens on a phone.
+ *
+ * The MACHINE fills about 51 of the source's 64 px - body plus the rotor discs at the corners - so
+ * the drawn width below is canvas, and the drone itself comes out around four fifths of it. At 26
+ * that is a ~21 u machine against the mech's 52: clearly smaller, and still large enough that the
+ * four rotors and the blue lens are separate things on a phone rather than one dark blob.
+ *
+ * Kept in step with tools/make-drone.mjs by hand, like every other sprite constant here.
+ */
+const DRONE_SRC_W = 64;
+const DRONE_DRAW_W = 26;
+export const DRONE_SCALE = DRONE_DRAW_W / DRONE_SRC_W;
+
 /** Gem `spaceParts_035` is 32x63; drawn ~18 u tall. */
 const GEM_SRC_H = 63;
 const GEM_DRAW_H = 18;
@@ -241,6 +258,8 @@ export interface GameTextures {
   readonly missile: Texture;
   /** Machine gun round, visualId === 2. */
   readonly slug: Texture;
+  /** The drone, drawn by `npm run drone`. Circular on purpose - see tools/make-drone.mjs. */
+  readonly drone: Texture;
 }
 
 /**
@@ -317,7 +336,7 @@ export async function loadGameTextures(
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
-  keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem');
+  keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
   keys.push('cons_spanner', 'cons_magnet');
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
@@ -373,6 +392,7 @@ export async function loadGameTextures(
       Array.from({ length: MECH_WALK_FRAMES }, (_, f) => get(`${h.sprite}_w${f}`)),
     ),
     turret: get('turret'),
+    drone: get('drone'),
     enemies,
     enemyScale,
     floor,

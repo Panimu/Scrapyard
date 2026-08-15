@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T14:12Z',
+    title: 'Drones look like drones',
+    notes: [
+      'THEY HAVE THEIR OWN SPRITE NOW - a round hull with four rotor discs and a blue lens in the middle, spinning as it flies. They shipped yesterday wearing the missile art, which was a stand-in and a bad one: a missile has a nose, so the eye reads it as travelling the way it points, and a drone spends its life orbiting - which meant an arrowhead spinning on the spot.',
+      'A disc reads the same at every angle, which is right for something whose facing is not information.',
+    ],
+  },
+  {
     at: '2026-08-15T14:03Z',
     title: 'DRONES - a weapon that builds things instead of firing them',
     notes: [
