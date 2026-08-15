@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-15T15:11Z',
+    title: 'Drones arrive sooner, shoot bullets, and have a face on the reels',
+    notes: [
+      'THE BAY BUILDS FIVE SECONDS FASTER. Twenty-five to start rather than thirty, and every tier that trims the build time trims a share of the new number - so a finished bay turns one out every sixteen seconds instead of twenty.',
+      'A DRONE FIRES MACHINE GUN ROUNDS, and now they finally look like it. They were being drawn as CANNON shells, so a drone appeared to be lobbing artillery at a runt while its card said machine gun. Same tracer the gun uses, one at a time rather than the gun’s pair.',
+      'THE CYBER CHEST HAS A DRONE SYMBOL. It had none, so the drone rolled up as an empty tile on the reels - unreadable on the one screen in the game where you have half a second to read it. It is a quadcopter seen from above, and it is the only symbol on the reels that does not point anywhere.',
+    ],
+  },
+  {
     at: '2026-08-15T14:49Z',
     title: 'Drones stay in your fight instead of wandering out of it',
     notes: [

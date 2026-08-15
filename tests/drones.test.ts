@@ -257,9 +257,10 @@ describe('the drone bay', () => {
     // reads as "nothing happened".
     const e = addEnemy(w, 200, 0, 50_000);
     // A drone magazine (half the gun's) at the gun's cadence, plus slack for the slow flight out.
-    // The whole window has to stay under the 30 s build time, or the bay deploys a REPLACEMENT and
-    // the count reads 1 for a reason that has nothing to do with the detonation.
-    ticks(w, Math.ceil((MACHINE_GUN.base.ammoCapacity * 0.5 * MACHINE_GUN.base.cooldown) / DT) + 600);
+    // The whole window has to stay under the bay's build time, or it deploys a REPLACEMENT and the
+    // count reads 1 for a reason that has nothing to do with the detonation. 540 ticks of firing
+    // plus 400 of slack is 15.7 s against a 25 s build.
+    ticks(w, Math.ceil((MACHINE_GUN.base.ammoCapacity * 0.5 * MACHINE_GUN.base.cooldown) / DT) + 400);
 
     expect(w.drones.count).toBe(0);
     // The rounds AND the blast both landed on it.

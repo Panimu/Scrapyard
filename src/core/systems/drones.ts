@@ -376,7 +376,9 @@ function fireRound(world: World, d: number, dirX: number, dirY: number, gun: Wea
   p.splashFrac[i] = 0;
   p.radius[i] = 5;
   p.pierceLeft[i] = 0;
-  p.visualId[i] = 5; // VIS_DRONE_ROUND
+  // The Machine Gun's own visual, read off the def rather than named here: the drone fires that
+  // gun, so it should be impossible for the two to disagree about what its rounds look like.
+  p.visualId[i] = MACHINE_GUN.visualId;
   pushEvent(world.events, EV_WEAPON_FIRED, world.tick, drones.x[d], drones.y[d], dirX, dirY);
 }
 

@@ -1,13 +1,13 @@
 /**
  * `npm run icons` - draws one icon per upgrade into public/sprites/, for the Cyber Chest's reels.
  *
- * FOURTEEN SYMBOLS, and they exist because a slot machine has to be read at a glance while it is
- * moving. The level-up card can afford a name and a sentence; a reel cannot, so each of these has
+ * ONE SYMBOL PER CARD, and they exist because a slot machine has to be read at a glance while it
+ * is moving. The level-up card can afford a name and a sentence; a reel cannot, so each of these has
  * to say "Long Laser" or "Ablative Plate" from its silhouette and its colour alone, at 64 pixels,
  * blurred by motion, in the half second it is stationary before the next one lands.
  *
  * ---------------------------------------------------------------------------------------------
- * THE RULES THAT MAKE FOURTEEN ICONS DISTINGUISHABLE
+ * THE RULES THAT KEEP THEM DISTINGUISHABLE FROM EACH OTHER
  * ---------------------------------------------------------------------------------------------
  *   COLOUR IS THE CATEGORY - EXCEPT FOR THE LASERS, WHICH WEAR THEIR OWN BEAM. Weapons are amber
  *     and passives are blue, the same split the level-up cards use (`--accent` against
@@ -97,6 +97,7 @@ const ICONS = [
   'w-missile-long',
   'w-machine-gun',
   'w-artillery',
+  'w-drone',
   'w-laser-short',
   'w-laser-medium',
   'w-laser-long',
@@ -215,6 +216,37 @@ const DRAW = `(id) => {
       g.fillStyle = KEY; g.globalAlpha = 1 - i * 0.13; g.fill();
     }
     g.globalAlpha = 1;
+  }
+
+  if (id === 'w-drone') {
+    // A quadcopter from above: four rotor discs on an X frame, one solid hull between them.
+    //
+    // IT IS THE ONLY GLYPH IN THE SET SYMMETRICAL ABOUT BOTH AXES, and that is the whole design.
+    // A reel is read while it is moving, when nothing resolves but the gross shape - and every
+    // other weapon here is a thing POINTING somewhere (a shell nose-up, a stream running right, a
+    // beam, a pair of missiles). A drone is the one weapon with no facing, so the icon has none
+    // either, and the eye separates it from the rest before any detail arrives.
+    //
+    // Deliberately NOT a small picture of the drone sprite. At 64 px the hull and the rotors would
+    // merge into an amber blob; the X frame is what holds the four discs apart at that size.
+    const ARM = 26;
+    const CORNERS = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    g.strokeStyle = STEEL; g.lineWidth = 7;
+    g.beginPath();
+    for (const [sx, sy] of [[-1, -1], [1, -1]]) {
+      g.moveTo(CX + sx * ARM, CY + sy * ARM);
+      g.lineTo(CX - sx * ARM, CY - sy * ARM);
+    }
+    g.stroke();
+    for (const [sx, sy] of CORNERS) {
+      const x = CX + sx * ARM, y = CY + sy * ARM;
+      g.beginPath(); g.arc(x, y, 14, 0, 6.284);
+      g.globalAlpha = 0.28; g.fillStyle = KEY; g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = KEY; g.lineWidth = 4; g.stroke();
+    }
+    // The hull, with the lens punched out of it - the one asymmetry-free detail that reads at size.
+    g.beginPath(); g.arc(CX, CY, 17, 0, 6.284); g.fillStyle = KEY; g.fill();
+    g.beginPath(); g.arc(CX, CY, 7, 0, 6.284); g.fillStyle = PLATE; g.fill();
   }
 
   if (id === 'w-artillery') {

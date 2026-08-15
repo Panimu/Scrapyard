@@ -56,8 +56,11 @@ export const VIS_SLUG = 2;
 /** Artillery: no shell at all. A red targeting ring on the ground, counting its own fuse down. */
 export const VIS_STRIKE_MARKER = 3;
 export const VIS_MISSILE_LONG = 4;
-/** A drone's round. A slug like the Machine Gun's, because that is literally what it fires. */
-export const VIS_DRONE_ROUND = 5;
+// A drone's round has NO VIS_ ID OF ITS OWN. It fires the Machine Gun, so it draws the Machine
+// Gun's slug - one at a time rather than the gun's pair, which is the fire pattern and not the
+// sprite. Id 5 was a drone-specific entry that fell through the renderer's chain to the CANNON's
+// shell, so a drone appeared to be lobbing artillery. The number is retired rather than reused:
+// visualId lands in the replay, and 5 has already been written into recorded runs.
 
 /**
  * Target-selection strategies.
@@ -843,8 +846,12 @@ export const ARTILLERY: WeaponDef = Object.freeze({
  * would be two tables to keep in step for no gain, and "it fires a machine gun" is a sentence a
  * player can actually hold on to.
  */
-export const DRONE_BUILD_SEC = 30;
-/** Per-tier build-time cut. Additive off the BASE, the way every other rate tier in this file is. */
+export const DRONE_BUILD_SEC = 25;
+/**
+ * Per-tier build-time cut. Additive off the BASE, the way every other rate tier in this file is,
+ * and DERIVED from it - the ladder is specified as percentages, so cutting the base cuts every
+ * rung with it. 25 s runs down to 16.25 s by tier 7, where 30 s ran down to 19.5 s.
+ */
 export const DRONE_BUILD_TIER = -DRONE_BUILD_SEC * 0.1;
 export const DRONE_BUILD_TIER_SMALL = -DRONE_BUILD_SEC * 0.05;
 /** A drone engages anything inside this multiple of its gun's range. */
@@ -854,8 +861,9 @@ export const DRONE: WeaponDef = Object.freeze({
   id: 'drone',
   name: 'Drones',
   kind: 'projectile',
-  // Unused: the bay never selects a target. Each DRONE picks its own, by proximity, from where it
-  // is standing rather than from where the player is - which is the whole point of sending it out.
+  // Unused: the bay never selects a target. Each DRONE picks its own, from the bodies inside this
+  // range (x DRONE_ACQUIRE_MUL) OF THE PLAYER - not of the drone, which is what stopped a chain of
+  // kills from walking one off the screen. See systems/drones.ts.
   targeting: 'nearest',
   pattern: 'factory',
   behaviour: 'straight',
@@ -895,7 +903,9 @@ export const DRONE: WeaponDef = Object.freeze({
     { projectileCount: 1, cooldown: DRONE_BUILD_TIER_SMALL }, // T7 - a fourth, and a last trim
   ]),
   reengageMul: 1,
-  visualId: VIS_DRONE_ROUND,
+  // Unused by the bay itself - it spawns no projectile of its own. Its DRONES fire slugs; see
+  // systems/drones.ts, which reads the Machine Gun's visual rather than this field.
+  visualId: VIS_SLUG,
   muzzleOffset: 0,
   shellRadius: 5,
   beamColour: 0,
