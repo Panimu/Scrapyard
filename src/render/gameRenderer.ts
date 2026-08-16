@@ -297,7 +297,27 @@ export class GameRenderer {
   private readonly floor: TilingSprite;
   private readonly groundPaths: GroundPaths;
   private readonly groundCover: GroundCover;
-  private readonly fence: Fence;
+/**
+   * THE PERIMETER, OR NOTHING AT ALL.
+   *
+   * `null` on a level that has no edge, and null means there is no Fence - not a Fence with
+   * `visible = false`. Mossy Mayhem is its own map rather than the Scrapyard with a wall switched
+   * off, and a hidden fence is exactly the kind of thing that comes back: something toggles
+   * visibility for an unrelated reason, or a later layer sorts against it, and a level that is
+   * supposed to be open grows an edge nobody put there.
+   *
+   * It is built the first time a bounded level asks for one and thrown away when an unbounded
+   * level starts, so the display list under `fenceSlot` is genuinely empty out on the moss.
+   */
+  private fence: Fence | null = null;
+  /**
+   * The fence's PLACE in the layer order, kept whether or not anything is in it.
+   *
+   * An empty container costs a pointer and nothing else, and it means attaching a fence later
+   * cannot land in the wrong z-slot - which is the one thing that would go wrong if the fence were
+   * added and removed from `world` directly.
+   */
+  private readonly fenceSlot: Container;
   private readonly scrap: SpritePool;
   private readonly world: Container;
   private readonly letterbox: Graphics;
@@ -444,7 +464,7 @@ export class GameRenderer {
     this.letterbox = new Graphics({ label: 'letterbox' });
     this.bossArrows = new Graphics({ label: 'boss-arrows' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
-    this.fence = new Fence(tex);
+    this.fenceSlot = new Container({ label: 'fence-slot' });
     // No texture: each pile picks its own variant, exactly as the enemy pool does. Small capacity
     // because the yard is deliberately sparse - the camera reaches 500 u and piles sit a cell
     // apart, so it can never see more than a handful (see drawScenery).
@@ -456,9 +476,9 @@ export class GameRenderer {
       // whatever is under it at the yard's edge.
       this.groundPaths.container,
       this.groundCover.container,
-      // Then the fence - it has to cover the floor tile, which is drawn screen-space and does not
-      // know the yard has an edge.
-      this.fence.container,
+      // Then the fence's slot - it has to cover the floor tile, which is drawn screen-space and
+      // does not know the yard has an edge. Empty on a level with no edge.
+      this.fenceSlot,
       // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
       // hide the bodies the player is deciding about.
       this.strikeMarkers,
@@ -510,9 +530,21 @@ export class GameRenderer {
     const ground = this.tex.floors.get(world.level.floor);
     if (ground !== undefined) this.floor.texture = ground;
 
-    // NO FENCE ON AN UNBOUNDED LEVEL. The fence draws four strips at +/-arenaHalf; at Infinity
-    // those are nowhere, and the honest thing is not to have it in the scene at all.
-    this.fence.container.visible = Number.isFinite(world.arenaHalf);
+    // A FENCE EXISTS EXACTLY WHERE THERE IS SOMETHING TO FENCE, and that is DERIVED from the
+    // bound rather than being a second field on the level that could disagree with it. A finite
+    // arena with no fence is an invisible wall; an unbounded one with a fence is four strips at
+    // infinity. Neither is a level anybody would author on purpose, so neither is expressible.
+    const wantsFence = Number.isFinite(world.arenaHalf);
+    if (wantsFence && this.fence === null) {
+      this.fence = new Fence(this.tex);
+      this.fenceSlot.addChild(this.fence.container);
+    } else if (!wantsFence && this.fence !== null) {
+      this.fenceSlot.removeChildren();
+      // children, not textures: the strips' textures are shared with the asset cache and are
+      // wanted again the moment a bounded level starts.
+      this.fence.container.destroy({ children: true });
+      this.fence = null;
+    }
 
     // GROUND DECORATION IS DRESSED FOR ITS LEVEL. Packages B and C are rust rubble and worn
     // plating; on turf they read as spilled dirt. Hidden rather than retinted, because the moss
@@ -571,9 +603,8 @@ export class GameRenderer {
     this.drawFloor();
     // Static geometry - this only decides which of the four runs are worth submitting, and in the
     // middle of the yard the answer is none of them.
-    // Skipped entirely on an unbounded level: `reset` hid the container, and four strips' worth of
-    // visibility arithmetic against a wall that does not exist is work for nothing.
-    if (this.fence.container.visible) this.fence.update(this.camera);
+    // Nothing to update when there is no fence, and nothing to remember to hide either.
+    if (this.fence !== null) this.fence.update(this.camera);
     this.drawScenery(world);
     // PACKAGE C and PACKAGE B. Drawn before anything that moves, and after the camera is known -
     // both derive what is on screen from the camera rect rather than storing a world of scenery.
