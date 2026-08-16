@@ -58,6 +58,33 @@ export const GAIT_NONE = 0;
 export const GAIT_WALK = 1;
 
 /**
+ * Radians of stride per tick, for a creature drawn `GAIT_REF_HEIGHT` units tall. 2*pi/26 is a
+ * stride every 26 ticks - a hair over four tenths of a second, a brisk walk rather than a scuttle.
+ */
+const GAIT_RATE = (Math.PI * 2) / 26;
+/** The drawn height that rate is FOR: a runt, which is the smallest thing that walks. */
+const GAIT_REF_HEIGHT = 26;
+
+/**
+ * BIG THINGS TAKE LONGER STEPS. A creature drawn twice the size does not walk at twice the speed
+ * with the same cadence - its legs are a longer pendulum, and a pendulum's period goes with the
+ * SQUARE ROOT of its length. Same reason an elephant's stride looks slow and a mouse's looks
+ * frantic, and the reason a game that scales a sprite without scaling its cadence gets something
+ * that reads as a toy rather than as a large animal.
+ *
+ * So the rate is divided by `sqrt(size)`. On the rank ladder that is a stride every 26 ticks for a
+ * regular, 32 for an elite and 44 for a boss - the boss takes 1.7x as long over a step while being
+ * 2.9x the size, which is the ratio the physics gives rather than one picked by eye.
+ *
+ * `Math.sqrt` is fine HERE and would not be in core: this is the render layer, and the value is
+ * computed once at load rather than per frame.
+ */
+export function gaitRateFor(drawnHeight: number): number {
+  if (drawnHeight <= 0) return GAIT_RATE;
+  return GAIT_RATE * Math.sqrt(GAIT_REF_HEIGHT / drawnHeight);
+}
+
+/**
  * KEYED BY SPRITE NAME, not by creature id. A name is content that means the same thing forever,
  * whereas ids are positional - and this table would silently start animating the wrong creature the
  * day somebody inserted a row above it. Anything absent simply does not move, which is the right
@@ -76,6 +103,16 @@ export interface CreatureFrame {
   readonly scale: number;
   /** One of the GAIT_* constants. */
   readonly gait: number;
+  /**
+   * Radians of stride per tick at rank `regular`, from the creature's drawn height. See
+   * `gaitRateFor`.
+   *
+   * ONE VALUE PER CREATURE, NOT PER FRAME, even though it sits on the frame: a hydra is 32 source
+   * pixels tall with five heads and 31 with one, and `phase` is `tick * rate`, so a rate that
+   * moved when a stage changed would jump the phase by hundreds of radians mid-fight. Taken from
+   * frame 0, so every stage of a creature keeps the cadence it started with.
+   */
+  readonly gaitRate: number;
   /** The sprite the boss outline pass draws. See `RIM_BY_LEVEL`. */
   readonly rim: Texture;
   /** `rim`'s own scale. Applied from the same centre as `scale`, so the two stay concentric. */
@@ -231,8 +268,13 @@ export function buildCreatureArt(
 ): LevelCreatureArt {
   const contentPx = CONTENT_PX_BY_LEVEL[levelId];
   const rim = RIM_BY_LEVEL[levelId];
-  return creatures.map((c) =>
-    c.frames.map((key) => {
+  return creatures.map((c) => {
+    // The creature's own drawn height, from its healthiest frame - see `CreatureFrame.gaitRate`
+    // for why this is deliberately not measured per frame.
+    const whole = get(c.frames[0]);
+    const gaitRate = gaitRateFor((whole.height * c.drawSize) / contentPx(c.id, whole));
+
+    return c.frames.map((key) => {
       const texture = get(key);
       // THE SAME `scale` FOR BOTH when the rim is baked. A baked rim is the body's own box grown
       // by a fixed margin, so drawing it at the body's scale from the same centre puts the band
@@ -243,11 +285,12 @@ export function buildCreatureArt(
         texture,
         scale,
         gait: GAIT_BY_SPRITE[key] ?? GAIT_NONE,
+        gaitRate,
         rim: rimKey === undefined ? texture : get(rimKey),
         rimScale: scale * rim.scale,
       };
-    }),
-  );
+    });
+  });
 }
 
 /**

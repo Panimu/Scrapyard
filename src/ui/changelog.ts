@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T17:09Z',
+    title: 'BIG THINGS TAKE LONGER STEPS',
+    notes: [
+      'A big Sporeling now walks at a big Sporeling\'s pace. The stride slows as the creature gets larger — an elite is noticeably heavier-footed than a runt, and a boss lumbers — instead of every size scurrying at the same cadence.',
+    ],
+  },
+  {
     at: '2026-08-16T16:54Z',
     title: 'THE BOSS IS OUTLINED, NOT SMUDGED',
     notes: [

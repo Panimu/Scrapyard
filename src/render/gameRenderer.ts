@@ -287,12 +287,13 @@ export interface RenderStats {
 /**
  * THE WALK CYCLE'S NUMBERS. Render-only, so none of this can move the simulation.
  *
- * `GAIT_RATE` is radians of stride per tick: 2*pi/26 is a stride every 26 ticks, a hair over four
- * tenths of a second, which is a brisk walk rather than a scuttle. `GAIT_STAGGER` is an offset per
- * body, deliberately not a neat fraction of a stride so a wave that spawned together does not
- * march in step.
+ * The stride RATE is not here: it depends on how big the creature is drawn, so it is worked out
+ * once per creature at load and lives on the frame as `gaitRate` (see `gaitRateFor`). What is here
+ * is everything that is the same at every size.
+ *
+ * `GAIT_STAGGER` is a phase offset per body, deliberately not a neat fraction of a stride so a wave
+ * that spawned together does not march in step.
  */
-const GAIT_RATE = (Math.PI * 2) / 26;
 const GAIT_STAGGER = 1.7;
 /**
  * How far the body squashes at each footfall, as a fraction of its drawn size.
@@ -1222,7 +1223,13 @@ export class GameRenderer {
       let lift = 0;
       let lean = 0;
       if (frame.gait === GAIT_WALK) {
-        const phase = (world.tick + alpha) * GAIT_RATE + p.spawnId[d] * GAIT_STAGGER;
+        // SLOWER THE BIGGER IT IS DRAWN. `gaitRate` already covers how large the CREATURE is; this
+        // covers how large this particular one is, which is the rank ladder and the flavour's own
+        // render scale. Same square root, and for the same reason - see `gaitRateFor`.
+        //
+        // `rankScale` is fixed for the life of an enemy, so dividing here cannot jump the phase.
+        const rate = frame.gaitRate / Math.sqrt(rankScale);
+        const phase = (world.tick + alpha) * rate + p.spawnId[d] * GAIT_STAGGER;
         // `beat` is +1 passing over a planted foot and -1 as the next one lands.
         const beat = Math.sin(phase * 2);
         gsy = 1 + GAIT_SQUASH * beat;
