@@ -130,14 +130,15 @@ into `public/sprites/`. The PNGs are checked in, so nobody needs Chromium to bui
 
 ## Where art comes from, in this order
 
-Kenney CC0 packs under `assets/kenney/` supply what they can; the rest is drawn. Three rules, and
-they are a sequence rather than a menu.
+CC0 packs under `assets/` supply what they can; the rest is drawn. Three rules, and they are a
+sequence rather than a menu.
 
-**1. PREFER WHAT IS ALREADY VENDORED.** Look in `assets/kenney/` before looking anywhere else, and
-look properly — packs are vendored WHOLE, so what is on disk is far more than what is currently
-drawn. `assets/kenney/README.md` says what each pack is for and what each conspicuously lacks.
-A sprite that is already here costs nothing: no licence to check, no download, no new row in the
-manifest, and it is guaranteed to sit in the same visual language as everything else on screen.
+**1. PREFER WHAT IS ALREADY VENDORED.** Look in `assets/` before looking anywhere else, and look
+properly — packs are vendored WHOLE, so what is on disk is far more than what is currently drawn.
+`assets/README.md` lists every source; each source directory has its own README saying what each
+pack is for and what each conspicuously lacks. A sprite that is already here costs nothing: no
+licence to check, no download, no new row in the manifest, and it is guaranteed to sit in the same
+visual language as everything else on screen.
 
 **2. LOOK ONLINE FREELY.** Searching, downloading to a scratch directory, unzipping and rendering
 contact sheets to see whether a pack is any good needs NO permission and should not be hedged
@@ -151,9 +152,17 @@ a claim about the game's art direction — all three are the owner's call, not a
 with. Bring back a recommendation with the evidence: what it has, what it lacks, what it would
 replace, and preferably a rendered preview. Then wait.
 
-Once approved: **vendor the whole pack**, keep its `License.txt`, and add a row to
-`assets/kenney/README.md` saying what the pack is for — noting anything it conspicuously does NOT
-have, because that is the thing the next person will go looking for.
+Once approved: **vendor the whole pack**, keep its `License.txt`, and add a row to its source's
+README saying what the pack is for — noting anything it conspicuously does NOT have, because that
+is the thing the next person will go looking for. A pack from a new source gets a new directory
+under `assets/` with its own README, and a row in `assets/README.md`.
+
+**RECORD WHERE IT CAME FROM, PRECISELY — the URL, the filename and the date.** Not "from
+OpenGameArt": the exact page and the exact zip. The question that gets asked six months later is
+never "what licence is this" but "the pack had a bear, does it have a wolf" — and the only cheap
+answer to that is going back to the same well. A source README that names its upstream turns that
+into one download; one that says "downloaded from the internet" turns it into the whole search
+again, licence check included.
 
 Whole, rather than only the files in use, which is what this used to say. Trimming a pack to the
 handful of sprites the game had reached for made every later "does the pack have a X" question a
