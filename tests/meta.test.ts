@@ -24,6 +24,15 @@ import {
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { resolvePlayerStats, type PlayerStats } from '../src/core/data/stats.js';
+import { ARCHETYPES, ARCH_RUNT } from '../src/core/content/enemyCatalog.js';
+import { allocEnemy } from '../src/core/entity/enemyPool.js';
+import { DT } from '../src/core/constants.js';
+import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
+import { rebuildSpatialHash } from '../src/core/spatial/hashGrid.js';
+import { updateCollision } from '../src/core/systems/collision.js';
+import { updateDamage } from '../src/core/systems/damage.js';
+import { RUN_PHASE_DEAD, RUN_PHASE_RUNNING, type World } from '../src/core/types.js';
+import { createWorld } from '../src/core/world.js';
 
 /** Every upgrade at full tier. */
 function maxed(): Uint8Array {
@@ -128,6 +137,8 @@ describe('what the screen says a tier is worth', () => {
     // Nothing on this screen is authored: every string is the value formatted. Asserted for the
     // whole catalog rather than one row, because the failure is per-upgrade.
     for (const def of META_CATALOG) {
+      // A flag has no magnitude to compare - its words ARE the whole of it.
+      if (def.display.as === 'flag') continue;
       const v = metaEffectValue(def, def.tiers);
       const text = metaEffectText(def, def.tiers);
       const shown = Number(text.replace(/[^0-9.]/g, ''));
@@ -137,10 +148,93 @@ describe('what the screen says a tier is worth', () => {
   });
 });
 
+describe('mech insurance', () => {
+  const RUNT = ARCHETYPES[ARCH_RUNT];
+
+  /** A live world with insurance owned or not, and the player one bite from gone. */
+  function nearlyDead(owned: number): World {
+    const tiers = new Uint8Array(META_CATALOG.length);
+    tiers[metaIndex('m-insurance')] = owned;
+    const w = createWorld({
+      seed: 1,
+      heroId: 0,
+      runLengthSec: 900,
+      tuning: DEFAULT_TUNING,
+      metaTiers: tiers,
+    });
+    w.phase = RUN_PHASE_RUNNING;
+    w.player.hp = 1;
+    return w;
+  }
+
+  /** Puts a runt against the mech and runs the real S5 -> S8 -> S9, as collision.test.ts does. */
+  function bite(w: World, x = 8): void {
+    // Through the pool's own allocator rather than by hand: the pool owns the sparse/dense
+    // bookkeeping, and writing the dense arrays directly leaves the handle table out of step.
+    const e = w.enemies;
+    allocEnemy(e, 0, 0, ARCH_RUNT, x, 0, w.director.nextSpawnId++);
+    const d = e.count - 1;
+    e.hp[d] = 500;
+    e.maxHp[d] = 500;
+    e.radius[d] = RUNT.radius;
+    e.mass[d] = RUNT.mass;
+    e.speed[d] = 0;
+    e.contactDamage[d] = RUNT.contactDamage;
+    e.contactTimer[d] = 0;
+    e.xpValue[d] = RUNT.xp;
+    rebuildSpatialHash(w.spatial, w.enemies);
+    updateCollision(w, DT);
+    updateDamage(w, DT);
+  }
+
+  it('without it, that bite is the end of the run', () => {
+    const w = nearlyDead(0);
+    bite(w);
+    expect(w.phase).toBe(RUN_PHASE_DEAD);
+    expect(w.player.hp).toBe(0);
+  });
+
+  it('with it, the run continues on a full hull and three seconds of immunity', () => {
+    const w = nearlyDead(1);
+    bite(w);
+    expect(w.phase).toBe(RUN_PHASE_RUNNING);
+    expect(w.player.hp).toBe(w.player.stats.maxHp);
+    expect(w.player.invulnLeft).toBe(3);
+    expect(w.player.insuranceUsed).toBe(1);
+    // A run this saved did not die, so nothing may have recorded that it did.
+    expect(w.stats.killedByRank).toBe(-1);
+  });
+
+  it('pays out ONCE - the second death in a run is a real one', () => {
+    const w = nearlyDead(1);
+    bite(w);
+    expect(w.phase).toBe(RUN_PHASE_RUNNING);
+    // Past the immunity window, and down to the wire again.
+    w.player.invulnLeft = 0;
+    w.player.hp = 1;
+    bite(w, -8);
+    expect(w.phase).toBe(RUN_PHASE_DEAD);
+  });
+
+  it('the catalog entry is a behaviour, not a stat', () => {
+    // It must contribute NOTHING to any resolved number - the whole of it is at the death site.
+    const def = META_CATALOG[metaIndex('m-insurance')];
+    expect(def.effects.length).toBe(0);
+    expect(def.tiers).toBe(1);
+    expect(def.cost).toBe(100);
+    expect(metaEffectText(def, 1)).toBe('Survives your first death');
+    expect(metaEffectText(def, 0)).toBe('');
+  });
+
+  it('costs 100, pushing the max-everything total to 1215', () => {
+    expect(metaSpent(maxed())).toBe(1215);
+  });
+});
+
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 1115', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 1215', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(1115);
+    expect(metaSpent(maxed())).toBe(1215);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 

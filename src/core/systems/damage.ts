@@ -105,7 +105,16 @@ import { SPLASH_RIM_FRAC } from '../constants.js';
 import { breakBarrelIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
+import { metaTierOf } from '../data/meta.js';
 import { KILL_REASON_KILLED } from './enemyAI.js';
+
+/**
+ * Seconds of total immunity Mech Insurance opens when it pays out.
+ *
+ * Long enough to walk out of the crowd that just killed you and no longer - the upgrade is a second
+ * chance at the run, not a window to fight in.
+ */
+const INSURANCE_INVULN_SEC = 3;
 
 /**
  * Credits `amount` of EFFECTIVE damage to the weapon in loadout slot `slot`, and to the run total.
@@ -574,6 +583,23 @@ function applyContacts(world: World): void {
     );
 
     if (player.hp <= 0) {
+      // ---- MECH INSURANCE, the workshop's one behaviour ------------------------------------
+      // Checked BEFORE anything about dying is recorded, because a run this saves did not die: no
+      // `killedByRank`, no phase change, and nothing in the summary that says otherwise.
+      //
+      // The early return matters as much as the heal. A tick can carry several contacts, and
+      // without it the very next body in the buffer would take the restored hull straight back
+      // down - insurance that pays out and is immediately spent again is insurance that does
+      // nothing. The immunity window then covers getting clear of the crowd that did it.
+      if (player.insuranceUsed === 0 && metaTierOf(world.meta.tiers, 'm-insurance') > 0) {
+        player.insuranceUsed = 1;
+        player.hp = player.stats.maxHp;
+        // Not `max`: a shield break's window is the player's own doing and this is a bigger event
+        // than that, so it is set outright rather than allowed to be shortened by one in progress.
+        player.invulnLeft = INSURANCE_INVULN_SEC;
+        return;
+      }
+
       // WHAT KILLED YOU, read off the flags this loop already has. Recorded before the early
       // return below, which drops every remaining contact - so it is the body that actually landed
       // the last bite and not whichever one happened to be next in the buffer.

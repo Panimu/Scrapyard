@@ -64,7 +64,18 @@ export class TitleScreen {
     menu.className = 'title__menu';
 
     menu.appendChild(button('New Game', 'btn btn--primary title__go', actions.onNewGame));
-    menu.appendChild(button('Upgrades', 'btn', actions.onUpgrades));
+    // THE WORKSHOP IS NEW, and a menu entry that has been sitting there unchanged for weeks is one
+    // a returning player's eye has learned to skip. The badge is the one thing on this screen that
+    // is not square to the world, which is the whole reason it gets noticed.
+    const upgradesBtn = button('Upgrades', 'btn title__upgrades', actions.onUpgrades);
+    const badge = document.createElement('span');
+    badge.className = 'title__new';
+    badge.textContent = 'NEW';
+    // Decoration: the button already says Upgrades, and a screen reader announcing "NEW Upgrades"
+    // would be reading the sticker rather than the label.
+    badge.setAttribute('aria-hidden', 'true');
+    upgradesBtn.appendChild(badge);
+    menu.appendChild(upgradesBtn);
     // Above Settings on purpose: it is about the GAME, and Settings is about the device.
     menu.appendChild(button('Scrapopedia', 'btn', actions.onScrapopedia));
     menu.appendChild(button('Settings', 'btn', actions.onSettings));

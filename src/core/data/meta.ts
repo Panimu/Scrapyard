@@ -68,7 +68,8 @@ export type MetaId =
   | 'm-armour'
   | 'm-speed'
   | 'm-laser'
-  | 'm-drone';
+  | 'm-drone'
+  | 'm-insurance';
 
 /**
  * One stat change, per tier owned.
@@ -109,16 +110,17 @@ export interface MetaEffect {
  * string is the half that gets forgotten - on a shop screen, where the string IS the offer.
  */
 export interface MetaDisplay {
-  /** Which of `effects` is the headline. */
-  readonly key: PlayerStatKey | WeaponStatKey;
+  /** Which of `effects` is the headline. Omitted for `flag`, which has no stat behind it. */
+  readonly key?: PlayerStatKey | WeaponStatKey;
   /**
    *   percent         a share of base, shown as +X%
    *   rateOfFire      a cooldown REDUCTION, shown as the increase in shots per second it produces
    *   flat            absolute units, shown as a bare number
    *   secondsFaster   a negative `add` in seconds, shown as how much sooner
+   *   flag            no magnitude at all - it either happens or it does not, and `noun` says what
    */
-  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'secondsFaster';
-  /** The thing being bought, as the player would name it. */
+  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'secondsFaster' | 'flag';
+  /** The thing being bought, as the player would name it. For `flag`, the whole sentence. */
   readonly noun: string;
 }
 
@@ -323,6 +325,27 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     ]),
     display: { key: 'cooldown', as: 'secondsFaster', noun: 'drone build time' },
   },
+  {
+    id: 'm-insurance',
+    name: 'Mech Insurance',
+    blurb:
+      'The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.',
+    tiers: 1,
+    cost: 100,
+    /**
+     * NO STAT EFFECTS AT ALL, and it is the first upgrade here with none.
+     *
+     * Everything else in this shop is a number the resolver folds in. This is a BEHAVIOUR: it
+     * changes what happens at the moment `damage.ts` would set RUN_PHASE_DEAD, which is not
+     * something any multiplier can express. So `effects` is empty and the whole of it lives at that
+     * one site - see `insuranceSaves`.
+     *
+     * ONCE PER RUN, tracked on the player rather than in the save. A second death is a real death,
+     * and the latch resets when the next run starts because it is run state, not a possession.
+     */
+    effects: Object.freeze([]),
+    display: { as: 'flag', noun: 'Survives your first death' },
+  },
 ]);
 
 /** Trims a trailing `.0` so a whole number reads as one. 12.857 -> "12.9", 30 -> "30". */
@@ -344,6 +367,9 @@ function oneDecimal(v: number): string {
  * the catalog.
  */
 export function metaEffectValue(def: MetaDef, tiers: number): number {
+  // A flag has no stat and therefore no magnitude - it is held or it is not. Returned as 0/1 so
+  // the "every tier is worth the same" invariant is meaningful for it rather than skipped.
+  if (def.display.as === 'flag') return tiers > 0 ? 1 : 0;
   const fx = def.effects.find((e) => e.key === def.display.key);
   if (fx === undefined || tiers <= 0) return 0;
   const total = effectTotal(fx, tiers > def.tiers ? def.tiers : tiers);
@@ -366,7 +392,9 @@ export function metaEffectValue(def: MetaDef, tiers: number): number {
  */
 export function metaEffectText(def: MetaDef, tiers: number, bare = false): string {
   const d = def.display;
-  if (tiers <= 0 || def.effects.find((e) => e.key === d.key) === undefined) return '';
+  if (tiers <= 0) return '';
+  if (d.as === 'flag') return d.noun;
+  if (def.effects.find((e) => e.key === d.key) === undefined) return '';
   const v = metaEffectValue(def, tiers);
 
   switch (d.as) {
@@ -378,6 +406,24 @@ export function metaEffectText(def: MetaDef, tiers: number, bare = false): strin
     case 'secondsFaster':
       return bare ? `${oneDecimal(v)}s` : `Drones build ${oneDecimal(v)}s faster`;
   }
+}
+
+/**
+ * Tiers of one upgrade held, out of a dense tier array. Clamped to the upgrade's ceiling.
+ *
+ * FOR THE ONE UPGRADE THAT IS NOT A STAT. Everything else reaches the game through the resolvers
+ * and nothing has to look a tier up by name; Mech Insurance is a behaviour at a single site in
+ * damage.ts, and this is how that site asks. Kept here rather than inlining an index, because a
+ * catalog index written into a system is exactly the coupling the rest of this file avoids.
+ */
+export function metaTierOf(tiers: ArrayLike<number>, id: MetaId): number {
+  for (let i = 0; i < META_CATALOG.length; i++) {
+    const def = META_CATALOG[i];
+    if (def.id !== id) continue;
+    const owned = tiers[i] ?? 0;
+    return owned > def.tiers ? def.tiers : owned < 0 ? 0 : owned;
+  }
+  return 0;
 }
 
 /** Catalog index for an id, or -1. */

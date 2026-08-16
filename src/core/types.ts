@@ -178,6 +178,14 @@ export interface PlayerState {
    * because World is hashed for replay determinism and the hash walks numeric fields.
    */
   criticalArmed: number;
+  /**
+   * LATCH for Mech Insurance: 1 once it has paid out this run. See systems/damage.ts.
+   *
+   * RUN STATE, not a possession - it lives here beside the other latches and is zeroed with the
+   * world, so a second death in the same run is a real one and the next run gets its own save. The
+   * upgrade itself is in the save; whether it has fired is not.
+   */
+  insuranceUsed: number;
   shieldLayers: number;
   shieldTimer: number;
   invulnLeft: number;

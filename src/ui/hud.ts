@@ -132,6 +132,7 @@ export class Hud {
   private readonly level: HTMLDivElement;
   private readonly timer: HTMLDivElement;
   private readonly kills: HTMLDivElement;
+  private readonly alive: HTMLDivElement;
   private readonly hurt: HTMLDivElement;
   private readonly debug: HTMLPreElement;
 
@@ -165,6 +166,7 @@ export class Hud {
   private lastLevelText = '';
   private lastTimerText = '';
   private lastKillsText = '';
+  private lastAliveText = '';
   private lastDebugText = '';
   private hurtTimer = 0;
 
@@ -187,6 +189,7 @@ export class Hud {
         <div class="hud__timer" data-timer role="button" tabindex="0"
              aria-label="Elapsed time. Activate to toggle the debug readout.">0:00</div>
         <div class="hud__kills" data-kills>0 kills</div>
+        <div class="hud__alive" data-alive aria-label="Enemies on the field">0 live</div>
       </div>
       <pre class="hud__debug" data-debug hidden></pre>
       <div class="hud__hurt" data-hurt aria-hidden="true"></div>
@@ -207,6 +210,7 @@ export class Hud {
     this.level = query(el, '[data-level]');
     this.timer = query(el, '[data-timer]');
     this.kills = query(el, '[data-kills]');
+    this.alive = query(el, '[data-alive]');
     this.hurt = query(el, '[data-hurt]');
     this.debug = query<HTMLPreElement>(el, '[data-debug]');
 
@@ -297,6 +301,23 @@ export class Hud {
     if (killsText !== this.lastKillsText) {
       this.lastKillsText = killsText;
       this.kills.textContent = killsText;
+    }
+
+    // HOW MANY ARE STILL COMING, which is the one number on this HUD about the present rather than
+    // about the past. Kills is what the run has achieved; this is what it is standing in, and it is
+    // the difference between "a wave is building" and "the wave broke" long before either is
+    // visible at the edge of a phone screen.
+    //
+    // `enemies.count` is the DENSE count - the pool swap-removes on death, so live bodies are
+    // exactly [0, count) with no holes and nothing has to be filtered. Corpses mid-reap are already
+    // gone from it.
+    //
+    // Compared as a string like the others: this changes on most ticks, and the guard is what keeps
+    // that from being a DOM write sixty times a second when it has not actually moved.
+    const aliveText = `${world.enemies.count} live`;
+    if (aliveText !== this.lastAliveText) {
+      this.lastAliveText = aliveText;
+      this.alive.textContent = aliveText;
     }
 
     this.updateHeat(world);

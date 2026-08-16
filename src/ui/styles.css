@@ -538,6 +538,15 @@ body {
   color: var(--ink-dim);
 }
 
+/* Live bodies on the field. Dimmer than the kill count on purpose: kills is the run's score, this
+   is a reading off the horde, and the HUD's whole job on a phone is to stay out of the way of the
+   field. Deliberately NOT tinted toward the enemy red - a number that changes every second in a
+   warning colour would read as an alarm sixty times a minute. */
+.hud__alive {
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
 .hud__spacer {
   flex: 1 1 auto;
 }
@@ -2462,4 +2471,40 @@ body {
 .upgrades__summary--none {
   font-weight: 400;
   color: var(--ink-dim);
+}
+
+/* ---- the NEW sticker on the Upgrades button --------------------------------------------------
+ * Slapped on at an angle, which is the point: everything else on the title screen is square to the
+ * world, so the one thing that is not is the one thing the eye goes to. It hangs off the corner
+ * rather than sitting inside the button, so it reads as stuck ON rather than printed IN.
+ *
+ * The button needs `position: relative` for this to anchor to, and `overflow: visible` so the
+ * corner it hangs off is not clipped away. */
+.title__upgrades {
+  position: relative;
+  overflow: visible;
+}
+
+.title__new {
+  position: absolute;
+  top: -9px;
+  right: -10px;
+  transform: rotate(12deg);
+  transform-origin: center;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #1a1205;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  /* Lifts it off the button so the angle reads as a separate object rather than as a skewed edge. */
+  box-shadow: 0 2px 6px rgb(0 0 0 / 55%);
+  /* THE DARK EDGE IS LOAD-BEARING, not trim. The badge takes the accent, and the button directly
+     above it on this menu is New Game - which is also the accent, being the one thing that should
+     be brightest. Hanging a yellow sticker over a yellow button merged the two into one shape; the
+     border is what keeps the corner it overlaps readable whatever it lands on. */
+  border: 2px solid var(--bg);
+  pointer-events: none;
 }

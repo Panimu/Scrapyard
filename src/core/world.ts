@@ -232,6 +232,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     magnetSec: 0,
     repairLeft: 0,
     criticalArmed: 0,
+    insuranceUsed: 0,
     shieldLayers: 0,
     shieldTimer: 0,
     invulnLeft: 0,

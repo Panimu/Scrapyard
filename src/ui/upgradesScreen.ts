@@ -135,10 +135,14 @@ export class UpgradesScreen {
      */
     const summary = document.createElement('div');
     summary.className = 'upgrades__summary';
+    // "AT FULL" ONLY MEANS SOMETHING ON A LADDER. A one-tier upgrade has a single state, so the
+    // phrase adds nothing on Coolant Baffles and is outright wrong on Mech Insurance, which would
+    // read "Survives your first death at full".
+    const suffix = def.tiers > 1 ? ' at full' : '';
     if (owned <= 0) {
       // Nothing owned: there is no current effect to state, so the promise is the whole line - and
       // it is dimmed, because it is the one row state where this text is not describing your mech.
-      summary.textContent = `${metaEffectText(def, def.tiers)} at full`;
+      summary.textContent = `${metaEffectText(def, def.tiers)}${suffix}`;
       summary.classList.add('upgrades__summary--none');
     } else {
       summary.textContent = metaEffectText(def, owned);
