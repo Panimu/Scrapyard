@@ -58,18 +58,29 @@ export const ARCHETYPE_COUNT = 5;
 
 export const ARCHETYPE_NAMES: readonly string[] = ['runt', 'grunt', 'bruiser', 'elite', 'boss'];
 
+/**
+ * ---------------------------------------------------------------------------------------------
+ * FLAVOURS THE DIRECTOR CANNOT ROLL
+ * ---------------------------------------------------------------------------------------------
+ * THREE of them - HEAVY, SWARMER and CHEST DROPPER - and they are unrollable BY ABSENCE. The
+ * spawner picks a flavour by drawing from the archetype's own `flavours` list, so a flavour that
+ * is on no list can never arrive through the ordinary drip, through an elite drop-in, or through a
+ * boss. There is no `spawnable: false` field and no branch in the spawner to forget; the only way
+ * any of the three reaches the field is a set-piece that names it (systems/spawning.ts).
+ *
+ * THIS PARAGRAPH USED TO SIT ON THE HEAVY AND SAY "THE ONE FLAVOUR THE DIRECTOR CANNOT ROLL". It
+ * was true when it was written and stopped being true the moment the Swarmer landed, and then
+ * again for the chest dropper - and nothing complained, because a claim about a set is exactly the
+ * kind of comment that rots when the set grows. It is stated once here, and `enemyCatalog.test.ts`
+ * pins the membership, so the next flavour that joins fails a test instead of quietly making a
+ * paragraph wrong.
+ */
 export const FLAV_PLAIN = 0;
 export const FLAV_SWIFT = 1;
 export const FLAV_TOUGH = 2;
 export const FLAV_SPIKY = 3;
 /**
- * HEAVY - THE ONE FLAVOUR THE DIRECTOR CANNOT ROLL.
- *
- * It is absent from every `ArchetypeDef.flavours` list below, and that absence IS the rule: the
- * spawner picks a flavour by drawing from the archetype's own list, so a flavour that is not on
- * any list can never arrive through the ordinary drip, through an elite drop-in, or through a
- * boss. There is no `spawnable: false` field and no branch in the spawner to forget - the only
- * way a Heavy reaches the field is a set-piece that names it (systems/spawning.ts, `spawnSiege`).
+ * HEAVY - a SET-PIECE-ONLY flavour. See "flavours the director cannot roll", above.
  *
  * x10 HP at x0.0726 speed is a wall that walks. Both halves matter: ten times the hit points would
  * be a wandering roadblock, and a fourteenth of the speed alone would be a free kill. Together
