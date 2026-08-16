@@ -1,4 +1,6 @@
 .DS_Store
+# Windows Explorer thumbnail caches. Kenney's zips ship these; they are not art.
+Thumbs.db
 node_modules/
 *.log
 .env
