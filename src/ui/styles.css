@@ -332,6 +332,14 @@ body {
   display: none;
 }
 
+/* THE CHIP IS A PANEL NOW, and this used to say the opposite - "the label sits directly on the
+   battlefield, not on a panel" - which held while the only floor was the Scrapyard's rust. Mossy's
+   grass is bright, mottled and full of high-frequency detail, and a 9 px label with a drop shadow
+   over it was not dim, it was unreadable. A backing also makes the bar and its name read as ONE
+   object rather than as a stripe with a caption near it, which is half of what was wrong here.
+
+   Kept as quiet as it can be and still work: no border, and an alpha low enough that the field
+   shows through. */
 .heat {
   --beam: var(--ink-dim);
   /* Overwritten per chip with `heatResume / heatCapacity`; see hud.ts. */
@@ -339,16 +347,25 @@ body {
   flex: 1 1 0;
   min-width: 0;
   max-width: 128px;
+  padding: 4px 5px 3px;
+  border-radius: 8px;
+  background: rgba(8, 11, 16, 0.62);
+  /* The weapon's own colour, at the very bottom of its range: enough to key the chip without
+     becoming a second thing to look at beside the bar. */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--beam) 22%, transparent);
 }
 
 .heat[hidden] {
   display: none;
 }
 
+/* Tall enough to carry the readout inside it - see `.heat__status`. It was 9 px, which was a
+   stripe; at 15 px it is a gauge with a number on it, and the row stopped needing a second line
+   of text to be legible. */
 .heat__track {
   position: relative;
-  height: 9px;
-  border-radius: 5px;
+  height: 15px;
+  border-radius: 8px;
   border: 1px solid var(--line);
   overflow: hidden;
   /* Below the resume line: cool. Above it: the zone where overheating is a real cost. The dark
@@ -390,43 +407,57 @@ body {
   transition: transform 60ms linear;
 }
 
-.heat__foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 4px;
-  margin-top: 2px;
-  font-size: 9px;
+/* THE NAME, on its own line under the bar and no longer sharing it with the readout. It has the
+   full width of the chip, so nothing ellipsises and DRONES is spelled DRONES.
+
+   Full-strength colour rather than the 0.85 it used to carry: the chip's own backing supplies the
+   contrast now, and a name at 85% of a mid-grey over grass was the original complaint. */
+.heat__name {
+  margin-top: 3px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  color: var(--ink-faint);
+  letter-spacing: 0.09em;
+  color: var(--beam);
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
-  /* The label sits directly on the battlefield, not on a panel. Without this the red laser's own
-     name is unreadable against the rust floor. */
+  text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
-.heat__name {
-  letter-spacing: 0.1em;
-  color: var(--beam);
-  opacity: 0.85;
-  /* A flex item's default min-width is `auto`, which refuses to shrink below the word's own
-     width and would push the tier badge out of the chip instead of ellipsising the name. */
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* THE READOUT, INSIDE THE TRACK. Right-aligned against the end the bar is filling toward, so on a
+   rearm the fill arrives at the number exactly as the weapon comes up.
 
-/* THE TIER. Every card in the pool is a weapon tier, so this is the one place a player can read
-   back what the run has been spent on. It sits between the name and the countdown, never wraps,
-   and never shrinks the name away: `flex: 0 0 auto` on both means the NAME is what ellipsises. */
+   WHITE, NOT THE WEAPON'S COLOUR, and this is the one place on the chip that is not: it has to
+   stay readable over the fill AND over the empty track behind it, and only a near-white with a
+   hard shadow does both. The colour is already carried by the bar it is sitting on and by the name
+   underneath - saying it a third time would cost legibility for nothing.
 
-/* No letter-spacing and tabular figures: the countdown must fit beside the name inside a chip
-   that is a third of a 393 px screen, and it must not reflow as the digits tick down. */
+   Tabular figures so a countdown does not reflow as its digits tick. */
 .heat__status {
-  flex: 0 0 auto;
+  position: absolute;
+  right: 5px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f2f6fb;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  /* NEVER WRAPS. At five weapons on a 393 px screen the track is about 60 px, and a readout that
+     wrapped to two lines burst straight out of a 15 px bar. */
+  white-space: nowrap;
+  /* A SCRIM, NOT A TEXT-SHADOW, and the difference is the Drones bar. A shadow is enough over a
+     green or a blue fill and disappears completely over a WHITE one - and Drones are white, and a
+     ready drone bay is a full bar, so the one reading that vanished was the one sitting under the
+     number the whole time. A pill guarantees the contrast whatever colour is behind it. */
+  padding: 0 4px;
+  border-radius: 5px;
+  background: rgba(6, 9, 13, 0.72);
 }
 
 /* NOT A HEAT BAR. The resume notch and the "too hot" band above it are a property of a beam's
@@ -473,7 +504,9 @@ body {
   transition: none;
 }
 
-.heat--reload .heat__status,
+/* The NAME carries the state, and the readout does not: it is sitting on the brass fill that is
+   climbing under it, and brass on brass is exactly the countdown a player most wants to read
+   going illegible at the moment they want it. Same rule as the base `.heat__status`. */
 .heat--reload .heat__name {
   color: #f0c96a;
   opacity: 1;
@@ -497,9 +530,9 @@ body {
   animation: heat-pulse 620ms ease-in-out infinite;
 }
 
-.heat--out .heat__status {
-  color: #ff8a6a;
-}
+/* Left white for the same reason the reload's is: it sits over hazard stripes, and warning red on
+   a red-and-black diagonal is the least readable thing on the HUD. The stripes and the outlined
+   track are already shouting; the countdown's job is to be read. */
 
 .heat--out .heat__name {
   color: #ff8a6a;

@@ -96,10 +96,40 @@ import {
 const MAG_COLOUR = '#e0b34a';
 
 /**
- * The cooldown chip's colour. Steel, and shared by the Cannon, both missile racks and the
- * artillery - they are one family, paced by one limiter, and giving each its own colour would
- * claim a difference the simulation does not make.
+ * ONE COLOUR PER WEAPON, for everything that is not a beam.
+ *
+ * This used to be a single steel for the whole cooldown family - Cannon, both missile racks and
+ * the artillery - on the grounds that they share a limiter and colouring them apart would claim a
+ * difference the simulation does not make. That reasoning was about the SIMULATION and the chip is
+ * not about the simulation: with four grey bars in a row, "which of these is my Cannon" took
+ * reading four labels at 9 px on a moving background, and the answer arrived after the moment it
+ * was wanted. A colour is read without being looked at, which is the whole job of this row.
+ *
+ * BEAMS ARE NOT IN HERE. A laser's chip takes `def.beamColour` straight from the catalog, so the
+ * bar on the HUD and the line drawn across the field are the same value and cannot drift apart.
+ * Adding the lasers here would be a second copy of a number core already owns.
+ *
+ * The five are picked to survive being small, side by side, and drawn over both floors - the
+ * Scrapyard's rust and Mossy's green - which rules out anything low-contrast against either.
  */
+const WEAPON_COLOUR: Readonly<Record<string, string>> = {
+  // Yellow: the gun everyone has from the first minute, and the one whose rearm number a player
+  // actually watches.
+  cannon: '#ffd93d',
+  // White. Drones are the only weapon that is a THING ON THE FIELD rather than a shot, and white
+  // is the one value on this row that reads as "not a colour" - it stands apart the way they do.
+  drone: '#eef3f8',
+  // The two racks are a family and stay adjacent in hue, near enough to read as siblings and far
+  // enough apart to tell which one just came up.
+  'missile-short': '#ff8a3c',
+  'missile-long': '#c98bff',
+  // Rose, which is nowhere else on screen. The artillery is the one weapon that fires where you
+  // are not looking, so its chip is the only way to know a barrage is coming.
+  artillery: '#ff5f8f',
+  'machine-gun': MAG_COLOUR,
+};
+
+/** Anything the table above has not been told about. Never hit by a shipping weapon. */
 const COOL_COLOUR = '#8fa3bb';
 
 export interface DebugInfo {
@@ -140,7 +170,7 @@ export class Hud {
   private readonly heatRow: HTMLDivElement;
   private readonly heatChips: HTMLDivElement[] = [];
   private readonly heatFills: HTMLDivElement[] = [];
-  private readonly heatNames: HTMLSpanElement[] = [];
+  private readonly heatNames: HTMLElement[] = [];
   private readonly heatStatus: HTMLSpanElement[] = [];
   /** Catalog index currently bound to each chip, or -1. Rebinding is what rewrites name/colour. */
   private readonly heatDefId = new Int32Array(WEAPON_SLOTS).fill(-1);
@@ -224,14 +254,19 @@ export class Hud {
       const chip = document.createElement('div');
       chip.className = 'heat';
       chip.hidden = true;
+      // THE NUMBER LIVES IN THE TRACK, not beside the name. Sharing one line was costing the
+      // NAME: five chips on a 393 px screen are about 65 px each, and "DRONES 7.39s" at 9 px does
+      // not fit in that, so the name ellipsised and the row read DRON... and CANN... - the chip
+      // failing at the one job it has. On the bar the number is also where it belongs: the bar is
+      // the countdown and the number is what it counts, so they are one object.
       chip.innerHTML = `
-        <div class="heat__track"><div class="heat__fill" data-fill></div></div>
-        <div class="heat__foot"><span class="heat__name" data-name></span><span
-          class="heat__status" data-status></span></div>`;
+        <div class="heat__track"><div class="heat__fill" data-fill></div><span
+          class="heat__status" data-status></span></div>
+        <div class="heat__name" data-name></div>`;
       heatRow.appendChild(chip);
       this.heatChips.push(chip);
       this.heatFills.push(query(chip, '[data-fill]'));
-      this.heatNames.push(query<HTMLSpanElement>(chip, '[data-name]'));
+      this.heatNames.push(query<HTMLElement>(chip, '[data-name]'));
       this.heatStatus.push(query<HTMLSpanElement>(chip, '[data-status]'));
     }
 
@@ -377,12 +412,14 @@ export class Hud {
       if (this.heatDefId[n] !== inst.defId || this.heatLevel[n] !== inst.level) {
         this.heatDefId[n] = inst.defId;
         this.heatLevel[n] = inst.level;
-        // The bar carries the beam's own colour, so bar and beam are visibly one weapon. A
-        // projectile weapon has no beam colour at all (0x000000 would paint the chip black), so
-        // the property is removed and the stylesheet's neutral default applies.
-        if (beam) chip.style.setProperty('--beam', cssColour(def.beamColour));
-        else if (mag) chip.style.setProperty('--beam', MAG_COLOUR);
-        else chip.style.setProperty('--beam', COOL_COLOUR);
+        // THE COLOUR IS THE CHIP'S IDENTITY, and it is where the row does most of its work: a
+        // player finds their Cannon by its yellow, not by reading four labels. A beam takes its
+        // own `beamColour` so the bar and the line drawn on the field are one weapon; everything
+        // else comes out of WEAPON_COLOUR, which is keyed by id rather than by family.
+        chip.style.setProperty(
+          '--beam',
+          beam ? cssColour(def.beamColour) : (WEAPON_COLOUR[def.id] ?? COOL_COLOUR),
+        );
         // Both suppress the resume notch, which is a property of a beam's hysteresis and means
         // nothing to a magazine or a cooldown.
         chip.classList.toggle('heat--mag', mag);
@@ -390,8 +427,10 @@ export class Hud {
         // The TIER decides the name: a Medium Laser at 8 is a Chain Laser, and the chip is the
         // one place the player reads what they are carrying. Falls back to the catalog name if
         // the weapon has no card, which no shipping weapon does.
-        this.heatNames[n].textContent = shortWeaponName(
-          weaponNameAtTier(def.id, inst.level) || def.name,
+        this.heatNames[n].textContent = chipLabel(
+          def.id,
+          def.name,
+          weaponNameAtTier(def.id, inst.level),
         );
         // The chip's spoken identity. NO TIER IN IT: the badge that used to carry the number is
         // gone from the chip, and a label that announces something the screen does not show is a
@@ -504,16 +543,24 @@ export class Hud {
       if (mode !== this.heatStatusMode[n] || value !== this.heatTenths[n]) {
         this.heatStatusMode[n] = mode;
         this.heatTenths[n] = value;
+        // THE NUMBER ONLY - the words `OFFLINE` and `RELOAD` used to be in here and are gone.
+        // Five chips on a 393 px screen leave about 60 px of track each, and `OFFLINE 5.9s`
+        // wrapped to two lines and burst out of a 15 px bar. It was also saying twice what the
+        // track already says once and louder: an overheat is hazard-striped, outlined red and
+        // pulsing, and a reload is a brass bar visibly climbing. Neither needs a caption; both
+        // need the seconds, which is the part a word was crowding out.
         this.heatStatus[n].textContent =
-          mode === 1
-            ? `OFFLINE ${(value / 10).toFixed(1)}s`
-            : mode === 2
-              ? `RELOAD ${(value / 10).toFixed(1)}s`
-              : mode === 3
-                ? String(value)
-                : mode === 4
-                  ? `${(value / 100).toFixed(2)}s`
-                  : '';
+          mode === 1 || mode === 2
+            ? `${(value / 10).toFixed(1)}s`
+            : mode === 3
+              ? String(value)
+              : mode === 4
+                // TWO DECIMALS ONLY WHERE THE SECOND ONE SAYS ANYTHING. A Cannon rearms in 0.57 s
+                // and a fire-rate tier moves that by hundredths, so it earns both; the drone bay's
+                // 7.39 s does not, and the digit was buying nothing but width in the tightest text
+                // on the HUD.
+                ? `${(value / 100).toFixed(value >= 100 ? 1 : 2)}s`
+                : '';
       }
 
       n++;
@@ -529,12 +576,49 @@ export class Hud {
 }
 
 /**
- * "Short Laser" -> "SHORT". The colour is the identity; this is the word that teaches it once.
- * Called only on a rebind, so the allocation is per weapon acquired, not per frame.
+ * The word on the chip, per weapon. The colour is the identity; this is what teaches it once.
+ *
+ * AUTHORED RATHER THAN DERIVED, and it used to be derived - the first word of the catalog name,
+ * upper-cased. That produced TWO CHIPS READING `SHORT` (the Short Laser and the Short Missiles)
+ * and two reading `LONG`, which is the row telling the player two different weapons are the same
+ * weapon. A rule that collides is worse than a table that has to be kept, because the collision is
+ * silent and the table is not.
+ *
+ * SRM AND LRM FOR THE RACKS. Three characters, so they cannot truncate at any chip width, and
+ * short/long-range missile is the native shorthand of the genre this game is in. The lasers keep
+ * the size word because they are a ladder a player climbs and their three colours are already the
+ * strongest signal on the row.
  */
-function shortWeaponName(name: string): string {
-  const space = name.indexOf(' ');
-  return (space > 0 ? name.slice(0, space) : name).toUpperCase();
+const SHORT_NAME: Readonly<Record<string, string>> = {
+  'laser-short': 'SHORT',
+  'laser-medium': 'MEDIUM',
+  'laser-long': 'LONG',
+  'missile-short': 'SRM',
+  'missile-long': 'LRM',
+  cannon: 'CANNON',
+  // M.GUN, not MACHINE: seven characters ellipsised to `MACHI...` at five weapons on a 393 px
+  // screen, which is the same failure this table exists to fix.
+  'machine-gun': 'M.GUN',
+  artillery: 'HEAVY',
+  drone: 'DRONES',
+};
+
+/**
+ * What this chip is called, at this tier. Called only on a rebind, so the allocation is per weapon
+ * acquired and per tier taken, not per frame.
+ *
+ * AN ASCENSION OUTRANKS THE TABLE. A Medium Laser at tier 8 is a Chain Laser, and that rename IS
+ * the reward - a chip that went on saying MEDIUM would be hiding the one thing the player just
+ * earned. So the table is consulted only while the weapon is still called what the catalog calls
+ * it, and a renamed weapon falls back to the first word of its new name.
+ */
+function chipLabel(id: string, catalogName: string, tierName: string): string {
+  const name = tierName || catalogName;
+  if (name !== catalogName) {
+    const space = name.indexOf(' ');
+    return (space > 0 ? name.slice(0, space) : name).toUpperCase();
+  }
+  return SHORT_NAME[id] ?? catalogName.toUpperCase();
 }
 
 /** 0xRRGGBB -> '#rrggbb'. Rebind only. */

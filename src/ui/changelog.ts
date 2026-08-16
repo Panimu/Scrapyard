@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T21:12Z',
+    title: 'EVERY GUN HAS ITS OWN COLOUR NOW',
+    notes: [
+      'The weapon bars along the top used to be four identical greys and three lasers. Every weapon has its own colour: the Cannon is yellow, the Drones are white, the two missile racks are orange and violet, and the artillery is rose. You can find a gun on the row without reading it.',
+      'Each bar sits on its own backing, so the numbers and names are legible over grass as well as rust — they were washed out over the moss.',
+      'The countdown moved onto the bar itself, which gave the name the whole width underneath. No more DRON… and CANN… — the row spells things out.',
+      'The missile racks are now labelled SRM and LRM. They both used to read the same word as a laser: two chips saying SHORT and two saying LONG.',
+    ],
+  },
+  {
     at: '2026-08-16T21:02Z',
     title: 'THE CHEST SAYS WHERE IT LEAVES YOU',
     notes: [
