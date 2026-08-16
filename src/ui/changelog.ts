@@ -40,10 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T12:57Z',
+    title: 'THE HORDE FINDS ITS WAY IN',
+    notes: [
+      'Enemies no longer queue up outside a walled room you are standing in. They follow the outside of it until they find the entrance, and they come in.',
+      'Nothing gets permanently wedged in a corner any more. A body that has gone the wrong way round something will try the other way rather than standing there for the rest of the run.',
+    ],
+  },
+  {
     at: '2026-08-16T12:31Z',
     title: 'WALLS NOW BEHAVE LIKE WALLS',
     notes: [
-      'The horde walks AROUND a wall instead of piling up against it. They pick a side, follow the wall until they are past it, and back out of a dead end rather than standing in it — and a pack meeting a wall head-on splits and comes round both ends.',
+      'The horde walks AROUND a wall instead of piling up against it. They pick a side, follow the wall until they are past it, and a pack meeting a wall head-on splits and comes round both ends.',
       'Your shots no longer fly straight through solid rock. A round buries itself in the wall it hits, so cover is cover in both directions.',
       'Your guns stop aiming at things they cannot hit. A target behind a wall is no longer chosen, so the lasers keep burning something they can see instead of locking onto a body through solid rock and holding fire.',
       'That last one applies to the Scrapyard too: weapons no longer pick a target on the far side of a wreck.',
