@@ -71,7 +71,7 @@ import { HERO_CATALOG } from './data/heroes.js';
 import { WEAPON_CATALOG } from './data/weapons.js';
 import { UPGRADE_CATALOG } from './data/upgrades.js';
 import { resolvePlayerStats, resolveWeaponStats } from './data/stats.js';
-import { META_CATALOG } from './data/meta.js';
+import { META_CATALOG, metaRunGrant } from './data/meta.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
 
 // ---- the ten mandated systems (sim agents) ------------------------------------------------
@@ -246,14 +246,19 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   // being played, and an unknown id degrades to the first playable one instead of throwing.
   const level = levelOrDefault(config.levelId);
 
+  // Copied into a dense array once rather than read through `config.metaTiers` at every resolve:
+  // the config field is an optional ArrayLike a caller may not have passed at all, and five
+  // resolve sites each doing `?? EMPTY` is five chances to get the fallback wrong.
+  //
+  // Hoisted above the world literal because the RUN-START GRANTS are read from it while that
+  // literal is still being built - `levelUp.rerolls` is seeded from it below.
+  const metaTiers = Uint8Array.from(META_CATALOG.map((_, i) => config.metaTiers?.[i] ?? 0));
+
   const world: World = {
     config,
     level,
     arenaHalf: level.arenaHalf,
-    // Copied into a dense array once rather than read through `config.metaTiers` at every resolve:
-    // the config field is an optional ArrayLike a caller may not have passed at all, and five
-    // resolve sites each doing `?? EMPTY` is five chances to get the fallback wrong.
-    meta: { tiers: Uint8Array.from(META_CATALOG.map((_, i) => config.metaTiers?.[i] ?? 0)) },
+    meta: { tiers: metaTiers },
     rng: createRngStreams(config.seed),
 
     tick: 0,
@@ -294,7 +299,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       offers: new Int32Array(UPGRADE_OFFER_COUNT).fill(-1),
       stacks: new Uint8Array(catalogs.upgrades.length),
       picksTaken: 0,
-      rerolls: config.tuning.xp.rerollsPerRun,
+      // THE RUN'S REROLLS: the tuning's baseline plus whatever the workshop has permanently added.
+      // Seeded once and never recomputed - a reroll is spent, not resolved, so an upgrade to it is
+      // a bigger pile at the start rather than a multiplier on anything. See meta.ts 'm-rerolls'.
+      rerolls: config.tuning.xp.rerollsPerRun + metaRunGrant(metaTiers, 'rerolls'),
       rerollsUsed: 0,
     },
     infiniteRerolls: false,

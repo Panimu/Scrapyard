@@ -18,6 +18,7 @@ import {
   metaEffectText,
   metaEffectValue,
   metaIndex,
+  metaRunGrant,
   metaSpent,
   type MetaDef,
 } from '../src/core/data/meta.js';
@@ -240,15 +241,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, pushing the max-everything total to 1215', () => {
-    expect(metaSpent(maxed())).toBe(1215);
+  it('costs 100, pushing the max-everything total to 1305', () => {
+    expect(metaSpent(maxed())).toBe(1305);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 1215', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 1305', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(1215);
+    expect(metaSpent(maxed())).toBe(1305);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 
@@ -289,5 +290,59 @@ describe('it reaches the resolved stats', () => {
 
     // Sum, not product: (1 + a)(1 + b) would be strictly larger for two positive shares.
     expect(both).toBeCloseTo(cardOnly + 0.15, 10);
+  });
+});
+
+/**
+ * REROLLS - the first upgrade that grants something at run start rather than resolving into a
+ * stat. The number lives in `effects` alone, so these check the two readers agree with it.
+ */
+describe('rerolls', () => {
+  const REROLLS = META_CATALOG.findIndex((d) => d.id === 'm-rerolls');
+
+  function tiers(n: number): Uint8Array {
+    const t = new Uint8Array(META_CATALOG.length);
+    t[REROLLS] = n;
+    return t;
+  }
+
+  it('grants two per tier, and none when unowned', () => {
+    expect(metaRunGrant(new Uint8Array(META_CATALOG.length), 'rerolls')).toBe(0);
+    expect(metaRunGrant(tiers(1), 'rerolls')).toBe(2);
+    expect(metaRunGrant(tiers(2), 'rerolls')).toBe(4);
+    expect(metaRunGrant(tiers(3), 'rerolls')).toBe(6);
+    // Clamped to the ladder: a save carrying more tiers than exist cannot buy more effect.
+    expect(metaRunGrant(tiers(9), 'rerolls')).toBe(6);
+  });
+
+  it('says the same number in the shop as the run actually gets', () => {
+    // The whole point of `run` being a target rather than a bespoke mechanism: one source.
+    const def = META_CATALOG[REROLLS];
+    for (let n = 1; n <= def.tiers; n++) {
+      expect(metaEffectValue(def, n)).toBe(metaRunGrant(tiers(n), 'rerolls'));
+    }
+    expect(metaEffectText(def, 3)).toBe('6 rerolls');
+  });
+
+  it('actually reaches the run, on top of the tuning baseline', () => {
+    const base = createWorld({ seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING });
+    expect(base.levelUp.rerolls).toBe(DEFAULT_TUNING.xp.rerollsPerRun);
+
+    const bought = createWorld({
+      seed: 1,
+      heroId: 0,
+      runLengthSec: 900,
+      tuning: DEFAULT_TUNING,
+      metaTiers: tiers(3),
+    });
+    expect(bought.levelUp.rerolls).toBe(DEFAULT_TUNING.xp.rerollsPerRun + 6);
+  });
+
+  it('is invisible to the stat resolvers - a grant is not a multiplier', () => {
+    // `accumulateMeta` filters on target, so a `run` effect can never leak into a stat. If this
+    // ever fails, every weapon in the game has quietly gained a reroll-shaped bonus.
+    const a = accumulateMeta(tiers(3), 'player', 'rerolls', undefined);
+    expect(a.add).toBe(0);
+    expect(a.mul).toBe(1);
   });
 });

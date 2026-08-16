@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T10:31Z',
+    title: 'PAUSE SHOWS THE WHOLE LOADOUT, AND REROLLS ARE FOR SALE',
+    notes: [
+      'PAUSING NOW SHOWS ALL FIVE GUN SLOTS AND ALL FIVE PASSIVE SLOTS, with the tier of each. The empty ones are drawn too, which is the point: the thing you pause to work out is usually what you have NOT got yet, and a list of only what you are holding cannot tell you that two slots are still free.',
+      'The names are the ones the tier has earned - an ascended gun is listed under its new name, exactly as the chip on the HUD reads it.',
+      'A NEW WORKSHOP UPGRADE: REROLLS. Three tiers at 30 credits each, and every tier hands you two more rerolls at the start of every run - six on top of the one you already get, if you buy the lot. A reroll deals a fresh three cards and still owes you the pick, so this is straightforwardly more of the run you wanted rather than a bigger number anywhere.',
+    ],
+  },
+  {
     at: '2026-08-16T10:21Z',
     title: 'THE FIELD MANUAL HAS A BESTIARY',
     notes: [

@@ -54,6 +54,7 @@ import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
 import { buildChangelogOverlay } from './ui/changelog.js';
+import { buildPauseOverlay } from './ui/pauseOverlay.js';
 import { VirtualJoystick } from './ui/virtualJoystick.js';
 import './ui/styles.css';
 
@@ -590,6 +591,9 @@ async function boot(): Promise<void> {
   function togglePause(): void {
     if (state.phase === 'running') {
       state.set('paused');
+      // Painted on OPEN rather than kept live: the world is frozen behind this menu, so one pass
+      // is the whole of it, and a paused screen has no reason to be doing work per frame.
+      pauseOverlay.paint(sim.world);
       pauseOverlay.element.hidden = false;
       joystick.setEnabled(false);
     } else if (state.phase === 'paused') {
@@ -861,69 +865,6 @@ async function boot(): Promise<void> {
     const asNumber = Number.parseInt(raw, 10);
     return Number.isFinite(asNumber) ? asNumber >>> 0 : undefined;
   }
-}
-
-// -----------------------------------------------------------------------------------------
-// Pause overlay - small enough to live here rather than earn its own file.
-// -----------------------------------------------------------------------------------------
-
-function buildPauseOverlay(
-  onResume: () => void,
-  infiniteRerolls: boolean,
-  onInfiniteRerolls: (on: boolean) => void,
-  onQuit: () => void,
-  onChangelog: () => void,
-): { element: HTMLDivElement } {
-  const el = document.createElement('div');
-  el.className = 'overlay pause';
-  el.hidden = true;
-  el.setAttribute('role', 'dialog');
-  el.setAttribute('aria-label', 'Paused');
-
-  const title = document.createElement('div');
-  title.className = 'pause__title';
-  title.textContent = 'PAUSED';
-
-  const resume = document.createElement('button');
-  resume.type = 'button';
-  resume.className = 'btn btn--primary';
-  resume.textContent = 'Resume';
-  resume.addEventListener('click', onResume);
-
-  const changes = document.createElement('button');
-  changes.type = 'button';
-  changes.className = 'btn';
-  changes.textContent = 'Changelog';
-  changes.addEventListener('click', onChangelog);
-
-  // Abandon is LAST and is not primary: it is the one button here that destroys the run, and it
-  // should never be the one a thumb finds by accident on the way to Resume.
-  const quit = document.createElement('button');
-  quit.type = 'button';
-  quit.className = 'btn';
-  quit.textContent = 'Abandon run';
-  quit.addEventListener('click', onQuit);
-
-  // THE ONE CHEAT WITH A SWITCH ON IT, and it lives here rather than in Settings because it is
-  // only meaningful mid-run: this is the menu you are already in when a card you did not want
-  // has just come up.
-  let cheat = infiniteRerolls;
-  const rerolls = document.createElement('button');
-  rerolls.type = 'button';
-  rerolls.className = 'btn';
-  const paintCheat = (): void => {
-    rerolls.textContent = `Infinite rerolls: ${cheat ? 'ON' : 'OFF'}`;
-    rerolls.setAttribute('aria-pressed', cheat ? 'true' : 'false');
-  };
-  paintCheat();
-  rerolls.addEventListener('click', () => {
-    cheat = !cheat;
-    paintCheat();
-    onInfiniteRerolls(cheat);
-  });
-
-  el.append(title, resume, changes, rerolls, quit);
-  return { element: el };
 }
 
 // -----------------------------------------------------------------------------------------

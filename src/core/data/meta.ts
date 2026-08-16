@@ -69,7 +69,8 @@ export type MetaId =
   | 'm-speed'
   | 'm-laser'
   | 'm-drone'
-  | 'm-insurance';
+  | 'm-insurance'
+  | 'm-rerolls';
 
 /**
  * One stat change, per tier owned.
@@ -79,9 +80,27 @@ export type MetaId =
  * workshop sells one upgrade that is about the drone bay specifically, and the alternative to
  * scoping was inventing a `droneBuildSec` stat that only one weapon reads.
  */
+/**
+ * Things an upgrade can change that are NOT a resolved stat: run-start grants.
+ *
+ * A union rather than a bare string so a typo is a compile error, and separate from the stat keys
+ * because these never reach `resolveOne` - `accumulateMeta` filters on `target` and a `run` effect
+ * is invisible to every resolver by construction.
+ */
+export type RunGrantKey = 'rerolls';
+
 export interface MetaEffect {
-  readonly target: 'player' | 'weapon';
-  readonly key: PlayerStatKey | WeaponStatKey;
+  /**
+   * `player` and `weapon` are resolved stats. `run` is a ONE-OFF GRANT read once at run start -
+   * a number the simulation is seeded with rather than one it recomputes.
+   *
+   * It is a target rather than a second mechanism because the alternative is what Mech Insurance
+   * had to do: no effects at all, and the magnitude living in whatever code implements it. That is
+   * correct for a pure behaviour with nothing to count, and wrong the moment there IS a number -
+   * the shop would then have to restate it, which is the one thing MetaDisplay exists to prevent.
+   */
+  readonly target: 'player' | 'weapon' | 'run';
+  readonly key: PlayerStatKey | WeaponStatKey | RunGrantKey;
   /** 'add' is absolute units; 'mul' is a share of base, summed with every other share. */
   readonly mode: 'add' | 'mul';
   /**
@@ -111,7 +130,7 @@ export interface MetaEffect {
  */
 export interface MetaDisplay {
   /** Which of `effects` is the headline. Omitted for `flag`, which has no stat behind it. */
-  readonly key?: PlayerStatKey | WeaponStatKey;
+  readonly key?: PlayerStatKey | WeaponStatKey | RunGrantKey;
   /**
    *   percent         a share of base, shown as +X%
    *   rateOfFire      a cooldown REDUCTION, shown as the increase in shots per second it produces
@@ -346,6 +365,31 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     effects: Object.freeze([]),
     display: { as: 'flag', noun: 'Survives your first death' },
   },
+  {
+    id: 'm-rerolls',
+    name: 'Rerolls',
+    blurb:
+      'Walk into every run holding more second opinions. A reroll deals a fresh three cards and still owes you the pick.',
+    tiers: 3,
+    cost: 30,
+    /**
+     * A RUN-START GRANT, not a stat. `world.ts` seeds `levelUp.rerolls` from the run tuning plus
+     * this, once, and nothing recomputes it - which is the whole character of the thing: a reroll
+     * is a resource you spend, so a permanent upgrade to it has to arrive as a bigger pile at the
+     * start rather than as a multiplier on anything.
+     *
+     * The number lives HERE and nowhere else. `metaRunGrant` reads it for the seeding and
+     * `metaEffectValue` reads it for the shop text, so the "+6 rerolls" on the card and the six
+     * rerolls in the run are the same 2 x 3.
+     *
+     * TWO PER TIER, FLAT, which keeps the workshop's promise that a third of the tiers is a third
+     * of the effect - and unlike every percentage in this shop it is exact rather than nearly so.
+     */
+    effects: Object.freeze([
+      { target: 'run' as const, key: 'rerolls' as const, mode: 'add' as const, amount: 2 },
+    ]),
+    display: { key: 'rerolls', as: 'flat', noun: 'rerolls' },
+  },
 ]);
 
 /** Trims a trailing `.0` so a whole number reads as one. 12.857 -> "12.9", 30 -> "30". */
@@ -416,6 +460,28 @@ export function metaEffectText(def: MetaDef, tiers: number, bare = false): strin
  * damage.ts, and this is how that site asks. Kept here rather than inlining an index, because a
  * catalog index written into a system is exactly the coupling the rest of this file avoids.
  */
+/**
+ * Total of every owned tier's RUN-START GRANT of `key`.
+ *
+ * The `run` counterpart to `accumulateMeta`, and deliberately a separate function rather than a
+ * third case inside it: that one returns a reused accumulator for a hot per-weapon path, and this
+ * is called once per run. Sharing the accumulator would put a footgun on a cold path for nothing.
+ */
+export function metaRunGrant(tiers: ArrayLike<number>, key: RunGrantKey): number {
+  let total = 0;
+  for (let i = 0; i < META_CATALOG.length; i++) {
+    const owned = tiers[i] ?? 0;
+    if (owned <= 0) continue;
+    const def = META_CATALOG[i];
+    const held = owned > def.tiers ? def.tiers : owned;
+    for (const fx of def.effects) {
+      if (fx.target !== 'run' || fx.key !== key) continue;
+      total += effectTotal(fx, held);
+    }
+  }
+  return total;
+}
+
 export function metaTierOf(tiers: ArrayLike<number>, id: MetaId): number {
   for (let i = 0; i < META_CATALOG.length; i++) {
     const def = META_CATALOG[i];
