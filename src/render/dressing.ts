@@ -82,5 +82,5 @@ export type DressingFactory = (tex: GameTextures) => LevelDressing;
  */
 export const DRESSING_BY_LEVEL: Record<LevelId, DressingFactory> = {
   scrapyard: (tex) => new ScrapyardDressing(tex),
-  'mossy-mayhem': () => new MossDressing(),
+  'mossy-mayhem': (tex) => new MossDressing(tex),
 };

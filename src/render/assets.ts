@@ -298,7 +298,34 @@ export interface GameTextures {
   readonly slug: Texture;
   /** The drone, drawn by `npm run drone`. Circular on purpose - see tools/make-drone.mjs. */
   readonly drone: Texture;
+  /**
+   * MOSSY MAYHEM'S WALL SEGMENTS. Four sets, all baked by `npm run walls`.
+   *
+   * `wallTiles` is the 4x4 AUTOTILE, indexed `row * 4 + col`, where the two indices are the ones
+   * the neighbour test in `dressingMoss.ts` already produced - cols 0/1/2 and rows 0/1/2 are the
+   * edges and middle, and col/row 3 are the thin one-cell-wide and one-cell-tall variants. Order
+   * is the sheet's, so there is no lookup table between the test and the texture.
+   */
+  readonly wallTiles: readonly Texture[];
+  /** Cliff faces, drawn under any cell with nothing below it. Four, so a long edge does not repeat. */
+  readonly wallFaces: readonly Texture[];
+  /** The destructible variety, standing. */
+  readonly wallTrees: readonly Texture[];
+  /** The same trees felled. Index-paired with `wallTrees`: stump N is tree N cut down. */
+  readonly wallStumps: readonly Texture[];
 }
+
+/** How many pieces each of the four wall sets has. See tools/make-moss-walls.mjs. */
+export const WALL_TILE_COUNT = 16;
+export const WALL_FACE_COUNT = 4;
+export const WALL_TREE_COUNT = 3;
+
+/**
+ * Height of a cliff-face texture as a fraction of a wall cell. The tool crops the bottom 36 of the
+ * sheet's 64 px, and the renderer has to know how tall the result is to place it under a cell.
+ * Derived from the same two numbers rather than measured off the texture, so the two cannot drift.
+ */
+export const WALL_FACE_FRACTION = 36 / 64;
 
 /**
  * A sprite name -> data: URI map, injected by tools/inline_build.mjs for the single-file build.
@@ -393,6 +420,12 @@ export async function loadGameTextures(
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
+  // Mossy Mayhem's walls. `mwall_t<col><row>` is the autotile; see GameTextures.wallTiles.
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) keys.push(`mwall_t${col}${row}`);
+  }
+  for (let i = 0; i < WALL_FACE_COUNT; i++) keys.push(`mwall_face${i}`);
+  for (let i = 0; i < WALL_TREE_COUNT; i++) keys.push(`mwall_tree${i}`, `mwall_stump${i}`);
 
   // `UnresolvedAsset` carries a `[key: string]: any` index signature, so an ARRAY of them also
   // satisfies the single-asset overload and TypeScript picks that one first. Naming the record
@@ -447,6 +480,13 @@ export async function loadGameTextures(
     ),
     turret: get('turret'),
     drone: get('drone'),
+    // `row * 4 + col`, matching the neighbour test that produces the two indices.
+    wallTiles: Array.from({ length: WALL_TILE_COUNT }, (_, i) =>
+      get(`mwall_t${i % 4}${Math.floor(i / 4)}`),
+    ),
+    wallFaces: Array.from({ length: WALL_FACE_COUNT }, (_, i) => get(`mwall_face${i}`)),
+    wallTrees: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_tree${i}`)),
+    wallStumps: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_stump${i}`)),
     creatures,
     floors,
     fence,

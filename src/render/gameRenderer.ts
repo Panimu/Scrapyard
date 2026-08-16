@@ -28,6 +28,7 @@ import {
   ARCHETYPES,
   ARENA_HALF,
   EV_BARREL_BROKEN,
+  EV_WALL_BROKEN,
   EV_CONSUMABLE_TAKEN,
   BOSS_OUTLINE_SCALE,
   BOSS_OUTLINE_TINT,
@@ -719,6 +720,15 @@ export class GameRenderer {
           this.savedTotal = c;
           break;
 
+        case EV_WALL_BROKEN:
+          // A TREE COMING DOWN IS NOT A DRUM GOING UP. No fireball and no scorch mark: a green
+          // sparkle for the foliage and a dust puff at the base, which is all the confirmation
+          // needed because the thing the player is actually watching for - the gap - is the
+          // stump the dressing starts drawing on the very next frame.
+          this.effects.sparkle(a, b, 0x6fbf4f);
+          this.effects.puff(a, b, c * 1.4);
+          break;
+
         case EV_BARREL_BROKEN:
           // A drum going up is the loudest thing scenery ever does, and it has to be, because the
           // player did not aim at it: the burst is what tells them a barrel WAS there and that
@@ -955,6 +965,14 @@ export class GameRenderer {
     const s = world.scenery;
     const pool = this.scrap;
     pool.begin();
+    // SCRAP PILES ONLY. A level whose terrain is a wall lattice draws it in its own dressing,
+    // where it belongs - this loop is the Scrapyard's jittered grid and understands nothing else.
+    // `pool.begin()`/`end()` still bracket the early return so the sprite pool is released rather
+    // than left holding last frame's piles.
+    if (s.kind !== 'piles') {
+      pool.end();
+      return;
+    }
 
     const c0 = Math.floor((this.camera.x - this.camera.halfW + ARENA_HALF) / SCENERY_CELL);
     const c1 = Math.floor((this.camera.x + this.camera.halfW + ARENA_HALF) / SCENERY_CELL);

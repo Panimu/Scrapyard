@@ -81,7 +81,12 @@ import {
   STRIKE_RADIUS_MIN,
 } from '../constants.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
-import { destructibleRayHit, sceneryRayHit } from '../content/scenery.js';
+import {
+  destructibleRayHit,
+  sceneryRayHit,
+  sceneryX,
+  sceneryY,
+} from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
@@ -793,7 +798,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // shot instead: whatever the line crossed goes up, and the beam carries on to its target.
   const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
   if (drum >= 0) {
-    breakBarrelIn(world, world.scenery.x[drum], world.scenery.y[drum], 0);
+    breakBarrelIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0);
   }
 
   // THE CHAIN. Only a weapon whose ascension has been taken gets here - see WeaponDef.chainsFrom.

@@ -40,6 +40,17 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T12:14Z',
+    title: 'MOSSY MAYHEM HAS WALLS NOW',
+    notes: [
+      'The moss is no longer open turf. Stone walls run across it in lines, corners, junctions and walled rooms with a way in — cover to fight behind, and corners to lose a pack around.',
+      'A gap one segment wide is exactly wide enough to drive through. Every wall is built so that there is always a way past.',
+      'Some of it is woodland instead of stone, and woodland comes down. Shoot a tree or simply walk your mech into it and it falls, leaving a stump and a hole in the treeline you can drive through for the rest of the run.',
+      'Lasers will not fire into a rock face, but they will burn straight through a tree — so a beam clears its own path.',
+      'It goes on forever in every direction, and no two runs lay it out the same way.',
+    ],
+  },
+  {
     at: '2026-08-16T10:31Z',
     title: 'PAUSE SHOWS THE WHOLE LOADOUT, AND REROLLS ARE FOR SALE',
     notes: [

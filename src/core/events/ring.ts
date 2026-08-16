@@ -124,6 +124,14 @@ export const EV_PLAYER_REPAIRED = 27;
  * that outlives the protection it depicts is worse than no effect.
  */
 export const EV_PLAYER_SAVED = 28;
+/**
+ * A DESTRUCTIBLE WALL SEGMENT was broken - a tree on Mossy Mayhem. Payload: (x, y, radius, 0).
+ *
+ * ITS OWN EVENT RATHER THAN EV_BARREL_BROKEN, because the two look nothing alike and the renderer
+ * has to be able to tell them apart: a drum is a fireball and a scorch mark, a felled tree is
+ * leaves and a stump. Sharing the id would have made every tree on the moss map explode.
+ */
+export const EV_WALL_BROKEN = 29;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -156,6 +164,7 @@ export const EVENT_NAMES: readonly string[] = [
   'SPECIAL_EVENT',
   'PLAYER_REPAIRED',
   'PLAYER_SAVED',
+  'WALL_BROKEN',
 ];
 
 export interface EventRing {

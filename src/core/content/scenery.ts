@@ -1,5 +1,10 @@
 /**
- * SCENERY - the scrap piles standing in the yard, and every query anything makes about them.
+ * SCENERY - a level's standing terrain, and every query anything makes about it.
+ *
+ * TWO TERRAINS ANSWER THESE QUESTIONS. The Scrapyard's scrap piles are described at length below
+ * and implemented here; Mossy Mayhem's unbounded wall lattice lives in `wallsMossy.ts` and is
+ * dispatched to from each query. See `Scenery` for why that is a tagged union rather than the
+ * feature flag `levels.ts` forbids.
  *
  * Generated once at `createWorld` from the run seed. It is world DATA, not a system: nothing here
  * runs per tick, and there is no `updateScenery`. Movement, projectiles and the lasers all ask it
@@ -38,6 +43,21 @@
 
 import { ARENA_HALF, ARENA_SIZE } from '../constants.js';
 import { Rng } from '../rng.js';
+import {
+  breakWallCell,
+  pushOutOfWalls,
+  wallCellX,
+  wallCellY,
+  wallCentre,
+  wallDestructibleOverlap,
+  wallDestructibleRayHit,
+  wallOverlap,
+  wallRayHit,
+  WALL_HALF,
+  WALL_TREE,
+  wallKindAt,
+  type MossWalls,
+} from './wallsMossy.js';
 
 /** Cell edge. One pile per cell, at most. 16 x 16 = 256 cells across a 12 288 u yard. */
 export const SCENERY_CELL = 768;
@@ -162,7 +182,11 @@ const CLEAR_RADIUS = 420;
  */
 const SCENERY_SEED_MIX = 0x5ce7e12 | 0;
 
-export interface Scenery {
+/**
+ * THE SCRAPYARD'S TERRAIN: circles on a jittered grid. Everything above describes this one.
+ */
+export interface ScrapPiles {
+  readonly kind: 'piles';
   /** Indexed by `row * SCENERY_COLS + col`. `radius` 0 means the cell is empty. */
   readonly x: Float32Array;
   readonly y: Float32Array;
@@ -174,15 +198,42 @@ export interface Scenery {
 }
 
 /**
+ * TERRAIN, WHICHEVER SHAPE THIS LEVEL'S IS.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * A TAGGED UNION, WHICH IS NOT THE SAME THING AS A FEATURE FLAG
+ * ---------------------------------------------------------------------------------------------
+ * `levels.ts` is emphatic that a level supplies its parts rather than ticking boxes, and this looks
+ * at first glance like the boolean that document forbids. It is the opposite of one, and the
+ * difference is worth stating because the next person to add terrain will have to decide the same
+ * thing:
+ *
+ *   - A FLAG switches shared behaviour on and off, so content can only ever differ in ways somebody
+ *     already anticipated, and the `if` lands in the middle of code other levels depend on.
+ *   - THIS is two unrelated geometries - circles on a bounded grid, cells on an unbounded lattice -
+ *     that happen to answer the same six questions. The discrimination is on WHAT THE DATA IS, it
+ *     lives entirely inside this module, and it appears exactly once per question.
+ *
+ * The evidence that it is the right shape: not one system changed. `playerMovement`, `enemyAI`,
+ * `spawning`, `projectiles` and `weapons` still call `pushOutOfScenery` and `sceneryRayHit` and
+ * have no idea there are two kinds of ground. Had this been a flag, every one of them would carry
+ * it.
+ *
+ * A third terrain is a third member and six more branches here, and still no system edits.
+ */
+export type Scenery = ScrapPiles | MossWalls;
+
+/**
  * An allocated but EMPTY world. Used by a level that generates its terrain some other way, or not
  * yet at all.
  *
  * A complete `Scenery` rather than a special case: `count` 0 means every overlap query returns -1
  * and every push misses, so no system needs to know whether a level has anything in it.
  */
-export function emptyScenery(): Scenery {
+export function emptyScenery(): ScrapPiles {
   const n = SCENERY_COLS * SCENERY_COLS;
   return {
+    kind: 'piles',
     x: new Float32Array(n),
     y: new Float32Array(n),
     radius: new Float32Array(n),
@@ -199,7 +250,7 @@ export function emptyScenery(): Scenery {
  * stops. That is a property of one level, which is why the level catalog holds a `makeScenery`
  * function instead of a flag telling this one whether to bother.
  */
-export function createScenery(seed: number): Scenery {
+export function createScenery(seed: number): ScrapPiles {
   const s = emptyScenery();
 
   const rng = new Rng((seed ^ SCENERY_SEED_MIX) | 0);
@@ -268,6 +319,7 @@ function cellOf(v: number): number {
  * there is never a second.
  */
 export function sceneryOverlap(s: Scenery, x: number, y: number, r: number): number {
+  if (s.kind === 'walls') return wallOverlap(s, x, y, r);
   const c0 = cellOf(x);
   const r0 = cellOf(y);
 
@@ -325,6 +377,7 @@ export function pushOutOfScenery(
   y: number,
   r: number,
 ): Readonly<SceneryPush> {
+  if (s.kind === 'walls') return pushOutOfWalls(s, x, y, r);
   PUSH.x = x;
   PUSH.y = y;
   PUSH.nx = 0;
@@ -384,6 +437,7 @@ export function sceneryRayHit(
   dy: number,
   maxT: number,
 ): number {
+  if (s.kind === 'walls') return wallRayHit(s, ox, oy, dx, dy, maxT);
   const c0 = cellOf(ox + dx * maxT * 0.5);
   const r0 = cellOf(oy + dy * maxT * 0.5);
   // Cells to either side of the midpoint that the ray can still touch. Half the ray plus the
@@ -426,6 +480,7 @@ export function sceneryRayHit(
 
 /** True if this cell holds something a weapon can break. */
 export function isDestructible(s: Scenery, i: number): boolean {
+  if (s.kind === 'walls') return wallKindAt(s, wallCellX(i), wallCellY(i)) === WALL_TREE;
   return s.radius[i] > 0 && s.variant[i] === SCRAP_BARREL;
 }
 
@@ -439,6 +494,7 @@ export function isDestructible(s: Scenery, i: number): boolean {
  * reports the NEAREST, which is the one a blast centred anywhere should take out first.
  */
 export function destructibleOverlap(s: Scenery, x: number, y: number, r: number): number {
+  if (s.kind === 'walls') return wallDestructibleOverlap(s, x, y, r);
   const c0 = cellOf(x);
   const r0 = cellOf(y);
 
@@ -474,6 +530,7 @@ export function destructibleOverlap(s: Scenery, x: number, y: number, r: number)
  * a new concept.
  */
 export function destroyScenery(s: Scenery, i: number): void {
+  if (s.kind === 'walls') return breakWallCell(s, i);
   if (s.radius[i] === 0) return;
   s.radius[i] = 0;
   s.count--;
@@ -519,6 +576,8 @@ export const BARREL_REGROW_MIN_DIST = 560;
  * (cars), and no empty cell can be mistaken for a drum that was there.
  */
 export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): number {
+  // Walls do not come back. See wallsMossy.ts: a wood the player cut through stays cut.
+  if (s.kind === 'walls') return -1;
   const n = s.radius.length;
   const min2 = BARREL_REGROW_MIN_DIST * BARREL_REGROW_MIN_DIST;
 
@@ -561,6 +620,7 @@ export function destructibleRayHit(
   dy: number,
   maxT: number,
 ): number {
+  if (s.kind === 'walls') return wallDestructibleRayHit(s, ox, oy, dx, dy, maxT);
   const c0 = cellOf(ox + dx * maxT * 0.5);
   const r0 = cellOf(oy + dy * maxT * 0.5);
   const span = 1 + Math.floor((maxT * 0.5 + RADIUS_MAX) / SCENERY_CELL);
@@ -595,4 +655,33 @@ export function destructibleRayHit(
     }
   }
   return best;
+}
+
+// -------------------------------------------------------------------------------------------
+// Reading a cell back
+// -------------------------------------------------------------------------------------------
+
+/**
+ * WHERE THE THING AT INDEX `i` IS, AND HOW BIG IT IS.
+ *
+ * Three accessors rather than the callers reaching into `s.x[i]`, because the index a query hands
+ * back means different things to the two terrains - a slot in a flat array for the Scrapyard, a
+ * packed cell coordinate for Mossy - and the callers have no business knowing which. They ask a
+ * query for an index and hand that index straight back; this is the only place the difference
+ * exists.
+ *
+ * It is also what let the barrel-breaking path stay one piece of code: it reads a position out of
+ * whatever it hit and puts an event there, and both terrains answer.
+ */
+export function sceneryX(s: Scenery, i: number): number {
+  return s.kind === 'walls' ? wallCentre(wallCellX(i)) : s.x[i];
+}
+
+export function sceneryY(s: Scenery, i: number): number {
+  return s.kind === 'walls' ? wallCentre(wallCellY(i)) : s.y[i];
+}
+
+/** Sizes the burst the renderer plays where something went up. Half a cell, for a wall. */
+export function sceneryRadius(s: Scenery, i: number): number {
+  return s.kind === 'walls' ? WALL_HALF : s.radius[i];
 }

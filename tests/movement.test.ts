@@ -30,6 +30,9 @@ function makeWorld(heroId = 0): World {
   // clamp - and every one of them holds the stick down for long enough to cross a few hundred
   // units. With scrap standing in the world that eventually means driving into a pile and
   // measuring the collision response instead of the thing under test. Scenery has its own tests.
+  // `createWorld` with no level is the Scrapyard, whose terrain is piles; the narrowing is a
+  // statement of that rather than a possibility being handled.
+  if (w.scenery.kind !== 'piles') throw new Error('expected the Scrapyard');
   w.scenery.radius.fill(0);
   w.scenery.count = 0;
   return w;

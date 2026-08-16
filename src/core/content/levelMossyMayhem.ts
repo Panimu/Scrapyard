@@ -10,18 +10,20 @@
  * have to be describable in terms of either.
  *
  * ---------------------------------------------------------------------------------------------
- * WHY IT IS BARE TODAY
+ * ITS TERRAIN IS WALLS, AND THEY GO ON FOREVER
  * ---------------------------------------------------------------------------------------------
- * `makeScenery` returns an EMPTY world - deliberately, and only for now. The Scrapyard's generator
- * fills a fixed square; this level has no square to fill, so it needs terrain derived in chunks
- * around the player as they walk, which is the next piece of work and belongs in this file when it
- * arrives. Shipping bare turf beats shipping a wood that stops at an invisible line.
+ * The Scrapyard scatters circles across a fixed square. This level has no square, so it cannot -
+ * and blobs would not be what it wants anyway. `wallsMossy.ts` deals SEGMENTS instead: lines, Ls,
+ * Ts and walled rooms with entrances, one shape per block of the plane, generated from the seed
+ * wherever the player happens to be standing.
  *
- * An empty `Scenery` is a complete one: `count` 0 means every overlap query misses and every push
- * is a no-op, so nothing downstream needs to know this level has nothing in it yet.
+ * Two varieties. Stone is permanent; TREES come down when shot and leave a stump. That is a
+ * property of the terrain rather than a feature switched on for this level, which is why it cost
+ * core one event and no system a branch.
  */
 
-import { emptyScenery, type Scenery } from './scenery.js';
+import { type Scenery } from './scenery.js';
+import { createMossWalls } from './wallsMossy.js';
 import { MOSS, MOSS_CREATURES } from './creaturesMossy.js';
 import { MOSS_LADDER, resolveMossyCycle } from './cyclesMossy.js';
 import type { LevelDef } from './levels.js';
@@ -48,7 +50,12 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
   arenaHalf: Infinity,
   floor: 'floor_moss',
 
-  makeScenery: (): Scenery => emptyScenery(),
+  /**
+   * The whole plane's worth of walls, from the seed alone. Nothing is allocated up front: the
+   * lattice generates the block under the query and memoises it, so a run that walks two hundred
+   * thousand units costs the same as one that never leaves the opening.
+   */
+  makeScenery: (seed: number): Scenery => createMossWalls(seed),
 
   /**
    * ITS OWN CREATURES AND ITS OWN LADDER - eight things that live in moss, and the eight cycles

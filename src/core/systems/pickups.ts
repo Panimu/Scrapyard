@@ -68,7 +68,14 @@ import {
   MAX_KILLS_PER_TICK,
 } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
-import { destroyScenery, destructibleOverlap, regrowBarrel } from '../content/scenery.js';
+import {
+  destroyScenery,
+  destructibleOverlap,
+  regrowBarrel,
+  sceneryRadius,
+  sceneryX,
+  sceneryY,
+} from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
@@ -87,6 +94,7 @@ import {
 import {
   EV_BARREL_BROKEN,
   EV_BARREL_GREW,
+  EV_WALL_BROKEN,
   EV_CONSUMABLE_TAKEN,
   EV_GEM_COLLECTED,
   EV_GEM_SPAWNED,
@@ -148,9 +156,9 @@ function regrowBarrels(world: World): void {
     world.events,
     EV_BARREL_GREW,
     world.tick,
-    world.scenery.x[i],
-    world.scenery.y[i],
-    world.scenery.radius[i],
+    sceneryX(world.scenery, i),
+    sceneryY(world.scenery, i),
+    sceneryRadius(world.scenery, i),
     0,
   );
 }
@@ -160,8 +168,9 @@ function regrowBarrels(world: World): void {
 // -------------------------------------------------------------------------------------------
 
 /**
- * Breaks any FUEL BARREL overlapping the circle (x, y, r) and drops what was inside. Returns true
- * if something went up.
+ * Breaks whatever DESTRUCTIBLE TERRAIN overlaps the circle (x, y, r). Returns true if something
+ * went. On the Scrapyard that is a fuel barrel, and what was inside falls out; on Mossy Mayhem it
+ * is a tree, which leaves a stump and nothing else.
  *
  * CALLED FROM FOUR PLACES - the three ways a WEAPON can touch the ground, and the player.
  *
@@ -183,8 +192,22 @@ export function breakBarrelIn(world: World, x: number, y: number, r: number): bo
   const i = destructibleOverlap(world.scenery, x, y, r);
   if (i < 0) return false;
 
-  const bx = world.scenery.x[i];
-  const by = world.scenery.y[i];
+  const bx = sceneryX(world.scenery, i);
+  const by = sceneryY(world.scenery, i);
+
+  // A TREE IS NOT A DRUM, and this is the one place the difference has to be spoken aloud. Both
+  // terrains answer `destructibleOverlap`, so all four callers above reach this function without
+  // knowing which map they are on - but what happens next genuinely differs, and pretending
+  // otherwise would either drop loot out of a hedge or make every tree on the moss map explode.
+  //
+  // Written as an early return rather than a shared body with two `if`s in it, so the barrel path
+  // below reads exactly as it did before there was a second terrain.
+  if (world.scenery.kind === 'walls') {
+    const br = sceneryRadius(world.scenery, i);
+    destroyScenery(world.scenery, i);
+    pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, 0);
+    return true;
+  }
 
   // OFF SCREEN, SO IT SURVIVES. See BARREL_BREAK_RADIUS: a drum the player cannot see is a drum
   // whose contents they will never collect, so breaking it only costs them the barrel. Measured
@@ -198,7 +221,7 @@ export function breakBarrelIn(world: World, x: number, y: number, r: number): bo
   if (dx * dx + dy * dy > BARREL_BREAK_RADIUS * BARREL_BREAK_RADIUS) return false;
   // Read BEFORE destroying: destruction is a radius write, so this is the last tick the size of
   // the thing that went up exists anywhere, and the renderer sizes its burst from it.
-  const br = world.scenery.radius[i];
+  const br = sceneryRadius(world.scenery, i);
   destroyScenery(world.scenery, i);
   world.stats.barrelsBroken++;
   pushEvent(world.events, EV_BARREL_BROKEN, world.tick, bx, by, br, 0);
