@@ -69,12 +69,11 @@ import {
 import { BeamLayer } from './beams.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
-import { Fence } from './fence.js';
 import { SpritePool } from './spritePool.js';
+import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
+import type { LevelId } from '../core/content/levels.js';
 // PACKAGE B and PACKAGE C - two independent decoration layers. Each is one import, one field, one
 // construction, one addChild and one draw call; removing either touches nothing else.
-import { GroundCover } from './groundCover.js';
-import { GroundPaths } from './groundPaths.js';
 import {
   GEM_SCALE,
   GEM_TINT,
@@ -295,29 +294,20 @@ export class GameRenderer {
   };
 
   private readonly floor: TilingSprite;
-  private readonly groundPaths: GroundPaths;
-  private readonly groundCover: GroundCover;
 /**
-   * THE PERIMETER, OR NOTHING AT ALL.
+   * THE LEVEL'S DRESSING, and the slot it lives in.
    *
-   * `null` on a level that has no edge, and null means there is no Fence - not a Fence with
-   * `visible = false`. Mossy Mayhem is its own map rather than the Scrapyard with a wall switched
-   * off, and a hidden fence is exactly the kind of thing that comes back: something toggles
-   * visibility for an unrelated reason, or a later layer sorts against it, and a level that is
-   * supposed to be open grows an edge nobody put there.
+   * The renderer owns a POSITION in the layer order and nothing about what fills it. Roads, rubble
+   * and the perimeter fence were fields here once, switched on and off by the level; they are the
+   * Scrapyard's, they live in `dressingScrapyard.ts`, and this file no longer knows they exist.
    *
-   * It is built the first time a bounded level asks for one and thrown away when an unbounded
-   * level starts, so the display list under `fenceSlot` is genuinely empty out on the moss.
+   * The slot is a permanent empty Container so that swapping dressings cannot land the new one in
+   * the wrong z-position - the one thing that would go wrong if dressings were added to `world`
+   * directly.
    */
-  private fence: Fence | null = null;
-  /**
-   * The fence's PLACE in the layer order, kept whether or not anything is in it.
-   *
-   * An empty container costs a pointer and nothing else, and it means attaching a fence later
-   * cannot land in the wrong z-slot - which is the one thing that would go wrong if the fence were
-   * added and removed from `world` directly.
-   */
-  private readonly fenceSlot: Container;
+  private dressing: LevelDressing | null = null;
+  private dressingLevel: LevelId | null = null;
+  private readonly dressingSlot: Container;
   private readonly scrap: SpritePool;
   private readonly world: Container;
   private readonly letterbox: Graphics;
@@ -390,8 +380,6 @@ export class GameRenderer {
     const firstFloor = tex.floors.values().next().value;
     if (firstFloor === undefined) throw new Error('assets: no level floor textures loaded');
     this.floor = new TilingSprite({ texture: firstFloor, width: 1, height: 1, label: 'floor' });
-    this.groundPaths = new GroundPaths(tex.pathByMask);
-    this.groundCover = new GroundCover(tex.cover);
 
     // isRenderGroup: camera movement becomes one GPU-side transform instead of re-walking every
     // child's world transform each frame.
@@ -464,21 +452,18 @@ export class GameRenderer {
     this.letterbox = new Graphics({ label: 'letterbox' });
     this.bossArrows = new Graphics({ label: 'boss-arrows' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
-    this.fenceSlot = new Container({ label: 'fence-slot' });
+    this.dressingSlot = new Container({ label: 'dressing' });
     // No texture: each pile picks its own variant, exactly as the enemy pool does. Small capacity
     // because the yard is deliberately sparse - the camera reaches 500 u and piles sit a cell
     // apart, so it can never see more than a handful (see drawScenery).
     this.scrap = new SpritePool({ capacity: SCRAP_SPRITES, label: 'scrap' });
 
     this.world.addChild(
-      // PACKAGE C then PACKAGE B, both before everything: a road is painted ON the ground, and a
-      // rock sits ON the road. Both are below the fence, which is a structure and correctly hides
-      // whatever is under it at the yard's edge.
-      this.groundPaths.container,
-      this.groundCover.container,
-      // Then the fence's slot - it has to cover the floor tile, which is drawn screen-space and
-      // does not know the yard has an edge. Empty on a level with no edge.
-      this.fenceSlot,
+      // THE LEVEL'S DRESSING, below everything that moves and above the floor tile. What is in it
+      // is the level's business - see dressing.ts. It sits here because whatever a level paints on
+      // its ground has to cover the floor tile, which is drawn screen-space and does not know the
+      // world has features.
+      this.dressingSlot,
       // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
       // hide the bodies the player is deciding about.
       this.strikeMarkers,
@@ -530,27 +515,25 @@ export class GameRenderer {
     const ground = this.tex.floors.get(world.level.floor);
     if (ground !== undefined) this.floor.texture = ground;
 
-    // A FENCE EXISTS EXACTLY WHERE THERE IS SOMETHING TO FENCE, and that is DERIVED from the
-    // bound rather than being a second field on the level that could disagree with it. A finite
-    // arena with no fence is an invisible wall; an unbounded one with a fence is four strips at
-    // infinity. Neither is a level anybody would author on purpose, so neither is expressible.
-    const wantsFence = Number.isFinite(world.arenaHalf);
-    if (wantsFence && this.fence === null) {
-      this.fence = new Fence(this.tex);
-      this.fenceSlot.addChild(this.fence.container);
-    } else if (!wantsFence && this.fence !== null) {
-      this.fenceSlot.removeChildren();
-      // children, not textures: the strips' textures are shared with the asset cache and are
-      // wanted again the moment a bounded level starts.
-      this.fence.container.destroy({ children: true });
-      this.fence = null;
+    // THE LEVEL'S DRESSING. Swapped only when the level actually changes, so replaying the same
+    // level does not rebuild a fence and a rubble lattice it is about to use unchanged.
+    //
+    // The old dressing is DESTROYED rather than hidden: a level that is not being played should
+    // not have anything in the display list, and "hidden" is the state that comes back when
+    // something toggles visibility for an unrelated reason.
+    if (this.dressingLevel !== world.level.id) {
+      if (this.dressing !== null) {
+        this.dressingSlot.removeChildren();
+        this.dressing.destroy();
+      }
+      const dressing = DRESSING_BY_LEVEL[world.level.id](this.tex);
+      this.dressingSlot.addChild(dressing.container);
+      this.dressing = dressing;
+      this.dressingLevel = world.level.id;
     }
-
-    // GROUND DECORATION IS DRESSED FOR ITS LEVEL. Packages B and C are rust rubble and worn
-    // plating; on turf they read as spilled dirt. Hidden rather than retinted, because the moss
-    // map is getting its own out of the medieval pack rather than a green-tinted boulder.
-    this.groundCover.container.visible = world.level.groundDecor;
-    this.groundPaths.container.visible = world.level.groundDecor;
+    // Told the seed on every run, not only when the dressing is new: replaying the same level with
+    // a different seed has to lay out a different yard.
+    this.dressing?.begin(world);
 
     this.pickups.clear();
     this.enemies.clear();
@@ -570,10 +553,6 @@ export class GameRenderer {
     this.strikeMarkers.clear();
     this.bossArrows.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
-    // The two decoration layers are pure functions of the seed - see their own headers. This is
-    // the only thing either of them is ever told.
-    this.groundPaths.begin(world.config.seed);
-    this.groundCover.begin(world.config.seed);
     this.camera.snapTo(world.player.x, world.player.y);
     // Drop anything the previous run left in the ring so its explosions do not play now.
     world.events.readCursor = world.events.writeCursor;
@@ -601,19 +580,11 @@ export class GameRenderer {
     this.camera.follow(px, py);
 
     this.drawFloor();
-    // Static geometry - this only decides which of the four runs are worth submitting, and in the
-    // middle of the yard the answer is none of them.
-    // Nothing to update when there is no fence, and nothing to remember to hide either.
-    if (this.fence !== null) this.fence.update(this.camera);
+    // THE LEVEL'S GROUND, whatever this level's ground is. Drawn after the camera is positioned,
+    // because a dressing derives what is on screen from the camera rect rather than storing a
+    // world of it, and before anything that moves.
+    if (this.dressing !== null) this.dressing.draw(this.camera, world);
     this.drawScenery(world);
-    // PACKAGE C and PACKAGE B. Drawn before anything that moves, and after the camera is known -
-    // both derive what is on screen from the camera rect rather than storing a world of scenery.
-    // Skipped entirely when the level does not want them - `reset` hid the containers, and
-    // deriving a lattice of cells nobody will see is the one cost this layer is not worth.
-    if (world.level.groundDecor) {
-      this.groundPaths.draw(this.camera);
-      this.groundCover.draw(this.camera);
-    }
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);

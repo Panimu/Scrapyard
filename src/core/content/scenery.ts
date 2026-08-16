@@ -174,27 +174,33 @@ export interface Scenery {
 }
 
 /**
- * `populate` false returns the same struct with nothing in it.
+ * An allocated but EMPTY world. Used by a level that generates its terrain some other way, or not
+ * yet at all.
  *
- * FOR A LEVEL THAT HAS NO EDGES. Everything below fills a FIXED SQUARE - the cell grid is indexed
- * from `-ARENA_HALF` and `sceneryCell` maps a coordinate back the same way - so this generator is
- * built on knowing where the world stops. An unbounded level needs scenery derived in chunks
- * around the player instead, the way the render-side ground cover already is, and that is a
- * different function rather than a flag on this one.
- *
- * An empty `Scenery` is a perfectly good one: `count` 0 means every overlap query returns -1 and
- * every push misses, so nothing downstream needs to know a level has no scrap in it.
+ * A complete `Scenery` rather than a special case: `count` 0 means every overlap query returns -1
+ * and every push misses, so no system needs to know whether a level has anything in it.
  */
-export function createScenery(seed: number, populate = true): Scenery {
+export function emptyScenery(): Scenery {
   const n = SCENERY_COLS * SCENERY_COLS;
-  const s: Scenery = {
+  return {
     x: new Float32Array(n),
     y: new Float32Array(n),
     radius: new Float32Array(n),
     variant: new Int32Array(n),
     count: 0,
   };
-  if (!populate) return s;
+}
+
+/**
+ * THE SCRAPYARD'S generator, and it is the Scrapyard's rather than core's.
+ *
+ * Everything below fills a FIXED SQUARE - the cell grid is indexed from `-ARENA_HALF` and
+ * `sceneryCell` maps a coordinate back the same way - so it is built on knowing where the world
+ * stops. That is a property of one level, which is why the level catalog holds a `makeScenery`
+ * function instead of a flag telling this one whether to bother.
+ */
+export function createScenery(seed: number): Scenery {
+  const s = emptyScenery();
 
   const rng = new Rng((seed ^ SCENERY_SEED_MIX) | 0);
   const clear2 = CLEAR_RADIUS * CLEAR_RADIUS;

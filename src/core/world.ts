@@ -35,7 +35,6 @@ import {
 import { xpToNextLevel } from './config/tuning.js';
 import { RANKS, createResolvedCycle } from './content/cycles.js';
 import { FLAVOURS } from './content/enemyCatalog.js';
-import { createScenery } from './content/scenery.js';
 import { levelOrDefault } from './content/levels.js';
 import { createDronePool } from './entity/dronePool.js';
 import { createEnemyPool } from './entity/enemyPool.js';
@@ -277,7 +276,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     weaponCount: 0,
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
-    scenery: createScenery(config.seed, level.scenery),
+    // The LEVEL's own world generation, not core's. See LevelDef.makeScenery.
+    scenery: level.makeScenery(config.seed),
     chest: {
       reels: new Int32Array(CHEST_REELS).fill(-1),
       payout: 0,

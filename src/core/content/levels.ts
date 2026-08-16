@@ -1,33 +1,37 @@
 /**
- * THE LEVELS. Two, and the simulation reads them now.
- *
- * A table rather than a pair of buttons in the UI, because a level is the thing that chooses what
- * the ground is, how big the world is, and eventually the scenery mix and the enemy ladder. When
- * those arrive they arrive as FIELDS HERE, not as a switch statement in whatever system needed to
- * know.
+ * THE LEVEL CATALOG: the shape a level has, and the list of them.
  *
  * ---------------------------------------------------------------------------------------------
- * `arenaHalf` IS THE FIRST THING A LEVEL ACTUALLY DECIDES
+ * A LEVEL SUPPLIES ITS PARTS - IT DOES NOT TICK BOXES
  * ---------------------------------------------------------------------------------------------
- * The Scrapyard is a fenced square: half-extent `ARENA_HALF`, a wall you can be cornered against,
- * and that pressure is the level. Mossy Mayhem is `Infinity` - genuinely unbounded in all four
- * directions, no wall, no wrap, no soft nudge back toward the middle.
+ * This table held booleans for a while: `scenery: true`, `groundDecor: true`. That made the second
+ * level "the first one with things switched off", and it would have made the third level a fourth
+ * and fifth boolean with an `if` for each in whatever system happened to care. It is the same shape
+ * the weapon catalog explicitly forbids - a branch in a system for one piece of content - and it
+ * has the same failure: content can only ever differ in the ways somebody already anticipated.
  *
- * INFINITY RATHER THAN A VERY LARGE NUMBER, and it is worth being deliberate about. Every bound
- * check in core is a comparison, and `x > Infinity` is false, `x < -Infinity` is false, so every
- * clamp degrades to exactly the no-op an unbounded world wants without a single `if (bounded)`
- * anywhere. A big finite number would instead put a wall somewhere far away that nobody tested,
- * which is the kind of thing that is found by a player and not by us.
+ * So the fields here are either UNIVERSAL FACTS every level must answer (how big is it, what is the
+ * ground called) or FUNCTIONS THE LEVEL SUPPLIES (`makeScenery`). Nothing is a switch on shared
+ * behaviour. A level whose terrain is generated in chunks, or whose ground is procedural, or which
+ * has no ground at all, hands over its own function and core learns nothing new.
  *
- * It never reaches an entity's position or the replay hash: the clamps that would have written it
- * are the ones that no longer fire, and `hashWorld` walks pools rather than config.
+ * Each level's definition lives in ITS OWN FILE - `levelScrapyard.ts`, `levelMossyMayhem.ts` - so
+ * that a change to one cannot silently alter the other, and so that reading a level means reading
+ * one file rather than picking a column out of a table.
  *
- * A LEVEL NOBODY CAN PICK IS STILL WORTH SHIPPING - `playable` says so in one place rather than in
- * the markup. That is how Mossy Mayhem sat here as a name for weeks, and it is how the next one
- * will too.
+ * ---------------------------------------------------------------------------------------------
+ * THE RENDER SIDE IS SEPARATE, AND KEYED BY ID
+ * ---------------------------------------------------------------------------------------------
+ * How a level LOOKS - its ground decoration, its perimeter, whatever a future level paints - is not
+ * in here, because core must not depend on the renderer. It lives in `src/render/dressing.ts`, in a
+ * `Record<LevelId, ...>` that the type system requires to be complete: adding a level to this
+ * catalog fails to compile until it has been given a dressing. That is a much stronger guarantee
+ * than a boolean, which can be forgotten and simply reads as `false`.
  */
 
-import { ARENA_HALF } from '../constants.js';
+import { MOSSY_MAYHEM } from './levelMossyMayhem.js';
+import { SCRAPYARD } from './levelScrapyard.js';
+import type { Scenery } from './scenery.js';
 
 export type LevelId = 'scrapyard' | 'mossy-mayhem';
 
@@ -40,72 +44,41 @@ export interface LevelDef {
   readonly art: string;
   /** False: shown on the picker, greyed, and refused. */
   readonly playable: boolean;
+
   /**
    * Half-extent of the playable square, world units, or `Infinity` for an unbounded level.
    *
-   * Read once into `World.arenaHalf` at creation and consulted from there by every system that
-   * cares. Nothing in core reads `ARENA_HALF` directly any more - that constant is now just the
-   * Scrapyard's number, quoted here.
+   * A UNIVERSAL FACT rather than a feature switch: every system that moves a body has to know
+   * where the world stops, and "nowhere" is a legitimate answer to that question rather than a
+   * different code path. Read once into `World.arenaHalf`; nothing in core reads `ARENA_HALF`
+   * directly any more, that constant being merely the Scrapyard's number.
    */
   readonly arenaHalf: number;
+
   /**
    * Ground texture key, without the `sprites/` path or the `.png`.
    *
-   * One baked, seamless, tiling texture per level - the same shape the Scrapyard's `floor` has
-   * been since the ground was baked. A level's floor is one TilingSprite with one texture, and
-   * changing levels changes which texture.
+   * One baked, seamless, tiling texture per level. `tools/make-floor.mjs` bakes them and
+   * `assets.ts` loads exactly the keys this catalog names, so a level's ground is a row here and a
+   * row there with nothing to change in the renderer.
    */
   readonly floor: string;
+
   /**
-   * Does this level generate colliding scenery?
+   * THE LEVEL'S OWN WORLD GENERATION, called once at run start with the run's seed.
    *
-   * FALSE FOR MOSSY MAYHEM TODAY, and deliberately. `createScenery` fills a FIXED SQUARE at run
-   * start - it is built around knowing where the edges are - and an unbounded level needs scenery
-   * generated in chunks around the player instead. That is the next piece of work, and shipping
-   * the ground without it beats shipping a wood that stops at an invisible line 6144 units out.
+   * A function rather than a flag, because the levels do not generate the same thing with a
+   * different density - they generate differently. The Scrapyard fills a fixed square from its
+   * edges inward; an unbounded level cannot, and a future level might carve rooms or grow terrain
+   * around the player. All of those are this signature; none of them is a boolean.
+   *
+   * Must be DETERMINISTIC in `seed` alone. It is part of the replay key.
    */
-  readonly scenery: boolean;
-  /**
-   * Does this level draw the render-side ground decoration - the rubble scatter and the worn
-   * service roads?
-   *
-   * FALSE FOR MOSSY MAYHEM, because both are dressed for the yard. The scatter is rust clusters
-   * and grey boulders tinted `0xb08a76`, and the roads are pale plating tinted to worn concrete;
-   * on turf they read as smears of dirt somebody spilled rather than as ground. The moss map gets
-   * its own decoration in the same step as its scenery, out of the medieval pack.
-   *
-   * Purely cosmetic and render-side - see src/render/groundCover.ts. Nothing in the simulation
-   * knows either layer exists, which is why this is a rendering flag and not a `scenery` one.
-   */
-  readonly groundDecor: boolean;
+  readonly makeScenery: (seed: number) => Scenery;
 }
 
-export const LEVEL_CATALOG: readonly LevelDef[] = Object.freeze([
-  Object.freeze({
-    id: 'scrapyard' as const,
-    name: 'Scrapyard',
-    blurb: 'A fenced yard of rust and wrecks. Fifteen minutes, seven bosses, nowhere to run to.',
-    art: 'scrap_0',
-    playable: true,
-    arenaHalf: ARENA_HALF,
-    floor: 'floor',
-    scenery: true,
-    groundDecor: true,
-  }),
-  Object.freeze({
-    id: 'mossy-mayhem' as const,
-    name: 'Mossy Mayhem',
-    blurb: 'Open moss and turf, running out further than you can walk. No fence, no corners.',
-    art: '',
-    playable: true,
-    // No wall in any direction. See this file's header for why Infinity rather than a big number.
-    arenaHalf: Infinity,
-    floor: 'floor_moss',
-    // Not yet - see `scenery` and `groundDecor` on LevelDef.
-    scenery: false,
-    groundDecor: false,
-  }),
-]);
+/** Every level, in picker order. */
+export const LEVEL_CATALOG: readonly LevelDef[] = Object.freeze([SCRAPYARD, MOSSY_MAYHEM]);
 
 /** A level by id, or the first playable one. Never an index literal, never a bare fallback. */
 export function levelOrDefault(id: string | undefined): LevelDef {
