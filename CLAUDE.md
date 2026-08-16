@@ -146,6 +146,17 @@ about. Nothing has been added to the project by looking at it. Do the homework p
 the actual art rather than the pack description, check the licence is really CC0, and check the
 sprite size and style against what is already here.
 
+**THERE IS FULL INTERNET ACCESS. A FAILED FETCH IS NOT A MISSING ASSET.** Most of what looks like
+a wall is a host refusing automated clients: `WebFetch` has been refused by kenney.nl,
+opengameart.org and itch.io while plain `curl` walked straight through, and JS-rendered pages hand
+back a shell that says nothing about what is on them. So when a fetch fails, change the method
+before changing the conclusion — try `curl`, try the site's own JSON endpoint, try the project's
+GitHub mirror (`git clone` works and is often the whole pack), try the CDN the page's own images
+come from. Reporting "I could not get it" after one attempt has cost this project a real asset
+hunt more than once, and twice the thing behind the block turned out to be the best candidate
+found. The one genuine stop is the LOCAL permission prompt — that names itself in the error, and it
+is the user's to lift, not something to route around.
+
 **3. ASK BEFORE ANYTHING LANDS IN THE REPOSITORY.** Vendoring is the step that needs approval, and
 it needs it every time. A pack in `assets/` is a licence obligation, a permanent few megabytes and
 a claim about the game's art direction — all three are the owner's call, not a detail to be got on
