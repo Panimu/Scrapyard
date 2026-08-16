@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T13:46Z',
+    title: 'THE HORDE KNOWS THE WAY',
+    notes: [
+      'Enemies now take a route to you rather than feeling their way along whatever they bumped into. Walls are something they walk around, not something they get caught on.',
+      'A walled room is no longer a fort. Stand inside one and the whole horde comes round the outside and in through the door — all of them, not the lucky few that guessed the right way.',
+      'Enemies you cannot see are finding their way too, so the pressure from behind a treeline arrives instead of quietly never turning up.',
+      'They still walk straight at you in the open. Nothing has become clever about hunting you down — only about not getting stuck.',
+    ],
+  },
+  {
     at: '2026-08-16T12:57Z',
     title: 'THE HORDE FINDS ITS WAY IN',
     notes: [

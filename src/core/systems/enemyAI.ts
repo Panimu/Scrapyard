@@ -46,6 +46,7 @@ import {
   sceneryX,
   sceneryY,
 } from '../content/scenery.js';
+import { FLOW_X, FLOW_Y, flowDirAt } from '../spatial/flowField.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
 import { rollRingPosition } from './spawning.js';
@@ -225,67 +226,46 @@ function seek(world: World, dt: number): void {
     let uy = dy * inv;
 
     // ---------------------------------------------------------------------------------------
-    // STEERING AROUND TERRAIN, which the slide in `integrate` cannot do on its own.
+    // STEERING PAST TERRAIN
     // ---------------------------------------------------------------------------------------
-    // The push-out keeps the tangent and loses the inward component, and against the Scrapyard's
-    // CIRCLES that is enough: an approach is almost never exactly along a pile's normal, so there
-    // is always some tangent left and a body walks itself round. Against a FLAT WALL it is not,
-    // and the failure is total rather than partial - an enemy approaching an east-west wall from
-    // the north with the player due south has a seek direction exactly along the normal, so the
-    // tangent is ZERO. It presses into the face and stays there for the rest of the run, and a
-    // crowd of them lines up along the wall like washing. That is the bug this exists for.
+    // Straight at the player is right almost all of the time, and it is what makes the horde read
+    // as a horde rather than as a search algorithm. So the straight bearing stands until a short
+    // probe says something is actually in front of this body - and only then does anything else
+    // happen. That keeps open ground on exact bearings rather than on eight of them, and it keeps
+    // the trigger somewhere that can see the truth (see flowDirAt for the version that tried to
+    // decide from the field alone, and the two-cell oscillation that produced).
     //
-    // So the avoidance goes HERE, in the steering, where a decision about where to walk belongs -
-    // by the time `integrate` has a contact normal the direction has already been chosen.
-    //
-    // ONE PROBE IN THE COMMON CASE. The straight-ahead test is also the test for whether any of
-    // this is needed, so a body in open ground pays a single overlap query and nothing else.
+    // WHEN SOMETHING IS THERE, THE FIELD SAYS WHERE TO GO. One search from the player, shared by
+    // the whole horde, and it has already seen the whole neighbourhood - so unlike a body feeling
+    // its way round, it cannot be fooled by a pocket or a room with the door on the far side.
     const r = radius[d];
     const reach = r + AVOID_LOOKAHEAD;
     const ahead = sceneryOverlap(world.scenery, x[d] + ux * reach, y[d] + uy * reach, r);
-    if (ahead >= 0) {
-      // WHICH WAY ROUND, and it is a PURE FUNCTION of the body and the clock rather than a stored
-      // decision. Two things have to be true at once and they pull against each other:
+    if (ahead >= 0 && flowDirAt(world.flow, x[d], y[d])) {
+      ux = FLOW_X;
+      uy = FLOW_Y;
+    } else if (ahead >= 0) {
+      // ---- THE FALLBACK: feel the way round, one probe at a time.
       //
-      //   IT MUST BE STABLE, or the body dithers. Recomputing a preference from the heading every
-      //     tick does not work at all - the heading swings as a body slides along a wall and the
-      //     preferred side flips with it, which is an oscillation rather than a detour. Measured
-      //     with no stability at all: 0 of 12 bodies got past an eight-cell wall in 25 seconds.
+      // Reached only when the field cannot answer - a boss outside its 3072 u window, or a body
+      // standing inside terrain. It is a wall FOLLOWER and its ceiling is documented: local
+      // sensing cannot escape a local minimum, which is why it is no longer the primary. For the
+      // handful of bodies the field does not cover it is the right behaviour, and it is still held
+      // to the same tests.
       //
-      //   IT MUST NOT BE PERMANENT, or a body that picked the wrong way is stuck with it. A
-      //     reactive follower has local minima - a nook where the committed direction leads back
-      //     into a wall - and a body that can never revise settles there and stays for the rest of
-      //     the run. Measured: 1 to 5 bodies in 24 parked against a stationary player.
-      //
-      // `tick >>> 10` changes every 1024 ticks, about 17 seconds. SWEPT, not guessed - the period
-      // trades the two failures above directly against each other, measured as bodies that rounded
-      // an eight-cell wall in 25 s and bodies left parked out of 120 across five seeds:
-      //
-      //     period    rounded the wall    parked
-      //       8 s          8 of 12          1
-      //      17 s         11 of 12          1
-      //      34 s         11 of 12          5
-      //      68 s         12 of 12          6
-      //
-      // Too short and a body is turned round in the middle of a detour it was going to complete;
-      // too long and a body sits in a pocket for most of a run. 17 s is the knee.
-      //
-      // `spawnId` does double duty: its low bit splits a pack so half go each way rather than
-      // queueing at one corner, and the multiplier staggers WHEN each body reconsiders, so the
-      // horde does not all turn round on the same tick.
+      // WHICH WAY ROUND is a pure function of the body and the clock: stable for about 17 seconds
+      // so a detour is never interrupted, then reconsidered so nothing is trapped forever.
+      // `spawnId` splits a pack both ways and staggers when each body reconsiders.
       const ccw = (((world.tick + spawnId[d] * 149) >>> 10) & 1) === 1;
 
-      // Run along the face of the thing in the way.
       wallTangent(world, ahead, x[d], y[d], ux, uy, ccw);
       let tx = TANGENT_X;
       let ty = TANGENT_Y;
 
       const beside = sceneryOverlap(world.scenery, x[d] + tx * reach, y[d] + ty * reach, r);
       if (beside >= 0) {
-        // A CONCAVE CORNER: the face we wanted to run along has another wall across it. The
-        // follower does NOT turn round - it starts following the new wall, with the same
-        // handedness, which is what carries it out of the crook of an L and on round the outside
-        // of a room.
+        // A CONCAVE CORNER: follow the NEW wall with the same handedness rather than turning
+        // round, which is what carries a body out of the crook of an L.
         wallTangent(world, beside, x[d], y[d], ux, uy, ccw);
         if (
           sceneryOverlap(world.scenery, x[d] + TANGENT_X * reach, y[d] + TANGENT_Y * reach, r) < 0
@@ -293,8 +273,7 @@ function seek(world: World, dt: number): void {
           tx = TANGENT_X;
           ty = TANGENT_Y;
         } else {
-          // Wedged in a pocket with no way along either face. Straight back out, away from the
-          // thing ahead, and try again from open ground next tick.
+          // Wedged with no way along either face. Straight back out.
           wallNormal(world, ahead, x[d], y[d], ux, uy);
           tx = NORMAL_X;
           ty = NORMAL_Y;

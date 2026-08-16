@@ -16,6 +16,7 @@ import type { EnemyPool } from './entity/enemyPool.js';
 import type { ProjectilePool } from './entity/projectilePool.js';
 import type { PickupPool } from './entity/pickupPool.js';
 import type { Scenery } from './content/scenery.js';
+import type { FlowField } from './spatial/flowField.js';
 import type { SpatialHash } from './spatial/hashGrid.js';
 import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
@@ -557,6 +558,14 @@ export interface World {
   weaponCount: number;
 
   readonly spatial: SpatialHash;
+  /**
+   * ONE SEARCH FROM THE PLAYER THAT THE WHOLE HORDE READS - how an enemy gets round a wall.
+   *
+   * DERIVED, like the spatial hash beside it, and left out of `hashWorld` for the same reason: it
+   * is a pure function of the terrain and the player's cell, rebuilt from them whenever it goes
+   * stale. See spatial/flowField.ts.
+   */
+  readonly flow: FlowField;
   /**
    * The scrap piles standing in the yard. Generated once from the seed and immutable for the run -
    * movement, projectiles and the lasers all read it, nothing writes it.

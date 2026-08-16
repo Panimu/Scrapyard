@@ -13,18 +13,21 @@
  *   NO MEMORY          the tangent flips as the heading swings, so a body oscillates against a
  *                      straight wall. 0 of 12 got past an eight-cell wall in 25 seconds.
  *   TANGENT FROM THE   handedness is relative to the body's facing rather than to the wall, so it
- *   HEADING            cannot circle anything. With the player inside a walled room, 1 of 24 found
- *                      the entrance in a minute.
+ *   HEADING            cannot circle anything. Player inside a walled room: 1 of 24 found the way.
  *   PERMANENT CHOICE   a body that picked the way round that leads into a nook can never revise,
  *                      so it settles there. 1 to 5 bodies in 24 parked against a stationary player.
+ *
+ * All three are the same ceiling rather than three bugs: a purely LOCAL follower cannot see past
+ * what it is touching, so there is always a shape it settles in. The horde now steers by a FLOW
+ * FIELD instead (spatial/flowField.ts) - one search from the player that every body reads - and
+ * the follower survives only as the fallback for bodies the field's window does not cover.
  *
  * ---------------------------------------------------------------------------------------------
  * WHAT IS NOT CLAIMED
  * ---------------------------------------------------------------------------------------------
- * This is a REACTIVE FOLLOWER, not pathfinding. It does not promise a shortest route or that every
- * body arrives - a room's entrance is a single 64 u cell and two dozen bodies queueing at one is a
- * traffic jam, which is a chokepoint working rather than a bug. What it does promise is the two
- * things below: the horde comes round a wall, and nothing is left parked where it first met one.
+ * Not a shortest route, and not that literally every body arrives: a room's entrance is one 64 u
+ * cell, and a queue at one is a chokepoint working rather than a bug. What is claimed is that the
+ * horde gets round terrain and that nothing is left parked against it.
  *
  * So the assertions are about OUTCOMES over seconds of real simulation, and the numbers are
  * deliberately loose: this is a floor under "the horde arrives", not a pin on any particular
@@ -96,6 +99,32 @@ function everReached(w: World, secs: number, near: number): { reached: number; p
   return { reached: seen.size, planted: ids.size };
 }
 
+/** The world position of a cell inside a walled enclosure, if this seed has one nearby. */
+function findRoomInterior(w: World): [number, number] | undefined {
+  if (w.scenery.kind !== 'walls') return undefined;
+  for (let cy = -60; cy < 60; cy++) {
+    for (let cx = -60; cx < 60; cx++) {
+      if (wallKindAt(w.scenery, cx, cy) !== 0) continue;
+      let walled = 0;
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        for (let k = 1; k <= 6; k++) {
+          if (wallKindAt(w.scenery, cx + dx * k, cy + dy * k) !== 0) {
+            walled++;
+            break;
+          }
+        }
+      }
+      if (walled === 4) return [(cx + 0.5) * WALL_CELL, (cy + 0.5) * WALL_CELL];
+    }
+  }
+  return undefined;
+}
+
 describe('the horde gets past terrain', () => {
   it('comes round a wall it meets head-on', () => {
     // THE REPORTED SHAPE, and the one a straight-line seek cannot solve: the player due south of
@@ -130,8 +159,9 @@ describe('the horde gets past terrain', () => {
 
     const { reached, planted } = everReached(w, 30, 120);
     expect(planted).toBe(12);
-    // Every one of them, before this existed, spent the whole run pressed against the far face.
-    expect(reached).toBeGreaterThanOrEqual(10);
+    // 12 of 12, measured. Before any of this existed, all twelve spent the whole run pressed
+    // against the far face of the wall.
+    expect(reached).toBe(12);
   });
 
   it('reaches a moving player through terrain, which is the case the game has', () => {
@@ -169,12 +199,38 @@ describe('the horde gets past terrain', () => {
           if (dx * dx + dy * dy < 120 * 120) seen.add(w.enemies.spawnId[d]);
         }
       }
-      // Measured 21-24 of 24 across these seeds. The floor is well under that on purpose - this
-      // is a guard against the horde failing to arrive, not a pin on a steering rule.
+      // 24 of 24 on every one of these seeds with the flow field, up from 21-24 with the local
+      // follower alone. The floor is under that on purpose - a guard against the horde failing to
+      // arrive, not a pin on a steering rule.
       expect(seen.size, `seed ${seed}: too much of the horde never arrived`).toBeGreaterThanOrEqual(
-        18,
+        22,
       );
       expect(ids.size).toBe(24);
+    }
+  });
+
+  it('finds the way into a walled room the player is standing in', () => {
+    // THE CASE THE LOCAL FOLLOWER COULD NOT DO. A room is the shape that defeats local sensing
+    // outright: from outside it there is no gradient to follow, and a body has to go all the way
+    // round to find a door it cannot see. The field has already searched the whole neighbourhood,
+    // so this is simply a question of walking.
+    for (const seed of [7, 99, 2024, 5]) {
+      const w = mossWorld(seed);
+      const spot = findRoomInterior(w);
+      if (spot === undefined) continue;
+      w.player.x = spot[0];
+      w.player.y = spot[1];
+      w.player.prevX = spot[0];
+      w.player.prevY = spot[1];
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        plant(w, spot[0] + Math.cos(a) * 600, spot[1] + Math.sin(a) * 600);
+      }
+
+      const { reached } = everReached(w, 60, 120);
+      // 23-24 of 24, measured. With the local follower this was 1 to 11 depending on the seed:
+      // the entrance is a single cell and bodies that went round the wrong way never came back.
+      expect(reached, `seed ${seed}: the horde did not find the way in`).toBeGreaterThanOrEqual(20);
     }
   });
 
@@ -227,8 +283,8 @@ describe('the horde gets past terrain', () => {
         if (moved < 5 && away > 250) parked++;
       }
       // Measured 0 on four of these seeds and 1 on the fifth, out of 120 bodies. The threshold
-      // allows one: this is a guard against the horde stalling, not a pin on a steering rule, and
-      // a reactive follower will always have some geometry it settles in.
+      // allows one: the field's window does not cover everything, and the follower behind it will
+      // always have some geometry it settles in.
       expect(parked, `seed ${seed}: bodies parked against the terrain`).toBeLessThanOrEqual(1);
     }
   });

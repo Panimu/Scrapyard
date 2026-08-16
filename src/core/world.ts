@@ -48,6 +48,7 @@ import {
   createKillFeed,
 } from './events/ring.js';
 import { createRngStreams } from './rng.js';
+import { createFlowField, updateFlowField } from './spatial/flowField.js';
 import { createSpatialHash, rebuildSpatialHash } from './spatial/hashGrid.js';
 import {
   RUN_PHASE_CHEST,
@@ -278,6 +279,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     weaponCount: 0,
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
+    flow: createFlowField(),
     // The LEVEL's own world generation, not core's. See LevelDef.makeScenery.
     scenery: level.makeScenery(config.seed),
     chest: {
@@ -505,6 +507,11 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
   // S3 before S4: enemies steer toward the player's CURRENT position, one tick fresher. It is
   // what makes the horde feel like it is actually chasing you.
   updatePlayerMovement(world, DT);
+
+  // S3b BETWEEN player movement and the horde's steering, and it has to be exactly here: the field
+  // is a search FROM the player, so it must be built after the mech has moved this tick and before
+  // anything steers by it. Rebuilt only when it has gone stale - see spatial/flowField.ts.
+  updateFlowField(world);
 
   // S4 seek + separation + integrate. Separation reads the PREVIOUS tick's hash (staleness
   // <= 2.4 u, and the query radius is padded by exactly that) so a soft steering force does not
