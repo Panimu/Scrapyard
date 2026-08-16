@@ -72,7 +72,7 @@ import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
 import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
-import { stageIndexFor, type LevelCreatureArt } from './creatureArt.js';
+import { GAIT_WALK, stageIndexFor, type LevelCreatureArt } from './creatureArt.js';
 import type { LevelId } from '../core/content/levels.js';
 // PACKAGE B and PACKAGE C - two independent decoration layers. Each is one import, one field, one
 // construction, one addChild and one draw call; removing either touches nothing else.
@@ -284,6 +284,37 @@ export interface RenderStats {
   /** Beams drawn on the last frame. 0..MAX_WEAPONS. */
   beams: number;
 }
+
+/**
+ * THE WALK CYCLE'S NUMBERS. Render-only, so none of this can move the simulation.
+ *
+ * `GAIT_RATE` is radians of stride per tick: 2*pi/26 is a stride every 26 ticks, a hair over four
+ * tenths of a second, which is a brisk walk rather than a scuttle. `GAIT_STAGGER` is an offset per
+ * body, deliberately not a neat fraction of a stride so a wave that spawned together does not
+ * march in step.
+ */
+const GAIT_RATE = (Math.PI * 2) / 26;
+const GAIT_STAGGER = 1.7;
+/**
+ * How far the body squashes at each footfall, as a fraction of its drawn size.
+ *
+ * 0.13 rather than the 0.08 this started at, and the reason is the creature's SIZE: a Sporeling is
+ * a 26-unit runt drawn about 28 px tall, so 8% was three pixels of movement and read as nothing at
+ * all. Measured off the rendered frames rather than guessed - drawn height swings 25 to 28 px at
+ * this value, which is visible without becoming a bounce.
+ */
+const GAIT_SQUASH = 0.13;
+/**
+ * How far the body RISES between footfalls, in world units.
+ *
+ * This is the half of a walk cycle the squash alone does not have. A body is lowest when a foot
+ * lands and highest passing over it, and without the rise the creature stretches on the spot like
+ * something breathing rather than something walking. Only the up half is applied - a walk does not
+ * sink INTO the ground.
+ */
+const GAIT_LIFT = 2.2;
+/** How far it leans, in skew radians, over a stride. */
+const GAIT_LEAN = 0.1;
 
 export class GameRenderer {
   readonly camera = new Camera();
@@ -1193,8 +1224,48 @@ export class GameRenderer {
       // headings; rotating them makes trucks drive on their side and swings the shadow around.
       // Horizontal flip only (ASSET_MANIFEST §2).
       s.rotation = 0;
-      s.scale.set(p.vx[d] < 0 ? -base : base, base);
-      s.position.set(x, y);
+
+      // ---- THE GAIT. Squash, stretch and lean, out of nothing but a transform.
+      //
+      // The art packs ship one still frame per creature, so this is motion INVENTED at draw time
+      // rather than played back - see `GAIT_WALK` in creatureArt.ts for why that is the cheap half
+      // of the choice. Two footfalls a stride: the body squashes as each foot lands and stretches
+      // between, and leans from one side to the other over the whole stride, which on something
+      // top-heavy reads as weight shifting rather than as the sprite sliding about.
+      //
+      // THE CLOCK IS THE SIM'S, not a wall clock: `tick + alpha` is smooth across the interpolated
+      // frame and identical on every machine, so a recording and a replay animate together. It is
+      // read ONLY here and written back nowhere - the simulation neither knows nor could.
+      //
+      // STAGGERED BY `spawnId` so a crowd is not a chorus line. An irrational-ish stride offset
+      // keeps neighbours out of step even when they spawned together.
+      let sx = base;
+      let sy = base;
+      let fy = y;
+      if (frame.gait === GAIT_WALK) {
+        const phase = (world.tick + alpha) * GAIT_RATE + p.spawnId[d] * GAIT_STAGGER;
+        // `beat` is +1 passing over a planted foot and -1 as the next one lands.
+        const beat = Math.sin(phase * 2);
+        sy = base * (1 + GAIT_SQUASH * beat);
+        // Widen as it shortens. Not a true volume constraint, just enough that the squash reads as
+        // weight landing instead of the creature shrinking.
+        sx = base * (1 - GAIT_SQUASH * 0.7 * beat);
+        // THE FEET STAY ON THE GROUND. The anchor is the sprite's middle, so scaling alone lifts
+        // the bottom edge by half the change - which reads as hovering, and is the one thing that
+        // would make this look worse than no animation at all. Then the body RISES over the
+        // planted foot, which is the part that turns a stretch into a step.
+        fy = y + (texture.height * (base - sy)) / 2 - (beat > 0 ? GAIT_LIFT * beat : 0);
+        s.skew.x = GAIT_LEAN * Math.sin(phase);
+      } else if (s.skew.x !== 0) {
+        // Pooled sprites are reused, so a frame that leans must be cleared before the slot is
+        // handed to something that does not.
+        s.skew.x = 0;
+      }
+
+      s.scale.set(p.vx[d] < 0 ? -sx : sx, sy);
+      s.position.set(x, fy);
+      // SORTED BY THE SIM'S y, never the bobbed one, or a creature would swap depth with its
+      // neighbour twice a stride.
       s.zIndex = y;
       // From the flavour, so the only flavour that is not white costs nothing to add and nothing
       // to look up - see FlavourDef.renderTint. A Heavy comes out as unpainted steel.

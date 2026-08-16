@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T16:19Z',
+    title: 'THE SPORELINGS HAVE LEARNED TO WALK',
+    notes: [
+      'Sporelings now bob and lean as they come at you instead of sliding along upright. Their feet stay on the ground; the cap rolls with each stride, and no two in a pack are in step with each other.',
+    ],
+  },
+  {
     at: '2026-08-16T14:22Z',
     title: 'THEY DO NOT ALL COME THE SAME WAY',
     notes: [

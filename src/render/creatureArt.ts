@@ -42,10 +42,40 @@ import type { Texture } from 'pixi.js';
 import type { CreatureDef } from '../core/index.js';
 import type { LevelId } from '../core/content/levels.js';
 
-/** One drawable frame: the texture, and the scale that makes its content measure `drawSize`. */
+/**
+ * HOW A CREATURE CARRIES ITSELF. An index, not a description - the renderer owns what each one
+ * looks like (see `drawEnemies`).
+ *
+ * THE ART PACKS SHIP NO ANIMATION. DCSS is one still frame per creature - no walk cycle, no attack,
+ * no death (assets/dcss/README.md is explicit about it) - so any motion has to be made rather than
+ * played back. That leaves two ways to do it, and this is the cheap one: transform the still.
+ * Squash, stretch and lean cost nothing per creature, work on art nobody drew frames for, and
+ * generalise to the whole roster for free. Baking real frames would look better and costs an
+ * artist per creature; this is the experiment that says whether that is worth doing.
+ */
+export const GAIT_NONE = 0;
+/** A walk: two footfalls a stride, squashing on each, leaning from foot to foot. */
+export const GAIT_WALK = 1;
+
+/**
+ * KEYED BY SPRITE NAME, not by creature id. A name is content that means the same thing forever,
+ * whereas ids are positional - and this table would silently start animating the wrong creature the
+ * day somebody inserted a row above it. Anything absent simply does not move, which is the right
+ * default for a table nobody has got to yet.
+ */
+const GAIT_BY_SPRITE: Readonly<Record<string, number>> = {
+  // THE SPORELING, and for now the only one. A cap on two legs is the best possible test of a
+  // transform-only gait: it is top-heavy, so a lean reads as weight shifting rather than as the
+  // whole sprite sliding, and it is already drawn mid-stride.
+  moss_wandering_mushroom: GAIT_WALK,
+};
+
+/** One drawable frame: the texture, the scale that makes its content measure `drawSize`, and how it moves. */
 export interface CreatureFrame {
   readonly texture: Texture;
   readonly scale: number;
+  /** One of the GAIT_* constants. */
+  readonly gait: number;
 }
 
 /**
@@ -144,7 +174,11 @@ export function buildCreatureArt(
   return creatures.map((c) =>
     c.frames.map((key) => {
       const texture = get(key);
-      return { texture, scale: c.drawSize / contentPx(c.id, texture) };
+      return {
+        texture,
+        scale: c.drawSize / contentPx(c.id, texture),
+        gait: GAIT_BY_SPRITE[key] ?? GAIT_NONE,
+      };
     }),
   );
 }
