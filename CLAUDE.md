@@ -129,7 +129,14 @@ into `public/sprites/`. The PNGs are checked in, so nobody needs Chromium to bui
 **Never run `npx playwright install`** — browsers are preinstalled at `/opt/pw-browsers`.
 
 Kenney CC0 packs under `assets/kenney/` supply what they can; the rest is drawn. Downloading a new
-pack is fine — vendor only what is used, and keep its licence file.
+pack is fine — **vendor the whole pack**, and keep its licence file.
+
+Whole, rather than only the files in use, which is what this used to say. Trimming a pack to the
+handful of sprites the game had reached for made every later "does the pack have a X" question a
+re-download, and it hid what was available from anyone reading the repository. A Kenney pack is a
+couple of megabytes; the answer to that question being one `ls` away is worth more. Add a row to
+`assets/kenney/README.md` saying what the pack is for, and note in it anything the pack conspicuously
+does NOT have, because that is the thing the next person will go looking for.
 
 ## The version number is the commit count
 
