@@ -16,6 +16,12 @@ Credit them anyway — the upstream README asks for it, and it costs nothing.
 | `full/` | https://opengameart.org/content/dungeon-crawl-32x32-tiles → `Dungeon Crawl Stone Soup Full_0.zip` | 2026-08-16 |
 | `supplemental/` | https://opengameart.org/content/dungeon-crawl-32x32-tiles-supplemental → `Dungeon Crawl Stone Soup Supplemental.zip` | 2026-08-16 |
 
+**PROJECT UTUMNO IS ON THE SAME PAGE AND IS NOT VENDORED.** `ProjectUtumno_full.png` is a single
+2048x3040 sheet - 6,080 tiles at the same 32x32, same CC0 dedication - offered as a separate
+download beside the two zips above. It is a different roster (far more items and monsters) and it
+contains natural MOSSY BOULDER terrain that neither vendored pack has. If this project ever wants
+a green stone wall, that sheet is where it is.
+
 **THERE IS MORE WHERE THIS CAME FROM, and this table is how to find it again.** The tiles are
 maintained at https://github.com/crawl/tiles/tree/master/releases, which is the upstream both
 OpenGameArt pages mirror. It is still being added to. If the game wants a creature these two packs
@@ -23,8 +29,29 @@ do not have, look there BEFORE looking anywhere else — it is the same artists,
 and the same CC0 dedication, so a sprite from there needs no licence check and is guaranteed to sit
 beside what is already here.
 
-Both packs were vendored **whole and unmodified**. Nothing was trimmed, renamed or re-encoded. The
-zips contained no `Thumbs.db` or other junk, so nothing was deleted either.
+Both packs were vendored **whole**, with ONE deliberate deletion, below.
+
+### `zombie_small.png` was removed, and this is the only edit
+
+The upstream repository carries `TILES_UNDER_UNKNOWN_LICENSE.md`: 1,230 tiles whose ownership could
+not be established in 2010 and which "will be excluded from any release". The OpenGameArt zips are
+those releases - and one file on that list, `full/monster/undead/zombies/zombie_small.png`, was in
+the zip anyway. It has been deleted.
+
+The whole 9,045-file vendored set was cross-referenced against that list; it was the only hit. The
+game never referenced it. Re-run the check after any future update from this source:
+
+    python3 - <<'EOF'
+    import os, re
+    excl = {m.group(1) for line in open('TILES_UNDER_UNKNOWN_LICENSE.md')
+            for m in [re.match(r'^-\s+(\S+\.png)\s*$', line.strip())] if m}
+    hits = [f for _, _, fs in os.walk('assets/dcss') for f in fs if f in excl]
+    print(hits or 'clean')
+    EOF
+
+The exclusion list is NOT in either zip - it is only in the upstream repository - which is the
+concrete reason the "record where it came from" rule earns its keep: without the upstream named
+here, this file would never have been found.
 
 ## What is in them
 
