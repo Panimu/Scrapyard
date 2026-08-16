@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T21:02Z',
+    title: 'THE CHEST SAYS WHERE IT LEAVES YOU',
+    notes: [
+      'Every line of a Cyber Chest payout now says which tier it takes that system up to. A chest that hands you three of the same gun counts up — tier 3, tier 4, tier 5 — instead of naming it three times and leaving you to work out where you landed.',
+      'A line that finishes a system is marked MAX, and one that puts something new in your hands is marked NEW.',
+    ],
+  },
+  {
     at: '2026-08-16T19:46Z',
     title: 'THE RIG COMES EARLY NOW',
     notes: [

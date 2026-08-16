@@ -548,6 +548,20 @@ export class ChestOverlay {
 
     // The upgrades themselves, named. The reels say WHAT in symbols; a player deserves the words
     // too, because three of these arrive at once and none of them was chosen.
+    //
+    // AND WHAT TIER EACH ONE LEAVES THE SYSTEM ON, which is the only question a player actually
+    // has here. A name alone says a chest touched the Short Laser; it does not say whether that
+    // was the rung which finishes it.
+    //
+    // NOTHING HAS BEEN APPLIED YET - the grants land when the player presses collect - so
+    // `levelUp.stacks` is still the PRE-CHEST count and the tier a row announces has to be worked
+    // out rather than read.
+    //
+    // COUNTED ACROSS THE LIST, never per row. A triple deals more than one tier to the SAME
+    // system, so three rows reading `stacks + 1` would all claim the same rung and two of them
+    // would be wrong. This is the same running count `openChest` deals the payout with, for the
+    // same reason it needs one.
+    const dealt = new Map<number, number>();
     this.grantsEl.innerHTML = '';
     for (let i = 0; i < n; i++) {
       const grant = chest.grants[i];
@@ -583,6 +597,21 @@ export class ChestOverlay {
           ? `${upgradeNameAt(def, WEAPON_ASCENDED_TIER)} — ${def.ascension?.description ?? ''}`
           : def.name;
       row.appendChild(name);
+
+      const before = dealt.get(grant) ?? 0;
+      dealt.set(grant, before + 1);
+      const lands =
+        ascended !== undefined ? WEAPON_ASCENDED_TIER : world.levelUp.stacks[grant] + before + 1;
+      const badge = document.createElement('b');
+      badge.className = 'chest__grant-tier';
+      // NEW and MAX because the two rungs that mean something beyond their number are the first
+      // and the last, and the same two words the level-up card uses for them. An ascension gets
+      // neither: tier 8 is past `maxStacks` and the headline above has already said what it is.
+      badge.textContent = `TIER ${lands}${
+        ascended !== undefined ? '' : lands === 1 ? ' · NEW' : lands >= def.maxStacks ? ' · MAX' : ''
+      }`;
+      row.appendChild(badge);
+
       this.grantsEl.appendChild(row);
     }
 

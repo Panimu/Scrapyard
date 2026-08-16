@@ -2440,6 +2440,26 @@ body {
 .chest__grant--weapon { --chest-key: var(--accent); }
 .chest__grant--passive { --chest-key: var(--accent-sys); }
 .chest__grant img { width: 26px; height: 26px; display: block; }
+/* The name takes the slack so the tier badge is pinned to the right edge of every row and the
+   column of them reads down the list. min-width:0 so a long ascension line ellipsises rather than
+   shoving the badge off the card. */
+.chest__grant span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Which rung the grant leaves the system on. Tinted with the row's own key - weapon or system -
+   so the badge reads as part of the thing it is describing rather than as a second column. */
+.chest__grant-tier {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: var(--chest-key, var(--accent));
+  opacity: .85;
+  white-space: nowrap;
+}
 
 .chest__go--waiting { opacity: .35; }
 
