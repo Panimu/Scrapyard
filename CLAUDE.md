@@ -128,15 +128,39 @@ otherwise every pacing number after that point is about the bot rather than the 
 into `public/sprites/`. The PNGs are checked in, so nobody needs Chromium to build or play.
 **Never run `npx playwright install`** — browsers are preinstalled at `/opt/pw-browsers`.
 
-Kenney CC0 packs under `assets/kenney/` supply what they can; the rest is drawn. Downloading a new
-pack is fine — **vendor the whole pack**, and keep its licence file.
+## Where art comes from, in this order
+
+Kenney CC0 packs under `assets/kenney/` supply what they can; the rest is drawn. Three rules, and
+they are a sequence rather than a menu.
+
+**1. PREFER WHAT IS ALREADY VENDORED.** Look in `assets/kenney/` before looking anywhere else, and
+look properly — packs are vendored WHOLE, so what is on disk is far more than what is currently
+drawn. `assets/kenney/README.md` says what each pack is for and what each conspicuously lacks.
+A sprite that is already here costs nothing: no licence to check, no download, no new row in the
+manifest, and it is guaranteed to sit in the same visual language as everything else on screen.
+
+**2. LOOK ONLINE FREELY.** Searching, downloading to a scratch directory, unzipping and rendering
+contact sheets to see whether a pack is any good needs NO permission and should not be hedged
+about. Nothing has been added to the project by looking at it. Do the homework properly — check
+the actual art rather than the pack description, check the licence is really CC0, and check the
+sprite size and style against what is already here.
+
+**3. ASK BEFORE ANYTHING LANDS IN THE REPOSITORY.** Vendoring is the step that needs approval, and
+it needs it every time. A pack in `assets/` is a licence obligation, a permanent few megabytes and
+a claim about the game's art direction — all three are the owner's call, not a detail to be got on
+with. Bring back a recommendation with the evidence: what it has, what it lacks, what it would
+replace, and preferably a rendered preview. Then wait.
+
+Once approved: **vendor the whole pack**, keep its `License.txt`, and add a row to
+`assets/kenney/README.md` saying what the pack is for — noting anything it conspicuously does NOT
+have, because that is the thing the next person will go looking for.
 
 Whole, rather than only the files in use, which is what this used to say. Trimming a pack to the
 handful of sprites the game had reached for made every later "does the pack have a X" question a
 re-download, and it hid what was available from anyone reading the repository. A Kenney pack is a
-couple of megabytes; the answer to that question being one `ls` away is worth more. Add a row to
-`assets/kenney/README.md` saying what the pack is for, and note in it anything the pack conspicuously
-does NOT have, because that is the thing the next person will go looking for.
+couple of megabytes; the answer to that question being one `ls` away is worth more. Extracting a
+zip whole also brings in whatever junk the author packed with it — `Thumbs.db` and friends are
+gitignored, and anything else non-art should be deleted rather than committed.
 
 ## The version number is the commit count
 
