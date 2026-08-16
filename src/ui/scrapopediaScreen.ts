@@ -1061,17 +1061,17 @@ const CYCLE_MANUAL: Readonly<Record<string, EnemyEntry>> = {
       'It will catch you if you commit to a fight facing the wrong way.',
     ],
   },
-  'scrapyard/Dozer': {
+  'scrapyard/Hardhead': {
     lead: 'Slams the brakes, and nearly doubles the bite.',
     notes: [
       'The first cycle that genuinely hurts to touch. Everything before it could be walked through in an emergency; this is where that stops being free.',
-      'Slow enough that none of that has to happen to you. Being hit by one is a decision you made a second earlier.',
+      'Wide, and it does not move when you shoot it. Slow enough that none of that has to happen to you - being hit by one is a decision you made a second earlier.',
     ],
   },
   'scrapyard/Breaker': {
     lead: 'Quick again, and it hits harder than anything so far.',
     notes: [
-      'The Dozer was slow enough to forgive a mistake. This is not, and it arrives with the pace of the Prowler and the weight of the Dozer at the same time.',
+      'The Hardhead was slow enough to forgive a mistake. This is not, and it arrives with the pace of the Prowler and the weight of the Hardhead at the same time.',
       'The rung where standing your ground stops being a style and starts being a way to die.',
     ],
   },
@@ -1082,11 +1082,11 @@ const CYCLE_MANUAL: Readonly<Record<string, EnemyEntry>> = {
       'Bites less than the Breaker did. It is a wall being built around you rather than a thing attacking you.',
     ],
   },
-  'scrapyard/Colossus': {
-    lead: 'A wall. The slowest thing in the yard and by far the heaviest.',
+  'scrapyard/Dozer': {
+    lead: 'The slowest thing in the yard, and the hardest to finish.',
     notes: [
-      'The endgame is MASS, not pace, and this is the statement of it. It closes in slowly and the problem is that there is no gap in it.',
-      'It cannot be outrun into a corner, because a corner is where it is pushing you.',
+      'The endgame is NUMBERS, not pace. It closes in slowly and the problem is that there is no gap in it.',
+      'Lighter than it looks for something that takes this long to kill - it can be shoved, and late on that is the difference between a corner you chose and one you were pushed into.',
     ],
   },
 
@@ -1170,7 +1170,7 @@ const WIDEST_BODY: number = Math.max(
  *
  * The BODY SIZE is in it. `bestiaryIconScale` normalises every sprite so its content fills its
  * box, which is right when the point is to compare two maps' bodies of the SAME class - and wrong
- * here, where it made a Colossus look no bigger than a Rustling. Multiplying back by the
+ * here, where it made a Breaker look no bigger than a Rustling. Multiplying back by the
  * creature's own `drawSize` restores the fact the index is supposed to teach.
  *
  * The BOSS GLOW is not. A drop-shadow on a transform-scaled sprite bleeds well outside its row,

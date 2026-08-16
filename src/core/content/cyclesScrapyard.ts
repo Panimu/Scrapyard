@@ -66,11 +66,17 @@
  *                    You can walk away from these; you cannot ignore them.
  *      3 Prowler     THE FASTEST THING IN THE GAME at 71, and LIGHTER than the Hauler before it -
  *                    the one rung where HP goes backwards.
- *      4 Dozer       Slams the brakes to 53 and nearly doubles the bite. The first cycle that
- *                    hurts to touch.
+ *      4 Hardhead    Slams the brakes to 53 and nearly doubles the bite. The first cycle that
+ *                    hurts to touch, and - since the silhouette swap below - the first BRUISER
+ *                    body, so it is wide and hard to shove as well as slow.
  *      5 Breaker     Quick AGAIN at 65, and it hits hardest of anything so far.
  *      6 Warden      Tanky and unhurried.
- *      7 Colossus    A WALL: 225 HP at 50 speed, the slowest and by far the heaviest.
+ *      7 Dozer       225 HP at 50 speed: the slowest thing in the yard, and the highest HP.
+ *
+ * IT IS NO LONGER THE HEAVIEST, and that sentence used to be here. Cycle 7 rides a GRUNT body
+ * since the swap, mass 1.2 against the Breaker's and the Hardhead's 3 - so the last wave has the
+ * most hit points in the game and is the easiest of the three to knock out of the way. Worth
+ * knowing before reading a pacing measurement taken before the swap.
  *
  * SPEED FALLS ACROSS THE LAST TWO CYCLES on purpose - 57, then 50 - because the endgame's threat
  * is meant to be MASS, not pace. An earlier table climbed at the end instead, and the final
@@ -115,10 +121,18 @@ export interface ScrapyardCycleDef {
 }
 
 /**
- * The hull column is chosen for READ, not for variety: infantry silhouettes while the enemy is
- * chaff, trucks once it is worth aiming at, rigs once it is a wall. The tier column is chosen so
- * consecutive cycles never share a regular's paint, which is what stops a rollover from looking
- * like nothing happened.
+ * The hull column was chosen for READ rather than variety - infantry while the enemy is chaff,
+ * trucks once it is worth aiming at, rigs once it is a wall - and cycles 4 and 7 have since had
+ * their silhouettes and their names traded, so the rig now lands mid-run and the yard finishes on
+ * a truck. The escalation reads by SIZE rather than by class from cycle 4 on.
+ *
+ * THE BODY CLASS FOLLOWED THE HULL, because it is derived and not authored: cycle 4 became a
+ * bruiser and cycle 7 a grunt. That moved radius, mass, contact interval and the flavour pool with
+ * it - see the note above about cycle 7 no longer being the heaviest thing in the game.
+ *
+ * THE PAINT COLUMN DID NOT MOVE WITH THE HULLS, deliberately. Tiers are picked so consecutive
+ * cycles never share a regular's paint, which is what stops a rollover from looking like nothing
+ * happened; carrying cycle 7's green up to cycle 4 would have put it next to the Prowler's.
  */
 export const CYCLE_LADDER: readonly ScrapyardCycleDef[] = Object.freeze([
   // hull 1,2,3 = infantry (runt) | 6,8 = trucks (grunt) | 7,11 = rigs (bruiser)
@@ -126,10 +140,10 @@ export const CYCLE_LADDER: readonly ScrapyardCycleDef[] = Object.freeze([
   Object.freeze({ name: 'Scavenger', hull: 2, tier: 1 as const, hp: 34, speed: 68, contactDamage: 6, xp: 2, variantChance: 0.1 }),
   Object.freeze({ name: 'Hauler', hull: 6, tier: 0 as const, hp: 56, speed: 54, contactDamage: 9, xp: 3, variantChance: 0.16 }),
   Object.freeze({ name: 'Prowler', hull: 3, tier: 2 as const, hp: 66, speed: 71, contactDamage: 8, xp: 4, variantChance: 0.22 }),
-  Object.freeze({ name: 'Dozer', hull: 8, tier: 1 as const, hp: 104, speed: 53, contactDamage: 14, xp: 6, variantChance: 0.26 }),
+  Object.freeze({ name: 'Hardhead', hull: 11, tier: 1 as const, hp: 104, speed: 53, contactDamage: 14, xp: 6, variantChance: 0.26 }),
   Object.freeze({ name: 'Breaker', hull: 7, tier: 0 as const, hp: 118, speed: 65, contactDamage: 18, xp: 8, variantChance: 0.3 }),
   Object.freeze({ name: 'Warden', hull: 6, tier: 3 as const, hp: 172, speed: 57, contactDamage: 15, xp: 11, variantChance: 0.32 }),
-  Object.freeze({ name: 'Colossus', hull: 11, tier: 2 as const, hp: 225, speed: 50, contactDamage: 22, xp: 15, variantChance: 0.34 }),
+  Object.freeze({ name: 'Dozer', hull: 8, tier: 2 as const, hp: 225, speed: 50, contactDamage: 22, xp: 15, variantChance: 0.34 }),
 ] as const) as readonly ScrapyardCycleDef[];
 
 /** Body class per ladder entry, read off the atlas rather than authored. See `hull`. */

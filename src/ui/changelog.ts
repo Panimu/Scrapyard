@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T19:46Z',
+    title: 'THE RIG COMES EARLY NOW',
+    notes: [
+      'Minute 8 to 10 is the HARDHEAD — the heavy rig that used to close out a run, arriving four cycles sooner. It is as slow and as bitey as the wave it replaces, but it is a much wider body and it barely moves when you hit it.',
+      'The last two minutes are the DOZER, the boxy gun-truck. It still has more hit points than anything else in the yard and it is still the slowest thing on the field, but it is a smaller body than the wall that used to stand there — so the end of a run can be shoved around in a way it could not before.',
+      'Neither one is tougher or weaker than what stood in its place: every wave keeps its own hit points, speed, bite and salvage. What changed is which machine is wearing them.',
+    ],
+  },
+  {
     at: '2026-08-16T19:37Z',
     title: 'THE BAY WORKS FASTER',
     notes: [
