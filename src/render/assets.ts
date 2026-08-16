@@ -16,7 +16,12 @@
 import { Assets, Texture } from 'pixi.js';
 import { HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
 import { LEVEL_CATALOG, type LevelId } from '../core/content/levels.js';
-import { buildCreatureArt, creatureSpriteKeys, type LevelCreatureArt } from './creatureArt.js';
+import {
+  buildCreatureArt,
+  creatureRimKeys,
+  creatureSpriteKeys,
+  type LevelCreatureArt,
+} from './creatureArt.js';
 
 /** The distinct ground-texture keys the level catalog asks for, in catalog order, deduplicated. */
 function levelFloorKeys(): string[] {
@@ -404,6 +409,9 @@ export async function loadGameTextures(
   // a row in its own content file with nothing to remember here.
   for (const level of LEVEL_CATALOG) {
     for (const key of creatureSpriteKeys(level.creatures)) keys.push(key);
+    // The boss outline sprites, where the level bakes them. Empty for a level whose rule reuses
+    // the body texture, so this adds nothing to the Scrapyard's load.
+    for (const key of creatureRimKeys(level.id, level.creatures)) keys.push(key);
   }
 
   keys.push('fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');

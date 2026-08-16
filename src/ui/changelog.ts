@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T16:54Z',
+    title: 'THE BOSS IS OUTLINED, NOT SMUDGED',
+    notes: [
+      'Bosses in the moss now carry a clean blue outline that traces their shape — through the gap between a Sporeling\'s legs, round every horn on a hydra. It used to be a thick black smear that pooled under the feet and filled in the gaps, and the bigger the boss the more of it there was.',
+      'The outline moves with the boss. A walking one no longer swells and shrinks inside a halo that stayed still.',
+    ],
+  },
+  {
     at: '2026-08-16T16:19Z',
     title: 'THE SPORELINGS HAVE LEARNED TO WALK',
     notes: [

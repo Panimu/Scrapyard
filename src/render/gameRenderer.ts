@@ -30,7 +30,6 @@ import {
   EV_BARREL_BROKEN,
   EV_WALL_BROKEN,
   EV_CONSUMABLE_TAKEN,
-  BOSS_OUTLINE_SCALE,
   BOSS_OUTLINE_TINT,
   ENEMY_FLAG_BOSS,
   ENEMY_FLAG_DEAD,
@@ -1195,20 +1194,73 @@ export class GameRenderer {
       // does not need a branch for either. The scale is the frame's own, times the rank multiplier
       // the sim already applied to the collision radius: the thing you see is the thing you hit.
       const rank = isBoss ? RANK_BOSS : isElite ? RANK_ELITE : RANK_REGULAR;
-      const base = frame.scale * RANKS[rank].size * (flavour?.renderScale ?? 1);
+      const rankScale = RANKS[rank].size * (flavour?.renderScale ?? 1);
+      const base = frame.scale * rankScale;
+      const flip = p.vx[d] < 0;
 
-      // THE BOSS OUTLINE. A second, larger, blue copy of the same sprite parked one z below the
-      // body - the sprite has an alpha silhouette, so scaling it 14% and tinting it reads as a
-      // rim rather than as a shadow. It costs one quad out of the SAME pool and the SAME texture
-      // as the body, so it batches with every other enemy in the frame and adds no draw call.
+      // ---- THE GAIT. Squash, stretch and lean, out of nothing but a transform.
+      //
+      // The art packs ship one still frame per creature, so this is motion INVENTED at draw time
+      // rather than played back - see `GAIT_WALK` in creatureArt.ts for why that is the cheap half
+      // of the choice. Two footfalls a stride: the body squashes as each foot lands and stretches
+      // between, and leans from one side to the other over the whole stride, which on something
+      // top-heavy reads as weight shifting rather than as the sprite sliding about.
+      //
+      // THE CLOCK IS THE SIM'S, not a wall clock: `tick + alpha` is smooth across the interpolated
+      // frame and identical on every machine, so a recording and a replay animate together. It is
+      // read ONLY here and written back nowhere - the simulation neither knows nor could.
+      //
+      // STAGGERED BY `spawnId` so a crowd is not a chorus line. An irrational-ish stride offset
+      // keeps neighbours out of step even when they spawned together.
+      //
+      // COMPUTED AS MULTIPLIERS, and computed HERE rather than beside the body, because the boss
+      // outline below has to move with the body it is an outline of. It did not, once: the body
+      // squashed 13% and rose inside a rigid halo, so the visible band nearly doubled twice a
+      // stride.
+      let gsx = 1;
+      let gsy = 1;
+      let lift = 0;
+      let lean = 0;
+      if (frame.gait === GAIT_WALK) {
+        const phase = (world.tick + alpha) * GAIT_RATE + p.spawnId[d] * GAIT_STAGGER;
+        // `beat` is +1 passing over a planted foot and -1 as the next one lands.
+        const beat = Math.sin(phase * 2);
+        gsy = 1 + GAIT_SQUASH * beat;
+        // Widen as it shortens. Not a true volume constraint, just enough that the squash reads as
+        // weight landing instead of the creature shrinking.
+        gsx = 1 - GAIT_SQUASH * 0.7 * beat;
+        // The body RISES over the planted foot, which is the part that turns a stretch into a step.
+        lift = beat > 0 ? GAIT_LIFT * beat : 0;
+        lean = GAIT_LEAN * Math.sin(phase);
+      }
+
+      // THE FEET STAY ON THE GROUND. The anchor is the sprite's middle, so scaling alone lifts the
+      // bottom edge by half the change - which reads as hovering, and is the one thing that would
+      // make this look worse than no animation at all. Pushing the sprite back down by half of what
+      // it lost pins the bottom edge wherever the scale goes, for a rim as much as for a body.
+      const plant = (texHeight: number, scale: number): number =>
+        y + (texHeight * scale * (1 - gsy)) / 2 - lift;
+
+      // THE BOSS OUTLINE, one z below the body. What it draws is the LEVEL'S business, not this
+      // loop's: Mossy hands over a baked hollow ring at the body's own scale, the Scrapyard hands
+      // back the body texture and a 1.2 multiplier, and neither needs a branch here. See
+      // `RIM_BY_LEVEL` for why one pack can tint a scaled copy and the other cannot.
+      //
+      // Either way it is one quad from the SAME pool as the body, so it batches with every other
+      // enemy in the frame and adds no draw call.
       if (isBoss) {
         const o = pool.acquire();
         if (o === undefined) break;
-        const ob = base * BOSS_OUTLINE_SCALE;
-        o.texture = texture;
+        const rimTex = frame.rim;
+        const ob = frame.rimScale * rankScale;
+        o.texture = rimTex;
         o.rotation = 0;
-        o.scale.set(p.vx[d] < 0 ? -ob : ob, ob);
-        o.position.set(x, y);
+        o.scale.set(flip ? -ob * gsx : ob * gsx, ob * gsy);
+        o.position.set(x, plant(rimTex.height, ob));
+        // Written every frame, never conditionally: pooled slots are handed out in index order and
+        // reset nothing, so a slot that carried a leaning body last frame arrives here still
+        // sheared. `lean` is already 0 for a creature that does not walk.
+        o.skew.x = lean;
         o.zIndex = y - 1;
         o.tint = BOSS_OUTLINE_TINT;
         o.alpha = 0.95;
@@ -1225,45 +1277,9 @@ export class GameRenderer {
       // Horizontal flip only (ASSET_MANIFEST §2).
       s.rotation = 0;
 
-      // ---- THE GAIT. Squash, stretch and lean, out of nothing but a transform.
-      //
-      // The art packs ship one still frame per creature, so this is motion INVENTED at draw time
-      // rather than played back - see `GAIT_WALK` in creatureArt.ts for why that is the cheap half
-      // of the choice. Two footfalls a stride: the body squashes as each foot lands and stretches
-      // between, and leans from one side to the other over the whole stride, which on something
-      // top-heavy reads as weight shifting rather than as the sprite sliding about.
-      //
-      // THE CLOCK IS THE SIM'S, not a wall clock: `tick + alpha` is smooth across the interpolated
-      // frame and identical on every machine, so a recording and a replay animate together. It is
-      // read ONLY here and written back nowhere - the simulation neither knows nor could.
-      //
-      // STAGGERED BY `spawnId` so a crowd is not a chorus line. An irrational-ish stride offset
-      // keeps neighbours out of step even when they spawned together.
-      let sx = base;
-      let sy = base;
-      let fy = y;
-      if (frame.gait === GAIT_WALK) {
-        const phase = (world.tick + alpha) * GAIT_RATE + p.spawnId[d] * GAIT_STAGGER;
-        // `beat` is +1 passing over a planted foot and -1 as the next one lands.
-        const beat = Math.sin(phase * 2);
-        sy = base * (1 + GAIT_SQUASH * beat);
-        // Widen as it shortens. Not a true volume constraint, just enough that the squash reads as
-        // weight landing instead of the creature shrinking.
-        sx = base * (1 - GAIT_SQUASH * 0.7 * beat);
-        // THE FEET STAY ON THE GROUND. The anchor is the sprite's middle, so scaling alone lifts
-        // the bottom edge by half the change - which reads as hovering, and is the one thing that
-        // would make this look worse than no animation at all. Then the body RISES over the
-        // planted foot, which is the part that turns a stretch into a step.
-        fy = y + (texture.height * (base - sy)) / 2 - (beat > 0 ? GAIT_LIFT * beat : 0);
-        s.skew.x = GAIT_LEAN * Math.sin(phase);
-      } else if (s.skew.x !== 0) {
-        // Pooled sprites are reused, so a frame that leans must be cleared before the slot is
-        // handed to something that does not.
-        s.skew.x = 0;
-      }
-
-      s.scale.set(p.vx[d] < 0 ? -sx : sx, sy);
-      s.position.set(x, fy);
+      s.skew.x = lean;
+      s.scale.set(flip ? -base * gsx : base * gsx, base * gsy);
+      s.position.set(x, plant(texture.height, base));
       // SORTED BY THE SIM'S y, never the bobbed one, or a creature would swap depth with its
       // neighbour twice a stride.
       s.zIndex = y;

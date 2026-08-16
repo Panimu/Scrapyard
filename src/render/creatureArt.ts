@@ -39,7 +39,7 @@
 
 import type { Texture } from 'pixi.js';
 
-import type { CreatureDef } from '../core/index.js';
+import { BOSS_OUTLINE_SCALE, type CreatureDef } from '../core/index.js';
 import type { LevelId } from '../core/content/levels.js';
 
 /**
@@ -76,6 +76,65 @@ export interface CreatureFrame {
   readonly scale: number;
   /** One of the GAIT_* constants. */
   readonly gait: number;
+  /** The sprite the boss outline pass draws. See `RIM_BY_LEVEL`. */
+  readonly rim: Texture;
+  /** `rim`'s own scale. Applied from the same centre as `scale`, so the two stay concentric. */
+  readonly rimScale: number;
+}
+
+/**
+ * HOW A LEVEL DRAWS THE BOSS OUTLINE. Two answers, and which one is right is a fact about the art
+ * pack rather than a preference - the same shape, and the same reason, as `CONTENT_PX_BY_LEVEL`.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * A TINT IS A MULTIPLY, AND THAT IS THE WHOLE STORY
+ * ---------------------------------------------------------------------------------------------
+ * `out = texel x tint`. It can darken a pixel; it can never brighten one. So tinting a scaled-up
+ * copy of a sprite only produces a coloured rim if the sprite's OUTER EDGE is bright.
+ *
+ *   SCRAPYARD   Kenney's units are flat-shaded with no keyline, so the edge takes the blue and a
+ *               scaled copy of the body IS the outline. Nothing to bake, and it batches with the
+ *               body because it is the same texture.
+ *   MOSSY       DCSS creatures carry a heavy near-black keyline all the way round, and the keyline
+ *               is exactly what an enlarged copy exposes. Measured on the visible band: 81%
+ *               near-black on the Sporeling, 98% on the jelly, mean colour #191f0d. It read as a
+ *               black shadow, and worst on bosses because the band scales with the body - 7.5
+ *               world units of it round a 75-unit Sporeling boss.
+ *
+ * So Mossy draws a rim baked by `tools/make-moss-enemies.mjs`: the creature's own alpha mask,
+ * grown two source pixels, minus itself, painted flat white. White multiplies to whatever colour
+ * is asked for; hollow means a gap between two legs stays a gap; and a real dilation is an EVEN
+ * band, where scaling about the centre gave one that was nothing at the waist and widest at the
+ * extremities.
+ */
+export interface RimRule {
+  /** The sprite key drawing `key`'s rim, or undefined to reuse the body sprite itself. */
+  readonly keyFor: (key: string) => string | undefined;
+  /** Rim scale, as a multiple of the body's. A baked rim is 1: it is already the right size. */
+  readonly scale: number;
+}
+
+/** EVERY LEVEL'S RULE, BY ID - `Record<LevelId, ...>`, so a new level cannot forget to answer. */
+export const RIM_BY_LEVEL: Record<LevelId, RimRule> = {
+  scrapyard: { keyFor: () => undefined, scale: BOSS_OUTLINE_SCALE },
+  'mossy-mayhem': { keyFor: (key) => `${key}_rim`, scale: 1 },
+};
+
+/**
+ * Every rim sprite key a level's creatures need, deduplicated - empty for a level whose rule
+ * reuses the body. Separate from `creatureSpriteKeys` because these are not creature art: nothing
+ * but the boss outline pass ever draws one, and the bestiary must not pick them up.
+ */
+export function creatureRimKeys(levelId: LevelId, creatures: readonly CreatureDef[]): string[] {
+  const rule = RIM_BY_LEVEL[levelId];
+  const keys = new Set<string>();
+  for (const c of creatures) {
+    for (const f of c.frames) {
+      const k = rule.keyFor(f);
+      if (k !== undefined) keys.add(k);
+    }
+  }
+  return [...keys];
 }
 
 /**
@@ -171,13 +230,21 @@ export function buildCreatureArt(
   get: (key: string) => Texture,
 ): LevelCreatureArt {
   const contentPx = CONTENT_PX_BY_LEVEL[levelId];
+  const rim = RIM_BY_LEVEL[levelId];
   return creatures.map((c) =>
     c.frames.map((key) => {
       const texture = get(key);
+      // THE SAME `scale` FOR BOTH when the rim is baked. A baked rim is the body's own box grown
+      // by a fixed margin, so drawing it at the body's scale from the same centre puts the band
+      // exactly where the dilation put it - which is the point of baking it.
+      const scale = c.drawSize / contentPx(c.id, texture);
+      const rimKey = rim.keyFor(key);
       return {
         texture,
-        scale: c.drawSize / contentPx(c.id, texture),
+        scale,
         gait: GAIT_BY_SPRITE[key] ?? GAIT_NONE,
+        rim: rimKey === undefined ? texture : get(rimKey),
+        rimScale: scale * rim.scale,
       };
     }),
   );
