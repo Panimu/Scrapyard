@@ -141,36 +141,41 @@ export interface CreatureDef {
   /** Index into the owning level's table. Always equal to the array position. */
   readonly id: number;
   /**
-   * Sprite key, or the FIRST of several when `stages` is set. Without the `sprites/` path or the
-   * `.png`, exactly as the texture cache keys them.
+   * THE SPRITES THIS CREATURE CAN DRAW AS, HEALTHIEST FIRST. Never empty; usually one.
+   *
+   * ONE LIST RATHER THAN A `sprite` PLUS A `stages`. That is what it was, and the redundancy bit
+   * twice in the same afternoon: `stages[0]` had to repeat `sprite`, so the loader registered two
+   * creatures' textures under a duplicate alias and Pixi logged an overwrite on every boot; and
+   * the builder read `stages` when it was non-empty, so a creature written the obvious way -
+   * `sprite: 'snail', stages: ['slug']` - silently never drew its snail. Two fields that had to
+   * agree, with nothing making them agree.
+   *
+   * Sprite keys, without the `sprites/` path or the `.png`, exactly as the texture cache keys them.
    */
-  readonly sprite: string;
+  readonly frames: readonly string[];
   /**
    * World units across at rank `regular`. Rank multiplies it, and multiplies the collision radius
    * by the same factor, so the hitbox never lies about the drawing.
+   *
+   * MUST EQUAL the `drawSize` of the body class its cycle uses - the radius comes from the class
+   * and the picture from here, and the two disagreeing is the one bug in this area that players
+   * notice immediately. tests/levels.test.ts checks every rank of every cycle of every level.
    */
   readonly drawSize: number;
-  /**
-   * SPRITES FOR A CREATURE THAT VISIBLY COMES APART AS IT IS HURT, healthiest first, `sprite`
-   * being index 0. Empty for the overwhelming majority, which are one picture.
-   *
-   * This is PRESENTATION ONLY and core never reads it - the renderer picks the frame from the
-   * enemy's current HP fraction, and the simulation does not know the creature has more than one
-   * face. That is why it can be a list of strings here rather than a state machine anywhere: a
-   * snail losing its shell and a hydra losing heads change nothing about the fight, so nothing in
-   * the fight needs to be told.
-   */
-  readonly stages: readonly string[];
 }
 
-/** A creature row, with `stages` defaulted, so a table reads as one line per creature. */
-export function creature(
-  id: number,
-  sprite: string,
-  drawSize: number,
-  stages: readonly string[] = [],
-): CreatureDef {
-  return Object.freeze({ id, sprite, drawSize, stages: Object.freeze(stages.slice()) });
+/**
+ * A creature row. One frame is the overwhelming majority; more than one means it VISIBLY COMES
+ * APART as it is hurt, and the renderer picks between them from its HP fraction.
+ *
+ * Damage stages are PRESENTATION ONLY and core never reads past `frames[0]`. A snail losing its
+ * shell and a hydra losing heads change nothing about the fight - not a radius, not a speed, not a
+ * hitbox - so nothing in the fight is told, and the whole feature costs the simulation zero. See
+ * render/creatureArt.ts.
+ */
+export function creature(id: number, drawSize: number, ...frames: string[]): CreatureDef {
+  if (frames.length === 0) throw new Error(`creature ${id}: needs at least one frame`);
+  return Object.freeze({ id, drawSize, frames: Object.freeze(frames.slice()) });
 }
 
 // -------------------------------------------------------------------------------------------

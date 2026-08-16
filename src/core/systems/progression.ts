@@ -168,7 +168,6 @@ function drainBankedXp(world: World): void {
   world.xpBanked = 0;
 
   const xpTuning = world.config.tuning.xp;
-  const playerTuning = world.config.tuning.player;
   while (player.xp >= player.xpToNext) {
     const need = player.xpToNext;
     if (!(need > 0)) break;

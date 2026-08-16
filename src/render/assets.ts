@@ -14,7 +14,7 @@
  */
 
 import { Assets, Texture } from 'pixi.js';
-import { ARCHETYPES, HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
+import { HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
 import { LEVEL_CATALOG, type LevelId } from '../core/content/levels.js';
 import { buildCreatureArt, creatureSpriteKeys, type LevelCreatureArt } from './creatureArt.js';
 
@@ -75,31 +75,15 @@ export const TURRET_SCALE = TURRET_DRAW_W / TURRET_SRC_W;
 /** Muzzle emits at +24 u along facing - the front lip of the 52 u chassis. */
 export const MUZZLE_OFFSET = 24;
 
-/**
- * Largest content dimension of each enemy hull, in DEFAULT-size pixels, indexed by `hull - 1`.
- * Straight from the measured bbox table in ASSET_MANIFEST §2.
+/*
+ * WHERE THE ENEMY CONTENT-SIZE TABLE WENT: `render/creatureArt.ts`.
  *
- * This table is why the renderer does not simply scale the 64 px canvas to `drawSize`: a runt
- * is 16x24 px of art inside a 64x64 canvas, so canvas-scaling would draw a 26 u runt as a
- * 6.5 u speck inside its own 26 u collision circle. We scale so the CONTENT measures `drawSize`.
+ * It used to live here, next to the loader, as `HULL_CONTENT_PX` plus a retina factor. It is not a
+ * fact about LOADING textures, though - it is a measured fact about one art pack, and it is only
+ * one of the two rules the game now needs (Mossy's tiles are trimmed at bake time, so their own
+ * dimensions are the content). Both rules live together beside the registry that chooses between
+ * them. Leaving a copy here would have been a hand-measured table existing twice.
  */
-const HULL_CONTENT_PX: readonly number[] = [
-  24, // 1  infantry, plain          16x24
-  24, // 2  infantry, helmet         16x24
-  24, // 3  infantry, arms out       20x24
-  24, // 4  infantry, shoulder pads  20x24
-  24, // 5  infantry, bulky          16x24
-  32, // 6  light truck              32x32
-  40, // 7  long truck               40x36
-  40, // 8  boxy truck               32x40
-  51, // 9  tank, gun barrel         51x38
-  44, // 10 heavy hover-bus          44x40
-  40, // 11 rig with cylinder        40x40
-  24, // 12 infantry, orange         16x24
-];
-
-/** We ship `PNG/Retina/Unit/`, whose canvas AND content are exactly 2x the Default-size art. */
-const ENEMY_RETINA_FACTOR = 2;
 
 /** Shell `spaceMissiles_012` is 16x22 and points up; drawn ~16 u long. */
 const SHELL_SRC_H = 22;

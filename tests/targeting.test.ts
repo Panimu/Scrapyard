@@ -50,7 +50,6 @@ const FIXTURE_HERO = testHero();
 
 const FIXTURE_CATALOGS: Catalogs = {
   heroes: [FIXTURE_HERO],
-  enemies: [],
   weapons: WEAPON_CATALOG,
   upgrades: [],
 };

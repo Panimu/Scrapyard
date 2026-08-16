@@ -87,6 +87,24 @@ export interface LevelDef {
   readonly creatures: readonly CreatureDef[];
 
   /**
+   * WHICH OF THIS LEVEL'S CREATURES ILLUSTRATES THE SHARED MACHINERY. An id into `creatures`.
+   *
+   * The Scrapopedia has pages for VARIANTS and RANKS - swift, tough, spiky, elite, boss - which
+   * are properties of the machinery rather than of any one creature, so a page needs a body to
+   * put the cue on. It used to be a hardcoded `enemy_01`, which was fine when there was one map
+   * and became a lie the moment there were two: a player who only plays Mossy was shown a scrap
+   * machine to explain what a swift moss creature looks like.
+   *
+   * So every level names its OWN representative and the pedia shows one per level side by side.
+   * No level's art is ever repurposed to stand for another's, which also means a body on that
+   * screen can always be answered for - it is that map's creature, from that map's table.
+   *
+   * Pick a PLAIN, mid-roster, unmistakable silhouette. It carries the variant's render cue at
+   * 34 px, so a body whose outline is ambiguous at that size teaches nothing.
+   */
+  readonly bestiaryBody: number;
+
+  /**
    * THE LEVEL'S OWN LADDER - which creature the director spawns in cycle `index`, and how tough.
    *
    * A function for the same reason `makeScenery` is one. The Scrapyard's ladder names a hull and

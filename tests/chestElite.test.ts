@@ -49,7 +49,6 @@ function world(): World {
     { seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
     {
       heroes: [testHero({ startingWeapon: 'cannon' })],
-      enemies: [],
       weapons: WEAPON_CATALOG,
       upgrades: UPGRADE_CATALOG,
     },

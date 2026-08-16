@@ -17,8 +17,8 @@
  * ---------------------------------------------------------------------------------------------
  * NO DAMAGE STAGES ANYWHERE IN HERE
  * ---------------------------------------------------------------------------------------------
- * Every entry's `stages` is empty. A Kenney unit is one clean vector drawing with nothing to come
- * apart, and inventing a wrecked repaint for 48 of them is work the game has not asked for.
+ * Every entry has exactly one frame. A Kenney unit is one clean vector drawing with nothing to
+ * come apart, and inventing a wrecked repaint for 48 of them is work the game has not asked for.
  */
 
 import { creature, type CreatureDef } from './cycles.js';
@@ -43,5 +43,5 @@ export function typeIdFor(hull: number, tier: number): number {
  * would drift from it the first time anyone edited one.
  */
 export const SCRAPYARD_CREATURES: readonly CreatureDef[] = Object.freeze(
-  ENEMY_CATALOG.map((def) => creature(def.id, def.sprite, ARCHETYPES[def.archetype].drawSize)),
+  ENEMY_CATALOG.map((def) => creature(def.id, ARCHETYPES[def.archetype].drawSize, def.sprite)),
 ) as readonly CreatureDef[];

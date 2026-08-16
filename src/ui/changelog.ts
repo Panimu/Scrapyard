@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T10:05Z',
+    title: 'THE FIELD MANUAL SHOWS BOTH MAPS',
+    notes: [
+      'EVERY VARIANT AND RANK PAGE NOW SHOWS ONE BODY PER MAP. A swift enemy is illustrated by a Scrapyard machine AND a Mossy creature, side by side, each wearing that variant\'s own cue - the heavy\'s cold tint, the spiky\'s red rim, the boss\'s blue glow. Before this, both maps were explained with a single picture of a scrap machine, which told anyone playing Mossy something that was simply not true.',
+      'AND THE TWO ARE DRAWN AT THE SIZE THEY ACTUALLY ARE. They are both the smallest body class in the game, and the page now says so instead of making one look three times the other.',
+    ],
+  },
+  {
     at: '2026-08-16T09:42Z',
     title: 'MOSSY MAYHEM HAS ITS OWN CREATURES',
     notes: [

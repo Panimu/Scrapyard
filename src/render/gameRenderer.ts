@@ -527,7 +527,16 @@ export class GameRenderer {
 
     // THE LEVEL'S CREATURES, for the same reason and by the same route as its ground: one lookup
     // per run, because `typeId` means something different on every map.
-    this.creatureArt = this.tex.creatures.get(world.level.id) ?? [];
+    //
+    // THROWN, not defaulted. `tex.creatures` is built from LEVEL_CATALOG so a miss cannot happen,
+    // but the draw loop indexes this array for every enemy on screen and a silent `[]` would turn
+    // an impossible condition into a TypeError sixty times a second with nothing saying why. One
+    // loud failure at run start, naming the level, is the only useful behaviour here.
+    const creatures = this.tex.creatures.get(world.level.id);
+    if (creatures === undefined || creatures.length === 0) {
+      throw new Error(`renderer: no creature art loaded for level "${world.level.id}"`);
+    }
+    this.creatureArt = creatures;
 
     // THE LEVEL'S DRESSING. Swapped only when the level actually changes, so replaying the same
     // level does not rebuild a fence and a rubble lattice it is about to use unchanged.
@@ -1113,6 +1122,12 @@ export class GameRenderer {
 
       // THE LEVEL'S OWN ART. `typeId` indexes the CURRENT level's creature table, so this lookup
       // has to go through the level - there is no global enemy array to index any more.
+      //
+      // The fallback is REAL rather than decorative: `reset` has already refused to run with an
+      // empty table, so `art[0]` is a creature and an out-of-range typeId draws the wrong thing
+      // instead of crashing. An earlier version of this line copied the shape of the old guard
+      // without that guarantee, so its fallback was `undefined` in precisely the case it existed
+      // for - which is worse than no fallback, because it reads as safe.
       const frames = art[typeId] ?? art[0];
 
       // A CREATURE MAY COME APART AS IT IS HURT. Most have exactly one frame and this resolves to

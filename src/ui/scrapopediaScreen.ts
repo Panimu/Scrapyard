@@ -102,6 +102,7 @@
 import {
   ACHIEVEMENT_CATALOG,
   FLAVOURS,
+  LEVEL_CATALOG,
   HERO_CATALOG,
   RANKS,
   UPGRADE_CATALOG,
@@ -116,6 +117,7 @@ import {
   type UpgradeId,
 } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
+import { bestiaryIconScale } from '../render/creatureArt.js';
 
 /**
  * The part the catalog cannot say. Keyed by card id so a new card is a compile error here rather
@@ -265,10 +267,12 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
  * repeated here - a variant is 18% faster or 30% tougher, and what a player needs is which way it
  * leans, not the multiplier.
  *
- * `sprite` is a REPRESENTATIVE body, not the variant's own: enemy art is per CYCLE, not per
- * flavour, so the same swift chassis wears a different sprite in wave 1 and wave 6. One frame
- * stands in for all of them and the CSS supplies the flavour's own render cue - the heavy's cool
- * tint, the spiky's red rim, the size difference between a runt and a bruiser.
+ * THE BODIES ON THESE PAGES ARE REPRESENTATIVE, not the variant's own: enemy art is per CYCLE, not
+ * per flavour, so the same swift chassis wears a different sprite in wave 1 and wave 6. Each LEVEL
+ * supplies its own representative (`LevelDef.bestiaryBody`) and the page shows one per level, so a
+ * variant is illustrated by every map it can appear on and by no map it cannot. The CSS supplies
+ * the flavour's own render cue - the heavy's cool tint, the spiky's red rim, the size difference
+ * between a runt and a bruiser.
  */
 interface EnemyEntry {
   readonly lead: string;
@@ -606,21 +610,17 @@ export class ScrapopediaScreen {
   }
 
   /**
-   * A horde entry. The sprite is a stand-in (see ENEMY_MANUAL) but the CUES are the real ones:
-   * the size difference, the heavy\'s cool tint, the spiky\'s red rim. Those are what a player
-   * actually recognises a variant by, so the row teaches the same thing the battlefield does.
+   * A horde entry. One body per level (see `bodyRow`) and the CUES are the real ones: the size
+   * difference, the heavy\'s cool tint, the spiky\'s red rim. Those are what a player actually
+   * recognises a variant by, so the row teaches the same thing the battlefield does - on both maps
+   * at once, which is the only honest way to show a property both maps share.
    */
   private bodyButton(label: string, cue: BodyCue, onTap: () => void): HTMLButtonElement {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'pedia__entry pedia__entry--enemy';
 
-    const icon = document.createElement('img');
-    icon.className = 'pedia__icon pedia__icon--enemy';
-    icon.src = spriteUrl(ENEMY_STAND_IN);
-    icon.alt = '';
-    icon.decoding = 'async';
-    applyCue(icon, cue, 1);
+    const icon = bodyRow(cue, 'pedia__icon pedia__icon--enemy');
 
     const name = document.createElement('span');
     name.className = 'pedia__name';
@@ -959,10 +959,47 @@ function group(text: string, found: number, total: number): HTMLDivElement {
 }
 
 /**
- * One enemy frame stands in for all of them. Enemy art is per CYCLE rather than per variant, so
- * there is no "the swift sprite" to show - see ENEMY_MANUAL.
+ * ONE BODY PER LEVEL, each from that level's OWN creature table.
+ *
+ * Variants and ranks are properties of the machinery, not of a creature, so a page needs some body
+ * to put the cue on. This used to be a single hardcoded `enemy_01` - a Kenney scrap machine - and
+ * with two maps that was a repurposing: it told a Mossy player that a swift moss creature looks
+ * like a truck. Now the Scrapyard's body comes from the Scrapyard's table and Mossy's from Mossy's,
+ * side by side, and nothing on this screen represents a creature it is not.
+ *
+ * Unplayable levels are skipped: a page is written about things you can actually meet.
  */
-const ENEMY_STAND_IN = 'enemy_01';
+function bodyRow(cue: BodyCue, cls: string): HTMLSpanElement {
+  const row = document.createElement('span');
+  row.className = 'pedia__bodies';
+  for (const level of LEVEL_CATALOG) {
+    if (!level.playable) continue;
+    const icon = document.createElement('img');
+    icon.className = cls;
+    // `frames[0]` is the healthy frame. A bestiary body is never a damaged one - the stages exist
+    // to be discovered in a fight, and the Scrapopedia does not spoil an ascension either.
+    icon.src = spriteUrl(level.creatures[level.bestiaryBody].frames[0]);
+    icon.alt = '';
+    icon.decoding = 'async';
+    // The level's name, so a body that is unfamiliar can be identified rather than guessed at.
+    icon.title = level.name;
+    // CONTENT, NOT CANVAS. `object-fit: contain` fits the whole PNG, and a Kenney unit is a small
+    // figure inside a large empty one - so without this correction the two bodies in this row are
+    // wrong relative to each other by about 2.7x while being the same size in play. Applied on
+    // load because it needs the image's natural dimensions.
+    const fit = (): void => {
+      applyCue(icon, cue, bestiaryIconScale(level.id, level.bestiaryBody, {
+        width: icon.naturalWidth,
+        height: icon.naturalHeight,
+      }));
+    };
+    applyCue(icon, cue, 1);
+    if (icon.complete && icon.naturalWidth > 0) fit();
+    else icon.addEventListener('load', fit, { once: true });
+    row.appendChild(icon);
+  }
+  return row;
+}
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -1025,15 +1062,11 @@ function applyCue(icon: HTMLImageElement, cue: BodyCue, extra: number): void {
   if (cue.filter !== '') icon.style.filter = cue.filter;
 }
 
-/** The page header for a horde entry: a stand-in body carrying the variant's own render cues. */
+/** The page header for a horde entry: each level's own body, carrying the variant's render cues. */
 function bodyHead(name: string, kind: string, cue: BodyCue): HTMLDivElement {
   const head = document.createElement('div');
   head.className = 'pedia__page-head';
-  const icon = document.createElement('img');
-  icon.className = 'pedia__page-icon pedia__page-icon--enemy';
-  icon.src = spriteUrl(ENEMY_STAND_IN);
-  icon.alt = '';
-  applyCue(icon, cue, 1);
+  const icon = bodyRow(cue, 'pedia__page-icon pedia__page-icon--enemy');
   const title = document.createElement('div');
   title.className = 'pedia__page-name';
   title.textContent = name;

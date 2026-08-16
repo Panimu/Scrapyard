@@ -22,7 +22,7 @@
  */
 
 import { emptyScenery, type Scenery } from './scenery.js';
-import { MOSS_CREATURES } from './creaturesMossy.js';
+import { MOSS, MOSS_CREATURES } from './creaturesMossy.js';
 import { resolveMossyCycle } from './cyclesMossy.js';
 import type { LevelDef } from './levels.js';
 
@@ -60,4 +60,15 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
    */
   creatures: MOSS_CREATURES,
   resolveCycle: resolveMossyCycle,
+
+  /**
+   * THE JACKAL, and not the Sporeling this map opens with.
+   *
+   * The bestiary body carries a variant's render cue - a size change, a tint, a rim - at 34 px, so
+   * it has to be a silhouette that still reads once it has been squashed and recoloured. A dog
+   * does; a mushroom becomes an anonymous blob. It is also a RUNT, like the Scrapyard's Rustling
+   * beside it, so the two maps' bodies are drawn at the same scale and the row compares creatures
+   * rather than sizes.
+   */
+  bestiaryBody: MOSS.JACKAL,
 });

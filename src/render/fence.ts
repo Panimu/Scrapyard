@@ -33,14 +33,13 @@
  * assets.ts as OUTSIDE_COLOUR / OUTSIDE_ALPHA for exactly that reason.
  */
 
-import { Container, Graphics, Sprite, TilingSprite, type Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, TilingSprite } from 'pixi.js';
 
 import { ARENA_HALF } from '../core/index.js';
 import type { Camera } from './camera.js';
 import {
   FENCE_INNER_UNITS,
   FENCE_OUTER_UNITS,
-  FENCE_TILE_UNITS,
   OUTSIDE_ALPHA,
   OUTSIDE_COLOUR,
   type GameTextures,

@@ -51,6 +51,7 @@ import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { resolveWeaponStats, type WeaponStats } from '../src/core/data/stats.js';
 import { WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
 import { Simulation } from '../src/core/simulation.js';
+import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../src/core/content/levels.js';
 import { botInput, createBot } from '../src/sim/botPolicy.js';
 
 /** Seconds stepped and discarded before the clock starts. One full elite phase of a cycle. */
@@ -185,11 +186,34 @@ function analytic(def: WeaponDef, tier: number): Row {
  * to isolate ONE weapon at ONE tier - and the only path the game offers to tier 7 goes through six
  * level-ups, which would also hand out six other cards.
  */
+/**
+ * THE LEVEL UNDER MEASUREMENT. `--level <id>`, defaulting to the first playable one.
+ *
+ * Refused rather than defaulted on a typo: a measurement run that silently reports the wrong map
+ * is worse than one that does not start.
+ */
+const LEVEL: string = (() => {
+  const argv = process.argv.slice(2);
+  const i = argv.findIndex((a) => a === '--level' || a.startsWith('--level='));
+  if (i < 0) return firstPlayableLevel();
+  const raw = argv[i].includes('=') ? argv[i].slice(argv[i].indexOf('=') + 1) : (argv[i + 1] ?? '');
+  const level = levelById(raw);
+  if (level === undefined || !level.playable) {
+    const names = LEVEL_CATALOG.filter((l) => l.playable).map((l) => l.id).join(', ');
+    throw new Error(`--level: no playable level "${raw}". Try one of: ${names}`);
+  }
+  return level.id;
+})();
+
 function runField(def: WeaponDef, tier: number): Field {
   const defId = WEAPON_CATALOG.indexOf(def);
   const sim = new Simulation({
     seed: SEED,
     heroId: HERO_CATALOG.indexOf(NEUTRAL),
+    // A DPS number is per level: the field it is measured against is that level's creatures, at
+    // that level's health. Reporting one map's table as "the" damage numbers was only ever
+    // correct while there was one map.
+    levelId: LEVEL,
     // Longer than the window, or the run would declare VICTORY partway through and stop stepping.
     runLengthSec: (WARMUP_SEC + MEASURE_SEC) * 2,
   });

@@ -21,7 +21,9 @@ import {
   type World,
 } from '../src/core/types.js';
 import { createWorld, stepWorld } from '../src/core/world.js';
+import { existsSync } from 'node:fs';
 import { SPAWNABLE_ARCHETYPES, createResolvedCycle, maxEnemySpeedAt } from '../src/core/content/cycles.js';
+import { ARCHETYPES } from '../src/core/content/enemyCatalog.js';
 import { stageIndexFor } from '../src/render/creatureArt.js';
 
 function world(levelId: string): World {
@@ -186,6 +188,46 @@ describe('a level owns its creatures', () => {
           expect(level.creatures[typeId]).toBeDefined();
         }
       }
+    }
+  });
+
+  it("every creature's drawSize matches the body class its cycle spawns it as", () => {
+    // THE HITBOX MUST NOT LIE. The collision radius comes from the cycle's archetype and the
+    // picture comes from the creature, so if the two disagree the player sees a body that is not
+    // where they can hit it. Two separate files assert this matters; nothing was checking it.
+    for (const level of LEVEL_CATALOG) {
+      const c = createResolvedCycle(level.resolveCycle);
+      for (let i = 0; i < 24; i++) {
+        level.resolveCycle(i, c);
+        for (const typeId of c.typeByRank) {
+          expect(level.creatures[typeId].drawSize).toBe(ARCHETYPES[c.archetype].drawSize);
+        }
+      }
+    }
+  });
+
+  it('every sprite a creature can draw exists as a baked PNG', () => {
+    // A MISSING PNG IS NOT A MOSSY BUG, IT IS A BLANK GAME. `assets.ts` asks for every level's
+    // keys during boot and `get()` throws on a miss, so renaming one Mossy sprite key takes the
+    // Scrapyard down with it. Cheap to check here; expensive to find on a phone.
+    for (const level of LEVEL_CATALOG) {
+      for (const c of level.creatures) {
+        expect(c.frames.length).toBeGreaterThan(0);
+        for (const key of c.frames) {
+          expect(existsSync(`public/sprites/${key}.png`), `missing sprite ${key}.png`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("names a bestiary body from its own table, never another level's", () => {
+    // The Scrapopedia illustrates variants and ranks with one body PER LEVEL. Each has to resolve
+    // inside that level's own creatures - the whole point is that no map's art stands in for
+    // another's.
+    for (const level of LEVEL_CATALOG) {
+      const body = level.creatures[level.bestiaryBody];
+      expect(body, `${level.id}: bestiaryBody ${level.bestiaryBody} is not in its own table`).toBeDefined();
+      expect(body.id).toBe(level.bestiaryBody);
     }
   });
 

@@ -118,23 +118,6 @@ function slotOf(world: World, idx: number): number {
   return -1;
 }
 
-/**
- * A slot on the current card that is neither `avoid` nor anything touching max HP or weapon
- * damage - so that skipping toward a specific card cannot perturb the number under test.
- */
-function pickHarmlessSlot(world: World, avoid: number): number {
-  for (let i = 0; i < world.levelUp.offerCount; i++) {
-    const idx = world.levelUp.offers[i];
-    if (idx === avoid) continue;
-    const def = world.upgradeCatalog[idx];
-    let touches = false;
-    for (const fx of def.effects) {
-      if (fx.key === 'maxHp' || fx.key === 'damage') touches = true;
-    }
-    if (!touches) return i;
-  }
-  return 0;
-}
 
 /**
  * Levels up until `idx` is on the card, takes it, and returns the tier now held. Anything else
@@ -255,7 +238,7 @@ const FIXTURE_UPGRADES: readonly UpgradeDef[] = [
 ];
 
 function fixtureCatalogs(hero: HeroDef, upgrades: readonly UpgradeDef[]): Catalogs {
-  return { heroes: [hero], enemies: [], weapons: WEAPON_CATALOG, upgrades };
+  return { heroes: [hero], weapons: WEAPON_CATALOG, upgrades };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -446,7 +429,7 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   function soloCatalog(weapon: string): Catalogs {
     const card = UPGRADE_CATALOG.find((u) => u.grantsWeapon === weapon);
     if (card === undefined) throw new Error(`no card grants ${weapon}`);
-    return { heroes: HERO_CATALOG, enemies: [], weapons: WEAPON_CATALOG, upgrades: [card] };
+    return { heroes: HERO_CATALOG, weapons: WEAPON_CATALOG, upgrades: [card] };
   }
 
   function makeWorldForHero(heroId: number, seed = 1, solo?: string): World {

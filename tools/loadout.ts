@@ -57,6 +57,7 @@
 
 import { DT, RUN_LENGTH_SEC } from '../src/core/constants.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
+import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../src/core/content/levels.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG, WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
 import { resolvePlayerStats, resolveWeaponStats } from '../src/core/data/stats.js';
@@ -144,8 +145,25 @@ function equipEverything(world: World): void {
   world.player.stats.xpGain = 0;
 }
 
+/**
+ * THE LEVEL UNDER MEASUREMENT. `--level <id>`, defaulting to the first playable one. Damage share
+ * is per level for the same reason DPS is: the field is that level's creatures.
+ */
+const LEVEL: string = (() => {
+  const argv = process.argv.slice(2);
+  const i = argv.findIndex((a) => a === '--level' || a.startsWith('--level='));
+  if (i < 0) return firstPlayableLevel();
+  const raw = argv[i].includes('=') ? argv[i].slice(argv[i].indexOf('=') + 1) : (argv[i + 1] ?? '');
+  const level = levelById(raw);
+  if (level === undefined || !level.playable) {
+    const names = LEVEL_CATALOG.filter((l) => l.playable).map((l) => l.id).join(', ');
+    throw new Error(`--level: no playable level "${raw}". Try one of: ${names}`);
+  }
+  return level.id;
+})();
+
 function runOne(seed: number): Outcome {
-  const sim = new Simulation({ seed, heroId: HERO_CATALOG.indexOf(NEUTRAL) });
+  const sim = new Simulation({ seed, heroId: HERO_CATALOG.indexOf(NEUTRAL), levelId: LEVEL });
   const world = sim.world;
   world.noAscension = true;
   equipEverything(world);

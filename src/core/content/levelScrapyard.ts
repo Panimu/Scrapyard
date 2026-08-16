@@ -49,4 +49,7 @@ export const SCRAPYARD: LevelDef = Object.freeze({
    */
   creatures: SCRAPYARD_CREATURES,
   resolveCycle: resolveScrapyardCycle,
+
+  /** Hull 1, blue: the Rustling's own body, and the first thing anyone who plays this map met. */
+  bestiaryBody: 0,
 });

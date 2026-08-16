@@ -29,12 +29,19 @@ import {
   type World,
 } from '../core/index.js';
 import { EVENT_NOTHING, SPECIAL_EVENTS } from '../core/content/specialEvents.js';
+import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../core/content/levels.js';
 import { FLAV_CHEST_DROPPER } from '../core/content/enemyCatalog.js';
 import { botInput, createBot } from './botPolicy.js';
 
 export interface HarnessOptions {
   seed: number;
   heroId: number;
+  /**
+   * WHICH LEVEL TO MEASURE. Every level authors its own creatures and its own pacing, so a
+   * measurement is about ONE map and a harness that could only ever run the default was quietly
+   * reporting the Scrapyard's numbers as if they were the game's.
+   */
+  levelId: string;
   /** Simulated seconds to run. Defaults to the full run length plus the intro. */
   seconds: number;
   /** Seconds between timeline rows. */
@@ -47,6 +54,9 @@ export interface HarnessOptions {
 export const DEFAULT_OPTIONS: HarnessOptions = {
   seed: 0x5ca19a2d,
   heroId: 0,
+  // The first playable entry, not a literal: the default has to follow the catalog rather than
+  // pin a measurement to whichever level happened to be first when this was written.
+  levelId: firstPlayableLevel(),
   seconds: RUN_LENGTH_SEC + 8,
   interval: 30,
   hashes: false,
@@ -69,6 +79,20 @@ export function parseArgs(argv: readonly string[]): HarnessOptions {
       case '--heroId':
         o.heroId = Number.parseInt(next(), 10) | 0;
         break;
+      case '--level':
+      case '--levelId': {
+        const id = next();
+        // REFUSED rather than defaulted. `levelOrDefault` would silently hand back the Scrapyard
+        // for a typo, and a measurement run that reports the wrong map without saying so is worse
+        // than one that does not start.
+        const level = levelById(id);
+        if (level === undefined || !level.playable) {
+          const names = LEVEL_CATALOG.filter((l) => l.playable).map((l) => l.id).join(', ');
+          throw new Error(`--level: no playable level "${id}". Try one of: ${names}`);
+        }
+        o.levelId = level.id;
+        break;
+      }
       case '--seconds':
         o.seconds = Number.parseFloat(next());
         break;
@@ -101,6 +125,7 @@ function printUsage(): void {
       'npm run sim -- [options]',
       '  --seed <int>       run seed (default 0x5ca19a2d)',
       '  --hero <0..15>     hero index into HERO_CATALOG',
+      '  --level <id>       level to measure (default the first playable one)',
       '  --minutes <n>      simulated minutes (default 15:08)',
       '  --interval <sec>   seconds between timeline rows (default 30)',
       '  --hashes           print the world hash on every row',
@@ -125,7 +150,7 @@ function countLiveEnemies(world: World): number {
 
 /** Runs the sim and prints the timeline. Returns the finished world for further assertions. */
 export function runHarness(options: HarnessOptions = DEFAULT_OPTIONS): World {
-  const sim = new Simulation({ seed: options.seed, heroId: options.heroId });
+  const sim = new Simulation({ seed: options.seed, heroId: options.heroId, levelId: options.levelId });
   const world = sim.world;
   const bot = createBot();
 
@@ -137,6 +162,7 @@ export function runHarness(options: HarnessOptions = DEFAULT_OPTIONS): World {
     console.log(`SCRAPYARD headless run`);
     console.log(
       `  seed ${options.seed} (0x${(options.seed >>> 0).toString(16)})   hero ${hero.name} [${hero.id}]   weapon ${weapon?.name ?? 'NONE'}`,
+      `  level ${world.level.name} [${world.level.id}]`,
     );
     console.log(
       `  hp ${fixed(world.player.stats.maxHp, 0)}  speed ${fixed(world.player.stats.moveMaxSpeed, 1)} u/s  accel ${fixed(world.player.stats.moveAccel, 0)}  drag ${fixed(world.player.stats.moveDrag, 3)} (derived)`,
@@ -345,7 +371,9 @@ function printSummary(
   console.log(`  peak enemies      ${s.peakEnemies}`);
   console.log(`  level timeline    ${levelTimes.map((t) => clock(t * DT)).join(' ') || '-'}`);
   console.log(`  final hash        ${hashToHex(hashWorld(world))}`);
-  console.log(`  seed              ${options.seed} / hero ${options.heroId}`);
+  // THE LEVEL IS PART OF THE RESULT. Every level authors its own creatures and pacing, so a kill
+  // count or a dps figure without the map it came from cannot be compared with anything.
+  console.log(`  seed              ${options.seed} / hero ${options.heroId} / level ${world.level.id}`);
   console.log('');
 }
 

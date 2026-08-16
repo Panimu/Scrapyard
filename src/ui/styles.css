@@ -2508,3 +2508,19 @@ body {
   border: 2px solid var(--bg);
   pointer-events: none;
 }
+
+/* ---- bestiary bodies -------------------------------------------------------------------
+ * ONE BODY PER LEVEL on every variant and rank page, each from that level's own creature table.
+ * A single stand-in used to serve both maps, which meant a scrap machine explaining what a swift
+ * moss creature looks like.
+ *
+ * The icons keep their own `.pedia__icon--enemy` / `.pedia__page-icon--enemy` sizes and their
+ * inline `transform: scale(...)` cue, so this row only has to stop them stacking and give the
+ * scaled bodies somewhere to overflow into without shoving the label about. */
+.pedia__bodies {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}

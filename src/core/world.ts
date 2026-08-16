@@ -22,7 +22,6 @@ import {
   MAX_BEAMS_PER_TICK,
   MAX_QUERY_CANDIDATES,
   MAX_TARGETS,
-  MAX_WEAPONS,
   WEAPON_SLOTS,
   PICKUP_CAP,
   PROJECTILE_CAP,
@@ -69,7 +68,6 @@ import { reapDead } from './systems/reap.js';
 
 // ---- content catalogs (data agent) --------------------------------------------------------
 import { HERO_CATALOG } from './data/heroes.js';
-import { ENEMY_CATALOG } from './data/enemies.js';
 import { WEAPON_CATALOG } from './data/weapons.js';
 import { UPGRADE_CATALOG } from './data/upgrades.js';
 import { resolvePlayerStats, resolveWeaponStats } from './data/stats.js';
@@ -92,7 +90,6 @@ import { updateProgression } from './systems/progression.js';
 /** The shipping catalogs. Injectable so tests can substitute fixtures (see createWorld). */
 export const DEFAULT_CATALOGS: Catalogs = {
   heroes: HERO_CATALOG,
-  enemies: ENEMY_CATALOG,
   weapons: WEAPON_CATALOG,
   upgrades: UPGRADE_CATALOG,
 };
@@ -354,7 +351,6 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     xpBanked: 0,
 
     heroes: catalogs.heroes,
-    enemyCatalog: catalogs.enemies,
     weaponCatalog: catalogs.weapons,
     upgradeCatalog: catalogs.upgrades,
   };

@@ -47,9 +47,18 @@
  *      7 Golem        Tanky and unhurried.
  *      8 Wyrm         A WALL. Slowest and by far the heaviest.
  *
- * Invariant K holds with room: the fastest thing here is a `swift` Pack regular at 71 x 1.18 x the
- * speed ramp = 100.6 u/s, against a 195 u/s mech. tests/levels.test.ts checks it per level rather
- * than trusting that one measurement covers both.
+ * Invariant K holds with room. The fastest thing on this map is a PLAIN Pack regular: 71 x the
+ * 1.06 within-cycle speed ramp = 75.26 u/s, against a 195 u/s mech. Measured, not reasoned.
+ *
+ * NOT a `swift` one, and the difference is worth writing down because this comment claimed
+ * otherwise and was wrong by 34%. `swift` is +18% speed, but ARCH_RUNT does not carry it -
+ * enemyCatalog.ts drops it from the runt flavour list on purpose, for this exact invariant. So the
+ * three cycles here that CAN roll swift are the grunt ones, and they are the slow ones: the
+ * quickest of those is the Golem wave at 57 x 1.18 x 1.06 = 71.3 u/s, still under the Pack.
+ *
+ * The lesson rather than the number: a body class decides which flavours are reachable, so a
+ * worst case reasoned from the speed column alone will be wrong in both directions.
+ * tests/levels.test.ts checks this per level rather than trusting that one measurement covers both.
  */
 
 import {

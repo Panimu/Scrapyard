@@ -27,7 +27,6 @@ import { sceneryOverlap } from '../content/scenery.js';
 import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
 import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
 import {
-  BEHAVIOUR_HOMING,
   BEHAVIOUR_STRAIGHT,
   type ProjectileBehaviour,
   type WeaponDef,

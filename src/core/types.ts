@@ -24,7 +24,6 @@ import type { LevelDef } from './content/levels.js';
 import type { MetaSource, PlayerStats, WeaponStats } from './data/stats.js';
 import type { DronePool } from './entity/dronePool.js';
 import type { HeroDef } from './data/heroes.js';
-import type { EnemyDef } from './data/enemies.js';
 import type { WeaponDef } from './data/weapons.js';
 import type { UpgradeDef } from './data/upgrades.js';
 
@@ -618,7 +617,12 @@ export interface World {
 
   /** Catalogs are INJECTED, not imported, so tests can substitute fixtures. */
   readonly heroes: readonly HeroDef[];
-  readonly enemyCatalog: readonly EnemyDef[];
+  /**
+   * NO ENEMY CATALOG. `typeId` indexes `level.creatures`, which the LEVEL owns, so a single
+   * injected enemy table could only ever be right for one map - and being wrong silently, for
+   * anyone who indexed it with a typeId, is exactly the confusion the per-level split removed.
+   * Read `world.level.creatures`.
+   */
   readonly weaponCatalog: readonly WeaponDef[];
   readonly upgradeCatalog: readonly UpgradeDef[];
 }
@@ -626,7 +630,6 @@ export interface World {
 /** The four catalogs, bundled so createWorld can take a fixture set in one argument. */
 export interface Catalogs {
   readonly heroes: readonly HeroDef[];
-  readonly enemies: readonly EnemyDef[];
   readonly weapons: readonly WeaponDef[];
   readonly upgrades: readonly UpgradeDef[];
 }

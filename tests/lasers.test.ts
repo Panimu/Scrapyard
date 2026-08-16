@@ -37,7 +37,6 @@ import {
   type WeaponDef,
   type WeaponId,
 } from '../src/core/content/weaponCatalog.js';
-import { ENEMY_CATALOG } from '../src/core/data/enemies.js';
 import {
   UPGRADE_CATALOG,
   WEAPON_MAX_TIER,
@@ -84,7 +83,6 @@ function heroWith(startingWeapon: WeaponId): HeroDef {
 function catalogsFor(startingWeapon: WeaponId): Catalogs {
   return {
     heroes: [heroWith(startingWeapon)],
-    enemies: [],
     weapons: WEAPON_CATALOG,
     upgrades: [],
   };
@@ -841,7 +839,6 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
       { seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
       {
         heroes: [heroWith(startingWeapon)],
-        enemies: ENEMY_CATALOG,
         weapons: WEAPON_CATALOG,
         upgrades: UPGRADE_CATALOG,
       },
@@ -1069,7 +1066,6 @@ describe('determinism with lasers in the loadout', () => {
       { seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
       {
         heroes: [heroWith(startingWeapon)],
-        enemies: ENEMY_CATALOG,
         weapons: WEAPON_CATALOG,
         upgrades: UPGRADE_CATALOG,
       },
@@ -1100,7 +1096,6 @@ describe('determinism with lasers in the loadout', () => {
       { seed: 4242, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
       {
         heroes: [heroWith('laser-medium')],
-        enemies: ENEMY_CATALOG,
         weapons: WEAPON_CATALOG,
         upgrades: UPGRADE_CATALOG,
       },
@@ -1109,7 +1104,6 @@ describe('determinism with lasers in the loadout', () => {
       { seed: 999, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
       {
         heroes: [heroWith('laser-short')],
-        enemies: ENEMY_CATALOG,
         weapons: WEAPON_CATALOG,
         upgrades: UPGRADE_CATALOG,
       },

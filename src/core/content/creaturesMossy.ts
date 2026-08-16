@@ -32,8 +32,8 @@
  * ---------------------------------------------------------------------------------------------
  * TWO BOSSES COME APART AS YOU HURT THEM
  * ---------------------------------------------------------------------------------------------
- * `stages` is a list of sprites from healthy to nearly dead, and the RENDERER picks between them
- * from the enemy's HP fraction. Core never reads it: losing a shell or a head changes nothing
+ * A creature's `frames` run from healthy to nearly dead, and the RENDERER picks between them from
+ * the enemy's HP fraction. Core never reads past frame 0: losing a shell or a head changes nothing
  * about the fight, so nothing in the fight is told about it, and the whole feature costs the
  * simulation exactly zero.
  *
@@ -44,7 +44,7 @@
  *                  health bar, so the fight has a visible countdown in it - and the trimmed
  *                  sprites shrink from 32 px wide to 21 as the heads go, so it genuinely dwindles.
  *
- * The order is HEALTHIEST FIRST and the renderer indexes it by damage taken, so appending a stage
+ * The order is HEALTHIEST FIRST and the renderer indexes it by damage taken, so appending a frame
  * makes the creature come apart in more steps rather than reordering what a player already knows.
  */
 
@@ -68,44 +68,41 @@ const BRUISER = 42;
  */
 export const MOSS_CREATURES: readonly CreatureDef[] = Object.freeze([
   // 1  SPORELING - one creature, three sizes.
-  creature(0, 'moss_wandering_mushroom', RUNT),
+  creature(0, RUNT, 'moss_wandering_mushroom'),
 
   // 2  The swarm. Blowfly -> killer bee -> mosquito: same silhouette language, more weapon.
-  creature(1, 'moss_giant_blowfly', RUNT),
-  creature(2, 'moss_killer_bee', RUNT),
-  creature(3, 'moss_giant_mosquito', RUNT),
+  creature(1, RUNT, 'moss_giant_blowfly'),
+  creature(2, RUNT, 'moss_killer_bee'),
+  creature(3, RUNT, 'moss_giant_mosquito'),
 
   // 3  The formless. Jelly -> ooze, then a SHELLBACK boss that leaves its shell behind.
-  creature(4, 'moss_jelly', GRUNT),
-  creature(5, 'moss_ooze', GRUNT),
-  creature(6, 'moss_giant_snail', GRUNT, ['moss_giant_snail', 'moss_giant_slug']),
+  creature(4, GRUNT, 'moss_jelly'),
+  creature(5, GRUNT, 'moss_ooze'),
+  creature(6, GRUNT, 'moss_giant_snail', 'moss_giant_slug'),
 
   // 4  The pack. Jackal -> raiju -> hellhound: a dog, a lightning dog, a burning dog.
-  creature(7, 'moss_jackal', RUNT),
-  creature(8, 'moss_raiju', RUNT),
-  creature(9, 'moss_hell_hound', RUNT),
+  creature(7, RUNT, 'moss_jackal'),
+  creature(8, RUNT, 'moss_raiju'),
+  creature(9, RUNT, 'moss_hell_hound'),
 
   // 5  VINE STALKER - one creature, three sizes.
-  creature(10, 'moss_vine_stalker', GRUNT),
+  creature(10, GRUNT, 'moss_vine_stalker'),
 
   // 6  DRACONIAN - one creature, three sizes.
-  creature(11, 'moss_draconic_green', BRUISER),
+  creature(11, BRUISER, 'moss_draconic_green'),
 
   // 7  The made things. Earth elemental -> stone golem -> iron golem: dirt, then rock, then metal.
-  creature(12, 'moss_earth_elemental', GRUNT),
-  creature(13, 'moss_stone_golem', GRUNT),
-  creature(14, 'moss_iron_golem', GRUNT),
+  creature(12, GRUNT, 'moss_earth_elemental'),
+  creature(13, GRUNT, 'moss_stone_golem'),
+  creature(14, GRUNT, 'moss_iron_golem'),
 
-  // 8  The wyrms. Dragon -> golden dragon, then a HYDRA that loses a head per stage.
-  creature(15, 'moss_dragon', BRUISER),
-  creature(16, 'moss_golden_dragon', BRUISER),
-  creature(17, 'moss_hydra_5', BRUISER, [
-    'moss_hydra_5',
-    'moss_hydra_4',
-    'moss_hydra_3',
-    'moss_hydra_2',
-    'moss_hydra_1',
-  ]),
+  // 8  The wyrms. Dragon -> golden dragon, then a HYDRA that loses a head per frame.
+  creature(15, BRUISER, 'moss_dragon'),
+  creature(16, BRUISER, 'moss_golden_dragon'),
+  creature(
+    17, BRUISER,
+    'moss_hydra_5', 'moss_hydra_4', 'moss_hydra_3', 'moss_hydra_2', 'moss_hydra_1',
+  ),
 ] as const) as readonly CreatureDef[];
 
 /** By-name handles for the ladder, so a cycle never names a creature by index. */

@@ -20,6 +20,7 @@
     "moduleDetection": "force",
 
     "strict": true,
+    "noUnusedLocals": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,

@@ -81,11 +81,23 @@ const HULL_CONTENT_PX: readonly number[] = [
 /** We ship `PNG/Retina/Unit/`, whose canvas AND content are exactly 2x the Default-size art. */
 const ENEMY_RETINA_FACTOR = 2;
 
+/** Anything with pixel dimensions: a loaded `Texture`, or an `<img>`'s natural size. */
+export interface Measurable {
+  readonly width: number;
+  readonly height: number;
+}
+
 /**
- * How many pixels of `texture` are the creature, for a creature at index `id` in the level's table.
- * The scale is then `drawSize / contentPx`.
+ * How many pixels of `art` are the creature, for a creature at index `id` in the level's table.
+ * The sprite scale is then `drawSize / contentPx`.
+ *
+ * Deliberately typed on WIDTH AND HEIGHT rather than on `Texture`, so the Scrapopedia can ask the
+ * same question of an `<img>`'s natural size. That screen draws one body per level side by side,
+ * and without this they are wrong relative to each other by a factor of 2.7 - a Kenney unit is a
+ * small figure in a large empty canvas, a DCSS tile is trimmed to its own edges, and letting the
+ * browser fit each to the same box makes two identically-sized runts look nothing alike.
  */
-export type ContentPxRule = (id: number, texture: Texture) => number;
+export type ContentPxRule = (id: number, art: Measurable) => number;
 
 /**
  * EVERY LEVEL'S RULE, BY ID. `Record<LevelId, ...>` so a missing entry is a COMPILE ERROR: a level
@@ -97,25 +109,30 @@ export const CONTENT_PX_BY_LEVEL: Record<LevelId, ContentPxRule> = {
   // is the Scrapyard's and appears in exactly two places - here, and `typeIdFor` in core.
   scrapyard: (id) => HULL_CONTENT_PX[id % 12] * ENEMY_RETINA_FACTOR,
   // Trimmed at bake time: the PNG is the creature and nothing else.
-  'mossy-mayhem': (_id, texture) => Math.max(texture.width, texture.height),
+  'mossy-mayhem': (_id, art) => Math.max(art.width, art.height),
 };
 
-/** Every sprite key a level's creatures can draw, stages included, for the loader's key list. */
+/**
+ * Every sprite key a level's creatures can draw, DEDUPLICATED.
+ *
+ * The dedupe is not defensive tidiness, it is required: Pixi's resolver warns and takes an
+ * "overwriting" path when the same alias is registered twice, and two levels may legitimately
+ * share nothing while ONE level reuses a frame across two creatures. Cheaper to guarantee it here
+ * than to rely on every content table being written without repeats.
+ */
 export function creatureSpriteKeys(creatures: readonly CreatureDef[]): string[] {
-  const keys: string[] = [];
+  const keys = new Set<string>();
   for (const c of creatures) {
-    keys.push(c.sprite);
-    for (const s of c.stages) keys.push(s);
+    for (const f of c.frames) keys.add(f);
   }
-  return keys;
+  return [...keys];
 }
 
 /**
  * Builds one level's creature art. `get` resolves a sprite key to a loaded texture.
  *
- * A creature with no stages becomes a one-frame list of its own `sprite`, so the draw path is
- * uniform. Each stage is measured independently - a hydra shrinks from 32 source pixels to 21 as
- * it loses heads, and measuring once would have stretched the last frame back up to full size,
+ * EVERY FRAME IS MEASURED INDEPENDENTLY. A hydra shrinks from 32 source pixels to 21 as it loses
+ * heads; measuring once and reusing the scale would stretch the last frame back up to full size,
  * throwing away the one thing the effect is for.
  */
 export function buildCreatureArt(
@@ -124,13 +141,12 @@ export function buildCreatureArt(
   get: (key: string) => Texture,
 ): LevelCreatureArt {
   const contentPx = CONTENT_PX_BY_LEVEL[levelId];
-  return creatures.map((c) => {
-    const keys = c.stages.length > 0 ? c.stages : [c.sprite];
-    return keys.map((key) => {
+  return creatures.map((c) =>
+    c.frames.map((key) => {
       const texture = get(key);
       return { texture, scale: c.drawSize / contentPx(c.id, texture) };
-    });
-  });
+    }),
+  );
 }
 
 /**
@@ -148,4 +164,20 @@ export function stageIndexFor(hp: number, maxHp: number, count: number): number 
   const taken = 1 - hp / maxHp;
   const i = Math.floor(taken * count);
   return i < 0 ? 0 : i >= count ? count - 1 : i;
+}
+
+/**
+ * How much to magnify a level's bestiary body so its CONTENT fills its box, given the loaded
+ * image's natural size.
+ *
+ * The Scrapopedia sizes its icons in CSS and lets `object-fit: contain` fit the whole PNG, which
+ * fits the CANVAS - so a Kenney unit, whose canvas is mostly empty, comes out at about a third of
+ * the size of a trimmed DCSS tile drawn beside it. Both are 26-unit runts in play; the row has to
+ * say so.
+ */
+export function bestiaryIconScale(levelId: LevelId, creatureId: number, art: Measurable): number {
+  const longest = Math.max(art.width, art.height);
+  if (longest <= 0) return 1;
+  const px = CONTENT_PX_BY_LEVEL[levelId](creatureId, art);
+  return px > 0 ? longest / px : 1;
 }
