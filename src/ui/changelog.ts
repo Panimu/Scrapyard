@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T00:23Z',
+    title: 'DRONES FLY AT A FIXED SPEED, AND THEY ACTUALLY CIRCLE NOW',
+    notes: [
+      'A DRONE THAT LOCKS ON NOW RUNS STRAIGHT AT ITS TARGET AND THEN GOES ROUND IT. It used to ease in, which meant it was always still closing and never quite arrived - what looked like an orbit was a long spiral that never shut. It now flies in at a flat speed, reaches its ring, and holds it exactly while it shoots.',
+      'IT ALSO STOPS FLYING THROUGH THE THING IT IS CIRCLING. It comes in at the nearest point on the ring rather than at whichever side it happened to be facing when it locked on, so a drone crossing to a target no longer passes straight over the top of it.',
+      'DRONES HAVE THEIR OWN ENGINE, at a flat 5% over a stock chassis. It does not scale with anything - not the mech you picked, not Servo Drive, not the workshop. Buy movement speed and you will outrun your own escort, which is a real cost of a speed build rather than something that quietly followed you.',
+    ],
+  },
+  {
     at: '2026-08-16T00:02Z',
     title: 'MECH INSURANCE, AND A COUNT OF WHAT IS STILL COMING',
     notes: [

@@ -78,14 +78,35 @@ const ENGAGE_RADIUS_FRAC = 0.55;
  * moving only one changes the SHAPE of the flight - a slow orbit with a fast transit darts and
  * parks, a fast orbit with a slow transit spirals. Scaling both keeps the path and slows the film.
  *
- * WHAT FOLLOW_RATE COSTS, stated because it is not obvious from the number. The follow is an
- * exponential approach, so a player running flat out leaves the drone a steady `speed /
- * FOLLOW_RATE` behind - about 186 units at 1.05 against a 195 u/s mech, which is three escort
- * radii. Drones trail a sprinting player rather than staying on his shoulder. That is the price of
- * a readable orbit, and it is only paid while actually running.
+ * ORBIT_RATE IS DELIBERATELY WELL UNDER what the drone could fly. At the engage ring its point
+ * moves about 58 u/s and the drone is good for 205, so the drone is never chasing its own mark
+ * once it is on station - it sits on the ring exactly and goes round at a pace you can watch. The
+ * spare speed is all spent on getting there.
  */
 const ORBIT_RATE = 0.525;
-const FOLLOW_RATE = 1.05;
+
+/**
+ * How far off the ring still counts as being on it, as a fraction of the ring's radius.
+ *
+ * The orbit does not begin until the drone is inside this - see the approach in `updateDrones`. A
+ * touch over 1 rather than exactly 1 because the drone arrives from outside and would otherwise
+ * flicker between transiting and orbiting on the tick it crosses.
+ */
+const ON_STATION_FRAC = 1.15;
+
+/**
+ * Drone airspeed, as a fraction of the mech's BASE top speed.
+ *
+ * IT SCALES WITH NOTHING. Not the chassis' own speed multiplier, not Servo Drive, not the
+ * workshop's Servo Tuning - it is read off `tuning.player.moveMaxSpeed` before any of those get
+ * near it. A drone is a machine with its own engine, and the alternative is a drone that quietly
+ * gets faster because you took a card about your legs.
+ *
+ * THE CONSEQUENCE IS INTENDED AND WORTH KNOWING: a player who buys movement speed outruns their
+ * own escort. At 5% over base the drones stay on your shoulder at a walk and trail you the moment
+ * you are faster than stock, which is a real cost of a speed build rather than an oversight.
+ */
+const DRONE_SPEED_FRAC = 1.05;
 
 /**
  * THE ACQUISITION CIRCLE IS DRAWN AROUND THE PLAYER, NOT AROUND THE DRONE. This is the single most
@@ -250,6 +271,9 @@ export function updateDrones(world: World, dt: number): void {
   const acquire = gun.range * DRONE_ACQUIRE_MUL;
   const acquireSq = acquire * acquire;
   const engageRadius = gun.range * ENGAGE_RADIUS_FRAC;
+  // From TUNING, not from `player.stats` - the base number, before the chassis multiplier and
+  // before any card or workshop tier touches it. See DRONE_SPEED_FRAC.
+  const speed = world.config.tuning.player.moveMaxSpeed * DRONE_SPEED_FRAC;
   // THE GUN'S WHOLE MAGAZINE. No drone-specific fraction: the round is what was made cheaper.
   const magazine = Math.max(1, Math.floor(gun.ammoCapacity));
 
@@ -348,17 +372,57 @@ export function updateDrones(world: World, dt: number): void {
     const centreY = target >= 0 ? enemies.y[target] : player.y;
     const radius = target >= 0 ? engageRadius : ESCORT_RADIUS;
 
-    drones.angle[d] += ORBIT_RATE * dt * drones.spin[d];
-    if (drones.angle[d] > TWO_PI) drones.angle[d] -= TWO_PI;
-    else if (drones.angle[d] < 0) drones.angle[d] += TWO_PI;
+    // ARRIVAL GATES THE ORBIT, which is what makes a lock read as "chase it, then circle it".
+    //
+    // ON STATION the phase advances and the drone goes round. OFF station the phase is SNAPPED TO
+    // THE DRONE'S OWN BEARING from the centre, so the point it is flying at is always the nearest
+    // one on the ring: the approach is a straight radial run in, and the circle starts from
+    // wherever it happens to arrive.
+    //
+    // Both halves were wrong before. Chasing a mark that slides around the ring during a long
+    // approach is a spiral - the drone always cuts the corner toward where the mark is going and
+    // arrives on a curve that never closes. Freezing the mark instead fixes the spiral but leaves
+    // the drone flying at whatever phase it held when it locked on, which is as likely to be the
+    // FAR side of the target as the near one: measured, it passed within 16 units of the centre of
+    // the thing it was supposed to be circling. Aiming at the nearest point can do neither.
+    const toCentre = Math.sqrt(distSq(drones.x[d], drones.y[d], centreX, centreY));
+    if (toCentre <= radius * ON_STATION_FRAC) {
+      drones.angle[d] += ORBIT_RATE * dt * drones.spin[d];
+      if (drones.angle[d] > TWO_PI) drones.angle[d] -= TWO_PI;
+      else if (drones.angle[d] < 0) drones.angle[d] += TWO_PI;
+    } else if (toCentre > 0) {
+      // atan2 rather than the deterministic table: core already uses it in projectiles.ts for
+      // missile steering, and nothing outside this file reads `angle` - it is internal phase.
+      let a = Math.atan2(drones.y[d] - centreY, drones.x[d] - centreX);
+      if (a < 0) a += TWO_PI;
+      drones.angle[d] = a;
+    }
 
     const wantX = centreX + dcos(drones.angle[d]) * radius;
     const wantY = centreY + dsin(drones.angle[d]) * radius;
-    // Eased rather than snapped, and `t` is clamped at 1 so a long frame cannot overshoot into a
-    // wobble - the one way a follow like this can go unstable.
-    const t = FOLLOW_RATE * dt < 1 ? FOLLOW_RATE * dt : 1;
-    drones.x[d] += (wantX - drones.x[d]) * t;
-    drones.y[d] += (wantY - drones.y[d]) * t;
+
+    // A CONSTANT SPEED, not the exponential ease this used to fly.
+    //
+    // An exponential approach covers a fraction of the remaining gap per tick, so it is quick when
+    // far away and asymptotically slow when close - it never actually arrives, and it left a drone
+    // a steady 186 units behind a sprinting player. Worse for what this is meant to look like: a
+    // drone that is always still closing is a drone that is always spiralling, so the orbit could
+    // only ever be approximated.
+    //
+    // At a fixed speed it closes the gap in a straight line, reaches the ring, and then TRACKS it
+    // exactly - the ring's own point moves about 1 unit a tick and the drone can move 3.4, so once
+    // it is on station it simply stays on station and goes round.
+    const dxw = wantX - drones.x[d];
+    const dyw = wantY - drones.y[d];
+    const gap = Math.sqrt(dxw * dxw + dyw * dyw);
+    const step = speed * dt;
+    if (gap > step) {
+      drones.x[d] += (dxw / gap) * step;
+      drones.y[d] += (dyw / gap) * step;
+    } else {
+      drones.x[d] = wantX;
+      drones.y[d] = wantY;
+    }
 
     // ---- shoot ------------------------------------------------------------------------------
     if (drones.cooldownLeft[d] > 0) drones.cooldownLeft[d] -= dt;
