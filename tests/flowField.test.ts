@@ -9,7 +9,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
-import { wallKindAt } from '../src/core/content/wallsMossy.js';
+import { destroyScenery } from '../src/core/content/scenery.js';
+import { WALL_TREE, packWallCell, wallKindAt } from '../src/core/content/wallsMossy.js';
 import {
   FLOW_CELL,
   FLOW_CELLS,
@@ -147,5 +148,64 @@ describe('the flow field', () => {
     updateFlowField(w);
     expect(w.flow.rebuilds).toBe(first + 1);
     expect(w.flow.builtCx).toBe(flowCellOf(w.player.x));
+  });
+
+  it('notices a felled tree on the very next tick', () => {
+    // THE TRIGGER THAT REPLACED A TIMER. The field used to expire twice a second, so a route that
+    // opened when a tree came down could stay invisible to the horde for half a second - exactly
+    // the moment they should be pouring through it. It now watches `sceneryVersion`, and this is
+    // the test that says so: without it, nothing would fail if the version stopped being bumped.
+    const w = mossWorld(7);
+    if (w.scenery.kind !== 'walls') throw new Error('expected the wall lattice');
+
+    // A tree within the window, and not in the opening the player starts clear of.
+    let felled: number | undefined;
+    let cell: [number, number] | undefined;
+    outer: for (let cy = -50; cy < 50; cy++) {
+      for (let cx = -50; cx < 50; cx++) {
+        if (wallKindAt(w.scenery, cx, cy) !== WALL_TREE) continue;
+        cell = [cx, cy];
+        felled = packWallCell(cx, cy);
+        break outer;
+      }
+    }
+    if (felled === undefined || cell === undefined) throw new Error('seed has no tree to fell');
+
+    // Stand next to it so the cell is inside the field's window.
+    fieldAt(w, (cell[0] + 0.5) * FLOW_CELL, (cell[1] + 0.5) * FLOW_CELL + FLOW_CELL * 3);
+    const before = w.flow.rebuilds;
+    const i = (cell[1] - w.flow.originCy) * FLOW_CELLS + (cell[0] - w.flow.originCx);
+    expect(w.flow.blocked[i], 'the tree should start out blocking its cell').toBe(1);
+
+    // Fell it. The player has not moved and no tick has passed - only the terrain changed.
+    destroyScenery(w.scenery, felled);
+    updateFlowField(w);
+
+    expect(w.flow.rebuilds, 'the field ignored a terrain change').toBe(before + 1);
+    expect(w.flow.blocked[i], 'the felled cell is still marked blocked').toBe(0);
+  });
+
+  it('offers more than one way on, wherever more than one exists', () => {
+    // The route variation rests on this: the field records EVERY neighbour that gets closer, not
+    // just the closest. If that collapsed back to one option per cell the horde would file through
+    // gaps single-file again, and nothing else in the suite would notice.
+    const w = mossWorld(7);
+    fieldAt(w, 1800, -2400);
+    const f = w.flow;
+
+    let multi = 0;
+    let reachable = 0;
+    for (let i = 0; i < FLOW_CELLS * FLOW_CELLS; i++) {
+      if (f.dist[i] <= 0) continue;
+      reachable++;
+      let bits = 0;
+      for (let k = 0; k < 8; k++) if ((f.options[i] & (1 << k)) !== 0) bits++;
+      // Every reachable cell must have SOMEWHERE to go, or a body standing in it is stranded.
+      expect(bits, `cell ${i} is reachable but offers no way on`).toBeGreaterThan(0);
+      if (bits >= 2) multi++;
+    }
+    // Measured at 87.9% across five seeds. The floor is well under that - this guards against the
+    // choice collapsing, not against it shifting a few points on a terrain reroll.
+    expect(multi / reachable).toBeGreaterThan(0.6);
   });
 });

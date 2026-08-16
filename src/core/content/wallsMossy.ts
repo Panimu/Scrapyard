@@ -190,10 +190,15 @@ export interface MossWalls {
    * such number.
    */
   count: number;
+  /**
+   * Bumped by every write that changes what is standing. See `sceneryVersion` in scenery.ts: this
+   * is how anything CACHED off the terrain - the flow field, today - knows to throw its copy away.
+   */
+  version: number;
 }
 
 export function createMossWalls(seed: number): MossWalls {
-  return { kind: 'walls', seed: seed | 0, blocks: new Map(), broken: new Set(), count: 0 };
+  return { kind: 'walls', seed: seed | 0, blocks: new Map(), broken: new Set(), count: 0, version: 0 };
 }
 
 // -------------------------------------------------------------------------------------------
@@ -752,4 +757,5 @@ export function breakWallCell(w: MossWalls, i: number): void {
   if (w.broken.has(i)) return;
   w.broken.add(i);
   w.count++;
+  w.version++;
 }

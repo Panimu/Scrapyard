@@ -195,6 +195,8 @@ export interface ScrapPiles {
   readonly variant: Int32Array;
   /** How many cells actually hold a pile. Diagnostics and the harness; nothing branches on it. */
   count: number;
+  /** Bumped by every write that changes what is standing. See `sceneryVersion`. */
+  version: number;
 }
 
 /**
@@ -239,6 +241,7 @@ export function emptyScenery(): ScrapPiles {
     radius: new Float32Array(n),
     variant: new Int32Array(n),
     count: 0,
+    version: 0,
   };
 }
 
@@ -534,6 +537,7 @@ export function destroyScenery(s: Scenery, i: number): void {
   if (s.radius[i] === 0) return;
   s.radius[i] = 0;
   s.count--;
+  s.version++;
 }
 
 /**
@@ -600,6 +604,7 @@ export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): numb
     if (pick-- > 0) continue;
     s.radius[i] = BARREL_RADIUS;
     s.count++;
+    s.version++;
     return i;
   }
   return -1;
@@ -684,4 +689,25 @@ export function sceneryY(s: Scenery, i: number): number {
 /** Sizes the burst the renderer plays where something went up. Half a cell, for a wall. */
 export function sceneryRadius(s: Scenery, i: number): number {
   return s.kind === 'walls' ? WALL_HALF : s.radius[i];
+}
+
+/**
+ * A COUNTER THAT CHANGES WHENEVER THE TERRAIN DOES, and nothing else about it is meaningful - not
+ * its value, not how fast it climbs. Only "is this the same number as last time".
+ *
+ * It exists so that anything holding a CACHE derived from the terrain can tell, in one comparison,
+ * whether its copy is still good. The flow field is the only such thing today and it used to
+ * manage without: it simply expired twice a second on the assumption that half a second of stale
+ * terrain would not be noticed. That was true but wasteful in both directions - it rebuilt 120
+ * times a minute while standing in an empty field where nothing had changed, and it still took up
+ * to half a second to notice a tree coming down, which is exactly the moment a route opens and the
+ * horde should use it.
+ *
+ * THE THREE WRITES ARE THE WHOLE LIST: `destroyScenery` and `regrowBarrel` here, and
+ * `breakWallCell` in wallsMossy.ts. That is not a coincidence to be maintained by vigilance - the
+ * header of this file has always said terrain is generated once and mutated in exactly one way per
+ * kind, and `tests/flowField.test.ts` asserts that a felled tree is seen.
+ */
+export function sceneryVersion(s: Scenery): number {
+  return s.version;
 }

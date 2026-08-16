@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T14:22Z',
+    title: 'THEY DO NOT ALL COME THE SAME WAY',
+    notes: [
+      'Enemies routing around a wall now spread across every way round that works instead of filing through one gap in single file. Some flank wide, some cut close, and a pack meeting a long wall will often break around both ends of it at once.',
+      'Every one of those routes still gets them to you — none of them wander or give up. What changed is that there is more than one.',
+      'Cut down a tree and the horde uses the new gap immediately, instead of taking up to half a second to notice it had opened.',
+    ],
+  },
+  {
     at: '2026-08-16T13:49Z',
     title: 'THE WALL WALKS FASTER',
     notes: [

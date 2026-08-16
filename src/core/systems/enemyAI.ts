@@ -46,7 +46,7 @@ import {
   sceneryX,
   sceneryY,
 } from '../content/scenery.js';
-import { FLOW_X, FLOW_Y, flowDirAt } from '../spatial/flowField.js';
+import { FLOW_X, FLOW_Y, flowDirFor } from '../spatial/flowField.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
 import { rollRingPosition } from './spawning.js';
@@ -241,7 +241,12 @@ function seek(world: World, dt: number): void {
     const r = radius[d];
     const reach = r + AVOID_LOOKAHEAD;
     const ahead = sceneryOverlap(world.scenery, x[d] + ux * reach, y[d] + uy * reach, r);
-    if (ahead >= 0 && flowDirAt(world.flow, x[d], y[d])) {
+    if (ahead >= 0 && flowDirFor(world.flow, x[d], y[d], ux, uy, spawnId[d])) {
+      // AND NOT ALL THE SAME WAY ROUND. The field records every neighbour that gets closer, not
+      // just the closest, and this body takes whichever of them best matches its own fixed lean on
+      // the bearing to the player. Every option strictly reduces the distance, so each is a route
+      // that works - what differs is which one. A pack that used to file through one gap now comes
+      // at you across the whole spread of routes that reach you.
       ux = FLOW_X;
       uy = FLOW_Y;
     } else if (ahead >= 0) {
