@@ -111,6 +111,19 @@ export const EV_SPECIAL_EVENT = 26;
  * a repair is the mech mending itself.
  */
 export const EV_PLAYER_REPAIRED = 27;
+/**
+ * MECH INSURANCE paid out. Payload: (x, y, seconds of immunity opened, 0).
+ *
+ * The single most consequential moment a run can have - the tick it was over and then was not - so
+ * it gets an event of its own rather than being inferred from a full hull appearing. Nothing else
+ * in the game restores every hit point at once, but a renderer watching for that would also fire on
+ * the first frame of a run, which is when the hull is also suddenly full.
+ *
+ * The immunity duration is carried so the picture can last exactly as long as the window does. A
+ * renderer that guessed at three seconds would drift the day the number is tuned, and an effect
+ * that outlives the protection it depicts is worse than no effect.
+ */
+export const EV_PLAYER_SAVED = 28;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -142,6 +155,7 @@ export const EVENT_NAMES: readonly string[] = [
   'UPGRADE_REROLLED',
   'SPECIAL_EVENT',
   'PLAYER_REPAIRED',
+  'PLAYER_SAVED',
 ];
 
 export interface EventRing {

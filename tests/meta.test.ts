@@ -33,6 +33,7 @@ import { updateCollision } from '../src/core/systems/collision.js';
 import { updateDamage } from '../src/core/systems/damage.js';
 import { RUN_PHASE_DEAD, RUN_PHASE_RUNNING, type World } from '../src/core/types.js';
 import { createWorld } from '../src/core/world.js';
+import { EV_PLAYER_SAVED } from '../src/core/events/ring.js';
 
 /** Every upgrade at full tier. */
 function maxed(): Uint8Array {
@@ -203,6 +204,19 @@ describe('mech insurance', () => {
     expect(w.player.insuranceUsed).toBe(1);
     // A run this saved did not die, so nothing may have recorded that it did.
     expect(w.stats.killedByRank).toBe(-1);
+
+    // AND THE RENDERER IS TOLD. The whole animation hangs off this one event, and a payout that
+    // silently produced no picture would look exactly like the upgrade not working.
+    const ring = w.events;
+    let saw = false;
+    for (let i = ring.readCursor; i < ring.writeCursor; i++) {
+      const j = i & ring.mask;
+      if (ring.kind[j] !== EV_PLAYER_SAVED) continue;
+      saw = true;
+      // The immunity duration rides along so the shimmer can last exactly as long as it does.
+      expect(ring.c[j]).toBe(3);
+    }
+    expect(saw).toBe(true);
   });
 
   it('pays out ONCE - the second death in a run is a real one', () => {

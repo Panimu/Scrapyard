@@ -40,6 +40,7 @@ import {
   EV_GEM_COLLECTED,
   EV_LEVEL_UP,
   EV_PLAYER_DAMAGED,
+  EV_PLAYER_SAVED,
   EV_PLAYER_SHIELD_BROKEN,
   EV_PLAYER_SHIELD_RESTORED,
   EV_PROJECTILE_DETONATED,
@@ -162,6 +163,34 @@ const SHIELD_RIM_RADIUS = 38;
 const SHIELD_RIM_STEP = 7;
 const SHIELD_RIM_WIDTH = 2.5;
 const SHIELD_RIM_TINT = 0x4fa8ff;
+
+/**
+ * The Mech Insurance window, worn on the chassis. Gold, matching the burst that opened it and the
+ * credits that bought it - see `Effects.insuranceSave`.
+ */
+const INSURANCE_SAVED_TINT = 0xffd257;
+/** Radians per second of the pulse. ~1.4 Hz: fast enough to read as a timer, slow enough not to strobe. */
+const INSURANCE_PULSE_HZ = 9;
+
+/**
+ * Blends two packed 0xRRGGBB tints, per channel. `t` is how much of `b` to take, 0..1.
+ *
+ * Per channel rather than a single lerp on the packed integer, which would bleed the red channel's
+ * arithmetic into green the moment it carried.
+ */
+function mixTint(a: number, b: number, t: number): number {
+  const k = t < 0 ? 0 : t > 1 ? 1 : t;
+  const ar = (a >> 16) & 0xff;
+  const ag = (a >> 8) & 0xff;
+  const ab = a & 0xff;
+  const br = (b >> 16) & 0xff;
+  const bg = (b >> 8) & 0xff;
+  const bb = b & 0xff;
+  const r = (ar + (br - ar) * k) | 0;
+  const g = (ag + (bg - ag) * k) | 0;
+  const bl = (ab + (bb - ab) * k) | 0;
+  return (r << 16) | (g << 8) | bl;
+}
 /**
  * The rim breathes between these two alphas. A static ring reads as part of the chassis art; a
  * moving one reads as a field that is running, which is the difference between the player noticing
@@ -302,6 +331,16 @@ export class GameRenderer {
   /** Wall-clock seconds since boot, for cosmetic cycles (gem bob). Never touches the sim. */
   private clock = 0;
   private playerFlash = 0;
+  /**
+   * Seconds left on the Mech Insurance shimmer, and the duration it started from.
+   *
+   * RENDER-SIDE ONLY, counted down in real seconds like every other effect clock here. It could
+   * have been read straight off `player.invulnLeft`, and deliberately is not: that field is also
+   * set by a shield rim breaking, which already has its own picture and does not want this one.
+   * Driving it from the EVENT means the shimmer belongs to the thing that caused it.
+   */
+  private savedFor = 0;
+  private savedTotal = 0;
   /**
    * Green tint while the level-up heal lands. The health bar moves too, but the card opens over
    * it the same instant - so without a cue on the mech itself the only healing in the game
@@ -470,6 +509,8 @@ export class GameRenderer {
     this.beams.clear();
     this.effects.clear();
     this.playerFlash = 0;
+    this.savedFor = 0;
+    this.savedTotal = 0;
     // -1, not 0: the new run may start with the same layer count the last one ended on, and a
     // cleared Graphics that believes it is already drawn would leave the rim missing all run.
     this.shieldRimDrawn = -1;
@@ -495,6 +536,7 @@ export class GameRenderer {
   draw(world: World, alpha: number, dtSec: number): void {
     this.clock += dtSec;
     if (this.playerFlash > 0) this.playerFlash -= dtSec;
+    if (this.savedFor > 0) this.savedFor -= dtSec;
     if (this.healFlash > 0) this.healFlash -= dtSec;
     if (this.turretKick > 0) this.turretKick -= dtSec;
 
@@ -612,6 +654,18 @@ export class GameRenderer {
 
         case EV_PLAYER_SHIELD_RESTORED:
           this.effects.shieldRestore(a, b, SHIELD_RIM_TINT);
+          break;
+
+        // MECH INSURANCE PAID OUT. The burst is the moment; `savedFor` is the aftermath, and both
+        // are needed - a run that is saved and then walks into the same crowd having no idea it is
+        // briefly untouchable has been given half an upgrade.
+        //
+        // `c` is the immunity duration from the simulation rather than a number repeated here, so
+        // the shimmer lasts exactly as long as the protection does however it is later tuned.
+        case EV_PLAYER_SAVED:
+          this.effects.insuranceSave(a, b);
+          this.savedFor = c;
+          this.savedTotal = c;
           break;
 
         case EV_BARREL_BROKEN:
@@ -1161,7 +1215,26 @@ export class GameRenderer {
     const phase = (this.stride / (STRIDE_UNITS * cycleSteps)) * Math.PI * 2;
     const yaw = hero?.gait === 'hover' ? 0 : Math.sin(phase) * GAIT_YAW;
     // Damage wins over the heal: being hit is the more urgent fact.
-    const tint = this.playerFlash > 0 ? 0xffb0a8 : this.healFlash > 0 ? 0xb6f5c4 : 0xffffff;
+    let tint = this.playerFlash > 0 ? 0xffb0a8 : this.healFlash > 0 ? 0xb6f5c4 : 0xffffff;
+
+    /**
+     * THE INSURANCE WINDOW, worn by the mech itself.
+     *
+     * The burst says it happened; this says it is STILL happening, which is the half that changes
+     * what the player does. Three seconds of immunity nobody can see is three seconds of running
+     * away from a fight you could have walked through.
+     *
+     * A PULSE RATHER THAN A STEADY TINT, and it outranks both flashes above. A constant gold would
+     * be read as a new paint job within about a second; a pulse is unmistakably a timer, and the
+     * one thing the player needs from it is a sense of how much is left. It fades out over the
+     * window rather than stopping dead, so the protection ending is something you saw coming.
+     */
+    if (this.savedFor > 0 && this.savedTotal > 0) {
+      const left = this.savedFor / this.savedTotal;
+      // Math.sin is fine here and banned in core: this is a renderer clock, not the simulation.
+      const pulse = 0.5 + 0.5 * Math.sin((this.savedTotal - this.savedFor) * INSURANCE_PULSE_HZ);
+      tint = mixTint(tint, INSURANCE_SAVED_TINT, left * (0.45 + 0.55 * pulse));
+    }
 
     this.legs.position.set(px, py);
     this.legs.rotation = facing + yaw;

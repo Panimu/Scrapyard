@@ -57,6 +57,16 @@ const BEAM_START_LIFE = 0.14;
 const OVERHEAT_LIFE = 0.26;
 /** Shield break/restore. Longer than a hit flash: it is a state change, not a tick of damage. */
 const SHIELD_BREAK_LIFE = 0.3;
+
+/**
+ * Mech Insurance. Longer-lived than anything else here - a shield break is 0.3 s because rims go
+ * constantly, and this happens at most once in a run and should be impossible to miss or to
+ * mistake for one.
+ */
+const INSURANCE_CORE_LIFE = 0.34;
+const INSURANCE_RING_LIFE = 0.42;
+/** Gold, the credit colour. See `insuranceSave` for why it is not the shield blue. */
+const INSURANCE_TINT = 0xffd257;
 /** Artillery landing. Slower than a shell impact because the thing that arrived is much bigger. */
 const ARTILLERY_BLAST_LIFE = 0.34;
 
@@ -305,6 +315,57 @@ export class Effects {
     this.size0[i] = 14;
     this.size1[i] = 88;
     this.tint[i] = tint;
+  }
+
+  /**
+   * MECH INSURANCE PAYING OUT. The loudest thing that happens to the player in a run, and the only
+   * one that is good news at the exact moment the news was worst.
+   *
+   * THREE LAYERS, because one ring reads as a shield rim and this is not that:
+   *
+   *   A WHITE-HOT CORE that collapses inward. Every other flash in this file expands; this one
+   *     runs the other way, which is what makes it read as the hull being pulled back together
+   *     rather than as something detonating.
+   *   TWO SHOCK RINGS expanding at different rates and lifetimes, so the edge is a sweep rather
+   *     than a single hoop. The second is nearly twice the first and outlives it - a double pulse
+   *     is legible in peripheral vision at a glance, which a single one is not.
+   *   A FULL RING OF EMBERS, twenty of them at even angles rather than the shield break's eight,
+   *     thrown far enough to clear the crowd that just did this. It is the only omnidirectional
+   *     ember burst in the game and it should stay that way: it is the visual signature of the one
+   *     event nothing else can produce.
+   *
+   * GOLD, not the shield's blue and not the repair's green. Blue would say a rim absorbed it and
+   * green would say something healed you - both true-ish and both far too quiet for what this is.
+   * Gold is the credit colour, which is exactly right: this is the moment the money paid off.
+   */
+  insuranceSave(x: number, y: number): void {
+    const core = this.alloc(KIND_FLASH, x, y, INSURANCE_CORE_LIFE);
+    if (core >= 0) {
+      this.size0[core] = 150;
+      this.size1[core] = 26;
+      this.tint[core] = 0xfff6d8;
+    }
+
+    const inner = this.alloc(KIND_FLASH, x, y, INSURANCE_RING_LIFE);
+    if (inner >= 0) {
+      this.size0[inner] = 24;
+      this.size1[inner] = 190;
+      this.tint[inner] = INSURANCE_TINT;
+    }
+
+    const outer = this.alloc(KIND_FLASH, x, y, INSURANCE_RING_LIFE * 1.7);
+    if (outer >= 0) {
+      this.size0[outer] = 18;
+      this.size1[outer] = 330;
+      this.tint[outer] = INSURANCE_TINT;
+    }
+
+    // Even angles, not jittered: this is machinery firing, not debris coming off something. The
+    // regularity is what separates it from every other ember burst in the game.
+    for (let k = 0; k < 20; k++) {
+      const a = (k / 20) * Math.PI * 2;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), INSURANCE_TINT);
+    }
   }
 
   sparkle(x: number, y: number, tint: number): void {

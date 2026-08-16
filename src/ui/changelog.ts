@@ -44,6 +44,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     title: 'MECH INSURANCE, AND A COUNT OF WHAT IS STILL COMING',
     notes: [
       'A NEW THING IN THE WORKSHOP, AND IT IS NOT A NUMBER. Mech Insurance costs 100 credits and buys one thing: the first hit that would end a run does not. The hull comes back whole and nothing can touch you for three seconds while you get clear of whatever did it.',
+      'AND IT LOOKS LIKE SOMETHING. The moment it fires the yard goes gold - a white core pulling inward as the hull comes back together, two shock rings sweeping out past the crowd, and a full circle of embers. It is the loudest thing that happens to your mech in a run, which is about right for the one moment a run was over and then was not.',
+      'THE THREE SECONDS ARE VISIBLE TOO. The chassis pulses gold for exactly as long as nothing can touch it, fading as the window closes - so being untouchable is something you can spend rather than something you find out about afterwards.',
       'ONCE PER RUN, AND THE SECOND ONE IS REAL. It is a second chance at the run rather than a spare life you can spend twice - and the immunity is there to get you out of the crowd that just killed you, not to fight in.',
       'It also cannot be spent by the same crowd that triggered it. Everything else touching you on that tick is dropped, so the hull it just gave you back does not go straight down again to the next body in the queue.',
       'THE HUD NOW SAYS HOW MANY ARE STILL ALIVE, beside the kill count. Kills is what the run has done; this is what it is standing in. It is the difference between a wave building and a wave broken, and on a phone screen that is a thing you can otherwise only find out by being surrounded.',

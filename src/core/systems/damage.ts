@@ -93,6 +93,7 @@ import {
   EV_ENEMY_KILLED,
   EV_PHASE_CHANGED,
   EV_PLAYER_DAMAGED,
+  EV_PLAYER_SAVED,
   EV_PLAYER_SHIELD_BROKEN,
   EV_PROJECTILE_DETONATED,
   EV_PROJECTILE_HIT,
@@ -597,6 +598,15 @@ function applyContacts(world: World): void {
         // Not `max`: a shield break's window is the player's own doing and this is a bigger event
         // than that, so it is set outright rather than allowed to be shortened by one in progress.
         player.invulnLeft = INSURANCE_INVULN_SEC;
+        pushEvent(
+          world.events,
+          EV_PLAYER_SAVED,
+          world.tick,
+          player.x,
+          player.y,
+          INSURANCE_INVULN_SEC,
+          0,
+        );
         return;
       }
 
