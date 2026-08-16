@@ -40,8 +40,13 @@
 import { RELOCATE_RADIUS, SWARM_SLOW_FRAC } from '../constants.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
-import { pushOutOfScenery } from '../content/scenery.js';
-import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
+import { pushOutOfScenery, sceneryOverlap } from '../content/scenery.js';
+import {
+  ENEMY_FLAG_AVOIDING,
+  ENEMY_FLAG_AVOID_CCW,
+  ENEMY_FLAG_BOSS,
+  ENEMY_FLAG_DEAD,
+} from '../entity/enemyPool.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
 import { rollRingPosition } from './spawning.js';
 import type { World } from '../types.js';
@@ -76,6 +81,17 @@ const RELOCATE_R2_BY_FLAVOUR = (() => {
   return out;
 })();
 
+/**
+ * How far AHEAD of its own hull an enemy looks for terrain, in world units.
+ *
+ * Small on purpose. This is not pathfinding and must not read as it: at 20 u a body commits to
+ * going round only once the wall is genuinely in front of it, which looks like an animal noticing
+ * an obstacle. Much larger and the horde starts visibly swerving at things it was never going to
+ * touch, which reads as the crowd avoiding the PLAYER rather than the scenery, and it also begins
+ * to steer bodies away from gaps they would have fitted through.
+ */
+const AVOID_LOOKAHEAD = 20;
+
 export function updateEnemyAI(world: World, dt: number): void {
   seek(world, dt);
   separate(world, dt);
@@ -104,6 +120,8 @@ function seek(world: World, dt: number): void {
   const speed = p.speed;
   const flags = p.flags;
   const chargeLeft = p.chargeLeft;
+  const radius = p.radius;
+  const spawnId = p.spawnId;
   const n = p.count;
 
   for (let d = 0; d < n; d++) {
@@ -138,9 +156,88 @@ function seek(world: World, dt: number): void {
       vy[d] = 0;
       continue;
     }
-    const s = speed[d] / Math.sqrt(l2);
-    vx[d] = dx * s;
-    vy[d] = dy * s;
+    const inv = 1 / Math.sqrt(l2);
+    let ux = dx * inv;
+    let uy = dy * inv;
+
+    // ---------------------------------------------------------------------------------------
+    // STEERING AROUND TERRAIN, which the slide in `integrate` cannot do on its own.
+    // ---------------------------------------------------------------------------------------
+    // The push-out keeps the tangent and loses the inward component, and against the Scrapyard's
+    // CIRCLES that is enough: an approach is almost never exactly along a pile's normal, so there
+    // is always some tangent left and a body walks itself round. Against a FLAT WALL it is not,
+    // and the failure is total rather than partial - an enemy approaching an east-west wall from
+    // the north with the player due south has a seek direction exactly along the normal, so the
+    // tangent is ZERO. It presses into the face and stays there for the rest of the run, and a
+    // crowd of them lines up along the wall like washing. That is the bug this exists for.
+    //
+    // So the avoidance goes HERE, in the steering, where a decision about where to walk belongs -
+    // by the time `integrate` has a contact normal the direction has already been chosen.
+    //
+    // ONE PROBE IN THE COMMON CASE. The straight-ahead test is also the test for whether any of
+    // this is needed, so a body in open ground pays a single overlap query and nothing else.
+    const r = radius[d];
+    const reach = r + AVOID_LOOKAHEAD;
+    if (sceneryOverlap(world.scenery, x[d] + ux * reach, y[d] + uy * reach, r) < 0) {
+      // The way ahead is open. Forget whichever way round we were going: the commitment below is
+      // only meant to last as long as the obstruction, and a body that keeps it after rounding a
+      // corner would set off across the map along its old tangent.
+      flags[d] &= ~(ENEMY_FLAG_AVOIDING | ENEMY_FLAG_AVOID_CCW);
+    } else {
+      // BLOCKED. Turn a quarter of the way round - exact, since (x, y) -> (-y, x) is a swap and a
+      // sign flip, with no trigonometry to diverge between V8 in CI and JSC on the phone.
+      //
+      // WHICH WAY IS DECIDED ONCE AND THEN REMEMBERED. It cannot be recomputed per tick: the only
+      // thing available to choose with is the heading, the tangent is by construction exactly
+      // perpendicular to it, and so every "which side is better" test is identically zero. Worse,
+      // as a body slides along the wall its heading swings, and the side that a fixed rule picks
+      // flips as it passes the point nearest the player - which is an oscillation, not a detour.
+      if ((flags[d] & ENEMY_FLAG_AVOIDING) === 0) {
+        // A NEW OBSTRUCTION. Pick a side, preferring one that is actually open, and split the
+        // crowd when both are: `spawnId` parity is stable per body, so half go each way and the
+        // horde flows round BOTH ends of a wall instead of queueing at one corner.
+        const ccwOpen = sceneryOverlap(world.scenery, x[d] - uy * reach, y[d] + ux * reach, r) < 0;
+        const cwOpen = sceneryOverlap(world.scenery, x[d] + uy * reach, y[d] - ux * reach, r) < 0;
+        const ccw = ccwOpen === cwOpen ? (spawnId[d] & 1) === 1 : ccwOpen;
+        flags[d] |= ENEMY_FLAG_AVOIDING;
+        if (ccw) flags[d] |= ENEMY_FLAG_AVOID_CCW;
+        else flags[d] &= ~ENEMY_FLAG_AVOID_CCW;
+      }
+
+      // THE COMMITMENT IS REVOCABLE WHEN THE WAY IT CHOSE IS ITSELF SHUT, which is the other half
+      // of this and the half that a first version left out. An INSIDE CORNER - a body in the
+      // crook of an L, wall ahead and wall to the side it picked - has one way out and it is
+      // backwards. Held to its choice the body presses into the second wall forever, which is the
+      // original bug wearing a different hat: measured, 3 of 24 bodies never reached the player on
+      // one seed and were still there sixty seconds later.
+      //
+      // So the chosen side is probed, and a blocked one flips. Flipping REWRITES the flag rather
+      // than just using the other tangent for a tick, so the body commits to going back the way it
+      // came and does not immediately turn round again at the next step.
+      let ccw = (flags[d] & ENEMY_FLAG_AVOID_CCW) !== 0;
+      let tx = ccw ? -uy : uy;
+      let ty = ccw ? ux : -ux;
+      if (sceneryOverlap(world.scenery, x[d] + tx * reach, y[d] + ty * reach, r) >= 0) {
+        const bx = -tx;
+        const by = -ty;
+        if (sceneryOverlap(world.scenery, x[d] + bx * reach, y[d] + by * reach, r) < 0) {
+          ccw = !ccw;
+          tx = bx;
+          ty = by;
+          if (ccw) flags[d] |= ENEMY_FLAG_AVOID_CCW;
+          else flags[d] &= ~ENEMY_FLAG_AVOID_CCW;
+        }
+        // Both shut is a dead end proper. The flag is left ALONE - flipping it every tick in a
+        // pocket would thrash - and the straight heading stands, so the push-out parks the body
+        // against the face it walked into, which is the honest outcome.
+      }
+      ux = tx;
+      uy = ty;
+    }
+
+    const sp = speed[d];
+    vx[d] = ux * sp;
+    vy[d] = uy * sp;
   }
 }
 

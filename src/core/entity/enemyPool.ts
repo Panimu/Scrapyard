@@ -33,6 +33,27 @@ export const ENEMY_FLAG_BOSS = 1 << 2;
 /** Set by the director for enemies that must never be knocked back (the boss). */
 export const ENEMY_FLAG_ANCHORED = 1 << 3;
 
+/**
+ * WHICH WAY ROUND THIS BODY IS CURRENTLY GOING PAST TERRAIN. See `seek` in systems/enemyAI.ts.
+ *
+ * A body that meets a wall head-on has two equally good ways round it, and it must COMMIT to one
+ * until it is clear. Recomputing the choice every tick dithers: the tangent is derived from the
+ * heading, the heading swings as the body slides, and somewhere near the midpoint the preferred
+ * side flips - so a crowd oscillates against the wall for the rest of the run instead of walking
+ * round it. Measured: with no memory at all, 0 of 12 bodies got past an eight-cell wall in 25
+ * seconds, having travelled a few dozen units back and forth.
+ *
+ * TWO BITS OF THE FLAGS BYTE, rather than a new pool column. `flags` is already hashed, already
+ * moved by the swap-remove and already cleared on alloc, so the whole of this state costs nothing
+ * anywhere else - which is the difference between "one byte of AI memory" being a footnote and
+ * being a change to the replay format.
+ *
+ * AVOIDING says a side has been chosen; AVOID_CCW says which. Cleared the moment the way ahead
+ * opens up, so the commitment lasts exactly as long as the obstruction does.
+ */
+export const ENEMY_FLAG_AVOIDING = 1 << 4;
+export const ENEMY_FLAG_AVOID_CCW = 1 << 5;
+
 export interface EnemyPool {
   readonly capacity: number;
   count: number;

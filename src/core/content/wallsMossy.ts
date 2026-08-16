@@ -459,6 +459,12 @@ function cellDist2(cx: number, cy: number, x: number, y: number): number {
  * The scan is the cell range the circle's bounding box covers, which is at most 2x2 for anything
  * the game moves (the widest body is far under a cell) and never depends on how much terrain
  * exists.
+ *
+ * `d2 === 0` IS A HIT, and leaving that out is what let every projectile in the game fly through
+ * every wall. A round is tested as a POINT - `sceneryOverlap(scenery, x, y, 0)` - and a point
+ * inside a cell is at distance 0 from it, so the strict `d2 < r * r` reads `0 < 0` and is false.
+ * The Scrapyard never showed this because a pile has a radius of its own: its reach is `pr + r`,
+ * which stays positive at r = 0. A box has no radius, so containment has to be said out loud.
  */
 export function wallOverlap(w: MossWalls, x: number, y: number, r: number): number {
   const c0 = wallCellOf(x - r);
@@ -468,13 +474,20 @@ export function wallOverlap(w: MossWalls, x: number, y: number, r: number): numb
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
       if (wallKindAt(w, cx, cy) === WALL_EMPTY) continue;
-      if (cellDist2(cx, cy, x, y) < r * r) return packWallCell(cx, cy);
+      const d2 = cellDist2(cx, cy, x, y);
+      if (d2 === 0 || d2 < r * r) return packWallCell(cx, cy);
     }
   }
   return -1;
 }
 
-/** The nearest BREAKABLE cell the circle touches, or -1. The complement of what rays occlude on. */
+/**
+ * The nearest BREAKABLE cell the circle touches, or -1. The complement of what rays occlude on.
+ *
+ * `d2 === 0` counts here for the same reason as in `wallOverlap`, and the symptom was its twin: a
+ * shell arriving asks with radius 0, so without it an impact could never fell a tree and only
+ * splash - which has a radius - ever could.
+ */
 export function wallDestructibleOverlap(w: MossWalls, x: number, y: number, r: number): number {
   const c0 = wallCellOf(x - r);
   const c1 = wallCellOf(x + r);
@@ -486,7 +499,7 @@ export function wallDestructibleOverlap(w: MossWalls, x: number, y: number, r: n
     for (let cx = c0; cx <= c1; cx++) {
       if (wallKindAt(w, cx, cy) !== WALL_TREE) continue;
       const d2 = cellDist2(cx, cy, x, y);
-      if (d2 >= r * r) continue;
+      if (d2 !== 0 && d2 >= r * r) continue;
       if (best < 0 || d2 < bestD2) {
         best = packWallCell(cx, cy);
         bestD2 = d2;

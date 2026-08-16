@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest';
 
 import { testHero } from './fixtures.js';
 
-import { DT, MAX_TARGETS } from '../src/core/constants.js';
+import { ARENA_HALF, DT, MAX_TARGETS } from '../src/core/constants.js';
+import { SCENERY_CELL, SCENERY_COLS } from '../src/core/content/scenery.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { createWorld } from '../src/core/world.js';
 import {
@@ -59,10 +60,19 @@ const FIXTURE_CATALOGS: Catalogs = {
 const ARCH_GRUNT = 1;
 
 function makeWorld(seed = 1): World {
-  return createWorld(
+  const w = createWorld(
     { seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
     FIXTURE_CATALOGS,
   );
+  // AN EMPTY YARD. Target selection skips bodies it has no line of sight to, so a world with
+  // scrap standing in it would make these tests about which enemies happened to be behind a
+  // wreck rather than about the ORDERING RULE, which is the whole subject of this file. The
+  // occlusion behaviour has its own test below, where it is the thing being asserted rather than
+  // a confound. Same reasoning as `movement.test.ts`.
+  if (w.scenery.kind !== 'piles') throw new Error('expected the Scrapyard');
+  w.scenery.radius.fill(0);
+  w.scenery.count = 0;
+  return w;
 }
 
 /**
@@ -463,5 +473,77 @@ describe('the rule, end to end through updateWeapons', () => {
     expect(w.weapons[0].targetDense).toBe(-1);
     expect(w.stats.shotsFired).toBe(0);
     expect(w.projectiles.count).toBe(0);
+  });
+
+  /**
+   * LINE OF SIGHT. Weapons fire in a straight line and everything that stops a round stops it
+   * before it arrives, so a body behind cover is not a hard shot - it is one that cannot land.
+   * Picking it wastes a cooldown, and for the lasers it is worse: they refuse an obstructed shot,
+   * so a laser locked onto an occluded body sits idle with a full heat bar while things it can
+   * see walk past.
+   */
+  describe('line of sight', () => {
+    /**
+     * One pile at (x, y).
+     *
+     * WRITTEN TO THE CELL ITS POSITION FALLS IN, not to slot 0. The yard is a jittered GRID and
+     * every query indexes it by coordinate - a pile parked in the wrong slot is invisible to the
+     * ray, which is exactly how the first version of this test passed while asserting nothing.
+     */
+    function putPile(w: World, x: number, y: number, radius: number): void {
+      if (w.scenery.kind !== 'piles') throw new Error('expected the Scrapyard');
+      const col = Math.floor((x + ARENA_HALF) / SCENERY_CELL);
+      const row = Math.floor((y + ARENA_HALF) / SCENERY_CELL);
+      const i = row * SCENERY_COLS + col;
+      w.scenery.x[i] = x;
+      w.scenery.y[i] = y;
+      w.scenery.radius[i] = radius;
+      // Variant 0 (crushed cars) rather than the barrel: barrels are deliberately transparent to
+      // the ray queries, so using one here would assert nothing.
+      w.scenery.variant[i] = 0;
+      w.scenery.count = 1;
+    }
+
+    it('does not target a body hidden behind scenery', () => {
+      const w = makeWorld();
+      putPile(w, 120, 0, 60);
+      // Directly behind the pile, well inside the Cannon's range.
+      const hidden = addEnemy(w, 240, 0, 900);
+      // `sync` FIRST. gather reads the spatial hash, so without a rebuild it returns 0 for an
+      // enemy that is simply not in the hash yet - and the assertion would pass on a build with
+      // no occlusion test at all.
+      sync(w);
+      expect(gatherLiveInRange(w, 0, 0, 260 * 260, new Uint16Array(MAX_TARGETS * 4))).toBe(0);
+
+      for (let i = 0; i < 30; i++) tick(w);
+      expect(w.weapons[0].targetDense).toBe(-1);
+      expect(w.stats.shotsFired).toBe(0);
+      // The body is alive and in range - it is only unreachable.
+      expect(w.enemies.hp[hidden]).toBe(900);
+    });
+
+    it('picks a visible body over a hidden one, even when the hidden one is the better target', () => {
+      const w = makeWorld();
+      putPile(w, 120, 0, 60);
+      // The Cannon wants the HIGHEST hp. The hidden body wins that comparison outright, so if it
+      // is still a candidate it will be chosen and this test fails on the value of targetDense.
+      addEnemy(w, 240, 0, 5000);
+      const visible = addEnemy(w, 0, 200, 100);
+
+      for (let i = 0; i < 30; i++) tick(w);
+      // The CHOICE is the contract here, not the shot: the visible body is at 90 degrees, and the
+      // turret has neither finished traversing onto it nor come off cooldown in 30 ticks.
+      expect(w.weapons[0].targetDense).toBe(visible);
+    });
+
+    it('still targets a body whose own edge is clear of the obstruction', () => {
+      const w = makeWorld();
+      // Off to one side, so the line to the enemy misses it entirely.
+      putPile(w, 120, 200, 60);
+      const seen = addEnemy(w, 240, 0, 900);
+
+      for (let i = 0; i < 30; i++) tick(w);
+      expect(w.weapons[0].targetDense).toBe(seen);
+    });
   });
 });

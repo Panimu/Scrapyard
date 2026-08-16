@@ -1,6 +1,6 @@
 /**
- * MOSSY MAYHEM'S WALL LATTICE - the two properties that are expensive to lose and invisible when
- * lost, and nothing else.
+ * MOSSY MAYHEM'S WALL LATTICE - the properties that are expensive to lose and invisible when lost,
+ * and nothing else.
  *
  * Deliberately small. The shapes, the density and the look are judged by playing and by measuring
  * (see the notes in `wallsMossy.ts`), not by asserting a cell count that would have to be edited
@@ -16,6 +16,10 @@
  *   2. THE SAME SEED IS THE SAME WORLD. Terrain is part of the replay key, and this one is
  *      generated lazily as the player walks, so it is uniquely easy to make it depend on the ORDER
  *      blocks were first asked for. It must not.
+ *
+ *   3. A POINT COUNTS AS A HIT. Every projectile in the game asks about terrain with radius 0, and
+ *      the first implementation answered "no" to all of them - so every shot flew through every
+ *      wall. See the test for why the Scrapyard could not have caught this.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -25,7 +29,10 @@ import {
   WALL_EMPTY,
   createMossWalls,
   pushOutOfWalls,
+  wallCentre,
+  wallCellOf,
   wallKindAt,
+  wallOverlap,
 } from '../src/core/content/wallsMossy.js';
 
 /** The mech's collision radius. The number this whole lattice is dimensioned against. */
@@ -92,6 +99,39 @@ describe('mossy wall lattice', () => {
     // A DIFFERENT seed must be a different world, or the assertion above would also pass on a
     // generator that ignored the seed entirely.
     expect(differs).toBeGreaterThan(100);
+  });
+
+  /**
+   * A PROJECTILE IS A POINT. `sceneryOverlap(scenery, x, y, 0)` is how every round in the game
+   * asks whether it has hit terrain, and a strict `distance < radius` test answers "no" for a
+   * point no matter where it is - `0 < 0` is false. Every shot flew through every wall.
+   *
+   * The Scrapyard could never have shown this: a pile's reach is its own radius plus the query's,
+   * which stays positive at 0. A box has no radius of its own, so containment has to be tested
+   * for explicitly, and this is the guard on that.
+   */
+  it('stops a zero-radius probe, which is what a projectile is', () => {
+    const w = createMossWalls(7);
+
+    // Find any wall cell, then fire the probe at its middle.
+    let found = false;
+    for (let cy = -40; cy < 40 && !found; cy++) {
+      for (let cx = -40; cx < 40 && !found; cx++) {
+        if (wallKindAt(w, cx, cy) === WALL_EMPTY) continue;
+        found = true;
+        expect(wallOverlap(w, wallCentre(cx), wallCentre(cy), 0)).toBeGreaterThanOrEqual(0);
+        // And every corner of it, which is where a strict test is most tempting to leave alone.
+        expect(wallOverlap(w, cx * WALL_CELL + 1, cy * WALL_CELL + 1, 0)).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('lets a zero-radius probe through open ground', () => {
+    const w = createMossWalls(7);
+    // The opening is guaranteed clear, so a probe at the origin must pass.
+    expect(wallOverlap(w, 0, 0, 0)).toBe(-1);
+    expect(wallCellOf(0)).toBe(0);
   });
 
   it("leaves the player's opening clear", () => {

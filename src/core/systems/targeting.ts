@@ -34,6 +34,7 @@
  *     CPU budget.
  */
 
+import { sceneryRayHit } from '../content/scenery.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { EnemyPool } from '../entity/enemyPool.js';
 import type { World } from '../types.js';
@@ -73,13 +74,49 @@ export function gatherLiveInRange(
 
   const ex = enemies.x;
   const ey = enemies.y;
+  const er = enemies.radius;
+  const scenery = world.scenery;
   let m = 0;
   for (let i = 0; i < n; i++) {
     const d = out[i];
     const dx = ex[d] - originX;
     const dy = ey[d] - originY;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > rangeSq) continue;
+
+    // ---------------------------------------------------------------------------------------
+    // LINE OF SIGHT. A body you cannot shoot is not a target.
+    // ---------------------------------------------------------------------------------------
+    // Every gun in this game fires in a straight line at what it picked, and everything that
+    // stops a round - a wreck, a rock wall - stops it before it arrives. So a target behind cover
+    // is not a hard shot, it is a shot that CANNOT LAND, and choosing one is strictly worse than
+    // choosing anything else in range:
+    //
+    //   the shell buries itself in the obstruction and the cooldown is spent anyway;
+    //   the LASERS are worse still - they refuse the shot when something is in the way (see
+    //     fireBeam), so a laser that has locked onto an occluded body simply stops firing and
+    //     sits idle with a full heat bar while things it CAN see walk past it.
+    //
+    // Filtering here rather than at the trigger is what fixes the second case: the weapon has to
+    // pick a different body, and it can only do that if the occluded one was never a candidate.
+    //
+    // MEASURED TO THE BODY'S NEAR EDGE, not its centre - `d2` is the centre distance and the ray
+    // is cut short by the enemy's own radius. Otherwise a body pressed against the far side of a
+    // wall would occlude ITSELF: the wall it is touching sits between the origin and its centre.
+    //
+    // COST: one ray per in-range body per weapon per tick, and the ray stops at the first thing it
+    // meets. On the Scrapyard the piles are round and sparse, so this almost always terminates
+    // immediately; on Mossy it is a grid walk of a handful of cells.
+    if (d2 > 0) {
+      const dist = Math.sqrt(d2);
+      const reach = dist - er[d];
+      if (reach > 0 && sceneryRayHit(scenery, originX, originY, dx / dist, dy / dist, reach) >= 0) {
+        continue;
+      }
+    }
+
     // m <= i always, so compacting in place can never clobber an unread entry.
-    if (dx * dx + dy * dy <= rangeSq) out[m++] = d;
+    out[m++] = d;
   }
   return m;
 }
