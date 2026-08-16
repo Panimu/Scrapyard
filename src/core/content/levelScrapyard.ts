@@ -17,7 +17,7 @@
 import { createScenery, type Scenery } from './scenery.js';
 import { ARENA_HALF } from '../constants.js';
 import { SCRAPYARD_CREATURES } from './creaturesScrapyard.js';
-import { resolveScrapyardCycle } from './cyclesScrapyard.js';
+import { CYCLE_LADDER, resolveScrapyardCycle } from './cyclesScrapyard.js';
 import type { LevelDef } from './levels.js';
 
 export const SCRAPYARD: LevelDef = Object.freeze({
@@ -49,6 +49,7 @@ export const SCRAPYARD: LevelDef = Object.freeze({
    */
   creatures: SCRAPYARD_CREATURES,
   resolveCycle: resolveScrapyardCycle,
+  cycleCount: CYCLE_LADDER.length,
 
   /** Hull 1, blue: the Rustling's own body, and the first thing anyone who plays this map met. */
   bestiaryBody: 0,

@@ -431,7 +431,12 @@ async function boot(): Promise<void> {
   function bankProgress(world: World): void {
     const record = runRecord(world);
     toast.push(state.recordAchievements(record));
-    state.recordKills(world.stats.killsByFlavour, world.stats.killsByRank);
+    state.recordKills(
+      world.stats.killsByFlavour,
+      world.stats.killsByRank,
+      world.level,
+      world.stats.killsByCycleRank,
+    );
     for (const id of state.recordRun(record)) {
       earnedThisRun.push(HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
     }

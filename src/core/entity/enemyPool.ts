@@ -88,8 +88,21 @@ export interface EnemyPool {
    *  soak the player's invulnerability window on behalf of a bruiser. */
   readonly contactTimer: Float32Array;
   readonly xpValue: Uint16Array;
-  /** Index into ENEMY_CATALOG (0..47) - also selects the sprite. */
+  /** Index into the CURRENT LEVEL's creature table - also selects the sprite. */
   readonly typeId: Uint8Array;
+  /**
+   * WHICH RUNG OF THE LADDER SPAWNED THIS ONE, clamped to the authored table.
+   *
+   * Not derivable from anything else the pool holds, and needed at the moment of DEATH rather than
+   * of spawn: `typeId` does not identify a cycle (the Scrapyard's Hauler and Warden are the same
+   * hull) and nothing despawns, so a cycle-2 body is routinely killed in cycle 5. Without this
+   * column "which creature did I put down" is unanswerable, and that is what the Scrapopedia's
+   * bestiary is gated on.
+   *
+   * Clamped rather than raw: past the authored ladder every cycle is an extrapolation of the last
+   * rung, which is the same creature, so it counts as that rung.
+   */
+  readonly cycleIndex: Uint8Array;
   /** Index into FLAVOURS. */
   readonly flavourId: Uint8Array;
   readonly archetype: Uint8Array;
@@ -148,6 +161,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oFlavourId = L.u8(capacity);
   const oArchetype = L.u8(capacity);
   const oFlags = L.u8(capacity);
+  const oCycleIndex = L.u8(capacity);
 
   const buffer = new ArrayBuffer(L.byteLength);
   const f32 = (o: number): Float32Array => new Float32Array(buffer, o, capacity);
@@ -188,6 +202,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
     flavourId: u8(oFlavourId),
     archetype: u8(oArchetype),
     flags: u8(oFlags),
+    cycleIndex: u8(oCycleIndex),
     spawnId: u32(oSpawnId),
     slot: u32(oSlot),
 
@@ -208,7 +223,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
     p.hp, p.maxHp, p.radius, p.speed, p.mass, p.knockbackTake,
     p.chargeX, p.chargeY, p.chargeLeft,
     p.contactDamage, p.contactTimer,
-    p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags,
+    p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags, p.cycleIndex,
     p.spawnId, p.slot,
   );
 
@@ -277,6 +292,8 @@ export function allocEnemy(
   p.flavourId[d] = flavourId;
   p.archetype[d] = archetype;
   p.flags[d] = 0;
+  // The spawner overwrites this with the real rung; 0 is only what an unattributed alloc gets.
+  p.cycleIndex[d] = 0;
   p.spawnId[d] = spawnId;
 
   return packHandle(s, p.generation[s]) as EnemyHandle;
@@ -333,6 +350,7 @@ export function reapEnemies(p: EnemyPool): void {
       p.flavourId[d] = p.flavourId[last];
       p.archetype[d] = p.archetype[last];
       p.flags[d] = p.flags[last];
+      p.cycleIndex[d] = p.cycleIndex[last];
       p.spawnId[d] = p.spawnId[last];
       const movedSlot = p.slot[last];
       p.slot[d] = movedSlot;

@@ -2524,3 +2524,10 @@ body {
   gap: 4px;
   flex: 0 0 auto;
 }
+
+/* A bestiary page icon is transform-scaled by its rank - a boss overflows its 60px box by about
+ * half - so it needs real room or it sits under the creature's name. */
+.pedia__page-icon--enemy {
+  flex: 0 0 auto;
+  margin: 8px 18px 8px 12px;
+}

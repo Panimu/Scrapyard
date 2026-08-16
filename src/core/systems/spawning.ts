@@ -734,6 +734,12 @@ function spawnRank(world: World, rank: Rank, t: DirectorTuning, forced = -1): nu
   // reads as "the one that has been alive longest".
   dir.nextSpawnId++;
 
+  // THE RUNG THIS BODY BELONGS TO, clamped to the authored ladder. Stamped at spawn because it is
+  // needed at DEATH, and nothing despawns - a cycle-2 body is routinely killed in cycle 5, by
+  // which time the director's own cycle says nothing about what just died.
+  const rungs = world.level.cycleCount;
+  p.cycleIndex[d] = c.index < rungs ? c.index : rungs - 1;
+
   const a = ARCHETYPES[archetype];
   const f = FLAVOURS[flavourId];
   const diff = world.difficulty;

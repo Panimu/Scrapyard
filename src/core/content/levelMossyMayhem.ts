@@ -23,7 +23,7 @@
 
 import { emptyScenery, type Scenery } from './scenery.js';
 import { MOSS, MOSS_CREATURES } from './creaturesMossy.js';
-import { resolveMossyCycle } from './cyclesMossy.js';
+import { MOSS_LADDER, resolveMossyCycle } from './cyclesMossy.js';
 import type { LevelDef } from './levels.js';
 
 export const MOSSY_MAYHEM: LevelDef = Object.freeze({
@@ -60,6 +60,7 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
    */
   creatures: MOSS_CREATURES,
   resolveCycle: resolveMossyCycle,
+  cycleCount: MOSS_LADDER.length,
 
   /**
    * THE JACKAL, and not the Sporeling this map opens with.

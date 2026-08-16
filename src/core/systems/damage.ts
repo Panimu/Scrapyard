@@ -76,7 +76,7 @@
  */
 
 import { ARCHETYPES } from '../content/enemyCatalog.js';
-import { RANK_BOSS, RANK_ELITE, RANK_REGULAR } from '../content/cycles.js';
+import { RANKS, RANK_BOSS, RANK_ELITE, RANK_REGULAR } from '../content/cycles.js';
 import {
   ENEMY_FLAG_ANCHORED,
   ENEMY_FLAG_BOSS,
@@ -413,9 +413,13 @@ function killEnemy(world: World, ed: number, killerSlot: number): void {
   stats.killsByFlavour[enemies.flavourId[ed]]++;
   // Rank comes off the flags the kill path already loaded - no second field in the pool.
   const kf = enemies.flags[ed];
-  stats.killsByRank[
-    (kf & ENEMY_FLAG_BOSS) !== 0 ? RANK_BOSS : (kf & ENEMY_FLAG_ELITE) !== 0 ? RANK_ELITE : RANK_REGULAR
-  ]++;
+  const rank =
+    (kf & ENEMY_FLAG_BOSS) !== 0 ? RANK_BOSS : (kf & ENEMY_FLAG_ELITE) !== 0 ? RANK_ELITE : RANK_REGULAR;
+  stats.killsByRank[rank]++;
+  // WHICH CREATURE, AT WHICH RANK - what the bestiary is gated on. The rung was stamped at spawn
+  // (spawning.ts) precisely so this line can exist: by now the director has moved on and only the
+  // body itself still knows what it is.
+  stats.killsByCycleRank[enemies.cycleIndex[ed] * RANKS.length + rank]++;
 
   // WHAT WAS IN YOUR HANDS WHEN A BOSS WENT DOWN. Recorded HERE rather than reconstructed at run
   // end, because the loadout at the end is not the loadout at the moment - see RunStats. Bosses

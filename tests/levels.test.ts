@@ -22,7 +22,13 @@ import {
 } from '../src/core/types.js';
 import { createWorld, stepWorld } from '../src/core/world.js';
 import { existsSync } from 'node:fs';
-import { SPAWNABLE_ARCHETYPES, createResolvedCycle, maxEnemySpeedAt } from '../src/core/content/cycles.js';
+import {
+  RANKS,
+  SPAWNABLE_ARCHETYPES,
+  createResolvedCycle,
+  maxEnemySpeedAt,
+} from '../src/core/content/cycles.js';
+import { bestiaryFor } from '../src/bestiary.js';
 import { ARCHETYPES } from '../src/core/content/enemyCatalog.js';
 import { stageIndexFor } from '../src/render/creatureArt.js';
 
@@ -287,5 +293,43 @@ describe('damage stages', () => {
     // A one-frame creature is every creature that does not come apart. It never indexes anything.
     expect(stageIndexFor(0, 1, 1)).toBe(0);
     expect(stageIndexFor(1, 0, 3)).toBe(0);
+  });
+});
+
+/**
+ * The bestiary flattening. It is read by TWO callers - the save recorder and the Scrapopedia - and
+ * the failure mode if they ever disagree about what an entry is, is a page that can never unlock.
+ */
+describe('the bestiary', () => {
+  it('is every rung at every rank, in the order they are met', () => {
+    for (const level of LEVEL_CATALOG) {
+      const entries = bestiaryFor(level);
+      expect(entries.length).toBe(level.cycleCount * RANKS.length);
+      entries.forEach((e, i) => {
+        expect(e.rung).toBe(Math.floor(i / RANKS.length));
+        expect(e.rank).toBe(i % RANKS.length);
+      });
+    }
+  });
+
+  it('draws every entry from its OWN level, and no two entries share a save key', () => {
+    const keys = new Set<string>();
+    for (const level of LEVEL_CATALOG) {
+      for (const e of bestiaryFor(level)) {
+        // Identity, not equality: the creature must be the row out of THIS level's table.
+        expect(level.creatures).toContain(e.creature);
+        expect(e.levelId).toBe(level.id);
+        // A key collision across maps would let a Mossy kill unlock a Scrapyard page.
+        expect(keys.has(e.key), `duplicate bestiary key ${e.key}`).toBe(false);
+        keys.add(e.key);
+      }
+    }
+  });
+
+  it('names a regular after its creature and suffixes the ranks above it', () => {
+    const [regular, elite, boss] = bestiaryFor(LEVEL_CATALOG[0]);
+    expect(regular.name).toBe(regular.cycleName);
+    expect(elite.name).toBe(`${regular.cycleName} elite`);
+    expect(boss.name).toBe(`${regular.cycleName} boss`);
   });
 });

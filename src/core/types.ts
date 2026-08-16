@@ -365,6 +365,16 @@ export interface RunStats {
   readonly killsByArchetype: Uint32Array;
   /** Length 3, indexed by Rank. THE breakdown that means something under the cycle ladder. */
   readonly killsByRank: Uint32Array;
+  /**
+   * KILLS PER LADDER RUNG PER RANK, `rung * RANKS.length + rank`, sized by the level's
+   * `cycleCount`. The bestiary is gated on it: a creature gets a page the first time you put that
+   * exact creature down, at that exact rank.
+   *
+   * Per rung rather than per creature id, because a rung is what a player meets as one animal -
+   * Mossy's Swarm cycle is three different insects and they are one entry with three ranks, not
+   * three unrelated ones.
+   */
+  readonly killsByCycleRank: Uint32Array;
   damageDealt: number;
   damageTaken: number;
   /**

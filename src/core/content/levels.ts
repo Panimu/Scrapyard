@@ -87,6 +87,17 @@ export interface LevelDef {
   readonly creatures: readonly CreatureDef[];
 
   /**
+   * HOW MANY RUNGS THIS LEVEL'S LADDER ACTUALLY AUTHORS.
+   *
+   * `resolveCycle` answers for any index - past the table it extrapolates the last rung - so
+   * nothing in the simulation needs this. The BESTIARY does: it enumerates a level's creatures and
+   * has to stop where the authored content stops, or it would list minute 17's harder Wyrm as a
+   * separate animal. It is also what the kill tally is sized by, and what clamps a late cycle back
+   * onto the rung it is a repeat of.
+   */
+  readonly cycleCount: number;
+
+  /**
    * WHICH OF THIS LEVEL'S CREATURES ILLUSTRATES THE SHARED MACHINERY. An id into `creatures`.
    *
    * The Scrapopedia has pages for VARIANTS and RANKS - swift, tough, spiky, elite, boss - which

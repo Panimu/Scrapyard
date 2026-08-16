@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T10:21Z',
+    title: 'THE FIELD MANUAL HAS A BESTIARY',
+    notes: [
+      'EVERY CREATURE IN THE GAME NOW HAS A PAGE. Forty-eight of them: the Scrapyard\'s eight, and Mossy Mayhem\'s eight, each as a regular, an elite and a boss. They are listed in the order you meet them, under the map they belong to, and each one is drawn at the size it actually is - a Colossus takes up more of its row than a Rustling does, because it takes up more of the screen.',
+      'A PAGE IS WRITTEN THE FIRST TIME YOU PUT THAT CREATURE DOWN, at that rank. Not on seeing one - something that walks past while you run has taught you nothing. Killing a Rustling gets you the Rustling; the boss version is its own page and its own fight.',
+      'AND THE PAGES SAY WHAT THE THING IS FOR. Which way it leans, what changed since the last wave, what it does that the one before it did not - the Formless boss shedding its shell, the Wyrm boss losing a head at a time. No numbers: you are reading it to recognise the next one, not to do arithmetic.',
+      'The counter at the top of each map\'s list tells you how many of its twenty-four you have met.',
+    ],
+  },
+  {
     at: '2026-08-16T10:05Z',
     title: 'THE FIELD MANUAL SHOWS BOTH MAPS',
     notes: [

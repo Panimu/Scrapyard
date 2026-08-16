@@ -118,6 +118,7 @@ import {
 } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
 import { bestiaryIconScale } from '../render/creatureArt.js';
+import { bestiaryFor, type BestiaryEntry } from '../bestiary.js';
 
 /**
  * The part the catalog cannot say. Keyed by card id so a new card is a compile error here rather
@@ -387,7 +388,7 @@ export class ScrapopediaScreen {
    */
   private section: Section | null = null;
   private open: {
-    readonly kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank';
+    readonly kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank' | 'creature';
     readonly index: number;
   } | null = null;
 
@@ -540,6 +541,17 @@ export class ScrapopediaScreen {
     }
 
     if (section === 'enemies') {
+      // THE CREATURES FIRST, one group per level, in ladder order then rank order - which is the
+      // order they are met in. A level's own entries and nothing else: `bestiaryFor` reads that
+      // level's ladder and that level's creature table, so no map can list another's animals.
+      for (const level of LEVEL_CATALOG) {
+        if (!level.playable) continue;
+        const all = bestiaryFor(level);
+        const known = all.filter((e) => this.has.killed(e.key));
+        this.indexEl.appendChild(group(level.name, known.length, all.length));
+        this.indexEl.appendChild(grid(known.map((e) => this.creatureButton(e))));
+      }
+
       // GATED ON HAVING KILLED ONE, which is the bestiary's version of the rule the rest of this
       // screen follows: a page is written the first time you have actually had the thing in your
       // hands, or in this case put it down. Not on having SEEN one - something that walks past
@@ -598,6 +610,25 @@ export class ScrapopediaScreen {
     }
 
     b.appendChild(words);
+    return b;
+  }
+
+  /**
+   * ONE CREATURE, AT ONE RANK. Unlike the variant and rank rows this shows exactly ONE body - its
+   * own - because the page is about that creature rather than about a property several share.
+   */
+  private creatureButton(e: BestiaryEntry): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pedia__entry pedia__entry--enemy';
+
+    const icon = creatureIcon(e, 'pedia__icon pedia__icon--enemy', false);
+    const name = document.createElement('span');
+    name.className = 'pedia__name';
+    name.textContent = e.name;
+
+    b.append(icon, name);
+    b.addEventListener('click', () => this.showCreature(e));
     return b;
   }
 
@@ -740,7 +771,10 @@ export class ScrapopediaScreen {
   }
 
   /** Common to every kind of page: clear the old one, show the pane, start at the top. */
-  private openPage(kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank', index: number): void {
+  private openPage(
+    kind: 'upgrade' | 'ascension' | 'mech' | 'enemy' | 'rank' | 'creature',
+    index: number,
+  ): void {
     this.open = { kind, index };
     this.sectionsEl.hidden = true;
     this.indexEl.hidden = true;
@@ -759,6 +793,31 @@ export class ScrapopediaScreen {
     this.detailEl.appendChild(para('pedia__desc', entry.lead));
     this.detailEl.appendChild(section('In the yard'));
     for (const n of entry.notes) this.detailEl.appendChild(para('pedia__note', n));
+  }
+
+  /**
+   * A creature's page: its own body at its own rank, the rung's character, and what the rank means.
+   *
+   * The rank paragraph is RANK_MANUAL's, not a second copy - a boss means the same thing on both
+   * maps and on all sixteen rungs, and writing it out per creature is how forty-eight pages start
+   * disagreeing with each other.
+   */
+  private showCreature(e: BestiaryEntry): void {
+    this.openPage('creature', e.rung * RANKS.length + e.rank);
+    this.detailEl.appendChild(creatureHead(e));
+
+    const own = CYCLE_MANUAL[`${e.levelId}/${e.cycleName}`];
+    if (own !== undefined) {
+      this.detailEl.appendChild(para('pedia__desc', own.lead));
+      this.detailEl.appendChild(section(e.levelName));
+      for (const n of own.notes) this.detailEl.appendChild(para('pedia__note', n));
+    }
+
+    const rank = RANK_MANUAL[RANKS[e.rank].name];
+    if (rank !== undefined && e.rank !== 0) {
+      this.detailEl.appendChild(section(`As ${titleCase(RANKS[e.rank].name)}`));
+      this.detailEl.appendChild(para('pedia__note', rank.lead));
+    }
   }
 
   private showRank(index: number): void {
@@ -956,6 +1015,213 @@ function group(text: string, found: number, total: number): HTMLDivElement {
   tally.textContent = `${found} of ${total}`;
   d.append(name, tally);
   return d;
+}
+
+/**
+ * THE CREATURES, one page per rung of each level's ladder, keyed `<levelId>/<cycleName>`.
+ *
+ * ONE ENTRY PER RUNG RATHER THAN PER RANK. A rung's three ranks are the same animal getting worse -
+ * on the Scrapyard literally, three paints of one hull; on Mossy a blowfly that becomes a killer
+ * bee that becomes a mosquito. So the creature's own character is written once here and the RANK
+ * supplies what a rank means (RANK_MANUAL), which is how the two never end up disagreeing.
+ *
+ * NO MAGNITUDES, exactly as on the cards: which way the thing leans, not by how much. A player
+ * reading this has met the creature; what they want is the sentence that makes the next encounter
+ * legible, not a number they would have to hold against another number.
+ *
+ * Keyed by level id AND name so the two maps cannot collide, and so a missing page is a blank
+ * rather than another creature's description.
+ */
+const CYCLE_MANUAL: Readonly<Record<string, EnemyEntry>> = {
+  'scrapyard/Rustling': {
+    lead: 'The first thing that ever came for you, and the slowest.',
+    notes: [
+      'It arrives alone, in ones and twos, and it dies to whatever you are holding. That is the point: the opening minutes are where you find out what your guns do without anything punishing you for looking.',
+      'Nothing else in the yard is this forgiving. If a Rustling reaches you, you were standing still.',
+    ],
+  },
+  'scrapyard/Scavenger': {
+    lead: 'Quicker than a Rustling and no tougher at all.',
+    notes: [
+      'The wave that teaches you distance is not safety. It closes gaps you had already decided were enough, and it does it while you are looking at something else.',
+      'It still dies immediately. The whole threat is where it is, not what it does when it gets there.',
+    ],
+  },
+  'scrapyard/Hauler': {
+    lead: 'Slow and fat. You can walk away from these; you cannot ignore them.',
+    notes: [
+      'The first body that outlives your attention. It takes long enough to bring down that the wave behind it arrives while you are still working, which is a different problem from anything before it.',
+      'Nothing about it is fast. Everything about it is in the way.',
+    ],
+  },
+  'scrapyard/Prowler': {
+    lead: 'The fastest thing in the yard, and lighter than what came before it.',
+    notes: [
+      'The one rung where the horde gets FLIMSIER than the last. It is a change of question rather than an increase: the Hauler asked how long you could keep firing, this asks whether you can be somewhere else.',
+      'It will catch you if you commit to a fight facing the wrong way.',
+    ],
+  },
+  'scrapyard/Dozer': {
+    lead: 'Slams the brakes, and nearly doubles the bite.',
+    notes: [
+      'The first cycle that genuinely hurts to touch. Everything before it could be walked through in an emergency; this is where that stops being free.',
+      'Slow enough that none of that has to happen to you. Being hit by one is a decision you made a second earlier.',
+    ],
+  },
+  'scrapyard/Breaker': {
+    lead: 'Quick again, and it hits harder than anything so far.',
+    notes: [
+      'The Dozer was slow enough to forgive a mistake. This is not, and it arrives with the pace of the Prowler and the weight of the Dozer at the same time.',
+      'The rung where standing your ground stops being a style and starts being a way to die.',
+    ],
+  },
+  'scrapyard/Warden': {
+    lead: 'Tanky and unhurried.',
+    notes: [
+      'It does not chase and it does not need to. By this point in a run the field never empties, so a body that simply refuses to fall is doing the work of three that would have.',
+      'Bites less than the Breaker did. It is a wall being built around you rather than a thing attacking you.',
+    ],
+  },
+  'scrapyard/Colossus': {
+    lead: 'A wall. The slowest thing in the yard and by far the heaviest.',
+    notes: [
+      'The endgame is MASS, not pace, and this is the statement of it. It closes in slowly and the problem is that there is no gap in it.',
+      'It cannot be outrun into a corner, because a corner is where it is pushing you.',
+    ],
+  },
+
+  'mossy-mayhem/Sporeling': {
+    lead: 'Slow, soft, and there are a great many of them.',
+    notes: [
+      'Moss opens the way the yard does - with something that cannot hurt you while you work out what your guns do on new ground.',
+      'The same creature stands in for all three ranks here. What changes is how big it is and how long it takes.',
+    ],
+  },
+  'mossy-mayhem/Swarm': {
+    lead: 'Fast and flimsy. Distance is not safety out here either.',
+    notes: [
+      'It escalates by getting more weapon rather than more body: a blowfly, then a killer bee, then a mosquito the size of the bee. You can read which one is coming before it arrives.',
+      'None of the three survives being looked at. All of them are somewhere you did not expect.',
+    ],
+  },
+  'mossy-mayhem/Formless': {
+    lead: 'Slow and fat. Walk away from these; do not ignore them.',
+    notes: [
+      'A jelly, then an ooze, then something with a shell on.',
+      'HURT THE BIG ONE ENOUGH AND ITS SHELL COMES OFF. What is left is faster to look at and no easier to finish - the shell was never the fight, it was the half of the fight you had done.',
+    ],
+  },
+  'mossy-mayhem/Pack': {
+    lead: 'The fastest thing on the moss, and lighter than the Formless before it.',
+    notes: [
+      'A jackal, then something with lightning in it, then something on fire. Three dogs, and the escalation is what they are made of rather than how big they are.',
+      'The rung that punishes committing to a direction.',
+    ],
+  },
+  'mossy-mayhem/Vine Stalker': {
+    lead: 'Slams the brakes, and nearly doubles the bite.',
+    notes: [
+      'The first thing on this map that hurts to touch. It does not chase well and it does not have to.',
+      'Rooted-looking and absolutely not rooted. That is the joke and it costs you the first time.',
+    ],
+  },
+  'mossy-mayhem/Draconian': {
+    lead: 'Quick again, and it hits hardest of anything so far.',
+    notes: [
+      'Pace and weight arriving together, which is the combination the Vine Stalker let you off.',
+      'The rung where the moss stops being the easier map.',
+    ],
+  },
+  'mossy-mayhem/Golem': {
+    lead: 'Tanky and unhurried - dirt, then rock, then metal.',
+    notes: [
+      'The three ranks are three materials, and you can tell at a glance which one you have walked into.',
+      'It bites less than the Draconian did. It simply does not fall over, and by now the field never empties.',
+    ],
+  },
+  'mossy-mayhem/Wyrm': {
+    lead: 'A wall. The slowest thing on the map and by far the heaviest.',
+    notes: [
+      'A dragon, then a golden one, then something with rather more heads than that.',
+      'THE BIG ONE LOSES A HEAD EVERY TIME YOU TAKE A FIFTH OF IT DOWN. It is the only health bar in the game you can read from across the field without looking at the bar.',
+    ],
+  },
+};
+
+/**
+ * ONE CREATURE'S OWN BODY, at its own rank, corrected for content size.
+ *
+ * `rankCue` supplies the size step, so a boss entry is drawn visibly larger than its regular - the
+ * same relationship the field shows, which is what makes a 24-row index readable at a glance.
+ */
+/**
+ * The widest body any level fields, so a bestiary row can be drawn at its TRUE relative size
+ * without the biggest one deciding the row height by itself. Derived, not typed: a level with a
+ * larger creature must not silently overflow the list.
+ */
+const WIDEST_BODY: number = Math.max(
+  ...LEVEL_CATALOG.flatMap((l) => l.creatures.map((c) => c.drawSize)),
+);
+
+/**
+ * A creature row's cue: SIZE ONLY, and the size is the real one.
+ *
+ * TWO THINGS ARE DELIBERATELY DIFFERENT FROM `rankCue`, which the Ranks pages use.
+ *
+ * The BODY SIZE is in it. `bestiaryIconScale` normalises every sprite so its content fills its
+ * box, which is right when the point is to compare two maps' bodies of the SAME class - and wrong
+ * here, where it made a Colossus look no bigger than a Rustling. Multiplying back by the
+ * creature's own `drawSize` restores the fact the index is supposed to teach.
+ *
+ * The BOSS GLOW is not. A drop-shadow on a transform-scaled sprite bleeds well outside its row,
+ * and twenty-four rows of it smeared into one continuous band down the boss column. The row
+ * already says "boss" in words and draws it largest; the glow is kept for the page header, where
+ * there is exactly one of them and the space to show it.
+ */
+function creatureCue(e: BestiaryEntry, glow: boolean): BodyCue {
+  const rank = rankCue(RANKS[e.rank]);
+  return {
+    scale: rank.scale * (e.creature.drawSize / WIDEST_BODY),
+    filter: glow ? rank.filter : '',
+  };
+}
+
+function creatureIcon(e: BestiaryEntry, cls: string, glow: boolean): HTMLImageElement {
+  const icon = document.createElement('img');
+  icon.className = cls;
+  // `frames[0]`: the healthy face. A creature that comes apart is meant to be discovered doing it.
+  icon.src = spriteUrl(e.creature.frames[0]);
+  icon.alt = '';
+  icon.decoding = 'async';
+  icon.title = e.levelName;
+  const cue = creatureCue(e, glow);
+  const fit = (): void => {
+    applyCue(icon, cue, bestiaryIconScale(e.levelId, e.creature.id, {
+      width: icon.naturalWidth,
+      height: icon.naturalHeight,
+    }));
+  };
+  applyCue(icon, cue, 1);
+  if (icon.complete && icon.naturalWidth > 0) fit();
+  else icon.addEventListener('load', fit, { once: true });
+  return icon;
+}
+
+/** The page header for a creature: its own body, its name, and which map it belongs to. */
+function creatureHead(e: BestiaryEntry): HTMLDivElement {
+  const head = document.createElement('div');
+  head.className = 'pedia__page-head';
+  const icon = creatureIcon(e, 'pedia__page-icon pedia__page-icon--enemy', true);
+  const title = document.createElement('div');
+  title.className = 'pedia__page-name';
+  title.textContent = e.name;
+  const k = document.createElement('div');
+  k.className = 'pedia__page-kind pedia__page-kind--enemy';
+  k.textContent = e.levelName;
+  const words = document.createElement('div');
+  words.append(title, k);
+  head.append(icon, words);
+  return head;
 }
 
 /**

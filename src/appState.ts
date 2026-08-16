@@ -25,7 +25,8 @@ import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
 import { META_CATALOG, metaSpent, type MetaId } from './core/data/meta.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
 import { reportSync, reportUnlocked } from './achievements.js';
-import { firstPlayableLevel, type LevelId } from './core/content/levels.js';
+import { firstPlayableLevel, type LevelDef, type LevelId } from './core/content/levels.js';
+import { bestiaryFor } from './bestiary.js';
 
 /**
  * `title`, `levelSelect`, `settings`, `upgrades` and `scrapopedia` join the list for the same
@@ -489,7 +490,12 @@ export class AppState {
    * calls it on the once-a-second poll, which is what makes a variant killed forty minutes into a
    * run that ends in a tab reload still count.
    */
-  recordKills(killsByFlavour: ArrayLike<number>, killsByRank: ArrayLike<number>): void {
+  recordKills(
+    killsByFlavour: ArrayLike<number>,
+    killsByRank: ArrayLike<number>,
+    level: LevelDef,
+    killsByCycleRank: ArrayLike<number>,
+  ): void {
     let added = false;
     const note = (name: string): void => {
       if (this.settings.killedEnemies.includes(name)) return;
@@ -498,6 +504,13 @@ export class AppState {
     };
     for (let i = 0; i < FLAVOURS.length; i++) if ((killsByFlavour[i] ?? 0) > 0) note(FLAVOURS[i].name);
     for (let i = 0; i < RANKS.length; i++) if ((killsByRank[i] ?? 0) > 0) note(RANKS[i].name);
+
+    // THE BESTIARY, one entry per creature per rank. Stored under `creatureKey`, which carries the
+    // LEVEL ID - two maps may one day name a creature the same thing, and a Mossy kill unlocking a
+    // Scrapyard page is precisely the confusion the per-level split exists to prevent.
+    for (const entry of bestiaryFor(level)) {
+      if ((killsByCycleRank[entry.rung * RANKS.length + entry.rank] ?? 0) > 0) note(entry.key);
+    }
     if (added) this.saveSettings();
   }
 

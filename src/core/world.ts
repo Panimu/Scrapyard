@@ -303,6 +303,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       kills: 0,
       killsByArchetype: new Uint32Array(ARCHETYPE_COUNT),
       killsByRank: new Uint32Array(RANKS.length),
+      killsByCycleRank: new Uint32Array(level.cycleCount * RANKS.length),
       damageDealt: 0,
       damageTaken: 0,
       damagePrevented: 0,
