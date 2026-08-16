@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T21:16Z',
+    title: 'THE TURRET STOPS FLINCHING AT YOUR DRONES',
+    notes: [
+      'Your mech\'s gun no longer recoils, and the camera no longer shakes, every time a drone fires. A fleet of four running a machine gun was holding the turret jammed back against its mount for the whole run.',
+      'The drones still flash at the muzzle when they shoot. It is only the chassis that has stopped reacting to a shot that was not fired from it.',
+    ],
+  },
+  {
     at: '2026-08-16T21:12Z',
     title: 'EVERY GUN HAS ITS OWN COLOUR NOW',
     notes: [

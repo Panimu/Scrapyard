@@ -132,6 +132,22 @@ export const EV_PLAYER_SAVED = 28;
  * leaves and a stump. Sharing the id would have made every tree on the moss map explode.
  */
 export const EV_WALL_BROKEN = 29;
+/**
+ * A DRONE fired a round. Payload: (x, y, unit dir x, unit dir y) - identical to EV_WEAPON_FIRED,
+ * because it wants the identical muzzle flash.
+ *
+ * ITS OWN EVENT, and the reason is everything ELSE the renderer hangs off a shot. `EV_WEAPON_FIRED`
+ * means THE MECH FIRED, and the renderer answers it by kicking the turret back along its mount and
+ * shoving the camera. A drone firing is not the mech firing, and it was pushing the same event -
+ * so a fleet of four drones running a machine gun at ten rounds a second held the turret jammed
+ * against its stop and the camera permanently shaking. The gun on the chassis was recoiling for
+ * shots fired by something twenty units away from it.
+ *
+ * Splitting the id rather than adding a payload flag: the four slots are full, and "which of these
+ * two things fired" is the kind of question the kind field exists to answer. The renderer draws the
+ * same flash and does none of the rest.
+ */
+export const EV_DRONE_FIRED = 30;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -165,6 +181,7 @@ export const EVENT_NAMES: readonly string[] = [
   'PLAYER_REPAIRED',
   'PLAYER_SAVED',
   'WALL_BROKEN',
+  'DRONE_FIRED',
 ];
 
 export interface EventRing {

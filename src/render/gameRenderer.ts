@@ -45,6 +45,7 @@ import {
   EV_PLAYER_SHIELD_RESTORED,
   EV_PROJECTILE_DETONATED,
   EV_PROJECTILE_HIT,
+  EV_DRONE_FIRED,
   EV_WEAPON_FIRED,
   FLAVOURS,
   RANKS,
@@ -702,6 +703,15 @@ export class GameRenderer {
           this.effects.muzzle(a, b, c, d);
           this.turretKick = TURRET_KICK_SEC;
           this.camera.kick(c, d);
+          break;
+
+        case EV_DRONE_FIRED:
+          // THE FLASH AND NOTHING ELSE. A drone's round leaves a drone, so it gets the same muzzle
+          // flash at the same place - but the recoil and the camera shake belong to the gun on the
+          // chassis, and this shot was not fired from it. Drones used to push EV_WEAPON_FIRED, so
+          // a fleet of four running a machine gun held the turret jammed back against its mount
+          // and the camera shaking for the rest of the run.
+          this.effects.muzzle(a, b, c, d);
           break;
 
         case EV_ENEMY_DAMAGED:

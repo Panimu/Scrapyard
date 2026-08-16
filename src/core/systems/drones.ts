@@ -54,7 +54,7 @@ import {
   allocProjectile,
 } from '../entity/projectilePool.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
-import { EV_WEAPON_FIRED, pushEvent } from '../events/ring.js';
+import { EV_DRONE_FIRED, pushEvent } from '../events/ring.js';
 import { TWO_PI, dcos, dsin } from '../math/trig.js';
 import type { World } from '../types.js';
 
@@ -496,7 +496,11 @@ function fireRound(world: World, d: number, dirX: number, dirY: number, gun: Wea
   // The Machine Gun's own visual, read off the def rather than named here: the drone fires that
   // gun, so it should be impossible for the two to disagree about what its rounds look like.
   p.visualId[i] = MACHINE_GUN.visualId;
-  pushEvent(world.events, EV_WEAPON_FIRED, world.tick, drones.x[d], drones.y[d], dirX, dirY);
+  // EV_DRONE_FIRED, NOT EV_WEAPON_FIRED. Same payload and the renderer draws the same muzzle
+  // flash - but the mech's own shot event also kicks the turret and shakes the camera, and a drone
+  // is not the mech. Four of them running a machine gun kept the turret pinned back and the camera
+  // shaking for the whole run.
+  pushEvent(world.events, EV_DRONE_FIRED, world.tick, drones.x[d], drones.y[d], dirX, dirY);
 }
 
 /**
