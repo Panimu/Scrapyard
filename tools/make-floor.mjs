@@ -50,10 +50,35 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'sprites');
-const TILE_DIR = join(ROOT, 'assets', 'kenney', 'sci-fi-rts', 'PNG', 'Default size', 'Tile');
 
-/** The two plain rust tiles. Anything with a path, a plant or ice on it is not ground. */
-const SOURCES = ['scifiTile_41.png', 'scifiTile_42.png'];
+/**
+ * ONE ROW PER LEVEL'S GROUND, and adding a level's floor is adding a row.
+ *
+ * Each needs exactly two PLAIN tiles - anything carrying a path, a plant or ice on it is not
+ * ground, and a directional tile would break the rotation this bake depends on. Both packs happen
+ * to ship precisely two, which is not a coincidence: it is what a "plain terrain" tile is for.
+ *
+ * The two packs are siblings (see assets/kenney/README.md), so the grass and the rust are the same
+ * art at the same size with the same speckle density. The moss floor is therefore the rust floor's
+ * arrangement in another colour, which is the reason the second level's ground took one table row
+ * rather than a second tool.
+ */
+const FLOORS = [
+  {
+    out: 'floor.png',
+    dir: join(ROOT, 'assets', 'kenney', 'sci-fi-rts', 'PNG', 'Default size', 'Tile'),
+    sources: ['scifiTile_41.png', 'scifiTile_42.png'],
+    label: 'Scrapyard rust',
+  },
+  {
+    out: 'floor_moss.png',
+    dir: join(ROOT, 'assets', 'kenney', 'medieval-rts', 'PNG', 'Default size', 'Tile'),
+    // 93% plain grass each, with the same faint speckle the rust tiles carry - measured, not
+    // assumed. 55 and 56 look plain in a thumbnail and are not: they carry dirt and sand.
+    sources: ['medievalTile_57.png', 'medievalTile_58.png'],
+    label: 'Mossy Mayhem turf',
+  },
+];
 
 /** Cells per side of the baked texture. 8 x 64 = 512 px, which is 512 world units. */
 const CELLS = 8;
@@ -130,12 +155,6 @@ function resolveChromium() {
 }
 
 async function main() {
-  const images = [];
-  for (const name of SOURCES) {
-    const buf = await readFile(join(TILE_DIR, name));
-    images.push(`data:image/png;base64,${buf.toString('base64')}`);
-  }
-
   const { chromium } = await import('@playwright/test');
   const launchOptions = {};
   const found = resolveChromium();
@@ -146,18 +165,12 @@ async function main() {
   await page.goto('about:blank');
   await mkdir(OUT_DIR, { recursive: true });
 
-  const dataUrl = await page.evaluate(`(${DRAW})(${JSON.stringify({
-    images,
-    cells: CELLS_SPEC,
-    CELLS,
-    TILE,
-  })})`);
-
   // THE SEAM CHECK, and it is the reason this is worth a tool rather than a one-off script. A
   // baked texture has to wrap: its left column must be the continuation of its right, and its top
   // of its bottom. Rotating flat-noise tiles keeps that true, and a future edit that swapped in a
   // tile with a directional edge would break it silently - the game would grow a faint grid and
-  // nobody would know why.
+  // nobody would know why. Run PER FLOOR: a second level's ground is a second chance to get this
+  // wrong, and the whole point of a table is that a new row is checked like the old ones.
   const SEAM_FN = `(url, S) => new Promise((res) => {
     const im = new Image();
     im.onload = () => {
@@ -178,14 +191,33 @@ async function main() {
     };
     im.src = url;
   })`;
-  const seam = await page.evaluate(`(${SEAM_FN})(${JSON.stringify(dataUrl)}, ${CELLS * TILE})`);
 
-  const buf = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
-  await writeFile(join(OUT_DIR, 'floor.png'), buf);
-  console.log(
-    `  floor.png        ${CELLS * TILE}x${CELLS * TILE}  ${(buf.length / 1024).toFixed(1)} kB -> ${OUT_DIR}`,
-  );
-  console.log(`  wrap seam        worst edge delta  x ${seam.worstX}  y ${seam.worstY}  (0 is seamless)`);
+  for (const floor of FLOORS) {
+    const images = [];
+    for (const name of floor.sources) {
+      const buf = await readFile(join(floor.dir, name));
+      images.push(`data:image/png;base64,${buf.toString('base64')}`);
+    }
+
+    const dataUrl = await page.evaluate(`(${DRAW})(${JSON.stringify({
+      images,
+      cells: CELLS_SPEC,
+      CELLS,
+      TILE,
+    })})`);
+
+    const seam = await page.evaluate(`(${SEAM_FN})(${JSON.stringify(dataUrl)}, ${CELLS * TILE})`);
+    const buf = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+    await writeFile(join(OUT_DIR, floor.out), buf);
+    console.log(
+      `  ${floor.out.padEnd(16)} ${CELLS * TILE}x${CELLS * TILE}  ${(buf.length / 1024)
+        .toFixed(1)
+        .padStart(6)} kB   ${floor.label}`,
+    );
+    console.log(
+      `  ${''.padEnd(16)} wrap seam  worst edge delta  x ${seam.worstX}  y ${seam.worstY}  (0 is seamless)`,
+    );
+  }
 
   await browser.close();
 }

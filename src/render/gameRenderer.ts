@@ -365,7 +365,11 @@ export class GameRenderer {
     private readonly app: Application,
     private readonly tex: GameTextures,
   ) {
-    this.floor = new TilingSprite({ texture: tex.floor, width: 1, height: 1, label: 'floor' });
+    // Seeded with whatever the catalog's first floor is; `reset` swaps in the level's own before
+    // anything is drawn. A TilingSprite's texture is swappable, so there is one of these forever.
+    const firstFloor = tex.floors.values().next().value;
+    if (firstFloor === undefined) throw new Error('assets: no level floor textures loaded');
+    this.floor = new TilingSprite({ texture: firstFloor, width: 1, height: 1, label: 'floor' });
     this.groundPaths = new GroundPaths(tex.pathByMask);
     this.groundCover = new GroundCover(tex.cover);
 
@@ -500,6 +504,22 @@ export class GameRenderer {
 
   /** Wipes every transient sprite and effect. Called when a run starts or is abandoned. */
   reset(world: World): void {
+    // THE LEVEL'S GROUND. Looked up by the level's own key, so a new level is a catalog row and a
+    // baked texture with nothing to change in here. An unknown key would be a missing bake, and
+    // keeping the previous texture is a visibly wrong floor rather than a blank screen.
+    const ground = this.tex.floors.get(world.level.floor);
+    if (ground !== undefined) this.floor.texture = ground;
+
+    // NO FENCE ON AN UNBOUNDED LEVEL. The fence draws four strips at +/-arenaHalf; at Infinity
+    // those are nowhere, and the honest thing is not to have it in the scene at all.
+    this.fence.container.visible = Number.isFinite(world.arenaHalf);
+
+    // GROUND DECORATION IS DRESSED FOR ITS LEVEL. Packages B and C are rust rubble and worn
+    // plating; on turf they read as spilled dirt. Hidden rather than retinted, because the moss
+    // map is getting its own out of the medieval pack rather than a green-tinted boulder.
+    this.groundCover.container.visible = world.level.groundDecor;
+    this.groundPaths.container.visible = world.level.groundDecor;
+
     this.pickups.clear();
     this.enemies.clear();
     this.hpBars.clear();
@@ -551,12 +571,18 @@ export class GameRenderer {
     this.drawFloor();
     // Static geometry - this only decides which of the four runs are worth submitting, and in the
     // middle of the yard the answer is none of them.
-    this.fence.update(this.camera);
+    // Skipped entirely on an unbounded level: `reset` hid the container, and four strips' worth of
+    // visibility arithmetic against a wall that does not exist is work for nothing.
+    if (this.fence.container.visible) this.fence.update(this.camera);
     this.drawScenery(world);
     // PACKAGE C and PACKAGE B. Drawn before anything that moves, and after the camera is known -
     // both derive what is on screen from the camera rect rather than storing a world of scenery.
-    this.groundPaths.draw(this.camera);
-    this.groundCover.draw(this.camera);
+    // Skipped entirely when the level does not want them - `reset` hid the containers, and
+    // deriving a lattice of cells nobody will see is the one cost this layer is not worth.
+    if (world.level.groundDecor) {
+      this.groundPaths.draw(this.camera);
+      this.groundCover.draw(this.camera);
+    }
     this.drawPickups(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);

@@ -450,6 +450,9 @@ async function boot(): Promise<void> {
       heroId,
       runLengthSec: RUN_LENGTH_SEC,
       metaTiers: state.metaTiersArray(),
+      // The picker's choice, reaching the simulation for the first time. Until now a level was a
+      // name on a card; it now decides the ground and whether the world has edges.
+      levelId: state.levelId,
     });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
     // THE DECK'S GATE, pushed in at run start. Core never reads the save; it is handed a mask.

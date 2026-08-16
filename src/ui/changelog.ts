@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T08:25Z',
+    title: 'MOSSY MAYHEM IS PLAYABLE, AND IT DOES NOT END',
+    notes: [
+      'THE SECOND MAP OPENS. It has sat on the picker as a locked card with "not built yet" written on it for weeks; it is now a level you can pick and play. Green turf instead of rust, and the horde comes for you on it exactly as it does in the yard.',
+      'THERE IS NO FENCE. Not a bigger yard - no edge at all, in any direction. Run one way for as long as you like and the ground keeps going; there is no wall to be cornered against, no corner to be trapped in, and nothing to put your back to. The Scrapyard is a room and this is not.',
+      'WHICH MAKES IT A DIFFERENT GAME WITH THE SAME RULES. Every fight in the yard is shaped by the fact that running has an end. Out here running always works, so the question stops being "where do I get pushed to" and starts being "how long can I keep moving".',
+      'NOTHING GROWS ON IT YET. The turf is bare - no trees, no rocks, nothing to shoot round or hide behind. That is the next piece of work rather than an oversight: scenery that stops at an invisible line six thousand units out would be worse than none, and an endless map needs it grown around you as you walk.',
+    ],
+  },
+  {
     at: '2026-08-16T00:23Z',
     title: 'DRONES FLY AT A FIXED SPEED, AND THEY ACTUALLY CIRCLE NOW',
     notes: [

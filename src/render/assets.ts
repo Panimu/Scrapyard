@@ -15,6 +15,16 @@
 
 import { Assets, Texture } from 'pixi.js';
 import { ARCHETYPES, ENEMY_CATALOG, HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
+import { LEVEL_CATALOG } from '../core/content/levels.js';
+
+/** The distinct ground-texture keys the level catalog asks for, in catalog order, deduplicated. */
+function levelFloorKeys(): string[] {
+  const out: string[] = [];
+  for (const level of LEVEL_CATALOG) {
+    if (level.floor !== '' && !out.includes(level.floor)) out.push(level.floor);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Rotation offsets. ASSET_MANIFEST §8.
@@ -260,7 +270,13 @@ export interface GameTextures {
   readonly enemies: readonly Texture[];
   /** Sprite scale for each typeId, so the CONTENT measures the archetype's drawSize. */
   readonly enemyScale: Float32Array;
-  readonly floor: Texture;
+  /**
+   * Ground textures by their level's `floor` key. See `levelFloorKeys`.
+   *
+   * A MAP RATHER THAN A FIELD PER LEVEL, so the renderer looks one up by `world.level.floor` and
+   * never learns how many levels exist.
+   */
+  readonly floors: ReadonlyMap<string, Texture>;
   /** Perimeter fence strip, tiled along each run. Repeat-wrapped, so it is kept out of any atlas. */
   readonly fence: Texture;
   /** Corner pillar, one per corner, capping the two runs that meet there. */
@@ -369,7 +385,11 @@ export async function loadGameTextures(
 
   for (const def of ENEMY_CATALOG) keys.push(def.sprite);
 
-  keys.push('floor', 'fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
+  keys.push('fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
+  // ONE GROUND TEXTURE PER LEVEL, taken from the level catalog rather than listed here. Adding a
+  // level's floor is then a row in `LEVEL_CATALOG` and a row in `tools/make-floor.mjs`, with
+  // nothing to remember in the renderer - which is the whole reason the key lives on the level.
+  for (const key of levelFloorKeys()) keys.push(key);
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
   keys.push('cons_spanner', 'cons_magnet', 'cons_dice', 'chest');
   // PACKAGE B. Remove this line and the `cover` field with the layer.
@@ -397,9 +417,15 @@ export async function loadGameTextures(
 
   // WebGL REPEAT wrapping needs a dedicated power-of-two texture; this is exactly why the floor
   // tile and the fence strip are kept OUT of any atlas (ASSET_MANIFEST gotcha 8).
-  const floor = get('floor');
-  floor.source.wrapMode = 'repeat';
-  floor.source.scaleMode = 'linear';
+  // Every level's floor, wrapped. A TilingSprite samples outside [0,1] and WebGL needs REPEAT on a
+  // dedicated power-of-two texture to do it, which is why these stay out of any atlas.
+  const floors = new Map<string, Texture>();
+  for (const key of levelFloorKeys()) {
+    const t = get(key);
+    t.source.wrapMode = 'repeat';
+    t.source.scaleMode = 'linear';
+    floors.set(key, t);
+  }
 
   const fence = get('fence');
   fence.source.wrapMode = 'repeat';
@@ -408,7 +434,7 @@ export async function loadGameTextures(
   // Smooth vector-derived art, upscaled. Linear + mipmaps; NEAREST would look worse, not
   // crisper (ASSET_MANIFEST gotcha 6).
   for (const k of keys) {
-    if (k === 'floor' || k === 'fence') continue;
+    if (k === 'fence' || floors.has(k)) continue;
     get(k).source.scaleMode = 'linear';
   }
 
@@ -432,7 +458,7 @@ export async function loadGameTextures(
     drone: get('drone'),
     enemies,
     enemyScale,
-    floor,
+    floors,
     fence,
     fencePost: get('fence_post'),
     scrap: Array.from({ length: SCENERY_VARIANTS }, (_, i) => get(`scrap_${i}`)),

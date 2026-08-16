@@ -62,7 +62,6 @@
  */
 
 import {
-  ARENA_HALF,
   BARREL_BREAK_RADIUS,
   DT,
   GEM_SOFT_CAP,
@@ -636,10 +635,11 @@ function magnetAndCollect(world: World, dt: number): void {
     // throws it into the void, where it stops - and where the player can never get within 18 u of
     // it, because they cannot reach the wire. Measured at 89 u outside the bound before this
     // clamp, which is XP silently deleted.
-    if (x < -ARENA_HALF) x = -ARENA_HALF;
-    else if (x > ARENA_HALF) x = ARENA_HALF;
-    if (y < -ARENA_HALF) y = -ARENA_HALF;
-    else if (y > ARENA_HALF) y = ARENA_HALF;
+    const edge = world.arenaHalf;
+    if (x < -edge) x = -edge;
+    else if (x > edge) x = edge;
+    if (y < -edge) y = -edge;
+    else if (y > edge) y = edge;
 
     pool.x[d] = x;
     pool.y[d] = y;

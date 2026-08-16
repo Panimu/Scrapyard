@@ -36,6 +36,7 @@ import { xpToNextLevel } from './config/tuning.js';
 import { RANKS, createResolvedCycle } from './content/cycles.js';
 import { FLAVOURS } from './content/enemyCatalog.js';
 import { createScenery } from './content/scenery.js';
+import { levelOrDefault } from './content/levels.js';
 import { createDronePool } from './entity/dronePool.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
@@ -244,8 +245,15 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
   // and this is only how many instances exist to be claimed. See constants.ts.
   for (let i = 0; i < WEAPON_SLOTS; i++) weapons.push(createWeaponInstance());
 
+  // THE LEVEL, RESOLVED ONCE. Everything downstream reads `world.level` and `world.arenaHalf`
+  // rather than the catalog, so a system can never disagree with the picker about which level is
+  // being played, and an unknown id degrades to the first playable one instead of throwing.
+  const level = levelOrDefault(config.levelId);
+
   const world: World = {
     config,
+    level,
+    arenaHalf: level.arenaHalf,
     // Copied into a dense array once rather than read through `config.metaTiers` at every resolve:
     // the config field is an optional ArrayLike a caller may not have passed at all, and five
     // resolve sites each doing `?? EMPTY` is five chances to get the fallback wrong.
@@ -269,7 +277,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     weaponCount: 0,
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
-    scenery: createScenery(config.seed),
+    scenery: createScenery(config.seed, level.scenery),
     chest: {
       reels: new Int32Array(CHEST_REELS).fill(-1),
       payout: 0,

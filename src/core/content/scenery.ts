@@ -173,7 +173,19 @@ export interface Scenery {
   count: number;
 }
 
-export function createScenery(seed: number): Scenery {
+/**
+ * `populate` false returns the same struct with nothing in it.
+ *
+ * FOR A LEVEL THAT HAS NO EDGES. Everything below fills a FIXED SQUARE - the cell grid is indexed
+ * from `-ARENA_HALF` and `sceneryCell` maps a coordinate back the same way - so this generator is
+ * built on knowing where the world stops. An unbounded level needs scenery derived in chunks
+ * around the player instead, the way the render-side ground cover already is, and that is a
+ * different function rather than a flag on this one.
+ *
+ * An empty `Scenery` is a perfectly good one: `count` 0 means every overlap query returns -1 and
+ * every push misses, so nothing downstream needs to know a level has no scrap in it.
+ */
+export function createScenery(seed: number, populate = true): Scenery {
   const n = SCENERY_COLS * SCENERY_COLS;
   const s: Scenery = {
     x: new Float32Array(n),
@@ -182,6 +194,7 @@ export function createScenery(seed: number): Scenery {
     variant: new Int32Array(n),
     count: 0,
   };
+  if (!populate) return s;
 
   const rng = new Rng((seed ^ SCENERY_SEED_MIX) | 0);
   const clear2 = CLEAR_RADIUS * CLEAR_RADIUS;

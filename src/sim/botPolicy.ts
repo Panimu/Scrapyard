@@ -14,7 +14,6 @@
  */
 
 import {
-  ARENA_HALF,
   ENEMY_FLAG_BOSS,
   ENEMY_FLAG_DEAD,
   ENEMY_FLAG_ELITE,
@@ -198,8 +197,12 @@ export function botInput(bot: BotState, world: World): Readonly<InputFrame> {
   //
   // A repulsion that grows as the wall approaches, rather than a hard "turn around" test, so the
   // bot curves along the fence the way a player does instead of oscillating on a threshold.
-  mx += wallPush(px);
-  my += wallPush(py);
+  // THE LEVEL'S wall, not the constant. On an unbounded level `arenaHalf` is Infinity, the slack
+  // is always Infinity, and the push is always zero - so the bot does not curve away from a fence
+  // that is not there. Measuring a level with no walls against a bot that believes in one would
+  // produce pacing numbers about the bot, which is exactly what this function exists to prevent.
+  mx += wallPush(px, world.arenaHalf);
+  my += wallPush(py, world.arenaHalf);
 
   const l = Math.sqrt(mx * mx + my * my);
   if (l > 1e-6) {
@@ -224,8 +227,8 @@ function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-function wallPush(v: number): number {
-  const slack = ARENA_HALF - Math.abs(v);
+function wallPush(v: number, arenaHalf: number): number {
+  const slack = arenaHalf - Math.abs(v);
   if (slack >= WALL_FEEL) return 0;
   const t = (WALL_FEEL - slack) / WALL_FEEL;
   return (v > 0 ? -1 : 1) * WALL_PUSH * t * t;

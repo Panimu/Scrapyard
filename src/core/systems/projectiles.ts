@@ -23,7 +23,6 @@
  * until S12).
  */
 
-import { ARENA_HALF } from '../constants.js';
 import { sceneryOverlap } from '../content/scenery.js';
 import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
 import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
@@ -253,15 +252,19 @@ function stopAtTheEdges(world: World): void {
   const y = p.y;
   const flags = p.flags;
   const scenery = world.scenery;
+  // On an unbounded level this is Infinity, so nothing is ever culled by the edge. Rounds still
+  // die on their own `projectileLifetime`, which is what actually bounds a shot's travel - the
+  // wall was only ever the second, coarser of the two.
+  const edge = world.arenaHalf;
 
   for (let d = 0; d < n; d++) {
     if ((flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
 
     if (
-      x[d] < -ARENA_HALF ||
-      x[d] > ARENA_HALF ||
-      y[d] < -ARENA_HALF ||
-      y[d] > ARENA_HALF
+      x[d] < -edge ||
+      x[d] > edge ||
+      y[d] < -edge ||
+      y[d] > edge
     ) {
       expireProjectile(world, d);
       continue;

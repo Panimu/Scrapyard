@@ -37,7 +37,7 @@
  * anything catch you.
  */
 
-import { ARENA_HALF, RELOCATE_RADIUS, SWARM_SLOW_FRAC } from '../constants.js';
+import { RELOCATE_RADIUS, SWARM_SLOW_FRAC } from '../constants.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import { pushOutOfScenery } from '../content/scenery.js';
@@ -315,7 +315,7 @@ function integrate(world: World, dt: number): void {
     let nx = x[d] + (vx[d] + kx) * dt;
     let ny = y[d] + (vy[d] + ky) * dt;
 
-    const bound = ARENA_HALF - radius[d];
+    const bound = world.arenaHalf - radius[d];
     if (nx < -bound) nx = -bound;
     else if (nx > bound) nx = bound;
     if (ny < -bound) ny = -bound;

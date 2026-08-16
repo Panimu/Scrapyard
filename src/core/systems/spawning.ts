@@ -73,7 +73,7 @@
  * the order is written down here rather than left to be inferred from the code.
  */
 
-import { ARENA_HALF, MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
+import { MAX_LIVE_ENEMIES, SPAWN_RADIUS, THREAT_RADIUS } from '../constants.js';
 import { cycleIndexAt, type DirectorTuning } from '../config/tuning.js';
 import {
   EVENT_CHEST_ELITE,
@@ -374,10 +374,14 @@ export function rollRingPosition(
 
   let x = p.x + out.x * SPAWN_RADIUS;
   let y = p.y + out.y * SPAWN_RADIUS;
-  if (x < -ARENA_HALF || x > ARENA_HALF) x = p.x - out.x * SPAWN_RADIUS;
-  if (y < -ARENA_HALF || y > ARENA_HALF) y = p.y - out.y * SPAWN_RADIUS;
-  x = x < -ARENA_HALF ? -ARENA_HALF : x > ARENA_HALF ? ARENA_HALF : x;
-  y = y < -ARENA_HALF ? -ARENA_HALF : y > ARENA_HALF ? ARENA_HALF : y;
+  // Reflected to the other side of the player rather than clamped onto the wall, so a player
+  // hugging a corner is not fed a stream of bodies from the two directions there is no room in.
+  // On an unbounded level `edge` is Infinity and none of this fires: the ring is always free.
+  const edge = world.arenaHalf;
+  if (x < -edge || x > edge) x = p.x - out.x * SPAWN_RADIUS;
+  if (y < -edge || y > edge) y = p.y - out.y * SPAWN_RADIUS;
+  x = x < -edge ? -edge : x > edge ? edge : x;
+  y = y < -edge ? -edge : y > edge ? edge : y;
 
   // NOTHING IS EVER PLACED INSIDE A SCRAP PILE. Movement would push it straight back out on the
   // first tick, so this is not a correctness fix - it is a visual one: an enemy that materialises
@@ -480,7 +484,7 @@ function spawnSwarm(world: World): void {
   const hp = c.hp * r.hp * f.hp * diff.hpRamp;
   const speed = c.speed * r.speed * f.speed * diff.speedRamp;
   const bodyRadius = a.radius * r.size;
-  const bound = ARENA_HALF - bodyRadius;
+  const bound = world.arenaHalf - bodyRadius;
 
   // ONE direction for the whole swarm: it comes from somewhere, and that somewhere is a place the
   // player can turn to face. `dcos`/`dsin`, never Math.cos/sin - core bans the built-ins because
@@ -644,7 +648,7 @@ function spawnSiege(world: World, t: DirectorTuning): void {
   // stand outside the yard. That is not a gap in the trap: the missing arc is a WALL, and a wall
   // is not a way out. In open ground - which is where a siege is sprung nearly every time - the
   // ring is a complete, evenly spaced, non-overlapping fifty at exactly SIEGE_RING_RADIUS.
-  const bound = ARENA_HALF - bodyRadius;
+  const bound = world.arenaHalf - bodyRadius;
 
   for (let i = 0; i < SIEGE_COUNT; i++) {
     const angle = (i / SIEGE_COUNT) * TWO_PI;

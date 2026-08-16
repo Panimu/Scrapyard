@@ -54,7 +54,6 @@
  * gate is 20 u/s.
  */
 
-import { ARENA_HALF } from '../constants.js';
 import { pushOutOfScenery } from '../content/scenery.js';
 import { breakBarrelIn } from './pickups.js';
 import { EV_PLAYER_REPAIRED, EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
@@ -100,7 +99,8 @@ export function updatePlayerMovement(world: World, dt: number): void {
   // The other axis is untouched, so the fence SLIDES: running into it diagonally converts into
   // running along it, which is what a player expects from a wall and what keeps a corner from
   // being a trap.
-  const bound = ARENA_HALF - s.radius;
+  // The level's edge, not the constant - `Infinity` on an unbounded level makes this a no-op.
+  const bound = world.arenaHalf - s.radius;
   if (p.x < -bound) {
     p.x = -bound;
     if (vx < 0) vx = 0;

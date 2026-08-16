@@ -20,6 +20,7 @@ import type { SpatialHash } from './spatial/hashGrid.js';
 import type { BeamBuffer, ContactBuffer, EventRing, HitBuffer, KillFeed } from './events/ring.js';
 import type { Tuning } from './config/tuning.js';
 import type { ResolvedCycle } from './content/cycles.js';
+import type { LevelDef } from './content/levels.js';
 import type { MetaSource, PlayerStats, WeaponStats } from './data/stats.js';
 import type { DronePool } from './entity/dronePool.js';
 import type { HeroDef } from './data/heroes.js';
@@ -124,6 +125,8 @@ export interface WorldConfig {
    * nothing, so a workshop purchase can never move a benchmark.
    */
   readonly metaTiers?: ArrayLike<number>;
+  /** Which level. Omitted means the first playable one - see content/levels.ts. */
+  readonly levelId?: string;
 }
 
 export interface PlayerState {
@@ -505,6 +508,16 @@ export interface World {
    * wrong is one of them being written without the argument.
    */
   readonly meta: MetaSource;
+  /**
+   * Half-extent of the playable square, or `Infinity` on an unbounded level.
+   *
+   * READ FROM HERE, NEVER FROM `ARENA_HALF`. Six systems clamp against the world's edge and the
+   * constant is now only the Scrapyard's value; a system that kept importing it would fence a
+   * level that is supposed to have no fence, and would do it silently.
+   */
+  readonly arenaHalf: number;
+  /** The level's own definition, resolved once at creation. */
+  readonly level: LevelDef;
   readonly rng: RngStreams;
 
   /** 0-based index of the step currently executing. endTick advances it. */

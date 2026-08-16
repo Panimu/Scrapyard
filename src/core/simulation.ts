@@ -56,6 +56,8 @@ export interface SimulationOptions {
    * benchmark or a replay hash unless it was deliberately handed over.
    */
   readonly metaTiers?: ArrayLike<number>;
+  /** Which level to play. Omitted means the first playable one. */
+  readonly levelId?: string;
   /** Substitute catalogs, for fixture-driven tests. */
   readonly catalogs?: Catalogs;
 }
@@ -75,6 +77,7 @@ export class Simulation {
       runLengthSec: options.runLengthSec ?? RUN_LENGTH_SEC,
       tuning: options.tuning ?? DEFAULT_TUNING,
       metaTiers: options.metaTiers,
+      levelId: options.levelId,
     };
     this.world = createWorld(config, options.catalogs ?? DEFAULT_CATALOGS);
   }
