@@ -14,8 +14,9 @@
  */
 
 import { Assets, Texture } from 'pixi.js';
-import { ARCHETYPES, ENEMY_CATALOG, HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
-import { LEVEL_CATALOG } from '../core/content/levels.js';
+import { ARCHETYPES, HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
+import { LEVEL_CATALOG, type LevelId } from '../core/content/levels.js';
+import { buildCreatureArt, creatureSpriteKeys, type LevelCreatureArt } from './creatureArt.js';
 
 /** The distinct ground-texture keys the level catalog asks for, in catalog order, deduplicated. */
 function levelFloorKeys(): string[] {
@@ -266,10 +267,14 @@ export interface GameTextures {
    */
   readonly mechLegs: readonly (readonly Texture[])[];
   readonly turret: Texture;
-  /** Indexed by EnemyPool.typeId (0..47). */
-  readonly enemies: readonly Texture[];
-  /** Sprite scale for each typeId, so the CONTENT measures the archetype's drawSize. */
-  readonly enemyScale: Float32Array;
+  /**
+   * Creature art by level id, each indexed by `EnemyPool.typeId` within THAT level's table.
+   *
+   * A MAP RATHER THAN ONE ARRAY, for the same reason `floors` is one: typeId 3 means a different
+   * creature on each map, so there is no single array it could index. The renderer looks up
+   * `world.level.id` once per run, not per enemy.
+   */
+  readonly creatures: ReadonlyMap<LevelId, LevelCreatureArt>;
   /**
    * Ground textures by their level's `floor` key. See `levelFloorKeys`.
    *
@@ -383,7 +388,12 @@ export async function loadGameTextures(
   }
   keys.push('turret');
 
-  for (const def of ENEMY_CATALOG) keys.push(def.sprite);
+  // EVERY LEVEL'S CREATURES, from the level catalog rather than from a global enemy table. There
+  // is no global enemy table any more: each level owns its own, and adding a level's creatures is
+  // a row in its own content file with nothing to remember here.
+  for (const level of LEVEL_CATALOG) {
+    for (const key of creatureSpriteKeys(level.creatures)) keys.push(key);
+  }
 
   keys.push('fence', 'fence_post', 'shell', 'missile', 'slug', 'gem', 'drone');
   // ONE GROUND TEXTURE PER LEVEL, taken from the level catalog rather than listed here. Adding a
@@ -438,12 +448,9 @@ export async function loadGameTextures(
     get(k).source.scaleMode = 'linear';
   }
 
-  const enemies: Texture[] = [];
-  const enemyScale = new Float32Array(ENEMY_CATALOG.length);
-  for (let i = 0; i < ENEMY_CATALOG.length; i++) {
-    const def = ENEMY_CATALOG[i];
-    enemies.push(get(def.sprite));
-    enemyScale[i] = def.drawSize / (HULL_CONTENT_PX[def.hull - 1] * ENEMY_RETINA_FACTOR);
+  const creatures = new Map<LevelId, LevelCreatureArt>();
+  for (const level of LEVEL_CATALOG) {
+    creatures.set(level.id, buildCreatureArt(level.id, level.creatures, get));
   }
 
   const puff: Texture[] = [];
@@ -456,8 +463,7 @@ export async function loadGameTextures(
     ),
     turret: get('turret'),
     drone: get('drone'),
-    enemies,
-    enemyScale,
+    creatures,
     floors,
     fence,
     fencePost: get('fence_post'),

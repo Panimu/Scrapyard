@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-16T09:42Z',
+    title: 'MOSSY MAYHEM HAS ITS OWN CREATURES',
+    notes: [
+      'THE THINGS THAT COME AT YOU ON THE MOSS ARE ALIVE. Eight new enemies, none of them a machine and none of them shared with the yard: sporelings, a swarm of flies and bees, jellies and oozes, a jackal pack, a vine stalker, a draconian, golems, and dragons.',
+      'THE THREE RANKS ARE THREE DIFFERENT CREATURES NOW, ON MOST WAVES. In the Scrapyard an elite is the same wreck in a different paint. Out here the flies wave sends a blowfly at you, then a killer bee, then a mosquito the size of the bee; the golem wave goes from dirt to stone to iron. You can read what you are looking at without being told.',
+      'TWO BOSSES COME APART AS YOU HURT THEM. The snail loses its shell at half health and finishes the fight as a slug. The hydra starts with five heads and drops one for every fifth of its health you take off - so the end of that fight has a countdown in it that you can see from across the field.',
+      'THE TWO MAPS NO LONGER SHARE A SINGLE ENEMY NUMBER. Mossy has its own eight waves with their own health, speed, damage and payouts. They start where the yard\'s do, and from here they move independently: tuning one map can no longer change the other by accident.',
+    ],
+  },
+  {
     at: '2026-08-16T08:25Z',
     title: 'MOSSY MAYHEM IS PLAYABLE, AND IT DOES NOT END',
     notes: [

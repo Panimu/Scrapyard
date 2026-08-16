@@ -22,6 +22,8 @@
  */
 
 import { emptyScenery, type Scenery } from './scenery.js';
+import { MOSS_CREATURES } from './creaturesMossy.js';
+import { resolveMossyCycle } from './cyclesMossy.js';
 import type { LevelDef } from './levels.js';
 
 export const MOSSY_MAYHEM: LevelDef = Object.freeze({
@@ -47,4 +49,15 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
   floor: 'floor_moss',
 
   makeScenery: (): Scenery => emptyScenery(),
+
+  /**
+   * ITS OWN CREATURES AND ITS OWN LADDER - eight things that live in moss, and the eight cycles
+   * that spend them, in `creaturesMossy.ts` and `cyclesMossy.ts`.
+   *
+   * Nothing in either is shared with the Scrapyard: not a stat, not a sprite, not an id. Two of
+   * the bosses come apart as they are hurt, which is a property of THESE creatures rather than a
+   * feature switched on for the level, and is why it costs core nothing.
+   */
+  creatures: MOSS_CREATURES,
+  resolveCycle: resolveMossyCycle,
 });

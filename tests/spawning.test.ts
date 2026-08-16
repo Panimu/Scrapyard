@@ -22,7 +22,6 @@ import {
   cycleTimeAt,
 } from '../src/core/config/tuning.js';
 import {
-  CYCLE_LADDER,
   MAX_ENEMY_RADIUS,
   MAX_RANK_SIZE,
   RANKS,
@@ -30,9 +29,9 @@ import {
   RANK_ELITE,
   RANK_REGULAR,
   createResolvedCycle,
-  resolveCycle,
-  typeIdFor,
 } from '../src/core/content/cycles.js';
+import { CYCLE_LADDER, resolveScrapyardCycle } from '../src/core/content/cyclesScrapyard.js';
+import { typeIdFor } from '../src/core/content/creaturesScrapyard.js';
 import { ARCHETYPES, ENEMY_CATALOG } from '../src/core/content/enemyCatalog.js';
 import {
   ENEMY_FLAG_BOSS,
@@ -120,9 +119,9 @@ describe('the cycle clock', () => {
 
 describe('rank as a colour swap', () => {
   it('gives every rank the SAME hull in a DIFFERENT faction recolour', () => {
-    const c = createResolvedCycle();
+    const c = createResolvedCycle(resolveScrapyardCycle);
     for (let i = 0; i < CYCLE_LADDER.length + 3; i++) {
-      resolveCycle(i, c);
+      resolveScrapyardCycle(i, c);
       const ids = [
         c.typeByRank[RANK_REGULAR],
         c.typeByRank[RANK_ELITE],
@@ -138,9 +137,9 @@ describe('rank as a colour swap', () => {
   });
 
   it('derives the body class from the hull rather than authoring it twice', () => {
-    const c = createResolvedCycle();
+    const c = createResolvedCycle(resolveScrapyardCycle);
     for (let i = 0; i < CYCLE_LADDER.length; i++) {
-      resolveCycle(i, c);
+      resolveScrapyardCycle(i, c);
       expect(c.archetype).toBe(ENEMY_CATALOG[typeIdFor(CYCLE_LADDER[i].hull, 0)].archetype);
     }
   });
@@ -168,10 +167,10 @@ describe('rank as a colour swap', () => {
   });
 
   it('extrapolates past the authored ladder instead of falling off the end', () => {
-    const c = createResolvedCycle();
-    resolveCycle(CYCLE_LADDER.length - 1, c);
+    const c = createResolvedCycle(resolveScrapyardCycle);
+    resolveScrapyardCycle(CYCLE_LADDER.length - 1, c);
     const lastHp = c.hp;
-    resolveCycle(CYCLE_LADDER.length + 4, c);
+    resolveScrapyardCycle(CYCLE_LADDER.length + 4, c);
     expect(c.hp).toBeGreaterThan(lastHp);
     expect(Number.isFinite(c.hp)).toBe(true);
     expect(c.typeByRank[RANK_REGULAR]).toBeGreaterThanOrEqual(0);

@@ -33,7 +33,7 @@ import {
   WEAPON_SCRATCH_LEN,
 } from './constants.js';
 import { xpToNextLevel } from './config/tuning.js';
-import { RANKS, createResolvedCycle } from './content/cycles.js';
+import { RANKS, createResolvedCycle, type CycleResolver } from './content/cycles.js';
 import { FLAVOURS } from './content/enemyCatalog.js';
 import { levelOrDefault } from './content/levels.js';
 import { createDronePool } from './entity/dronePool.js';
@@ -181,7 +181,7 @@ function createWeaponInstance(): WeaponInstance {
   };
 }
 
-function createDirector(): SpawnDirector {
+function createDirector(resolveCycle: CycleResolver): SpawnDirector {
   return {
     localPressure: 0,
     targetPressure: 0,
@@ -197,7 +197,7 @@ function createDirector(): SpawnDirector {
     eventCycle: -1,
     bossSpawned: 0,
     bossHandle: NULL_HANDLE,
-    cycle: createResolvedCycle(),
+    cycle: createResolvedCycle(resolveCycle),
   };
 }
 
@@ -285,7 +285,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       opened: 0,
       ascension: -1,
     },
-    director: createDirector(),
+    director: createDirector(level.resolveCycle),
     difficulty: {
       hpRamp: 1,
       speedRamp: 1,

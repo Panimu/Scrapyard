@@ -16,7 +16,8 @@ import { describe, expect, it } from 'vitest';
 
 import { DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
-import { CYCLE_LADDER, maxEnemySpeedAt } from '../src/core/content/cycles.js';
+import { maxEnemySpeedAt } from '../src/core/content/cycles.js';
+import { CYCLE_LADDER, resolveScrapyardCycle } from '../src/core/content/cyclesScrapyard.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { updatePlayerMovement } from '../src/core/systems/playerMovement.js';
 import { quantiseAxis, type World } from '../src/core/types.js';
@@ -84,7 +85,7 @@ describe('terminal velocity - the kiting invariant', () => {
 
     let worst = 0;
     for (let c = 0; c < CYCLE_LADDER.length; c++) {
-      const v = maxEnemySpeedAt(c, ramp);
+      const v = maxEnemySpeedAt(resolveScrapyardCycle, c, ramp);
       if (v > worst) worst = v;
     }
 

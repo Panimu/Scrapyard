@@ -98,7 +98,6 @@ import {
   RANK_BOSS,
   RANK_ELITE,
   RANK_REGULAR,
-  resolveCycle,
   type Rank,
 } from '../content/cycles.js';
 import {
@@ -140,7 +139,10 @@ export function updateSpawning(world: World, dt: number): void {
   if (dir.cycle.index !== index) {
     // The ONLY thing a rollover does. No cull, no despawn, no state on the existing enemies -
     // "unkilled enemies persevere" is the absence of code, not the presence of it.
-    resolveCycle(index, dir.cycle);
+    // THE LEVEL'S ladder, not a global one. Every level authors its own creatures and its own
+    // pacing (content/cyclesScrapyard.ts, content/cyclesMossy.ts); the director only knows that
+    // something filled a ResolvedCycle.
+    world.level.resolveCycle(index, dir.cycle);
     dir.cycleIndex = index;
     // Zero, not `interval`: the elite phase opens with an arrival rather than with a wait.
     dir.eliteTimer = 0;

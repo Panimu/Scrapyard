@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
-import { CYCLE_LADDER } from '../src/core/content/cycles.js';
+import { CYCLE_LADDER } from '../src/core/content/cyclesScrapyard.js';
 import { ARCHETYPES, ARCH_GRUNT } from '../src/core/content/enemyCatalog.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { resolvePlayerStats } from '../src/core/data/stats.js';

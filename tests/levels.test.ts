@@ -21,6 +21,8 @@ import {
   type World,
 } from '../src/core/types.js';
 import { createWorld, stepWorld } from '../src/core/world.js';
+import { SPAWNABLE_ARCHETYPES, createResolvedCycle, maxEnemySpeedAt } from '../src/core/content/cycles.js';
+import { stageIndexFor } from '../src/render/creatureArt.js';
 
 function world(levelId: string): World {
   const w = createWorld({
@@ -148,5 +150,100 @@ describe('still deterministic', () => {
     const yard = world('scrapyard');
     for (let i = 0; i < 600; i++) stepWorld(yard, EMPTY_INPUT);
     expect(hashWorld(yard)).not.toBe(hashWorld(a));
+  });
+});
+
+/**
+ * EACH LEVEL OWNS ITS ENEMIES, and the point of the split is that editing one cannot reach the
+ * other. These check the seams that make that true rather than restating the tables.
+ */
+describe('a level owns its creatures', () => {
+  it('no creature object is shared between levels', () => {
+    // Identity, not equality. Two levels may legitimately choose the same drawSize; what must
+    // never happen is one level's row BEING another's, because then a tweak lands on both.
+    const seen = new Set<unknown>();
+    for (const level of LEVEL_CATALOG) {
+      for (const c of level.creatures) {
+        expect(seen.has(c)).toBe(false);
+        seen.add(c);
+      }
+    }
+  });
+
+  it('creature ids are positional, so a cycle can never name its neighbour', () => {
+    for (const level of LEVEL_CATALOG) {
+      level.creatures.forEach((c, i) => expect(c.id).toBe(i));
+    }
+  });
+
+  it('every rank of every authored cycle resolves to a real creature', () => {
+    for (const level of LEVEL_CATALOG) {
+      const c = createResolvedCycle(level.resolveCycle);
+      // Past the authored ladder too: extrapolation must not walk off the end of the table.
+      for (let i = 0; i < 24; i++) {
+        level.resolveCycle(i, c);
+        for (const typeId of c.typeByRank) {
+          expect(level.creatures[typeId]).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it('every cycle uses a body class MAX_ENEMY_RADIUS actually bounds', () => {
+    // MAX_ENEMY_RADIUS is derived from SPAWNABLE_ARCHETYPES rather than from the ladders, so that
+    // adding a level cannot silently widen a bound four spatial queries depend on. This is the
+    // check that keeps that honest - it fails the level, not the queries.
+    for (const level of LEVEL_CATALOG) {
+      const c = createResolvedCycle(level.resolveCycle);
+      for (let i = 0; i < 24; i++) {
+        level.resolveCycle(i, c);
+        expect(SPAWNABLE_ARCHETYPES).toContain(c.archetype);
+      }
+    }
+  });
+
+  it('Invariant K holds on every level, not just the one it was measured on', () => {
+    // Every hero must out-run the fastest thing the ladder can produce, or kiting stops working
+    // and the genre goes with it. tests/movement.test.ts checks it against the Scrapyard; this
+    // checks that adding a level did not quietly break it somewhere else.
+    const d = DEFAULT_TUNING.director;
+    let ramp = 1;
+    for (let s = 0; s < d.cycleSeconds; s++) ramp *= d.speedRampPerSec;
+
+    // The slowest mech in the game, resolved through the real stat pipeline rather than guessed.
+    let slowest = Infinity;
+    for (let heroId = 0; heroId < 8; heroId++) {
+      const w = createWorld({ seed: 1, heroId, runLengthSec: 900, tuning: DEFAULT_TUNING });
+      if (w.player.stats.moveMaxSpeed < slowest) slowest = w.player.stats.moveMaxSpeed;
+    }
+
+    for (const level of LEVEL_CATALOG) {
+      for (let i = 0; i < 12; i++) {
+        expect(slowest).toBeGreaterThanOrEqual(1.08 * maxEnemySpeedAt(level.resolveCycle, i, ramp));
+      }
+    }
+  });
+});
+
+describe('damage stages', () => {
+  it('splits a health bar into even bands, healthiest first', () => {
+    // Two frames break at exactly half - one event in the fight, which is what a snail losing its
+    // shell should be.
+    expect(stageIndexFor(1, 1, 2)).toBe(0);
+    expect(stageIndexFor(0.6, 1, 2)).toBe(0);
+    expect(stageIndexFor(0.4, 1, 2)).toBe(1);
+    // Five frames turn a hydra's bar into a countdown of heads.
+    expect(stageIndexFor(1, 1, 5)).toBe(0);
+    expect(stageIndexFor(0.5, 1, 5)).toBe(2);
+    expect(stageIndexFor(0.01, 1, 5)).toBe(4);
+  });
+
+  it('clamps rather than trusting hp, which is briefly out of range at the killing blow', () => {
+    expect(stageIndexFor(0, 1, 5)).toBe(4);
+    expect(stageIndexFor(-30, 1, 5)).toBe(4);
+    expect(stageIndexFor(2, 1, 5)).toBe(0);
+    // A one-frame creature is every creature that does not come apart. It never indexes anything.
+    expect(stageIndexFor(0, 1, 1)).toBe(0);
+    expect(stageIndexFor(1, 0, 3)).toBe(0);
   });
 });

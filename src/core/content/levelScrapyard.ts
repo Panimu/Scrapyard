@@ -16,6 +16,8 @@
 
 import { createScenery, type Scenery } from './scenery.js';
 import { ARENA_HALF } from '../constants.js';
+import { SCRAPYARD_CREATURES } from './creaturesScrapyard.js';
+import { resolveScrapyardCycle } from './cyclesScrapyard.js';
 import type { LevelDef } from './levels.js';
 
 export const SCRAPYARD: LevelDef = Object.freeze({
@@ -40,4 +42,11 @@ export const SCRAPYARD: LevelDef = Object.freeze({
    * cannot use it and does not have to pretend to.
    */
   makeScenery: (seed: number): Scenery => createScenery(seed),
+
+  /**
+   * Wrecked machines out of the Kenney sci-fi RTS atlas, and the eight-cycle ladder that spends
+   * them. Both live in their own files and are this level's alone - see `creaturesScrapyard.ts`.
+   */
+  creatures: SCRAPYARD_CREATURES,
+  resolveCycle: resolveScrapyardCycle,
 });

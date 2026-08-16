@@ -71,6 +71,7 @@ import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
 import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
+import { stageIndexFor, type LevelCreatureArt } from './creatureArt.js';
 import type { LevelId } from '../core/content/levels.js';
 // PACKAGE B and PACKAGE C - two independent decoration layers. Each is one import, one field, one
 // construction, one addChild and one draw call; removing either touches nothing else.
@@ -307,6 +308,15 @@ export class GameRenderer {
    */
   private dressing: LevelDressing | null = null;
   private dressingLevel: LevelId | null = null;
+
+  /**
+   * The current level's creature art, resolved once per run rather than per enemy per frame.
+   *
+   * `typeId` indexes the LEVEL'S creature table, so the array to index is a property of the run.
+   * Looking it up in the draw loop would be a Map hit per enemy per frame for an answer that
+   * cannot change while a run is in progress.
+   */
+  private creatureArt: LevelCreatureArt = [];
   private readonly dressingSlot: Container;
   private readonly scrap: SpritePool;
   private readonly world: Container;
@@ -514,6 +524,10 @@ export class GameRenderer {
     // keeping the previous texture is a visibly wrong floor rather than a blank screen.
     const ground = this.tex.floors.get(world.level.floor);
     if (ground !== undefined) this.floor.texture = ground;
+
+    // THE LEVEL'S CREATURES, for the same reason and by the same route as its ground: one lookup
+    // per run, because `typeId` means something different on every map.
+    this.creatureArt = this.tex.creatures.get(world.level.id) ?? [];
 
     // THE LEVEL'S DRESSING. Swapped only when the level actually changes, so replaying the same
     // level does not rebuild a fence and a rubble lattice it is about to use unchanged.
@@ -1079,7 +1093,7 @@ export class GameRenderer {
     const pool = this.enemies;
     const bars = this.hpBars;
     const glows = this.glows;
-    const tex = this.tex;
+    const art = this.creatureArt;
 
     pool.begin();
     bars.begin();
@@ -1096,14 +1110,28 @@ export class GameRenderer {
       const isBoss = (flags & ENEMY_FLAG_BOSS) !== 0;
       const isElite = (flags & ENEMY_FLAG_ELITE) !== 0;
       const flavour = FLAVOURS[p.flavourId[d]];
-      const texture = tex.enemies[typeId] ?? tex.enemies[0];
 
-      // RANK IS A DRAW SIZE, NOT A SPRITE. Elite and boss are recolours of the SAME hull the
-      // regular uses (content/cycles.ts), so there is no boss texture and no boss scale table -
-      // the atlas frame's own scale, times the rank multiplier the sim already applied to the
-      // collision radius. The thing you see is exactly the thing you can hit.
+      // THE LEVEL'S OWN ART. `typeId` indexes the CURRENT level's creature table, so this lookup
+      // has to go through the level - there is no global enemy array to index any more.
+      const frames = art[typeId] ?? art[0];
+
+      // A CREATURE MAY COME APART AS IT IS HURT. Most have exactly one frame and this resolves to
+      // it; a Mossy snail has two and a hydra has five, picked from the HP fraction the bar below
+      // is about to read anyway. The simulation is not involved and does not know - see
+      // creatureArt.ts for why that is the correct seam rather than a shortcut.
+      const frame =
+        frames.length === 1
+          ? frames[0]
+          : frames[stageIndexFor(p.hp[d], p.maxHp[d], frames.length)];
+      const texture = frame.texture;
+
+      // RANK IS A SIZE FIRST AND A SPRITE ONLY IF THE LEVEL SAYS SO. The Scrapyard's ranks are
+      // recolours of one atlas frame and Mossy's are three different creatures, but both arrive
+      // here as a typeId that the ladder already chose - so this code does not know which, and
+      // does not need a branch for either. The scale is the frame's own, times the rank multiplier
+      // the sim already applied to the collision radius: the thing you see is the thing you hit.
       const rank = isBoss ? RANK_BOSS : isElite ? RANK_ELITE : RANK_REGULAR;
-      const base = tex.enemyScale[typeId] * RANKS[rank].size * (flavour?.renderScale ?? 1);
+      const base = frame.scale * RANKS[rank].size * (flavour?.renderScale ?? 1);
 
       // THE BOSS OUTLINE. A second, larger, blue copy of the same sprite parked one z below the
       // body - the sprite has an alpha silhouette, so scaling it 14% and tinting it reads as a
@@ -1127,9 +1155,10 @@ export class GameRenderer {
 
       s.texture = texture;
 
-      // NEVER rotated. These are fixed 3/4-view RTS sprites with baked drop shadows and mutually
-      // inconsistent headings; rotating them makes trucks drive on their side and swings the
-      // shadow around. Horizontal flip only (ASSET_MANIFEST §2).
+      // NEVER rotated. Every pack the game draws enemies from - Kenney's 3/4-view RTS units and
+      // DCSS's hand-drawn creatures alike - has baked drop shadows and mutually inconsistent
+      // headings; rotating them makes trucks drive on their side and swings the shadow around.
+      // Horizontal flip only (ASSET_MANIFEST §2).
       s.rotation = 0;
       s.scale.set(p.vx[d] < 0 ? -base : base, base);
       s.position.set(x, y);

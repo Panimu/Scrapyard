@@ -29,6 +29,7 @@
  * than a boolean, which can be forgotten and simply reads as `false`.
  */
 
+import type { CreatureDef, CycleResolver } from './cycles.js';
 import { MOSSY_MAYHEM } from './levelMossyMayhem.js';
 import { SCRAPYARD } from './levelScrapyard.js';
 import type { Scenery } from './scenery.js';
@@ -75,6 +76,27 @@ export interface LevelDef {
    * Must be DETERMINISTIC in `seed` alone. It is part of the replay key.
    */
   readonly makeScenery: (seed: number) => Scenery;
+
+  /**
+   * THE LEVEL'S OWN CREATURES. `typeId` on the enemy pool indexes THIS array.
+   *
+   * There is no global enemy catalog any more. Two levels' id 3 are two unrelated things, and
+   * that is the point: a creature can be renamed, resized, given a damage stage or deleted without
+   * any possibility of moving something on another map.
+   */
+  readonly creatures: readonly CreatureDef[];
+
+  /**
+   * THE LEVEL'S OWN LADDER - which creature the director spawns in cycle `index`, and how tough.
+   *
+   * A function for the same reason `makeScenery` is one. The Scrapyard's ladder names a hull and
+   * derives three ranks by recolouring an atlas frame; Mossy's names three creatures outright
+   * because its art has no recolours; a third level might generate its ladder from the seed. All
+   * of those fill the same `ResolvedCycle`, and the director cannot tell the difference.
+   *
+   * Must be DETERMINISTIC in `index` alone.
+   */
+  readonly resolveCycle: CycleResolver;
 }
 
 /** Every level, in picker order. */
