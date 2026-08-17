@@ -201,6 +201,11 @@ export interface EventRing {
   readonly b: Float32Array; // usually y
   readonly c: Float32Array; // amount / slot
   readonly d: Float32Array; // id / aux
+  /** Fifth payload, added for EV_WEAPON_FIRED's weapon SLOT: the muzzle flash already spends all
+   *  of a-d on position and direction, and the renderer needs to know WHICH gun fired to give the
+   *  recoil to the drawn turret only when it was the turret that shot. 0 for every event that has
+   *  no fifth thing to say, which is all of them but one. */
+  readonly e: Float32Array;
   writeCursor: number;
   readCursor: number;
   /** Events overwritten before anyone read them. Counted, never grown - no allocation. */
@@ -217,6 +222,7 @@ export function createEventRing(capacity: number): EventRing {
     b: new Float32Array(capacity),
     c: new Float32Array(capacity),
     d: new Float32Array(capacity),
+    e: new Float32Array(capacity),
     writeCursor: 0,
     readCursor: 0,
     dropped: 0,
@@ -236,6 +242,8 @@ export function pushEvent(
   b: number,
   c: number,
   d: number,
+  /** Optional fifth payload - see EventRing.e. Defaults to 0 so no existing caller changes. */
+  e = 0,
 ): void {
   // Overwrite the oldest unread event rather than growing. A dropped cosmetic event is a
   // missing puff of smoke; an allocation mid-run is a dropped frame.
@@ -250,6 +258,7 @@ export function pushEvent(
   r.b[i] = b;
   r.c[i] = c;
   r.d[i] = d;
+  r.e[i] = e;
   r.writeCursor++;
 }
 

@@ -716,6 +716,7 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
       projectiles.y[d],
       dirX,
       dirY,
+      weaponIdx,
     );
   }
 };
@@ -1139,6 +1140,7 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
       projectiles.y[d],
       dirX,
       dirY,
+      weaponIdx,
     );
   }
 };
@@ -1210,7 +1212,7 @@ export const fireBarrage: FirePattern = (world, weaponIdx, inst, _targets, _targ
 
     // Payload is the impact point; direction is meaningless for a shell that does not travel, so
     // the renderer gets (0,0) and draws a falling marker rather than a rotated sprite.
-    pushEvent(world.events, EV_WEAPON_FIRED, world.tick, sx, sy, 0, 0);
+    pushEvent(world.events, EV_WEAPON_FIRED, world.tick, sx, sy, 0, 0, weaponIdx);
   }
 };
 
@@ -1263,7 +1265,8 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
   projectiles.flags[d] |= PROJECTILE_FLAG_NOCONTACT | PROJECTILE_FLAG_PHASE;
   projectiles.targetHandle[d] = enemyHandleAt(world.enemies, dense);
 
-  // Same payload as fireBattery's: muzzle position, then the unit direction, for the muzzle flash.
+  // Same payload as fireBattery's: muzzle position, then the unit direction, for the muzzle
+  // flash - plus the weapon slot in the fifth field, so the recoil lands on the right barrel.
   pushEvent(
     world.events,
     EV_WEAPON_FIRED,
@@ -1272,6 +1275,7 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
     projectiles.y[d],
     aim.x,
     aim.y,
+    weaponIdx,
   );
 };
 

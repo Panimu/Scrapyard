@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T20:01Z',
+    title: 'THE TURRET ONLY RECOILS FOR ITS OWN SHOTS',
+    notes: [
+      "The drawn barrel used to kick back — and the camera with it — whenever any of your guns fired, so a chassis with a slow main gun looked like it was firing constantly the moment you picked up missiles or a machine gun. Brass's Phase Cannon made it obvious: the tube jerked on every missile volley it had nothing to do with. Recoil and shake now belong to the gun the barrel actually draws.",
+    ],
+  },
+  {
     at: '2026-08-17T18:51Z',
     title: 'A SECOND MYSTERY BAR',
     notes: [

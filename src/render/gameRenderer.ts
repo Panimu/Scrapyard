@@ -800,8 +800,17 @@ export class GameRenderer {
           // Payload is muzzle position then the shell's unit direction - everything needed to
           // place and rotate the flash without recomputing anything.
           this.effects.muzzle(a, b, c, d);
-          this.turretKick = TURRET_KICK_SEC;
-          this.camera.kick(c, d);
+          // THE RECOIL AND THE SHAKE BELONG TO THE DRAWN BARREL, and only its own shots move it.
+          // There is one turret sprite and up to five guns, and this used to kick for ALL of
+          // them: on a chassis whose drawn gun fires slowly (Brass's Phase Cannon every 1.6 s),
+          // the barrel visibly jerked back for every missile volley and machine-gun round fired
+          // from guns with no barrel on screen at all - the drone bug below, rediscovered one
+          // event kind over. The fifth payload carries the firing weapon's slot; the kick lands
+          // only when that slot IS the one `turretWeapon` is drawing.
+          if (world.weapons[r.e[i]] === turretWeapon(world)) {
+            this.turretKick = TURRET_KICK_SEC;
+            this.camera.kick(c, d);
+          }
           break;
 
         case EV_DRONE_FIRED:

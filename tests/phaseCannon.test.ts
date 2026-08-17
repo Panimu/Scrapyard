@@ -25,8 +25,10 @@ import {
 } from '../src/core/content/weaponCatalog.js';
 import { UPGRADE_CATALOG, upgradeIndex } from '../src/core/data/upgrades.js';
 import { ARCH_GRUNT } from '../src/core/content/enemyCatalog.js';
+import { resolveWeaponStats } from '../src/core/data/stats.js';
 import { allocEnemy, markEnemyDead } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
+import { EV_WEAPON_FIRED } from '../src/core/events/ring.js';
 import { rebuildSpatialHash } from '../src/core/spatial/hashGrid.js';
 import { beginTick } from '../src/core/systems/clock.js';
 import { updateCollision } from '../src/core/systems/collision.js';
@@ -178,6 +180,44 @@ describe('the bolt', () => {
     expect(w.enemies.hp[0]).toBeLessThan(500);
     expect(w.enemies.hp[0]).toBeGreaterThanOrEqual(500 - burst);
     expect(bystander).toBeGreaterThanOrEqual(0); // fixture sanity, not behaviour
+  });
+});
+
+describe('fire events name their gun', () => {
+  it('stamps the firing weapon slot into EV_WEAPON_FIRED, so recoil lands on the right barrel', () => {
+    // Brass's bug: one drawn turret, several guns, and the recoil used to fire for all of them -
+    // a missile volley visibly kicked the Phase Cannon's barrel. The renderer now gates the kick
+    // on the event's fifth payload, which is pinned here at the sim end: each event carries the
+    // slot of the gun that actually fired.
+    const w = makeWorld(5);
+    const hero = w.heroes[w.player.heroId];
+    const second = w.weapons[w.weaponCount];
+    second.defId = WEAPON_CATALOG.findIndex((def) => def.id === 'missile-short');
+    second.level = 1;
+    resolveWeaponStats(
+      WEAPON_CATALOG[second.defId],
+      hero,
+      1,
+      w.levelUp.stacks,
+      UPGRADE_CATALOG,
+      second.stats,
+    );
+    w.weaponCount++;
+
+    addEnemy(w, 200, 0, 500); // the phase cannon needs a target; the rack fires regardless
+    tick(w);
+
+    const slots = new Set<number>();
+    const r = w.events;
+    for (let i = r.readCursor; i < r.writeCursor; i++) {
+      const j = i & r.mask;
+      if (r.kind[j] === EV_WEAPON_FIRED) slots.add(r.e[j]);
+    }
+    // Both guns fired on the banked-shot tick, and each event names its own slot - neither 0 for
+    // everything (the old behaviour, implicitly) nor the missile volley claiming the turret's.
+    expect(slots.has(0)).toBe(true);
+    expect(slots.has(1)).toBe(true);
+    expect(slots.size).toBe(2);
   });
 });
 
