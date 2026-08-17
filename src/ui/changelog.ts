@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T11:45Z',
+    title: 'DRONES DO LESS DAMAGE PER ROUND',
+    notes: [
+      'Drones were the strongest weapon in the game by a wide margin — a full fleet is four machine guns firing at once, and that added up to more than a run holding one gun could keep pace with. Each round now hits for less.',
+      'They are still the single strongest weapon at tier 7. This closes most of the gap rather than all of it — build a bay and it is still the pick that carries a run.',
+    ],
+  },
+  {
     at: '2026-08-17T10:53Z',
     title: 'LASERS ARE STOPPED BY TREES NOW — AND CUT THEM DOWN',
     notes: [

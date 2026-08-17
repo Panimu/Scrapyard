@@ -145,12 +145,31 @@ const DRONE_SPEED_FRAC = 1.05;
 /**
  * WHAT A DRONE'S ROUND IS WORTH, against the Machine Gun's own.
  *
- * HALF, AND THE MAGAZINE IS NOW FULL - the two go together and replaced each other. A drone used to
- * carry half a magazine at full damage, which is the same total damage in half the time; it now
- * carries the whole magazine at half damage, which is the same total damage over twice as long.
- * The second shape is the better one for a thing whose magazine IS its life: a drone at 200 rounds
- * lives 19.9 seconds of sustained fire against a sixteen second rebuild, so a flight is
- * something you maintain rather than something that keeps evaporating.
+ * NOT HALF ANY MORE. It shipped at 0.5 and that was the wrong number: a drone bay puts FOUR of
+ * these on the field at tier 7, each with its own cooldown and its own magazine, so "half the
+ * Machine Gun's damage" is not half the Machine Gun's OUTPUT - it is close to two Machine Guns'
+ * worth, tempered only by build time, magazine depletion and flight to target. `npm run dps`
+ * measured it: T7 Drones at 126.0 dps against the Machine Gun's own 102.8, a weapon that fires the
+ * literal same gun coming in 23% ahead of it. A real run bore this out - one T7 loadout with every
+ * offensive passive but Servo Drive banked 29% of its damage from Drones alone, the largest single
+ * share on the sheet, ahead of Long Missiles and the Medium Laser it opened with.
+ *
+ * 0.42 IS THE MEASURED CORRECTION, not a round number picked and hoped for. Swept against the same
+ * rig `npm run dps` uses:
+ *
+ *     frac   T7 dps   vs Machine Gun's 102.8
+ *     0.50    126.0    +22.5%   <- shipped, and the run above
+ *     0.42    112.8     +9.7%   <- here
+ *     0.38    100.5     -2.2%   <- parity, and a step too far: the weapon stops being worth building
+ *
+ * 0.42 leaves Drones the strongest T7 weapon in the game, which is the right shape for a bay that
+ * costs a full loadout slot and gives up manual aim entirely - it just stops being a 23% runaway
+ * over the second-best gun using the same rounds.
+ *
+ * THE MAGAZINE ARITHMETIC BELOW IS UNCHANGED, and worth saying so: a drone at 200 rounds still
+ * lives 19.9 seconds of sustained fire against a sixteen-second rebuild - that comes from the
+ * ROUND COUNT and the gun's cadence, neither of which this constant touches. Lowering the fraction
+ * makes every one of those rounds worth less; it does not make there be fewer of them.
  *
  * 19.9 AND NOT 18, WHICH IS WHAT THE ARITHMETIC SAYS. 200 rounds at the gun's 0.09 s cooldown is
  * 18.0 s, but 0.09 does not divide into the 1/60 s tick: the cooldown is decremented once per tick
@@ -165,7 +184,7 @@ const DRONE_SPEED_FRAC = 1.05;
  *
  * It scales with the tier for free, because it multiplies the gun's already-tiered damage.
  */
-const DRONE_DAMAGE_FRAC = 0.5;
+const DRONE_DAMAGE_FRAC = 0.42;
 
 /**
  * Scratch for the per-tick target query, which asks for the four bodies nearest THE PLAYER.
