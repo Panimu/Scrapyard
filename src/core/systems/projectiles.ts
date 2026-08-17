@@ -25,8 +25,16 @@
 
 import { sceneryOverlap } from '../content/scenery.js';
 import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../events/ring.js';
-import { PROJECTILE_FLAG_DEAD, markProjectileDead } from '../entity/projectilePool.js';
 import {
+  allocProjectile,
+  PROJECTILE_FLAG_DEAD,
+  PROJECTILE_FLAG_SPLITS,
+  markProjectileDead,
+} from '../entity/projectilePool.js';
+import { MISSILE_SHORT, SPLIT_COS, SPLIT_SIN } from '../content/weaponCatalog.js';
+import { NULL_HANDLE } from '../entity/handle.js';
+import {
+  BEHAVIOUR_HOMING,
   BEHAVIOUR_STRAIGHT,
   type ProjectileBehaviour,
   type WeaponDef,
@@ -54,9 +62,85 @@ const HOMING_SEEK_RADIUS = 240;
  * it explodes at the end are independent properties, so the code that ends a life belongs in one
  * place that all of them call.
  */
+/**
+ * THE GTM HORNET'S SPLIT. One warhead becomes two short-rack missiles, `15 deg` apart.
+ *
+ * WHY THIS IS A FUSE AND NOT A TIMER: the shell already carries a countdown, and "a second after
+ * launch, unless it hit something first" is exactly what a fuse means. `fireSpread` cuts the
+ * Hornet's fuse to SPLIT_SEC and flags the shell; everything else follows from the fuse running
+ * out, including the "if not detonated" half - a shell that struck something was reaped long
+ * before it got here.
+ *
+ * THE CHILDREN CANNOT SPLIT AGAIN. They are spawned without the flag, which is the whole reason
+ * the flag lives on the shell rather than being derived from the owning weapon: they are fired by
+ * the Hornet, at tier 8, and anything read through the owner would be true of them too. One volley
+ * would become a chain reaction and then the pool ceiling.
+ *
+ * THE NUMBERS ARE THE SHORT RACK'S AT TIER SEVEN, off `World.splitStats` - the rack itself has
+ * been eaten by the time any of this runs, so there is no instance to read. They stay credited to
+ * the Hornet through `ownerWeapon`, because the Hornet is what fired them.
+ *
+ * `Math.cos`/`Math.sin` are banned in core, so the half-angle arrives precomputed as its two
+ * components - see SPLIT_COS.
+ */
+function splitProjectile(world: World, d: number): void {
+  const p = world.projectiles;
+  const st = world.splitStats;
+  const vx = p.vx[d];
+  const vy = p.vy[d];
+  const len = Math.sqrt(vx * vx + vy * vy);
+  // A shell with no velocity has no heading to fan about. Unreachable - a missile is spawned at
+  // speed and never decelerates - but the alternative is dividing by zero into a NaN heading that
+  // would spread silently through the replay hash.
+  if (len <= 0) return;
+  const ux = vx / len;
+  const uy = vy / len;
+  const x = p.x[d];
+  const y = p.y[d];
+  const owner = p.ownerWeapon[d];
+
+  for (let k = 0; k < 2; k++) {
+    // -7.5 deg then +7.5, so the pair straddles the parent's heading rather than veering off it.
+    const sn = k === 0 ? -SPLIT_SIN : SPLIT_SIN;
+    const dirX = ux * SPLIT_COS - uy * sn;
+    const dirY = ux * sn + uy * SPLIT_COS;
+    const handle = allocProjectile(
+      p,
+      x,
+      y,
+      dirX * st.projectileSpeed,
+      dirY * st.projectileSpeed,
+      st.projectileLifetime,
+      owner,
+      BEHAVIOUR_HOMING,
+      ++world.stats.shotsFired,
+    );
+    if (handle === NULL_HANDLE) return;
+
+    const c = p.count - 1;
+    p.damage[c] = st.damage;
+    p.knockback[c] = st.knockback;
+    p.splashRadius[c] = st.splashRadius;
+    p.splashFrac[c] = st.splashFrac;
+    p.radius[c] = MISSILE_SHORT.shellRadius;
+    p.pierceLeft[c] = st.pierce;
+    p.visualId[c] = MISSILE_SHORT.visualId;
+  }
+}
+
 function expireProjectile(world: World, d: number): void {
   const p = world.projectiles;
+  const splits = (p.flags[d] & PROJECTILE_FLAG_SPLITS) !== 0;
   markProjectileDead(p, d);
+
+  // BEFORE the detonation below and INSTEAD of it. A Hornet warhead that comes apart has not gone
+  // off - it has become two missiles, and the damage is theirs to deal. Splitting AND detonating
+  // would pay the volley twice for the same warhead.
+  if (splits) {
+    splitProjectile(world, d);
+    pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, p.x[d], p.y[d], 0, d);
+    return;
+  }
 
   const inst = world.weapons[p.ownerWeapon[d]];
   const def =

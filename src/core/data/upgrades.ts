@@ -103,8 +103,28 @@ export interface Ascension {
   readonly name: string;
   /** Sprite key for the tier-8 icon, without the `icon_` prefix. */
   readonly icon: string;
-  /** Held at ANY tier. Nothing here cares how deep the passive is, only that the run took it. */
+  /** The upgrade the run must be holding. A passive for most; the Hornet names another WEAPON. */
   readonly requires: UpgradeId;
+  /**
+   * The tier `requires` must have reached. 1 means merely held, which is what every ascension
+   * before the Hornet wanted and what a passive requirement should keep meaning - the Chain Laser
+   * asks for a build that went NEAR Targeting Optics, not one that maxed it.
+   *
+   * The Hornet asks for 7, and that is a different kind of demand: it is not "you also took the
+   * short rack", it is "you finished it". Which is the point, because it then TAKES it.
+   */
+  readonly requiresTier: number;
+  /**
+   * An upgrade this ascension CONSUMES, if any. Its weapon is stripped out of the loadout and its
+   * tiers are given back to zero, so the slot is free and the card can be offered again as a
+   * brand new gun.
+   *
+   * THE ONLY MECHANISM IN THE GAME THAT TAKES SOMETHING AWAY. It exists because the Hornet does
+   * not merely reference the short rack - it eats it, and fires its warheads. An ascension that
+   * added a second rack's worth of missiles for free would be strictly better than holding both,
+   * which is not a decision.
+   */
+  readonly consumes?: UpgradeId;
   /** Card text, shown on the chest that grants it. */
   readonly description: string;
 }
@@ -355,6 +375,28 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   },
   {
     id: 'w-missile-long',
+    /**
+     * THE GTM HORNET, and it is the first ascension that COSTS something.
+     *
+     * The Chain Laser asks for a passive held at any tier: a nudge toward a build. This asks for
+     * the Short Missiles FINISHED, at seven, and then takes them - the rack is stripped for parts
+     * and its slot comes back empty for a new gun.
+     *
+     * That is the whole design. The Hornet fires the short rack's warheads out of the long rack's
+     * tubes, so a run that has both is carrying the same missiles twice; folding one into the
+     * other is a trade rather than a bonus. An ascension that simply added a second rack's worth
+     * of missiles for free would be strictly better than holding both, and a choice nobody can
+     * lose is not a choice.
+     */
+    ascension: Object.freeze({
+      name: 'GTM Hornet',
+      icon: 'w-gtm-hornet',
+      requires: 'w-missile-short' as const,
+      requiresTier: WEAPON_MAX_TIER,
+      consumes: 'w-missile-short' as const,
+      description:
+        'A second after launch, every missile still in the air splits into two short-range missiles fifteen degrees apart. The short rack is stripped for parts and its slot comes back empty.',
+    }),
     kind: 'weapon',
     grantsWeapon: 'missile-long',
     name: 'Long Missiles',
@@ -452,6 +494,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       name: 'Chain Laser',
       icon: 'w-chain-laser',
       requires: 'p-range' as const,
+      requiresTier: 1,
       description:
         'The beam jumps. From whatever it burns it reaches the nearest enemy not already in the chain, and keeps going while the whole beam still fits inside its range.',
     }),

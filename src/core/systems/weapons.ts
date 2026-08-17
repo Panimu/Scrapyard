@@ -88,7 +88,11 @@ import {
   sceneryY,
 } from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
-import { allocProjectile, PROJECTILE_FLAG_NOCONTACT } from '../entity/projectilePool.js';
+import {
+  allocProjectile,
+  PROJECTILE_FLAG_NOCONTACT,
+  PROJECTILE_FLAG_SPLITS,
+} from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import {
   EV_WEAPON_COOLED,
@@ -107,6 +111,7 @@ import { HERO_TRAITS } from '../data/traits.js';
 import type { HeroTrait, ShotCtx } from '../data/heroes.js';
 import {
   BEHAVIOUR_ID,
+  SPLIT_SEC,
   type FirePattern,
   type FirePatternId,
   type WeaponDef,
@@ -972,6 +977,14 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const baseY = def.fireAlongFacing ? player.faceY : inst.turretY;
   const half = (count - 1) * 0.5;
 
+  // THE GTM HORNET. At tier 8 the long rack's warheads come apart, and the only two things that
+  // changes here are the FUSE and a flag: the fuse is cut to the split time so they break up
+  // mid-flight rather than at the end of their reach, and the flag tells `expireProjectile` to
+  // split rather than to stop. Everything else about the volley is unchanged - same tubes, same
+  // fan, same homing.
+  const splits = def.splitsFrom !== undefined && def.splitsFrom > 0 && inst.level >= def.splitsFrom;
+  const life = splits ? SPLIT_SEC : stats.projectileLifetime;
+
   for (let i = 0; i < count; i++) {
     const a = (i - half) * stats.spreadAngle;
     const c = Math.cos(a);
@@ -996,7 +1009,7 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
       player.y + dirY * def.muzzleOffset,
       dirX * stats.projectileSpeed,
       dirY * stats.projectileSpeed,
-      stats.projectileLifetime,
+      life,
       weaponIdx,
       behaviour,
       spawnId,
@@ -1004,6 +1017,7 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
     if (handle === NULL_HANDLE) break;
 
     const d = projectiles.count - 1;
+    if (splits) projectiles.flags[d] |= PROJECTILE_FLAG_SPLITS;
     projectiles.damage[d] = stats.damage;
     projectiles.knockback[d] = stats.knockback;
     projectiles.splashRadius[d] = stats.splashRadius;

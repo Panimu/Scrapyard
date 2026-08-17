@@ -114,8 +114,10 @@ import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
 import type { WeaponId } from '../content/weaponCatalog.js';
-import { resolvePlayerStats, resolveWeaponStats } from '../data/stats.js';
+import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from '../data/stats.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
+import { freeDrone } from '../entity/dronePool.js';
+import { markProjectileDead } from '../entity/projectilePool.js';
 import {
   EV_CHEST_CLOSED,
   EV_CHEST_OPENED,
@@ -347,6 +349,28 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
     setWeaponLevel(world, def.grantsWeapon, lu.stacks[idx]);
   }
 
+  // AN ASCENSION THAT EATS SOMETHING. Only the Hornet does, and only on the tick it lands: the
+  // guard is the TIER, so this cannot fire on the way up the ladder or a second time.
+  //
+  // AFTER the install above and BEFORE the resolve below. After, because the gun being ascended
+  // has to be at its new tier first and removing a slot underneath it would move it while it was
+  // half-written; before, because a stripped weapon must not be in `weaponCount` when the loop
+  // that rebuilds every WeaponStats runs.
+  //
+  // THE TIERS GO BACK TO ZERO, which is what makes the promise honest: the slot is free AND the
+  // card returns to the deck, so the run can put a genuinely new gun there - including the same
+  // rack again, from tier 1, if the deck offers it.
+  const consumed = def.ascension?.consumes;
+  if (consumed !== undefined && lu.stacks[idx] === WEAPON_ASCENDED_TIER) {
+    for (let i = 0; i < world.upgradeCatalog.length; i++) {
+      const other = world.upgradeCatalog[i];
+      if (other?.id !== consumed) continue;
+      if (other.grantsWeapon !== undefined) removeWeapon(world, other.grantsWeapon);
+      lu.stacks[i] = 0;
+      break;
+    }
+  }
+
   const player = world.player;
   const maxHpBefore = player.stats.maxHp;
   const shieldCapBefore = player.stats.shieldLayers;
@@ -389,6 +413,8 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
       world.meta,
     );
   }
+  // The Hornet's children, rebuilt in the same breath as everything else - see World.splitStats.
+  resolveSplitStats(world, hero);
 
   pushEvent(
     world.events,
@@ -690,10 +716,82 @@ export function ascensionReady(world: World, idx: number): boolean {
   if (asc === undefined) return false;
   if (world.levelUp.stacks[idx] !== WEAPON_MAX_TIER) return false;
 
+  // `requiresTier` rather than "held at all". 1 is the old behaviour and is what a PASSIVE
+  // requirement should keep meaning - the Chain Laser asks for a build that went near Targeting
+  // Optics, not one that maxed it. The Hornet asks for seven, because it is about to take the
+  // thing it is asking for and taking a half-built rack would be a punishment rather than a trade.
   for (let i = 0; i < world.upgradeCatalog.length; i++) {
-    if (world.upgradeCatalog[i]?.id === asc.requires) return world.levelUp.stacks[i] > 0;
+    if (world.upgradeCatalog[i]?.id === asc.requires) return world.levelUp.stacks[i] >= asc.requiresTier;
   }
   return false;
+}
+
+/**
+ * Strips a weapon out of the loadout: the slot closes up, the card's tiers go back to zero, and
+ * the run may be offered it again from scratch.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE SLOT INDEX IS A REFERENCE, AND TWO POOLS HOLD IT
+ * ---------------------------------------------------------------------------------------------
+ * `ProjectilePool.ownerWeapon` and `DronePool.weaponSlot` are both LOADOUT SLOTS, not defIds, so
+ * closing a gap in the loadout silently re-points every one of them that sat above it. A shell
+ * fired by the artillery would be credited to whatever slid down into its slot, and a drone would
+ * start reading another gun's stats to fire with. Both are patched here, and neither is optional.
+ *
+ * What was fired by the weapon being removed is ENDED rather than re-pointed: there is no correct
+ * new owner for it, and a shell that outlives its gun by a few hundred milliseconds is a smaller
+ * lie than a shell credited to a gun that never fired it. They are marked dead without pushing a
+ * hit, so they simply stop rather than detonating.
+ *
+ * INSTANCES ARE ROTATED, NOT COPIED. `world.weapons` holds MAX_WEAPONS objects built once at
+ * `createWorld` and never allocated again; moving the references keeps that true and keeps every
+ * instance's preallocated `stats` and `scratch` with it.
+ */
+export function removeWeapon(world: World, id: WeaponId): boolean {
+  let slot = -1;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if (world.weaponCatalog[world.weapons[i].defId]?.id === id) {
+      slot = i;
+      break;
+    }
+  }
+  if (slot < 0) return false;
+
+  const proj = world.projectiles;
+  for (let d = 0; d < proj.count; d++) {
+    const owner = proj.ownerWeapon[d];
+    if (owner === slot) markProjectileDead(proj, d);
+    else if (owner > slot) proj.ownerWeapon[d] = owner - 1;
+  }
+
+  const drones = world.drones;
+  for (let d = drones.count - 1; d >= 0; d--) {
+    const owner = drones.weaponSlot[d];
+    if (owner === slot) freeDrone(drones, d);
+    else if (owner > slot) drones.weaponSlot[d] = owner - 1;
+  }
+
+  // Close the gap and park the emptied instance at the end, where `weaponCount` no longer reaches.
+  const dead = world.weapons[slot];
+  for (let i = slot; i < world.weaponCount - 1; i++) world.weapons[i] = world.weapons[i + 1];
+  world.weapons[world.weaponCount - 1] = dead;
+  world.weaponCount--;
+
+  // Wiped for the same reason `installWeapon` writes every field: the state of a slot must be a
+  // function of what fills it next, never of what used to be there.
+  dead.defId = 0;
+  dead.level = 0;
+  dead.cooldownLeft = 0;
+  dead.targetDense = -1;
+  dead.turretX = 1;
+  dead.turretY = 0;
+  dead.heat = 0;
+  dead.overheated = false;
+  dead.ammo = -1;
+  dead.reloadLeft = 0;
+  dead.droneBanked = false;
+  dead.scratch.fill(0);
+  return true;
 }
 
 /**

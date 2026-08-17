@@ -71,7 +71,7 @@ import { reapDead } from './systems/reap.js';
 import { HERO_CATALOG } from './data/heroes.js';
 import { WEAPON_CATALOG } from './data/weapons.js';
 import { UPGRADE_CATALOG } from './data/upgrades.js';
-import { resolvePlayerStats, resolveWeaponStats } from './data/stats.js';
+import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from './data/stats.js';
 import { META_CATALOG, metaRunGrant } from './data/meta.js';
 import type { PlayerStats, WeaponStats } from './data/stats.js';
 
@@ -341,6 +341,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     },
     drones: createDronePool(),
     droneGun: createWeaponStats(),
+    splitStats: createWeaponStats(),
     droneStacks: new Uint8Array(catalogs.upgrades.length),
     // ALL OFFERABLE unless the app says otherwise. See World.cardUnlocked.
     cardUnlocked: new Uint8Array(catalogs.upgrades.length).fill(1),
@@ -461,6 +462,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     );
     world.weaponCount = 1;
   }
+
+  resolveSplitStats(world, hero);
 
   // An empty-but-valid hash so anything querying before the first step sees a coherent structure.
   rebuildSpatialHash(world.spatial, world.enemies);

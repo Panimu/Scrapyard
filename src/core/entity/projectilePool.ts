@@ -26,6 +26,16 @@ export const PROJECTILE_FLAG_DEAD = 1 << 0;
  * on the way in, which would quietly turn an area-denial weapon into a very slow homing one.
  */
 export const PROJECTILE_FLAG_NOCONTACT = 1 << 1;
+/**
+ * THIS SHELL SPLITS WHEN ITS FUSE RUNS OUT instead of ending. The GTM Hornet's warheads and
+ * nothing else - see `splitProjectile` in systems/projectiles.ts.
+ *
+ * A FLAG ON THE SHELL RATHER THAN A LOOKUP THROUGH ITS WEAPON, because the two children are
+ * ordinary missiles that must NOT split again. They are fired by the same weapon at the same tier,
+ * so anything derived from the owner would be true of them too and one Hornet volley would become
+ * a chain reaction. The property belongs to the shell, so it lives on the shell.
+ */
+export const PROJECTILE_FLAG_SPLITS = 1 << 2;
 
 /** Stride of the per-projectile hit ring: the last 4 enemy spawnIds this shell has damaged. */
 export const HIT_RING_STRIDE = 4;

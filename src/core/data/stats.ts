@@ -33,6 +33,11 @@ import { DT, HEAT_RESUME_FRAC } from '../constants.js';
 import type { Tuning } from '../config/tuning.js';
 import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
+// RUNTIME, and it does not close a cycle: weaponCatalog reaches back here for `WeaponStatKey`
+// alone, which is a type and is erased.
+import { MISSILE_SHORT } from '../content/weaponCatalog.js';
+import { WEAPON_MAX_TIER } from './upgrades.js';
+import type { World } from '../types.js';
 import type { HeroDef, HeroWeaponBonus } from './heroes.js';
 import type { UpgradeDef } from './upgrades.js';
 import type { WeaponId } from '../content/definitions.js';
@@ -523,4 +528,23 @@ export function resolveWeaponStats(
   out.cosTraverseStep = Math.cos(step);
   out.sinTraverseStep = Math.sin(step);
   out.cosFireArc = Math.cos(out.fireArc);
+}
+
+/**
+ * Rebuilds `World.splitStats` - the short rack at tier 7, whether or not the run holds it.
+ *
+ * See `World.splitStats`. Called from the two places that rebuild every other weapon's stats
+ * (createWorld and applyChoice), so the Hornet's children track the player's passives exactly as a
+ * held weapon would, and there is no third place for it to go stale in.
+ */
+export function resolveSplitStats(world: World, hero: HeroDef): void {
+  resolveWeaponStats(
+    MISSILE_SHORT,
+    hero,
+    WEAPON_MAX_TIER,
+    world.levelUp.stacks,
+    world.upgradeCatalog,
+    world.splitStats,
+    world.meta,
+  );
 }

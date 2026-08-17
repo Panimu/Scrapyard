@@ -550,6 +550,19 @@ export interface World {
 
   readonly enemies: EnemyPool;
   readonly projectiles: ProjectilePool;
+  /**
+   * SHORT MISSILES AT TIER 7, resolved whether or not the run holds them.
+   *
+   * The GTM Hornet's warheads split into short-rack missiles, and by the time they do the short
+   * rack has been eaten - so there is no instance to read the numbers off. This is that instance's
+   * ghost: `MISSILE_SHORT` at `WEAPON_MAX_TIER`, rebuilt in the same place every other weapon's
+   * stats are, so the children still scale with the player's passives the way any missile does.
+   *
+   * DERIVED, so it stays out of `hashWorld` for the same reason `WeaponInstance.stats` does.
+   * Resolved unconditionally rather than only for a Hornet run: it is one call per level-up, and a
+   * field that is sometimes stale is worse than one that is always cheap.
+   */
+  readonly splitStats: WeaponStats;
   readonly pickups: PickupPool;
 
   /** Length WEAPON_SLOTS, all allocated at createWorld. weaponCount are live, capped at

@@ -19,6 +19,9 @@
  */
 
 import { HEAT_CAPACITY_BASE, STRIKE_RADIUS_MAX } from '../constants.js';
+// TYPE-ONLY BOTH WAYS BUT ONE: upgrades.ts imports `WeaponId` from here as a type, which is
+// erased, so this runtime import does not close a cycle.
+import { WEAPON_ASCENDED_TIER } from '../data/upgrades.js';
 import { degToRad } from '../math/trig.js';
 import type { WeaponStatKey } from '../data/stats.js';
 import type { World, WeaponInstance } from '../types.js';
@@ -158,6 +161,16 @@ export interface WeaponDef {
    * the catalog instead of putting a "which weapon am I now" branch in the firing code.
    */
   readonly chainsFrom?: number;
+  /**
+   * Tier at which this weapon's shells SPLIT at the end of their fuse instead of ending, or 0 for
+   * a weapon that never does. The GTM Hornet - the Long Missiles' tier 8 - and nothing else.
+   *
+   * A TIER RATHER THAN A BOOLEAN, and on the WeaponDef rather than the Ascension, for the same
+   * reason `chainsFrom` is both: an ascension is the SAME WeaponDef at level 8, so the thing that
+   * changes has to be expressible as a function of the level. `fireSpread` reads it once per
+   * volley; nothing has to know the word "ascension".
+   */
+  readonly splitsFrom?: number;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -626,11 +639,14 @@ function missile(
    */
   visualId: number,
   perLevel: readonly Readonly<Partial<Record<WeaponStatKey, number>>>[],
+  /** Tier at which the warheads split. 0 for a rack that never does. See WeaponDef.splitsFrom. */
+  splitsFrom = 0,
 ): WeaponDef {
   return Object.freeze({
     id,
     name,
     kind: 'projectile' as WeaponKind,
+    splitsFrom,
     // Unused: `fireAlongFacing` means no target is ever selected. Declared as 'nearest' rather
     // than inventing a 'none' strategy, because a fourth entry in the targeting table that is
     // never called would be a lie about what that table is for.
@@ -691,6 +707,30 @@ export const MISSILE_SHORT = missile(
   ]),
 );
 
+/**
+ * THE GTM HORNET - what the Long Missiles become at tier 8.
+ *
+ * A warhead that has been in the air for `SPLIT_SEC` without hitting anything breaks into two
+ * SHORT-rack missiles, `SPLIT_APART` apart. Five tubes become ten warheads, and the volley stops
+ * being a fan and starts being a cloud.
+ *
+ * ONE SECOND, which is under half the long rack's own 2.6 s fuse at tier 7. The split has to
+ * happen while the missiles are still crossing the field rather than as they expire, or the
+ * children arrive with nothing left to fly at - and a Hornet volley's whole shape is the second
+ * wave spreading through the gap the first one flew into.
+ *
+ * FIFTEEN DEGREES BETWEEN THE PAIR, so each child leaves at half that off its parent's heading.
+ * Wide enough that they separate before their own fuses run out, narrow enough that the pair still
+ * reads as one missile having come apart rather than as two unrelated ones.
+ *
+ * `Math.cos`/`Math.sin` are banned in core (implementation-defined in the last ulp, and one ulp of
+ * heading is a divergent replay), so the half-angle is stored as its two components, computed
+ * offline. Same treatment as the flow field's swirl table.
+ */
+export const SPLIT_SEC = 1;
+export const SPLIT_COS = 0.9914448613738104; // cos(7.5 deg)
+export const SPLIT_SIN = 0.13052619222005157; // sin(7.5 deg)
+
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
   3, 10, 4.2, 42, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
@@ -702,6 +742,8 @@ export const MISSILE_LONG = missile(
     { flightTime: 0.6 }, // T6  2.0 -> 2.6 s, reach ~860
     { projectileCount: 1 }, // T7  a fifth missile
   ]),
+  // T8 - the GTM Hornet. See SPLIT_SEC above.
+  WEAPON_ASCENDED_TIER,
 );
 
 // ---------------------------------------------------------------------------------------------

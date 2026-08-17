@@ -47,7 +47,7 @@ import { describeUnlockDone, type UnlockCond } from './unlocks.js';
  * The `mech-` half is generated: EVERY CHASSIS UNLOCK IS ALSO AN ACHIEVEMENT, and that is a rule
  * rather than a list, so it is written as one. See MECH_ACHIEVEMENTS below.
  */
-export type AchievementId = 'chain-laser' | `mech-${HeroId}`;
+export type AchievementId = 'chain-laser' | 'gtm-hornet' | `mech-${HeroId}`;
 
 export interface AchievementDef {
   readonly id: AchievementId;
@@ -145,5 +145,19 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
      * needing an event, a flag on the world, or a hook inside the chest.
      */
     cond: { kind: 'tier', id: 'w-laser-medium', tier: 8 },
+  },
+  {
+    id: 'gtm-hornet',
+    platformKey: 'scrapyard_gtm_hornet',
+    name: "Hornet's Nest",
+    // THE ASCENSION'S OWN ICON, not the parent card's - which is the opposite of the choice above,
+    // and deliberate. The Chain Laser is the same beam bent, so the card the player stared at all
+    // the way up is still a picture of what they got. The Hornet is not: what makes it worth
+    // finding is that one missile becomes two, and only the tier-8 icon says so.
+    icon: 'icon_w-gtm-hornet',
+    description: 'Fed the Short Missiles to the Long ones and made the GTM Hornet.',
+    secret: true,
+    // Tier 8 is reachable by nothing but a chest paying out an ascension - see the note above.
+    cond: { kind: 'tier', id: 'w-missile-long', tier: 8 },
   },
 ]);

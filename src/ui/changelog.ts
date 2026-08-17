@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T05:04Z',
+    title: 'THERE IS A SECOND ASCENSION',
+    notes: [
+      'A weapon in this game can now become something else for a second time. Finding it is the point, so that is all that will be said here — except that the first one was not the only one, and this one asks for more than a card.',
+      'The Scrapopedia will hold its page once you have held it.',
+    ],
+  },
+  {
     at: '2026-08-17T04:45Z',
     title: 'THE JELLY AND THE OOZE HEAVE ALONG',
     notes: [

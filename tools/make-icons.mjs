@@ -105,6 +105,9 @@ const ICONS = [
   // its own, because the whole point of a tier 8 is that the thing in your hands is not the thing
   // you were carrying.
   'w-chain-laser',
+  // TIER 8 AGAIN - the Long Missiles'. Same reason: the thing in your hands is not the thing you
+  // were carrying, and the reel has to say so.
+  'w-gtm-hornet',
   'p-range',
   'p-damage',
   'p-rate',
@@ -194,6 +197,110 @@ const DRAW = `(id) => {
     bar(CX - 19, 88, 38, 8, KEY_DIM);
   }
 
+  // ONE MISSILE, drawn centred on (x, cy). Shared by the two racks and by the Hornet, so a
+  // Hornet child is literally the same silhouette a short-rack missile is drawn with.
+  const missileBody = (x, cy, h, w) => {
+    const top = cy - h / 2;
+    const bot = cy + h / 2;
+    const hw = w / 2;
+    // EVERY LANDMARK IS A FRACTION OF THE LENGTH, not of the width, and that is what stops the
+    // fat one turning into an egg: a nose measured off the width grows as the body widens, so
+    // the short missile's dome ate half its body and the silhouette stopped being a missile at
+    // exactly the proportion this icon exists to show.
+    const shoulder = top + h * 0.3;
+    const tailHw = hw * 0.55;
+    const finTop = top + h * 0.55;
+    // The fins stop SHORT OF THE TAIL, so the body protrudes below them the way the sprite's
+    // does. It is a few pixels and it is most of what makes the shape read as a missile with
+    // fins rather than as a dart with a skirt.
+    const finBot = bot - h * 0.1;
+    // 1.95 rather than the sprite's ~2.1: the SHORT icon draws two of these side by side, and at
+    // a fuller span the two inner fins merged into one dark bar across the tile - which is a
+    // picture of a wedge, not of two missiles.
+    const finSpan = hw * 1.95;
+
+    // FINS FIRST, so the body sits over their roots exactly as it does in the sprite.
+    g.fillStyle = MISSILE_FIN;
+    for (const sx of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(x + sx * hw * 0.9, finTop);
+      g.lineTo(x + sx * finSpan, finBot);
+      g.lineTo(x + sx * tailHw, finBot);
+      g.closePath();
+      g.fill();
+    }
+
+    // BODY: ogive nose, parallel flanks, tapering to the tail.
+    //
+    // MID TONE FILLED, DARK OUTLINED, LIT DOWN THE CENTRELINE - which is how the sprite is
+    // shaded, and doing it in that order is what makes the icon read as the same object rather
+    // than as a pale cutout of its outline. Filling with the LIGHTEST tone and banding it (the
+    // first attempt) put a stripe across the body that the art does not have.
+    g.fillStyle = MISSILE_SHADE;
+    g.strokeStyle = MISSILE_EDGE;
+    g.lineWidth = 2.5;
+    g.beginPath();
+    g.moveTo(x, top);
+    // Control point out at the full half-width and NEARLY HALF WAY DOWN THE NOSE, which leaves
+    // the tip steeply and flattens to vertical at the shoulder - an ogive. A control point up
+    // near the tip gives a dome, which is a pill with fins on it.
+    g.quadraticCurveTo(x + hw, top + (shoulder - top) * 0.45, x + hw, shoulder);
+    g.lineTo(x + tailHw, bot);
+    g.lineTo(x - tailHw, bot);
+    g.lineTo(x - hw, shoulder);
+    g.quadraticCurveTo(x - hw, top + (shoulder - top) * 0.45, x, top);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    // The lit centreline. Stops at the shoulder rather than running into the nose, so the ogive
+    // still reads as a curved surface instead of a flat plate with a stripe on it.
+    g.fillStyle = MISSILE_BODY;
+    g.beginPath();
+    g.moveTo(x - hw * 0.3, shoulder - (shoulder - top) * 0.5);
+    g.lineTo(x + hw * 0.3, shoulder - (shoulder - top) * 0.5);
+    g.lineTo(x + tailHw * 0.45, bot - h * 0.02);
+    g.lineTo(x - tailHw * 0.45, bot - h * 0.02);
+    g.closePath();
+    g.fill();
+  };
+
+  if (id === 'w-gtm-hornet') {
+    // THE SPLIT, DRAWN. One missile at the top, two below it fanned apart - which is the mechanic
+    // and not a decoration: what a player has to recognise on a reel is that this rack's warheads
+    // come in half.
+    //
+    // IT IS THE LONG RACK'S MISSILE ON TOP AND THE SHORT RACK'S UNDERNEATH, at the two aspect
+    // ratios the icons already teach (long and thin, squat and fat). That is the whole sentence:
+    // a long missile becomes two short ones. Drawing three identical bodies would say "three
+    // missiles", which is what the plain long-rack icon already says.
+    const parent = { x: CX, y: CY - 30, h: 46, w: 12, a: 0 };
+    // +/- 7.5 degrees is the real split angle; drawn at 3x so it reads at 24 px on a reel. An icon
+    // at true scale is a picture of two parallel missiles.
+    const kids = [
+      { x: CX - 26, y: CY + 30, h: 34, w: 19, a: -0.39 },
+      { x: CX + 26, y: CY + 30, h: 34, w: 19, a: 0.39 },
+    ];
+    // The trail from the parent down to each child, so the eye reads the order: one, then two.
+    g.strokeStyle = KEY_DIM;
+    g.lineWidth = 3;
+    g.setLineDash([5, 5]);
+    for (const k of kids) {
+      g.beginPath();
+      g.moveTo(CX, CY - 6);
+      g.lineTo(k.x, k.y - k.h * 0.5);
+      g.stroke();
+    }
+    g.setLineDash([]);
+    for (const m of [parent, ...kids]) {
+      g.save();
+      g.translate(m.x, m.y);
+      g.rotate(m.a);
+      missileBody(0, 0, m.h, m.w);
+      g.restore();
+    }
+  }
+
   if (id === 'w-missile-short' || id === 'w-missile-long') {
     // TWO squat missiles against ONE long thin one - the same contrast the projectiles themselves
     // are drawn with in assets.ts, so the icon teaches the silhouette the player will see fly.
@@ -210,71 +317,6 @@ const DRAW = `(id) => {
     // is untouched; the border says gun or system, the glyph says WHICH. A missile drawn in the
     // category colour was a symbol for "a weapon", and every weapon on the reels is one of those.
     const long = id === 'w-missile-long';
-    const draw = (x, h, w) => {
-      const top = CY - h / 2;
-      const bot = CY + h / 2;
-      const hw = w / 2;
-      // EVERY LANDMARK IS A FRACTION OF THE LENGTH, not of the width, and that is what stops the
-      // fat one turning into an egg: a nose measured off the width grows as the body widens, so
-      // the short missile's dome ate half its body and the silhouette stopped being a missile at
-      // exactly the proportion this icon exists to show.
-      const shoulder = top + h * 0.3;
-      const tailHw = hw * 0.55;
-      const finTop = top + h * 0.55;
-      // The fins stop SHORT OF THE TAIL, so the body protrudes below them the way the sprite's
-      // does. It is a few pixels and it is most of what makes the shape read as a missile with
-      // fins rather than as a dart with a skirt.
-      const finBot = bot - h * 0.1;
-      // 1.95 rather than the sprite's ~2.1: the SHORT icon draws two of these side by side, and at
-      // a fuller span the two inner fins merged into one dark bar across the tile - which is a
-      // picture of a wedge, not of two missiles.
-      const finSpan = hw * 1.95;
-
-      // FINS FIRST, so the body sits over their roots exactly as it does in the sprite.
-      g.fillStyle = MISSILE_FIN;
-      for (const sx of [-1, 1]) {
-        g.beginPath();
-        g.moveTo(x + sx * hw * 0.9, finTop);
-        g.lineTo(x + sx * finSpan, finBot);
-        g.lineTo(x + sx * tailHw, finBot);
-        g.closePath();
-        g.fill();
-      }
-
-      // BODY: ogive nose, parallel flanks, tapering to the tail.
-      //
-      // MID TONE FILLED, DARK OUTLINED, LIT DOWN THE CENTRELINE - which is how the sprite is
-      // shaded, and doing it in that order is what makes the icon read as the same object rather
-      // than as a pale cutout of its outline. Filling with the LIGHTEST tone and banding it (the
-      // first attempt) put a stripe across the body that the art does not have.
-      g.fillStyle = MISSILE_SHADE;
-      g.strokeStyle = MISSILE_EDGE;
-      g.lineWidth = 2.5;
-      g.beginPath();
-      g.moveTo(x, top);
-      // Control point out at the full half-width and NEARLY HALF WAY DOWN THE NOSE, which leaves
-      // the tip steeply and flattens to vertical at the shoulder - an ogive. A control point up
-      // near the tip gives a dome, which is a pill with fins on it.
-      g.quadraticCurveTo(x + hw, top + (shoulder - top) * 0.45, x + hw, shoulder);
-      g.lineTo(x + tailHw, bot);
-      g.lineTo(x - tailHw, bot);
-      g.lineTo(x - hw, shoulder);
-      g.quadraticCurveTo(x - hw, top + (shoulder - top) * 0.45, x, top);
-      g.closePath();
-      g.fill();
-      g.stroke();
-
-      // The lit centreline. Stops at the shoulder rather than running into the nose, so the ogive
-      // still reads as a curved surface instead of a flat plate with a stripe on it.
-      g.fillStyle = MISSILE_BODY;
-      g.beginPath();
-      g.moveTo(x - hw * 0.3, shoulder - (shoulder - top) * 0.5);
-      g.lineTo(x + hw * 0.3, shoulder - (shoulder - top) * 0.5);
-      g.lineTo(x + tailHw * 0.45, bot - h * 0.02);
-      g.lineTo(x - tailHw * 0.45, bot - h * 0.02);
-      g.closePath();
-      g.fill();
-    };
     // THE ICONS CARRY THE PROJECTILES' OWN ASPECT RATIOS, now that those have been pushed apart:
     // 42 x 24 is 1.75 : 1 and 66 x 17 is 3.9 : 1, against the 20 x 11.4 and 25 x 6.3 the two racks
     // actually fly at. An icon fatter than the thing it is teaching is a worse icon even when it
@@ -285,8 +327,8 @@ const DRAW = `(id) => {
     // missile is written out as a third missile and a percentage never is. The long rack drew one
     // missile for as long as it existed, which quietly made "two against one" the difference
     // between the racks when the real difference is two against three.
-    if (long) { draw(CX - 34, 64, 16); draw(CX, 64, 16); draw(CX + 34, 64, 16); }
-    else { draw(CX - 25, 42, 24); draw(CX + 25, 42, 24); }
+    if (long) { missileBody(CX - 34, CY, 64, 16); missileBody(CX, CY, 64, 16); missileBody(CX + 34, CY, 64, 16); }
+    else { missileBody(CX - 25, CY, 42, 24); missileBody(CX + 25, CY, 42, 24); }
   }
 
   if (id === 'w-machine-gun') {
