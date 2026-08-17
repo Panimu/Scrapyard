@@ -34,6 +34,18 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
   blurb: 'Open moss and turf, running out further than you can walk. No fence, no corners.',
   art: '',
   playable: true,
+  /**
+   * EARNED BY FINISHING THE SCRAPYARD - the whole yard, every Scraplord down, not merely surviving
+   * it.
+   *
+   * The second map is the first thing in the game that is behind a WIN rather than behind a
+   * milestone inside a loss. Every chassis condition so far can be met by a run that ends badly;
+   * this one cannot, which is what makes it the reward for having actually finished something.
+   *
+   * The Scrapyard by name rather than `win`, because `win` would be satisfied by clearing THIS map
+   * and a condition that unlocks itself is not a condition.
+   */
+  unlock: { kind: 'winLevel', level: 'scrapyard' } as const,
 
   /**
    * NO EDGE IN ANY DIRECTION.

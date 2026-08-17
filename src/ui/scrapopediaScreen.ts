@@ -594,14 +594,19 @@ export class ScrapopediaScreen {
    *
    * IT IS NOT SYMMETRY WITH THE NAME, and the difference is the whole reason this is written down.
    * A name is a label - `Hornet's Nest` tells you there is something called that and nothing about
-   * what it is. AN ICON IS THE ANSWER. Every achievement in the catalog is `secret`, and the two
-   * kinds leak differently:
+   * what it is. AN ICON IS THE ANSWER, and every kind in the catalog leaks differently:
    *
    *   A MECH trophy's icon is the CHASSIS SPRITE, which is exactly what the picker withholds
    *   behind a silhouette. Printing it here hands back the thing that screen is keeping.
    *   AN ASCENSION's icon is a picture of the mechanic - a missile coming apart. The Scrapopedia
    *   goes to some length elsewhere never to mention that a tier 8 exists (see this file's header);
    *   drawing one on a row nobody has earned would undo that in a single glance.
+   *   A MAP's icon is one of that map's own CREATURES, and the bestiary gates those behind having
+   *   killed one. This row is not the place they arrive early.
+   *
+   * The plate is therefore drawn for every unearned row regardless of `AchievementDef.secret`, which
+   * is about the NAME and not about the picture: the map trophy is the one entry that is not secret,
+   * because the yard picker has always named the yard.
    *
    * So the plate is the same promise the hero picker makes: there is something here, and finding
    * out what is the game.

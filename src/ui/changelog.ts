@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T10:16Z',
+    title: 'MOSSY MAYHEM HAS TO BE EARNED',
+    notes: [
+      'The second yard starts LOCKED. Clear the Scrapyard — every Scraplord down, not merely survive it — and it opens, with a trophy to say so.',
+      'It is the first thing in the game behind a win rather than behind something that happens on the way to losing. The card keeps its name so you know it is there; what it takes is not written anywhere until you have done it.',
+      'If you have already beaten the Scrapyard on this save, your next win will open it — the game only learns what a run did when the run ends.',
+    ],
+  },
+  {
     at: '2026-08-17T10:01Z',
     title: 'THE GAME NOW TELLS YOU HOW TO WIN IT',
     notes: [

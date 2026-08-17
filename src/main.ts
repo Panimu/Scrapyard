@@ -257,6 +257,9 @@ async function boot(): Promise<void> {
     },
     () => showScreen('heroSelect'),
     state.levelId,
+    // Asked on every showing rather than snapshotted: the second yard is earned by winning the
+    // first, so it can open while this screen is sitting in the DOM behind a run.
+    (id) => state.hasLevel(id),
   );
 
   const upgrades = new UpgradesScreen(() => showScreen('title'), {
@@ -400,6 +403,9 @@ async function boot(): Promise<void> {
    */
   function runRecord(world: World): RunRecord {
     return {
+      // WHICH YARD, off the world rather than off `state.levelId`: the run is the authority on where
+      // it happened, and the two could disagree the instant the picker is touched mid-session.
+      levelId: world.level.id,
       // Waves are 1-based to the player: `cycleIndex` 0 is "wave 1" on the HUD.
       wave: world.director.cycleIndex + 1,
       runSec: world.runSec,
@@ -462,6 +468,10 @@ async function boot(): Promise<void> {
     // A card earned by this run joins the same list the summary announces. It is not a chassis, but
     // it is the same kind of news - something the next run can do that this one could not.
     for (const def of state.recordCards(record)) earnedThisRun.push(def.name);
+    // A YARD, on the same list, and it is the biggest thing on it: finishing the Scrapyard opens
+    // Mossy Mayhem. Banked through the same poll as everything else, so a win that ends in a tab
+    // reload still leaves the map open.
+    for (const def of state.recordLevels(record)) earnedThisRun.push(def.name);
   }
 
   function startRun(heroId: number, seed: number): void {

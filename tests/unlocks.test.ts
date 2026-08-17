@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   HERO_CATALOG,
+  LEVEL_CATALOG,
   UPGRADE_CATALOG,
   WEAPON_CATALOG,
   meetsUnlock,
@@ -111,6 +112,35 @@ describe('meetsUnlock', () => {
     // '' is every run that has not ended in death - including one that WON, which must never
     // satisfy a condition whose whole content is losing.
     expect(meetsUnlock(cond, run({ diedTo: '', won: true }), IDS)).toBe(false);
+  });
+
+  it('winLevel wants a win AND the right yard', () => {
+    const cond = { kind: 'winLevel', level: 'scrapyard' } as const;
+    expect(meetsUnlock(cond, run({ won: true, levelId: 'scrapyard' }), IDS)).toBe(true);
+    // Surviving the yard is not clearing it.
+    expect(meetsUnlock(cond, run({ won: false, levelId: 'scrapyard' }), IDS)).toBe(false);
+    // A win somewhere else is somewhere else's achievement. This is the half `win` cannot express,
+    // and the half that stops the second map unlocking itself.
+    expect(meetsUnlock(cond, run({ won: true, levelId: 'mossy-mayhem' }), IDS)).toBe(false);
+  });
+
+  it('every level a run can earn is earnable, and the door is open to an empty save', () => {
+    for (const level of LEVEL_CATALOG) {
+      if (level.unlock.kind === 'never') continue;
+      // The same guard the chassis get below, for the same reason: a map with an unsatisfiable
+      // condition is content nobody can reach and nothing else would report it.
+      const perfect = run({
+        won: true,
+        levelId: level.unlock.kind === 'winLevel' ? level.unlock.level : level.id,
+        wave: 99,
+        runSec: 100_000,
+        kills: 1_000_000,
+        tiers: new Uint8Array(UPGRADE_CATALOG.length).fill(8),
+      });
+      expect(meetsUnlock(level.unlock, perfect, IDS), `${level.id} is unreachable`).toBe(true);
+    }
+    // And exactly one of them needs nothing, because a save that has earned no map cannot play.
+    expect(LEVEL_CATALOG.filter((l) => l.unlock.kind === 'always').length).toBe(1);
   });
 
   it('a chassis that names a REAL condition names one some run could satisfy', () => {

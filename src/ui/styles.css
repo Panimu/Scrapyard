@@ -1221,6 +1221,14 @@ body {
   color: var(--ink-faint);
 }
 
+/* The badge exists on every card and is hidden on the open ones, so it needs this: the rule above
+   sets `padding` and a border but the badge is `position: absolute`, which still paints - and the UA
+   sheet's own [hidden] rule is the weakest there is. Every element whose `hidden` is toggled needs a
+   matching rule; see CLAUDE.md. */
+.level__flag[hidden] {
+  display: none;
+}
+
 /* -------------------------------------------------------------------------------------------
  * Settings
  * ----------------------------------------------------------------------------------------- */

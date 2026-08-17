@@ -143,6 +143,14 @@ export interface Settings {
    */
   heldAscensions: UpgradeId[];
   /**
+   * MAPS THIS PLAYER HAS EARNED, by id. The entry-point map is not listed - `LevelDef.unlock` says
+   * `always` for it, and that outranks the save exactly as it does for Slate.
+   *
+   * By id, filtered on load, same as every other list here: a level that is renamed or withdrawn
+   * stops being claimed rather than leaving an id nothing resolves.
+   */
+  unlockedLevels: LevelId[];
+  /**
    * Workshop tiers owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
    *
    * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
@@ -186,6 +194,7 @@ const DEFAULTS: Settings = {
   killedEnemies: [],
   earnedCards: [],
   heldAscensions: [],
+  unlockedLevels: [],
   metaTiers: {},
 };
 
@@ -262,6 +271,11 @@ function loadSettings(): Settings {
           (id): id is UpgradeId =>
             typeof id === 'string' &&
             UPGRADE_CATALOG.some((d) => d.id === id && d.ascension !== undefined),
+        ),
+      unlockedLevels: (Array.isArray(parsed.unlockedLevels) ? (parsed.unlockedLevels as unknown[]) : [])
+        .filter(
+          (id): id is LevelId =>
+            typeof id === 'string' && LEVEL_CATALOG.some((l) => l.id === id),
         ),
       // Clamped per upgrade against the CURRENT catalog: an unknown id is dropped, and a tier
       // count past what that upgrade now offers is trimmed to the new ceiling. Shortening an
@@ -506,6 +520,45 @@ export class AppState {
       if (!meetsUnlock(def.unlock, run, ids)) continue;
       this.settings.earnedCards.push(def.id);
       earned.push(def);
+    }
+    if (earned.length > 0) this.saveSettings();
+    return earned;
+  }
+
+  /**
+   * MAY THIS PLAYER PLAY THIS MAP?
+   *
+   * Three gates, and each answers a different question. `playable` is the CONTENT's: is this level
+   * finished. `always` is the DESIGN's: is it the door, in which case the save is not consulted at
+   * all - the same rule `hasHero` applies to Slate, and it exists because a save that has lost its
+   * entry point is a save that cannot press New Game. `never` is "the criteria have not been
+   * written", which outranks the save file even for somebody who banked it from an older build.
+   * Everything else is earned and stored.
+   */
+  hasLevel(id: LevelId): boolean {
+    const level = LEVEL_CATALOG.find((l) => l.id === id);
+    if (level === undefined || !level.playable) return false;
+    if (level.unlock.kind === 'never') return false;
+    if (level.unlock.kind === 'always') return true;
+    return this.settings.unlockedLevels.includes(id);
+  }
+
+  /**
+   * Tests every locked map against the run that just ended and banks the ones it earned. Returns
+   * the newly earned definitions so the caller can announce them.
+   *
+   * The same shape as `recordCards` and `recordRun`, and deliberately so: one evaluator, one
+   * condition language, and no second opinion anywhere about what "cleared the Scrapyard" means.
+   */
+  recordLevels(run: RunRecord): LevelDef[] {
+    const ids = UPGRADE_CATALOG.map((d) => d.id);
+    const earned: LevelDef[] = [];
+    for (const level of LEVEL_CATALOG) {
+      if (level.unlock.kind === 'always' || level.unlock.kind === 'never') continue;
+      if (this.settings.unlockedLevels.includes(level.id)) continue;
+      if (!meetsUnlock(level.unlock, run, ids)) continue;
+      this.settings.unlockedLevels.push(level.id);
+      earned.push(level);
     }
     if (earned.length > 0) this.saveSettings();
     return earned;

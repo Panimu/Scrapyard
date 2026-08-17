@@ -36,6 +36,7 @@
  * notion of this, so the flag maps straight through when the bridge lands.
  */
 
+import { LEVEL_CATALOG, type LevelId } from '../content/levels.js';
 import { WEAPON_CATALOG } from '../content/weaponCatalog.js';
 import { HERO_CATALOG, type HeroId } from './heroes.js';
 import { UPGRADE_CATALOG } from './upgrades.js';
@@ -47,7 +48,7 @@ import { describeUnlockDone, type UnlockCond } from './unlocks.js';
  * The `mech-` half is generated: EVERY CHASSIS UNLOCK IS ALSO AN ACHIEVEMENT, and that is a rule
  * rather than a list, so it is written as one. See MECH_ACHIEVEMENTS below.
  */
-export type AchievementId = 'chain-laser' | 'gtm-hornet' | `mech-${HeroId}`;
+export type AchievementId = 'chain-laser' | 'gtm-hornet' | `mech-${HeroId}` | `level-${LevelId}`;
 
 export interface AchievementDef {
   readonly id: AchievementId;
@@ -102,6 +103,50 @@ export interface AchievementDef {
  * SECRET, because the picker withholds which silhouette is which. An achievement list naming Ember
  * up front would hand back exactly what the silhouette is keeping.
  */
+const levelName = (id: LevelId): string | undefined => LEVEL_CATALOG.find((l) => l.id === id)?.name;
+const upgradeName = (id: string): string | undefined => UPGRADE_CATALOG.find((d) => d.id === id)?.name;
+const weaponName = (id: string): string | undefined => WEAPON_CATALOG.find((w) => w.id === id)?.name;
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * ONE PER EARNED MAP, GENERATED FROM THE LEVEL'S OWN UNLOCK
+ * ---------------------------------------------------------------------------------------------
+ * The same rule as the chassis below, for the same reason: a map that has to be earned is a goal,
+ * every goal in this game gets an achievement, and hand-copying the condition is how a player ends
+ * up standing on a map with no trophy for having opened it. `cond` is `LevelDef.unlock`, by
+ * reference, so they cannot disagree.
+ *
+ * THE NAME IS THE MAP THAT OPENED, and the description is what opened it - "Mossy Mayhem / Cleared
+ * the Scrapyard." Both halves are news at that moment and neither is news without the other.
+ *
+ * NOT SECRET, and this is the one place the chassis rule is deliberately not followed. A locked
+ * chassis is a silhouette with its name withheld, so naming it up front would give away what the
+ * picker is hiding. A locked MAP shows its name on the card - the yard picker has always said
+ * "Mossy Mayhem" - so there is nothing left to keep, and a hidden trophy for a visible thing would
+ * only make the list look emptier than it is. The CRITERIA are still published nowhere.
+ *
+ * THE ICON IS THAT MAP'S OWN REPRESENTATIVE CREATURE, `bestiaryBody` - the one the level already
+ * nominates to illustrate itself in the Scrapopedia. Reusing it here means a new level brings its
+ * own trophy art with it, and there is no second decision to forget. (The card `art` would be the
+ * obvious choice and is not usable: Mossy Mayhem has none yet, and an achievement with an empty
+ * sprite key is a 404 on the one screen that is meant to be a reward.)
+ */
+const LEVEL_ACHIEVEMENTS: readonly AchievementDef[] = LEVEL_CATALOG.filter(
+  (l) => l.unlock.kind !== 'never' && l.unlock.kind !== 'always',
+).map((l) => {
+  const body = l.creatures[l.bestiaryBody];
+  if (body === undefined) throw new Error(`achievements: ${l.id} has no bestiaryBody creature`);
+  return Object.freeze({
+    id: `level-${l.id}` as AchievementId,
+    platformKey: `scrapyard_level_${l.id.replace(/-/g, '_')}`,
+    name: l.name,
+    icon: body.frames[0],
+    description: describeUnlockDone(l.unlock, upgradeName, weaponName, levelName),
+    secret: false,
+    cond: l.unlock,
+  });
+});
+
 const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
   (h) => h.unlock.kind !== 'never' && h.unlock.kind !== 'always',
 ).map((h) =>
@@ -112,11 +157,7 @@ const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
     platformKey: `scrapyard_mech_${h.id}`,
     name: h.name,
     icon: h.sprite,
-    description: describeUnlockDone(
-      h.unlock,
-      (id) => UPGRADE_CATALOG.find((d) => d.id === id)?.name,
-      (id) => WEAPON_CATALOG.find((w) => w.id === id)?.name,
-    ),
+    description: describeUnlockDone(h.unlock, upgradeName, weaponName, levelName),
     secret: true,
     cond: h.unlock,
   }),
@@ -127,6 +168,7 @@ const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
  * earned achievements by `id` - so it can be reordered freely.
  */
 export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
+  ...LEVEL_ACHIEVEMENTS,
   ...MECH_ACHIEVEMENTS,
   {
     id: 'chain-laser',

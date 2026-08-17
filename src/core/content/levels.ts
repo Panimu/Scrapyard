@@ -29,6 +29,7 @@
  * than a boolean, which can be forgotten and simply reads as `false`.
  */
 
+import type { UnlockCond } from '../data/unlocks.js';
 import type { CreatureDef, CycleResolver } from './cycles.js';
 import { MOSSY_MAYHEM } from './levelMossyMayhem.js';
 import { SCRAPYARD } from './levelScrapyard.js';
@@ -45,6 +46,23 @@ export interface LevelDef {
   readonly art: string;
   /** False: shown on the picker, greyed, and refused. */
   readonly playable: boolean;
+
+  /**
+   * WHAT A RUN HAS TO HAVE DONE FOR THIS MAP TO BE AVAILABLE, in the same language a chassis uses.
+   *
+   * A DIFFERENT QUESTION FROM `playable`, and both are needed. `playable` is about the CONTENT: is
+   * this level finished enough to be shipped at all. `unlock` is about the SAVE: has this player
+   * earned it. A level can be unfinished (not playable, nobody may enter), finished but unearned
+   * (playable, locked on this save), or open (`always`) - and collapsing the two would mean the day
+   * a map is gated is the day the app layer starts reading a content flag as a progression flag.
+   *
+   * `always` for the entry point, for exactly the reason Slate is: a roster whose only door can be
+   * locked is a roster that can brick itself.
+   *
+   * The achievement that announces a level unlock is DERIVED from this field by reference - see
+   * data/achievements.ts - so the two can never disagree about what earned the map.
+   */
+  readonly unlock: UnlockCond;
 
   /**
    * Half-extent of the playable square, world units, or `Infinity` for an unbounded level.

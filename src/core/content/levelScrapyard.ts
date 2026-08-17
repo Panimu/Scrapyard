@@ -36,6 +36,8 @@ export const SCRAPYARD: LevelDef = Object.freeze({
   blurb: `A fenced yard of rust and wrecks. ${Math.round(RUN_LENGTH_SEC / 60)} minutes, ${CYCLE_LADDER.length} bosses, then the last Scraplord.`,
   art: 'scrap_0',
   playable: true,
+  // THE DOOR. Every save can play this from the first tap - see LevelDef.unlock.
+  unlock: { kind: 'always' } as const,
 
   /**
    * A WALL, and the pressure of it is the level. Being cornered is the Scrapyard's whole argument:

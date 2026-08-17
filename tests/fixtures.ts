@@ -67,6 +67,8 @@ export function testHero(over: Partial<HeroDef> = {}): HeroDef {
  */
 export function testRunRecord(over: Partial<RunRecord> = {}): RunRecord {
   return {
+    // The door, so a record that says nothing about where it was is on the map every save can play.
+    levelId: 'scrapyard',
     wave: 1,
     runSec: 0,
     kills: 0,

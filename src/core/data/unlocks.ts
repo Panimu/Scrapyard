@@ -46,6 +46,7 @@
  * conditions to be bent to fit the vocabulary.
  */
 
+import type { LevelId } from '../content/levels.js';
 import type { WeaponId } from '../content/weaponCatalog.js';
 import type { UpgradeId } from './upgrades.js';
 
@@ -129,7 +130,18 @@ export type UnlockCond =
    * total can carry.
    */
   | { readonly kind: 'fullRepair' }
-  | { readonly kind: 'win' };
+  | { readonly kind: 'win' }
+  /**
+   * WIN ON A NAMED MAP. The first condition in here that asks WHERE as well as what.
+   *
+   * `win` alone was not enough the moment a level had to be earned by clearing another one: a Mossy
+   * victory unlocking Mossy is a condition that unlocks itself, and there is no way to express
+   * "finish THAT yard" without the run saying which yard it was. Hence `RunRecord.levelId`.
+   *
+   * It is deliberately not `winLevel` plus a count. "Cleared the Scrapyard" is a thing that either
+   * happened or did not; asking for it twice would be asking a player to prove they meant it.
+   */
+  | { readonly kind: 'winLevel'; readonly level: LevelId };
 
 /**
  * Everything a condition may ask about one finished run, flattened away from `World`.
@@ -141,6 +153,14 @@ export type UnlockCond =
  * without standing up a simulation.
  */
 export interface RunRecord {
+  /**
+   * WHICH MAP THIS RUN WAS ON. Needed by `winLevel`, and by nothing else yet.
+   *
+   * Every other field here is a fact about what the player DID; this one is about where, and it is
+   * in the record rather than being an argument to `meetsUnlock` so that a condition about the map
+   * stays the same shape as every other condition - data, evaluated against one flat record.
+   */
+  readonly levelId: LevelId;
   /** Waves reached, 1-based: the opening wave is 1. */
   readonly wave: number;
   /** Seconds of run time survived. */
@@ -209,6 +229,10 @@ export function meetsUnlock(
       return run.kills >= cond.count;
     case 'win':
       return run.won;
+    // BOTH HALVES. A run that ended on this map without winning has not cleared it, and a win on
+    // another map is another map's achievement.
+    case 'winLevel':
+      return run.won && run.levelId === cond.level;
     case 'fullRepair':
       return run.fullRepairs > 0;
     case 'bossKillHolding':
@@ -261,6 +285,7 @@ export function describeUnlockDone(
   cond: UnlockCond,
   names: (id: UpgradeId) => string | undefined,
   weaponNames: (id: WeaponId) => string | undefined = () => undefined,
+  levelNames: (id: LevelId) => string | undefined = () => undefined,
 ): string {
   switch (cond.kind) {
     // Neither is reachable from an achievement - `always` is not an accomplishment and `never`
@@ -277,6 +302,10 @@ export function describeUnlockDone(
       return `Wrecked ${cond.count} in one run.`;
     case 'win':
       return 'Won a run.';
+    // "Cleared", not "won on": the sentence is about finishing a place off. A player who reads this
+    // has beaten every Scraplord in that yard, which is a different claim from having survived it.
+    case 'winLevel':
+      return `Cleared the ${levelNames(cond.level) ?? cond.level}.`;
     case 'bossKillHolding':
       return `Killed a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}.`;
     case 'killsWith':
