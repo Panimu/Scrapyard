@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { CHOOSE_REROLL, DT } from '../src/core/constants.js';
+import { SPLIT_SEC } from '../src/core/content/weaponCatalog.js';
 import { PROJECTILE_FLAG_DEAD } from '../src/core/entity/projectilePool.js';
 import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
 import { ascensionReady, openChest, updateProgression } from '../src/core/systems/progression.js';
@@ -149,19 +150,24 @@ describe('the GTM Hornet', () => {
     updateProgression(w, DT);
     w.input.chooseIndex = -1;
 
-    // Fly for eight seconds. The fuse is 1 s, so the first second can only ever hold what the
-    // tubes put up; anything past that is the split.
-    let firstSecond = 0;
+    // Fly for eight seconds, split either side of the FUSE rather than of a hardcoded second: this
+    // test read `60` until SPLIT_SEC moved to 0.5, and then failed for a reason that had nothing to
+    // do with what it is about. The volley leaves on the first tick and its fuse expires exactly
+    // `fuseTicks` later - measured: five in the air for ages 1 to 29, ten from age 30 - so the
+    // boundary is exact and needs no slack.
+    const fuseTicks = Math.round(SPLIT_SEC / DT);
+    let beforeSplit = 0;
     let after = 0;
     const start = w.tick;
     for (let t = 0; t < 60 * 8; t++) {
       stepWorld(w, { ...EMPTY, moveX: 1 });
       const n = liveProjectiles(w);
-      if (w.tick - start < 60) firstSecond = Math.max(firstSecond, n);
+      const age = w.tick - start;
+      if (age < fuseTicks) beforeSplit = Math.max(beforeSplit, n);
       else after = Math.max(after, n);
     }
     // Five tubes at tier 8.
-    expect(firstSecond).toBe(5);
-    expect(after).toBe(firstSecond * 2);
+    expect(beforeSplit).toBe(5);
+    expect(after).toBe(beforeSplit * 2);
   });
 });

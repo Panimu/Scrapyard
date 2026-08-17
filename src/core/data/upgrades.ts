@@ -395,7 +395,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       requiresTier: WEAPON_MAX_TIER,
       consumes: 'w-missile-short' as const,
       description:
-        'A second after launch, every missile still in the air splits into two short-range missiles fifteen degrees apart. The short rack is stripped for parts and its slot comes back empty.',
+        'Half a second after launch, every missile still in the air splits into two short-range missiles fifteen degrees apart. The short rack is stripped for parts and its slot comes back empty.',
     }),
     kind: 'weapon',
     grantsWeapon: 'missile-long',

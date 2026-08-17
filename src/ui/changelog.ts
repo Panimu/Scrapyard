@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T09:25Z',
+    title: 'THE HORNET COMES APART SOONER',
+    notes: [
+      'GTM Hornet warheads now split half a second after launch instead of a full second. The cloud of ten forms while the volley is still opening out, so the second wave arrives in the crowd near you rather than out at the edge of its reach.',
+    ],
+  },
+  {
     at: '2026-08-17T09:06Z',
     title: 'DRONES LAUNCH FROM THE MECH',
     notes: [

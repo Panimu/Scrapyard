@@ -538,7 +538,18 @@ function applyContacts(world: World): void {
     // damage, no second layer spent, and no event. The biter's cooldown is still rearmed above,
     // which is the whole point of the window - a crowd that all reach you on the same tick spend
     // their bites against 0.2 s of immunity instead of queueing up to land the instant it ends.
-    if (player.invulnLeft > 0) continue;
+    //
+    // A RIM IS ONLY EVER SPENT ON A BITE THAT WOULD OTHERWISE HAVE COST HIT POINTS, and both halves
+    // of that are checked here rather than only the first. `invulnLeft` is the immunity the game
+    // has today - a shield break's own window, and the workshop's insurance payout - and it is the
+    // one that matters in a real run. The second test is the general form of the same rule: a bite
+    // resolving to nothing takes nothing, whatever made it nothing. Shipped play cannot reach it
+    // (`resolvePlayerStats` floors `damageTakenMul` at 0.25 and armour cannot cut below
+    // `armourMinFrac` of the raw), so it costs one comparison and exists so that the day something
+    // else makes the pilot untouchable, the shield is not quietly eaten by a crowd that is doing no
+    // damage - which is the one failure mode of a defensive card that a player would never see
+    // coming and could never diagnose.
+    if (player.invulnLeft > 0 || taken <= 0) continue;
 
     if (player.shieldLayers > 0) {
       player.shieldLayers--;

@@ -289,6 +289,56 @@ describe('Energy Shield: the immunity window', () => {
   });
 });
 
+/**
+ * A RIM IS ONLY EVER SPENT ON A BITE THAT WOULD OTHERWISE HAVE COST HIT POINTS.
+ *
+ * The window a break opens for itself is covered above. This is the same rule for invulnerability
+ * the shield did not buy - the workshop's insurance payout is the one in the game today - and for
+ * the general case behind it: a bite resolving to nothing takes nothing, whatever made it nothing.
+ *
+ * The failure being guarded against is invisible from inside a run. A crowd standing on a pilot who
+ * cannot be hurt would strip both rims for free, and the player would come out of the window with
+ * no shield, no damage taken, and nothing anywhere saying why.
+ */
+describe('Energy Shield: invulnerability protects the layers', () => {
+  it('spends nothing while the pilot is invulnerable from another source', () => {
+    const w = makeWorld(7);
+    for (let i = 0; i < 6; i++) addBiter(w, 40);
+    // Set outright rather than earned: the rule is about the flag, not about what raised it. Mech
+    // insurance is what raises it in a real run, and it raises this same field.
+    w.player.invulnLeft = 0.5;
+    const hp = w.player.hp;
+    const from = w.events.writeCursor;
+
+    // Thirty ticks is half a second, so the last few land after the window has closed - which is
+    // what makes the assertion below meaningful rather than a test of an empty loop.
+    for (let t = 0; t < 20; t++) tick(w);
+
+    expect(w.player.hp).toBe(hp);
+    expect(w.player.shieldLayers).toBe(2);
+    expect(countEvents(w, EV_PLAYER_SHIELD_BROKEN, from)).toBe(0);
+    expect(w.player.invulnLeft).toBeGreaterThan(0);
+  });
+
+  it('spends nothing on a bite that resolves to no damage', () => {
+    const w = makeWorld(7);
+    addBiter(w, 40);
+    // Below what `resolvePlayerStats` will produce - it floors this at 0.25 - and written straight
+    // onto the resolved stats, which is what the measurement rigs in tools/ do to make a pilot
+    // immortal. Nothing in shipped play reaches it; the guard is here so that if anything ever
+    // does, it does not cost the player a shield.
+    w.player.stats.damageTakenMul = 0;
+    const from = w.events.writeCursor;
+
+    for (let t = 0; t < 10; t++) tick(w);
+
+    expect(w.player.shieldLayers).toBe(2);
+    expect(countEvents(w, EV_PLAYER_SHIELD_BROKEN, from)).toBe(0);
+    // And the biter is still on its feet: no rim broke, so nothing was burned by a backlash.
+    expect(w.enemies.flags[0] & ENEMY_FLAG_DEAD).toBe(0);
+  });
+});
+
 // ---------------------------------------------------------------------------------------------
 // Recharge
 // ---------------------------------------------------------------------------------------------
