@@ -36,6 +36,7 @@ import { RANKS, createResolvedCycle, type CycleResolver } from './content/cycles
 import { FLAVOURS } from './content/enemyCatalog.js';
 import { levelOrDefault } from './content/levels.js';
 import { createDronePool } from './entity/dronePool.js';
+import { createSheepPool } from './entity/sheepPool.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
@@ -83,6 +84,7 @@ import { updateEnemyAI } from './systems/enemyAI.js';
 import { updateWeapons } from './systems/weapons.js';
 import { updateProjectiles } from './systems/projectiles.js';
 import { updateDrones } from './systems/drones.js';
+import { updateSheep } from './systems/sheep.js';
 import { updateCollision } from './systems/collision.js';
 import { updateDamage } from './systems/damage.js';
 import { updatePickups } from './systems/pickups.js';
@@ -321,6 +323,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       consumables: 0,
       dice: 0,
       barrelsBroken: 0,
+      sheepTaken: 0,
       chests: 0,
       // Sized from the INJECTED catalog, not the shipping one: a fixture catalog with two weapons
       // gets a two-entry breakdown rather than an eight-entry array with six permanent zeroes.
@@ -340,6 +343,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       endTick: 0,
     },
     drones: createDronePool(),
+    sheep: createSheepPool(),
     droneGun: createWeaponStats(),
     splitStats: createWeaponStats(),
     droneStacks: new Uint8Array(catalogs.upgrades.length),
@@ -532,6 +536,12 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
   // every shell in flight was allocated before S7 integrates it. It also reads the hash rebuilt at
   // S5, so a drone's own target query is exact.
   updateDrones(world, DT);
+
+  // S6c after S5 and before anything reads a sheep's position: the flock steers by the hash the
+  // horde was just rebuilt into, and by the mech's position after S3. It allocates nothing and is
+  // read by nothing below - a sheep is not an enemy, is not in the hash, and collides with nothing
+  // (see systems/sheep.ts) - so where it sits in the tick is a statement about what it READS.
+  updateSheep(world, DT);
 
   // S7
   updateProjectiles(world, DT);

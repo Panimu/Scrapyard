@@ -148,6 +148,13 @@ export const EV_WALL_BROKEN = 29;
  * same flash and does none of the rest.
  */
 export const EV_DRONE_FIRED = 30;
+/**
+ * A SHEEP was taken - Mossy Mayhem's fuel drum, caught. Payload: (x, y, radius, 0).
+ *
+ * ITS OWN EVENT for the same reason a felled tree has one: a drum is a fireball, a tree is leaves,
+ * and this is a puff of wool. Sharing EV_BARREL_BROKEN would have detonated a farm animal.
+ */
+export const EV_SHEEP_TAKEN = 31;
 
 /** Human-readable names, for the harness timeline and the debug HUD. Index === event kind. */
 export const EVENT_NAMES: readonly string[] = [
@@ -182,6 +189,7 @@ export const EVENT_NAMES: readonly string[] = [
   'PLAYER_SAVED',
   'WALL_BROKEN',
   'DRONE_FIRED',
+  'SHEEP_TAKEN',
 ];
 
 export interface EventRing {

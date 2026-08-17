@@ -21,6 +21,7 @@
     "drops": "node tools/make-drops.mjs",
     "moss": "node tools/make-moss-enemies.mjs",
     "walls": "node tools/make-moss-walls.mjs",
+    "sheep": "node tools/make-sheep.mjs",
     "floor": "node tools/make-floor.mjs",
     "icons": "tsx tools/make-icons.mjs",
     "screenshot": "tsx tools/screenshot.ts",

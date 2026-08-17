@@ -61,6 +61,13 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
    */
   arenaHalf: Infinity,
   floor: 'floor_moss',
+  /**
+   * A DOZEN, WHICH IS ABOUT WHAT ONE SCREEN HOLDS. The camera sees 616x440 units and a sheep is
+   * placed 620-960 out, so a player walking in a straight line meets two or three at a time - often
+   * enough that a spanner is always somewhere, rare enough that catching one is a decision rather
+   * than a chore. This map's drums have legs; see systems/sheep.ts.
+   */
+  sheep: 12,
 
   /**
    * The whole plane's worth of walls, from the seed alone. Nothing is allocated up front: the

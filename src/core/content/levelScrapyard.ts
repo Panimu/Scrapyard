@@ -45,6 +45,8 @@ export const SCRAPYARD: LevelDef = Object.freeze({
    */
   arenaHalf: ARENA_HALF,
   floor: 'floor',
+  // NONE. This yard's loot is its fuel drums, which are part of the ground it is made of.
+  sheep: 0,
 
   /**
    * Scrap piles and fuel drums on a jittered grid, filling the square.

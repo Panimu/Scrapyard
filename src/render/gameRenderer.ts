@@ -41,6 +41,7 @@ import {
   EV_LEVEL_UP,
   EV_PLAYER_DAMAGED,
   EV_PLAYER_SAVED,
+  EV_SHEEP_TAKEN,
   EV_PLAYER_SHIELD_BROKEN,
   EV_PLAYER_SHIELD_RESTORED,
   EV_PROJECTILE_DETONATED,
@@ -71,6 +72,7 @@ import { BeamLayer } from './beams.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
+import { SHEEP_FLEE, SHEEP_GRAZE } from '../core/entity/sheepPool.js';
 import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
 import {
   ART_FACING_BY_LEVEL,
@@ -194,6 +196,25 @@ const INSURANCE_PULSE_HZ = 9;
  * quarter of a world unit of apparent movement: unmissable, and nowhere near enough to make the
  * screen unreadable while it is happening.
  */
+/**
+ * THE FLOCK - Mossy Mayhem's loot props. See core/systems/sheep.ts for what they do.
+ *
+ * `SHEEP_DRAW` is the drawn HEIGHT in world units, which is how every creature on this map is
+ * sized: 30 against a 52 u mech reads as an animal you could walk over rather than a body you have
+ * to fight. The break radius in core is 17, deliberately a little under half of it - a sheep is
+ * easier to look at than to hit, which is the whole character of chasing one down.
+ *
+ * The three frame rates are the same four or twelve frames played at different speeds, which is
+ * what says walking against bolting without a third sheet.
+ */
+const SHEEP_SPRITES = 32;
+const SHEEP_DRAW = 30;
+const GRAZE_FPS = 6;
+const WALK_FPS = 10;
+const FLEE_FPS = 16;
+/** Irrational-ish, so neighbouring spawn ids never land on the same frame. See drawSheep. */
+const SHEEP_STAGGER = 2.7;
+
 const SAVE_SHAKE_PX = 14;
 const SAVE_SHAKE_SEC = 0.5;
 const SAVE_ENCORE_SEC = 0.32;
@@ -403,6 +424,7 @@ export class GameRenderer {
   private readonly bossArrows: Graphics;
 
   private readonly pickups: SpritePool;
+  private readonly sheep: SpritePool;
   private readonly enemies: SpritePool;
   private readonly hpBars: SpritePool;
   private readonly playerLayer: Container;
@@ -481,6 +503,8 @@ export class GameRenderer {
     this.world = new Container({ isRenderGroup: true, label: 'world' });
 
     this.pickups = new SpritePool({ capacity: PICKUP_SPRITES, texture: tex.gem, label: 'pickups' });
+    // One sprite per animal and never more - the pool in core is capped at SHEEP_CAP.
+    this.sheep = new SpritePool({ capacity: SHEEP_SPRITES, texture: tex.sheepGraze[0], label: 'sheep' });
     this.enemies = new SpritePool({
       capacity: ENEMY_SPRITES,
       sortable: true, // y-sorted for depth; zIndex is rewritten every frame
@@ -568,6 +592,11 @@ export class GameRenderer {
       // them - so there is no case where a body and a wreck contend for depth.
       this.scrap.container,
       this.pickups.container,
+      // THE FLOCK, under the horde and over the loot on the ground. It is scenery that walks: a
+      // sheep must never hide an enemy the player is deciding about, and it must never be hidden by
+      // a gem lying in the grass. It is not y-sorted against the horde for the same reason the
+      // scrap is not - nothing can overlap it, because nothing collides with it.
+      this.sheep.container,
       this.enemies.container,
       this.hpBars.container,
       this.playerLayer,
@@ -645,6 +674,7 @@ export class GameRenderer {
     this.dressing?.begin(world);
 
     this.pickups.clear();
+    this.sheep.clear();
     this.enemies.clear();
     this.hpBars.clear();
     this.trails.clear();
@@ -706,6 +736,7 @@ export class GameRenderer {
     if (this.dressing !== null) this.dressing.draw(this.camera, world);
     this.drawScenery(world);
     this.drawPickups(world, alpha);
+    this.drawSheep(world, alpha);
     this.drawEnemies(world, alpha);
     this.drawPlayer(world, px, py, dtSec);
     this.drawProjectiles(world, alpha);
@@ -830,6 +861,12 @@ export class GameRenderer {
           this.saveEncoreLeft = SAVE_ENCORE_SEC;
           this.saveEncoreX = a;
           this.saveEncoreY = b;
+          break;
+
+        // A sheep caught. `c` is its radius, so the puff is sized by the animal rather than by a
+        // number repeated here.
+        case EV_SHEEP_TAKEN:
+          this.effects.sheepTaken(a, b, c);
           break;
 
         case EV_WALL_BROKEN:
@@ -1159,6 +1196,51 @@ export class GameRenderer {
    * lines and puts the chest on top of everything, which is where the one guaranteed reward in a
    * run belongs.
    */
+  /**
+   * THE FLOCK. Two cycles, staggered per animal, flipped by which way it is walking.
+   *
+   * THE PHASE COMES FROM `spawnId`, not from the dense index, for the reason every other staggered
+   * thing in this file uses it: the pool swap-removes, so a phase keyed by index would make the
+   * whole field jump a frame the moment one animal is taken. A dozen sheep chewing in lockstep is a
+   * chorus line rather than a field, and the stagger is what stops it.
+   *
+   * A GRAZING SHEEP KEEPS ITS LAST FACING. `dirX` is zeroed when it stops, so the flip is remembered
+   * on the sprite rather than recomputed - otherwise every animal would snap to face right the
+   * instant it put its head down.
+   */
+  private drawSheep(world: World, alpha: number): void {
+    const p = world.sheep;
+    const pool = this.sheep;
+    pool.begin();
+    if (p.count === 0) return;
+
+    for (let d = 0; d < p.count; d++) {
+      const x = lerp(p.prevX[d], p.x[d], alpha);
+      const y = lerp(p.prevY[d], p.y[d], alpha);
+      if (!this.camera.isVisible(x, y, SHEEP_DRAW * 0.75)) continue;
+
+      const s = pool.acquire();
+      if (s === undefined) break;
+
+      const grazing = p.state[d] === SHEEP_GRAZE;
+      const phase = p.spawnId[d] * SHEEP_STAGGER;
+      const frames = grazing ? this.tex.sheepGraze : this.tex.sheepWalk;
+      // Walking is faster than chewing, and bolting is faster again: the same four frames played
+      // quicker is what reads as speed, and it costs nothing.
+      const fps = grazing ? GRAZE_FPS : p.state[d] === SHEEP_FLEE ? FLEE_FPS : WALK_FPS;
+      const f = Math.floor(this.clock * fps + phase) % frames.length;
+      s.texture = frames[f];
+
+      // The pack draws its sheep facing LEFT, so a positive heading is the flipped one.
+      const face = p.dirX[d] > 0.01 ? -1 : p.dirX[d] < -0.01 ? 1 : (s.scale.x < 0 ? -1 : 1);
+      s.position.set(x, y);
+      s.scale.set(face * SHEEP_DRAW / s.texture.height, SHEEP_DRAW / s.texture.height);
+      s.rotation = 0;
+      s.tint = 0xffffff;
+      s.alpha = 1;
+    }
+  }
+
   private drawPickups(world: World, alpha: number): void {
     const p = world.pickups;
     const pool = this.pickups;

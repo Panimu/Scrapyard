@@ -24,6 +24,7 @@ import type { ResolvedCycle } from './content/cycles.js';
 import type { LevelDef } from './content/levels.js';
 import type { MetaSource, PlayerStats, WeaponStats } from './data/stats.js';
 import type { DronePool } from './entity/dronePool.js';
+import type { SheepPool } from './entity/sheepPool.js';
 import type { HeroDef } from './data/heroes.js';
 import type { WeaponDef } from './data/weapons.js';
 import type { UpgradeDef } from './data/upgrades.js';
@@ -397,6 +398,8 @@ export interface RunStats {
   dice: number;
   /** Fuel barrels broken. Not the same number - a barrel you never walked back to still counts. */
   barrelsBroken: number;
+  /** Sheep caught. The moss map's barrel, counted separately because it is a different verb. */
+  sheepTaken: number;
   /** Cyber Chests opened. */
   chests: number;
   /**
@@ -614,6 +617,8 @@ export interface World {
   readonly stats: RunStats;
   /** Drones currently flying. See entity/dronePool.ts. */
   readonly drones: DronePool;
+  /** The flock, on levels that keep one. See entity/sheepPool.ts and systems/sheep.ts. */
+  readonly sheep: SheepPool;
   /**
    * The drone gun's resolved stats - the Machine Gun at the drone bay's tier. Re-resolved once per
    * tick by updateDrones and read by every drone, rather than stored per drone: they all share one

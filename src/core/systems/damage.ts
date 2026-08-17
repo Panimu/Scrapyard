@@ -103,7 +103,7 @@ import {
   NO_DIRECT_HIT,
 } from '../events/ring.js';
 import { SPLASH_RIM_FRAC } from '../constants.js';
-import { breakBarrelIn } from './pickups.js';
+import { breakLootIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
 import { metaTierOf } from '../data/meta.js';
@@ -351,7 +351,7 @@ function applySplash(
   // all - it has no direct contact to speak of (it detonates on its fuse over open ground), so the
   // one weapon most likely to be dropping shells on scenery would be the one weapon that could
   // not set any of it off.
-  breakBarrelIn(world, x, y, radius, amount);
+  breakLootIn(world, x, y, radius, amount);
 
   const enemies = world.enemies;
   const candidates = world.scratch.candidates;

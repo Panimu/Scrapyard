@@ -116,7 +116,8 @@ import {
   type FirePatternId,
   type WeaponDef,
 } from '../content/weaponCatalog.js';
-import { breakBarrelIn } from './pickups.js';
+import { breakLootIn } from './pickups.js';
+import { sheepRayHit } from './sheep.js';
 import { TARGETING } from './targeting.js';
 import type { World, WeaponInstance } from '../types.js';
 
@@ -805,7 +806,16 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   if (drum >= 0) {
     // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per
     // tick, so a laser saws through a clump over a second or two rather than felling one per frame.
-    breakBarrelIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0, damage);
+    breakLootIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0, damage);
+  }
+
+  // AND IT TAKES SHEEP WITH IT, for the same reason and by the same route. The flock is not in the
+  // scenery, so `destructibleRayHit` cannot see it; this is the one extra line that reason costs.
+  // The point is handed back to `breakLootIn` rather than the animal being taken here, so the loot
+  // it was carrying drops through the one door every other weapon uses.
+  const grazing = sheepRayHit(world, px, py, aim.x, aim.y, endT);
+  if (grazing >= 0) {
+    breakLootIn(world, world.sheep.x[grazing], world.sheep.y[grazing], 0, damage);
   }
 
   // THE CHAIN. Only a weapon whose ascension has been taken gets here - see WeaponDef.chainsFrom.

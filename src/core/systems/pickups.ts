@@ -103,6 +103,7 @@ import {
   pushEvent,
 } from '../events/ring.js';
 import { openChest } from './progression.js';
+import { takeSheepIn } from './sheep.js';
 import type { World } from '../types.js';
 
 /** Uint16Array ceiling. An absorbed gem saturates here rather than wrapping to a white gem. */
@@ -170,9 +171,17 @@ function regrowBarrels(world: World): void {
 // -------------------------------------------------------------------------------------------
 
 /**
- * Breaks whatever DESTRUCTIBLE TERRAIN overlaps the circle (x, y, r). Returns true if something
- * went. On the Scrapyard that is a fuel barrel, and what was inside falls out; on Mossy Mayhem it
- * is a tree, which leaves a stump and nothing else.
+ * Breaks whatever LOOT PROP overlaps the circle (x, y, r). Returns true if something went.
+ *
+ * Three things can be in that circle and they are not alike. On the Scrapyard it is a FUEL BARREL,
+ * and what was inside falls out. On Mossy Mayhem it is either a TREE, which leaves a stump and
+ * nothing else, or a SHEEP - that map's drum, which walks about and holds exactly what a drum holds
+ * (see systems/sheep.ts).
+ *
+ * IT WAS CALLED `breakBarrelIn` UNTIL THE FLOCK ARRIVED. The rename is the point: this is the one
+ * door every "a weapon touched the ground here" path goes through, and a name that promised barrels
+ * would have made the sheep a fifth call site to add to four systems - which is exactly how a
+ * weapon ends up able to break one kind of prop and not another.
  *
  * CALLED FROM FOUR PLACES - the three ways a WEAPON can touch the ground, and the player.
  *
@@ -190,7 +199,7 @@ function regrowBarrels(world: World): void {
  * enemy - and it would delete the reason to ever walk into one, which is the only DELIBERATE way
  * to take a barrel there is.
  */
-export function breakBarrelIn(
+export function breakLootIn(
   world: World,
   x: number,
   y: number,
@@ -208,6 +217,24 @@ export function breakBarrelIn(
    */
   damage: number,
 ): boolean {
+  // OFF SCREEN, SO IT SURVIVES - the same rule the barrel gets below, and it is not optional for the
+  // flock either. MEASURED, in a probe, and it is the reason this check is up here rather than only
+  // down there: the lasers sweep 400 u of grass while aiming at the horde, so with no guard every
+  // sheep was being shot the moment it was placed and the player never once saw one. A loot prop
+  // taken where nobody can collect it is loot deleted.
+  const px = x - world.player.x;
+  const py = y - world.player.y;
+  const collectable = px * px + py * py <= BARREL_BREAK_RADIUS * BARREL_BREAK_RADIUS;
+
+  // THE FLOCK FIRST, and it is the only one of the three that can be in the circle when the terrain
+  // has nothing there at all - a sheep stands wherever it likes, including in open grass. Taking it
+  // first also means a shell that arrives among trees AND animals takes the animal, which is the
+  // outcome a player would predict from watching it.
+  if (collectable && takeSheepIn(world, x, y, r) >= 0) {
+    dropConsumable(world, x, y);
+    return true;
+  }
+
   const i = destructibleOverlap(world.scenery, x, y, r);
   if (i < 0) return false;
 
@@ -244,6 +271,8 @@ export function breakBarrelIn(
   //
   // Every caller ignores the return value, so refusing is free: the shell still lands, the beam
   // still burns, the blast still goes off. Only the drum is spared.
+  // Re-measured from the BARREL rather than from the hit point above, which for a blast can be a
+  // splash radius away: the question is whether the drum is on screen, not whether the shell was.
   const dx = bx - world.player.x;
   const dy = by - world.player.y;
   if (dx * dx + dy * dy > BARREL_BREAK_RADIUS * BARREL_BREAK_RADIUS) return false;

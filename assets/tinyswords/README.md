@@ -2,7 +2,13 @@
 
 Chunky 64x64 pixel-art terrain and units by **Pixel Frog**. Vendored for **Mossy Mayhem's wall
 segments** — the grass-topped stone the map's lines, Ls, Ts and rooms are built from, and the trees
-that make up their destructible variety.
+that make up their destructible variety — and, from `Terrain/Resources/Meat/Sheep/`, for **the
+flock**: that map's answer to the Scrapyard's fuel drums, a loot prop that grazes, wanders and bolts
+when the mech comes close (`npm run sheep`, `core/systems/sheep.ts`).
+
+`Sheep_Grass` (12 frames) and `Sheep_Move` (4) are the two sheets baked. `Sheep_Idle` is NOT: its
+frames differ, but every one of them has the identical opaque box, so at the size this draws it is a
+still image.
 
 **Licence: CC0 1.0 Universal** — see "About the licence", below, which is not as simple as the
 other packs here and is worth reading before this pack is used for anything else.

@@ -397,6 +397,23 @@ export class Effects {
     }
   }
 
+  /**
+   * A SHEEP TAKEN. A puff of wool and nothing else.
+   *
+   * DELIBERATELY QUIET NEXT TO A DRUM. A fuel barrel going up is the loudest thing scenery does,
+   * because the player did not aim at it and has to be told a barrel WAS there; a sheep is
+   * something they were chasing and are already looking at. So this is the death puff at a bigger
+   * size in an off-white, with none of the fireball - detonating a farm animal would be a joke the
+   * game only gets to make once.
+   */
+  sheepTaken(x: number, y: number, radius: number): void {
+    this.puff(x, y, radius * 3.4);
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), 0xfff4e4);
+    }
+  }
+
   sparkle(x: number, y: number, tint: number): void {
     const i = this.alloc(KIND_SPARKLE, x, y, SPARKLE_LIFE);
     if (i < 0) return;

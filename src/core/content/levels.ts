@@ -116,6 +116,19 @@ export interface LevelDef {
   readonly cycleCount: number;
 
   /**
+   * HOW MANY GRAZING PROPS THIS MAP KEEPS ALIVE. 0 for a map with none.
+   *
+   * A COUNT RATHER THAN A BOOLEAN, and it is a universal fact rather than a feature switch: every
+   * map answers "how much loot walks about on you" the way every map answers "how big is it". The
+   * Scrapyard's answer is none, because its loot is drums baked into the terrain; Mossy Mayhem's is
+   * a flock, because its terrain is trees and a felled tree gives nothing.
+   *
+   * The flock is topped up around the player rather than placed at run start - see systems/sheep.ts
+   * - which is what makes a number meaningful on an unbounded map.
+   */
+  readonly sheep: number;
+
+  /**
    * WHICH OF THIS LEVEL'S CREATURES ILLUSTRATES THE SHARED MACHINERY. An id into `creatures`.
    *
    * The Scrapopedia has pages for VARIANTS and RANKS - swift, tough, spiky, elite, boss - which

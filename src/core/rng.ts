@@ -31,6 +31,16 @@ export const RNG_SALT_WEAPON = 0x9e3779b1;
  * change the horde a seed produces. Both would be true if this drew from `spawn`.
  */
 export const RNG_SALT_EVENT = 0x85ebca6b;
+/**
+ * The flock. Where a sheep decides to wander, when it stops grazing, and where a new one is put.
+ *
+ * ITS OWN STREAM for the reason every stream here has one, and this is the clearest case yet: a
+ * sheep makes a decision every couple of seconds, every sheep, all run. Drawn from `spawn` the
+ * entire horde would depend on how many animals happened to be alive; drawn from `loot` what a
+ * barrel paid out would depend on how much the flock had walked about. Both are absurd and both are
+ * what sharing a stream would mean.
+ */
+export const RNG_SALT_SHEEP = 0xc2b2ae35;
 
 /**
  * splitmix32: seeds the four sfc32 words from one 32-bit seed. Its job is avalanche - seeds 1
@@ -178,6 +188,8 @@ export interface RngStreams {
   readonly weapon: Rng;
   /** Special-event draws, one per wave start and one per wave + 30 s. See content/specialEvents. */
   readonly event: Rng;
+  /** The flock's wandering and where new ones are put. See systems/sheep.ts. */
+  readonly sheep: Rng;
 }
 
 export function createRngStreams(seed: number): RngStreams {
@@ -187,6 +199,7 @@ export function createRngStreams(seed: number): RngStreams {
     upgrade: new Rng((seed ^ RNG_SALT_UPGRADE) | 0),
     weapon: new Rng((seed ^ RNG_SALT_WEAPON) | 0),
     event: new Rng((seed ^ RNG_SALT_EVENT) | 0),
+    sheep: new Rng((seed ^ RNG_SALT_SHEEP) | 0),
   };
 }
 

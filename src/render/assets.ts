@@ -34,10 +34,21 @@ import {
  * The strip is `SWAY_FRAMES` equal columns and nothing in the PNG says so - see `SWAY_FRAMES`.
  */
 function sway(strip: Texture): Texture[] {
-  const w = Math.round(strip.width / SWAY_FRAMES);
+  return cutStrip(strip, SWAY_FRAMES);
+}
+
+/**
+ * Cuts a horizontal strip into `frames` equal columns, all sharing the strip's `source`.
+ *
+ * The generalisation of `sway`, extracted when the flock arrived with two strips of its own at
+ * different frame counts. Same rule, same reason: one TextureSource per animation however many
+ * frames of it are on screen at once.
+ */
+function cutStrip(strip: Texture, frames: number): Texture[] {
+  const w = Math.round(strip.width / frames);
   const h = strip.height;
   return Array.from(
-    { length: SWAY_FRAMES },
+    { length: frames },
     (_, f) => new Texture({ source: strip.source, frame: new Rectangle(f * w, 0, w, h) }),
   );
 }
@@ -349,6 +360,13 @@ export interface GameTextures {
   readonly wallBushes: readonly (readonly Texture[])[];
   /** The same trees felled. Index-paired with `wallTrees`: stump N is tree N cut down. */
   readonly wallStumps: readonly Texture[];
+  /**
+   * THE FLOCK, as two cycles: heads down and walking. One TextureSource each, for the reason the
+   * trees have one - a field of sheep is phase-staggered by necessity, so a screenful shows most
+   * of a cycle's frames at once. See tools/make-sheep.mjs.
+   */
+  readonly sheepGraze: readonly Texture[];
+  readonly sheepWalk: readonly Texture[];
 }
 
 /** How many pieces each of the four wall sets has. See tools/make-moss-walls.mjs. */
@@ -356,6 +374,12 @@ export const WALL_TILE_COUNT = 16;
 export const WALL_FACE_COUNT = 4;
 export const WALL_TREE_COUNT = 3;
 export const WALL_BUSH_COUNT = 4;
+/**
+ * Frames in the sheep's two cycles. MUST match the sheets in tools/make-sheep.mjs - which are the
+ * pack's own frame counts, not a choice this project made.
+ */
+export const SHEEP_GRAZE_FRAMES = 12;
+export const SHEEP_WALK_FRAMES = 4;
 /**
  * Frames in a foliage sway cycle. MUST match `SWAY_FRAMES` in tools/make-moss-walls.mjs: the strip
  * is a plain PNG with nothing in it that says how many columns it has, so this number is the only
@@ -473,6 +497,7 @@ export async function loadGameTextures(
   for (let i = 0; i < WALL_FACE_COUNT; i++) keys.push(`mwall_face${i}`);
   for (let i = 0; i < WALL_TREE_COUNT; i++) keys.push(`mwall_tree${i}`, `mwall_stump${i}`);
   for (let i = 0; i < WALL_BUSH_COUNT; i++) keys.push(`mwall_bush${i}`);
+  keys.push('msheep_graze', 'msheep_walk');
 
   // `UnresolvedAsset` carries a `[key: string]: any` index signature, so an ARRAY of them also
   // satisfies the single-asset overload and TypeScript picks that one first. Naming the record
@@ -535,6 +560,8 @@ export async function loadGameTextures(
     wallTrees: Array.from({ length: WALL_TREE_COUNT }, (_, i) => sway(get(`mwall_tree${i}`))),
     wallBushes: Array.from({ length: WALL_BUSH_COUNT }, (_, i) => sway(get(`mwall_bush${i}`))),
     wallStumps: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_stump${i}`)),
+    sheepGraze: cutStrip(get('msheep_graze'), SHEEP_GRAZE_FRAMES),
+    sheepWalk: cutStrip(get('msheep_walk'), SHEEP_WALK_FRAMES),
     creatures,
     floors,
     fence,

@@ -9,7 +9,7 @@ finished sprites into `public/sprites/`, which is what ships.
 |---|---|---|---|
 | [Kenney](https://kenney.nl/assets) | 6 | Player mech, Scrapyard enemies, effects, projectiles, the moss map's ground and trees | [`kenney/README.md`](kenney/README.md) |
 | [Dungeon Crawl Stone Soup](https://opengameart.org/content/dungeon-crawl-32x32-tiles) | 2 | Mossy Mayhem's enemies — living plants, beasts, dinobeasts | [`dcss/README.md`](dcss/README.md) |
-| [Pixel Frog](https://pixelfrog-assets.itch.io/tiny-swords) | 1 | Mossy Mayhem's wall segments — grass-topped stone, and the trees and stumps of the destructible variety | [`tinyswords/README.md`](tinyswords/README.md) |
+| [Pixel Frog](https://pixelfrog-assets.itch.io/tiny-swords) | 1 | Mossy Mayhem's wall segments — grass-topped stone, the trees and stumps of the destructible variety — and the **sheep** that map's loot walks about in | [`tinyswords/README.md`](tinyswords/README.md) |
 
 **Each source README records the exact page and zip it came from, and the date.** That is the point
 of them: the recurring question is not "what licence is this" but "we need one more creature, where

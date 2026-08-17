@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T10:41Z',
+    title: 'THERE ARE SHEEP IN THE MOSS',
+    notes: [
+      'Mossy Mayhem finally has what the Scrapyard has always had: something to break open for a spanner, a magnet or a handful of credits. Here it is a flock, and it does not stand still.',
+      'A sheep grazes, wanders off at its own pace, and drifts away from anything near it. Get close and it bolts — not fast enough to escape a mech that means it, which is the whole deal: the loot costs you the seconds you spend cornering one.',
+      'They hold exactly what a fuel drum holds, and they come apart the same four ways: a shell, a blast, a beam sweeping past, or you walking into one. Your guns are not aiming at them — as with drums, you break them by accident on the way to something else.',
+      'The flock fills in ahead of you as you cross the map, so wherever you go there are sheep over the next rise.',
+    ],
+  },
+  {
     at: '2026-08-17T10:16Z',
     title: 'MOSSY MAYHEM HAS TO BE EARNED',
     notes: [

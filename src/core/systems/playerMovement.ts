@@ -55,7 +55,7 @@
  */
 
 import { pushOutOfScenery } from '../content/scenery.js';
-import { breakBarrelIn } from './pickups.js';
+import { breakLootIn } from './pickups.js';
 import { EV_PLAYER_REPAIRED, EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../events/ring.js';
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
@@ -147,7 +147,7 @@ export function updatePlayerMovement(world: World, dt: number): void {
   // AND IT CANNOT BE LARGE. At MECH_SHOVE_DPS a full clump takes about three and a half seconds of
   // standing still and leaning on it - which in a game about where you are standing is a real
   // price, and is the difference between "woodland is slow" and "woodland is free".
-  breakBarrelIn(world, p.x, p.y, s.radius, MECH_SHOVE_DPS * dt);
+  breakLootIn(world, p.x, p.y, s.radius, MECH_SHOVE_DPS * dt);
 
   // SCRAP PILES, resolved after the fence so a wreck sitting against the wire cannot squeeze the
   // mech through it. Same rule as the fence, generalised to an arbitrary normal: slide out, then

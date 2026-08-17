@@ -25,6 +25,7 @@ export * from './entity/handle.js';
 export * from './entity/enemyPool.js';
 export * from './entity/projectilePool.js';
 export * from './entity/pickupPool.js';
+export * from './entity/sheepPool.js';
 
 export * from './spatial/hashGrid.js';
 export * from './events/ring.js';
