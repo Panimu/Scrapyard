@@ -42,9 +42,33 @@
  * already had, and it is why the destructible variety did not need a second source. Keep TREES and
  * STUMPS in step: index N of one must be the same tree as index N of the other.
  *
- * The trees are 8-frame sway animations. FRAME 0 ONLY: the lattice is static world geometry that
- * the renderer draws by the hundred, and a swaying wood is a per-cell animation clock this game
- * has no reason to pay for.
+ * THE TREES SWAY, AND ALL EIGHT FRAMES ARE BAKED. This used to take frame 0 only, on the grounds
+ * that the lattice is static world geometry drawn by the hundred and a per-cell animation clock was
+ * not worth paying for. The clock turned out to cost nothing (one integer per cell per frame, from
+ * a hash the dressing already computes) and the wood turned out to be worth a great deal: a
+ * treeline that moves is the difference between scenery and a place.
+ *
+ * BAKED AS A HORIZONTAL STRIP, ONE PER VARIANT, and that is the part that matters for performance.
+ * Eight frames as eight FILES would be eight TextureSources per tree, and with the wood phase-
+ * staggered - which it must be, or a forest sways in lockstep like a chorus line - a screenful
+ * would interleave two dozen sources and shred the batch. Frames cut out of ONE strip share their
+ * source, so the whole wood is three sources however many frames are on screen at once, and the
+ * bushes are four more. Pixi batches up to sixteen.
+ *
+ * EVERY FRAME IS CROPPED TO THE SAME BOX - the UNION of all eight frames' content, not each
+ * frame's own. Trimming per frame would delete exactly the motion being baked: the sway IS the
+ * canopy moving inside its box, so per-frame trimming re-centres it every frame and the tree
+ * stands perfectly still while its outline breathes.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * BUSHES ARE UNDERGROWTH, AND THEY ARE THE SAME SHAPE OF THING
+ * ---------------------------------------------------------------------------------------------
+ * Four bush types, eight sway frames each, baked into strips the same way. They are drawn at the
+ * FOOT of a tree clump (dressingMoss.ts), which is what hides the line where trunks meet the
+ * ground - the giveaway that a treeline is a row of stamps rather than a wood.
+ *
+ * NOTHING COLLIDES WITH A BUSH. They are inside the treed cell that already collides, so they add
+ * no promise the simulation does not keep; scattering them onto open ground would.
  *
  * ---------------------------------------------------------------------------------------------
  * 2x, AND WHY NOT 1x OR 4x
@@ -109,8 +133,17 @@ const FACE_PX = 36;
 const TREES = ['Tree1.png', 'Tree3.png', 'Tree4.png'];
 const STUMPS = ['Stump 1.png', 'Stump 3.png', 'Stump 4.png'];
 
-/** Width of one frame of a tree's sway strip. The strips are 8 frames wide; we take the first. */
-const TREE_FRAME_W = 192;
+/**
+ * Frames in a sway cycle. MUST match `SWAY_FRAMES` in render/assets.ts - the renderer cuts a strip
+ * into this many equal columns and there is nothing in the PNG that says how many there are.
+ */
+const SWAY_FRAMES = 8;
+
+/**
+ * `mwall_bush<i>` <- these. Four types, each an 8-frame sway on a 128 px grid. Bushe3 is the
+ * biggest and leafiest, Bushe2 the smallest; all four are drawn by the same hand as the trees.
+ */
+const BUSHES = ['Bushe1.png', 'Bushe2.png', 'Bushe3.png', 'Bushe4.png'];
 
 /**
  * Runs INSIDE the page. Crops a rectangle out of a source PNG, optionally trims the result to its
@@ -160,6 +193,52 @@ const BAKE = `async (dataUrl, sx, sy, sw, sh, trim, upscale) => {
   const g = out.getContext('2d');
   g.imageSmoothingEnabled = false;
   g.drawImage(src, x0, y0, w, h, 0, 0, out.width, out.height);
+  return { url: out.toDataURL('image/png'), w, h };
+}`;
+
+/**
+ * Runs INSIDE the page. Cuts `frames` equal columns out of a sway sheet, finds the UNION of their
+ * opaque boxes, crops every frame to THAT box, and lays them out left to right at `upscale`.
+ *
+ * The union is the whole trick - see the header. Per-frame trimming would re-centre the canopy on
+ * every frame and delete the sway it is meant to preserve.
+ */
+const BAKE_STRIP = `async (dataUrl, frames, upscale) => {
+  const im = new Image();
+  im.src = dataUrl;
+  await im.decode();
+  const fw = Math.round(im.width / frames);
+  const fh = im.height;
+
+  const src = document.createElement('canvas');
+  src.width = im.width; src.height = fh;
+  const sg = src.getContext('2d', { willReadFrequently: true });
+  sg.imageSmoothingEnabled = false;
+  sg.drawImage(im, 0, 0);
+  const px = sg.getImageData(0, 0, im.width, fh).data;
+
+  let x0 = fw, y0 = fh, x1 = -1, y1 = -1;
+  for (let f = 0; f < frames; f++) {
+    for (let y = 0; y < fh; y++) {
+      for (let x = 0; x < fw; x++) {
+        if (px[(y * im.width + f * fw + x) * 4 + 3] === 0) continue;
+        if (x < x0) x0 = x;
+        if (y < y0) y0 = y;
+        if (x > x1) x1 = x;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < x0 || y1 < y0) throw new Error('sway sheet is entirely transparent');
+
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const out = document.createElement('canvas');
+  out.width = w * frames * upscale; out.height = h * upscale;
+  const g = out.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  for (let f = 0; f < frames; f++) {
+    g.drawImage(src, f * fw + x0, y0, w, h, f * w * upscale, 0, w * upscale, h * upscale);
+  }
   return { url: out.toDataURL('image/png'), w, h };
 }`;
 
@@ -231,13 +310,31 @@ async function main() {
     );
   }
 
-  // Trees and their stumps, trimmed to content so the renderer sizes art rather than air.
-  for (let i = 0; i < TREES.length; i++) {
-    const url = await dataUrlOf(join(PACK, 'Terrain', 'Resources', 'Wood', 'Trees', TREES[i]));
-    const im = await page.evaluate(
-      `(async () => { const i = new Image(); i.src = ${JSON.stringify(url)}; await i.decode(); return i.height; })()`,
+  const emitStrip = async (key, url) => {
+    const r = await page.evaluate(`(${BAKE_STRIP})(${JSON.stringify(url)}, ${SWAY_FRAMES}, ${UPSCALE})`);
+    const buf = Buffer.from(r.url.slice(r.url.indexOf(',') + 1), 'base64');
+    await writeFile(join(OUT_DIR, `${key}.png`), buf);
+    written++;
+    console.log(
+      `  ${`${key}.png`.padEnd(20)} ${String(r.w).padStart(3)}x${String(r.h).padEnd(3)} x${SWAY_FRAMES} -> ${String(r.w * SWAY_FRAMES * UPSCALE).padStart(4)}x${String(r.h * UPSCALE).padEnd(3)}  ${(buf.length / 1024).toFixed(1)} kB`,
     );
-    await emit(`mwall_tree${i}`, url, 0, 0, TREE_FRAME_W, im, true);
+  };
+
+  // Trees, as 8-frame sway strips. See the header for why the frames share one file and why every
+  // frame is cropped to the same box.
+  for (let i = 0; i < TREES.length; i++) {
+    await emitStrip(
+      `mwall_tree${i}`,
+      await dataUrlOf(join(PACK, 'Terrain', 'Resources', 'Wood', 'Trees', TREES[i])),
+    );
+  }
+
+  // The undergrowth, the same shape of thing.
+  for (let i = 0; i < BUSHES.length; i++) {
+    await emitStrip(
+      `mwall_bush${i}`,
+      await dataUrlOf(join(PACK, 'Terrain', 'Decorations', 'Bushes', BUSHES[i])),
+    );
   }
   for (let i = 0; i < STUMPS.length; i++) {
     const url = await dataUrlOf(join(PACK, 'Terrain', 'Resources', 'Wood', 'Trees', STUMPS[i]));

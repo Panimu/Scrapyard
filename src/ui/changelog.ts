@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T03:29Z',
+    title: 'THE MOSS HAS A WOOD IN IT',
+    notes: [
+      'The trees on Mossy Mayhem are a WOOD now instead of a row of stamps. Where there used to be one big tree per square there is a clump of smaller ones standing at slightly different places, so a treeline has a ragged edge and no two stretches of it look the same.',
+      'Scrub grows at the foot of every clump, hiding the line where trunks used to sit on bare moss.',
+      'And all of it SWAYS. Every clump moves on its own timing, so a wood breathes rather than marching in step.',
+      'It still blocks exactly what it always blocked, and one hit still fells a whole square — what changed is what you are looking at, not what you can drive through.',
+    ],
+  },
+  {
     at: '2026-08-16T21:16Z',
     title: 'THE TURRET STOPS FLINCHING AT YOUR DRONES',
     notes: [

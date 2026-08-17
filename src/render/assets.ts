@@ -13,7 +13,7 @@
  * to `loadGameTextures` alone: the rest of the renderer only ever sees `Texture` objects.
  */
 
-import { Assets, Texture } from 'pixi.js';
+import { Assets, Rectangle, Texture } from 'pixi.js';
 import { HERO_CATALOG, SCENERY_VARIANTS } from '../core/index.js';
 import { LEVEL_CATALOG, type LevelId } from '../core/content/levels.js';
 import {
@@ -22,6 +22,25 @@ import {
   creatureSpriteKeys,
   type LevelCreatureArt,
 } from './creatureArt.js';
+
+/**
+ * Cuts a horizontal sway strip into its frames.
+ *
+ * EVERY FRAME SHARES THE STRIP'S `source`, which is the entire reason the bake writes a strip
+ * instead of N files: a TextureSource is what the batcher keys on, so a phase-staggered wood
+ * showing all eight frames at once still costs one source per variant. Windows onto a texture are
+ * free; textures are not.
+ *
+ * The strip is `SWAY_FRAMES` equal columns and nothing in the PNG says so - see `SWAY_FRAMES`.
+ */
+function sway(strip: Texture): Texture[] {
+  const w = Math.round(strip.width / SWAY_FRAMES);
+  const h = strip.height;
+  return Array.from(
+    { length: SWAY_FRAMES },
+    (_, f) => new Texture({ source: strip.source, frame: new Rectangle(f * w, 0, w, h) }),
+  );
+}
 
 /** The distinct ground-texture keys the level catalog asks for, in catalog order, deduplicated. */
 function levelFloorKeys(): string[] {
@@ -315,7 +334,19 @@ export interface GameTextures {
   /** Cliff faces, drawn under any cell with nothing below it. Four, so a long edge does not repeat. */
   readonly wallFaces: readonly Texture[];
   /** The destructible variety, standing. */
-  readonly wallTrees: readonly Texture[];
+  /**
+   * The trees, as SWAY CYCLES: `wallTrees[variant][frame]`, `SWAY_FRAMES` long.
+   *
+   * Every frame of one variant is a window onto the SAME strip PNG, so it is one TextureSource per
+   * tree however many frames are on screen. That is not tidiness - the wood is phase-staggered per
+   * cell (a forest that sways in lockstep reads as a chorus line), so at any instant a screenful is
+   * showing most of the eight frames at once. As eight separate files that would be eight sources
+   * per variant interleaved down the draw order and a shredded batch; as windows onto one strip it
+   * stays three sources for the whole wood.
+   */
+  readonly wallTrees: readonly (readonly Texture[])[];
+  /** Undergrowth, same shape and for the same reason: `wallBushes[variant][frame]`. */
+  readonly wallBushes: readonly (readonly Texture[])[];
   /** The same trees felled. Index-paired with `wallTrees`: stump N is tree N cut down. */
   readonly wallStumps: readonly Texture[];
 }
@@ -324,6 +355,13 @@ export interface GameTextures {
 export const WALL_TILE_COUNT = 16;
 export const WALL_FACE_COUNT = 4;
 export const WALL_TREE_COUNT = 3;
+export const WALL_BUSH_COUNT = 4;
+/**
+ * Frames in a foliage sway cycle. MUST match `SWAY_FRAMES` in tools/make-moss-walls.mjs: the strip
+ * is a plain PNG with nothing in it that says how many columns it has, so this number is the only
+ * thing that knows, and a mismatch silently draws slivers of two frames at once.
+ */
+export const SWAY_FRAMES = 8;
 
 /**
  * Height of a cliff-face texture as a fraction of a wall cell. The tool crops the bottom 36 of the
@@ -434,6 +472,7 @@ export async function loadGameTextures(
   }
   for (let i = 0; i < WALL_FACE_COUNT; i++) keys.push(`mwall_face${i}`);
   for (let i = 0; i < WALL_TREE_COUNT; i++) keys.push(`mwall_tree${i}`, `mwall_stump${i}`);
+  for (let i = 0; i < WALL_BUSH_COUNT; i++) keys.push(`mwall_bush${i}`);
 
   // `UnresolvedAsset` carries a `[key: string]: any` index signature, so an ARRAY of them also
   // satisfies the single-asset overload and TypeScript picks that one first. Naming the record
@@ -493,7 +532,8 @@ export async function loadGameTextures(
       get(`mwall_t${i % 4}${Math.floor(i / 4)}`),
     ),
     wallFaces: Array.from({ length: WALL_FACE_COUNT }, (_, i) => get(`mwall_face${i}`)),
-    wallTrees: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_tree${i}`)),
+    wallTrees: Array.from({ length: WALL_TREE_COUNT }, (_, i) => sway(get(`mwall_tree${i}`))),
+    wallBushes: Array.from({ length: WALL_BUSH_COUNT }, (_, i) => sway(get(`mwall_bush${i}`))),
     wallStumps: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_stump${i}`)),
     creatures,
     floors,

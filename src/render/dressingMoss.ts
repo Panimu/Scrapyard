@@ -54,29 +54,88 @@ import {
   type MossWalls,
   type World,
 } from '../core/index.js';
-import { WALL_FACE_FRACTION, WALL_TREE_COUNT, type GameTextures } from './assets.js';
+import {
+  SWAY_FRAMES,
+  WALL_BUSH_COUNT,
+  WALL_FACE_FRACTION,
+  WALL_TREE_COUNT,
+  type GameTextures,
+} from './assets.js';
 import { SpritePool } from './spritePool.js';
 import type { Camera } from './camera.js';
 import type { LevelDressing } from './dressing.js';
 
 /**
- * How tall a tree is drawn, in world units.
+ * A TREED CELL IS A CLUMP, NOT A TREE.
  *
- * SIZED BY HEIGHT AGAINST THE MECH, not by width against the cell, and that was got wrong first
- * time. Scaled to 1.35 cells WIDE, the pack's trees came out between 133 and 200 units tall
- * depending on their aspect - up to four times the 52-unit mech - which is precisely the
- * dwarfing this whole art pass exists to avoid. Height is the dimension a player judges a tree
- * by, so height is the one that is fixed and width is what follows from the art.
+ * It used to be one 126-unit tree per cell, and the giveaway was exactly what you would expect: a
+ * run of them read as a row of stamps on a 64-unit grid, because that is what it was. The cell is
+ * still the collider and still takes one hit - nothing below changes what the simulation does - but
+ * it now GROWS several smaller stems at hashed offsets, so the treeline's silhouette is ragged and
+ * a wood looks like a wood.
  *
- * 126 was picked by looking at a run of eight in the real renderer. At 108 the canopies only just
- * touched and a treeline read as a row of separate lollipops with moss showing between the trunks -
- * decoration rather than something that stops you, which is the wrong message for a wall. At 126
- * the three surviving trees come out 79-83 units wide against a 64 unit cell, so consecutive
- * canopies overlap by a quarter and the run reads as one mass. It is 2.4x the mech, which a tree
- * is allowed to be; the thing that must not tower is the STONE, and that is handled by cropping
- * the cliff face (tools/make-moss-walls.mjs).
+ * THE JITTER IS THE WHOLE DIAL, and it is set well short of what looks best in a still picture.
+ * At +/- 0.29 of a cell the wood is beautiful and the WALL IS GONE: stems drift far enough that
+ * clumps separate, the run reads as detached bushes, and a player walks confidently into a gap they
+ * can see through. At +/- 0.25 the canopies still overlap their neighbours - which is the property
+ * the old 126 number existed to guarantee - and the silhouette is still broken up. Mocked both
+ * before picking.
+ *
+ * SIZED BY HEIGHT AGAINST THE MECH, not by width against the cell, and that was got wrong once
+ * already: scaled to a fixed WIDTH the pack's trees came out 133-200 units tall depending on their
+ * aspect, up to four times the 52-unit mech, which is the dwarfing this whole art pass exists to
+ * avoid. Height is the dimension a player judges a tree by, so height is fixed and width follows
+ * from the art - which is what keeps a pine narrow and a birch round.
  */
-const TREE_HEIGHT = 126;
+const STEM_HEIGHT = 76;
+/** Stems per cell: `STEM_MIN` plus a hashed 0..2. Six at 76 u covers a cell with overlap to spare. */
+const STEM_MIN = 4;
+const STEM_SPAN = 3;
+/** Total spread of a stem's base within its cell, as a fraction of one. Half of it either way. */
+const STEM_SPREAD = 0.5;
+/** Per-stem size jitter, so a clump is not one tree repeated. */
+const STEM_SCALE_MIN = 0.8;
+const STEM_SCALE_SPAN = 0.45;
+/**
+ * Where a clump sits in its cell, as a fraction from the cell's top. Not the bottom edge, which is
+ * where the single tree was anchored: a clump has stems on both sides of this line, so anchoring at
+ * the bottom would hang half of every cell's foliage into the cell below.
+ */
+const STEM_BASE_FRAC = 0.58;
+
+/**
+ * UNDERGROWTH. Two bushes tucked at the foot of every clump, inside its own cell.
+ *
+ * What they hide is the line where trunks meet the ground - a row of trunks standing on open moss
+ * is the second giveaway that a treeline is a row of stamps, and no amount of scattering the
+ * canopies fixes it.
+ *
+ * INSIDE THE CELL, NEVER OUTSIDE IT. Scattering bushes onto the open ground next to a wall looks
+ * better still - it dissolves the boundary completely - and it is a promise the simulation does not
+ * keep: nothing collides with a bush, so a fringe of them outside the wall is a band where a player
+ * cannot tell terrain from decoration. Inside a treed cell the collider is already there and the
+ * bush adds no claim at all.
+ */
+const BUSH_WIDTH = 34;
+const BUSH_COUNT = 2;
+/** Bush x spread within the cell, and where its band of y sits below the cell's middle. */
+const BUSH_SPREAD = 0.9;
+const BUSH_BASE_FRAC = 0.68;
+const BUSH_BASE_SPAN = 0.3;
+
+/**
+ * SWAY. Ticks per frame of the eight-frame cycle, so a full sway is 56 ticks - a hair under a
+ * second, which is a breeze rather than a gale.
+ *
+ * PHASED PER CELL. A wood where every tree reaches the same frame on the same tick is a chorus
+ * line, and it is far more obviously wrong than no animation at all. The offset is the cell's own
+ * hash, so it is stable as the camera moves and costs nothing to keep.
+ *
+ * THE CLOCK IS THE SIMULATION'S TICK, not a wall clock, for the same reason the Sporeling's gait
+ * is: it is identical on every machine and across a replay, and it is read here and written back
+ * nowhere.
+ */
+const SWAY_TICKS = 7;
 
 /** Stumps are small. Well under a cell, so a felled tree visibly leaves a gap you can drive through. */
 const STUMP_HEIGHT = 30;
@@ -88,7 +147,13 @@ const STUMP_HEIGHT = 30;
  */
 const TOP_CAPACITY = 512;
 const FACE_CAPACITY = 192;
-const TREE_CAPACITY = 192;
+/**
+ * Raised from 192 with the clump. A treed cell now costs up to six stems plus two bushes instead of
+ * one sprite, so a screen packed with wood needs eight times what it did. Running out is one
+ * missing stem out of a clump, which is invisible - the old ceiling would have been a whole cell
+ * of wood vanishing.
+ */
+const TREE_CAPACITY = 1536;
 
 /**
  * Which tree a cell grows, and which face a wall shows. A hash of the cell, so it is stable as the
@@ -97,6 +162,39 @@ const TREE_CAPACITY = 192;
  * Deliberately NOT the simulation's hash: this decides nothing the simulation can see, and reusing
  * that one would tie the art to the terrain's stream for no benefit.
  */
+/**
+ * One 32-bit hash per cell, and everything a clump needs is squeezed out of it: how many stems,
+ * which variants, where each one stands, how big it is, and the sway phase.
+ *
+ * ONE HASH RATHER THAN ONE PER QUESTION, because this runs for every treed cell on screen every
+ * frame - a clump is up to eight sprites and there can be seventy cells in view. `stemFrac` slices
+ * it rather than re-hashing.
+ *
+ * Deliberately NOT the simulation's hash: this decides nothing the simulation can see, and reusing
+ * that one would tie the art to the terrain's stream for no benefit.
+ */
+function cellHash(cx: number, cy: number): number {
+  let h = Math.imul(cx | 0, 0x27d4eb2f) ^ Math.imul(cy | 0, 0x9e3779b1);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  return h >>> 0;
+}
+
+/**
+ * A stable 0..1 for stem `k`'s question `q`, out of a cell's hash.
+ *
+ * Re-mixed rather than sliced straight out: the raw bits of one hash are far too correlated for
+ * six stems' worth of positions, and taking them directly lined every clump's trunks up on a
+ * diagonal. Cheap enough that it is fine in the draw loop - three multiplies.
+ */
+function stemFrac(h: number, k: number, q: number): number {
+  let v = Math.imul(h ^ Math.imul(k + 1, 0x9e3779b1) ^ Math.imul(q + 7, 0x85ebca6b), 0xc2b2ae35);
+  v ^= v >>> 16;
+  v = Math.imul(v, 0x27d4eb2f);
+  return ((v ^ (v >>> 15)) >>> 0) / 4294967296;
+}
+
 function variantOf(cx: number, cy: number, n: number): number {
   let h = Math.imul(cx | 0, 0x27d4eb2f) ^ Math.imul(cy | 0, 0x9e3779b1);
   h ^= h >>> 15;
@@ -113,6 +211,8 @@ export class MossDressing implements LevelDressing {
   private readonly faces: SpritePool;
   private readonly stumps: SpritePool;
   private readonly trees: SpritePool;
+  /** Scratch for the per-cell south-first stem sort. Preallocated: this runs per cell per frame. */
+  private readonly stemOrder = new Int32Array(STEM_MIN + STEM_SPAN);
 
   constructor(tex: GameTextures) {
     this.tex = tex;
@@ -161,7 +261,7 @@ export class MossDressing implements LevelDressing {
     const r1 = wallCellOf(camera.y + camera.halfH) + 1;
 
     this.drawGround(walls, c0, c1, r0, r1);
-    this.drawWood(walls, c0, c1, r0, r1);
+    this.drawWood(walls, c0, c1, r0, r1, world.tick);
 
     tops.end();
     faces.end();
@@ -215,34 +315,81 @@ export class MossDressing implements LevelDressing {
   }
 
   /**
-   * Passes 3 and 4: felled stumps, then standing trees.
+   * Passes 3 and 4: felled stumps, then the standing wood and its undergrowth.
    *
-   * Both are anchored at the BOTTOM CENTRE of their cell rather than at its middle, because that is
-   * where a trunk meets the ground - anchoring at the centre would bury half of every tree in the
-   * cell above and make a treeline sit a quarter of a cell too high.
+   * Everything is anchored at BOTTOM CENTRE, because that is where a trunk meets the ground -
+   * anchoring at the middle would bury half of every stem in the cell above.
+   *
+   * DEPTH IS DRAW ORDER, not zIndex. The cell loop already runs north to south, and within a cell
+   * the stems are emitted in order of their own jittered y and the bushes last - a bush skirts the
+   * FOOT of its clump, so it belongs in front of every stem in that cell and behind anything in the
+   * cell below. That is the whole sort, and it costs a six-element insertion rather than a
+   * sortable container.
    */
-  private drawWood(walls: MossWalls, c0: number, c1: number, r0: number, r1: number): void {
+  private drawWood(walls: MossWalls, c0: number, c1: number, r0: number, r1: number, tick: number): void {
+    const order = this.stemOrder;
     for (let cy = r0; cy <= r1; cy++) {
       for (let cx = c0; cx <= c1; cx++) {
         const kind = wallKindAt(walls, cx, cy);
         const felled = kind === WALL_EMPTY && isWallBroken(walls, cx, cy);
         if (kind !== WALL_TREE && !felled) continue;
 
-        const v = variantOf(cx, cy, WALL_TREE_COUNT);
-        const pool = felled ? this.stumps : this.trees;
-        const t = felled ? this.tex.wallStumps[v] : this.tex.wallTrees[v];
-        const s = pool.acquire();
-        if (s === undefined) continue;
+        const h = cellHash(cx, cy);
+        const n = STEM_MIN + (h % STEM_SPAN);
+        // The sway clock, per cell. See SWAY_TICKS: the offset is what stops the wood marching.
+        const frame = felled
+          ? 0
+          : (((tick / SWAY_TICKS) | 0) + (h >>> 8)) % SWAY_FRAMES;
 
-        // Scaled on HEIGHT - see TREE_HEIGHT. Width follows from the art, which is what keeps a
-        // pine narrow and a birch round instead of squashing both into a cell-shaped box.
-        const scale = (felled ? STUMP_HEIGHT : TREE_HEIGHT) / t.height;
-        s.texture = t;
-        s.anchor.set(0.5, 1);
-        s.position.set((cx + 0.5) * WALL_CELL, (cy + 1) * WALL_CELL);
-        s.scale.set(scale);
-        s.alpha = 1;
-        s.tint = 0xffffff;
+        // Stems south-first within the cell, so a nearer trunk covers a further one.
+        for (let k = 0; k < n; k++) order[k] = k;
+        for (let a = 1; a < n; a++) {
+          const key = order[a];
+          const ky = stemFrac(h, key, 1);
+          let b = a - 1;
+          while (b >= 0 && stemFrac(h, order[b], 1) > ky) {
+            order[b + 1] = order[b];
+            b--;
+          }
+          order[b + 1] = key;
+        }
+
+        for (let i = 0; i < n; i++) {
+          const k = order[i];
+          const s = (felled ? this.stumps : this.trees).acquire();
+          if (s === undefined) break;
+          const v = (h >>> (k * 3 + 2)) % WALL_TREE_COUNT;
+          const t = felled ? this.tex.wallStumps[v] : this.tex.wallTrees[v][frame];
+          // Scaled on HEIGHT - see STEM_HEIGHT. Width follows from the art.
+          const grow = STEM_SCALE_MIN + stemFrac(h, k, 2) * STEM_SCALE_SPAN;
+          s.texture = t;
+          s.anchor.set(0.5, 1);
+          s.position.set(
+            (cx + 0.5) * WALL_CELL + (stemFrac(h, k, 0) - 0.5) * WALL_CELL * STEM_SPREAD,
+            (cy + STEM_BASE_FRAC) * WALL_CELL + (stemFrac(h, k, 1) - 0.5) * WALL_CELL * STEM_SPREAD,
+          );
+          s.scale.set(((felled ? STUMP_HEIGHT : STEM_HEIGHT) * grow) / t.height);
+          s.alpha = 1;
+          s.tint = 0xffffff;
+        }
+
+        // The skirt. Drawn on a felled cell too: the trees came down, the scrub did not.
+        for (let k = 0; k < BUSH_COUNT; k++) {
+          const s = this.trees.acquire();
+          if (s === undefined) break;
+          const bv = (h >>> (k * 4 + 11)) % WALL_BUSH_COUNT;
+          const t = this.tex.wallBushes[bv][frame];
+          const w = BUSH_WIDTH * (STEM_SCALE_MIN + stemFrac(h, k, 3) * STEM_SCALE_SPAN);
+          s.texture = t;
+          s.anchor.set(0.5, 1);
+          s.position.set(
+            (cx + 0.5) * WALL_CELL + (stemFrac(h, k, 4) - 0.5) * WALL_CELL * BUSH_SPREAD,
+            (cy + BUSH_BASE_FRAC) * WALL_CELL + stemFrac(h, k, 5) * WALL_CELL * BUSH_BASE_SPAN,
+          );
+          s.scale.set(w / t.width);
+          s.alpha = 1;
+          s.tint = 0xffffff;
+        }
       }
     }
   }
