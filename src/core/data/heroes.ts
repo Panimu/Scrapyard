@@ -419,7 +419,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     id: 'indigo',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Indigo',
-    identity: 'Heavy strider, boxed racks. Opens with the Heavy Artillery.',
+    // WAS "boxed racks" - missile-rack flavour text left behind when this chassis moved off the
+    // Long Missiles (see the note on `startingWeapon` below). The one chassis built around the
+    // game's only AoE weapon was reading as a missile boat; the art has the same fix (make-mechs.mjs).
+    identity: 'Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery.',
     sprite: 'mech_indigo',
     gait: 'walk',
     // MOVED OFF THE LONG MISSILES when Fern took up Drones, because that left the Heavy Artillery

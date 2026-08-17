@@ -103,7 +103,12 @@ const HEROES = [
   { key: 'mech_onyx', cls: 'heavy', legs: 'quad', mount: 'missiles', torso: 'slab', hull: '#3a3f4d', trim: '#23262f', glass: '#b072ff' },
   { key: 'mech_ash', cls: 'light', legs: 'chicken', mount: 'missiles', torso: 'spear', hull: '#c3c9d4', trim: '#8a90a0', glass: '#b072ff' },
   { key: 'mech_vermilion', cls: 'light', legs: 'hover', mount: 'gatling', torso: 'drum', hull: '#e0603a', trim: '#9c3a1e', glass: '#45e0d0' },
-  { key: 'mech_indigo', cls: 'heavy', legs: 'strider', mount: 'missiles', torso: 'wedge', hull: '#5a4bb8', trim: '#362c78', glass: '#45e0d0' },
+  // MOUNT FIXED TO 'artillery': Indigo opens with the Heavy Artillery (see data/heroes.ts) but
+  // used to wear the 'missiles' mount, a leftover from when it opened with the Long Missiles - so
+  // the one chassis built around the game's only AoE weapon was drawn holding a rack of warheads
+  // instead of the howitzer tube. (strider, artillery) is a fresh (legs, mount) pair - Rust wears
+  // the same tube on 'quad' legs and Plum on 'chicken' - so this does not collide with either.
+  { key: 'mech_indigo', cls: 'heavy', legs: 'strider', mount: 'artillery', torso: 'wedge', hull: '#5a4bb8', trim: '#362c78', glass: '#45e0d0' },
   { key: 'mech_bone', cls: 'light', legs: 'strider', mount: 'pods', torso: 'spear', hull: '#ded3b6', trim: '#a2977a', glass: '#ff9d3c' },
   { key: 'mech_copper', cls: 'heavy', legs: 'quad', mount: 'gatling', torso: 'drum', hull: '#a85f3c', trim: '#703a22', glass: '#ff9d3c' },
   { key: 'mech_plum', cls: 'heavy', legs: 'chicken', mount: 'artillery', torso: 'wedge', hull: '#8f4a76', trim: '#5e2c4c', glass: '#ff6fae' },

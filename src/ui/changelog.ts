@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T16:14Z',
+    title: "INDIGO'S SILHOUETTE NOW MATCHES ITS GUN",
+    notes: [
+      "Indigo opens with the Heavy Artillery but was drawn carrying a boxed missile rack — leftover art from before it was moved onto that weapon. It now carries the howitzer tube its gun actually is, on the picker's silhouette as well as everywhere else.",
+    ],
+  },
+  {
     at: '2026-08-17T15:18Z',
     title: 'THREE PASSIVE ICONS REDRAWN',
     notes: [
