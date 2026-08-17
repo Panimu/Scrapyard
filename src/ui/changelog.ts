@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T10:01Z',
+    title: 'THE GAME NOW TELLS YOU HOW TO WIN IT',
+    notes: [
+      'The title screen said "Fifteen minutes. One yard." Outlasting the clock has never been the win condition — you win when the timer has passed AND every Scraplord is dead — and the run is sixteen minutes, and there are two yards. It now says what it actually takes.',
+      'The Scrapyard\'s own description was wrong in both numbers too: sixteen minutes and eight bosses, not fifteen and seven. Both are now read off the game rather than typed in, so they cannot drift again.',
+    ],
+  },
+  {
     at: '2026-08-17T09:49Z',
     title: 'BEING SAVED NOW STOPS THE GAME',
     notes: [

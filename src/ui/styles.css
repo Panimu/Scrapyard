@@ -1070,6 +1070,12 @@ body {
   color: var(--ink-faint);
 }
 
+/* One clause per line. See titleScreen.ts: the tagline does not fit on one line at 393 px, and a
+   wrapped sentence breaks wherever the box ends rather than where the sense does. */
+.title__tagline {
+  display: block;
+}
+
 .title__menu {
   display: flex;
   flex-direction: column;

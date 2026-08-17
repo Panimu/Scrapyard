@@ -626,7 +626,7 @@ function cssColour(rgb: number): string {
   return `#${(rgb & 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
-/** mm:ss. Never hh:mm:ss - a run is 15 minutes and an hours field would just be noise. */
+/** mm:ss. Never hh:mm:ss - a run is 16 minutes and an hours field would just be noise. */
 export function formatClock(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   const m = Math.floor(s / 60);

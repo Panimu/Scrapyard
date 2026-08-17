@@ -16,6 +16,7 @@
  * been before rather than a splash.
  */
 
+import { RUN_LENGTH_SEC } from '../core/index.js';
 import { BUILD_LABEL } from '../buildInfo.js';
 import { spriteUrl } from '../render/assets.js';
 
@@ -55,7 +56,33 @@ export class TitleScreen {
 
     const tag = document.createElement('div');
     tag.className = 'title__tag';
-    tag.textContent = 'Heavy mechs. Fifteen minutes. One yard.';
+    /**
+     * THE WIN CONDITION, AND IT HAS TO BE THE REAL ONE.
+     *
+     * This line read "Heavy mechs. Fifteen minutes. One yard." and every part of it was wrong. The
+     * run is sixteen minutes, there are two yards, and - the one that actually matters - OUTLASTING
+     * THE CLOCK IS NOT WINNING. A run ends in victory when the timer has passed AND no Scraplord is
+     * left standing (systems/progression.ts), so a player who reads this as "survive fifteen minutes"
+     * is told they have won several minutes before they have: measured on a real run, the last boss
+     * went down at 21:18 against a 16:00 clock.
+     *
+     * THE NUMBER IS DERIVED rather than spelled out. A word in prose cannot be checked by anything,
+     * which is exactly how this one came to be a minute short of the truth after RUN_LENGTH_SEC
+     * moved. `16 minutes` in digits is worth more than `sixteen` that can rot.
+     *
+     * The minutes describe THE HORDE, not the run: the director stops sending waves at the timer,
+     * and whatever is still alive is still alive. That is the honest way to state a clock that is a
+     * floor rather than a length.
+     *
+     * TWO SPANS RATHER THAN ONE STRING, because it does not fit on one line at 393 px and a wrapped
+     * sentence breaks wherever the box happens to end - measured, it broke after "Every", leaving
+     * "Scraplord down." stranded on the second line. Two blocks put the break between the clauses,
+     * which is where a reader would put it.
+     */
+    tag.append(
+      line(`Heavy mechs. ${Math.round(RUN_LENGTH_SEC / 60)} minutes of horde.`),
+      line('Every Scraplord down.'),
+    );
 
     head.append(art, name, tag);
     el.appendChild(head);
@@ -110,6 +137,14 @@ export class TitleScreen {
   hide(): void {
     this.element.hidden = true;
   }
+}
+
+/** One line of the tagline. A block, so the break between clauses is ours and not the box's. */
+function line(text: string): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.className = 'title__tagline';
+  span.textContent = text;
+  return span;
 }
 
 function button(label: string, className: string, onClick: () => void): HTMLButtonElement {

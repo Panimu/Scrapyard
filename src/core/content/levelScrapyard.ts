@@ -15,7 +15,7 @@
  */
 
 import { createScenery, type Scenery } from './scenery.js';
-import { ARENA_HALF } from '../constants.js';
+import { ARENA_HALF, RUN_LENGTH_SEC } from '../constants.js';
 import { SCRAPYARD_CREATURES } from './creaturesScrapyard.js';
 import { CYCLE_LADDER, resolveScrapyardCycle } from './cyclesScrapyard.js';
 import type { LevelDef } from './levels.js';
@@ -23,7 +23,17 @@ import type { LevelDef } from './levels.js';
 export const SCRAPYARD: LevelDef = Object.freeze({
   id: 'scrapyard' as const,
   name: 'Scrapyard',
-  blurb: 'A fenced yard of rust and wrecks. Fifteen minutes, seven bosses, nowhere to run to.',
+  /**
+   * BOTH NUMBERS ARE DERIVED, and they are derived because the hand-written version was wrong in
+   * both: it said "Fifteen minutes, seven bosses" for a sixteen-minute run with eight, having been
+   * written when the run was 900 s and the eighth Scraplord at 15:30 therefore never arrived.
+   *
+   * "Then the last Scraplord" is the WIN CONDITION rather than flavour. The clock is a floor: the
+   * yard stops sending at the timer and the run is won when nothing with a boss flag is still
+   * standing (systems/progression.ts). A blurb that stopped at the minutes would promise a survival
+   * timer, which is the one thing this game does not have.
+   */
+  blurb: `A fenced yard of rust and wrecks. ${Math.round(RUN_LENGTH_SEC / 60)} minutes, ${CYCLE_LADDER.length} bosses, then the last Scraplord.`,
   art: 'scrap_0',
   playable: true,
 
