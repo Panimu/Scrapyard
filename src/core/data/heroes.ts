@@ -356,6 +356,41 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weaponBonus: { drone: { mul: { cooldown: 0.9 } } },
   },
   {
+    id: 'indigo',
+    /**
+     * A THOUSAND-SHY FINISHES WITH THE BARRAGE, in one run. Killing blows, not damage dealt -
+     * the same rule every `killsWith` condition holds to - so a barrage that softens the horde
+     * for other guns to finish earns nothing here. It asks for a run that let the weather do
+     * the killing, which is exactly the run this chassis is built for.
+     */
+    unlock: { kind: 'killsWith', weapons: ['artillery'], count: 999 },
+    name: 'Indigo',
+    // WAS "boxed racks" - missile-rack flavour text left behind when this chassis moved off the
+    // Long Missiles (see the note on `startingWeapon` below). The one chassis built around the
+    // game's only AoE weapon was reading as a missile boat; the art has the same fix (make-mechs.mjs).
+    identity:
+      'Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery, blasting 15% wider.',
+    sprite: 'mech_indigo',
+    gait: 'walk',
+    // MOVED OFF THE LONG MISSILES when Fern took up Drones, because that left the Heavy Artillery
+    // with no opener at all - and every gun being somebody's opener is an invariant this roster
+    // holds (tests/heroes.test.ts). The long rack had three chassis and the header above has been
+    // grumbling about it since; this is the one-line rebalance it predicted.
+    //
+    // SITS DIRECTLY BEHIND FERN, out of the placeholder tail: earning a real condition is what
+    // moved it - the six behind it are still `never`, and the roster reads earnable-first. The
+    // shuffle shifts heroId for the six placeholders behind it, which no save can be pointing at
+    // (a `never` chassis is unpickable, and loadSettings falls lastHeroId back to a held one).
+    startingWeapon: 'artillery',
+    player: {},
+    weapon: {},
+    // AREA, NOT DAMAGE: `splashRadius` is the ring on the ground, and +15% radius is ~+32% ground
+    // covered per shell (area goes with the square). The shell is no heavier - the identity is
+    // "more of the yard is under the barrage", which stacks with the artillery's own T2/T5
+    // radius tiers and the workshop's Bursting Charges by the game's usual additive-share rule.
+    weaponBonus: { artillery: { mul: { splashRadius: 1.15 } } },
+  },
+  {
     id: 'jade',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Jade',
@@ -412,24 +447,6 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     sprite: 'mech_vermilion',
     gait: 'hover',
     startingWeapon: 'missile-long',
-    player: {},
-    weapon: {},
-  },
-  {
-    id: 'indigo',
-    unlock: { kind: 'never' }, // criteria to be defined
-    name: 'Indigo',
-    // WAS "boxed racks" - missile-rack flavour text left behind when this chassis moved off the
-    // Long Missiles (see the note on `startingWeapon` below). The one chassis built around the
-    // game's only AoE weapon was reading as a missile boat; the art has the same fix (make-mechs.mjs).
-    identity: 'Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery.',
-    sprite: 'mech_indigo',
-    gait: 'walk',
-    // MOVED OFF THE LONG MISSILES when Fern took up Drones, because that left the Heavy Artillery
-    // with no opener at all - and every gun being somebody's opener is an invariant this roster
-    // holds (tests/heroes.test.ts). The long rack had three chassis and the header above has been
-    // grumbling about it since; this is the one-line rebalance it predicted.
-    startingWeapon: 'artillery',
     player: {},
     weapon: {},
   },

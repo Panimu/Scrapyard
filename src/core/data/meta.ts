@@ -69,6 +69,7 @@ export type MetaId =
   | 'm-speed'
   | 'm-laser'
   | 'm-drone'
+  | 'm-blast'
   | 'm-insurance'
   | 'm-rerolls';
 
@@ -151,6 +152,20 @@ export interface MetaDef {
   readonly tiers: number;
   /** Credits per tier. Flat: every tier of one upgrade costs the same. */
   readonly cost: number;
+  /**
+   * THE VERSION OF THE DEAL, checked against every save on load.
+   *
+   * A purchase records the version (and the price paid) beside its tier count. When a shipped
+   * upgrade is RETUNED - cost per tier, tier count, or what a tier does - bump this by one, and
+   * every save holding the old deal has those tiers refunded AT THE PRICE ACTUALLY PAID and the
+   * purchase removed on its next load (see `reconcileMetaTiers` in appState.ts). The player
+   * keeps their credits; nobody keeps a deal that no longer exists, and nobody is silently
+   * repriced to one they never agreed to.
+   *
+   * Do NOT bump it for a blurb or comment edit - a bump resets every owner's purchase, which is
+   * the point when the numbers moved and pure noise when they did not.
+   */
+  readonly version: number;
   readonly effects: readonly MetaEffect[];
   /** How `metaEffectText` phrases this upgrade. See MetaDisplay. */
   readonly display: MetaDisplay;
@@ -210,6 +225,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       'Every gun the yard hands you hits harder, from the first second of the run. A hotter-running laser burns through its heat faster.',
     tiers: 7,
     cost: 50,
+    version: 1,
     // HEAT RIDES WITH DAMAGE, exactly as it does on the Ordnance card and on the lasers' own damage
     // rungs. The rule in this game is that raw power on a beam costs burst - you buy the burst back
     // with capacity and dispersion tiers, and in this shop that is Coolant Baffles.
@@ -240,6 +256,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     blurb: 'Everything reaches further, so the horde is dying before it arrives.',
     tiers: 5,
     cost: 30,
+    version: 1,
     effects: Object.freeze([
       { target: 'weapon' as const, key: 'range' as const, mode: 'mul' as const, amount: 0.15 / 5 },
     ]),
@@ -254,6 +271,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     // workshop sells those separately - dispersion IS Coolant Baffles - and one upgrade that
     // quietly contained another would make the cheaper one pointless.
     cost: 40,
+    version: 1,
     // A SHAPED LADDER, and the only one here. Equal cooldown steps would advertise 3.1 / 6.5 / 10
     // because rate is cooldown's reciprocal, which makes the first tier the worst buy of the three
     // for the same money. `rateLadder` authors it in rate instead: 3.3 / 6.7 / 10, equal thirds of
@@ -276,6 +294,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     // Ablative Plate is flat. Two armour is small against an elite and real against a swarm.
     tiers: 2,
     cost: 50,
+    version: 1,
     effects: Object.freeze([
       { target: 'player' as const, key: 'armour' as const, mode: 'add' as const, amount: 1 },
     ]),
@@ -287,6 +306,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     blurb: 'The chassis walks quicker, whichever chassis it is.',
     tiers: 3,
     cost: 45,
+    version: 1,
     // BOTH KEYS, for the reason Servo Drive gives: moveDrag is derived as accel / maxSpeed, so
     // raising the ceiling alone would make the mech float - a higher top speed it takes noticeably
     // longer to reach. Scaling both keeps time-to-max-speed constant.
@@ -312,6 +332,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     blurb: 'The beams shed heat faster, so they cut out for less of the fight.',
     tiers: 1,
     cost: 100,
+    version: 1,
     // A NO-OP FOR EVERYTHING ELSE, and it needs no scoping to be one: projectile weapons declare
     // `heatDispersion: 0`, and a share of zero is zero. The same trick the Ordnance card uses to
     // put a heat clause on a card every weapon can hold.
@@ -331,6 +352,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     blurb: 'The drone bay turns a new drone around sooner.',
     tiers: 2,
     cost: 80,
+    version: 1,
     // SCOPED TO THE DRONE, and it has to be: build time IS the drone weapon's `cooldown`, so an
     // unscoped -1s would take a second off every gun in the game and be worth many times its price.
     effects: Object.freeze([
@@ -345,12 +367,35 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'cooldown', as: 'secondsFaster', noun: 'drone build time' },
   },
   {
+    id: 'm-blast',
+    name: 'Bursting Charges',
+    blurb: 'Everything that explodes, explodes wider - the artillery barrage and a spent drone alike.',
+    tiers: 3,
+    cost: 70,
+    version: 1,
+    // UNSCOPED ON PURPOSE, and a no-op for anything that does not blast: only the Heavy Artillery
+    // (75 u) and the drone's death detonation (70 u) carry a `splashRadius` at all, and a share of
+    // zero is zero for everything else - the same trick the heat upgrades lean on. Area grows with
+    // the SQUARE of the radius, so +30% radius is ~+69% ground covered at full ladder; the radius
+    // is still the number shown, because it is the ring the player actually sees on the floor.
+    effects: Object.freeze([
+      {
+        target: 'weapon' as const,
+        key: 'splashRadius' as const,
+        mode: 'mul' as const,
+        amount: 0.3 / 3,
+      },
+    ]),
+    display: { key: 'splashRadius', as: 'percent', noun: 'blast radius' },
+  },
+  {
     id: 'm-insurance',
     name: 'Mech Insurance',
     blurb:
       'The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.',
     tiers: 1,
     cost: 100,
+    version: 1,
     /**
      * NO STAT EFFECTS AT ALL, and it is the first upgrade here with none.
      *
@@ -372,6 +417,7 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       'Walk into every run holding more second opinions. A reroll deals a fresh three cards and still owes you the pick.',
     tiers: 3,
     cost: 30,
+    version: 1,
     /**
      * A RUN-START GRANT, not a stat. `world.ts` seeds `levelUp.rerolls` from the run tuning plus
      * this, once, and nothing recomputes it - which is the whole character of the thing: a reroll

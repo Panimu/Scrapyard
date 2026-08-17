@@ -151,17 +151,34 @@ export interface Settings {
    */
   unlockedLevels: LevelId[];
   /**
-   * Workshop tiers owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
+   * Workshop purchases owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
    *
    * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
    * uses ids: an index is only meaningful beside the version of the table that produced it, and
    * reordering META_CATALOG must not silently hand somebody a different upgrade at full tier. The
    * array core wants is built from this at run start, where the catalog is in hand.
    *
-   * NO SEPARATE "SPENT" TOTAL. What the refund pays back is derived from these tiers by
-   * `metaSpent`, so the two cannot disagree - see the note on that function.
+   * EACH PURCHASE RECORDS THE DEAL IT WAS BOUGHT UNDER - `MetaDef.version` and the credits per
+   * tier actually paid - beside its tier count. While the versions match, the stored cost is
+   * redundant and is forced back to the catalog's on every load; its whole purpose is the day
+   * they DON'T match. A retuned upgrade (see `MetaDef.version`) is refunded at the price in the
+   * save, which is the only place the old price still exists - the catalog that charged it is
+   * gone by the time the new build loads.
+   *
+   * NO SEPARATE "SPENT" TOTAL, still. The refund-everything button derives from the tiers via
+   * `metaSpent`, which stays exact because load reconciliation guarantees every surviving
+   * purchase is priced at the current catalog's cost.
    */
-  metaTiers: Partial<Record<MetaId, number>>;
+  metaTiers: Partial<Record<MetaId, MetaPurchase>>;
+}
+
+/** One workshop purchase: how many tiers, and under what deal they were bought. */
+export interface MetaPurchase {
+  tiers: number;
+  /** `MetaDef.version` at purchase time. A mismatch on load refunds and removes the purchase. */
+  version: number;
+  /** Credits per tier actually paid. What a version-bump refund pays back. */
+  cost: number;
 }
 
 /** Ceiling for the banked total. Comfortably past any real play and exactly representable. */
@@ -233,6 +250,9 @@ function loadSettings(): Settings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<Settings>;
+    // Reconciled BEFORE the literal below so the credits line can fold the refund in: a purchase
+    // whose deal has been retuned since it was bought comes back as the credits it actually cost.
+    const meta = reconcileMetaTiers(parsed.metaTiers);
     const s: Settings = {
       // Bounded by the CATALOG, not by a literal. This read 0..7 while sixteen chassis shipped,
       // so choosing any of the last eight silently came back as Brass on the next launch - the
@@ -243,7 +263,14 @@ function loadSettings(): Settings {
       infiniteRerolls: parsed.infiniteRerolls === true,
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
       // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
-      credits: clampInt(parsed.credits, 0, MAX_BANKED_CREDITS, 0),
+      // The refund from any version-bumped workshop purchase is folded in here, under the same
+      // ceiling - see `reconcileMetaTiers`.
+      credits: clampInt(
+        clampInt(parsed.credits, 0, MAX_BANKED_CREDITS, 0) + meta.refund,
+        0,
+        MAX_BANKED_CREDITS,
+        0,
+      ),
       unlockedUpgrades: knownIds(
         parsed.unlockedUpgrades,
         UPGRADE_CATALOG.map((d) => d.id),
@@ -277,12 +304,7 @@ function loadSettings(): Settings {
           (id): id is LevelId =>
             typeof id === 'string' && LEVEL_CATALOG.some((l) => l.id === id),
         ),
-      // Clamped per upgrade against the CURRENT catalog: an unknown id is dropped, and a tier
-      // count past what that upgrade now offers is trimmed to the new ceiling. Shortening an
-      // upgrade's ladder must not leave somebody holding tier 9 of a seven-tier card - and it must
-      // not silently eat the credits either, which is why the refund is derived from the clamped
-      // tiers rather than from anything banked at the time of purchase.
-      metaTiers: readMetaTiers(parsed.metaTiers),
+      metaTiers: meta.owned,
       // Filtered against ALL THREE namespaces that share this array - see BESTIARY_KEYS. It used
       // to check two of them, which silently deleted every Scrapopedia page on every reload.
       killedEnemies: (Array.isArray(parsed.killedEnemies)
@@ -321,21 +343,60 @@ function loadSettings(): Settings {
 }
 
 /**
- * Workshop tiers out of storage: unknown ids dropped, counts clamped to each upgrade's ceiling.
+ * Workshop purchases out of storage: unknown ids dropped, surviving counts clamped to each
+ * upgrade's ceiling - and any purchase bought under a RETUNED DEAL refunded and removed.
+ *
+ * THE VERSION CHECK IS THE WHOLE POINT (see `MetaDef.version`). A purchase carries the version
+ * and per-tier price it was bought under; when the catalog's version has moved on, the save is
+ * the only place the old price still exists, so the refund pays `tiers x stored cost` - what was
+ * actually spent - and the purchase is removed. Refunding at the CURRENT cost would invent or eat
+ * credits by exactly the size of the retune, which is the failure this mechanism exists to close.
+ *
+ * The refunded tiers are deliberately NOT clamped to the current ladder: a save can legitimately
+ * hold seven tiers of an upgrade the new catalog caps at five - that is precisely what a ladder
+ * retune looks like - and all seven were paid for.
+ *
+ * A LEGACY BARE NUMBER (the pre-versioning shape) is adopted at the current version and cost.
+ * Versioning starts with this build; there is no older record to honour, and adopting is what
+ * makes the migration invisible to everyone whose deal has not changed.
  *
  * Storage is script-writable and this round-trips through JSON, so every value here is treated as
- * hostile - a hand-edited "damage: 900" becomes the seven it is allowed to be rather than a
- * multiplier nothing downstream expects.
+ * hostile - tiers and costs are clamped to sane integers, and a fabricated refund can mint no
+ * more than the same script could write into `credits` directly.
+ *
+ * Exported for the test suite: this is pure data-in data-out, and the one behaviour here a player
+ * would notice being wrong to the credit.
  */
-function readMetaTiers(v: unknown): Partial<Record<MetaId, number>> {
-  const out: Partial<Record<MetaId, number>> = {};
-  if (typeof v !== 'object' || v === null) return out;
+export function reconcileMetaTiers(v: unknown): {
+  owned: Partial<Record<MetaId, MetaPurchase>>;
+  refund: number;
+} {
+  const owned: Partial<Record<MetaId, MetaPurchase>> = {};
+  let refund = 0;
+  if (typeof v !== 'object' || v === null) return { owned, refund };
   const raw = v as Record<string, unknown>;
   for (const def of META_CATALOG) {
-    const n = clampInt(raw[def.id], 0, def.tiers, 0);
-    if (n > 0) out[def.id] = n;
+    const entry = raw[def.id];
+    // Legacy shape: a bare tier count from before purchases carried their deal.
+    if (typeof entry === 'number') {
+      const n = clampInt(entry, 0, def.tiers, 0);
+      if (n > 0) owned[def.id] = { tiers: n, version: def.version, cost: def.cost };
+      continue;
+    }
+    if (typeof entry !== 'object' || entry === null) continue;
+    const p = entry as Record<string, unknown>;
+    const tiers = clampInt(p.tiers, 0, 999, 0);
+    if (tiers <= 0) continue;
+    const version = clampInt(p.version, 0, 999_999, 0);
+    if (version !== def.version) {
+      refund += tiers * clampInt(p.cost, 0, MAX_BANKED_CREDITS, 0);
+      continue;
+    }
+    // Same deal: tiers clamped to today's ceiling, cost forced back to the catalog's so a hand-
+    // edited price cannot ride along waiting for a future bump to cash it out.
+    owned[def.id] = { tiers: Math.min(tiers, def.tiers), version: def.version, cost: def.cost };
   }
-  return out;
+  return { owned, refund };
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
@@ -425,7 +486,7 @@ export class AppState {
 
   /** Tiers owned of one upgrade. */
   metaTier(id: MetaId): number {
-    return this.settings.metaTiers[id] ?? 0;
+    return this.settings.metaTiers[id]?.tiers ?? 0;
   }
 
   /**
@@ -460,7 +521,11 @@ export class AppState {
     if (owned >= def.tiers) return false;
     if (this.settings.credits < def.cost) return false;
     this.settings.credits -= def.cost;
-    this.settings.metaTiers[id] = owned + 1;
+    // The deal is stamped onto the purchase - version and price actually paid - which is what a
+    // future retune's refund is computed from. See `reconcileMetaTiers`. Always the CURRENT
+    // catalog's, and never mixed: load reconciliation guarantees any existing entry already
+    // matches, so tier n+1 is bought under the same deal as tiers 1..n.
+    this.settings.metaTiers[id] = { tiers: owned + 1, version: def.version, cost: def.cost };
     this.saveSettings();
     return true;
   }

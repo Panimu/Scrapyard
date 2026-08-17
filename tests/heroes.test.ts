@@ -117,6 +117,16 @@ describe('the missile racks', () => {
     expect(HERO_CATALOG[heroIndex('onyx')].startingWeapon).toBe('missile-long');
   });
 
+  it('keeps Indigo directly behind Fern, out of the placeholder tail', () => {
+    // Earning a real unlock is what moved it: the roster reads earnable-first, and everything
+    // behind Indigo is still `never`. Adjacency rather than an absolute index, as with the four
+    // below, so it survives the roster being reordered around them.
+    expect(heroIndex('indigo')).toBe(heroIndex('fern') + 1);
+    for (let i = heroIndex('indigo') + 1; i < HERO_CATALOG.length; i++) {
+      expect(HERO_CATALOG[i].unlock.kind, HERO_CATALOG[i].id).toBe('never');
+    }
+  });
+
   it('keeps Onyx, Ash, Bone and Plum consecutive on the select screen', () => {
     // Adjacency rather than absolute indices: the ordering that was asked for is a run of four,
     // and stating it this way survives the roster being reordered again around them.
@@ -207,6 +217,16 @@ describe('chassis bonuses', () => {
     const plain = statsFor('copper', 'machine-gun');
     expect(bone.damage).toBeCloseTo(plain.damage * 1.3, 9);
     expect(bone.ammoCapacity).toBe(plain.ammoCapacity);
+  });
+
+  it('blasts Indigo\'s artillery 15% wider - the ring, not the shell', () => {
+    const indigo = statsFor('indigo', 'artillery');
+    // Rust has no opinion about the artillery, so it is the plain chassis here.
+    const plain = statsFor('rust', 'artillery');
+    expect(indigo.splashRadius).toBeCloseTo(plain.splashRadius * 1.15, 9);
+    // Radius only: the shell is no heavier and the barrage no more frequent.
+    expect(indigo.damage).toBe(plain.damage);
+    expect(indigo.cooldown).toBe(plain.cooldown);
   });
 
   it('applies a bonus to a weapon PICKED UP, not only to the opener', () => {

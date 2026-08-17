@@ -40,6 +40,28 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T16:32Z',
+    title: 'INDIGO CAN NOW BE EARNED',
+    notes: [
+      'The artillery chassis has a real unlock condition at last, and its own achievement to go with it. What the condition is stays where it always does — on the achievement, after you have met it.',
+      'It flies its own flag now too: its Heavy Artillery blasts 15% wider than anyone else firing the same tube. And it has moved up the roster to sit beside Fern, out of the block of silhouettes still waiting for their criteria.',
+    ],
+  },
+  {
+    at: '2026-08-17T16:32Z',
+    title: 'NEW IN THE WORKSHOP: BURSTING CHARGES',
+    notes: [
+      'Three tiers, 70 credits each, +10% blast radius apiece — +30% at full. It widens everything that explodes: the artillery barrage and the blast a drone goes out on. Nothing else blasts, so nothing else changes.',
+    ],
+  },
+  {
+    at: '2026-08-17T16:32Z',
+    title: 'A RETUNED WORKSHOP UPGRADE REFUNDS ITSELF',
+    notes: [
+      'From now on, if a workshop upgrade you own is ever rebalanced — its price, its tiers, or what a tier does — your purchase is automatically refunded at the price you actually paid, the next time the game loads. You keep your credits; nobody gets silently moved onto a deal they never agreed to.',
+    ],
+  },
+  {
     at: '2026-08-17T16:14Z',
     title: "INDIGO'S SILHOUETTE NOW MATCHES ITS GUN",
     notes: [

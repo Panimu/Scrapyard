@@ -22,9 +22,16 @@ import {
   metaSpent,
   type MetaDef,
 } from '../src/core/data/meta.js';
+import { reconcileMetaTiers } from '../src/appState.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
-import { resolvePlayerStats, type PlayerStats } from '../src/core/data/stats.js';
+import { ARTILLERY, CANNON } from '../src/core/content/weaponCatalog.js';
+import {
+  resolvePlayerStats,
+  resolveWeaponStats,
+  type PlayerStats,
+  type WeaponStats,
+} from '../src/core/data/stats.js';
 import { ARCHETYPES, ARCH_RUNT } from '../src/core/content/enemyCatalog.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
 import { DT } from '../src/core/constants.js';
@@ -54,12 +61,13 @@ function fullMul(id: string, target: 'player' | 'weapon', key: string): number {
 }
 
 describe('a full ladder is worth what its summary says', () => {
-  it('damage, range, rate, speed and dispersion', () => {
+  it('damage, range, rate, speed, dispersion and blast radius', () => {
     expect(fullMul('m-damage', 'weapon', 'damage')).toBeCloseTo(0.3, 10);
     expect(fullMul('m-range', 'weapon', 'range')).toBeCloseTo(0.15, 10);
     expect(fullMul('m-speed', 'player', 'moveMaxSpeed')).toBeCloseTo(0.15, 10);
     expect(fullMul('m-speed', 'player', 'moveAccel')).toBeCloseTo(0.15, 10);
     expect(fullMul('m-laser', 'weapon', 'heatDispersion')).toBeCloseTo(0.1, 10);
+    expect(fullMul('m-blast', 'weapon', 'splashRadius')).toBeCloseTo(0.3, 10);
   });
 
   it('damage drags heat with it, at the same share, like the card it mirrors', () => {
@@ -106,6 +114,8 @@ describe('what the screen says a tier is worth', () => {
     expect(metaEffectText(byId('m-laser'), 1)).toBe('+10% heat dispersion');
     expect(metaEffectText(byId('m-drone'), 1)).toBe('Drones build 1s faster');
     expect(metaEffectText(byId('m-drone'), 2)).toBe('Drones build 2s faster');
+    expect(metaEffectText(byId('m-blast'), 1)).toBe('+10% blast radius');
+    expect(metaEffectText(byId('m-blast'), 3)).toBe('+30% blast radius');
   });
 
   it('reports rate of fire as rate, not as the cooldown behind it', () => {
@@ -241,15 +251,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, pushing the max-everything total to 1305', () => {
-    expect(metaSpent(maxed())).toBe(1305);
+  it('costs 100, pushing the max-everything total to 1515', () => {
+    expect(metaSpent(maxed())).toBe(1515);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 1305', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 1515', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(1305);
+    expect(metaSpent(maxed())).toBe(1515);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 
@@ -269,6 +279,21 @@ describe('it reaches the resolved stats', () => {
     const before = out.armour;
     resolvePlayerStats(hero, stacks, UPGRADE_CATALOG, out, undefined, { tiers: maxed() });
     expect(out.armour).toBe(before + 2);
+  });
+
+  it('widens the blasts that exist and invents none for the guns without one', () => {
+    const hero = HERO_CATALOG[0];
+    const stacks = new Uint8Array(UPGRADE_CATALOG.length);
+    const out = {} as WeaponStats;
+    // The artillery's 75 u ring grows by the full ladder's +30%...
+    resolveWeaponStats(ARTILLERY, hero, 1, stacks, UPGRADE_CATALOG, out);
+    const before = out.splashRadius;
+    resolveWeaponStats(ARTILLERY, hero, 1, stacks, UPGRADE_CATALOG, out, { tiers: maxed() });
+    expect(out.splashRadius).toBeCloseTo(before * 1.3, 9);
+    // ...and the Cannon still has no blast at all: a share of zero is zero, which is the whole
+    // reason the upgrade can go unscoped.
+    resolveWeaponStats(CANNON, hero, 1, stacks, UPGRADE_CATALOG, out, { tiers: maxed() });
+    expect(out.splashRadius).toBe(0);
   });
 
   it('percentages ADD with the run’s own cards rather than compounding', () => {
@@ -344,5 +369,77 @@ describe('rerolls', () => {
     const a = accumulateMeta(tiers(3), 'player', 'rerolls', undefined);
     expect(a.add).toBe(0);
     expect(a.mul).toBe(1);
+  });
+});
+
+/**
+ * VERSIONED PURCHASES - the load-time reconcile (appState.reconcileMetaTiers). The behaviour
+ * being pinned: a purchase bought under a deal the catalog no longer offers comes back as the
+ * credits ACTUALLY PAID, and the purchase is removed. Pure data-in data-out, so it is tested
+ * here beside the catalog it reconciles against.
+ */
+describe('versioned purchases', () => {
+  const DAMAGE = META_CATALOG[metaIndex('m-damage')];
+
+  it('every entry in the catalog carries a version of at least 1', () => {
+    // Version 0 is reserved as "never a real deal" - it is what a hand-edited or corrupt record
+    // degrades to, and it must not collide with anything the catalog actually ships.
+    for (const def of META_CATALOG) expect(def.version, def.id).toBeGreaterThanOrEqual(1);
+  });
+
+  it('keeps a purchase whose version matches, at the catalog price', () => {
+    const r = reconcileMetaTiers({
+      'm-damage': { tiers: 3, version: DAMAGE.version, cost: DAMAGE.cost },
+    });
+    expect(r.owned['m-damage']).toEqual({ tiers: 3, version: DAMAGE.version, cost: DAMAGE.cost });
+    expect(r.refund).toBe(0);
+  });
+
+  it('refunds a version-bumped purchase at the price actually paid, and removes it', () => {
+    // The save says these three tiers cost 120 each under version 0 of the deal. The current
+    // catalog charges 50 - and the refund must pay the 360 that left this player's pocket, not
+    // the 150 today's price implies.
+    const r = reconcileMetaTiers({ 'm-damage': { tiers: 3, version: 0, cost: 120 } });
+    expect(r.owned['m-damage']).toBeUndefined();
+    expect(r.refund).toBe(360);
+  });
+
+  it('refunds every tier of a retuned ladder, past the current ceiling included', () => {
+    // A ladder shortened from 9 tiers to 7 with a version bump is exactly the case where the
+    // save legitimately holds more tiers than the catalog now sells - all 9 were paid for.
+    const r = reconcileMetaTiers({ 'm-damage': { tiers: 9, version: 0, cost: 50 } });
+    expect(r.refund).toBe(450);
+    expect(r.owned['m-damage']).toBeUndefined();
+  });
+
+  it('adopts a legacy bare tier count at the current deal, with no refund', () => {
+    // The pre-versioning shape. Versioning starts now, so there is no older record to honour -
+    // adopting is what makes the migration invisible to everyone whose deal has not changed.
+    const r = reconcileMetaTiers({ 'm-damage': 3, 'm-armour': 1 });
+    expect(r.owned['m-damage']).toEqual({ tiers: 3, version: DAMAGE.version, cost: DAMAGE.cost });
+    expect(r.owned['m-armour']?.tiers).toBe(1);
+    expect(r.refund).toBe(0);
+  });
+
+  it('forces a hand-edited price back to the catalog when the version matches', () => {
+    // A doctored cost must not ride along in the save waiting for a future version bump to cash
+    // it out at 9999 a tier.
+    const r = reconcileMetaTiers({
+      'm-damage': { tiers: 2, version: DAMAGE.version, cost: 9999 },
+    });
+    expect(r.owned['m-damage']?.cost).toBe(DAMAGE.cost);
+    expect(r.refund).toBe(0);
+  });
+
+  it('drops garbage without paying for it', () => {
+    expect(reconcileMetaTiers(undefined)).toEqual({ owned: {}, refund: 0 });
+    expect(reconcileMetaTiers(null).refund).toBe(0);
+    expect(reconcileMetaTiers({ 'm-nonsense': { tiers: 5, version: 0, cost: 100 } })).toEqual({
+      owned: {},
+      refund: 0,
+    });
+    expect(reconcileMetaTiers({ 'm-damage': 'seven' }).owned['m-damage']).toBeUndefined();
+    // Tiers clamp at 0: a negative count cannot mint a negative refund.
+    expect(reconcileMetaTiers({ 'm-damage': { tiers: -4, version: 0, cost: 50 } }).refund).toBe(0);
   });
 });
