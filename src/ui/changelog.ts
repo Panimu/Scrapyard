@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T09:49Z',
+    title: 'BEING SAVED NOW STOPS THE GAME',
+    notes: [
+      'When Mech Insurance pulls you out of a death, everything holds still for a moment. The screen shakes, the hull comes back together in a gold flash, a second shockwave sweeps out past the crowd, and the words say what happened — then the fight resumes exactly where it stopped.',
+      'It used to be a flash in the middle of a fight you were losing, at the one instant you were least able to notice it. The most expensive thing in the workshop should be impossible to miss when it pays out.',
+      'Nothing about the save itself changed: same full hull, same brief window of being untouchable, still once per run. The frozen moment costs no run time.',
+    ],
+  },
+  {
     at: '2026-08-17T09:25Z',
     title: 'THE HORNET COMES APART SOONER',
     notes: [

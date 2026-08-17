@@ -50,6 +50,7 @@ import { SettingsScreen } from './ui/settingsScreen.js';
 import { ScrapopediaScreen } from './ui/scrapopediaScreen.js';
 import { UpgradesScreen } from './ui/upgradesScreen.js';
 import { AchievementToast } from './ui/achievementToast.js';
+import { SAVE_PAUSE_SEC, SavedOverlay } from './ui/savedOverlay.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay } from './ui/gameOverOverlay.js';
@@ -266,6 +267,7 @@ async function boot(): Promise<void> {
     spent: () => state.metaSpent(),
   });
   const toast = new AchievementToast();
+  const saved = new SavedOverlay();
 
   const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
     upgrade: (id) => state.hasUpgrade(id),
@@ -331,6 +333,10 @@ async function boot(): Promise<void> {
   uiRoot.append(
     joystick.element,
     hud.element,
+    // ABOVE THE HUD, BELOW EVERY INTERACTIVE OVERLAY. It is inert and it covers the whole screen, so
+    // the only thing that matters is that a pause menu opened during the freeze sits over it rather
+    // than under it.
+    saved.element,
     levelUp.element,
     chest.element,
     pauseOverlay.element,
@@ -355,6 +361,18 @@ async function boot(): Promise<void> {
   let sim = new Simulation({ seed: 1, heroId: 0, runLengthSec: RUN_LENGTH_SEC });
   let pendingChoice = -1;
   let lastDamageTaken = 0;
+  /**
+   * THE INSURANCE FREEZE. Seconds of simulation left un-stepped, and whether this run's one payout
+   * has already been seen.
+   *
+   * The freeze lives HERE rather than in core, and that is the whole design. A new RUN_PHASE would
+   * have put a cosmetic pause into the replay stream and given every system a state to defend
+   * against; skipping `sim.advance` costs core nothing and cannot be observed by it. The run's clock
+   * is tick-based, so a frozen run loses no time either - exactly like the level-up card, which has
+   * always worked this way.
+   */
+  let savePauseLeft = 0;
+  let saveSeen = false;
 
   /**
    * One reused input frame. Called once per SIM STEP - up to five times in a single rendered
@@ -473,6 +491,9 @@ async function boot(): Promise<void> {
     toast.clear();
     pendingChoice = -1;
     lastDamageTaken = 0;
+    savePauseLeft = 0;
+    saveSeen = false;
+    saved.hide();
 
     renderer.reset(sim.world);
     // Every menu screen down, whichever one we came from - including the deep-link path, where
@@ -691,12 +712,35 @@ async function boot(): Promise<void> {
     const dtMs = raw < 0 ? 0 : raw > MAX_FRAME_MS ? MAX_FRAME_MS : raw;
     const dtSec = dtMs / 1000;
 
+    const world = sim.world;
+
     let steps = 0;
     if (state.phase === 'running') {
-      steps = sim.advance(dtMs, sampleInput);
+      if (savePauseLeft > 0) {
+        // THE WORLD HOLDS STILL. Nothing is stepped, so the horde standing on the mech is frozen
+        // mid-bite while the burst, the shake and the banner play over the top of it - all three of
+        // which run on real seconds and therefore keep moving. Counted down here rather than in the
+        // draw so that opening the pause menu mid-save does not spend the freeze behind it.
+        savePauseLeft -= dtSec;
+        if (savePauseLeft <= 0) {
+          savePauseLeft = 0;
+          // The frozen wall-clock time was never fed to the accumulator, so there is nothing banked
+          // to catch up on. This is belt and braces against a future frame loop that pauses
+          // differently: coming back from a freeze must never cost the player five sudden ticks.
+          sim.resetClock();
+        }
+      } else {
+        steps = sim.advance(dtMs, sampleInput);
+        // MECH INSURANCE, caught off the world rather than off the event ring - the renderer owns
+        // that ring and drains it during the draw, which is after this point in the frame. One
+        // payout per run, so `insuranceUsed` going high is the whole trigger and it cannot repeat.
+        if (!saveSeen && world.player.insuranceUsed !== 0) {
+          saveSeen = true;
+          savePauseLeft = SAVE_PAUSE_SEC;
+          saved.show();
+        }
+      }
     }
-
-    const world = sim.world;
 
     // --- phase reactions -----------------------------------------------------------------
     if (state.phase === 'running') {
@@ -738,6 +782,10 @@ async function boot(): Promise<void> {
       if (world.phase === RUN_PHASE_DEAD || world.phase === RUN_PHASE_VICTORY) {
         levelUp.hide();
         chest.hide();
+        // The banner cannot outlive the run it belongs to: a save on the very tick something else
+        // finished the mech off would otherwise leave "HULL RESTORED" sitting over the summary.
+        saved.hide();
+        savePauseLeft = 0;
         joystick.setEnabled(false);
         hud.setVisible(false);
         // BANK BEFORE SHOWING. This branch runs once - `state.set('summary')` below leaves the
@@ -783,6 +831,9 @@ async function boot(): Promise<void> {
     // the player is actually present for, which includes the summary screen and excludes a
     // backgrounded tab. Ticking it beside the simulation would freeze it whenever the game paused.
     toast.update(dtSec);
+    // Same clock as the toast and for the same reason: the banner is up for 1.2 s of the player
+    // actually being present, not of a backgrounded tab.
+    saved.update(dtSec);
 
     if (!hud.element.hidden) {
       if (state.settings.debug) {

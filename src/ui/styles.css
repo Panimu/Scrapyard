@@ -2188,6 +2188,158 @@ body {
   font-size: 14px;
 }
 
+/* ---------------------------------------------------------------------------------------------
+   MECH INSURANCE PAYING OUT - the only thing in the game that stops the world (src/main.ts freezes
+   the simulation, src/ui/savedOverlay.ts owns this element).
+
+   Every duration here is authored against SAVE_PAUSE_SEC = 1.2s. The whole thing is keyframes on
+   opacity and transform so it composites while the main thread is busy with the frame it froze, and
+   `pointer-events: none` because the player is mid-tap and this is not asking them anything.
+   --------------------------------------------------------------------------------------------- */
+.saved {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  z-index: 5;
+}
+
+/* Mandatory, not decorative: this rule sets `display`, and the UA sheet's `[hidden]` rule is the
+   weakest there is - without this line `el.hidden = true` would do nothing at all. */
+.saved[hidden] {
+  display: none;
+}
+
+/* The wash. Radial rather than flat: a full-screen gold rectangle reads as a UI error state, while
+   a bloom centred on the mech reads as light coming off the thing that just happened. */
+.saved__flash {
+  position: absolute;
+  inset: 0;
+  /* TWO LAYERS, and the dark one is doing as much work as the gold. A gold bloom alone barely reads
+     against the Scrapyard's rusty floor - measured, in a probe screenshot - and a vignette says
+     "everything stopped" in a way no amount of brightness in the middle can. Gold first so it is
+     painted over the darkened edges rather than under them. */
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 236, 178, 0.72) 0%,
+      rgba(255, 210, 87, 0.34) 26%,
+      rgba(231, 185, 0, 0) 58%
+    ),
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 34%, rgba(0, 0, 0, 0.72) 100%);
+  animation: saved-flash 1.2s ease-out forwards;
+}
+
+@keyframes saved-flash {
+  /* Hard in - the first frame is the brightest thing on screen, which is what a save should be. */
+  0% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.55;
+  }
+  /* The second beat of the world-space burst lands around here (SAVE_ENCORE_SEC), so the wash lifts
+     with it rather than fading monotonically past it. */
+  30% {
+    opacity: 0.78;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* IN THE UPPER THIRD, NOT THE MIDDLE. The mech is dead centre and the burst is playing on top of it
+   - that is the picture the player needs to see, and a 40px wordmark parked over it hides the one
+   thing the banner is about. Measured in a probe: centred, the words covered the chassis completely. */
+.saved__words {
+  position: relative;
+  /* ABOVE THE WASH. Both children are positioned with z-index auto, so DOM order would put the
+     flash's gold gradient OVER the text - measured in a probe, and it washed the wordmark out to a
+     muddy tan with its drop shadow gone. One line fixes it and it is not optional. */
+  z-index: 1;
+  text-align: center;
+  transform: translateY(-150%);
+  animation: saved-words 1.2s cubic-bezier(0.14, 0.9, 0.24, 1) forwards;
+}
+
+/* A DARK SCRIM BEHIND THE WORDS, not another text-shadow. This is the second time this lesson has
+   been paid for - the drone HUD readout learned it first: a shadow works over one background and
+   vanishes over the next, and these words have to be legible over rust, over moss, and over a gold
+   explosion.
+
+   A PSEUDO-ELEMENT LARGER THAN THE TEXT, rather than a background on the block itself. Painted on
+   the block, the gradient is clipped by the box and the fade never completes - it read as a grey
+   rectangle with three hard edges, which is exactly what a scrim must not do. Oversized, the
+   gradient reaches zero inside its own box and there is no edge to see. `z-index: -1` puts it behind
+   the text within the words' own stacking context, which `z-index: 1` above establishes. */
+.saved__words::before {
+  content: '';
+  position: absolute;
+  inset: -55% -14%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(3, 6, 11, 0.78) 0%,
+    rgba(3, 6, 11, 0.46) 48%,
+    rgba(3, 6, 11, 0) 76%
+  );
+}
+
+@keyframes saved-words {
+  /* Slams in oversized and settles - the same gesture a fighting game uses for a counter-hit, which
+     is the register this moment is in. */
+  0% {
+    opacity: 0;
+    transform: translateY(-150%) scale(1.45);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(-150%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(-150%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-162%) scale(1.02);
+  }
+}
+
+.saved__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.saved__title {
+  margin-top: 2px;
+  /* NOWRAP, and sized to fit the narrow axis because of it: two words on two lines read as a
+     paragraph and doubled the height of the block over the mech. */
+  white-space: nowrap;
+  font-size: clamp(24px, 8.4vw, 44px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fffbef;
+  /* Two shadows: a hard black one for the letterform's own edge, and a gold bloom so the words
+     belong to the light rather than sitting on top of it. The SCRIM above is what makes them
+     legible; these are what make them look like they came from the explosion. */
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.85),
+    0 0 26px rgba(255, 210, 87, 0.9);
+}
+
+.saved__sub {
+  margin-top: 6px;
+  font-size: clamp(11px, 3.4vw, 15px);
+  color: var(--ink);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
+}
+
 /* Landscape is not blocked - iOS ignores manifest orientation and offers no JS lock, so the
    camera fixes the field of view instead (src/render/camera.ts) and the layout just gets
    shorter. Overlays go two-column so their buttons stay above the fold. */

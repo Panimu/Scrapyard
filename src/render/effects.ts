@@ -368,6 +368,35 @@ export class Effects {
     }
   }
 
+  /**
+   * THE SECOND BEAT of an insurance save, a third of a second after the first - see SAVE_ENCORE_SEC
+   * in gameRenderer.ts, which owns the timing.
+   *
+   * ONE SLOW, HUGE RING and nothing else. The first beat is a bang: a collapsing core, two quick
+   * hoops and a full circle of embers, all of it over inside half a second. This is the sweep
+   * afterwards - twice the reach and three times the duration, so it crosses ground the first burst
+   * never touched and is still expanding when the game starts moving again. That contrast is the
+   * whole point: a bang and then a wave reads as one event with a shape, where two bangs read as a
+   * stutter and one long flash reads as a bug.
+   *
+   * The half-angle ring of embers is thrown OUTWARD ONLY at the cardinals, eight of them rather than
+   * the first beat's twenty - enough to give the wave an edge, few enough that it does not look like
+   * the same burst again.
+   */
+  insuranceEncore(x: number, y: number): void {
+    const wave = this.alloc(KIND_FLASH, x, y, INSURANCE_RING_LIFE * 3);
+    if (wave >= 0) {
+      this.size0[wave] = 40;
+      this.size1[wave] = 660;
+      this.tint[wave] = INSURANCE_TINT;
+    }
+
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      this.beamEmber(x, y, Math.cos(a), Math.sin(a), whitenTint(INSURANCE_TINT));
+    }
+  }
+
   sparkle(x: number, y: number, tint: number): void {
     const i = this.alloc(KIND_SPARKLE, x, y, SPARKLE_LIFE);
     if (i < 0) return;

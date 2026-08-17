@@ -21,6 +21,17 @@ import { VIEW_MAJOR_MAX_UNITS, VIEW_MINOR_UNITS } from '../core/index.js';
 /** Shot kick: 4 px opposite the barrel, ~90 ms ease-out (DESIGN.md §10.5). */
 const KICK_PIXELS = 4;
 const KICK_DECAY_SEC = 0.09;
+/**
+ * SHAKE FREQUENCIES, Hz, and they are deliberately not the same number.
+ *
+ * Two axes shaken at one frequency trace a LINE - the camera slides back and forth along a
+ * diagonal, which reads as a drag rather than as a jolt. Two frequencies that are close but not
+ * harmonically related draw a Lissajous figure instead, so the viewport moves in a way that has no
+ * direction in it. 31 and 23 are not tuned numbers; they are coprime, well above the eye's ability
+ * to follow, and comfortably below the frame rate so a shake cannot alias into a slow wobble.
+ */
+const SHAKE_HZ_X = 31;
+const SHAKE_HZ_Y = 23;
 /** Extra world units queried around the camera rect when culling, ~= the largest sprite radius. */
 const CULL_MARGIN = 80;
 
@@ -45,6 +56,11 @@ export class Camera {
 
   private kickX = 0;
   private kickY = 0;
+  /** Peak shake amplitude in CSS px, and the clock it is driven and faded by. */
+  private shakePx = 0;
+  private shakeLeft = 0;
+  private shakeTotal = 0;
+  private shakeAge = 0;
 
   /**
    * Recomputes scale and letterbox for a new viewport. Cheap and idempotent - safe to call from
@@ -81,6 +97,10 @@ export class Camera {
     this.y = y;
     this.kickX = 0;
     this.kickY = 0;
+    this.shakePx = 0;
+    this.shakeLeft = 0;
+    this.shakeTotal = 0;
+    this.shakeAge = 0;
   }
 
   follow(x: number, y: number): void {
@@ -97,22 +117,68 @@ export class Camera {
     this.kickY -= dirY * KICK_PIXELS;
   }
 
-  /** Exponential ease-out on the kick. `dtSec` is REAL time - effects are not tick-locked. */
+  /**
+   * SHAKES THE WHOLE VIEWPORT for `seconds`, starting at `pixels` and fading linearly to nothing.
+   *
+   * A different thing from `kick`, not a bigger one. A kick is DIRECTIONAL - it says a shell left
+   * the barrel that way - and it is over in 90 ms. A shake has no direction and lasts long enough
+   * to be felt rather than glimpsed: it says the machine itself was hit. Nothing in the game shook
+   * before this, which is exactly why it is worth spending on the one event that has to land.
+   *
+   * The LOUDEST of the shake and whatever is already running wins, rather than the sum: two events
+   * on the same frame should not be able to throw the camera twice as far as either was authored to.
+   */
+  shake(pixels: number, seconds: number): void {
+    if (pixels <= this.shakePx && this.shakeLeft > 0) return;
+    this.shakePx = pixels;
+    this.shakeLeft = seconds;
+    this.shakeTotal = seconds;
+    this.shakeAge = 0;
+  }
+
+  /**
+   * Exponential ease-out on the kick, linear fade on the shake. `dtSec` is REAL time - effects are
+   * not tick-locked, which is what lets both of these keep running while the simulation is frozen.
+   */
   update(dtSec: number): void {
     const k = Math.exp(-dtSec / KICK_DECAY_SEC);
     this.kickX *= k;
     this.kickY *= k;
     if (Math.abs(this.kickX) < 0.01) this.kickX = 0;
     if (Math.abs(this.kickY) < 0.01) this.kickY = 0;
+
+    if (this.shakeLeft > 0) {
+      this.shakeAge += dtSec;
+      this.shakeLeft -= dtSec;
+      if (this.shakeLeft <= 0) {
+        this.shakeLeft = 0;
+        this.shakePx = 0;
+      }
+    }
+  }
+
+  /**
+   * Current shake offset. Derived from the clock rather than integrated, so it cannot drift and it
+   * always ends at exactly zero - an integrated shake left the world a pixel or two off centre for
+   * the rest of the run, which nothing on screen ever explains.
+   */
+  private get shakeX(): number {
+    if (this.shakeLeft <= 0) return 0;
+    return Math.sin(this.shakeAge * SHAKE_HZ_X) * this.shakePx * (this.shakeLeft / this.shakeTotal);
+  }
+
+  private get shakeY(): number {
+    if (this.shakeLeft <= 0) return 0;
+    return Math.cos(this.shakeAge * SHAKE_HZ_Y) * this.shakePx * (this.shakeLeft / this.shakeTotal);
   }
 
   /** Screen-space x (CSS px) of the world container's origin. */
   get originX(): number {
-    return this.viewW * 0.5 - this.x * this.scale + this.kickX;
+    return this.viewW * 0.5 - this.x * this.scale + this.kickX + this.shakeX;
   }
 
   get originY(): number {
-    return this.viewH * 0.5 - this.y * this.scale + this.kickY;
+    return this.viewH * 0.5 - this.y * this.scale + this.kickY + this.shakeY;
   }
 
   /**

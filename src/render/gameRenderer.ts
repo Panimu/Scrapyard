@@ -180,6 +180,28 @@ const INSURANCE_SAVED_TINT = 0xffd257;
 const INSURANCE_PULSE_HZ = 9;
 
 /**
+ * MECH INSURANCE IS THE ONE EVENT THAT STOPS THE GAME, and these are the numbers that make it read
+ * as more than a bigger flash. The simulation is frozen by the frame loop for `SAVE_PAUSE_SEC`
+ * (see main.ts, which owns the freeze); everything here runs on real seconds, so it plays over the
+ * top of a still battlefield.
+ *
+ * TWO BEATS, not one long effect. The first is the save itself, on the frame it happens. The second
+ * lands `SAVE_ENCORE_SEC` later and is BIGGER - a slow ring that sweeps past everything the first
+ * burst reached - and the gap between them is what turns a flash into an event with a shape. One
+ * continuous effect at this length just reads as a long flash, which is the thing being fixed.
+ *
+ * The shake is 14 px against a 440-unit viewport, which at a phone's scale is between a fifth and a
+ * quarter of a world unit of apparent movement: unmissable, and nowhere near enough to make the
+ * screen unreadable while it is happening.
+ */
+const SAVE_SHAKE_PX = 14;
+const SAVE_SHAKE_SEC = 0.5;
+const SAVE_ENCORE_SEC = 0.32;
+/** The second beat's shake. Smaller and shorter - an aftershock, not a repeat. */
+const SAVE_ENCORE_SHAKE_PX = 7;
+const SAVE_ENCORE_SHAKE_SEC = 0.3;
+
+/**
  * Blends two packed 0xRRGGBB tints, per channel. `t` is how much of `b` to take, 0..1.
  *
  * Per channel rather than a single lerp on the packed integer, which would bleed the red channel's
@@ -418,6 +440,13 @@ export class GameRenderer {
   private savedFor = 0;
   private savedTotal = 0;
   /**
+   * The second beat: seconds until it fires, and where it fires. Negative means "nothing pending",
+   * which is a different state from zero - zero is the frame it goes off on.
+   */
+  private saveEncoreLeft = -1;
+  private saveEncoreX = 0;
+  private saveEncoreY = 0;
+  /**
    * Green tint while the level-up heal lands. The health bar moves too, but the card opens over
    * it the same instant - so without a cue on the mech itself the only healing in the game
    * happens entirely behind a menu.
@@ -626,6 +655,7 @@ export class GameRenderer {
     this.playerFlash = 0;
     this.savedFor = 0;
     this.savedTotal = 0;
+    this.saveEncoreLeft = -1;
     // -1, not 0: the new run may start with the same layer count the last one ended on, and a
     // cleared Graphics that believes it is already drawn would leave the rim missing all run.
     this.shieldRimDrawn = -1;
@@ -649,6 +679,16 @@ export class GameRenderer {
     if (this.playerFlash > 0) this.playerFlash -= dtSec;
     if (this.savedFor > 0) this.savedFor -= dtSec;
     if (this.healFlash > 0) this.healFlash -= dtSec;
+    // THE SECOND BEAT of an insurance save, fired from the draw loop rather than from the event -
+    // the event is one frame and this is a third of a second later. See SAVE_ENCORE_SEC.
+    if (this.saveEncoreLeft >= 0) {
+      this.saveEncoreLeft -= dtSec;
+      if (this.saveEncoreLeft <= 0) {
+        this.saveEncoreLeft = -1;
+        this.effects.insuranceEncore(this.saveEncoreX, this.saveEncoreY);
+        this.camera.shake(SAVE_ENCORE_SHAKE_PX, SAVE_ENCORE_SHAKE_SEC);
+      }
+    }
     if (this.turretKick > 0) this.turretKick -= dtSec;
 
     this.drainEvents(world);
@@ -783,6 +823,13 @@ export class GameRenderer {
           this.effects.insuranceSave(a, b);
           this.savedFor = c;
           this.savedTotal = c;
+          // THE WHOLE VIEWPORT MOVES, once, for the one event in the game that deserves it - and
+          // the frame loop freezes the simulation around it, so the shake and the second beat play
+          // over a still field rather than getting lost in a fight that carried on regardless.
+          this.camera.shake(SAVE_SHAKE_PX, SAVE_SHAKE_SEC);
+          this.saveEncoreLeft = SAVE_ENCORE_SEC;
+          this.saveEncoreX = a;
+          this.saveEncoreY = b;
           break;
 
         case EV_WALL_BROKEN:
