@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T15:18Z',
+    title: 'THREE PASSIVE ICONS REDRAWN',
+    notes: [
+      "Ordnance and Feed Systems used to wear the same arrow, one arrow and two of it, which made them hard to tell apart at a glance on the level-up card or a spinning chest reel. Ordnance is now a four-point impact burst and Feed Systems a fast-forward arrow — two different pictures for two different cards.",
+      "Energy Shield's ring used to read as a stray letter C. It is now a tighter ring studded with sparking energy nodes, closer to what the shield actually looks like around the mech.",
+    ],
+  },
+  {
     at: '2026-08-17T13:43Z',
     title: 'NEW PASSIVE: RADIATOR BANK',
     notes: [

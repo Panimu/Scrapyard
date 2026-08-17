@@ -175,14 +175,6 @@ const DRAW = `(id) => {
     g.fillRect(40, CY - thick, len, thick * 2);
     g.globalAlpha = 1;
   };
-  const chevron = (cy, w, t) => {
-    g.strokeStyle = KEY; g.lineWidth = t;
-    g.beginPath();
-    g.moveTo(CX - w, cy + w * 0.55);
-    g.lineTo(CX, cy - w * 0.55);
-    g.lineTo(CX + w, cy + w * 0.55);
-    g.stroke();
-  };
 
   // --- weapons -------------------------------------------------------------------------------
   if (id === 'w-cannon') {
@@ -430,12 +422,41 @@ const DRAW = `(id) => {
     g.beginPath(); g.arc(CX - 26, CY, 7, 0, 6.284); g.fillStyle = KEY; g.fill();
   }
 
-  if (id === 'p-damage') chevron(CY + 8, 30, 11);
+  if (id === 'p-damage') {
+    // AN IMPACT BURST, not a chevron. The chevron used to be shared with p-rate - one arrow doing
+    // duty for "harder" and two of the same arrow for "sooner" - which reads as the same card
+    // twice rather than as two different things at a glance. A four-point spike is what a hit
+    // looks like on its own terms, and it owes nothing to the rate glyph beside it.
+    const R_OUT = 32, R_IN = 12;
+    g.fillStyle = KEY;
+    g.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const ang = (Math.PI / 4) * i - Math.PI / 2;
+      const r = i % 2 === 0 ? R_OUT : R_IN;
+      const x = CX + Math.cos(ang) * r;
+      const y = CY + Math.sin(ang) * r;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath();
+    g.fill();
+  }
 
   if (id === 'p-rate') {
-    // Two chevrons: the same gesture as damage, doubled. Rate is damage again, sooner.
-    chevron(CY - 6, 27, 9);
-    chevron(CY + 26, 27, 9);
+    // A FAST-FORWARD prompt - three triangles racing right, fading as they go. Stands on its own
+    // as "faster/again" rather than being p-damage's chevron doubled, which is what made the two
+    // cards hard to tell apart on a moving reel.
+    g.fillStyle = KEY;
+    for (let i = 0; i < 3; i++) {
+      g.globalAlpha = 1 - i * 0.22;
+      const x = CX - 30 + i * 22;
+      g.beginPath();
+      g.moveTo(x - 12, CY - 20);
+      g.lineTo(x + 12, CY);
+      g.lineTo(x - 12, CY + 20);
+      g.closePath();
+      g.fill();
+    }
+    g.globalAlpha = 1;
   }
 
   if (id === 'p-speed') {
@@ -493,12 +514,38 @@ const DRAW = `(id) => {
   }
 
   if (id === 'p-shield') {
-    // The rim the game actually draws around the mech, with a gap - a field, not a wall.
+    // THE RIM THE GAME ACTUALLY DRAWS AROUND THE MECH - still a field with a gap, not a closed
+    // wall, but a much narrower gap than this used to have. At the old width (about a sixth of
+    // the circle) the ring read as a stray letter C rather than as a shield; closing most of it
+    // and studding what remains with a few energy nodes is what makes it read as an active field
+    // instead of an open arc that happens to be blue.
+    const GAP = 0.18;
     g.strokeStyle = KEY; g.lineWidth = 8;
-    g.beginPath(); g.arc(CX, CY, 34, 0.55, 5.73); g.stroke();
+    g.beginPath(); g.arc(CX, CY, 34, GAP, 6.284 - GAP); g.stroke();
     g.globalAlpha = 0.4; g.lineWidth = 15;
-    g.beginPath(); g.arc(CX, CY, 34, 0.55, 5.73); g.stroke();
+    g.beginPath(); g.arc(CX, CY, 34, GAP, 6.284 - GAP); g.stroke();
     g.globalAlpha = 1;
+    // Energy nodes: bright diamonds set into the rim with a spark ticking outward from each, so
+    // it reads as a charged field rather than a plain stroke that happens to have a seam in it.
+    for (const ang of [1.6, 3.4, 5.0]) {
+      const nx = CX + Math.cos(ang) * 34;
+      const ny = CY + Math.sin(ang) * 34;
+      g.strokeStyle = KEY;
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(nx, ny);
+      g.lineTo(CX + Math.cos(ang) * 46, CY + Math.sin(ang) * 46);
+      g.stroke();
+      g.save();
+      g.translate(nx, ny);
+      g.rotate(ang);
+      g.fillStyle = KEY;
+      g.beginPath();
+      g.moveTo(9, 0); g.lineTo(0, 6); g.lineTo(-9, 0); g.lineTo(0, -6);
+      g.closePath();
+      g.fill();
+      g.restore();
+    }
     g.beginPath(); g.arc(CX, CY, 12, 0, 6.284); g.fillStyle = STEEL; g.fill();
   }
 
