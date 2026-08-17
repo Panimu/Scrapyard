@@ -586,6 +586,25 @@ export class ScrapopediaScreen {
    *
    * Unearned: greyed, and the description withheld. The name still shows, so the list is a set of
    * things to go and do rather than a row of locked boxes.
+   *
+   * ---------------------------------------------------------------------------------------------
+   * THE ICON IS EARNED TOO
+   * ---------------------------------------------------------------------------------------------
+   * An earned row draws the achievement's own picture; an unearned one draws a sealed plate.
+   *
+   * IT IS NOT SYMMETRY WITH THE NAME, and the difference is the whole reason this is written down.
+   * A name is a label - `Hornet's Nest` tells you there is something called that and nothing about
+   * what it is. AN ICON IS THE ANSWER. Every achievement in the catalog is `secret`, and the two
+   * kinds leak differently:
+   *
+   *   A MECH trophy's icon is the CHASSIS SPRITE, which is exactly what the picker withholds
+   *   behind a silhouette. Printing it here hands back the thing that screen is keeping.
+   *   AN ASCENSION's icon is a picture of the mechanic - a missile coming apart. The Scrapopedia
+   *   goes to some length elsewhere never to mention that a tier 8 exists (see this file's header);
+   *   drawing one on a row nobody has earned would undo that in a single glance.
+   *
+   * So the plate is the same promise the hero picker makes: there is something here, and finding
+   * out what is the game.
    */
   private achievementRow(def: AchievementDef): HTMLButtonElement {
     const got = this.has.achievement(def.id);
@@ -593,6 +612,23 @@ export class ScrapopediaScreen {
     b.type = 'button';
     b.className = `pedia__entry pedia__entry--achv${got ? '' : ' pedia__entry--unearned'}`;
     b.disabled = true;
+
+    if (got) {
+      const icon = document.createElement('img');
+      icon.className = 'pedia__icon pedia__icon--achv';
+      icon.src = spriteUrl(def.icon);
+      icon.alt = '';
+      icon.decoding = 'async';
+      b.appendChild(icon);
+    } else {
+      const sealed = document.createElement('span');
+      sealed.className = 'pedia__icon pedia__icon--achv pedia__icon--sealed';
+      sealed.textContent = '?';
+      // Decoration: the row already reads as unearned through the withheld description, and a
+      // screen reader announcing "question mark" before every locked name is noise.
+      sealed.setAttribute('aria-hidden', 'true');
+      b.appendChild(sealed);
+    }
 
     const words = document.createElement('span');
     words.className = 'pedia__achv-words';

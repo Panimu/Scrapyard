@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T08:06Z',
+    title: 'THE TROPHY SHELF HAS PICTURES ON IT',
+    notes: [
+      'Achievements you have earned now show their own icon in the Scrapopedia — the chassis you unlocked, the weapon you turned into something else.',
+      'Ones you have not earned show a sealed plate instead. The picture is part of the prize: several of these icons would tell you exactly what you are looking for, and finding out is the game.',
+    ],
+  },
+  {
     at: '2026-08-17T05:04Z',
     title: 'THERE IS A SECOND ASCENSION',
     notes: [

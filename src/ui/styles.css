@@ -1649,6 +1649,28 @@ body {
   white-space: normal;
 }
 
+/* Achievement icons come from three different places - a chassis sprite, a card icon, a tier-8
+   icon - so they are not a common shape. `contain` is what stops a 148 px mech being stretched
+   into a 34 px square. */
+.pedia__icon--achv {
+  object-fit: contain;
+  align-self: flex-start;
+}
+
+/* THE SEALED PLATE on an achievement nobody has earned. Dashed rather than solid, so it reads as
+   a space left for something rather than as a thing in its own right. */
+.pedia__icon--sealed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--ink-faint);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .pedia__entry--unearned {
   border-left-color: var(--ink-faint);
   opacity: 0.45;
