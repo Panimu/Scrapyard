@@ -40,6 +40,20 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T09:06Z',
+    title: 'DRONES LAUNCH FROM THE MECH',
+    notes: [
+      'A new drone now appears at your feet and flies out to its station, instead of blinking into existence already on the escort ring. The bay is on your chassis, so that is where drones come from.',
+    ],
+  },
+  {
+    at: '2026-08-17T09:06Z',
+    title: 'HEAVIES WALK FASTER',
+    notes: [
+      'The armoured hulks that show up in a siege ring move a fifth quicker. The ring still takes a while to close on you, but leaving it behind and coming back to find it barely moved no longer works.',
+    ],
+  },
+  {
     at: '2026-08-17T08:47Z',
     title: 'EIGHT BOSSES IS ALL THERE IS',
     notes: [

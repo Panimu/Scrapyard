@@ -452,20 +452,26 @@ function distSq(ax: number, ay: number, bx: number, by: number): number {
 }
 
 /**
- * Puts a new drone on the field, on the far side of the escort ring from the ones already there.
+ * Puts a new drone on the field AT THE MECH, flying out to its station on the escort ring.
  *
- * The phase is spread by the count rather than drawn from an RNG: a random one would couple the
- * drones to the loot or spawn stream for a purely cosmetic decision, and evenly spaced is what a
- * player would draw if asked to.
+ * IT USED TO APPEAR ON THE RING, already 62 units out, and that read as a drone teleporting in
+ * rather than being built. The bay is on the mech - a machine that makes things should be seen
+ * emitting them - and the flight out is about a third of a second, which is exactly the beat that
+ * says "that came from here". The kill is the same either way; only the launch reads differently.
+ *
+ * The STATION is unchanged and is still spread by the count rather than drawn from an RNG: a random
+ * phase would couple the drones to the loot or spawn stream for a purely cosmetic decision, and
+ * evenly spaced is what a player would draw if asked to. `angle` is handed over explicitly for that
+ * reason - the orbit code only re-derives phase from position for a drone that is off-station and
+ * away from the centre, so one starting exactly ON the mech keeps the phase it was given and flies
+ * to it instead of to whatever direction a zero-length vector would have produced.
  */
 function deployDrone(world: World, slot: number, ammo: number, alive: number): void {
   const player = world.player;
   const angle = (TWO_PI * alive) / 4;
-  const x = player.x + dcos(angle) * ESCORT_RADIUS;
-  const y = player.y + dsin(angle) * ESCORT_RADIUS;
   // Alternating spin, so two drones on the same ring do not sit on top of each other forever.
   const spin = alive % 2 === 0 ? 1 : -1;
-  allocDrone(world.drones, x, y, angle, ammo > 0 ? ammo : 1, slot, spin);
+  allocDrone(world.drones, player.x, player.y, angle, ammo > 0 ? ammo : 1, slot, spin);
 }
 
 /** One round, credited to the bay that built the drone so the damage table names the right gun. */
