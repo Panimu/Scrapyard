@@ -151,6 +151,32 @@ export interface RimRule {
   readonly scale: number;
 }
 
+/**
+ * WHICH WAY A LEVEL'S ART IS DRAWN FACING: `1` for east, `-1` for west.
+ *
+ * The renderer mirrors a creature so it faces the way it is walking, and to do that it has to know
+ * which way the art faces to begin with. That is a fact about the PACK, not about the creature, so
+ * it belongs here with the other two - and it was assumed rather than asked, which is the bug this
+ * exists to fix.
+ *
+ *   SCRAPYARD   Kenney's RTS units are drawn facing EAST, and every enemy on that map has been
+ *               correct since the first build - which is why the assumption survived.
+ *   MOSSY       Dungeon Crawl's monster tiles are drawn facing WEST. All of them: checked the full
+ *               roster of 23 rather than a sample, and every creature with a profile at all - the
+ *               dragons, the hydra at all five head counts, both hounds, the jackal, the flies, the
+ *               snail and slug - points its head to the left. The rest are drawn head-on and do not
+ *               care. So every creature on the moss was walking backwards, in both directions.
+ *
+ * IT WAS REPORTED AS "the Draconian is wrong", and that is worth recording. The Draconian is a
+ * bruiser drawn up to 122 units with a snout you cannot misread; a 26-unit jackal walking backwards
+ * reads as a smudge. The loudest symptom was not the cause, and fixing the sprite would have left
+ * twenty-two others wrong.
+ */
+export const ART_FACING_BY_LEVEL: Record<LevelId, number> = {
+  scrapyard: 1,
+  'mossy-mayhem': -1,
+};
+
 /** EVERY LEVEL'S RULE, BY ID - `Record<LevelId, ...>`, so a new level cannot forget to answer. */
 export const RIM_BY_LEVEL: Record<LevelId, RimRule> = {
   scrapyard: { keyFor: () => undefined, scale: BOSS_OUTLINE_SCALE },

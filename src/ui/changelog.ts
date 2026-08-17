@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T04:04Z',
+    title: 'THE MOSS STOPS WALKING BACKWARDS',
+    notes: [
+      'Every creature on Mossy Mayhem was facing the wrong way — coming at you tail first, in both directions. The Draconian was the one you could not miss, because it is the biggest thing on that map with a face, but the jackals, the hounds, the dragons, the hydra and the flies were all doing it too.',
+      'They now face the way they are walking. Nothing on the Scrapyard changes; its machines were always right.',
+    ],
+  },
+  {
     at: '2026-08-17T03:32Z',
     title: 'THE SCRAPOPEDIA REMEMBERS AGAIN',
     notes: [

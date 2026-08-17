@@ -72,7 +72,12 @@ import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
 import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
-import { GAIT_WALK, stageIndexFor, type LevelCreatureArt } from './creatureArt.js';
+import {
+  ART_FACING_BY_LEVEL,
+  GAIT_WALK,
+  stageIndexFor,
+  type LevelCreatureArt,
+} from './creatureArt.js';
 import type { LevelId } from '../core/content/levels.js';
 // PACKAGE B and PACKAGE C - two independent decoration layers. Each is one import, one field, one
 // construction, one addChild and one draw call; removing either touches nothing else.
@@ -350,6 +355,8 @@ export class GameRenderer {
    * cannot change while a run is in progress.
    */
   private creatureArt: LevelCreatureArt = [];
+  /** Which way this level's creature art is drawn facing. See `ART_FACING_BY_LEVEL`. */
+  private creatureFacing = 1;
   private readonly dressingSlot: Container;
   private readonly scrap: SpritePool;
   private readonly world: Container;
@@ -570,6 +577,7 @@ export class GameRenderer {
       throw new Error(`renderer: no creature art loaded for level "${world.level.id}"`);
     }
     this.creatureArt = creatures;
+    this.creatureFacing = ART_FACING_BY_LEVEL[world.level.id];
 
     // THE LEVEL'S DRESSING. Swapped only when the level actually changes, so replaying the same
     // level does not rebuild a fence and a rubble lattice it is about to use unchanged.
@@ -1207,7 +1215,14 @@ export class GameRenderer {
       const rank = isBoss ? RANK_BOSS : isElite ? RANK_ELITE : RANK_REGULAR;
       const rankScale = RANKS[rank].size * (flavour?.renderScale ?? 1);
       const base = frame.scale * rankScale;
-      const flip = p.vx[d] < 0;
+      // MIRRORED SO IT FACES THE WAY IT IS WALKING, which needs to know which way the art faces
+      // to start with - `ART_FACING_BY_LEVEL`. This used to be a bare `vx < 0`, i.e. "the art faces
+      // east", which is true of Kenney's units and false of every DCSS tile: the whole Mossy roster
+      // was walking backwards in both directions.
+      //
+      // A STANDING ENEMY IS NOT MIRRORED. `vx` of exactly 0 leaves the art as drawn rather than
+      // snapping it to a direction it is not travelling in.
+      const flip = this.creatureFacing < 0 ? p.vx[d] > 0 : p.vx[d] < 0;
 
       // ---- THE GAIT. Squash, stretch and lean, out of nothing but a transform.
       //
