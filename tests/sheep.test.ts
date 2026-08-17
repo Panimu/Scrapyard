@@ -27,8 +27,9 @@ describe('the flock', () => {
   it('grazes on the map that asks for one, and nowhere else', () => {
     const moss = makeWorld('mossy-mayhem');
     const yard = makeWorld('scrapyard');
-    // Half a minute is a dozen spawn ticks - comfortably more than the level asks for, so this
-    // also pins that the flock STOPS at the number rather than growing all run.
+    // Half a minute is ~16 spawn attempts at SPAWN_EVERY_SEC - comfortably more than the four the
+    // level asks for, so this also pins that the flock STOPS at the number rather than growing all
+    // run.
     for (let t = 0; t < 60 * 30; t++) {
       stepWorld(moss, EMPTY);
       stepWorld(yard, EMPTY);

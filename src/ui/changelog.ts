@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T12:42Z',
+    title: 'FEWER SHEEP',
+    notes: [
+      'The flock on Mossy Mayhem was three times as thick as the Scrapyard\'s own fuel drums for the same amount of ground — it shipped as a guess and the guess was too generous. Matched to the real drum count now, so the two maps hand out loot at about the same rate.',
+    ],
+  },
+  {
     at: '2026-08-17T11:45Z',
     title: 'DRONES DO LESS DAMAGE PER ROUND',
     notes: [

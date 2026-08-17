@@ -62,12 +62,30 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
   arenaHalf: Infinity,
   floor: 'floor_moss',
   /**
-   * A DOZEN, WHICH IS ABOUT WHAT ONE SCREEN HOLDS. The camera sees 616x440 units and a sheep is
-   * placed 620-960 out, so a player walking in a straight line meets two or three at a time - often
-   * enough that a spanner is always somewhere, rare enough that catching one is a decision rather
-   * than a chore. This map's drums have legs; see systems/sheep.ts.
+   * FOUR, MEASURED AGAINST THE SCRAPYARD'S OWN DRUMS rather than picked for feel.
+   *
+   * It shipped at twelve, which was a guess and the wrong one: a sheep is this map's fuel barrel,
+   * so the honest brief is "about as many loot props within reach as the other map has", and twelve
+   * was three times too many. `systems/sheep.ts` culls anything past `CULL_DIST` (1500 u), so every
+   * alive sheep sits within 1500 u of the player BY CONSTRUCTION - that radius is the flock's whole
+   * operating footprint, and the fair comparison is however many drums the Scrapyard has within the
+   * same 1500 u of an average player.
+   *
+   * MEASURED, generating real yards (ten seeds, thirteen sample points spread across the square,
+   * counting only the fuel-barrel variant):
+   *
+   *     radius    mean drums within it
+   *        560           0.55
+   *        800           1.18
+   *       1200           2.57
+   *       1500           4.15   <- CULL_DIST, the comparable figure
+   *       2000           6.99
+   *
+   * Four is that number, rounded down rather than up: sheep are also easier to find than a drum
+   * (they move toward the player as often as away, a drum never does), so erring low keeps them
+   * from reading as commoner than the thing they are matched against.
    */
-  sheep: 12,
+  sheep: 4,
 
   /**
    * The whole plane's worth of walls, from the seed alone. Nothing is allocated up front: the
