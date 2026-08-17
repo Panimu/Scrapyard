@@ -479,11 +479,23 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
   });
 
   it('gives the Cannon range, fire rate, damage and pierce on the tiers that claim them', () => {
-    // BRASS, not Amber, and the choice matters: both open with the Cannon, but Amber's chassis
-    // bonus is +1 pierce and this test is about the LADDER's numbers. A ladder test run on a
-    // chassis that bends the same weapon is testing two things and can only fail ambiguously.
-    // The chassis bonuses have their own suite in tests/heroes.test.ts.
-    const w = makeWorldForHero(heroIndex('brass'), 21, 'cannon');
+    // A FIXTURE HERO, not a roster one, and the choice matters: this test is about the LADDER's
+    // numbers, so its chassis must have no opinion about the Cannon at all. It used to borrow
+    // Brass for that (a bonus-free Cannon opener at the time); Brass has since moved to the Phase
+    // Cannon, and Amber - the one remaining Cannon opener - carries +1 pierce, which this ladder
+    // asserts is 0 until tier 7. The chassis bonuses have their own suite in tests/heroes.test.ts.
+    const cannonCard = UPGRADE_CATALOG.find((u) => u.grantsWeapon === 'cannon');
+    if (cannonCard === undefined) throw new Error('no card grants cannon');
+    const w = createWorld(
+      { seed: 21, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      {
+        heroes: [testHero({ startingWeapon: 'cannon' })],
+        weapons: WEAPON_CATALOG,
+        upgrades: [cannonCard],
+      },
+    );
+    w.phase = RUN_PHASE_RUNNING;
+    w.player.stats.xpGain = 1;
     const card = 0; // solo catalog: the Cannon card is the only one in this world's pool
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 

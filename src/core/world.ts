@@ -358,6 +358,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     kills: createKillFeed(MAX_KILLS_PER_TICK),
     scratch: {
       candidates: new Uint16Array(MAX_QUERY_CANDIDATES),
+      neighbourCounts: new Uint16Array(MAX_QUERY_CANDIDATES),
       targets: new Int32Array(MAX_TARGETS),
       beamClaims: new Int32Array(WEAPON_SLOTS),
       v0: { x: 0, y: 0 },

@@ -38,7 +38,7 @@ import { sceneryRayHit } from '../content/scenery.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { EnemyPool } from '../entity/enemyPool.js';
 import type { World } from '../types.js';
-import type { TargetingFn, TargetingId } from '../content/weaponCatalog.js';
+import { PHASE_CLUSTER_RADIUS, type TargetingFn, type TargetingId } from '../content/weaponCatalog.js';
 
 /**
  * Collects the DENSE indices of every live enemy strictly inside the range circle, compacted in
@@ -314,6 +314,136 @@ export const targetLowestHp: TargetingFn = (
 ): number => selectTopK(world, originX, originY, rangeSq, wantCount, out, betterLowestHp);
 
 /**
+ * THE PHASE CANNON'S RULE: the body with the most live neighbours within PHASE_CLUSTER_RADIUS of
+ * it, then nearest to the origin, then lowest spawnId. Strict and total, like the other three.
+ *
+ * TWO DELIBERATE DEPARTURES from the shared machinery:
+ *
+ * NO LINE-OF-SIGHT FILTER. Every other rule goes through `gatherLiveInRange`, which drops a body
+ * the weapon cannot draw a clear line to - because for every other weapon an occluded target is a
+ * wasted cooldown. The phase bolt flies through scrap, walls and bodies alike, so occlusion is
+ * not a fact about ITS shots, and filtering would blind the one gun whose whole identity is
+ * shooting the knot of enemies behind cover. Hence the bespoke gather below: range test and
+ * dedupe, no ray.
+ *
+ * DEDUPED BEFORE COUNTING. `queryCircleLiveInto` may return a body twice (bucket aliasing); for
+ * the argmax rules a duplicate is harmless, but here it would double-count every neighbour tally
+ * involving it. The dedupe is the membership scan `selectTopK` already does at insert, moved to
+ * gather time.
+ *
+ * COST, bounded and stated: the tally is one pass over all candidate PAIRS - O(n^2) with n the
+ * live bodies in the range circle. Bodies have real radii and separation keeps them apart, so a
+ * 260 u circle physically holds ~150 of the smallest; 150^2/2 pairs of four float ops each is
+ * ~45k ops per tick worst case, on flat typed arrays. Measured against the budget targeting.ts
+ * frets about, that is well under the 100k/s line that motivated the spatial hash - and typical
+ * fields are a tenth of the worst case.
+ */
+export const targetDensest: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+): number => {
+  const k = wantCount < out.length ? wantCount : out.length;
+  if (k <= 0) return 0;
+
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+  const counts = world.scratch.neighbourCounts;
+
+  // Gather: live, in range, deduped. NO line-of-sight ray - see the header.
+  const raw = queryCircleLiveInto(
+    world.spatial,
+    enemies,
+    originX,
+    originY,
+    Math.sqrt(rangeSq),
+    candidates,
+  );
+  const ex = enemies.x;
+  const ey = enemies.y;
+  let n = 0;
+  for (let i = 0; i < raw; i++) {
+    const d = candidates[i];
+    const dx = ex[d] - originX;
+    const dy = ey[d] - originY;
+    if (dx * dx + dy * dy > rangeSq) continue;
+    let duplicate = false;
+    for (let j = 0; j < n; j++) {
+      if (candidates[j] === d) {
+        duplicate = true;
+        break;
+      }
+    }
+    if (duplicate) continue;
+    candidates[n++] = d;
+  }
+  if (n === 0) return 0;
+
+  // Tally neighbours among the candidates themselves, each pair once. A body's own cluster can
+  // extend past the weapon's range; those outliers are not counted, which is the honest reading -
+  // this rule scores what the weapon can actually see and the blast can actually follow up on.
+  const r2 = PHASE_CLUSTER_RADIUS * PHASE_CLUSTER_RADIUS;
+  for (let i = 0; i < n; i++) counts[i] = 0;
+  for (let i = 0; i < n; i++) {
+    const a = candidates[i];
+    const axv = ex[a];
+    const ayv = ey[a];
+    for (let j = i + 1; j < n; j++) {
+      const b = candidates[j];
+      const dx = ex[b] - axv;
+      const dy = ey[b] - ayv;
+      if (dx * dx + dy * dy <= r2) {
+        counts[i]++;
+        counts[j]++;
+      }
+    }
+  }
+
+  // Argmax by (count desc, dist2 asc, spawnId asc) - strict and total, so the result cannot
+  // depend on hash visit order. K is 1 for the one weapon that uses this; wantCount is honoured
+  // by re-scanning with an already-taken check, which at K <= MAX_TARGETS beats sorting n.
+  let filled = 0;
+  while (filled < k) {
+    let best = -1;
+    let bestIdx = -1;
+    for (let i = 0; i < n; i++) {
+      const d = candidates[i];
+      let taken = false;
+      for (let j = 0; j < filled; j++) {
+        if (out[j] === d) {
+          taken = true;
+          break;
+        }
+      }
+      if (taken) continue;
+      if (best >= 0) {
+        const cb = counts[bestIdx];
+        const ci = counts[i];
+        if (ci < cb) continue;
+        if (ci === cb) {
+          const bx = ex[best] - originX;
+          const by = ey[best] - originY;
+          const ix = ex[d] - originX;
+          const iy = ey[d] - originY;
+          const db = bx * bx + by * by;
+          const di = ix * ix + iy * iy;
+          if (di > db) continue;
+          if (di === db && enemies.spawnId[d] >= enemies.spawnId[best]) continue;
+        }
+      }
+      best = d;
+      bestIdx = i;
+    }
+    if (best < 0) break;
+    out[filled++] = best;
+  }
+  return filled;
+};
+
+/**
  * THE STRATEGY TABLE. Adding a targeting rule is one entry here plus one pure function above -
  * `updateWeapons` never learns the rule exists.
  */
@@ -321,4 +451,5 @@ export const TARGETING: Readonly<Record<TargetingId, TargetingFn>> = Object.free
   'highest-hp': targetHighestHp,
   nearest: targetNearest,
   'lowest-hp': targetLowestHp,
+  densest: targetDensest,
 });

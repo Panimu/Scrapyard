@@ -28,9 +28,13 @@ import { EV_PROJECTILE_EXPIRED, NO_DIRECT_HIT, pushEvent, pushHit } from '../eve
 import {
   allocProjectile,
   PROJECTILE_FLAG_DEAD,
+  PROJECTILE_FLAG_PHASE,
   PROJECTILE_FLAG_SPLITS,
   markProjectileDead,
+  projectileRecordHit,
 } from '../entity/projectilePool.js';
+import { enemyIndex } from '../entity/enemyPool.js';
+import { type EnemyHandle } from '../entity/handle.js';
 import { MISSILE_SHORT, SPLIT_COS, SPLIT_SIN } from '../content/weaponCatalog.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import {
@@ -291,6 +295,78 @@ export const behaviourHoming: ProjectileBehaviour = (world, behaviourId, dt): vo
 };
 
 /**
+ * `phase` - the Phase Cannon's bolt. A perfect seeker onto ONE designated enemy, and a ghost to
+ * everything else.
+ *
+ * IT LANDS ONLY ON ITS MARK. The bolt is spawned NOCONTACT, so the general collision sweep (S8)
+ * never considers it; the arrival test lives here instead, against exactly the one enemy whose
+ * handle it carries. `enemyIndex` is generation-checked, so a mark that died - or whose slot has
+ * been recycled a hundred times since - resolves to -1 rather than to a stranger, and the classic
+ * "chased a recycled entity" bug stays structurally impossible.
+ *
+ * THE STEER IS TOTAL, NOT A TURN RATE. Velocity is re-pointed straight at the mark every tick at
+ * constant speed - a plasma bolt that cannot be juked, because the fairness lever on this weapon
+ * is the slow turret in front of the shot, not wobble after it. No trig: the steer is a
+ * normalise, which is `sqrt` and divides, all exactly rounded.
+ *
+ * ON ARRIVAL it pushes an ordinary hit and lets S9 do everything - damage, knockback, splash,
+ * pierce spend, death. S7 pushing hits is the established shape (`expireProjectile` already does
+ * it for the artillery); what S7 never does is touch hp itself.
+ *
+ * A MARK THAT DIES MID-FLIGHT leaves the bolt flying its last heading until the fuse ends, and
+ * `detonateOnExpiry` bursts it there - so a stolen kill still costs the crowd the blast, arriving
+ * roughly where the crowd was.
+ */
+export const behaviourPhase: ProjectileBehaviour = (world, behaviourId, dt): void => {
+  const p = world.projectiles;
+  const n = p.count;
+  const enemies = world.enemies;
+
+  for (let d = 0; d < n; d++) {
+    if (p.behaviour[d] !== behaviourId) continue;
+    if ((p.flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+
+    const ed = enemyIndex(enemies, p.targetHandle[d] as EnemyHandle);
+    if (ed >= 0) {
+      const tx = enemies.x[ed] - p.x[d];
+      const ty = enemies.y[ed] - p.y[d];
+      const dist2 = tx * tx + ty * ty;
+      const reach = enemies.radius[ed] + p.radius[d];
+
+      if (dist2 <= reach * reach) {
+        // ARRIVED. Recorded against re-hits for the same reason S8 records before S9 applies,
+        // then handed to S9 as an ordinary hit at the bolt's own position.
+        projectileRecordHit(p, d, enemies.spawnId[ed]);
+        pushHit(world.hits, d, ed, p.x[d], p.y[d]);
+        // pierce 0 -> S9 marks it dead after applying. Nothing more to fly.
+        const left = p.lifeSec[d] - dt;
+        p.lifeSec[d] = left;
+        continue;
+      }
+
+      const dist = Math.sqrt(dist2);
+      const vx = p.vx[d];
+      const vy = p.vy[d];
+      const speed = Math.sqrt(vx * vx + vy * vy);
+      if (speed > 0 && dist > 0) {
+        p.vx[d] = (tx / dist) * speed;
+        p.vy[d] = (ty / dist) * speed;
+      }
+    }
+
+    const mx = p.vx[d] * dt;
+    const my = p.vy[d] * dt;
+    p.x[d] += mx;
+    p.y[d] += my;
+    p.travelled[d] += Math.sqrt(mx * mx + my * my);
+
+    const left = p.lifeSec[d] - dt;
+    p.lifeSec[d] = left;
+    if (left <= 0) expireProjectile(world, d);
+  }
+};
+
+/**
  * THE BEHAVIOUR TABLE. Index === the value stored in ProjectilePool.behaviour === the BEHAVIOUR_*
  * constant in weaponCatalog.ts. Those indices are written into every replay hash, so this array
  * is APPEND ONLY - reordering it silently reinterprets every recorded run.
@@ -298,6 +374,7 @@ export const behaviourHoming: ProjectileBehaviour = (world, behaviourId, dt): vo
 export const PROJECTILE_BEHAVIOURS: readonly ProjectileBehaviour[] = Object.freeze([
   behaviourStraight, // BEHAVIOUR_STRAIGHT === 0
   behaviourHoming, // BEHAVIOUR_HOMING === 1
+  behaviourPhase, // BEHAVIOUR_PHASE === 2
 ]);
 
 export function updateProjectiles(world: World, dt: number): void {
@@ -352,6 +429,11 @@ function stopAtTheEdges(world: World): void {
       expireProjectile(world, d);
       continue;
     }
+
+    // A PHASE BOLT IS EXEMPT from the scrap absorption below - passing through cover is the
+    // weapon (its targeting rule does not even filter for line of sight). The FENCE above still
+    // ends it: the fence is the edge of the world, not an obstacle in it.
+    if ((flags[d] & PROJECTILE_FLAG_PHASE) !== 0) continue;
 
     // Radius 0: a round is a point against scenery, as it already is against enemies.
     if (sceneryOverlap(scenery, x[d], y[d], 0) >= 0) {

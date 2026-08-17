@@ -30,9 +30,9 @@
  * Showing fewer numbers is not showing false ones, and every number that IS shown - a heat bar, a
  * damage figure in the summary - is still exact.
  *
- * FIFTEEN CARDS: eight weapons and seven passives, every one of them SEVEN TIERS deep. Tier 1 puts
+ * SIXTEEN CARDS: nine weapons and seven passives, every one of them SEVEN TIERS deep. Tier 1 puts
  * the thing in your hands; tiers 2-7 change what it does. A run has five weapon slots and five
- * passive slots, so nothing here is a collection to complete - 105 tiers exist and a long run
+ * passive slots, so nothing here is a collection to complete - 112 tiers exist and a long run
  * takes perhaps 30 of them.
  *
  * WHAT A TIER DOES lives in WEAPON_CATALOG's `perLevel` arrays, not here. This file says WHICH
@@ -64,6 +64,7 @@ export type UpgradeId =
   | 'w-machine-gun'
   | 'w-artillery'
   | 'w-drone'
+  | 'w-phase-cannon'
   | 'p-range'
   | 'p-damage'
   | 'p-rate'
@@ -490,6 +491,34 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // LOCKED UNTIL THE YARD IS BEATEN. The one card in the deck that has to be earned - see
     // `unlock` above, and the chassis that opens with it for the way in that does not.
     unlock: { kind: 'win' },
+    effects: [],
+  },
+  {
+    id: 'w-phase-cannon',
+    kind: 'weapon',
+    grantsWeapon: 'phase-cannon',
+    name: 'Phase Cannon',
+    description:
+      'One plasma bolt that flies through everything - the horde, the wrecks, the walls - and bursts on the thickest knot of enemies it can find.',
+    // Order matches the weapon's own perLevel ladder exactly: damage, burst, rate, twice around.
+    tiers: Object.freeze([
+      'Unlock.',
+      'A heavier bolt.',
+      'A wider burst.',
+      'Rearms sooner.',
+      'A heavier bolt again.',
+      'A wider burst again.',
+      'Rearms sooner still.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    /**
+     * LOCKED BEHIND ITSELF: a thousand and one killing blows with the gun, in one run. The same
+     * bootstrap the drone card uses - the card cannot come up in the deck until earned, and the
+     * chassis that OPENS with it (Brass) is the way in: a held card keeps offering its tiers
+     * whatever the lock says, so Brass levels it while everyone else is still earning it.
+     */
+    unlock: { kind: 'killsWith', weapons: ['phase-cannon'], count: 1001 },
     effects: [],
   },
   {

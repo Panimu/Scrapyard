@@ -40,6 +40,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T17:38Z',
+    title: 'NEW WEAPON: THE PHASE CANNON',
+    notes: [
+      'A blue plasma bolt that aims at the enemy with the thickest crowd packed around it — even one behind a wall — and flies through everything on the way: the horde, the wrecks, the walls. Nothing in between is touched; the mark takes the bolt and everything around it takes the burst.',
+      'The price is the slowest turret in the yard. The bolt cannot miss once fired, so the fight is getting the barrel around in time.',
+      'Its card is locked until you have destroyed 1001 enemies with the gun in one run — which sounds circular until you meet the chassis below.',
+    ],
+  },
+  {
+    at: '2026-08-17T17:38Z',
+    title: 'BRASS CAN NOW BE EARNED, AND CARRIES THE PHASE CANNON',
+    notes: [
+      'Brass has a real unlock condition at last — where it is stated is where they always are, on the achievement, after you have met it. It opens with the Phase Cannon, 10% harder-hitting, and is the only way to fire one before its card is earned.',
+      "Its cockpit glass runs plasma-blue now instead of the Cannon's amber, because the chassis says what it opens with before the first shot.",
+    ],
+  },
+  {
     at: '2026-08-17T16:32Z',
     title: 'INDIGO CAN NOW BE EARNED',
     notes: [

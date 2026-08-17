@@ -39,7 +39,8 @@ export type WeaponId =
   | 'missile-long'
   | 'machine-gun'
   | 'artillery'
-  | 'drone';
+  | 'drone'
+  | 'phase-cannon';
 
 /**
  * WHAT A PROJECTILE LOOKS LIKE. Named rather than numbered at the use site, because a bare `3` in
@@ -64,6 +65,8 @@ export const VIS_MISSILE_LONG = 4;
 // sprite. Id 5 was a drone-specific entry that fell through the renderer's chain to the CANNON's
 // shell, so a drone appeared to be lobbing artillery. The number is retired rather than reused:
 // visualId lands in the replay, and 5 has already been written into recorded runs.
+/** The Phase Cannon's bolt: a blue plasma ball. 6, because 5 is retired - see above. */
+export const VIS_PLASMA = 6;
 
 /**
  * Target-selection strategies.
@@ -71,12 +74,15 @@ export const VIS_MISSILE_LONG = 4;
  * `'highest-hp'` is the Cannon's specced rule and the identity of this iteration.
  * `'nearest'` is not a demo: SCATTER's Flak Battery trait rewrites shells 2..n to it
  * (DESIGN.md §8.2), and it is what proves the strategy seam actually generalises.
+ * `'densest'` is the Phase Cannon's: the body with the most neighbours packed around it -
+ * and, uniquely, it does NOT filter for line of sight, because its round phases through
+ * whatever is in the way. See `targetDensest` in systems/targeting.ts.
  */
-export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp'; // grows: | 'densest'
+export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp' | 'densest';
 
-export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage' | 'factory';
+export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage' | 'factory' | 'phase';
 
-export type BehaviourId = 'straight' | 'homing'; // grows: | 'arc'
+export type BehaviourId = 'straight' | 'homing' | 'phase'; // grows: | 'arc'
 
 /**
  * BehaviourId -> index into PROJECTILE_BEHAVIOURS, which is what the pool stores (a Uint8Array).
@@ -85,10 +91,12 @@ export type BehaviourId = 'straight' | 'homing'; // grows: | 'arc'
  */
 export const BEHAVIOUR_STRAIGHT = 0;
 export const BEHAVIOUR_HOMING = 1;
+export const BEHAVIOUR_PHASE = 2;
 
 export const BEHAVIOUR_ID: Readonly<Record<BehaviourId, number>> = Object.freeze({
   straight: BEHAVIOUR_STRAIGHT,
   homing: BEHAVIOUR_HOMING,
+  phase: BEHAVIOUR_PHASE,
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -1057,6 +1065,100 @@ export const DRONE: WeaponDef = Object.freeze({
   detonateOnExpiry: true,
 });
 
+// ---------------------------------------------------------------------------------------------
+// THE PHASE CANNON - one bolt, through everything, into the thickest part of the crowd.
+//
+// Character, in one line: it answers the question the Cannon refuses to. The Cannon commits to
+// the single biggest body and ignores the crowd; this commits to the CROWD - the body with the
+// most neighbours packed around it - and its bolt phases through every enemy, wreck and wall on
+// the way, lands on that one target, and bursts. Nothing on the way in is touched; everything
+// around the arrival point is.
+//
+// THE PHASING IS ALSO IN THE TARGETING. `densest` is the one strategy that does not filter for
+// line of sight (see targeting.ts), so a Phase Cannon shoots the knot of bodies on the far side
+// of a rock wall that every other gun has to walk around. That is the whole fantasy, and it is
+// why the targeting rule and the flight behaviour ship as one weapon.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * How far "around it" reaches when counting a body's neighbours: the cluster radius the densest
+ * rule scores against. Sized a touch over the blast at tier 1 (55 u) so what the rule optimises
+ * for is roughly what the burst then covers - a target chosen for neighbours the blast cannot
+ * reach would make the rule read as broken.
+ */
+export const PHASE_CLUSTER_RADIUS = 80;
+
+/**
+ * 60 deg/s - the slowest turret in the game, a third under the Cannon's 90. The bolt cannot miss
+ * once fired (it chases its mark through everything), so the traverse is where this weapon pays:
+ * a crowd that forms BEHIND the mech is three full seconds of slew away, and repositioning so the
+ * turret's job stays small is the skill the gun asks for.
+ */
+const PHASE_TURRET_TRAVERSE = degToRad(60);
+const PHASE_FIRE_ARC = degToRad(14);
+
+/** Same derived-rate-tier shape as the Cannon's - see CANNON_COOLDOWN for why. */
+const PHASE_COOLDOWN = 1.6;
+const PHASE_RATE_TIER = -PHASE_COOLDOWN * 0.15;
+
+export const PHASE_CANNON: WeaponDef = Object.freeze({
+  id: 'phase-cannon',
+  name: 'Phase Cannon',
+  kind: 'projectile',
+  targeting: 'densest',
+  pattern: 'phase',
+  behaviour: 'phase',
+  requiresTarget: true,
+  base: Object.freeze({
+    // BELOW THE CANNON'S 44, deliberately: the Cannon buys its number by ignoring the crowd, and
+    // a gun that hits the crowd for free cannot also match it on the direct hit. The blast makes
+    // up the difference exactly when the target was chosen well.
+    damage: 36,
+    cooldown: PHASE_COOLDOWN,
+    range: 260,
+    projectileSpeed: 460,
+    projectileCount: 1,
+    pierce: 0,
+    knockback: 90,
+    // A MODERATE BURST at half strength: 18 into everything inside 55 u at tier 1. Enough to
+    // matter against the packed chaff the targeting rule aims it into, nowhere near the
+    // artillery's everything-in-the-circle blast.
+    splashRadius: 55,
+    splashFrac: 0.5,
+    turretTraverse: PHASE_TURRET_TRAVERSE,
+    fireArc: PHASE_FIRE_ARC,
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: 0,
+    // The bolt's whole flight budget, and its fuse when its mark dies mid-flight: it keeps going
+    // on its last heading and BURSTS at the end of this (detonateOnExpiry), so a stolen kill
+    // still costs the crowd something. 1.2 s at 460 u/s comfortably out-runs the 260 u range plus
+    // a chase after a moving target.
+    flightTime: 1.2,
+    ammoCapacity: 0,
+    reloadTime: 0,
+  }),
+  perLevel: Object.freeze([
+    { damage: 8 }, // T2  36 -> 44
+    { splashRadius: 12 }, // T3  55 -> 67
+    { cooldown: PHASE_RATE_TIER }, // T4  1.60 -> 1.36 s
+    { damage: 8 }, // T5  44 -> 52
+    { splashRadius: 12 }, // T6  67 -> 79
+    { cooldown: PHASE_RATE_TIER }, // T7  1.36 -> 1.12 s (0.70x base, as the Cannon's ladder)
+  ]),
+  reengageMul: 1,
+  visualId: VIS_PLASMA,
+  muzzleOffset: 30,
+  shellRadius: 7,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: false,
+  drivesTurret: true,
+  detonateOnExpiry: true,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -1067,6 +1169,7 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   MACHINE_GUN,
   ARTILLERY,
   DRONE,
+  PHASE_CANNON,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */

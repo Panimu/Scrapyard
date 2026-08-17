@@ -88,10 +88,11 @@ import {
   sceneryX,
   sceneryY,
 } from '../content/scenery.js';
-import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
+import { ENEMY_FLAG_DEAD, enemyHandleAt } from '../entity/enemyPool.js';
 import {
   allocProjectile,
   PROJECTILE_FLAG_NOCONTACT,
+  PROJECTILE_FLAG_PHASE,
   PROJECTILE_FLAG_SPLITS,
 } from '../entity/projectilePool.js';
 import { NULL_HANDLE } from '../entity/handle.js';
@@ -1213,11 +1214,73 @@ export const fireBarrage: FirePattern = (world, weaponIdx, inst, _targets, _targ
   }
 };
 
+/**
+ * `phase` - the Phase Cannon's single bolt. One projectile, aimed at targets[0] (the densest
+ * body, per the weapon's targeting rule), carrying that enemy's HANDLE so the flight can chase
+ * the mark itself rather than the spot it was standing on.
+ *
+ * NOCONTACT + PHASE together are the whole trick: NOCONTACT keeps the general collision sweep
+ * from ever seeing the bolt (nothing on the way in can be hit), and PHASE is what
+ * `behaviourPhase` and `stopAtTheEdges` key their own handling on - the bolt's single-target
+ * arrival test, and its immunity to scrap and walls.
+ *
+ * NO TRAIT HOOK, unlike fireBattery, and deliberately: the hook's contract is "rotate/scale the
+ * launch direction", and a phase bolt's launch direction is cosmetic - it re-steers onto its
+ * mark every tick. A hook that believed it had redirected the shot would be being lied to.
+ */
+export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
+  if (targetCount <= 0) return; // requiresTarget weapons never reach here without one; belt and braces
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const aim = world.scratch.v2;
+
+  const dense = targets[0];
+  aimInto(world, dense, inst.turretX, inst.turretY, aim);
+
+  const spawnId = ++world.stats.shotsFired;
+  const handle = allocProjectile(
+    projectiles,
+    world.player.x + aim.x * def.muzzleOffset,
+    world.player.y + aim.y * def.muzzleOffset,
+    aim.x * stats.projectileSpeed,
+    aim.y * stats.projectileSpeed,
+    stats.projectileLifetime,
+    weaponIdx,
+    BEHAVIOUR_ID[def.behaviour],
+    spawnId,
+  );
+  if (handle === NULL_HANDLE) return;
+
+  const d = projectiles.count - 1;
+  projectiles.damage[d] = stats.damage;
+  projectiles.knockback[d] = stats.knockback;
+  projectiles.splashRadius[d] = stats.splashRadius;
+  projectiles.splashFrac[d] = stats.splashFrac;
+  projectiles.radius[d] = def.shellRadius;
+  projectiles.pierceLeft[d] = stats.pierce;
+  projectiles.visualId[d] = def.visualId;
+  projectiles.flags[d] |= PROJECTILE_FLAG_NOCONTACT | PROJECTILE_FLAG_PHASE;
+  projectiles.targetHandle[d] = enemyHandleAt(world.enemies, dense);
+
+  // Same payload as fireBattery's: muzzle position, then the unit direction, for the muzzle flash.
+  pushEvent(
+    world.events,
+    EV_WEAPON_FIRED,
+    world.tick,
+    projectiles.x[d],
+    projectiles.y[d],
+    aim.x,
+    aim.y,
+  );
+};
+
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
   spread: fireSpread,
   barrage: fireBarrage,
   beam: fireBeam,
+  phase: firePhase,
   // A drone bay has no volley. Everything it does - the build timer, deploying, and the drones
   // themselves - lives in systems/drones.ts, which runs as its own stage. This entry exists so the
   // pattern table stays exhaustive over FirePatternId rather than being a partial record with a

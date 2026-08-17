@@ -199,6 +199,15 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'Finish the bay and four fly at once. It also keeps building at full strength: one finished drone is held in reserve, so a loss is replaced the instant it happens.',
     ],
   },
+  'w-phase-cannon': {
+    aims: 'The enemy with the DENSEST CROWD packed around it - even one behind a wall.',
+    notes: [
+      'The bolt is untouchable in flight. It passes through every enemy, wreck and wall between you and its mark, lands on that one body, and bursts into everything standing around it. Nothing on the way in is hit; the crowd at the arrival point is.',
+      'It is the only gun in the game that does not care about line of sight. Every other weapon refuses or wastes a shot at something behind cover; this one picks the knot of bodies on the far side of the rock wall and reaches it.',
+      'The catch is the turret: the slowest slew in the yard. The bolt cannot miss once fired, so the fight is getting the barrel around in time - a crowd forming behind you is seconds of traverse away, and where you stand decides how much of that you pay.',
+      "A mark that dies before the bolt arrives does not save its friends: the bolt keeps flying and bursts at the end of its run anyway.",
+    ],
+  },
   'w-artillery': {
     aims: 'NOTHING AT ALL. Shells fall on random ground near you.',
     notes: [

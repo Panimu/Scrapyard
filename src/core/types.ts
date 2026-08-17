@@ -509,6 +509,11 @@ export interface RunStats {
  */
 export interface WorldScratch {
   readonly candidates: Uint16Array;
+  /**
+   * Per-candidate neighbour tallies for the `densest` targeting rule - same length as
+   * `candidates`, indexed in step with it. Only that rule writes or reads it.
+   */
+  readonly neighbourCounts: Uint16Array;
   /** Top-K targeting output; length MAX_TARGETS. */
   readonly targets: Int32Array;
   /**

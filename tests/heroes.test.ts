@@ -60,6 +60,7 @@ const ALL_WEAPONS: readonly WeaponId[] = [
   'missile-long',
   'machine-gun',
   'artillery',
+  'phase-cannon',
 ];
 
 describe('the roster', () => {
@@ -96,7 +97,8 @@ describe('the roster', () => {
       'missile-long': 'Long Missiles',
       'machine-gun': 'Machine Gun',
       drone: 'Drones',
-  artillery: 'Heavy Artillery',
+      artillery: 'Heavy Artillery',
+      'phase-cannon': 'Phase Cannon',
     };
     for (const h of HERO_CATALOG) {
       if (h.startingWeapon === null) continue;
@@ -117,12 +119,13 @@ describe('the missile racks', () => {
     expect(HERO_CATALOG[heroIndex('onyx')].startingWeapon).toBe('missile-long');
   });
 
-  it('keeps Indigo directly behind Fern, out of the placeholder tail', () => {
-    // Earning a real unlock is what moved it: the roster reads earnable-first, and everything
-    // behind Indigo is still `never`. Adjacency rather than an absolute index, as with the four
-    // below, so it survives the roster being reordered around them.
+  it('keeps Indigo directly behind Fern, and every placeholder in one tail', () => {
+    // Earning a real unlock is what moves a chassis up: the roster reads earnable-first, and the
+    // `never` placeholders form one contiguous tail rather than being scattered through the list.
     expect(heroIndex('indigo')).toBe(heroIndex('fern') + 1);
-    for (let i = heroIndex('indigo') + 1; i < HERO_CATALOG.length; i++) {
+    const firstNever = HERO_CATALOG.findIndex((h) => h.unlock.kind === 'never');
+    expect(firstNever).toBeGreaterThan(0);
+    for (let i = firstNever; i < HERO_CATALOG.length; i++) {
       expect(HERO_CATALOG[i].unlock.kind, HERO_CATALOG[i].id).toBe('never');
     }
   });
@@ -227,6 +230,16 @@ describe('chassis bonuses', () => {
     // Radius only: the shell is no heavier and the barrage no more frequent.
     expect(indigo.damage).toBe(plain.damage);
     expect(indigo.cooldown).toBe(plain.cooldown);
+  });
+
+  it('hits 10% harder on Brass\'s Phase Cannon - the bolt, not the blast radius', () => {
+    const brass = statsFor('brass', 'phase-cannon');
+    const plain = statsFor('jade', 'phase-cannon');
+    expect(brass.damage).toBeCloseTo(plain.damage * 1.1, 9);
+    // The burst inherits the heavier bolt through splashFrac, but the RING stays everyone's -
+    // radius is Indigo's flag, not this one.
+    expect(brass.splashRadius).toBe(plain.splashRadius);
+    expect(brass.cooldown).toBe(plain.cooldown);
   });
 
   it('applies a bonus to a weapon PICKED UP, not only to the opener', () => {

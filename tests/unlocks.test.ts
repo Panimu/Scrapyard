@@ -174,12 +174,16 @@ describe('meetsUnlock', () => {
     // `diedTo` is excluded alongside `never` for opposite reasons: `never` cannot be satisfied by
     // anything, and `diedTo` cannot be satisfied by a run that WON - which this fixture did. It
     // gets its own assertion above rather than being wedged into a single impossible run.
-    const stuck = HERO_CATALOG.filter(
-      (h) =>
-        h.unlock.kind !== 'never' &&
-        h.unlock.kind !== 'diedTo' &&
-        !meetsUnlock(h.unlock, perfect, IDS),
-    );
+    //
+    // A `winLevel` condition is evaluated on ITS OWN MAP rather than the fixture's default: one
+    // record cannot have been played on two yards at once, and "unreachable" for a map-gated
+    // chassis means "no run on that map could earn it", not "a run somewhere else did not".
+    const stuck = HERO_CATALOG.filter((h) => {
+      if (h.unlock.kind === 'never' || h.unlock.kind === 'diedTo') return false;
+      const record =
+        h.unlock.kind === 'winLevel' ? { ...perfect, levelId: h.unlock.level } : perfect;
+      return !meetsUnlock(h.unlock, record, IDS);
+    });
     expect(stuck.map((h) => h.id)).toEqual([]);
   });
 });

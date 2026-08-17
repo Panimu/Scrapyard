@@ -36,6 +36,12 @@ export const PROJECTILE_FLAG_NOCONTACT = 1 << 1;
  * a chain reaction. The property belongs to the shell, so it lives on the shell.
  */
 export const PROJECTILE_FLAG_SPLITS = 1 << 2;
+/**
+ * A PHASE BOLT: collides with nothing on its way - not enemies (it also carries NOCONTACT, so the
+ * general sweep never sees it), not scrap, not walls - and lands only on the one enemy whose
+ * handle it carries in `targetHandle`. See `behaviourPhase` in systems/projectiles.ts.
+ */
+export const PROJECTILE_FLAG_PHASE = 1 << 3;
 
 /** Stride of the per-projectile hit ring: the last 4 enemy spawnIds this shell has damaged. */
 export const HIT_RING_STRIDE = 4;
@@ -66,6 +72,15 @@ export interface ProjectilePool {
   readonly travelled: Float32Array;
 
   readonly pierceLeft: Int8Array;
+  /**
+   * ENEMY HANDLE of a phase bolt's designated mark; NULL_HANDLE on everything else.
+   *
+   * The file header's "shells carry no target reference" rule bends here KNOWINGLY, and the bug
+   * it guarded against stays structurally absent: a handle is generation-checked, so a mark that
+   * dies resolves to -1 rather than to whatever recycled its slot - the same contract the drones
+   * already rely on for their own targets. A dense index or slot here would be the actual bug.
+   */
+  readonly targetHandle: Int32Array;
   /** Index into PROJECTILE_BEHAVIOURS. */
   readonly behaviour: Uint8Array;
   readonly ownerWeapon: Uint8Array;
@@ -106,6 +121,7 @@ export function createProjectilePool(capacity: number): ProjectilePool {
   const oRadius = L.f32(capacity);
   const oLifeSec = L.f32(capacity);
   const oTravelled = L.f32(capacity);
+  const oTargetHandle = L.i32(capacity);
   const oHitRing = L.u32(capacity * HIT_RING_STRIDE);
   const oSpawnId = L.u32(capacity);
   const oSlot = L.u32(capacity);
@@ -150,6 +166,7 @@ export function createProjectilePool(capacity: number): ProjectilePool {
     travelled: f32(oTravelled),
 
     pierceLeft: new Int8Array(buffer, oPierceLeft, capacity),
+    targetHandle: new Int32Array(buffer, oTargetHandle, capacity),
     behaviour: u8(oBehaviour),
     ownerWeapon: u8(oOwnerWeapon),
     visualId: u8(oVisualId),
@@ -174,7 +191,7 @@ export function createProjectilePool(capacity: number): ProjectilePool {
   denseViews.push(
     p.x, p.y, p.vx, p.vy,
     p.damage, p.knockback, p.splashRadius, p.splashFrac, p.radius, p.lifeSec, p.travelled,
-    p.pierceLeft, p.behaviour, p.ownerWeapon, p.visualId, p.flags,
+    p.pierceLeft, p.targetHandle, p.behaviour, p.ownerWeapon, p.visualId, p.flags,
     p.spawnId, p.slot,
   );
 
@@ -231,6 +248,7 @@ export function allocProjectile(
   p.lifeSec[d] = lifeSec;
   p.travelled[d] = 0;
   p.pierceLeft[d] = 0;
+  p.targetHandle[d] = NULL_HANDLE;
   p.behaviour[d] = behaviour;
   p.ownerWeapon[d] = ownerWeapon;
   p.visualId[d] = 0;
@@ -292,6 +310,7 @@ export function reapProjectiles(p: ProjectilePool): void {
       p.lifeSec[d] = p.lifeSec[last];
       p.travelled[d] = p.travelled[last];
       p.pierceLeft[d] = p.pierceLeft[last];
+      p.targetHandle[d] = p.targetHandle[last];
       p.behaviour[d] = p.behaviour[last];
       p.ownerWeapon[d] = p.ownerWeapon[last];
       p.visualId[d] = p.visualId[last];

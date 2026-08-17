@@ -92,7 +92,9 @@ export const MAX_PASSIVES = 5;
  * that was simply wrong, and the ninth weapon (Drones) arrived and broke `npm run loadout` on the
  * missing slot. tests/loadout.test.ts now asserts the relationship rather than trusting a comment.
  */
-export const WEAPON_SLOTS = 9;
+// 12 with the Phase Cannon making ten weapons: two slots of headroom this time, so the eleventh
+// and twelfth weapons need no edit here - and the test still guards the day the thirteenth does.
+export const WEAPON_SLOTS = 12;
 
 /**
  * HEAT - the lasers' limiter, in place of a cooldown.

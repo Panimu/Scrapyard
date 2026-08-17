@@ -98,6 +98,7 @@ const ICONS = [
   'w-machine-gun',
   'w-artillery',
   'w-drone',
+  'w-phase-cannon',
   'w-laser-short',
   'w-laser-medium',
   'w-laser-long',
@@ -364,6 +365,36 @@ const DRAW = `(id) => {
     // The hull, with the lens punched out of it - the one asymmetry-free detail that reads at size.
     g.beginPath(); g.arc(CX, CY, 17, 0, 6.284); g.fillStyle = KEY; g.fill();
     g.beginPath(); g.arc(CX, CY, 7, 0, 6.284); g.fillStyle = PLATE; g.fill();
+  }
+
+  if (id === 'w-phase-cannon') {
+    // THE PASS-THROUGH, DRAWN: a dotted flight line crossing two hollow "ghost" bodies it does
+    // not touch, ending in a solid plasma orb with a burst ring around it. The glyph wears the
+    // bolt's own blue - the same licence the lasers and missiles take; the amber border still
+    // says "weapon" for the chest's kind-matching payout.
+    const PLASMA = '#55c8ff';
+    const PLASMA_DIM = '#2f6e8c';
+    // Ghost bodies: outline only, deliberately NOT filled - these are the enemies the bolt
+    // ignores on its way.
+    g.strokeStyle = STEEL;
+    g.lineWidth = 3;
+    for (const [gx, gr] of [[46, 10], [76, 13]]) {
+      g.beginPath(); g.arc(gx, CY, gr, 0, 6.284); g.stroke();
+    }
+    // The flight line, dotted, straight through both.
+    g.strokeStyle = PLASMA_DIM;
+    g.lineWidth = 4;
+    g.setLineDash([6, 6]);
+    g.beginPath(); g.moveTo(20, CY); g.lineTo(96, CY); g.stroke();
+    g.setLineDash([]);
+    // The arrival: burst ring first, then the orb over it, with a bright core.
+    g.strokeStyle = PLASMA;
+    g.lineWidth = 3.5;
+    g.globalAlpha = 0.55;
+    g.beginPath(); g.arc(104, CY, 19, 0, 6.284); g.stroke();
+    g.globalAlpha = 1;
+    g.beginPath(); g.arc(104, CY, 11, 0, 6.284); g.fillStyle = PLASMA; g.fill();
+    g.beginPath(); g.arc(104, CY, 5, 0, 6.284); g.fillStyle = '#d9f2ff'; g.fill();
   }
 
   if (id === 'w-artillery') {

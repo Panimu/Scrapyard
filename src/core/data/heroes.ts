@@ -391,6 +391,31 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weaponBonus: { artillery: { mul: { splashRadius: 1.15 } } },
   },
   {
+    id: 'brass',
+    /**
+     * BEHIND CLEARING MOSSY MAYHEM - every Scraplord in the second yard down, the same shape of
+     * condition that put the yard itself behind clearing the first. The second win-gated thing in
+     * the game, and it sits one step further out than the map it asks for by construction: nobody
+     * can be asked to clear Mossy before Mossy is open.
+     */
+    unlock: { kind: 'winLevel', level: 'mossy-mayhem' },
+    name: 'Brass',
+    // MOVED OFF THE CANNON, which loses nothing: Amber still opens with it, and every gun keeps
+    // an opener (the invariant tests/heroes.test.ts holds). Brass is the Phase Cannon's chassis
+    // now - and, like Fern before it, the only way to fire a LOCKED gun before its card is
+    // earned: the card asks for kills with the weapon itself, and somebody has to hold it first.
+    identity:
+      'Light hover, one heavy tube. Opens with the Phase Cannon, 10% harder-hitting.',
+    sprite: 'mech_brass',
+    gait: 'hover',
+    startingWeapon: 'phase-cannon',
+    player: {},
+    weapon: {},
+    // Damage only, like Ember's - the bolt hits 10% harder and the burst (half of damage, see
+    // splashFrac) inherits it, while the blast RADIUS stays everyone's. Radius is Indigo's flag.
+    weaponBonus: { 'phase-cannon': { mul: { damage: 1.1 } } },
+  },
+  {
     id: 'jade',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Jade',
@@ -411,18 +436,6 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     sprite: 'mech_rust',
     gait: 'walk',
     startingWeapon: 'laser-long',
-    player: {},
-    weapon: {},
-  },
-  {
-    id: 'brass',
-    unlock: { kind: 'never' }, // criteria to be defined
-    name: 'Brass',
-    identity:
-      'Light hover, one heavy cannon. Opens with the Cannon.',
-    sprite: 'mech_brass',
-    gait: 'hover',
-    startingWeapon: 'cannon',
     player: {},
     weapon: {},
   },

@@ -63,6 +63,7 @@ import {
   SCENERY_COLS,
   VIS_MISSILE_LONG,
   VIS_MISSILE_SHORT,
+  VIS_PLASMA,
   VIS_SLUG,
   VIS_STRIKE_MARKER,
   type WeaponInstance,
@@ -269,6 +270,9 @@ const SHIELD_PULSE_HZ = 0.7;
  * player is trying to decide about.
  */
 const STRIKE_TINT = 0xff3b30;
+/** The Phase Cannon's bolt, streak and halo. Cooler than the shield's blue so the two never read
+ *  as one system: the shield is the mech's own colour, this is the thing it fires. */
+const PLASMA_TINT = 0x55c8ff;
 const STRIKE_RING_WIDTH = 2;
 const STRIKE_FILL_ALPHA = 0.1;
 const STRIKE_RING_ALPHA = 0.75;
@@ -1700,6 +1704,11 @@ export class GameRenderer {
       if (!this.camera.isVisible(x, y, 24)) continue;
 
       const angle = Math.atan2(p.vy[d], p.vx[d]);
+      // visualId is sim-owned data, copied onto each projectile at spawn. Read per projectile
+      // rather than per weapon slot, so a round already in flight keeps its own look if the rack
+      // that fired it is upgraded behind it. Read BEFORE the trail: the phase bolt's streak runs
+      // plasma-blue, not tracer-amber.
+      const vis = p.visualId[d];
 
       const t = trails.acquire();
       if (t !== undefined) {
@@ -1707,7 +1716,7 @@ export class GameRenderer {
         t.position.set(x, y);
         t.rotation = angle + ROT_OFFSET.trail;
         t.scale.set(9 / PARTICLE_SRC, 34 / PARTICLE_SRC);
-        t.tint = 0xffc890;
+        t.tint = vis === VIS_PLASMA ? PLASMA_TINT : 0xffc890;
         t.alpha = 0.5;
       }
 
@@ -1715,14 +1724,9 @@ export class GameRenderer {
       if (s === undefined) break;
       s.position.set(x, y);
       s.rotation = angle + ROT_OFFSET.shell;
-      // visualId is sim-owned data, copied onto each projectile at spawn. Read per projectile
-      // rather than per weapon slot, so a round already in flight keeps its own look if the rack
-      // that fired it is upgraded behind it.
-      //
       // THE TWO RACKS SHARE ONE TEXTURE and differ only in proportion: the art points up, so the
       // sprite's local Y is the missile's LENGTH and its local X is the width. Short comes out
       // squat and fat, long comes out longer and thinner.
-      const vis = p.visualId[d];
       if (vis === VIS_MISSILE_SHORT) {
         s.texture = this.tex.missile;
         s.scale.set(MISSILE_SHORT_SCALE_X, MISSILE_SHORT_SCALE_Y);
@@ -1732,12 +1736,28 @@ export class GameRenderer {
       } else if (vis === VIS_SLUG) {
         s.texture = this.tex.slug;
         s.scale.set(SLUG_SCALE);
+      } else if (vis === VIS_PLASMA) {
+        // THE PHASE BOLT: the machine-gun tracer run big and blue-hot, under a soft halo of
+        // itself. Two sprites from the same pool rather than new art - at this scale the
+        // tracer's rounded head reads as a plasma bob, and the halo is what says "energy, not
+        // metal". The halo is acquired second, so it draws over the core as a translucent bloom.
+        s.texture = this.tex.slug;
+        s.scale.set(SLUG_SCALE * 2.2);
+        const halo = shells.acquire();
+        if (halo !== undefined) {
+          halo.texture = this.tex.slug;
+          halo.position.set(x, y);
+          halo.rotation = s.rotation;
+          halo.scale.set(SLUG_SCALE * 3.4);
+          halo.tint = PLASMA_TINT;
+          halo.alpha = 0.3;
+        }
       } else {
         s.texture = this.tex.shell;
         s.scale.set(SHELL_SCALE);
       }
       s.alpha = 1;
-      s.tint = 0xffffff;
+      s.tint = vis === VIS_PLASMA ? PLASMA_TINT : 0xffffff;
     }
 
     shells.end();

@@ -98,7 +98,9 @@ const HEROES = [
   { key: 'mech_cobalt', cls: 'heavy', legs: 'quad', mount: 'pods', torso: 'slab', hull: '#4a72d0', trim: '#2d4790', glass: '#4fa8ff' },
   { key: 'mech_jade', cls: 'heavy', legs: 'chicken', mount: 'claws', torso: 'drum', hull: '#3fae94', trim: '#26705f', glass: '#3be86b' },
   { key: 'mech_rust', cls: 'heavy', legs: 'quad', mount: 'artillery', torso: 'slab', hull: '#b5652f', trim: '#79401c', glass: '#ff8a4d' },
-  { key: 'mech_brass', cls: 'light', legs: 'hover', mount: 'cannon', torso: 'drum', hull: '#c9a24a', trim: '#8a6a25', glass: '#ffe08a' },
+  // Glass is plasma-blue, not the cannon's amber lamp: Brass opens with the Phase Cannon now, and
+  // the cockpit says what it fires before the first shot - the same promise every chassis makes.
+  { key: 'mech_brass', cls: 'light', legs: 'hover', mount: 'cannon', torso: 'drum', hull: '#c9a24a', trim: '#8a6a25', glass: '#55c8ff' },
   // ---- the eight that cover the missiles, the machine gun and the artillery ---------------
   { key: 'mech_onyx', cls: 'heavy', legs: 'quad', mount: 'missiles', torso: 'slab', hull: '#3a3f4d', trim: '#23262f', glass: '#b072ff' },
   { key: 'mech_ash', cls: 'light', legs: 'chicken', mount: 'missiles', torso: 'spear', hull: '#c3c9d4', trim: '#8a90a0', glass: '#b072ff' },
