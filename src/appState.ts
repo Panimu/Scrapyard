@@ -27,6 +27,7 @@ import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './
 import { reportSync, reportUnlocked } from './achievements.js';
 import { firstPlayableLevel, type LevelDef, type LevelId } from './core/content/levels.js';
 import { bestiaryFor } from './bestiary.js';
+import { LEVEL_CATALOG } from './core/content/levels.js';
 
 /**
  * `title`, `levelSelect`, `settings`, `upgrades` and `scrapopedia` join the list for the same
@@ -188,6 +189,36 @@ const DEFAULTS: Settings = {
   metaTiers: {},
 };
 
+/**
+ * Every bestiary key the CURRENT content can produce, built once.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THIS EXISTS: `killedEnemies` IS THREE NAMESPACES IN ONE ARRAY
+ * ---------------------------------------------------------------------------------------------
+ * It holds flavour names (`swift`), rank names (`elite`) and bestiary keys
+ * (`scrapyard/Rustling/regular`). The load filter checked the first two and dropped anything else,
+ * which is correct behaviour for a name nothing resolves - and it predates the bestiary. So every
+ * Scrapopedia page a player unlocked survived until the tab was reloaded and was then thrown away,
+ * every time, silently. Within a session it worked, which is why it took a player to find it.
+ *
+ * The filter is not the bug. Filtering on load is the rule this file is built on (CLAUDE.md), and
+ * it caught this the moment a third namespace joined the array without telling it. What was
+ * missing is that the third namespace has to be enumerable too - so here it is, from the same
+ * `bestiaryFor` the recorder and the screen both use, which is what stops the three disagreeing
+ * about what an entry is called.
+ *
+ * BUILT ONCE AT MODULE LOAD, not per call: it is a pure function of the content tables, and
+ * `loadSettings` runs on the constructor rather than on module init, so nothing here is evaluated
+ * before the catalogs are.
+ */
+const BESTIARY_KEYS: ReadonlySet<string> = (() => {
+  const keys = new Set<string>();
+  for (const level of LEVEL_CATALOG) {
+    for (const entry of bestiaryFor(level)) keys.add(entry.key);
+  }
+  return keys;
+})();
+
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -238,15 +269,17 @@ function loadSettings(): Settings {
       // not silently eat the credits either, which is why the refund is derived from the clamped
       // tiers rather than from anything banked at the time of purchase.
       metaTiers: readMetaTiers(parsed.metaTiers),
-      // Filtered against the two tables that can name one, so a retired variant stops appearing
-      // rather than lingering as a name nothing resolves.
+      // Filtered against ALL THREE namespaces that share this array - see BESTIARY_KEYS. It used
+      // to check two of them, which silently deleted every Scrapopedia page on every reload.
       killedEnemies: (Array.isArray(parsed.killedEnemies)
         ? (parsed.killedEnemies as unknown[])
         : []
       ).filter(
         (n): n is string =>
           typeof n === 'string' &&
-          (FLAVOURS.some((f) => f.name === n) || RANKS.some((r) => r.name === n)),
+          (FLAVOURS.some((f) => f.name === n) ||
+            RANKS.some((r) => r.name === n) ||
+            BESTIARY_KEYS.has(n)),
       ),
       unlockedAchievements: (Array.isArray(parsed.unlockedAchievements)
         ? (parsed.unlockedAchievements as unknown[])

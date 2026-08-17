@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T03:32Z',
+    title: 'THE SCRAPOPEDIA REMEMBERS AGAIN',
+    notes: [
+      'Bestiary pages you unlock by killing something now survive closing the game. They were being thrown away every time it loaded — you would unlock a page, see it, come back later and find it locked again. Everything else in the save was fine; it was only the creature pages.',
+      'Pages you have already earned will come back as you meet those enemies again. There is no way to recover what was lost, because it was never written down.',
+    ],
+  },
+  {
     at: '2026-08-17T03:29Z',
     title: 'THE MOSS HAS A WOOD IN IT',
     notes: [
