@@ -83,6 +83,7 @@ import {
 import { MAX_ENEMY_RADIUS } from '../content/cycles.js';
 import {
   destructibleRayHit,
+  destructibleRayDistance,
   sceneryRayHit,
   sceneryX,
   sceneryY,
@@ -773,6 +774,43 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     return;
   }
 
+  // ---- A TREE IN THE WAY IS BURNED THROUGH, NOT HELD FIRE FOR --------------------------------
+  //
+  // THE THIRD KIND OF OBSTACLE, and it behaves like neither of the other two. Scrap and stone make a
+  // laser hold fire (above): there is nothing to be gained by burning a rock, so the weapon stays
+  // cold and waits for the player to step around it. A fuel drum is invisible to occlusion and pops
+  // as the beam sweeps past, because a drum has no hit points to spend the beam on. A TREE HAS HIT
+  // POINTS, so it is the one obstacle where firing into it is progress: the beam terminates in the
+  // wood, the wood takes the tick's damage, and after a few seconds of that there is a hole and the
+  // beam reaches whatever was standing behind it.
+  //
+  // WHY THIS IS NOT AN OCCLUDER INSTEAD, which would have been one line in `wallRayHit`: an occluder
+  // makes the weapon HOLD FIRE, and a weapon that refuses to shoot at a tree can never remove one -
+  // the lasers would be permanently walled out of a third of the map (TREE_SHARE). Targeting must go
+  // on seeing straight through the wood; only the SHOT stops in it.
+  //
+  // MEASURED, and this is why it is here at all: before it, a beam passed through a clump AND hit the
+  // body behind it, so a laser build fought as though the wood was not there and spent almost nothing
+  // on it. Two minutes of bot play on Mossy felled three stems with the Medium Laser and opened no
+  // cell at all, against 16-21 stems for the shell weapons, which stop in the wood as a shell should.
+  const tree = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, stats.range);
+  const treeT = tree >= 0 ? destructibleRayDistance() : -1;
+  const treeFirst =
+    world.scenery.kind === 'walls' && tree >= 0 && (hit < 0 || treeT < BEAM.hitT);
+  if (treeFirst) {
+    const tx = sceneryX(world.scenery, tree);
+    const ty = sceneryY(world.scenery, tree);
+    // Through `breakLootIn`, so the wood is spent by exactly the door every other weapon uses - the
+    // stem pool, the felling event and the stump all come from one place.
+    breakLootIn(world, tx, ty, 0, stats.damage * dt);
+    // Drawn to the wood and billing nobody: NO_BEAM_TARGET is what tells updateDamage there is
+    // nothing to charge, and the player sees the beam stop where it is actually stopping.
+    const stopT = treeT > def.muzzleOffset ? treeT : def.muzzleOffset;
+    pushBeam(world.beams, weaponIdx, NO_BEAM_TARGET, 0, x0, y0, px + aim.x * stopT, py + aim.y * stopT);
+    heatBeam(world, weaponIdx, inst, stats, dt);
+    return;
+  }
+
   // `hit` is whatever the ray touched FIRST, which may not be `target` - that is the design, not
   // a fallback. A beam aimed at a wounded enemy across a crowd burns the crowd.
   //
@@ -802,11 +840,18 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // A BEAM TAKES DRUMS WITH IT. Barrels are exempt from beam occlusion (they have to be, or the
   // lasers would refuse to fire at one and could never break it), so the sweep happens after the
   // shot instead: whatever the line crossed goes up, and the beam carries on to its target.
-  const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
-  if (drum >= 0) {
-    // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per
-    // tick, so a laser saws through a clump over a second or two rather than felling one per frame.
-    breakLootIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0, damage);
+  //
+  // THE SCRAPYARD ONLY. A drum has no hit points, so a beam passing over one costs the shot nothing
+  // and there is nothing to spend; a TREE stops the beam outright and was already dealt with above.
+  // Running this on Mossy as well would burn a clump standing BEHIND the body being burned, through
+  // a beam that terminates at that body - damage out of nowhere, to a tree the shot never reached.
+  if (world.scenery.kind !== 'walls') {
+    const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
+    if (drum >= 0) {
+      // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per
+      // tick, so a laser saws through a clump over a second or two rather than felling one per frame.
+      breakLootIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0, damage);
+    }
   }
 
   // AND IT TAKES SHEEP WITH IT, for the same reason and by the same route. The flock is not in the
@@ -834,10 +879,30 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     chainFrom(world, weaponIdx, stats, hit, px, py, aim, endT, damage);
   }
 
-  // Step 6. The tick that reaches this weapon's OWN capacity still fires - it cuts out AFTER
-  // delivering the shot that overloaded it, so a full burst is exactly
-  // heatCapacity / heatPerSec seconds of damage and not one tick less. The ceiling is the
-  // weapon's, so a capacity tier buys a longer burst rather than a fuller bar.
+  // Step 6. Heat for the tick, which every path that actually FIRED has to pay - see `heatBeam`.
+  heatBeam(world, weaponIdx, inst, stats, dt);
+};
+
+/**
+ * The heat a tick of beam costs, and the overheat that ends the burst.
+ *
+ * ONE FUNCTION BECAUSE THERE ARE TWO WAYS TO FIRE. A beam that terminates in a tree is still a beam
+ * being fired - it is doing work, and the wood is taking it - so it pays the same heat as one that
+ * reaches a body. Extracted the moment the second path existed rather than duplicated, because a
+ * copy is how one of them ends up free.
+ *
+ * The tick that reaches this weapon's OWN capacity still fires: it cuts out AFTER delivering the shot
+ * that overloaded it, so a full burst is exactly heatCapacity / heatPerSec seconds of damage and not
+ * one tick less. The ceiling is the weapon's, so a capacity tier buys a longer burst rather than a
+ * fuller bar.
+ */
+function heatBeam(
+  world: World,
+  weaponIdx: number,
+  inst: WeaponInstance,
+  stats: WeaponStats,
+  dt: number,
+): void {
   const capacity = stats.heatCapacity;
   const heat = inst.heat + stats.heatPerSec * dt;
   if (heat >= capacity) {
@@ -847,7 +912,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   } else {
     inst.heat = heat;
   }
-};
+}
 
 
 /**

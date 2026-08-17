@@ -52,6 +52,7 @@ import {
   wallCentre,
   wallDestructibleOverlap,
   wallDestructibleRayHit,
+  wallLastRayT,
   wallOverlap,
   wallRayHit,
   WALL_HALF,
@@ -633,6 +634,23 @@ export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): numb
  * Used by the beams after they fire. A laser passes through a drum rather than being stopped by
  * it, and this is what notices, so the drum goes up as the beam sweeps across it.
  */
+let lastRayT = -1;
+
+/**
+ * HOW FAR ALONG THE RAY the last `destructibleRayHit` found what it found, or -1.
+ *
+ * Module scratch, valid only until the next call - the same contract `SceneryPush` keeps, and for
+ * the same reason: the beams need both the thing and its distance, and returning a pair would
+ * allocate inside the firing loop.
+ *
+ * IT IS ONLY MEANINGFUL FOR A TREE. A barrel does not stop anything (see `breakLootIn`), so nothing
+ * asks how far away one was; the piles branch fills this in anyway rather than leaving a stale value
+ * behind for the next reader to trust.
+ */
+export function destructibleRayDistance(): number {
+  return lastRayT;
+}
+
 export function destructibleRayHit(
   s: Scenery,
   ox: number,
@@ -641,7 +659,11 @@ export function destructibleRayHit(
   dy: number,
   maxT: number,
 ): number {
-  if (s.kind === 'walls') return wallDestructibleRayHit(s, ox, oy, dx, dy, maxT);
+  if (s.kind === 'walls') {
+    const cell = wallDestructibleRayHit(s, ox, oy, dx, dy, maxT);
+    lastRayT = wallLastRayT();
+    return cell;
+  }
   const c0 = cellOf(ox + dx * maxT * 0.5);
   const r0 = cellOf(oy + dy * maxT * 0.5);
   const span = 1 + Math.floor((maxT * 0.5 + RADIUS_MAX) / SCENERY_CELL);
@@ -675,6 +697,7 @@ export function destructibleRayHit(
       }
     }
   }
+  lastRayT = best < 0 ? -1 : bestT;
   return best;
 }
 

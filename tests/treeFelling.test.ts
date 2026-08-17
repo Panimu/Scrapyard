@@ -29,7 +29,11 @@ import {
   type MossWalls,
 } from '../src/core/content/wallsMossy.js';
 import { MOSS_LADDER } from '../src/core/content/cyclesMossy.js';
-import { createWorld } from '../src/core/world.js';
+import { wallCentre } from '../src/core/content/wallsMossy.js';
+import { ARCHETYPES, ARCH_GRUNT } from '../src/core/content/enemyCatalog.js';
+import { allocEnemy, enemyIndex } from '../src/core/entity/enemyPool.js';
+import { RUN_PHASE_RUNNING } from '../src/core/types.js';
+import { createWorld, stepWorld } from '../src/core/world.js';
 
 function walls(seed: number): MossWalls {
   const w = createWorld({
@@ -105,6 +109,54 @@ describe('felling a clump', () => {
     expect(wallStemsStanding(w, cx, cy)).toBe(0);
     // And a broken cell absorbs nothing further.
     expect(damageWallCell(w, i, TREE_STEM_HP * 10)).toBe(0);
+  });
+
+  it('takes a beam that is pointed through it, and shields whatever is behind', () => {
+    // THE WHOLE POINT OF A TREE HAVING HIT POINTS. A laser used to pass through a clump and burn the
+    // body on the far side, so a beam build fought as though the wood was not there - measured, two
+    // minutes of bot play felled three stems and opened nothing. Now the beam stops in the wood, the
+    // wood spends the tick's damage, and the thing behind it is genuinely covered until it opens.
+    const world = createWorld({
+      seed: 11, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING, levelId: 'mossy-mayhem',
+    });
+    world.phase = RUN_PHASE_RUNNING;
+    if (world.scenery.kind !== 'walls') throw new Error('expected the wall lattice');
+    const wl = world.scenery;
+    const [cx, cy] = findTree(wl);
+    const tx = wallCentre(cx);
+    const ty = wallCentre(cy);
+
+    // Slate opens with the Medium Laser. The mech stands one side of the clump, the enemy the other,
+    // both on the cell's own axis so the ray has to cross it.
+    world.player.x = tx - 100;
+    world.player.y = ty;
+    // 180 u apart, comfortably inside the Medium Laser's opening reach, and both of them clear of the
+    // cell itself (which is 64 u across, so +/-32 from its centre).
+    const handle = allocEnemy(world.enemies, 0, 0, ARCH_GRUNT, tx + 80, ty, 7);
+    const d = enemyIndex(world.enemies, handle);
+    world.enemies.hp[d] = 1e6;
+    world.enemies.maxHp[d] = 1e6;
+    world.enemies.speed[d] = 0;
+    world.enemies.radius[d] = ARCHETYPES[ARCH_GRUNT].radius;
+    world.enemies.mass[d] = 1e6;
+    world.enemies.xpValue[d] = 0;
+
+    const before = wallStemsStanding(wl, cx, cy);
+    // Seven seconds, which is more than one stem's worth of a tier-1 beam. Short of that the pool is
+    // being spent but nothing has come down yet, and the test would be about the arithmetic rather
+    // than about the wood.
+    for (let t = 0; t < 60 * 7; t++) {
+      // Pinned every tick: this is about what the BEAM does, not about a fight.
+      world.player.x = tx - 100;
+      world.player.y = ty;
+      world.enemies.x[d] = tx + 80;
+      world.enemies.y[d] = ty;
+      world.enemies.hp[d] = 1e6;
+      stepWorld(world, { moveX: 0, moveY: 0, buttons: 0, chooseIndex: -1 });
+    }
+
+    expect(wallStemsStanding(wl, cx, cy), 'the wood should be taking the beam').toBeLessThan(before);
+    expect(world.stats.damageDealt, 'nothing behind the wood should have been burned').toBe(0);
   });
 
   it('fells everything a single overwhelming hit is worth', () => {

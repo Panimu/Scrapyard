@@ -797,6 +797,20 @@ export function wallRayHit(
   return rayWalk(w, ox, oy, dx, dy, maxT, WALL_SOLID);
 }
 
+/**
+ * HOW FAR ALONG THE RAY the last `wallDestructibleRayHit` found its tree.
+ *
+ * Module scratch, read immediately by the one caller that needs it (the beams, which have to
+ * terminate AT the wood rather than through it) and never held across a call - the same contract
+ * `rayCellX/rayCellY` above have, and for the same reason: returning a pair would allocate in a
+ * hot loop.
+ */
+let rayHitT = -1;
+
+export function wallLastRayT(): number {
+  return rayHitT;
+}
+
 /** The first TREE the ray enters, as a packed cell, or -1. The complement of `wallRayHit`. */
 export function wallDestructibleRayHit(
   w: MossWalls,
@@ -806,7 +820,9 @@ export function wallDestructibleRayHit(
   dy: number,
   maxT: number,
 ): number {
-  if (rayWalk(w, ox, oy, dx, dy, maxT, WALL_TREE) < 0) return -1;
+  const t = rayWalk(w, ox, oy, dx, dy, maxT, WALL_TREE);
+  rayHitT = t;
+  if (t < 0) return -1;
   return packWallCell(rayCellX, rayCellY);
 }
 

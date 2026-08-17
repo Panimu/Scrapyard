@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T10:53Z',
+    title: 'LASERS ARE STOPPED BY TREES NOW — AND CUT THEM DOWN',
+    notes: [
+      'A beam used to pass straight through a clump of trees and burn the thing on the far side, so a laser build fought as though the wood was not there. It now stops in the wood and spends every second of that burn on it: hold the beam on a treeline and it comes down, then the beam reaches whatever was behind it.',
+      'Trees still never make a weapon hold fire — that is what stone and scrap do. Your guns keep shooting at whatever they were aiming at, and the wood in the way pays for it, which eventually opens the way through. Measured: the Long Laser used to fell 16 stems in two minutes and open one gap; it now fells 71 and opens 13.',
+    ],
+  },
+  {
     at: '2026-08-17T10:41Z',
     title: 'THERE ARE SHEEP IN THE MOSS',
     notes: [
