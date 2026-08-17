@@ -40,6 +40,20 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T13:17Z',
+    title: 'HEAVY BODIES ARE 50% FASTER',
+    notes: [
+      "The Heavy in a siege ring walked slowly enough that you could simply leave, deal with the rest of the horde, and come back to find it barely moved. It's noticeably quicker now — still a wall you have to grind down or go around, but no longer one you can outrun by standing still.",
+    ],
+  },
+  {
+    at: '2026-08-17T13:17Z',
+    title: 'THE GTM HORNET SPLITS SOONER',
+    notes: [
+      'Its missiles now break into their short-range pair earlier in flight, so the second wave forms while the volley is still opening out instead of near the end of its run — more of the spread lands in the crowd where it counts.',
+    ],
+  },
+  {
     at: '2026-08-17T12:50Z',
     title: "BONE'S BONUS NO LONGER REACHES DRONES",
     notes: [

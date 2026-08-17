@@ -714,13 +714,15 @@ export const MISSILE_SHORT = missile(
  * SHORT-rack missiles, `SPLIT_APART` apart. Five tubes become ten warheads, and the volley stops
  * being a fan and starts being a cloud.
  *
- * HALF A SECOND - under a fifth of the long rack's own 2.6 s fuse at tier 7, and down from the one
- * second it shipped at. The split has to happen while the missiles are still crossing the field
- * rather than as they expire, or the children arrive with nothing left to fly at, and a Hornet
- * volley's whole shape is the second wave spreading through the gap the first one flew into. A
- * second was late enough that the parents were most of the way to their targets before coming
- * apart; at half, the cloud forms while the volley is still opening out, which is both easier to
- * read and puts ten warheads into the crowd nearer the mech - where the crowd actually is.
+ * 0.4 SECONDS - under a sixth of the long rack's own 2.6 s fuse at tier 7, down from the one second
+ * it shipped at and the half second after that. The split has to happen while the missiles are
+ * still crossing the field rather than as they expire, or the children arrive with nothing left to
+ * fly at, and a Hornet volley's whole shape is the second wave spreading through the gap the first
+ * one flew into. A second was late enough that the parents were most of the way to their targets
+ * before coming apart; half was better but still let the parents open most of their fan first. At
+ * 0.4, the cloud forms while the volley is barely past the tubes, which puts all ten warheads into
+ * the crowd nearer the mech - where the crowd actually is - rather than out at the parents' own
+ * range.
  *
  * FIFTEEN DEGREES BETWEEN THE PAIR, so each child leaves at half that off its parent's heading.
  * Wide enough that they separate before their own fuses run out, narrow enough that the pair still
@@ -730,7 +732,7 @@ export const MISSILE_SHORT = missile(
  * heading is a divergent replay), so the half-angle is stored as its two components, computed
  * offline. Same treatment as the flow field's swirl table.
  */
-export const SPLIT_SEC = 0.5;
+export const SPLIT_SEC = 0.4;
 export const SPLIT_COS = 0.9914448613738104; // cos(7.5 deg)
 export const SPLIT_SIN = 0.13052619222005157; // sin(7.5 deg)
 
