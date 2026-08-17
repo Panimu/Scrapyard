@@ -803,7 +803,9 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // shot instead: whatever the line crossed goes up, and the beam carries on to its target.
   const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
   if (drum >= 0) {
-    breakBarrelIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0);
+    // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per
+    // tick, so a laser saws through a clump over a second or two rather than felling one per frame.
+    breakBarrelIn(world, sceneryX(world.scenery, drum), sceneryY(world.scenery, drum), 0, damage);
   }
 
   // THE CHAIN. Only a weapon whose ascension has been taken gets here - see WeaponDef.chainsFrom.

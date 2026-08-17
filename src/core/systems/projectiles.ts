@@ -357,7 +357,7 @@ function stopAtTheEdges(world: World): void {
     if (sceneryOverlap(scenery, x[d], y[d], 0) >= 0) {
       // A FUEL BARREL goes up rather than swallowing the round quietly. The projectile still dies
       // here either way - a drum stops a shell whether or not it was the breakable kind.
-      breakBarrelIn(world, x[d], y[d], 0);
+      breakBarrelIn(world, x[d], y[d], 0, p.damage[d]);
       markProjectileDead(p, d);
       pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, x[d], y[d], 0, d);
     }

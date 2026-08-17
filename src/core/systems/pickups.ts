@@ -69,6 +69,7 @@ import {
 } from '../constants.js';
 import { gemTierForValue } from '../config/tuning.js';
 import {
+  damageScenery,
   destroyScenery,
   destructibleOverlap,
   regrowBarrel,
@@ -78,6 +79,7 @@ import {
 } from '../content/scenery.js';
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
+import { wallCellX, wallCellY, wallStemsStanding } from '../content/wallsMossy.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import {
   PICKUP_FLAG_AUTO,
@@ -188,7 +190,24 @@ function regrowBarrels(world: World): void {
  * enemy - and it would delete the reason to ever walk into one, which is the only DELIBERATE way
  * to take a barrel there is.
  */
-export function breakBarrelIn(world: World, x: number, y: number, r: number): boolean {
+export function breakBarrelIn(
+  world: World,
+  x: number,
+  y: number,
+  r: number,
+  /**
+   * How much damage the thing that reached here is carrying.
+   *
+   * IGNORED BY A BARREL and load-bearing for a tree. A drum has no hit points - it goes over on
+   * contact, which is what makes it the one piece of scenery you break by accident - but a Mossy
+   * clump is `wallStemsAt` trees at `TREE_STEM_HP` each, and that pool is what this spends.
+   *
+   * ZERO IS A REAL ARGUMENT, and one caller passes it: the mech walking into things. A forty-tonne
+   * walker still shoves a drum over, and a walker that felled a tree by leaning on it would make
+   * every treeline on the map free to open. Trees are shot down or not at all.
+   */
+  damage: number,
+): boolean {
   const i = destructibleOverlap(world.scenery, x, y, r);
   if (i < 0) return false;
 
@@ -203,9 +222,18 @@ export function breakBarrelIn(world: World, x: number, y: number, r: number): bo
   // Written as an early return rather than a shared body with two `if`s in it, so the barrel path
   // below reads exactly as it did before there was a second terrain.
   if (world.scenery.kind === 'walls') {
+    // ONE STEM AT A TIME. A clump is several trees sharing a collider, so a hit spends the pool and
+    // this reports how many actually came down - usually none, which is the point: a treeline
+    // visibly thins under fire instead of vanishing when the first shell lands.
+    const felled = damageScenery(world.scenery, i, damage);
+    if (felled <= 0) return false;
     const br = sceneryRadius(world.scenery, i);
-    destroyScenery(world.scenery, i);
-    pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, 0);
+    const standing = wallStemsStanding(world.scenery, wallCellX(i), wallCellY(i));
+    // ONE EVENT PER TREE, so a shell that brings two down throws leaves twice. `d` carries how many
+    // are left, which is what tells the renderer whether that was the last one.
+    for (let k = 0; k < felled; k++) {
+      pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, standing);
+    }
     return true;
   }
 

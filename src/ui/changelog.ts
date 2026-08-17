@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T08:23Z',
+    title: 'TREES HAVE TO BE CUT DOWN NOW',
+    notes: [
+      'A clump of trees no longer disappears the instant something touches it. Each tree in it has its own hit points, and they come down ONE AT A TIME — so a treeline under fire visibly thins, and the gap opens on the near side where you have been shooting.',
+      'A whole tile of trees is worth roughly what an elite is. Chewing a hole through woodland is something you spend real firepower on.',
+      'Your mech can still shove its way through by leaning on one, and it now takes about four and a half seconds of standing still to do it. Walking past no longer flattens a tree for free.',
+    ],
+  },
+  {
     at: '2026-08-17T08:06Z',
     title: 'THE TROPHY SHELF HAS PICTURES ON IT',
     notes: [

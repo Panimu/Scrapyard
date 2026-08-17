@@ -173,6 +173,47 @@ const SHAPE_CDF: readonly number[] = Object.freeze([
   1.0, // room    22%
 ]);
 
+/**
+ * HOW MANY TREES STAND IN ONE DESTRUCTIBLE CELL, and how much each one is worth.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE COUNT LIVES HERE NOW, AND IT USED TO BE THE RENDERER'S
+ * ---------------------------------------------------------------------------------------------
+ * A clump was pure decoration - the dressing rolled 4 to 6 stems off its own hash and core knew
+ * nothing about it, which was correct while a cell died to a single touch. It stopped being
+ * correct the moment a stem became a THING YOU DESTROY: how many hits a cell takes is a fact about
+ * the fight, so the count is simulation state and the dressing reads it rather than inventing it.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * A TILE OF TREES IS WORTH ABOUT AN ELITE
+ * ---------------------------------------------------------------------------------------------
+ * `TREE_STEM_HP` x 5 stems is 550, against the Mossy ladder's elites - which are ten times a
+ * regular, so 560 at cycle 3 and 660 at cycle 4. A four-stem clump comes in at 440 and a six-stem
+ * one at 660, which brackets that pair either side. A treeline is therefore something you spend
+ * real output on rather than something that evaporates when a shell goes near it.
+ *
+ * FIXED RATHER THAN SCALED TO THE CURRENT CYCLE, and that is a choice worth stating because the
+ * brief could be read either way. An elite is 220 HP in the first minute and 2250 in the last, so
+ * a pool that tracked the ladder would move UNDER A CELL THE PLAYER IS HALF WAY THROUGH FELLING -
+ * a treeline you had chewed a gap in would heal because a rollover happened. A constant is worth
+ * more than exactness against a number that is itself a moving target.
+ */
+export const TREE_STEM_HP = 110;
+const STEM_MIN = 4;
+const STEM_SPAN = 3;
+
+/**
+ * How many stems a cell grew. A pure function of the seed and the cell, so it needs no storage and
+ * is the same on every machine and in every replay.
+ */
+export function wallStemsAt(w: MossWalls, cx: number, cy: number): number {
+  let h = Math.imul(cx | 0, 0x27d4eb2f) ^ Math.imul(cy | 0, 0x9e3779b1) ^ Math.imul(w.seed | 0, 0x85ebca6b);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 13;
+  return STEM_MIN + ((h >>> 0) % STEM_SPAN);
+}
+
 export interface MossWalls {
   readonly kind: 'walls';
   /** The run seed, mixed into every block hash. The layout is a pure function of this. */
@@ -184,6 +225,15 @@ export interface MossWalls {
   readonly blocks: Map<number, Uint8Array>;
   /** Global cells whose tree has been broken, keyed by `cellKey`. Never evicted. */
   readonly broken: Set<number>;
+  /**
+   * HIT POINTS LEFT, for cells that have been damaged and not yet felled. Keyed by `cellKey`.
+   *
+   * ABSENT MEANS UNTOUCHED, not zero - the pool is `wallStemsAt * TREE_STEM_HP` and is seeded on
+   * the first hit, so an unbounded map costs nothing for the enormous majority of cells nobody
+   * ever shoots at. An entry is deleted when the cell breaks, so this only ever holds the handful
+   * a player is actively chewing through.
+   */
+  readonly hurt: Map<number, number>;
   /**
    * How many trees have been broken this run. Diagnostics and the harness only; nothing branches
    * on it. There is no live count of standing walls, because on an unbounded map there is no
@@ -198,7 +248,15 @@ export interface MossWalls {
 }
 
 export function createMossWalls(seed: number): MossWalls {
-  return { kind: 'walls', seed: seed | 0, blocks: new Map(), broken: new Set(), count: 0, version: 0 };
+  return {
+    kind: 'walls',
+    seed: seed | 0,
+    blocks: new Map(),
+    broken: new Set(),
+    hurt: new Map(),
+    count: 0,
+    version: 0,
+  };
 }
 
 // -------------------------------------------------------------------------------------------
@@ -756,6 +814,54 @@ export function wallDestructibleRayHit(
 export function breakWallCell(w: MossWalls, i: number): void {
   if (w.broken.has(i)) return;
   w.broken.add(i);
+  w.hurt.delete(i);
   w.count++;
   w.version++;
+}
+
+/**
+ * How many stems of a cell are still standing. `wallStemsAt` when nothing has touched it, 0 once
+ * the cell is broken, and the remaining fraction of the pool in between.
+ *
+ * ROUNDED UP, so a stem is standing until its share of the pool is GONE rather than disappearing
+ * the moment it is scratched. Five stems on 550 points means the fifth falls at 440, the fourth at
+ * 330, and the cell opens at 0 - which is the promise the bar makes: every hit is progress and the
+ * last hit is the one that opens the gap.
+ */
+export function wallStemsStanding(w: MossWalls, cx: number, cy: number): number {
+  const i = cellKey(cx, cy);
+  if (w.broken.has(i)) return 0;
+  const left = w.hurt.get(i);
+  const stems = wallStemsAt(w, cx, cy);
+  if (left === undefined) return stems;
+  const up = Math.ceil(left / TREE_STEM_HP);
+  return up < 0 ? 0 : up > stems ? stems : up;
+}
+
+/**
+ * Puts `amount` of damage into a destructible cell. Returns how many stems that hit brought down,
+ * which is 0 for most hits and is what the caller turns into events.
+ *
+ * THE VERSION IS BUMPED ONLY WHEN THE CELL OPENS, not per stem. A stem coming down changes what is
+ * DRAWN and nothing about what is solid - the cell is a collider until the last one falls - and
+ * `version` is read by the flow field to decide whether to throw its cached routes away. Bumping
+ * it per stem would rebuild the horde's pathing every time a shell clipped a tree, for a route
+ * that had not changed.
+ */
+export function damageWallCell(w: MossWalls, i: number, amount: number): number {
+  if (amount <= 0 || w.broken.has(i)) return 0;
+  const cx = wallCellX(i);
+  const cy = wallCellY(i);
+  const stems = wallStemsAt(w, cx, cy);
+  const before = w.hurt.get(i) ?? stems * TREE_STEM_HP;
+  const after = before - amount;
+  const standingBefore = Math.ceil(before / TREE_STEM_HP);
+
+  if (after <= 0) {
+    breakWallCell(w, i);
+    return standingBefore;
+  }
+  w.hurt.set(i, after);
+  const standingAfter = Math.ceil(after / TREE_STEM_HP);
+  return standingBefore - standingAfter;
 }

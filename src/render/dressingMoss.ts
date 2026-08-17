@@ -51,6 +51,8 @@ import {
   isWallBroken,
   wallCellOf,
   wallKindAt,
+  wallStemsAt,
+  wallStemsStanding,
   type MossWalls,
   type World,
 } from '../core/index.js';
@@ -335,7 +337,15 @@ export class MossDressing implements LevelDressing {
         if (kind !== WALL_TREE && !felled) continue;
 
         const h = cellHash(cx, cy);
-        const n = STEM_MIN + (h % STEM_SPAN);
+        // THE COUNT IS THE SIMULATION'S. It used to be rolled here off `cellHash`, which was
+        // correct while a clump was decoration and a cell died to one touch; a stem is now a thing
+        // with hit points, so how many there are is a fact about the fight. Everything ELSE about a
+        // clump - where each stem stands, how big it is, which variant it draws - is still this
+        // hash's business, because none of it is.
+        const n = wallStemsAt(walls, cx, cy);
+        // How many are still up. The rest are drawn as stumps, so a treeline under fire visibly
+        // thins from whichever end the shells are landing on.
+        const standing = felled ? 0 : wallStemsStanding(walls, cx, cy);
         // The sway clock, per cell. See SWAY_TICKS: the offset is what stops the wood marching.
         const frame = felled
           ? 0
@@ -356,19 +366,25 @@ export class MossDressing implements LevelDressing {
 
         for (let i = 0; i < n; i++) {
           const k = order[i];
-          const s = (felled ? this.stumps : this.trees).acquire();
+          // THE SOUTHERNMOST STEMS FALL FIRST, because `order` is already sorted south-first and
+          // this counts standing ones off the end of it. That is not arbitrary: the near edge of a
+          // clump is the part a player is shooting at, so the gap opens towards them and the
+          // remaining trees are the ones further away.
+          const down = felled || i < n - standing;
+          const s = (down ? this.stumps : this.trees).acquire();
           if (s === undefined) break;
           const v = (h >>> (k * 3 + 2)) % WALL_TREE_COUNT;
-          const t = felled ? this.tex.wallStumps[v] : this.tex.wallTrees[v][frame];
+          const t = down ? this.tex.wallStumps[v] : this.tex.wallTrees[v][frame];
           // Scaled on HEIGHT - see STEM_HEIGHT. Width follows from the art.
           const grow = STEM_SCALE_MIN + stemFrac(h, k, 2) * STEM_SCALE_SPAN;
+          const height = down ? STUMP_HEIGHT : STEM_HEIGHT;
           s.texture = t;
           s.anchor.set(0.5, 1);
           s.position.set(
             (cx + 0.5) * WALL_CELL + (stemFrac(h, k, 0) - 0.5) * WALL_CELL * STEM_SPREAD,
             (cy + STEM_BASE_FRAC) * WALL_CELL + (stemFrac(h, k, 1) - 0.5) * WALL_CELL * STEM_SPREAD,
           );
-          s.scale.set(((felled ? STUMP_HEIGHT : STEM_HEIGHT) * grow) / t.height);
+          s.scale.set((height * grow) / t.height);
           s.alpha = 1;
           s.tint = 0xffffff;
         }

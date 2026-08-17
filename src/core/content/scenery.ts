@@ -45,6 +45,7 @@ import { ARENA_HALF, ARENA_SIZE } from '../constants.js';
 import { Rng } from '../rng.js';
 import {
   breakWallCell,
+  damageWallCell,
   pushOutOfWalls,
   wallCellX,
   wallCellY,
@@ -532,6 +533,21 @@ export function destructibleOverlap(s: Scenery, x: number, y: number, r: number)
  * that collision, the laser ray and the renderer all forget about it without any of them learning
  * a new concept.
  */
+/**
+ * Puts damage into a destructible piece. Returns how many TREES that hit felled - 0 or more on the
+ * moss, and always 1 on the Scrapyard, where a drum has no hit points and any contact takes it.
+ *
+ * THE DAMAGE IS IGNORED BY A BARREL, deliberately. A drum is a thing you set off, not a thing you
+ * grind down: it goes over when the mech walks into it and when a stray round finds it, and giving
+ * it a health bar would turn the one piece of scenery you break BY ACCIDENT into a target.
+ */
+export function damageScenery(s: Scenery, i: number, amount: number): number {
+  if (s.kind === 'walls') return damageWallCell(s, i, amount);
+  if (s.radius[i] === 0) return 0;
+  destroyScenery(s, i);
+  return 1;
+}
+
 export function destroyScenery(s: Scenery, i: number): void {
   if (s.kind === 'walls') return breakWallCell(s, i);
   if (s.radius[i] === 0) return;

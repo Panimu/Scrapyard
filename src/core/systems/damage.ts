@@ -351,7 +351,7 @@ function applySplash(
   // all - it has no direct contact to speak of (it detonates on its fuse over open ground), so the
   // one weapon most likely to be dropping shells on scenery would be the one weapon that could
   // not set any of it off.
-  breakBarrelIn(world, x, y, radius);
+  breakBarrelIn(world, x, y, radius, amount);
 
   const enemies = world.enemies;
   const candidates = world.scratch.candidates;

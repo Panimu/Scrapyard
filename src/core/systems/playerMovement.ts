@@ -60,6 +60,18 @@ import { EV_PLAYER_REPAIRED, EV_PLAYER_SHIELD_RESTORED, pushEvent } from '../eve
 import { clampLenInto } from '../math/vec2.js';
 import { dequantiseAxis, type World } from '../types.js';
 
+/**
+ * How fast the chassis pushes a tree over by leaning on it, in hit points per second.
+ *
+ * 150 against a clump's 440-660 (see TREE_STEM_HP) is three to four and a half seconds of standing
+ * still, and a stem comes down about every three quarters of a second - so shoving through
+ * woodland reads as the trees going over one at a time rather than as a wall dissolving.
+ *
+ * ONLY WHERE THE MECH IS TOUCHING. This is not a way to clear terrain at range, which is what keeps
+ * the number honest: it buys a path through the cell you are standing against and nothing else.
+ */
+const MECH_SHOVE_DPS = 150;
+
 export function updatePlayerMovement(world: World, dt: number): void {
   const p = world.player;
   const s = p.stats;
@@ -123,7 +135,19 @@ export function updatePlayerMovement(world: World, dt: number): void {
   // barrels by accident, aiming at something else; this is the only way to take one deliberately,
   // and it costs exactly what walking somewhere costs - which, in a game about where you are
   // standing, is the right price.
-  breakBarrelIn(world, p.x, p.y, s.radius);
+  // THE MECH SHOVES. A drum goes over on contact whatever is passed here; a Mossy clump is a pool
+  // of hit points, and this is the rate the chassis spends it at by leaning on it.
+  //
+  // IT CANNOT BE ZERO, and that was the first attempt. Trees used to die to a single touch, so a
+  // walker crossed woodland by deleting it; with a pool and no shove the mech is simply STOPPED by
+  // a treeline, and measured over 80 s of diagonal running it never got clear of the opening and
+  // was killed at twenty seconds. A map you can be boxed into with no way out but a weapon that is
+  // busy aiming at something else is not a map.
+  //
+  // AND IT CANNOT BE LARGE. At MECH_SHOVE_DPS a full clump takes about three and a half seconds of
+  // standing still and leaning on it - which in a game about where you are standing is a real
+  // price, and is the difference between "woodland is slow" and "woodland is free".
+  breakBarrelIn(world, p.x, p.y, s.radius, MECH_SHOVE_DPS * dt);
 
   // SCRAP PILES, resolved after the fence so a wreck sitting against the wire cannot squeeze the
   // mech through it. Same rule as the fence, generalised to an arbitrary normal: slide out, then
