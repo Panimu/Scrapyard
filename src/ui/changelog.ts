@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T04:45Z',
+    title: 'THE JELLY AND THE OOZE HEAVE ALONG',
+    notes: [
+      'The jelly and the ooze now move like something soft moving under its own weight — squashing as they go and rolling side to side. It is the same motion the Sporeling has, and it turns out to suit a blob better than it suits a mushroom.',
+      'The Vine Stalker walks in TWO FRAMES, on purpose. It snaps between one pose and the other with nothing in between — the way a sprite walked before anybody could afford more frames. Everything else on the moss moves smoothly; this one stomps.',
+    ],
+  },
+  {
     at: '2026-08-17T04:04Z',
     title: 'THE MOSS STOPS WALKING BACKWARDS',
     notes: [

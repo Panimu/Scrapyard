@@ -74,7 +74,8 @@ import { SpritePool } from './spritePool.js';
 import { DRESSING_BY_LEVEL, type LevelDressing } from './dressing.js';
 import {
   ART_FACING_BY_LEVEL,
-  GAIT_WALK,
+  GAIT_TODDLE,
+  GAIT_TWO_STEP,
   stageIndexFor,
   type LevelCreatureArt,
 } from './creatureArt.js';
@@ -321,6 +322,21 @@ const GAIT_SQUASH = 0.13;
 const GAIT_LIFT = 2.2;
 /** How far it leans, in skew radians, over a stride. */
 const GAIT_LEAN = 0.1;
+
+/**
+ * THE TWO-STEP'S THREE NUMBERS, and every one of them SNAPS - see `GAIT_TWO_STEP`. There is no
+ * easing anywhere in this gait on purpose: the pop between the two poses is the whole read, and an
+ * eased version of the same numbers is a smooth lurch, which is a different and worse thing.
+ *
+ * All three are small. Two poses cut hard is already a lot of movement per beat, and the amounts
+ * that look right on a continuous gait read as a seizure when they arrive instantly - these were
+ * pulled down twice from what the toddle uses.
+ */
+const STEP_LEAN = 0.075;
+/** How far the body rises on the pose it leans into, in world units. */
+const STEP_LIFT = 1.7;
+/** How far it shifts over the foot it is standing on, in world units. Mirrored with facing. */
+const STEP_SHIFT = 1.5;
 
 export class GameRenderer {
   readonly camera = new Camera();
@@ -1227,7 +1243,7 @@ export class GameRenderer {
       // ---- THE GAIT. Squash, stretch and lean, out of nothing but a transform.
       //
       // The art packs ship one still frame per creature, so this is motion INVENTED at draw time
-      // rather than played back - see `GAIT_WALK` in creatureArt.ts for why that is the cheap half
+      // rather than played back - see the GAIT_* constants in creatureArt.ts for why that is the
       // of the choice. Two footfalls a stride: the body squashes as each foot lands and stretches
       // between, and leans from one side to the other over the whole stride, which on something
       // top-heavy reads as weight shifting rather than as the sprite sliding about.
@@ -1247,7 +1263,8 @@ export class GameRenderer {
       let gsy = 1;
       let lift = 0;
       let lean = 0;
-      if (frame.gait === GAIT_WALK) {
+      let shift = 0;
+      if (frame.gait === GAIT_TODDLE) {
         // SLOWER THE BIGGER IT IS DRAWN. `gaitRate` already covers how large the CREATURE is; this
         // covers how large this particular one is, which is the rank ladder and the flavour's own
         // render scale. Same square root, and for the same reason - see `gaitRateFor`.
@@ -1264,7 +1281,28 @@ export class GameRenderer {
         // The body RISES over the planted foot, which is the part that turns a stretch into a step.
         lift = beat > 0 ? GAIT_LIFT * beat : 0;
         lean = GAIT_LEAN * Math.sin(phase);
+      } else if (frame.gait === GAIT_TWO_STEP) {
+        // TWO POSES, HARD CUT. Same clock and the same size-scaled rate as the toddle, but the sine
+        // is only read for its SIGN - which is what turns a continuous cycle into an alternation.
+        // Nothing here interpolates, and that is the entire point: this is the read of a two-frame
+        // sprite walk, and a two-frame walk pops.
+        const rate = frame.gaitRate / Math.sqrt(rankScale);
+        const phase = (world.tick + alpha) * rate + p.spawnId[d] * GAIT_STAGGER;
+        // Twice a stride, so the two poses are the two footfalls rather than the two halves of a
+        // sway. `>= 0` rather than `> 0` so the boundary case picks a pose instead of falling
+        // through to standing still.
+        const step = Math.sin(phase * 2) >= 0 ? 1 : -1;
+        lean = STEP_LEAN * step;
+        // On ONE of the two poses only. Both poses lifted is a hover; neither is a lean with no
+        // weight behind it. Alternating is what makes the pair read as left foot, right foot.
+        lift = step > 0 ? STEP_LIFT : 0;
+        shift = STEP_SHIFT * step;
       }
+
+      // MIRRORED WITH FACING. The lean already flips for free - a skew under a negative scale.x
+      // comes out reversed - but a world-space offset does not, and a creature that shifted the
+      // same way whichever direction it walked would be leaning into one and away from the other.
+      const px = flip ? x - shift : x + shift;
 
       // THE FEET STAY ON THE GROUND. The anchor is the sprite's middle, so scaling alone lifts the
       // bottom edge by half the change - which reads as hovering, and is the one thing that would
@@ -1288,7 +1326,7 @@ export class GameRenderer {
         o.texture = rimTex;
         o.rotation = 0;
         o.scale.set(flip ? -ob * gsx : ob * gsx, ob * gsy);
-        o.position.set(x, plant(rimTex.height, ob));
+        o.position.set(px, plant(rimTex.height, ob));
         // Written every frame, never conditionally: pooled slots are handed out in index order and
         // reset nothing, so a slot that carried a leaning body last frame arrives here still
         // sheared. `lean` is already 0 for a creature that does not walk.
@@ -1311,7 +1349,7 @@ export class GameRenderer {
 
       s.skew.x = lean;
       s.scale.set(flip ? -base * gsx : base * gsx, base * gsy);
-      s.position.set(x, plant(texture.height, base));
+      s.position.set(px, plant(texture.height, base));
       // SORTED BY THE SIM'S y, never the bobbed one, or a creature would swap depth with its
       // neighbour twice a stride.
       s.zIndex = y;

@@ -54,8 +54,29 @@ import type { LevelId } from '../core/content/levels.js';
  * artist per creature; this is the experiment that says whether that is worth doing.
  */
 export const GAIT_NONE = 0;
-/** A walk: two footfalls a stride, squashing on each, leaning from foot to foot. */
-export const GAIT_WALK = 1;
+/**
+ * THE TODDLE. Two footfalls a stride, squashing on each, with the body rising over the planted one
+ * and the whole thing rolling side to side once across the pair.
+ *
+ * Named for what it is rather than "walk": a toddle is specifically a body too tall for its legs
+ * shifting its weight from one to the other, which is exactly what the lean at one-per-stride
+ * riding on the squash at two-per-stride produces. A waddle is hips, a bob is only vertical, and a
+ * plain "walk" would have made the second gait impossible to name honestly.
+ */
+export const GAIT_TODDLE = 1;
+/**
+ * THE TWO-STEP. A deliberately CRUDE walk: two poses, hard cut, no easing anywhere.
+ *
+ * Everything else here is continuous - `sin` all the way down - and this is the opposite on
+ * purpose. It is the read of an old two-frame sprite walk, where the whole animation is one pose
+ * and its opposite alternating on a beat, and what sells that is the POP: an eased version of the
+ * same poses reads as a smooth lurch, which is a different and much worse thing.
+ *
+ * Three things move together and all three snap: the body leans one way then the other, rises on
+ * the pose it leans into, and shifts a little over the foot it is standing on. Two states, and
+ * nothing in between.
+ */
+export const GAIT_TWO_STEP = 2;
 
 /**
  * Radians of stride per tick, for a creature drawn `GAIT_REF_HEIGHT` units tall. 2*pi/26 is a
@@ -91,10 +112,23 @@ export function gaitRateFor(drawnHeight: number): number {
  * default for a table nobody has got to yet.
  */
 const GAIT_BY_SPRITE: Readonly<Record<string, number>> = {
-  // THE SPORELING, and for now the only one. A cap on two legs is the best possible test of a
+  // THE SPORELING, which the toddle was built for. A cap on two legs is the best possible test of a
   // transform-only gait: it is top-heavy, so a lean reads as weight shifting rather than as the
   // whole sprite sliding, and it is already drawn mid-stride.
-  moss_wandering_mushroom: GAIT_WALK,
+  moss_wandering_mushroom: GAIT_TODDLE,
+
+  // THE FORMLESS PAIR, and they are not an obvious fit - the toddle is a legged idea and these have
+  // no legs. It works because the part a blob needs IS the squash: something soft moving under its
+  // own weight compresses and recovers, and the lean turns that from a pulse into travel. The rise
+  // is the questionable half on these two, and it is small enough at their size to read as the
+  // body heaving forward rather than as a hop.
+  moss_jelly: GAIT_TODDLE,
+  moss_ooze: GAIT_TODDLE,
+
+  // THE VINE STALKER gets the two-step, and it is the right body for it: drawn head-on, upright,
+  // arms out, with no profile to contradict. A snapped lean on something facing you reads as a
+  // stride; the same snap on a creature drawn in profile would read as a glitch.
+  moss_vine_stalker: GAIT_TWO_STEP,
 };
 
 /** One drawable frame: the texture, the scale that makes its content measure `drawSize`, and how it moves. */
