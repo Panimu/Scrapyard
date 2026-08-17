@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T12:50Z',
+    title: "BONE'S BONUS NO LONGER REACHES DRONES",
+    notes: [
+      "Bone's card says \"Machine Gun, 30% harder-hitting\" — and because a drone fires that same gun's numbers internally, the bonus was quietly reaching every drone too, on a chassis whose card never mentions them. Fixed: the bonus now stays on the weapon it names.",
+    ],
+  },
+  {
     at: '2026-08-17T12:42Z',
     title: 'FEWER SHEEP',
     notes: [

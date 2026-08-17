@@ -265,6 +265,39 @@ describe('the drone bay', () => {
     expect(w.droneGun.damage).toBeGreaterThan(plain.dmg);
   });
 
+  it('does not collect a chassis bonus aimed at the Machine Gun by name', () => {
+    // A drone's shots ARE the Machine Gun's numbers, resolved internally - but a chassis bonus
+    // keyed to 'machine-gun' belongs to the weapon a player is actually holding, not to a system
+    // that borrows its arithmetic. Modelled on Bone: 'Machine Gun, 30% harder-hitting'.
+    const bone = testHero({
+      startingWeapon: 'drone',
+      weaponBonus: { 'machine-gun': { mul: { damage: 1.3 } } },
+    });
+    const neutral = testHero({ startingWeapon: 'drone' });
+
+    const withBonus = createWorld(
+      { seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: [bone], weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    withBonus.phase = RUN_PHASE_RUNNING;
+    const plain = createWorld(
+      { seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: [neutral], weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    plain.phase = RUN_PHASE_RUNNING;
+
+    tick(withBonus);
+    tick(plain);
+
+    // The bay's OWN stats differ - `weaponBonus` is not filtered there, and should not be: nothing
+    // says 'drone' here, so neither world's bay is bonused, and this just confirms the two worlds
+    // are otherwise identical fixtures.
+    expect(withBonus.weapons[0].stats.cooldown).toBeCloseTo(plain.weapons[0].stats.cooldown, 6);
+    // The GUN each drone fires must match exactly, not merely be close - Bone's bonus must
+    // contribute nothing at all, not a diminished amount.
+    expect(withBonus.droneGun.damage).toBeCloseTo(plain.droneGun.damage, 6);
+  });
+
   it('still lets Feed Systems speed up the BAY, which is a factory and not a gun', () => {
     // The exclusion is about the round, not the weapon. What a rate card should pace on this
     // system is how fast drones are built - the one place a rate bonus is not secretly a nerf.

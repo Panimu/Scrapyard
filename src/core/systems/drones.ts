@@ -226,14 +226,14 @@ const DRONE_GUN_IGNORES: readonly string[] = ['p-rate', 'p-range'];
  * The drone's gun, resolved once per tick rather than per drone.
  *
  * IT IS THE MACHINE GUN AT THE DRONE WEAPON'S OWN TIER, which is the whole specification - so it
- * is resolved from MACHINE_GUN with the drone's level rather than copied into the drone's def. A
- * chassis bonus to the Machine Gun therefore reaches the drones too, which is a real interaction
- * and the honest consequence of "it fires a machine gun".
+ * is resolved from MACHINE_GUN with the drone's level rather than copied into the drone's def.
  *
- * The stacks it resolves against are a MASKED COPY (World.droneStacks), rebuilt here every tick.
- * Masking at the input rather than unpicking the output means the exclusion cannot drift from
- * whatever those cards happen to modify: zero stacks of a card is zero effect from it, whatever
- * keys it grows later.
+ * THE STACKS ARE A MASKED COPY (World.droneStacks), rebuilt here every tick. Masking at the input
+ * rather than unpicking the output means the exclusion cannot drift from whatever those cards
+ * happen to modify: zero stacks of a card is zero effect from it, whatever keys it grows later.
+ *
+ * A HERO'S NAMED-WEAPON BONUS DOES NOT REACH IT, and this used to be backwards - see `droneHero`
+ * below.
  */
 function droneGunStats(world: World, level: number): void {
   const hero = world.heroes[world.player.heroId];
@@ -246,12 +246,32 @@ function droneGunStats(world: World, level: number): void {
     if (def !== undefined && DRONE_GUN_IGNORES.indexOf(def.id) >= 0) stacks[i] = 0;
   }
 
+  /**
+   * THE HERO'S weaponBonus IS STRIPPED, and only that field - `weapon`, the blanket multiplier
+   * every gun shares, is untouched.
+   *
+   * `resolveWeaponStats(MACHINE_GUN, hero, ...)` looks up `hero.weaponBonus?.['machine-gun']`,
+   * because that lookup is keyed on the DEF being resolved and the def here is always the Machine
+   * Gun. Bone's whole identity is "Machine Gun, 30% harder-hitting" - `weaponBonus: {
+   * 'machine-gun': { mul: { damage: 1.3 } } }` - so that bonus was reaching every drone a Bone
+   * player built, whether or not Bone was even holding an actual Machine Gun. MEASURED: T7 Drones
+   * solo went from 112.8 dps to 130.8 on Bone, a chassis whose card says nothing about drones.
+   *
+   * A chassis bonus is part of ONE WEAPON'S identity - it is what makes that gun, on that mech,
+   * different from the same gun anywhere else. A drone firing borrowed Machine Gun numbers is not
+   * the Machine Gun; it has no identity of its own to bonus, and Fern's own drone-scoped bonus
+   * (`weaponBonus: { drone: ... }`) already reaches it through the bay's own resolution, not this
+   * one. `hero.weapon` stays: it is not scoped to a single weapon's identity, so there is no
+   * borrowed-numbers problem for it to cause.
+   */
+  const droneHero = hero.weaponBonus === undefined ? hero : { ...hero, weaponBonus: undefined };
+
   // The workshop reaches the drone's gun too. Note this resolves MACHINE_GUN rather than the
   // drone bay, so `m-drone` - which is scoped to the bay's build time - correctly does NOT apply
   // here, while the unscoped damage and range upgrades do.
   resolveWeaponStats(
     MACHINE_GUN,
-    hero,
+    droneHero,
     level,
     stacks,
     world.upgradeCatalog,
