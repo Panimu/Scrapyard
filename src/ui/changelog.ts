@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T08:47Z',
+    title: 'EIGHT BOSSES IS ALL THERE IS',
+    notes: [
+      'The eighth boss is the last one. A run that goes long past the timer no longer gets handed a fresh boss every two minutes on top of the ones already standing — the waves keep coming, the bosses do not.',
+      'Nothing kills a boss but you, so the old behaviour meant a run that let one slip could never be won: there was always another arriving. Survive the eight and the field can only get lighter.',
+    ],
+  },
+  {
     at: '2026-08-17T08:23Z',
     title: 'TREES HAVE TO BE CUT DOWN NOW',
     notes: [

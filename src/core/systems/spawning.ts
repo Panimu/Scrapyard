@@ -167,7 +167,20 @@ export function updateSpawning(world: World, dt: number): void {
   // --- the cycle's boss ---------------------------------------------------------------------
   // `bossCycle` is set only on a SUCCESSFUL allocation, so a momentarily full pool retries next
   // tick rather than costing the cycle its set-piece.
-  if (dir.cyclePhase === 2 && dir.bossCycle !== index) {
+  //
+  // ONE PER AUTHORED RUNG AND NOT ONE MORE. The ladder extrapolates past its table - that is what
+  // stops a long run ending in an index error - and the boss was extrapolating with it, so a run
+  // that went past sixteen minutes kept being handed a fresh Scraplord every two minutes on top of
+  // however many were still alive. The LAST authored cycle's boss is the last boss there is.
+  //
+  // WHY THAT IS THE RIGHT PLACE TO STOP RATHER THAN A TIMER: `cycleCount` is where the level stops
+  // saying anything new. Past it every rung is the last one with bigger numbers, so a ninth boss is
+  // not an escalation, it is the eighth again - and the eighth is already standing in front of you,
+  // because bosses are tenants and nothing culls them.
+  //
+  // The regulars and elites carry on extrapolating exactly as they did. The horde is what makes a
+  // long run harder; the bosses are what make it unfinishable.
+  if (dir.cyclePhase === 2 && dir.bossCycle !== index && index < world.level.cycleCount) {
     if (spawnRank(world, RANK_BOSS, t) >= 0) dir.bossCycle = index;
   }
 
