@@ -258,6 +258,14 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'They come back on their own, and a finished shield carries a second rim that recharges in its turn.',
     ],
   },
+  'p-radiator': {
+    aims: 'Does nothing at all unless you are holding a laser.',
+    notes: [
+      'A bigger heat buffer and faster shedding between bursts, on every beam you hold. It has no opinion on anything that is not a laser, which is why the deck will not offer it until you already have one.',
+      'Half the ladder buys a longer burst before the cut-out, half buys a shorter wait once it does - which are different things: more buffer is worth having mid-burn, faster shedding is worth having while you wait for it to come back.',
+      'It never touches how hard a beam hits, only how long it can keep hitting. Ordnance is the card for the first half of that trade; this is the card for the second.',
+    ],
+  },
 };
 
 /**

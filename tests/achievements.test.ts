@@ -66,6 +66,14 @@ describe('achievements', () => {
     expect([...present].sort()).toEqual([...earnable].sort());
   });
 
+  it('the Radiator Bank achievement shares the card condition by reference, so they cannot drift', () => {
+    const card = UPGRADE_CATALOG.find((d) => d.id === 'p-radiator');
+    const def = ACHIEVEMENT_CATALOG.find((a) => a.id === 'radiator-bank');
+    expect(card?.unlock).toBeDefined();
+    expect(def?.cond).toBe(card?.unlock);
+    expect(def?.secret).toBe(true);
+  });
+
   it('a mech achievement shares the chassis condition by reference, so they cannot drift', () => {
     for (const hero of HERO_CATALOG) {
       const def = ACHIEVEMENT_CATALOG.find((a) => a.id === `mech-${hero.id}`);

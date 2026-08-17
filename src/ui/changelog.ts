@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T13:43Z',
+    title: 'NEW PASSIVE: RADIATOR BANK',
+    notes: [
+      "A new laser-only passive: a bigger heat buffer and faster shedding between bursts on every beam you hold. It won't show up on the level-up card unless you're already holding a laser, and it starts locked — run all three lasers red-hot at once in one run to earn it.",
+    ],
+  },
+  {
     at: '2026-08-17T13:17Z',
     title: 'HEAVY BODIES ARE 50% FASTER',
     notes: [

@@ -472,6 +472,17 @@ export interface RunStats {
    */
   fullRepairs: number;
   /**
+   * LATCH: 1 once this run has held all three lasers at once with all three overheated at the
+   * same tick, 0 otherwise. Unlocks p-radiator - see UnlockCond `lasersOverheated`.
+   *
+   * A number rather than a boolean for consistency with the rest of this struct (every other
+   * field here is a plain number), even though RunStats is deliberately outside the determinism
+   * hash - see hash.ts. Set in weapons.ts, once the tick's weapon loop has updated every
+   * instance's `overheated` flag, so "at once" means the same tick rather than three readings
+   * taken moments apart.
+   */
+  lasersOverheated: number;
+  /**
    * Rank of the enemy whose touch killed the player, or -1.
    *
    * Set exactly once, on the contact that takes hp to zero, and never cleared - a run has one

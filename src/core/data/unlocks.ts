@@ -130,6 +130,15 @@ export type UnlockCond =
    * total can carry.
    */
   | { readonly kind: 'fullRepair' }
+  /**
+   * Held all three lasers at once, with all three overheated on the same tick.
+   *
+   * A STATE, not a total - the same shape as `fullRepair`, and for the same reason: "all three
+   * were red-hot together" is not a fact three separate counters can reconstruct after the fact,
+   * so `RunStats.lasersOverheated` is a latch set at the moment it is observed rather than
+   * something derived here from three tallies that could have peaked on different ticks.
+   */
+  | { readonly kind: 'lasersOverheated' }
   | { readonly kind: 'win' }
   /**
    * WIN ON A NAMED MAP. The first condition in here that asks WHERE as well as what.
@@ -202,6 +211,8 @@ export interface RunRecord {
   readonly diedTo: string;
   /** Times the run went under a tenth of its hull and got all the way back. See RunStats. */
   readonly fullRepairs: number;
+  /** All three lasers held and overheated on the same tick, at some point. See RunStats. */
+  readonly lasersOverheated: boolean;
 }
 
 /**
@@ -235,6 +246,8 @@ export function meetsUnlock(
       return run.won && run.levelId === cond.level;
     case 'fullRepair':
       return run.fullRepairs > 0;
+    case 'lasersOverheated':
+      return run.lasersOverheated;
     case 'bossKillHolding':
       return run.bossKillsHolding.includes(cond.weapon);
     case 'killsWith': {
@@ -314,6 +327,8 @@ export function describeUnlockDone(
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
     case 'fullRepair':
       return 'Repaired to full hull after dropping below a fifth of it.';
+    case 'lasersOverheated':
+      return 'Ran all three lasers red-hot at once.';
     case 'contactHits':
       return `Took ${cond.count} hits from the horde in one run.`;
     case 'diedTo':

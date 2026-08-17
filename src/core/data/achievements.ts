@@ -48,7 +48,12 @@ import { describeUnlockDone, type UnlockCond } from './unlocks.js';
  * The `mech-` half is generated: EVERY CHASSIS UNLOCK IS ALSO AN ACHIEVEMENT, and that is a rule
  * rather than a list, so it is written as one. See MECH_ACHIEVEMENTS below.
  */
-export type AchievementId = 'chain-laser' | 'gtm-hornet' | `mech-${HeroId}` | `level-${LevelId}`;
+export type AchievementId =
+  | 'chain-laser'
+  | 'gtm-hornet'
+  | 'radiator-bank'
+  | `mech-${HeroId}`
+  | `level-${LevelId}`;
 
 export interface AchievementDef {
   readonly id: AchievementId;
@@ -106,6 +111,18 @@ export interface AchievementDef {
 const levelName = (id: LevelId): string | undefined => LEVEL_CATALOG.find((l) => l.id === id)?.name;
 const upgradeName = (id: string): string | undefined => UPGRADE_CATALOG.find((d) => d.id === id)?.name;
 const weaponName = (id: string): string | undefined => WEAPON_CATALOG.find((w) => w.id === id)?.name;
+
+/**
+ * `p-radiator`'s OWN unlock condition, read off the card rather than retyped - see "by reference"
+ * on the achievement entry below. A throw rather than a fallback: an achievement silently pointed
+ * at the wrong condition is exactly the drift this whole file exists to prevent, and it should
+ * fail the build rather than ship quietly wrong.
+ */
+const RADIATOR_UNLOCK: UnlockCond = (() => {
+  const cond = UPGRADE_CATALOG.find((d) => d.id === 'p-radiator')?.unlock;
+  if (cond === undefined) throw new Error('achievements: p-radiator has no unlock condition');
+  return cond;
+})();
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -201,5 +218,20 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     secret: true,
     // Tier 8 is reachable by nothing but a chest paying out an ascension - see the note above.
     cond: { kind: 'tier', id: 'w-missile-long', tier: 8 },
+  },
+  {
+    id: 'radiator-bank',
+    platformKey: 'scrapyard_radiator_bank',
+    name: 'Red Line',
+    // THE CARD'S OWN ICON. Unlike the Hornet, there is no bigger reveal behind this one - the card
+    // IS the reward, so the picture the player has been staring at level-up after level-up is the
+    // right badge for it.
+    icon: 'icon_p-radiator',
+    description: describeUnlockDone(RADIATOR_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, not hand-copied - see the header. `p-radiator` is what actually gates the
+    // card, and this achievement fires for exactly the same reason the card unlocks, because they
+    // are the same condition object.
+    cond: RADIATOR_UNLOCK,
   },
 ]);

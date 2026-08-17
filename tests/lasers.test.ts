@@ -932,6 +932,54 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     expect(w.weapons[slotIdx].heat).toBeGreaterThan(0);
   });
 
+  it('Radiator Bank is never offered while the loadout holds no laser', () => {
+    const w = progressionWorld('cannon', 11);
+    const radiator = upgradeIndex('p-radiator');
+    const isLaserCard = (idx: number): boolean => {
+      const grants = w.upgradeCatalog[idx].grantsWeapon;
+      return grants === 'laser-short' || grants === 'laser-medium' || grants === 'laser-long';
+    };
+
+    for (let i = 0; i < 25; i++) {
+      gainOneLevel(w);
+      if (w.phase !== RUN_PHASE_LEVEL_UP) break; // pool exhausted or run over - nothing left to check
+      for (let s = 0; s < w.levelUp.offerCount; s++) {
+        expect(w.levelUp.offers[s], `level-up ${i}`).not.toBe(radiator);
+      }
+      // Close the card WITHOUT ever taking a laser, so the premise this loop is built on - a
+      // loadout holding none - stays true going into the next level-up too.
+      let safe = 0;
+      for (let s = 0; s < w.levelUp.offerCount; s++) {
+        if (!isLaserCard(w.levelUp.offers[s])) {
+          safe = s;
+          break;
+        }
+      }
+      choose(w, safe);
+    }
+
+    for (let i = 0; i < w.weaponCount; i++) {
+      expect(isLaserCard(upgradeIndexForWeapon(w.weaponCatalog[w.weapons[i].defId].id))).toBe(
+        false,
+      );
+    }
+  });
+
+  it('Radiator Bank is offered once the loadout holds a laser, and can be taken', () => {
+    const w = progressionWorld('cannon', 21);
+    // Fitted by hand, the same way `twoLaserWorld` does below - the gate cares about what is
+    // HELD, not about how it got there, so earning the laser through a dozen level-ups would put
+    // the upgrade RNG between the setup and the assertion for no reason.
+    const inst = w.weapons[w.weaponCount];
+    inst.defId = weaponDefIndex('laser-short');
+    inst.level = 1;
+    w.weaponCount++;
+
+    const radiator = upgradeIndex('p-radiator');
+    expect(takeCard(w, radiator, 300)).toBe(true);
+    expect(w.levelUp.stacks[radiator]).toBe(1);
+  });
+
   it('starts the hero gun at tier 1 and offers its card as TIER 2, never as an unlock', () => {
     // The hero STARTS with the short laser and never chose a card for it, so `stacks` is seeded
     // at run start. Without that seed the card would come back as an unlock and taking it would
@@ -1307,5 +1355,90 @@ describe('lasers spread out: a body one laser has claimed is invisible to the ne
     expect(w.weapons[0].targetDense).toBe(-1);
     expect(w.weapons[1].targetDense).toBe(only);
     expect(w.beams.count).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Radiator Bank's unlock condition: all three lasers overheated at once
+// ---------------------------------------------------------------------------------------------
+
+describe('lasersOverheated: the latch behind Radiator Bank', () => {
+  /** A world holding all three lasers, fitted by hand - see `twoLaserWorld` above for why. */
+  function threeLaserWorld(): World {
+    const w = createWorld(
+      { seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: [heroWith('laser-short')], weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    w.phase = RUN_PHASE_RUNNING;
+    const hero = w.heroes[w.player.heroId];
+    for (const id of ['laser-medium', 'laser-long'] as const) {
+      const inst = w.weapons[w.weaponCount];
+      inst.defId = weaponDefIndex(id);
+      inst.level = 1;
+      resolveWeaponStats(w.weaponCatalog[inst.defId], hero, 1, w.levelUp.stacks, w.upgradeCatalog, inst.stats);
+      w.weaponCount++;
+    }
+    return w;
+  }
+
+  /** Marks a weapon overheated exactly the way the real cut-out leaves it. */
+  function overheat(inst: World['weapons'][number]): void {
+    inst.overheated = true;
+    inst.heat = inst.stats.heatCapacity;
+  }
+
+  it('latches once all three lasers are held and overheated on the same tick', () => {
+    const w = threeLaserWorld();
+    expect(w.weaponCount).toBe(3);
+    for (let i = 0; i < w.weaponCount; i++) overheat(w.weapons[i]);
+
+    expect(w.stats.lasersOverheated).toBe(0);
+    updateWeapons(w, DT);
+    expect(w.stats.lasersOverheated).toBe(1);
+  });
+
+  it('does not latch when only two of the three are overheated', () => {
+    const w = threeLaserWorld();
+    overheat(w.weapons[0]);
+    overheat(w.weapons[1]);
+    // w.weapons[2] (the long laser) stays cold.
+    updateWeapons(w, DT);
+    expect(w.stats.lasersOverheated).toBe(0);
+  });
+
+  it('does not latch for two overheated lasers plus a hot non-laser weapon', () => {
+    // Holds the short and medium lasers plus a Cannon - never all three lasers - so this pins that
+    // the condition counts WHICH weapons are overheated, not merely how many.
+    const w = createWorld(
+      { seed: 2, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: [heroWith('laser-short')], weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    w.phase = RUN_PHASE_RUNNING;
+    const hero = w.heroes[w.player.heroId];
+    for (const id of ['laser-medium', 'cannon'] as const) {
+      const inst = w.weapons[w.weaponCount];
+      inst.defId = weaponDefIndex(id);
+      inst.level = 1;
+      resolveWeaponStats(w.weaponCatalog[inst.defId], hero, 1, w.levelUp.stacks, w.upgradeCatalog, inst.stats);
+      w.weaponCount++;
+    }
+    overheat(w.weapons[0]);
+    overheat(w.weapons[1]);
+    updateWeapons(w, DT);
+    expect(w.stats.lasersOverheated).toBe(0);
+  });
+
+  it('stays latched once set, even after the lasers cool back down', () => {
+    const w = threeLaserWorld();
+    for (let i = 0; i < w.weaponCount; i++) overheat(w.weapons[i]);
+    updateWeapons(w, DT);
+    expect(w.stats.lasersOverheated).toBe(1);
+
+    for (let i = 0; i < w.weaponCount; i++) {
+      w.weapons[i].overheated = false;
+      w.weapons[i].heat = 0;
+    }
+    updateWeapons(w, DT);
+    expect(w.stats.lasersOverheated).toBe(1);
   });
 });

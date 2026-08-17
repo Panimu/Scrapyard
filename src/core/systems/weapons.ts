@@ -351,6 +351,33 @@ export function updateWeapons(world: World, dt: number): void {
     FIRE_PATTERNS[def.pattern](world, i, inst, targets, n);
     if (!beam) inst.cooldownLeft = stats.cooldown;
   }
+
+  // THE RADIATOR BANK'S UNLOCK CONDITION - see UnlockCond `lasersOverheated`. A LATCH, checked
+  // only until it fires once: the loop above has already brought every instance's `overheated`
+  // flag current for this tick, so this is the one place "all three at once" can be read rather
+  // than reconstructed from three counters that might have peaked on different ticks.
+  if (world.stats.lasersOverheated === 0) checkLasersOverheated(world);
+}
+
+/**
+ * All three lasers held, all three overheated on the same tick. `def.id` stays the base laser id
+ * even at tier 8 - the Chain Laser is the Medium Laser's own WeaponDef, renamed - so an ascended
+ * laser still counts as the laser it came from.
+ */
+function checkLasersOverheated(world: World): void {
+  let short = false;
+  let medium = false;
+  let long = false;
+  for (let i = 0; i < world.weaponCount; i++) {
+    const inst = world.weapons[i];
+    if (!inst.overheated) continue;
+    const def = world.weaponCatalog[inst.defId];
+    if (def === undefined) continue;
+    if (def.id === 'laser-short') short = true;
+    else if (def.id === 'laser-medium') medium = true;
+    else if (def.id === 'laser-long') long = true;
+  }
+  if (short && medium && long) world.stats.lasersOverheated = 1;
 }
 
 /**

@@ -30,10 +30,10 @@
  * Showing fewer numbers is not showing false ones, and every number that IS shown - a heat bar, a
  * damage figure in the summary - is still exact.
  *
- * FOURTEEN CARDS: eight weapons and six passives, every one of them SEVEN TIERS deep. Tier 1 puts
+ * FIFTEEN CARDS: eight weapons and seven passives, every one of them SEVEN TIERS deep. Tier 1 puts
  * the thing in your hands; tiers 2-7 change what it does. A run has five weapon slots and five
- * passive slots, so nothing here is a collection to complete - 98 tiers exist and a long run takes
- * perhaps 30 of them.
+ * passive slots, so nothing here is a collection to complete - 105 tiers exist and a long run
+ * takes perhaps 30 of them.
  *
  * WHAT A TIER DOES lives in WEAPON_CATALOG's `perLevel` arrays, not here. This file says WHICH
  * weapon a card belongs to and what to print on it; the weapon's own file says what tier 4 is
@@ -70,7 +70,8 @@ export type UpgradeId =
   | 'p-speed'
   | 'p-armour'
   | 'p-shield'
-  | 'p-repair';
+  | 'p-repair'
+  | 'p-radiator';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -195,6 +196,20 @@ export interface UpgradeDef {
    */
   readonly unlock?: UnlockCond;
   /**
+   * WHAT THE LOADOUT MUST HOLD RIGHT NOW for this card to be offered. Absent = offered regardless
+   * of loadout, which is every card but one.
+   *
+   * A DIFFERENT QUESTION FROM `unlock`, and evaluated a different way. `unlock` is decided once at
+   * run start from the save - has this ever been EARNED. This is decided fresh every card, against
+   * the RUN IN PROGRESS - is it USEFUL right now. A passive whose entire effect keys off one
+   * archetype of weapon (see p-radiator, which is a no-op on anything but a laser) is a dead pick
+   * for a run holding none, and the deck should not spend an offer slot on a card that does nothing.
+   *
+   * ANY ONE of the list is enough, matching the `killsWith`/`bossKillBy` rule: this asks for a
+   * KIND of weapon, not a specific model.
+   */
+  readonly requiresWeaponHeld?: readonly WeaponId[];
+  /**
    * Set on weapon cards that have a tier 8. Absent means the weapon tops out at 7 - which is most
    * of them today, and the reason this is optional rather than a field every card must fill in.
    */
@@ -260,11 +275,11 @@ function laserTierText(): readonly string[] {
 // ---------------------------------------------------------------------------------------------
 // PASSIVES
 //
-// SIX cards for FIVE slots (MAX_PASSIVES), so a finished build has deliberately left one behind.
+// SEVEN cards for FIVE slots (MAX_PASSIVES), so a finished build has deliberately left two behind.
 //
-// Five of the six are percentage cards on the shared ramp below. The sixth, Energy Shield, is not
-// a percentage of anything - it installs a mechanism - and is authored at the bottom of the
-// catalog with its own reasoning.
+// Five of the seven are percentage cards on the shared ramp below. Energy Shield is not a
+// percentage of anything - it installs a mechanism - and Radiator Bank splits its ramp across two
+// keys instead of one; both are authored at the bottom of the catalog with their own reasoning.
 //
 // The five ramp cards run seven tiers each, BACK-LOADED: 5 / 5 / 6 / 7 / 8 / 9 / 10 percent. That sums to
 // exactly 50% and the seventh rung is worth exactly twice the first, so finishing a passive is a
@@ -778,6 +793,64 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
+  },
+  {
+    id: 'p-radiator',
+    kind: 'passive',
+    /**
+     * RADIATOR BANK - a laser specialist, and the first passive that is honestly a dead pick on a
+     * run holding none. Every other passive here does SOMETHING for every weapon, even when heat
+     * is a rider on a broader effect (Ordnance's damage, Feed Systems' rate); this card's entire
+     * effect is heat, full stop, so `requiresWeaponHeld` keeps it out of the deck for anyone who
+     * cannot use it rather than offering a slot that does nothing.
+     *
+     * TWO DIALS, NOT ONE, and that is the reason to add a second heat card rather than just taking
+     * Feed Systems further: dispersion buys a SHORTER WAIT between bursts, capacity buys a LONGER
+     * BURST before the cut-out - two different questions at the trigger, and nothing else in the
+     * catalog moves capacity at all (only a laser's own T3/T6 tiers do). Stacking this with Feed
+     * Systems still compounds on the dispersion half, which is fine: that overlap is the price of
+     * this card sharing a lever with an existing one rather than inventing a third.
+     *
+     * THE RAMP IS SPLIT ACROSS BOTH KEYS rather than the shared PASSIVE_RAMP applied once, so each
+     * half is worth less per tier than a single-key card's ramp - the same trade Feed Systems makes
+     * across three keys instead of one. Dispersion carries the open and close rungs (1, 3, 5, 7),
+     * capacity the middle three (2, 4, 6), so the card never spends two tiers in a row on the same
+     * dial.
+     *
+     * NOT MEASURED YET. These numbers are a first pass, not a claim - see CLAUDE.md, "measure
+     * balance changes, do not assert them". A `dps`/`t8` run against a laser-only loadout with this
+     * maxed is owed before treating the ramp as final.
+     */
+    name: 'Radiator Bank',
+    description: 'Every beam runs a bigger heat buffer and sheds it faster between bursts.',
+    tiers: Object.freeze([
+      'Sheds heat a little faster between bursts.',
+      'Carries a bigger heat buffer.',
+      'Sheds heat faster between bursts.',
+      'Carries a bigger heat buffer.',
+      'Sheds heat faster between bursts.',
+      'Carries a much bigger heat buffer.',
+      'Sheds heat much faster between bursts.',
+    ]),
+    tierEffects: Object.freeze([
+      [{ target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: 0.08 }],
+      [{ target: 'weapon' as const, key: 'heatCapacity' as const, mode: 'mul' as const, amount: 0.08 }],
+      [{ target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: 0.08 }],
+      [{ target: 'weapon' as const, key: 'heatCapacity' as const, mode: 'mul' as const, amount: 0.1 }],
+      [{ target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: 0.1 }],
+      [{ target: 'weapon' as const, key: 'heatCapacity' as const, mode: 'mul' as const, amount: 0.12 }],
+      [{ target: 'weapon' as const, key: 'heatDispersion' as const, mode: 'mul' as const, amount: 0.12 }],
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+    requiresWeaponHeld: Object.freeze(['laser-short', 'laser-medium', 'laser-long']),
+    /**
+     * BEHIND HAVING RUN ALL THREE LASERS RED-HOT AT ONCE - a run that has already committed hard
+     * enough to lasers to feel the exact problem this card solves. See UnlockCond
+     * `lasersOverheated` and RunStats.lasersOverheated.
+     */
+    unlock: Object.freeze({ kind: 'lasersOverheated' as const }),
   },
 ] as const) as readonly UpgradeDef[];
 

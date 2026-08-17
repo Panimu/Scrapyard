@@ -428,6 +428,7 @@ async function boot(): Promise<void> {
         .map((w) => w.id),
       contactHits: world.stats.contactHits,
       fullRepairs: world.stats.fullRepairs,
+      lasersOverheated: world.stats.lasersOverheated > 0,
       diedTo: RANKS[world.stats.killedByRank]?.name ?? '',
     };
   }

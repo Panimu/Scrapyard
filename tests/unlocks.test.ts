@@ -114,6 +114,15 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock(cond, run({ diedTo: '', won: true }), IDS)).toBe(false);
   });
 
+  it('lasersOverheated reads the run record straight - it is set upstream, not computed here', () => {
+    expect(meetsUnlock({ kind: 'lasersOverheated' }, run({ lasersOverheated: true }), IDS)).toBe(
+      true,
+    );
+    expect(meetsUnlock({ kind: 'lasersOverheated' }, run({ lasersOverheated: false }), IDS)).toBe(
+      false,
+    );
+  });
+
   it('winLevel wants a win AND the right yard', () => {
     const cond = { kind: 'winLevel', level: 'scrapyard' } as const;
     expect(meetsUnlock(cond, run({ won: true, levelId: 'scrapyard' }), IDS)).toBe(true);

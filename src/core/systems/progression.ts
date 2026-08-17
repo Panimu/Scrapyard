@@ -634,6 +634,17 @@ function isOfferable(
   // started with could never be levelled would be a worse bug than the lock is a feature.
   if (stacks === 0 && world.cardUnlocked[index] === 0) return false;
 
+  // WHAT THE LOADOUT HOLDS RIGHT NOW, not what the save has earned - a different question from
+  // `cardUnlocked` above and checked every card rather than once at run start, because it is a
+  // fact about the run in progress. A card whose entire effect keys off one archetype of weapon
+  // is a dead pick for a run holding none of them, and the deck should not spend a slot on it.
+  if (
+    def.requiresWeaponHeld !== undefined &&
+    !def.requiresWeaponHeld.some((w) => ownsWeapon(world, w))
+  ) {
+    return false;
+  }
+
   // A card offered to a player with nothing to shoot with has to put something in their hands.
   // Note this deliberately hides the Energy Shield's tier 2 from Plum's opening card - a shield
   // tier is a fine pick, but not at the price of the only card an unarmed run is guaranteed.

@@ -115,6 +115,7 @@ const ICONS = [
   'p-armour',
   'p-shield',
   'p-repair',
+  'p-radiator',
 ];
 
 const DRAW = `(id) => {
@@ -499,6 +500,35 @@ const DRAW = `(id) => {
     g.beginPath(); g.arc(CX, CY, 34, 0.55, 5.73); g.stroke();
     g.globalAlpha = 1;
     g.beginPath(); g.arc(CX, CY, 12, 0, 6.284); g.fillStyle = STEEL; g.fill();
+  }
+
+  if (id === 'p-radiator') {
+    // A HEATSINK WITH HEAT COMING OFF IT. Parallel fins are the one INERT gesture in this set -
+    // every other glyph here points, pulses or grows - so the shimmer rising off the tallest fin
+    // is the only thing that has to carry motion, the same way heat shimmer does over real metal.
+    const FIN_W = 10, FIN_GAP = 6, FIN_BOT = CY + 34;
+    const heights = [20, 28, 36, 28, 20];
+    const total = heights.length * FIN_W + (heights.length - 1) * FIN_GAP;
+    let fx = CX - total / 2;
+    bar(fx - 4, FIN_BOT, total + 8, 7, STEEL);
+    g.fillStyle = KEY;
+    for (const h of heights) {
+      bar(fx, FIN_BOT - h, FIN_W, h, KEY);
+      fx += FIN_W + FIN_GAP;
+    }
+    g.strokeStyle = KEY;
+    g.lineWidth = 3;
+    g.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      const baseY = FIN_BOT - 44 - i * 13;
+      g.globalAlpha = 0.75 - i * 0.3;
+      g.beginPath();
+      g.moveTo(CX - 15, baseY + 9);
+      g.quadraticCurveTo(CX - 6, baseY - 7, CX, baseY);
+      g.quadraticCurveTo(CX + 6, baseY + 7, CX + 15, baseY - 9);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
   }
 
   return c.toDataURL('image/png');

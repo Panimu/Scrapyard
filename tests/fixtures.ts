@@ -79,6 +79,7 @@ export function testRunRecord(over: Partial<RunRecord> = {}): RunRecord {
     bossKillsBy: [],
     contactHits: 0,
     fullRepairs: 0,
+    lasersOverheated: false,
     diedTo: '',
     ...over,
   };
