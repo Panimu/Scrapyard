@@ -40,6 +40,21 @@ describe('the career kill ledger', () => {
     expect(state.career().killsWith['phase-cannon']).toBe(900);
   });
 
+  it('feeds the unlabeled bar: achievement progress tracks the banked career exactly', () => {
+    const state = new AppState();
+    expect(state.achievementProgress('phase-cannon')).toBe(0);
+
+    state.beginRunTally();
+    state.recordCareerKills(run({ killsWith: { 'phase-cannon': 500 } }));
+    // 500 of 1001 - the bar and the trophy read the same condition object, so this fraction can
+    // only reach 1 on the poll that also fires the achievement.
+    expect(state.achievementProgress('phase-cannon')).toBeCloseTo(500 / 1001, 10);
+
+    // And an achievement with nothing to count reports -1: no bar, rather than an empty one that
+    // implies a count exists.
+    expect(state.achievementProgress('chain-laser')).toBe(-1);
+  });
+
   it('earns the Phase Cannon card across two runs that each fall short alone', () => {
     const state = new AppState();
 

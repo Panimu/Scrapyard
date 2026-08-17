@@ -39,7 +39,7 @@
 import { LEVEL_CATALOG, type LevelId } from '../content/levels.js';
 import { WEAPON_CATALOG } from '../content/weaponCatalog.js';
 import { HERO_CATALOG, type HeroId } from './heroes.js';
-import { UPGRADE_CATALOG } from './upgrades.js';
+import { UPGRADE_CATALOG, type UpgradeId } from './upgrades.js';
 import { describeUnlockDone, type UnlockCond } from './unlocks.js';
 
 /**
@@ -52,6 +52,7 @@ export type AchievementId =
   | 'chain-laser'
   | 'gtm-hornet'
   | 'radiator-bank'
+  | 'phase-cannon'
   | `mech-${HeroId}`
   | `level-${LevelId}`;
 
@@ -113,16 +114,18 @@ const upgradeName = (id: string): string | undefined => UPGRADE_CATALOG.find((d)
 const weaponName = (id: string): string | undefined => WEAPON_CATALOG.find((w) => w.id === id)?.name;
 
 /**
- * `p-radiator`'s OWN unlock condition, read off the card rather than retyped - see "by reference"
- * on the achievement entry below. A throw rather than a fallback: an achievement silently pointed
+ * A CARD'S OWN unlock condition, read off the card rather than retyped - see "by reference" on
+ * the achievement entries below. A throw rather than a fallback: an achievement silently pointed
  * at the wrong condition is exactly the drift this whole file exists to prevent, and it should
  * fail the build rather than ship quietly wrong.
  */
-const RADIATOR_UNLOCK: UnlockCond = (() => {
-  const cond = UPGRADE_CATALOG.find((d) => d.id === 'p-radiator')?.unlock;
-  if (cond === undefined) throw new Error('achievements: p-radiator has no unlock condition');
+function cardUnlock(id: UpgradeId): UnlockCond {
+  const cond = UPGRADE_CATALOG.find((d) => d.id === id)?.unlock;
+  if (cond === undefined) throw new Error(`achievements: ${id} has no unlock condition`);
   return cond;
-})();
+}
+const RADIATOR_UNLOCK = cardUnlock('p-radiator');
+const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -233,5 +236,20 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // card, and this achievement fires for exactly the same reason the card unlocks, because they
     // are the same condition object.
     cond: RADIATOR_UNLOCK,
+  },
+  {
+    id: 'phase-cannon',
+    platformKey: 'scrapyard_phase_cannon',
+    name: 'Through and Through',
+    // The card's own icon - the bolt passing through two ghosts into a burst, which is the
+    // mechanic the thousand kills were made with.
+    icon: 'icon_w-phase-cannon',
+    description: describeUnlockDone(PHASE_CANNON_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like the radiator's: the card's own `killsWithTotal` condition, so the trophy
+    // and the deck unlock can never disagree about what a thousand and one means. This is also
+    // the entry the Scrapopedia's UNLABELED progress bar hangs off - `unlockProgress` reads this
+    // same object, so the bar, the trophy and the card all move on the identical count.
+    cond: PHASE_CANNON_UNLOCK,
   },
 ]);

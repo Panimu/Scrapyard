@@ -21,7 +21,7 @@ import {
   type UpgradeDef,
   type UpgradeId,
 } from './core/data/upgrades.js';
-import { meetsUnlock, type CareerRecord, type RunRecord } from './core/data/unlocks.js';
+import { meetsUnlock, unlockProgress, type CareerRecord, type RunRecord } from './core/data/unlocks.js';
 import { WEAPON_CATALOG, type WeaponId } from './core/content/weaponCatalog.js';
 import { META_CATALOG, metaSpent, type MetaId } from './core/data/meta.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
@@ -668,6 +668,17 @@ export class AppState {
   /** The career as the evaluator wants it - see CareerRecord in core/data/unlocks.ts. */
   career(): CareerRecord {
     return { killsWith: this.settings.careerKills };
+  }
+
+  /**
+   * Career progress toward one achievement, 0..1 - or -1 for the ones with nothing to measure.
+   * The Scrapopedia's unlabeled bar reads this; the fraction comes from the same condition object
+   * `recordAchievements` evaluates, so the bar can never fill at a different moment than the
+   * trophy fires.
+   */
+  achievementProgress(id: AchievementId): number {
+    const def = ACHIEVEMENT_CATALOG.find((a) => a.id === id);
+    return def === undefined ? -1 : unlockProgress(def.cond, this.career());
   }
 
   /**

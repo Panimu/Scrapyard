@@ -11,6 +11,7 @@ import {
   UPGRADE_CATALOG,
   WEAPON_CATALOG,
   meetsUnlock,
+  unlockProgress,
 } from '../src/core/index.js';
 import { testRunRecord as run } from './fixtures.js';
 
@@ -130,6 +131,23 @@ describe('meetsUnlock', () => {
     const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 100 } as const;
     expect(meetsUnlock(cond, run({ killsWith: { 'phase-cannon': 100 } }), IDS)).toBe(true);
     expect(meetsUnlock(cond, run({ killsWith: { 'phase-cannon': 99 } }), IDS)).toBe(false);
+  });
+
+  it('unlockProgress reports a career fraction for career kinds and -1 for everything else', () => {
+    const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 1000 } as const;
+    expect(unlockProgress(cond, { killsWith: {} })).toBe(0);
+    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 250 } })).toBeCloseTo(0.25, 10);
+    // Clamped: a career past the line reads as full, never as 200%.
+    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 2000 } })).toBe(1);
+    // Everything that is not a career count has no bar to show - an event either happened or it
+    // did not, and a one-run tally resets too often to be drawn outside the run.
+    const career = { killsWith: { 'phase-cannon': 500 } };
+    expect(unlockProgress({ kind: 'wave', wave: 3 }, career)).toBe(-1);
+    expect(unlockProgress({ kind: 'win' }, career)).toBe(-1);
+    expect(unlockProgress({ kind: 'never' }, career)).toBe(-1);
+    expect(
+      unlockProgress({ kind: 'killsWith', weapons: ['phase-cannon'], count: 100 }, career),
+    ).toBe(-1);
   });
 
   it('lasersOverheated reads the run record straight - it is set upstream, not computed here', () => {

@@ -277,6 +277,7 @@ async function boot(): Promise<void> {
     ascension: (id) => state.hasAscension(id),
     hero: (id) => state.hasHero(id),
     achievement: (id) => state.hasAchievement(id),
+    progress: (id) => state.achievementProgress(id),
     killed: (name) => state.hasKilled(name),
   });
 

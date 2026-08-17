@@ -422,6 +422,12 @@ export class ScrapopediaScreen {
       ascension: (id: UpgradeId) => boolean;
       hero: (id: HeroId) => boolean;
       achievement: (id: AchievementId) => boolean;
+      /**
+       * Career progress toward a locked achievement, 0..1, or -1 for the ones that have no
+       * meaningful bar - see `unlockProgress` in core/data/unlocks.ts. Same predicate shape as
+       * the rest: this screen asks the question, the save answers it.
+       */
+      progress: (id: AchievementId) => number;
       killed: (name: string) => boolean;
     },
   ) {
@@ -665,6 +671,27 @@ export class ScrapopediaScreen {
       desc.className = 'pedia__achv-desc';
       desc.textContent = def.description;
       words.appendChild(desc);
+    } else {
+      // THE UNLABELED BAR, for the locked rows whose condition counts something across the whole
+      // save. It says nothing about WHAT it measures - no caption, no numbers, no tooltip - and
+      // that is the design, not an omission: the criteria are published nowhere (see the file
+      // header on tier 8, and describeUnlockDone's whole reason for having no imperative form).
+      // All this leaks is that something is counting, and that it moved since the player last
+      // looked. That is the sealed plate's promise with a pulse in it, and watching the pulse
+      // answer to what you did last run IS the discovery mechanism.
+      const p = this.has.progress(def.id);
+      if (p >= 0) {
+        const bar = document.createElement('span');
+        bar.className = 'pedia__achv-bar';
+        // Decoration to a screen reader for the same reason it is unlabeled to everyone else:
+        // announcing a bare percentage of an unnamed thing is noise, not information.
+        bar.setAttribute('aria-hidden', 'true');
+        const fill = document.createElement('span');
+        fill.className = 'pedia__achv-bar-fill';
+        fill.style.width = `${Math.round(p * 100)}%`;
+        bar.appendChild(fill);
+        words.appendChild(bar);
+      }
     }
 
     b.appendChild(words);

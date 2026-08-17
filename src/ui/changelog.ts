@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T17:58Z',
+    title: 'A LOCKED ACHIEVEMENT WITH A PROGRESS BAR',
+    notes: [
+      "There is a new sealed achievement in the Scrapopedia, and under its name sits a thin unlabeled bar. It won't tell you what it's counting — nothing in this game states a condition before you've met it — but it moves, and what you did last run decides how much. Working out what makes it climb is the puzzle.",
+    ],
+  },
+  {
     at: '2026-08-17T17:53Z',
     title: 'WEAPON KILL UNLOCKS COUNT ACROSS RUNS',
     notes: [

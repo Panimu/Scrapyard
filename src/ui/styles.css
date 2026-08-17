@@ -1690,6 +1690,26 @@ body {
   opacity: 0.45;
 }
 
+/* THE UNLABELED PROGRESS BAR on a locked achievement whose condition counts something across the
+   whole save. Thin and captionless on purpose - it must whisper "something is counting" without
+   saying what (see achievementRow). The row's own 0.45 opacity already mutes it further. */
+.pedia__achv-bar {
+  display: block;
+  width: min(260px, 100%);
+  height: 4px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.pedia__achv-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
 /* A row rather than a tile: the NAME is what is being chosen, and a name needs width. */
 .pedia__entry {
   pointer-events: auto;

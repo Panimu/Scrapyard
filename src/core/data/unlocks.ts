@@ -318,6 +318,27 @@ export function meetsUnlock(
 }
 
 /**
+ * HOW FAR ALONG A CAREER IS toward `cond`, as a fraction 0..1 - or -1 when the condition has no
+ * progress a bar could honestly show.
+ *
+ * ONLY THE CAREER KINDS REPORT. They are the only conditions whose number climbs monotonically
+ * across a save's whole life; everything else either happens or does not (a win, a death), or is
+ * scoped to one run and resets too often for a bar drawn outside the run to mean anything.
+ *
+ * WHAT THE BAR IS FOR IS DELIBERATELY NOT PART OF THIS CONTRACT. The criteria are published
+ * nowhere (see describeUnlockDone below), and the one consumer draws this fraction UNLABELED -
+ * all it leaks is that something is counting and that it moved, which is the sealed plate's own
+ * promise with a pulse in it. This function therefore returns a bare number and no words.
+ */
+export function unlockProgress(cond: UnlockCond, career: CareerRecord): number {
+  if (cond.kind !== 'killsWithTotal') return -1;
+  let n = 0;
+  for (const w of cond.weapons) n += career.killsWith[w] ?? 0;
+  const f = n / cond.count;
+  return f > 1 ? 1 : f;
+}
+
+/**
  * The condition as one line, IN THE PAST TENSE - "Reached wave 3", "Killed a boss holding the Long
  * Laser". What a run DID, not what a run must do.
  *

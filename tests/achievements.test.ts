@@ -74,6 +74,14 @@ describe('achievements', () => {
     expect(def?.secret).toBe(true);
   });
 
+  it('the Phase Cannon achievement shares the card condition by reference, so they cannot drift', () => {
+    const card = UPGRADE_CATALOG.find((d) => d.id === 'w-phase-cannon');
+    const def = ACHIEVEMENT_CATALOG.find((a) => a.id === 'phase-cannon');
+    expect(card?.unlock).toBeDefined();
+    expect(def?.cond).toBe(card?.unlock);
+    expect(def?.secret).toBe(true);
+  });
+
   it('a mech achievement shares the chassis condition by reference, so they cannot drift', () => {
     for (const hero of HERO_CATALOG) {
       const def = ACHIEVEMENT_CATALOG.find((a) => a.id === `mech-${hero.id}`);
