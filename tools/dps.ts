@@ -1,5 +1,6 @@
 /**
- * `npm run dps` - the weapon damage table. Every weapon MEASURED IN A REAL FIGHT, at T1 and T7.
+ * `npm run dps` - the weapon damage table. Every weapon MEASURED IN A REAL FIGHT, at T1, T7 and -
+ * where the weapon has one - at T8.
  *
  * ---------------------------------------------------------------------------------------------
  * WHAT CHANGED, AND WHY IT MATTERED
@@ -23,13 +24,25 @@
  *   ONE WEAPON, FIXED TIER. The loadout is forced to exactly the weapon under test at exactly the
  *   tier under test. No starting weapon, no second gun stealing kills.
  *
- *   NO LEVEL-UPS. `xpGain` is zeroed, so no card ever opens and no passive can creep into the
- *   measurement. This is the whole reason the numbers are comparable across weapons - a run that
- *   picked up Ordnance would print 50% high and nothing would say so.
+ *   TIER 8 WHERE THERE IS ONE. A weapon carrying an ascension gets a third row, at
+ *   WEAPON_ASCENDED_TIER, named after the ascension: the tier-8 behaviour keys off `inst.level`
+ *   against the weapon's own `chainsFrom`/`splitsFrom`, so writing the level is genuinely the
+ *   ascension firing. The stats are identical to tier 7 - `perLevel` runs out at seven - so the row
+ *   is a measurement of the ASCENSION and nothing else, which is exactly what makes it worth having.
  *
- *   THE PLAYER IS IMMORTAL. `damageTakenMul` is zeroed. Without it a weak weapon dies at two
- *   minutes and gets measured over a shorter, easier window than a strong one - which would make
- *   the table rank weapons by how long they survive rather than by what they kill.
+ *   NO LEVEL-UPS AND NO CHESTS, and this took three goes to actually be true. `xpGain` and
+ *   `damageTakenMul` are zeroed - and then RE-ZEROED EVERY TICK, and the boss's Cyber Chest is
+ *   swept off the ground before anything can walk over it. All three are needed and the reason is
+ *   one mechanism: applying an upgrade re-resolves the player's stats FROM BASE, which puts both
+ *   multipliers back. So the first boss chest (01:30, thirty seconds into the measured window) used
+ *   to grant one random card, which restored `xpGain`, which let XP flow, which opened level-ups,
+ *   which granted more cards. MEASURED, at the end of a Cannon row: five weapons in the loadout and
+ *   eighteen upgrade stacks. Every table this tool printed before this was fixed was measuring the
+ *   Cannon plus whatever the reel happened to deal it.
+ *
+ *   The immortality is not a luxury: without it a weak weapon dies at two minutes and gets measured
+ *   over a shorter, easier window than a strong one - which would make the table rank weapons by how
+ *   long they survive rather than by what they kill.
  *
  *   The cost of immortality is real and is reported: a weapon that cannot clear the field ends up
  *   standing in a bigger crowd than one that can, which flatters splash and flatters anything that
@@ -45,14 +58,16 @@
  */
 
 import { DT } from '../src/core/constants.js';
-import { WEAPON_CATALOG, type WeaponDef } from '../src/core/content/weaponCatalog.js';
+import { SPLIT_SEC, WEAPON_CATALOG, type WeaponDef } from '../src/core/content/weaponCatalog.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
-import { resolveWeaponStats, type WeaponStats } from '../src/core/data/stats.js';
-import { WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
+import { resolveSplitStats, resolveWeaponStats, type WeaponStats } from '../src/core/data/stats.js';
+import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
+import { PICKUP_KIND_CHEST, markPickupDead } from '../src/core/entity/pickupPool.js';
 import { Simulation } from '../src/core/simulation.js';
 import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../src/core/content/levels.js';
 import { botInput, createBot } from '../src/sim/botPolicy.js';
+import { type World } from '../src/core/types.js';
 
 /** Seconds stepped and discarded before the clock starts. One full elite phase of a cycle. */
 const WARMUP_SEC = 60;
@@ -86,13 +101,37 @@ const NEUTRAL =
   ) ?? HERO_CATALOG[0];
 const NO_STACKS = new Uint8Array(UPGRADE_CATALOG.length);
 
+/**
+ * WEAPON ID -> THE NAME ITS TIER 8 GOES BY, read off the upgrade catalog rather than listed. Every
+ * ascension added from here gets its row in this table without an edit, and a table that has to be
+ * edited to stay complete is a table that will be wrong.
+ */
+const ASCENSION_NAME = new Map<string, string>(
+  UPGRADE_CATALOG.flatMap((def) =>
+    def.ascension === undefined || def.grantsWeapon === undefined
+      ? []
+      : [[def.grantsWeapon, def.ascension.name] as const],
+  ),
+);
+
 interface Row {
+  def: WeaponDef;
+  /** The ascension's name on a tier-8 row, the weapon's on every other. */
   name: string;
   tier: number;
   burst: number;
   uptime: number;
   /** The ARITHMETIC ceiling: burst x the weapon's own duty cycle, against a target that is always there. */
   sustained: number;
+  /**
+   * FALSE ON A TIER-8 ROW, where the arithmetic has nothing to say. `perLevel` runs out at seven, so
+   * the ceiling computed for a tier 8 is tier 7's - it knows nothing of a beam that chains or a
+   * warhead that becomes two, which is the entire content of an ascension. Printing it anyway would
+   * put a number in the column that means "the ceiling of the weapon this used to be", and the
+   * `of ceil` figure beside it would then read as an ascension overperforming rather than as a
+   * comparison against the wrong thing. The T7 row directly above is the honest comparison.
+   */
+  ceilingKnown: boolean;
   maxHit: number;
   note: string;
   /** Filled by `runField`. */
@@ -163,12 +202,27 @@ function analytic(def: WeaponDef, tier: number): Row {
     note = `${s.cooldown.toFixed(2)}s cooldown${s.pierce > 0 ? `, pierce ${s.pierce}` : ''}`;
   }
 
+  // WHAT THE ASCENSION DOES, in the notes column, because the tier-8 row's own stats are tier 7's
+  // and the whole difference is behavioural. Read off the WeaponDef's tier gates rather than from
+  // the ascension's prose, which is written for the player and is a paragraph long.
+  const ascended = tier >= WEAPON_ASCENDED_TIER;
+  if (ascended) {
+    const extras: string[] = [];
+    if ((def.chainsFrom ?? 0) > 0 && tier >= (def.chainsFrom ?? 0)) extras.push('the beam chains');
+    if ((def.splitsFrom ?? 0) > 0 && tier >= (def.splitsFrom ?? 0)) {
+      extras.push(`warheads split at ${SPLIT_SEC.toFixed(1)}s`);
+    }
+    if (extras.length > 0) note = `${extras.join(', ')} - otherwise as T${WEAPON_MAX_TIER}`;
+  }
+
   return {
-    name: def.name,
+    def,
+    name: (ascended ? ASCENSION_NAME.get(def.id) : undefined) ?? def.name,
     tier,
     burst,
     uptime,
     sustained: burst * uptime,
+    ceilingKnown: !ascended,
     maxHit,
     note,
     field: { dps: 0, killsPerMin: 0, hitsPerShot: 0, live: 0 },
@@ -205,6 +259,26 @@ const LEVEL: string = (() => {
   return level.id;
 })();
 
+/**
+ * THE ONE THING THAT KEEPS THE RIG ISOLATED, and it has to run every tick.
+ *
+ * Both multipliers are re-zeroed rather than trusted, because `applyUpgrade` re-resolves the player
+ * from base and would hand them back; the chest is swept off the ground so nothing can grant an
+ * upgrade in the first place. See the header for what this cost before it existed.
+ *
+ * Marked dead rather than reaped: the pickup stage skips a dead entry, and `reapPickups` runs in the
+ * tick anyway. The boss still drops it, is still worth its gems, and still takes as long to kill -
+ * the only thing removed is the payout, which is not part of a weapon's damage.
+ */
+function isolate(world: World): void {
+  world.player.stats.xpGain = 0;
+  world.player.stats.damageTakenMul = 0;
+  const p = world.pickups;
+  for (let d = 0; d < p.count; d++) {
+    if (p.kind[d] === PICKUP_KIND_CHEST) markPickupDead(p, d);
+  }
+}
+
 function runField(def: WeaponDef, tier: number): Field {
   const defId = WEAPON_CATALOG.indexOf(def);
   const sim = new Simulation({
@@ -239,15 +313,22 @@ function runField(def: WeaponDef, tier: number): Field {
   inst.reloadLeft = 0;
   resolveWeaponStats(def, NEUTRAL, tier, world.levelUp.stacks, UPGRADE_CATALOG, inst.stats);
   world.weaponCount = 1;
+  // The Hornet's children, resolved from a tier-7 short rack with the same empty stack table - so
+  // they carry no passives either. Harmless for every other weapon, and re-resolved here because
+  // wiping the stacks above invalidated whatever `createWorld` worked out.
+  resolveSplitStats(world, NEUTRAL);
 
-  // See the header. Both of these are written after resolution and never re-resolved, because no
-  // card is ever taken - which is exactly what the first of them guarantees.
-  world.player.stats.xpGain = 0;
-  world.player.stats.damageTakenMul = 0;
+  // Nothing in this rig may hand the pilot a tier 8 it was not asked to measure: a T8 row installs
+  // the level itself, and every other row must stay at the tier in its own label.
+  world.noAscension = true;
+  isolate(world);
 
   const warmupTicks = Math.round(WARMUP_SEC / DT);
   const measureTicks = Math.round(MEASURE_SEC / DT);
-  for (let t = 0; t < warmupTicks; t++) sim.step(botInput(bot, world));
+  for (let t = 0; t < warmupTicks; t++) {
+    isolate(world);
+    sim.step(botInput(bot, world));
+  }
 
   const damage0 = world.stats.damageDealt;
   const kills0 = world.stats.kills;
@@ -256,6 +337,7 @@ function runField(def: WeaponDef, tier: number): Field {
   let liveSum = 0;
 
   for (let t = 0; t < measureTicks; t++) {
+    isolate(world);
     sim.step(botInput(bot, world));
     liveSum += world.enemies.count;
   }
@@ -274,12 +356,13 @@ const rows: Row[] = [];
 for (const def of WEAPON_CATALOG) {
   rows.push(analytic(def, 1));
   rows.push(analytic(def, WEAPON_MAX_TIER));
+  // The third row exists only where the weapon has somewhere to go. Two weapons today.
+  if (ASCENSION_NAME.has(def.id)) rows.push(analytic(def, WEAPON_ASCENDED_TIER));
 }
 
 process.stdout.write(`  measuring ${rows.length} runs of ${MEASURE_SEC}s`);
 for (const r of rows) {
-  const def = WEAPON_CATALOG.find((d) => d.name === r.name);
-  if (def !== undefined) r.field = runField(def, r.tier);
+  r.field = runField(r.def, r.tier);
   process.stdout.write('.');
 }
 process.stdout.write('\n');
@@ -302,21 +385,31 @@ console.log(
   `  ${pad('weapon', 17)}${pad('tier', 6)}${'dps'.padStart(8)}${'kills/m'.padStart(9)}${'hit/sh'.padStart(8)}${'live'.padStart(7)}${'ceiling'.padStart(9)}${'of ceil'.padStart(9)}   notes`,
 );
 console.log(`  ${'-'.repeat(17 + 6 + 8 + 9 + 8 + 7 + 9 + 9 + 3 + 34)}`);
-for (const r of rows) {
-  const isT7 = r.tier === WEAPON_MAX_TIER;
+for (let i = 0; i < rows.length; i++) {
+  const r = rows[i];
+  // A weapon's rows run T1, T7, T8 and the group ends where the tier stops climbing. Both halves of
+  // the layout hang off that rather than off "is this T7", which stopped being the last row.
+  const last = i + 1 >= rows.length || rows[i + 1].tier <= r.tier;
+  // The NAME on the first row of the group, and again on a tier-8 row - which is the one place in
+  // this table where the same weapon changes what it is called.
+  const named = r.tier === 1 || r.tier >= WEAPON_ASCENDED_TIER;
   const hps = r.field.hitsPerShot < 0 ? '-' : num(r.field.hitsPerShot, 1, 2);
+  const ceiling = r.ceilingKnown ? num(r.sustained, 9) : '-'.padStart(9);
+  const ofCeil = r.ceilingKnown ? `${num((r.field.dps / r.sustained) * 100, 8)}%` : '-'.padStart(9);
   console.log(
-    `  ${pad(isT7 ? '' : r.name, 17)}${pad(`T${r.tier}`, 6)}${num(r.field.dps, 8)}` +
+    `  ${pad(named ? r.name : '', 17)}${pad(`T${r.tier}`, 6)}${num(r.field.dps, 8)}` +
       `${num(r.field.killsPerMin, 9)}${hps.padStart(8)}${num(r.field.live, 7, 0)}` +
-      `${num(r.sustained, 9)}${num((r.field.dps / r.sustained) * 100, 8)}%   ${r.note}`,
+      `${ceiling}${ofCeil}   ${r.note}`,
   );
-  if (isT7) console.log('');
+  if (last) console.log('');
 }
 
 console.log('  MEASURED DPS, RANKED');
-for (const tier of [1, WEAPON_MAX_TIER]) {
+for (const tier of [1, WEAPON_MAX_TIER, WEAPON_ASCENDED_TIER]) {
   const ranked = rows.filter((r) => r.tier === tier).sort((a, b) => b.field.dps - a.field.dps);
-  console.log(`    tier ${tier}`);
+  if (ranked.length === 0) continue;
+  // Named rather than numbered on the last block: "tier 8" is a rung, and only two weapons have one.
+  console.log(tier === WEAPON_ASCENDED_TIER ? `    tier ${tier} - the ascensions` : `    tier ${tier}`);
   for (const r of ranked) {
     console.log(
       `      ${pad(r.name, 17)}${num(r.field.dps, 8)} dps   ${num(r.field.killsPerMin, 6)} kills/min`,
@@ -328,8 +421,10 @@ console.log('');
 console.log('  COLUMNS');
 console.log('    dps       effective damage per second - overkill on a dying body is not counted');
 console.log('    kills/m   bodies killed per minute, which is what the field actually feels');
-console.log('    acc       shotsHit / shotsFired. Blank for beams: a beam has no discrete shot');
+console.log('    hit/sh    shotsHit / shotsFired. Blank for beams: a beam has no discrete shot');
 console.log('    live      mean enemies alive - how crowded the field this weapon left itself');
 console.log('    ceiling   the old arithmetic: burst x duty cycle, target always present');
 console.log('    of ceil   how much of that ceiling the weapon reaches in a real fight');
+console.log('              both blank at tier 8: the arithmetic cannot model an ascension, so the');
+console.log('              honest comparison is the T7 row directly above');
 console.log('');
