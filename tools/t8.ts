@@ -31,7 +31,7 @@
  *   `inst.level` against the weapon's own `chainsFrom`/`splitsFrom`, so a level of 8 is genuinely
  *   the ascension firing and not a tier-7 gun wearing its name.
  *
- *   ALL SIX PASSIVES AT TIER 7, and a NEUTRAL CHASSIS, exactly as `npm run loadout` has them. This
+ *   EVERY PASSIVE AT TIER 7, and a NEUTRAL CHASSIS, exactly as `npm run loadout` has them. This
  *   is a measurement of the guns; anything else in the rig that could favour one of them is off.
  *
  *   EVERY OTHER WEAPON CARD SITS AT TIER 7 IN `stacks` WITHOUT BEING INSTALLED. That looks like a

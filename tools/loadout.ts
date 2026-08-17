@@ -16,12 +16,14 @@
  * ---------------------------------------------------------------------------------------------
  * EVERY DISTORTION IN HERE IS DELIBERATE, AND EACH IS A DECISION
  * ---------------------------------------------------------------------------------------------
- *   ALL EIGHT WEAPONS AT TIER 7, ALL SIX PASSIVES AT TIER 7. A run cannot legally hold this:
+ *   EVERY WEAPON AT TIER 7, EVERY PASSIVE AT TIER 7 - however many of each the catalog holds, which
+ *   is why neither is written as a number here. This paragraph said "all eight weapons, all six
+ *   passives" until someone counted: there are nine and seven. A run cannot legally hold any of it -
  *   MAX_WEAPONS is 5 and MAX_PASSIVES is 5. The rig writes the loadout straight into
- *   `levelUp.stacks` and `world.weapons`, which is why `WEAPON_SLOTS` exists as a separate
- *   constant from `MAX_WEAPONS` - the ARRAY is eight long, the RULE is still five, and nothing
- *   here touches `isOfferable`. No card, chest or ascension can put a sixth gun in a player's
- *   hands as a result of this file existing.
+ *   `levelUp.stacks` and `world.weapons`, which is why `WEAPON_SLOTS` exists as a separate constant
+ *   from `MAX_WEAPONS` - the ARRAY is as long as the catalog, the RULE is still five, and nothing
+ *   here touches `isOfferable`. No card, chest or ascension can put a sixth gun in a player's hands
+ *   as a result of this file existing.
  *
  *   NO TIER 8. `world.noAscension` is set, because a rig holding every T7 weapon and every
  *   passive has satisfied every ascension requirement on tick one - the first boss chest would
