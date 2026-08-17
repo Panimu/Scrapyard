@@ -513,12 +513,15 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     /**
-     * LOCKED BEHIND ITSELF: a thousand and one killing blows with the gun, in one run. The same
-     * bootstrap the drone card uses - the card cannot come up in the deck until earned, and the
-     * chassis that OPENS with it (Brass) is the way in: a held card keeps offering its tiers
-     * whatever the lock says, so Brass levels it while everyone else is still earning it.
+     * LOCKED BEHIND ITSELF: a thousand and one killing blows with the gun, ACROSS EVERY RUN -
+     * `killsWithTotal`, the career condition, because a tally this size is a body of work rather
+     * than one heroic run, and a weapon-unlock grind that reset to zero on death would be the
+     * genre's worst homework. The same bootstrap the drone card uses otherwise: the card cannot
+     * come up in the deck until earned, and the chassis that OPENS with it (Brass) is the way in -
+     * a held card keeps offering its tiers whatever the lock says, so Brass levels it while
+     * everyone else is still earning it.
      */
-    unlock: { kind: 'killsWith', weapons: ['phase-cannon'], count: 1001 },
+    unlock: { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 1001 },
     effects: [],
   },
   {

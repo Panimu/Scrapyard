@@ -21,7 +21,8 @@ import {
   type UpgradeDef,
   type UpgradeId,
 } from './core/data/upgrades.js';
-import { meetsUnlock, type RunRecord } from './core/data/unlocks.js';
+import { meetsUnlock, type CareerRecord, type RunRecord } from './core/data/unlocks.js';
+import { WEAPON_CATALOG, type WeaponId } from './core/content/weaponCatalog.js';
 import { META_CATALOG, metaSpent, type MetaId } from './core/data/meta.js';
 import { ACHIEVEMENT_CATALOG, type AchievementDef, type AchievementId } from './core/data/achievements.js';
 import { reportSync, reportUnlocked } from './achievements.js';
@@ -151,6 +152,16 @@ export interface Settings {
    */
   unlockedLevels: LevelId[];
   /**
+   * KILLING BLOWS EVER LANDED, by weapon id, every run ever played. The career half of the
+   * unlock language - `killsWithTotal` conditions read these through `CareerRecord`.
+   *
+   * By id, filtered on load, like every other list here: an index is only meaningful beside the
+   * table that produced it. Banked DURING the run through the same once-a-second poll as
+   * everything else (see recordCareerKills), so a run that ends in a tab reload keeps the kills
+   * it had banked.
+   */
+  careerKills: Partial<Record<WeaponId, number>>;
+  /**
    * Workshop purchases owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
    *
    * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
@@ -212,6 +223,7 @@ const DEFAULTS: Settings = {
   earnedCards: [],
   heldAscensions: [],
   unlockedLevels: [],
+  careerKills: {},
   metaTiers: {},
 };
 
@@ -245,10 +257,34 @@ const BESTIARY_KEYS: ReadonlySet<string> = (() => {
   return keys;
 })();
 
+/**
+ * A FRESH default settings object, every mutable member its own copy.
+ *
+ * `{ ...DEFAULTS }` is a shallow spread: it hands out DEFAULTS' own arrays and records by
+ * reference, so the first mutation - banking a kill, buying a tier - would write into the
+ * module-level constant, and every later "fresh" save would silently inherit it. With exactly one
+ * AppState per page that stayed theoretical; the test suite constructs several, and the career
+ * ledger made it real.
+ */
+function freshDefaults(): Settings {
+  return {
+    ...DEFAULTS,
+    unlockedUpgrades: [...DEFAULTS.unlockedUpgrades],
+    unlockedHeroes: [...DEFAULTS.unlockedHeroes],
+    unlockedAchievements: [...DEFAULTS.unlockedAchievements],
+    killedEnemies: [...DEFAULTS.killedEnemies],
+    earnedCards: [...DEFAULTS.earnedCards],
+    heldAscensions: [...DEFAULTS.heldAscensions],
+    unlockedLevels: [...DEFAULTS.unlockedLevels],
+    careerKills: { ...DEFAULTS.careerKills },
+    metaTiers: { ...DEFAULTS.metaTiers },
+  };
+}
+
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return { ...DEFAULTS };
+    if (raw === null) return freshDefaults();
     const parsed = JSON.parse(raw) as Partial<Settings>;
     // Reconciled BEFORE the literal below so the credits line can fold the refund in: a purchase
     // whose deal has been retuned since it was bought comes back as the credits it actually cost.
@@ -304,6 +340,9 @@ function loadSettings(): Settings {
           (id): id is LevelId =>
             typeof id === 'string' && LEVEL_CATALOG.some((l) => l.id === id),
         ),
+      // Career kill tallies: unknown weapon ids dropped, counts clamped to sane integers - the
+      // same hostile-storage stance as everything else in this function.
+      careerKills: readCareerKills(parsed.careerKills),
       metaTiers: meta.owned,
       // Filtered against ALL THREE namespaces that share this array - see BESTIARY_KEYS. It used
       // to check two of them, which silently deleted every Scrapopedia page on every reload.
@@ -338,7 +377,7 @@ function loadSettings(): Settings {
     return s;
   } catch {
     // Private browsing, quota, corrupt JSON - all the same answer.
-    return { ...DEFAULTS };
+    return freshDefaults();
   }
 }
 
@@ -397,6 +436,18 @@ export function reconcileMetaTiers(v: unknown): {
     owned[def.id] = { tiers: Math.min(tiers, def.tiers), version: def.version, cost: def.cost };
   }
   return { owned, refund };
+}
+
+/** Career kill tallies out of storage: unknown weapon ids dropped, counts clamped. */
+function readCareerKills(v: unknown): Partial<Record<WeaponId, number>> {
+  const out: Partial<Record<WeaponId, number>> = {};
+  if (typeof v !== 'object' || v === null) return out;
+  const raw = v as Record<string, unknown>;
+  for (const def of WEAPON_CATALOG) {
+    const n = clampInt(raw[def.id], 0, 1_000_000_000, 0);
+    if (n > 0) out[def.id] = n;
+  }
+  return out;
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
@@ -569,6 +620,56 @@ export class AppState {
     return this.settings.earnedCards.includes(id);
   }
 
+  // -------------------------------------------------------------------------------------------
+  // THE CAREER - totals across every run ever played
+  // -------------------------------------------------------------------------------------------
+
+  /**
+   * What has already been banked FROM THE RUN IN PROGRESS, by weapon id. The delta ledger that
+   * makes `recordCareerKills` safe to call once a second: a run's tallies only grow, so what is
+   * owed on each call is the growth since the last one, and re-banking the whole run every poll
+   * would multiply every kill by the number of polls.
+   *
+   * NOT PERSISTED, deliberately. It describes the run in progress, and a run does not survive the
+   * page - a reload loses the run and this with it, while `careerKills` keeps exactly what the
+   * polls before the reload had banked. There is no run-resume for it to be wrong about.
+   */
+  private bankedRunKills: Partial<Record<WeaponId, number>> = {};
+
+  /** Called at run start: the new run has banked nothing yet. */
+  beginRunTally(): void {
+    this.bankedRunKills = {};
+  }
+
+  /**
+   * Banks the run's killing blows into the career totals - the growth since the last call only,
+   * so calling it every poll is free and calling it after the run ends banks the tail.
+   *
+   * MUST RUN BEFORE THE EVALUATORS in each poll (see bankProgress in main.ts): `career()` is what
+   * a `killsWithTotal` condition reads, and it should include the kills of the very tick that
+   * completed it rather than trailing one poll behind.
+   */
+  recordCareerKills(run: RunRecord): void {
+    let dirty = false;
+    for (const def of WEAPON_CATALOG) {
+      const now = run.killsWith[def.id] ?? 0;
+      const banked = this.bankedRunKills[def.id] ?? 0;
+      if (now <= banked) continue;
+      this.settings.careerKills[def.id] = Math.min(
+        1_000_000_000,
+        (this.settings.careerKills[def.id] ?? 0) + (now - banked),
+      );
+      this.bankedRunKills[def.id] = now;
+      dirty = true;
+    }
+    if (dirty) this.saveSettings();
+  }
+
+  /** The career as the evaluator wants it - see CareerRecord in core/data/unlocks.ts. */
+  career(): CareerRecord {
+    return { killsWith: this.settings.careerKills };
+  }
+
   /**
    * Tests every locked card against the run and banks the ones it earned. Returns the newly earned
    * definitions so the caller can say so.
@@ -582,7 +683,7 @@ export class AppState {
     for (const def of UPGRADE_CATALOG) {
       if (def.unlock === undefined) continue;
       if (this.settings.earnedCards.includes(def.id)) continue;
-      if (!meetsUnlock(def.unlock, run, ids)) continue;
+      if (!meetsUnlock(def.unlock, run, ids, this.career())) continue;
       this.settings.earnedCards.push(def.id);
       earned.push(def);
     }
@@ -621,7 +722,7 @@ export class AppState {
     for (const level of LEVEL_CATALOG) {
       if (level.unlock.kind === 'always' || level.unlock.kind === 'never') continue;
       if (this.settings.unlockedLevels.includes(level.id)) continue;
-      if (!meetsUnlock(level.unlock, run, ids)) continue;
+      if (!meetsUnlock(level.unlock, run, ids, this.career())) continue;
       this.settings.unlockedLevels.push(level.id);
       earned.push(level);
     }
@@ -743,7 +844,7 @@ export class AppState {
     const earned: HeroId[] = [];
     for (const hero of HERO_CATALOG) {
       if (this.settings.unlockedHeroes.includes(hero.id)) continue;
-      if (!meetsUnlock(hero.unlock, run, ids)) continue;
+      if (!meetsUnlock(hero.unlock, run, ids, this.career())) continue;
       this.settings.unlockedHeroes.push(hero.id);
       earned.push(hero.id);
     }
@@ -767,7 +868,7 @@ export class AppState {
     const earned: AchievementDef[] = [];
     for (const def of ACHIEVEMENT_CATALOG) {
       if (this.settings.unlockedAchievements.includes(def.id)) continue;
-      if (!meetsUnlock(def.cond, run, ids)) continue;
+      if (!meetsUnlock(def.cond, run, ids, this.career())) continue;
       this.settings.unlockedAchievements.push(def.id);
       earned.push(def);
     }

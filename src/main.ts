@@ -456,6 +456,10 @@ async function boot(): Promise<void> {
    */
   function bankProgress(world: World): void {
     const record = runRecord(world);
+    // FIRST, before anything evaluates: the career totals a `killsWithTotal` condition reads
+    // must already include this poll's kills, or the card completing on this very poll would
+    // not be seen until the next one.
+    state.recordCareerKills(record);
     toast.push(state.recordAchievements(record));
     state.recordKills(
       world.stats.killsByFlavour,
@@ -498,6 +502,8 @@ async function boot(): Promise<void> {
     // weapon (and Plum's shield) to tier 1, so this is true rather than generous - and it is the
     // only unlock a player who quits to the title mid-run would otherwise not have banked.
     state.recordHeldUpgrades(sim.world.levelUp.stacks);
+    // The career's per-run delta ledger starts at zero with the run - see recordCareerKills.
+    state.beginRunTally();
     earnedThisRun = [];
     toast.clear();
     pendingChoice = -1;

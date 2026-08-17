@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T17:53Z',
+    title: 'WEAPON KILL UNLOCKS COUNT ACROSS RUNS',
+    notes: [
+      "The Phase Cannon's 1001 kills now accumulate over your whole career instead of resetting with every run. Kills are banked while you play, once a second — so a run that ends in a tab reload keeps what it earned, and the card unlocks the moment the lifetime tally crosses the line, mid-run included.",
+    ],
+  },
+  {
     at: '2026-08-17T17:38Z',
     title: 'NEW WEAPON: THE PHASE CANNON',
     notes: [

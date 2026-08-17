@@ -21,9 +21,10 @@
  * also keeps `meetsUnlock` a pure function of one small record, which is what lets the summary
  * screen tell you what you just earned without consulting anything persistent.
  *
- * A cumulative condition ("open fifty chests, ever") would need the career totals that only the
- * app layer has. It is a new `kind` and a second argument on the day one is wanted, not a reason
- * to make this one impure now.
+ * A cumulative condition ("open fifty chests, ever") needs the career totals that only the app
+ * layer has - and the day one was wanted, it arrived exactly as this paragraph prescribed: a new
+ * `kind` (`killsWithTotal`) and a second argument (`CareerRecord`), leaving every one-run
+ * condition the pure function of one small record it always was.
  *
  * ---------------------------------------------------------------------------------------------
  * NO CONDITIONS ARE WRITTEN YET, AND NONE WILL BE INVENTED HERE
@@ -94,6 +95,25 @@ export type UnlockCond =
    * screen, and a gun that softens everything and never finishes anything has not killed with it.
    */
   | { readonly kind: 'killsWith'; readonly weapons: readonly WeaponId[]; readonly count: number }
+  /**
+   * Land the KILLING BLOW on `count` enemies with any of `weapons`, ACROSS EVERY RUN EVER PLAYED
+   * - the career condition the file header promised would arrive as its own kind rather than by
+   * making `killsWith` impure.
+   *
+   * The career totals live in the save, so they reach the evaluator as the CAREER ARGUMENT to
+   * `meetsUnlock` - the app layer passes its banked tallies (current run included, since it banks
+   * before it evaluates). When no career is supplied - a caller that has none, a test that
+   * pins a single run - the condition falls back to the run's own `killsWith`, so it degrades to
+   * the one-run reading rather than becoming quietly unsatisfiable.
+   *
+   * Same killing-blow rule as `killsWith`, for the same reason: "kill with X" has to mean the
+   * thing a player would check on the screen, however many runs it took.
+   */
+  | {
+      readonly kind: 'killsWithTotal';
+      readonly weapons: readonly WeaponId[];
+      readonly count: number;
+    }
   /** Land the KILLING BLOW on a boss with any of `weapons`. Same rule as `killsWith`. */
   | { readonly kind: 'bossKillBy'; readonly weapons: readonly WeaponId[] }
   /**
@@ -216,16 +236,32 @@ export interface RunRecord {
 }
 
 /**
+ * CAREER TOTALS - what a whole save has done, as opposed to what one run did.
+ *
+ * The second argument the file header promised the day a cumulative condition arrived. Only the
+ * app layer can build one (the totals live in the save), so it is optional and only the career
+ * `kind`s read it: every one-run condition stays a pure function of the RunRecord, exactly as
+ * before, and a caller with no save in hand simply omits it.
+ */
+export interface CareerRecord {
+  /** Killing blows ever landed, by weapon, every run included. Absent key = none. */
+  readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
+}
+
+/**
  * Did this run earn the thing behind `cond`?
  *
  * `ids` is UPGRADE_CATALOG's ids in catalog order - the key for `RunRecord.tiers`. Passed in
  * rather than imported so a fixture catalog in a test lines up with a fixture record, and so this
  * module does not depend on the real content table to answer a question about a record.
+ *
+ * `career` feeds only the career kinds - see CareerRecord.
  */
 export function meetsUnlock(
   cond: UnlockCond,
   run: RunRecord,
   ids: readonly UpgradeId[],
+  career?: CareerRecord,
 ): boolean {
   switch (cond.kind) {
     case 'always':
@@ -253,6 +289,14 @@ export function meetsUnlock(
     case 'killsWith': {
       let n = 0;
       for (const w of cond.weapons) n += run.killsWith[w] ?? 0;
+      return n >= cond.count;
+    }
+    case 'killsWithTotal': {
+      // The career when the caller has one; the run's own tallies when it does not - the
+      // fallback that keeps this satisfiable (and testable) without a save in hand.
+      const totals = career?.killsWith ?? run.killsWith;
+      let n = 0;
+      for (const w of cond.weapons) n += totals[w] ?? 0;
       return n >= cond.count;
     }
     case 'bossKillBy':
@@ -323,6 +367,8 @@ export function describeUnlockDone(
       return `Killed a boss holding the ${weaponNames(cond.weapon) ?? cond.weapon}.`;
     case 'killsWith':
       return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}.`;
+    case 'killsWithTotal':
+      return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}, across every run.`;
     case 'bossKillBy':
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
     case 'fullRepair':

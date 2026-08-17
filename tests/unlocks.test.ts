@@ -114,6 +114,24 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock(cond, run({ diedTo: '', won: true }), IDS)).toBe(false);
   });
 
+  it('killsWithTotal reads the career when given one, and sums across the weapons it names', () => {
+    const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 1001 } as const;
+    // The run on its own is far short; the career carries the other nine hundred.
+    const shortRun = run({ killsWith: { 'phase-cannon': 101 } });
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1001 } })).toBe(true);
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1000 } })).toBe(false);
+    // A weapon the condition does not name contributes nothing, however storied the career.
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { cannon: 1_000_000 } })).toBe(false);
+  });
+
+  it('killsWithTotal degrades to the run itself when no career is supplied', () => {
+    // The fallback that keeps the condition satisfiable for a caller with no save in hand - and
+    // keeps the perfect-run sweep below honest about reachability.
+    const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 100 } as const;
+    expect(meetsUnlock(cond, run({ killsWith: { 'phase-cannon': 100 } }), IDS)).toBe(true);
+    expect(meetsUnlock(cond, run({ killsWith: { 'phase-cannon': 99 } }), IDS)).toBe(false);
+  });
+
   it('lasersOverheated reads the run record straight - it is set upstream, not computed here', () => {
     expect(meetsUnlock({ kind: 'lasersOverheated' }, run({ lasersOverheated: true }), IDS)).toBe(
       true,

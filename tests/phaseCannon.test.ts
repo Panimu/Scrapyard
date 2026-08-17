@@ -182,10 +182,16 @@ describe('the bolt', () => {
 });
 
 describe('the card and the chassis', () => {
-  it('is locked behind a thousand and one killing blows with itself', () => {
+  it('is locked behind a thousand and one killing blows with itself, across every run', () => {
     const card = UPGRADE_CATALOG[upgradeIndex('w-phase-cannon')];
     expect(card.grantsWeapon).toBe('phase-cannon');
-    expect(card.unlock).toEqual({ kind: 'killsWith', weapons: ['phase-cannon'], count: 1001 });
+    // `killsWithTotal`, not `killsWith`: the tally accumulates over the career rather than
+    // resetting with the run. See recordCareerKills in appState.ts for the banking half.
+    expect(card.unlock).toEqual({
+      kind: 'killsWithTotal',
+      weapons: ['phase-cannon'],
+      count: 1001,
+    });
   });
 
   it('ships the identity the design asked for: densest targeting, phasing, a slow turret', () => {
