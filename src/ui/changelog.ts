@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-17T18:51Z',
+    title: 'A SECOND MYSTERY BAR',
+    notes: [
+      'Another sealed achievement in the Scrapopedia now carries the thin unlabeled bar. Same rules as the first: no caption, no numbers, and whatever it is counting no longer resets when a run ends.',
+    ],
+  },
+  {
     at: '2026-08-17T17:58Z',
     title: 'A LOCKED ACHIEVEMENT WITH A PROGRESS BAR',
     notes: [

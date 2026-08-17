@@ -55,6 +55,24 @@ describe('the career kill ledger', () => {
     expect(state.achievementProgress('chain-laser')).toBe(-1);
   });
 
+  it("feeds Indigo's bar too: the derived mech trophy counts artillery kills across runs", () => {
+    const state = new AppState();
+    // The mech achievement exists BECAUSE the chassis has a real condition - it is derived, not
+    // authored - and carries that condition by reference, so the bar arrives with no wiring.
+    expect(state.achievementProgress('mech-indigo')).toBe(0);
+
+    state.beginRunTally();
+    state.recordCareerKills(run({ killsWith: { artillery: 333 } }));
+    expect(state.achievementProgress('mech-indigo')).toBeCloseTo(333 / 999, 10);
+
+    state.beginRunTally();
+    state.recordCareerKills(run({ killsWith: { artillery: 666 } }));
+    expect(state.achievementProgress('mech-indigo')).toBeCloseTo(1, 10);
+    // 999 across two runs earns the chassis itself through the same career the bar reads.
+    const record = run({ killsWith: { artillery: 666 } });
+    expect(state.recordRun(record)).toContain('indigo');
+  });
+
   it('earns the Phase Cannon card across two runs that each fall short alone', () => {
     const state = new AppState();
 

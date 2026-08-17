@@ -358,12 +358,16 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'indigo',
     /**
-     * A THOUSAND-SHY FINISHES WITH THE BARRAGE, in one run. Killing blows, not damage dealt -
-     * the same rule every `killsWith` condition holds to - so a barrage that softens the horde
-     * for other guns to finish earns nothing here. It asks for a run that let the weather do
-     * the killing, which is exactly the run this chassis is built for.
+     * A THOUSAND-SHY FINISHES WITH THE BARRAGE, across every run ever played - `killsWithTotal`,
+     * like the Phase Cannon card's, and for the same reason: a tally this size is a body of work,
+     * not one heroic run. Killing blows, not damage dealt - the rule every kills condition holds
+     * to - so a barrage that softens the horde for other guns to finish earns nothing here.
+     *
+     * Being career-counted also puts the UNLABELED PROGRESS BAR on this chassis' sealed
+     * achievement row for free: the derived `mech-indigo` trophy carries this condition by
+     * reference, and `unlockProgress` reports for exactly the career kinds. See scrapopedia.
      */
-    unlock: { kind: 'killsWith', weapons: ['artillery'], count: 999 },
+    unlock: { kind: 'killsWithTotal', weapons: ['artillery'], count: 999 },
     name: 'Indigo',
     // WAS "boxed racks" - missile-rack flavour text left behind when this chassis moved off the
     // Long Missiles (see the note on `startingWeapon` below). The one chassis built around the
