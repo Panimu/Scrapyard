@@ -62,13 +62,40 @@ function run(w: World, dx: number, dy: number, ticks: number): void {
   for (let i = 0; i < ticks; i++) stepWorld(w, input);
 }
 
+/**
+ * THE LEVELS A RUN CAN ACTUALLY BE PLAYED ON.
+ *
+ * Every assertion below this line is about SHIPPABLE CONTENT - does the ladder resolve, does the
+ * art measure, does the boss supply hold - and none of it is a question you can ask of a stub. The
+ * catalog also carries entries that are named and not built (`playable: false`), which the picker
+ * greys out and `levelOrDefault` refuses; asking one of those for its cycle ladder throws by
+ * design, so the filter is the difference between this suite testing the game and testing the
+ * placeholder.
+ *
+ * The catalog-shape tests above still walk the WHOLE list, because that is where a stub has to be
+ * checked for being a well-formed stub.
+ */
+const PLAYABLE = LEVEL_CATALOG.filter((l) => l.playable);
+
 describe('the catalog', () => {
-  it('both levels are playable and every one names a floor', () => {
-    for (const level of LEVEL_CATALOG) {
-      expect(level.floor).not.toBe('');
-      expect(Number.isNaN(level.arenaHalf)).toBe(false);
+  it('every playable level names a floor, and a stub names none', () => {
+    expect(PLAYABLE.length).toBeGreaterThan(0);
+    for (const level of PLAYABLE) {
+      expect(level.floor, level.id).not.toBe('');
+      expect(Number.isNaN(level.arenaHalf), level.id).toBe(false);
     }
     expect(levelById('mossy-mayhem')?.playable).toBe(true);
+
+    // A STUB IS A WELL-FORMED STUB. Not merely unplayable: it must also name no floor (or
+    // `levelFloorKeys` would ask the loader for art nobody has drawn) and no criteria (a guessed
+    // unlock is a design decision made by accident - see levelCityChaos.ts).
+    for (const level of LEVEL_CATALOG) {
+      if (level.playable) continue;
+      expect(level.floor, level.id).toBe('');
+      expect(level.unlock.kind, level.id).toBe('never');
+      expect(level.creatures.length, level.id).toBe(0);
+      expect(level.cycleCount, level.id).toBe(0);
+    }
   });
 
   it('an unknown or unplayable id degrades to the first playable level', () => {
@@ -170,7 +197,7 @@ describe('a level owns its creatures', () => {
     // Identity, not equality. Two levels may legitimately choose the same drawSize; what must
     // never happen is one level's row BEING another's, because then a tweak lands on both.
     const seen = new Set<unknown>();
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       for (const c of level.creatures) {
         expect(seen.has(c)).toBe(false);
         seen.add(c);
@@ -179,13 +206,13 @@ describe('a level owns its creatures', () => {
   });
 
   it('creature ids are positional, so a cycle can never name its neighbour', () => {
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       level.creatures.forEach((c, i) => expect(c.id).toBe(i));
     }
   });
 
   it('every rank of every authored cycle resolves to a real creature', () => {
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       const c = createResolvedCycle(level.resolveCycle);
       // Past the authored ladder too: extrapolation must not walk off the end of the table.
       for (let i = 0; i < 24; i++) {
@@ -201,7 +228,7 @@ describe('a level owns its creatures', () => {
     // THE HITBOX MUST NOT LIE. The collision radius comes from the cycle's archetype and the
     // picture comes from the creature, so if the two disagree the player sees a body that is not
     // where they can hit it. Two separate files assert this matters; nothing was checking it.
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       const c = createResolvedCycle(level.resolveCycle);
       for (let i = 0; i < 24; i++) {
         level.resolveCycle(i, c);
@@ -216,7 +243,7 @@ describe('a level owns its creatures', () => {
     // A MISSING PNG IS NOT A MOSSY BUG, IT IS A BLANK GAME. `assets.ts` asks for every level's
     // keys during boot and `get()` throws on a miss, so renaming one Mossy sprite key takes the
     // Scrapyard down with it. Cheap to check here; expensive to find on a phone.
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       for (const c of level.creatures) {
         expect(c.frames.length).toBeGreaterThan(0);
         for (const key of c.frames) {
@@ -230,7 +257,7 @@ describe('a level owns its creatures', () => {
     // The Scrapopedia illustrates variants and ranks with one body PER LEVEL. Each has to resolve
     // inside that level's own creatures - the whole point is that no map's art stands in for
     // another's.
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       const body = level.creatures[level.bestiaryBody];
       expect(body, `${level.id}: bestiaryBody ${level.bestiaryBody} is not in its own table`).toBeDefined();
       expect(body.id).toBe(level.bestiaryBody);
@@ -241,7 +268,7 @@ describe('a level owns its creatures', () => {
     // MAX_ENEMY_RADIUS is derived from SPAWNABLE_ARCHETYPES rather than from the ladders, so that
     // adding a level cannot silently widen a bound four spatial queries depend on. This is the
     // check that keeps that honest - it fails the level, not the queries.
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       const c = createResolvedCycle(level.resolveCycle);
       for (let i = 0; i < 24; i++) {
         level.resolveCycle(i, c);
@@ -265,7 +292,7 @@ describe('a level owns its creatures', () => {
       if (w.player.stats.moveMaxSpeed < slowest) slowest = w.player.stats.moveMaxSpeed;
     }
 
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       for (let i = 0; i < 12; i++) {
         expect(slowest).toBeGreaterThanOrEqual(1.08 * maxEnemySpeedAt(level.resolveCycle, i, ramp));
       }
@@ -302,7 +329,7 @@ describe('damage stages', () => {
  */
 describe('the bestiary', () => {
   it('is every rung at every rank, in the order they are met', () => {
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       const entries = bestiaryFor(level);
       expect(entries.length).toBe(level.cycleCount * RANKS.length);
       entries.forEach((e, i) => {
@@ -314,7 +341,7 @@ describe('the bestiary', () => {
 
   it('draws every entry from its OWN level, and no two entries share a save key', () => {
     const keys = new Set<string>();
-    for (const level of LEVEL_CATALOG) {
+    for (const level of PLAYABLE) {
       for (const e of bestiaryFor(level)) {
         // Identity, not equality: the creature must be the row out of THIS level's table.
         expect(level.creatures).toContain(e.creature);

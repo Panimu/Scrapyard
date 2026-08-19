@@ -41,7 +41,11 @@ describe('the bestiary survives a reload', () => {
   it('keeps every key the current content can produce', async () => {
     // EVERY key, not a sample: the filter is a membership test, and a set built from the wrong
     // level or the wrong rank order would pass a spot check and fail on the entry it missed.
-    const keys = LEVEL_CATALOG.flatMap((l) => bestiaryFor(l)).map((e) => e.key);
+    // PLAYABLE ONLY, matching the set `BESTIARY_KEYS` itself is built from: an unplayable level
+    // produces no kills, so it can contribute no key to any save.
+    const keys = LEVEL_CATALOG.filter((l) => l.playable)
+      .flatMap((l) => bestiaryFor(l))
+      .map((e) => e.key);
     expect(keys.length).toBeGreaterThan(20);
     const app = await loadWith(keys);
     for (const k of keys) expect(app.has(k), `${k} was dropped on load`).toBe(true);

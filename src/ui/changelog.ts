@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T11:58Z',
+    title: 'SOMETHING IS BEING BUILT',
+    notes: [
+      'A third yard now sits on the level select \u2014 City Chaos \u2014 greyed out and not enterable. It is a placeholder for work that has not been done rather than a promise about when it will be, and it is there so you can see it coming.',
+    ],
+  },
+  {
     at: '2026-08-19T11:47Z',
     title: 'AUTO LEVEL',
     notes: [

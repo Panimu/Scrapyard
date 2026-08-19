@@ -33,9 +33,10 @@ import type { UnlockCond } from '../data/unlocks.js';
 import type { CreatureDef, CycleResolver } from './cycles.js';
 import { MOSSY_MAYHEM } from './levelMossyMayhem.js';
 import { SCRAPYARD } from './levelScrapyard.js';
+import { CITY_CHAOS } from './levelCityChaos.js';
 import type { Scenery } from './scenery.js';
 
-export type LevelId = 'scrapyard' | 'mossy-mayhem';
+export type LevelId = 'scrapyard' | 'mossy-mayhem' | 'city-chaos';
 
 export interface LevelDef {
   readonly id: LevelId;
@@ -160,7 +161,7 @@ export interface LevelDef {
 }
 
 /** Every level, in picker order. */
-export const LEVEL_CATALOG: readonly LevelDef[] = Object.freeze([SCRAPYARD, MOSSY_MAYHEM]);
+export const LEVEL_CATALOG: readonly LevelDef[] = Object.freeze([SCRAPYARD, MOSSY_MAYHEM, CITY_CHAOS]);
 
 /** A level by id, or the first playable one. Never an index literal, never a bare fallback. */
 export function levelOrDefault(id: string | undefined): LevelDef {

@@ -209,12 +209,19 @@ export interface RimRule {
 export const ART_FACING_BY_LEVEL: Record<LevelId, number> = {
   scrapyard: 1,
   'mossy-mayhem': -1,
+  // A STUB WITH NO CREATURES - see levelCityChaos.ts. 1 is "drawn facing +x", the neutral answer,
+  // and it is answered rather than left out because the Record is total on purpose: the day this
+  // level grows art, the compiler has already put the question in front of somebody.
+  'city-chaos': 1,
 };
 
 /** EVERY LEVEL'S RULE, BY ID - `Record<LevelId, ...>`, so a new level cannot forget to answer. */
 export const RIM_BY_LEVEL: Record<LevelId, RimRule> = {
   scrapyard: { keyFor: () => undefined, scale: BOSS_OUTLINE_SCALE },
   'mossy-mayhem': { keyFor: (key) => `${key}_rim`, scale: 1 },
+  // The Scrapyard's answer - a drawn outline rather than a baked rim sprite - because it is the
+  // one that needs no art to exist. See levelCityChaos.ts.
+  'city-chaos': { keyFor: () => undefined, scale: BOSS_OUTLINE_SCALE },
 };
 
 /**
@@ -296,6 +303,9 @@ export const CONTENT_PX_BY_LEVEL: Record<LevelId, ContentPxRule> = {
   scrapyard: (id) => HULL_CONTENT_PX[id % 12] * ENEMY_RETINA_FACTOR,
   // Trimmed at bake time: the PNG is the creature and nothing else.
   'mossy-mayhem': (_id, art) => Math.max(art.width, art.height),
+  // Measured off the art, which is the rule that works without knowing anything about an atlas
+  // this level does not have yet. See levelCityChaos.ts.
+  'city-chaos': (_id, art) => Math.max(art.width, art.height),
 };
 
 /**

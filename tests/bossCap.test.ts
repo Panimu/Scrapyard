@@ -117,7 +117,9 @@ describe('the boss supply', () => {
    * and a one-sided bound would only ever catch one of them.
    */
   it('delivers exactly what a ladder authors, on any level', () => {
-    for (const level of LEVEL_CATALOG) {
+    // PLAYABLE ONLY: a stub has no ladder to author bosses with, and asking it for one throws by
+    // design - see levelCityChaos.ts.
+    for (const level of LEVEL_CATALOG.filter((l) => l.playable)) {
       const w = immortal(level.id);
       runTo(w, 1140);
       expect(w.director.cycleIndex, `${level.id} never reached an extrapolated cycle`)

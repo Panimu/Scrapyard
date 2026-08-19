@@ -267,6 +267,11 @@ const DEFAULTS: Settings = {
 const BESTIARY_KEYS: ReadonlySet<string> = (() => {
   const keys = new Set<string>();
   for (const level of LEVEL_CATALOG) {
+    // PLAYABLE ONLY, matching both of the Scrapopedia's own walks. A level nobody can enter
+    // produces no kills, so it can contribute no key to anybody's save - and asking an unbuilt
+    // level for its ladder is how a stub in the catalog takes the whole app down at module load
+    // rather than sitting quietly greyed out on the picker, which is what one did.
+    if (!level.playable) continue;
     for (const entry of bestiaryFor(level)) keys.add(entry.key);
   }
   return keys;

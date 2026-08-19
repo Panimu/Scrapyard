@@ -83,4 +83,10 @@ export type DressingFactory = (tex: GameTextures) => LevelDressing;
 export const DRESSING_BY_LEVEL: Record<LevelId, DressingFactory> = {
   scrapyard: (tex) => new ScrapyardDressing(tex),
   'mossy-mayhem': (tex) => new MossDressing(tex),
+  // A STUB, and this one THROWS rather than returning an empty dressing - see levelCityChaos.ts.
+  // The level is `playable: false`, so a factory call means something got past the picker, and a
+  // blank yard that runs is a worse bug report than an error naming the file.
+  'city-chaos': () => {
+    throw new Error('City Chaos is a stub: it has no dressing. See levelCityChaos.ts.');
+  },
 };
