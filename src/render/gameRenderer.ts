@@ -66,6 +66,7 @@ import {
   VIS_PLASMA,
   VIS_SLUG,
   VIS_STRIKE_MARKER,
+  type WeaponId,
   type WeaponInstance,
   type World,
 } from '../core/index.js';
@@ -432,7 +433,8 @@ export class GameRenderer {
   private readonly enemies: SpritePool;
   private readonly hpBars: SpritePool;
   private readonly playerLayer: Container;
-  private readonly barrel: Sprite;
+  /** One sprite per TURRET_ART row, in stack order. Hidden unless its weapon is held. */
+  private readonly barrels: Sprite[];
   private readonly mech: Sprite;
   private readonly legs: Sprite;
   private readonly shieldRim: Graphics;
@@ -489,8 +491,8 @@ export class GameRenderer {
   private stride = 0;
   private prevPlayerX = Number.NaN;
   private prevPlayerY = Number.NaN;
-  /** Seconds left of the turret's recoil kick. Cosmetic; the shell has already left. */
-  private turretKick = 0;
+  /** Seconds left of each turret's recoil kick, by TURRET_ART row. Cosmetic. */
+  private readonly turretKicks = new Float32Array(3);
 
   constructor(
     private readonly app: Application,
@@ -521,11 +523,18 @@ export class GameRenderer {
     });
 
     this.playerLayer = new Container({ label: 'player' });
-    this.barrel = new Sprite({ texture: tex.turret, roundPixels: true });
-    // Pivot on the mount ring rather than the sprite centre: the turret swings about a point just
-    // behind the mech's middle, so the barrels sweep across the hull the way a real mount would.
-    this.barrel.anchor.set(0.2, 0.5);
-    this.barrel.scale.set(TURRET_SCALE);
+    // One sprite per TURRET_ART row - Cannon, Phase Cannon, Machine Gun - created in stack order
+    // so addChild puts the longest at the bottom and the snout on top. All hidden until held.
+    this.barrels = TURRET_ART.map((row) => {
+      const b = new Sprite({ texture: tex[row.tex], roundPixels: true });
+      // Pivot on the mount ring rather than the sprite centre: a turret swings about a point just
+      // behind the mech's middle, so the barrels sweep across the hull the way a real mount would.
+      // The three canvases share the ring position, so one anchor serves the whole stack.
+      b.anchor.set(0.2, 0.5);
+      b.scale.set(TURRET_SCALE);
+      b.visible = false;
+      return b;
+    });
     this.mech = new Sprite({ texture: tex.mechs[0], roundPixels: true });
     this.mech.anchor.set(0.5, 0.5);
     this.mech.scale.set(MECH_SCALE);
@@ -541,7 +550,7 @@ export class GameRenderer {
     this.shieldRim = new Graphics({ label: 'shield-rim' });
     // Turret ON TOP of the chassis: the mech walks one way and shoots another, and the turret is
     // the only thing on screen that says where the shot is going before it arrives.
-    this.playerLayer.addChild(this.legs, this.mech, this.barrel, this.shieldRim);
+    this.playerLayer.addChild(this.legs, this.mech, ...this.barrels, this.shieldRim);
 
     this.drones = new SpritePool({
       capacity: DRONE_SPRITES,
@@ -723,7 +732,9 @@ export class GameRenderer {
         this.camera.shake(SAVE_ENCORE_SHAKE_PX, SAVE_ENCORE_SHAKE_SEC);
       }
     }
-    if (this.turretKick > 0) this.turretKick -= dtSec;
+    for (let i = 0; i < this.turretKicks.length; i++) {
+      if (this.turretKicks[i] > 0) this.turretKicks[i] -= dtSec;
+    }
 
     this.drainEvents(world);
     this.effects.update(dtSec);
@@ -796,22 +807,24 @@ export class GameRenderer {
           this.healFlash = HEAL_FLASH_SEC;
           break;
 
-        case EV_WEAPON_FIRED:
+        case EV_WEAPON_FIRED: {
           // Payload is muzzle position then the shell's unit direction - everything needed to
           // place and rotate the flash without recomputing anything.
           this.effects.muzzle(a, b, c, d);
-          // THE RECOIL AND THE SHAKE BELONG TO THE DRAWN BARREL, and only its own shots move it.
-          // There is one turret sprite and up to five guns, and this used to kick for ALL of
-          // them: on a chassis whose drawn gun fires slowly (Brass's Phase Cannon every 1.6 s),
-          // the barrel visibly jerked back for every missile volley and machine-gun round fired
-          // from guns with no barrel on screen at all - the drone bug below, rediscovered one
-          // event kind over. The fifth payload carries the firing weapon's slot; the kick lands
-          // only when that slot IS the one `turretWeapon` is drawing.
-          if (world.weapons[r.e[i]] === turretWeapon(world)) {
-            this.turretKick = TURRET_KICK_SEC;
+          // THE RECOIL AND THE SHAKE BELONG TO A DRAWN BARREL, and each mount kicks only for its
+          // own shots. This used to kick one shared barrel for EVERY gun's fire: on a chassis
+          // whose drawn gun fires slowly (Brass's Phase Cannon every 1.6 s), the tube visibly
+          // jerked back for every missile volley fired from mounts with no barrel on screen -
+          // the drone bug below, rediscovered one event kind over. The fifth payload carries the
+          // firing weapon's slot; it maps to a TURRET_ART row or the shot moves nothing.
+          const firedId = world.weaponCatalog[world.weapons[r.e[i]]?.defId ?? -1]?.id;
+          const row = TURRET_ART.findIndex((t) => t.weapon === firedId);
+          if (row >= 0) {
+            this.turretKicks[row] = TURRET_KICK_SEC;
             this.camera.kick(c, d);
           }
           break;
+        }
 
         case EV_DRONE_FIRED:
           // THE FLASH AND NOTHING ELSE. A drone's round leaves a drone, so it gets the same muzzle
@@ -1636,18 +1649,27 @@ export class GameRenderer {
     this.mech.rotation = facing + yaw;
     this.mech.tint = tint;
 
-    // --- turret ----------------------------------------------------------------------------
-    const w = turretWeapon(world);
-    const tx = w?.turretX ?? pl.faceX;
-    const ty = w?.turretY ?? pl.faceY;
-    const aim = Math.atan2(ty, tx);
-    // RECOIL: the mount slides back along its own axis and returns. The shell is long gone by
-    // then - this is pure feedback, and it is the cheapest way to make firing feel like an event
-    // rather than a stream of sprites appearing at the muzzle.
-    const kick = this.turretKick > 0 ? (this.turretKick / TURRET_KICK_SEC) * TURRET_KICK_UNITS : 0;
-    this.barrel.position.set(px - tx * kick, py - ty * kick);
-    this.barrel.rotation = aim;
-    this.barrel.tint = tint;
+    // --- turrets ---------------------------------------------------------------------------
+    // Each of the three drawn mounts is visible only while its weapon is HELD, and tracks its own
+    // instance's aim - three guns on one chassis are three barrels swinging independently. A
+    // loadout with none of them draws no turret at all: everything else fires from hardware baked
+    // into the chassis art, or from nowhere the mech could show.
+    for (let i = 0; i < TURRET_ART.length; i++) {
+      const sprite = this.barrels[i];
+      const inst = heldWeapon(world, TURRET_ART[i].weapon);
+      if (inst === undefined) {
+        sprite.visible = false;
+        continue;
+      }
+      // RECOIL: the mount slides back along its own axis and returns. The shell is long gone by
+      // then - this is pure feedback, and each mount kicks only for its own shots.
+      const k = this.turretKicks[i];
+      const kick = k > 0 ? (k / TURRET_KICK_SEC) * TURRET_KICK_UNITS : 0;
+      sprite.visible = true;
+      sprite.position.set(px - inst.turretX * kick, py - inst.turretY * kick);
+      sprite.rotation = Math.atan2(inst.turretY, inst.turretX);
+      sprite.tint = tint;
+    }
 
     this.drawShieldRim(pl.shieldLayers, px, py);
   }
@@ -1823,48 +1845,32 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 /**
- * WHICH WEAPON THE BARREL ON TOP OF THE MECH IS SHOWING - the FIRST one that says it has a barrel.
+ * WHICH WEAPONS GET A DRAWN TURRET, and the order they stack in.
  *
- * There is one turret sprite and up to five weapons, so the renderer has to pick one, and it drew
- * slot 0 unconditionally for a long time. That is fine on a chassis that walks in holding a gun and
- * wrong on every chassis that does not: a missile rack fires along the direction you last MOVED, so
- * pointing the barrel at its target is a lie about where the volley is going.
+ * THREE AND ONLY THREE, hidden until held. The single always-drawn barrel is gone, and with it a
+ * long ladder of fallbacks (first `drivesTurret` gun, else any mount that slews, else the walking
+ * direction) whose end state was a gunless Plum wandering the yard with a twin-barrel sprite
+ * pointing wherever it strolled. Every other weapon's hardware is baked into the chassis art -
+ * the spine tube, the boxed racks, the rotary drums - or is not on the mech at all (drones,
+ * strike markers), so a rotating barrel on top was a lie about where those shots come from.
  *
- * FIRST rather than best, because the barrel has to be a stable thing to read - a mount that
- * reassigned itself every time a card was taken would turn the one cue that says what the mech has
- * decided into a cue about what was most recently picked up.
- *
- * IT ASKS THE WEAPON NOW (WeaponDef.drivesTurret) INSTEAD OF INFERRING IT. The test used to be
- * `fireAlongFacing === false`, which reads as "aims at something" - and a weapon can aim at
- * something while having no barrel to point. Fern's drone bay is exactly that: it selects targets,
- * so it passed, and its `turretTraverse` is 0, so the barrel it drove never moved. Her turret sat
- * pointing east for the whole run. See the flag's own note for why this is written down rather
- * than derived from a stat.
- *
- * THE FALLBACK IS A WEAPON THAT AT LEAST SLEWS, AND SKIPPING IT WAS A REGRESSION. When nothing in
- * the loadout has a barrel to show, the mount still has to point somewhere, and the first version
- * of this rule fell straight through to the player's heading - which welded the barrel to the legs
- * on every missile chassis. A rack fires along the heading, but its MOUNT still traverses onto
- * targets at 720 deg/s, and Onyx and Ash had been sweeping their barrels at the horde since they
- * shipped. Handing them a barrel that only moves when the mech turns was a downgrade nobody asked
- * for, made while fixing something else.
- *
- * So: a weapon with a barrel, else a weapon whose mount MOVES, else the heading.
- *
- * THE MIDDLE RUNG READS A STAT, and that is the one place it is the right thing to read. The
- * primary rule must not (see the flag's own note - `turretTraverse` is a tuning number and must
- * not decide what the mech looks like), but the question this rung asks is literally "does this
- * mount slew", and traverse is that property by definition. It is also why Fern alone still falls
- * through to the heading: her bay's traverse is 0 because a factory has nothing to aim.
+ * STACKED LONGEST-FIRST. The rows are in draw order: the Cannon's full-length twin mount at the
+ * bottom, the Phase Cannon's shorter tube over it, the Machine Gun's snout on top. The art is
+ * sized so each layer's muzzle clears the one above (76 / 62 / 48 px on the shared canvas), which
+ * is what lets a three-gun loadout read as three mounts tracking three targets rather than one
+ * smeared sprite. Hold any subset and the stack simply has gaps.
  */
-function turretWeapon(world: World): WeaponInstance | undefined {
+const TURRET_ART: readonly { readonly weapon: WeaponId; readonly tex: 'turret' | 'turretPhase' | 'turretMg' }[] = [
+  { weapon: 'cannon', tex: 'turret' },
+  { weapon: 'phase-cannon', tex: 'turretPhase' },
+  { weapon: 'machine-gun', tex: 'turretMg' },
+];
+
+/** The held instance of `id`, or undefined - slot order does not matter, ids are unique. */
+function heldWeapon(world: World, id: WeaponId): WeaponInstance | undefined {
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
-    if (world.weaponCatalog[inst.defId]?.drivesTurret === true) return inst;
-  }
-  for (let i = 0; i < world.weaponCount; i++) {
-    const inst = world.weapons[i];
-    if (inst.stats.turretTraverse > 0) return inst;
+    if (world.weaponCatalog[inst.defId]?.id === id) return inst;
   }
   return undefined;
 }

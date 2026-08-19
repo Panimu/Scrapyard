@@ -29,6 +29,7 @@ import {
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import {
   CANNON,
+  LASER_HARDPOINTS,
   LASER_LONG,
   LASER_MEDIUM,
   LASER_SHORT,
@@ -338,15 +339,17 @@ describe('the line: a beam burns whatever is in the way', () => {
     expect(w.enemies.hp[0]).toBeLessThan(500);
   });
 
-  it('stops the drawn line ON the target, not through it', () => {
-    const w = makeWorld('laser-short'); // muzzleOffset 22
+  it('stops the drawn line ON the target, and starts it at the hardpoint', () => {
+    const w = makeWorld('laser-short');
     const target = addEnemy(w, 100, 0, 500, 18);
     ticks(w, 1);
 
     expect(w.beams.count).toBe(1);
     expect(w.beams.enemyDense[0]).not.toBe(NO_BEAM_TARGET);
-    // Muzzle at the emitter head, endpoint at the near face of the target: 100 - 18 = 82.
-    expect(w.beams.x0[0]).toBeCloseTo(22, 9);
+    // ONE laser held -> the NOSE hardpoint, 21 u ahead of centre along the facing (+x at spawn).
+    // The hardpoint is the TRUE origin - the ray starts there too, not only the drawn line - so
+    // the endpoint is the target's near face measured from it: 21 + ((100 - 21) - 18) = 82.
+    expect(w.beams.x0[0]).toBeCloseTo(LASER_HARDPOINTS[0].x, 9);
     expect(w.beams.y0[0]).toBeCloseTo(0, 9);
     expect(w.beams.x1[0]).toBeCloseTo(82, 6);
     expect(w.beams.y1[0]).toBeCloseTo(0, 9);
@@ -1341,6 +1344,35 @@ describe('lasers spread out: a body one laser has claimed is invisible to the ne
     expect(w.weapons[0].targetDense).toBe(only);
     expect(w.weapons[1].targetDense).toBe(-1);
     expect(w.beams.count).toBe(1);
+  });
+
+  it('fires the pair from the two shoulder hardpoints, not the nose', () => {
+    // TWO lasers held -> the symmetric side mounts. The hardpoint is the true origin, so the two
+    // drawn lines start 15 u either side of the centreline while the mech faces +x at spawn.
+    const w = twoLaserWorld();
+    addEnemy(w, 200, 0, 400);
+    addEnemy(w, 200, 60, 400);
+    tick(w);
+
+    expect(w.beams.count).toBe(2);
+    const ys = [w.beams.y0[0], w.beams.y0[1]].sort((a, b) => a - b);
+    expect(ys[0]).toBeCloseTo(LASER_HARDPOINTS[1].y, 6);
+    expect(ys[1]).toBeCloseTo(LASER_HARDPOINTS[2].y, 6);
+    expect(w.beams.x0[0]).toBeCloseTo(LASER_HARDPOINTS[1].x, 6);
+  });
+
+  it('rotates the hardpoints with the chassis facing, not with the aim', () => {
+    const w = makeWorld('laser-short');
+    // The mech has been walking +y: facing (0,1). The single laser's nose hardpoint swings with
+    // the BODY, so it now sits 21 u up the y axis - wherever the beam itself is pointing.
+    w.player.faceX = 0;
+    w.player.faceY = 1;
+    addEnemy(w, 100, 0, 500, 18);
+    ticks(w, 30); // give the mount time to slew onto a target 90 deg off the spawn facing
+
+    expect(w.beams.count).toBe(1);
+    expect(w.beams.x0[0]).toBeCloseTo(0, 6);
+    expect(w.beams.y0[0]).toBeCloseTo(LASER_HARDPOINTS[0].x, 6);
   });
 
   it('does not reserve a body for a laser that has cut out', () => {

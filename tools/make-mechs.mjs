@@ -429,15 +429,30 @@ ${PREAMBLE}
 `;
 
 /**
- * The turret, drawn separately because it rotates independently of the chassis - the mech walks
- * one way and shoots another, and that is the most legible thing about the machine in motion.
- * Twin barrels rather than one: a single bar reads as a tank gun, which is the impression this
- * whole file exists to undo.
+ * THE TURRETS - three of them now, drawn separately because they rotate independently of the
+ * chassis: the mech walks one way and shoots another, and that is the most legible thing about
+ * the machine in motion.
+ *
+ * THEY STACK. The renderer draws every turret whose weapon is HELD, largest first: the Cannon's
+ * full-length twin mount at the bottom, the Phase Cannon's shorter single tube over it, the
+ * Machine Gun's stubby gatling snout on top. Three different lengths on one shared canvas is what
+ * makes a three-gun stack read as three mounts rather than as one smeared sprite - each layer's
+ * muzzle clears the one above it.
+ *
+ *   turret        the Cannon. Twin barrels to x=76 - a single bar reads as a tank gun, which is
+ *                 the impression this whole file exists to undo.
+ *   turret_phase  the Phase Cannon. One fat tube to x=62 with a plasma emitter at the muzzle -
+ *                 the only mount with a light on it, in the bolt's own blue.
+ *   turret_mg     the Machine Gun. A three-barrel gatling snout to x=48, all steel: volume of
+ *                 fire, no reach.
+ *
+ * All three share the 80x44 canvas and the mount ring at x=16, so the renderer's one anchor and
+ * one TURRET_SCALE serve every layer.
  */
 const TURRET_W = 80;
 const TURRET_H = 44;
 const DRAW_TURRET = /* js */ `
-() => {
+(kind) => {
   const c = document.createElement('canvas');
   c.width = ${TURRET_W}; c.height = ${TURRET_H};
   const g = c.getContext('2d');
@@ -445,6 +460,8 @@ const DRAW_TURRET = /* js */ `
   const DARK = ${JSON.stringify(DARK)};
   const METAL = ${JSON.stringify(METAL)};
   const METAL_HI = ${JSON.stringify(METAL_HI)};
+  const PLASMA = '#55c8ff';
+  const PLASMA_DIM = '#2f6e8c';
 
   const poly = (pts, fill, stroke, lw) => {
     g.beginPath();
@@ -455,14 +472,46 @@ const DRAW_TURRET = /* js */ `
     if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw ?? 3; g.lineJoin = 'round'; g.stroke(); }
   };
 
-  g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 3;
-  g.beginPath(); g.arc(16, CY, 13, 0, Math.PI * 2); g.fill(); g.stroke();
-  poly([[14, CY - 11], [44, CY - 12], [44, CY + 12], [14, CY + 11]], METAL, DARK, 3);
-  poly([[18, CY - 8], [38, CY - 8], [38, CY - 3], [18, CY - 3]], METAL_HI);
+  if (kind === 'cannon') {
+    g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 3;
+    g.beginPath(); g.arc(16, CY, 13, 0, Math.PI * 2); g.fill(); g.stroke();
+    poly([[14, CY - 11], [44, CY - 12], [44, CY + 12], [14, CY + 11]], METAL, DARK, 3);
+    poly([[18, CY - 8], [38, CY - 8], [38, CY - 3], [18, CY - 3]], METAL_HI);
 
-  for (const dy of [-6, 6]) {
-    poly([[40, CY + dy - 4], [76, CY + dy - 3], [76, CY + dy + 3], [40, CY + dy + 4]], METAL, DARK, 2.5);
-    poly([[70, CY + dy - 3], [76, CY + dy - 3], [76, CY + dy + 3], [70, CY + dy + 3]], DARK);
+    for (const dy of [-6, 6]) {
+      poly([[40, CY + dy - 4], [76, CY + dy - 3], [76, CY + dy + 3], [40, CY + dy + 4]], METAL, DARK, 2.5);
+      poly([[70, CY + dy - 3], [76, CY + dy - 3], [76, CY + dy + 3], [70, CY + dy + 3]], DARK);
+    }
+  } else if (kind === 'phase') {
+    // Smaller mount ring, one heavy tube, and the emitter glow at the muzzle. Reads as the odd
+    // one out at a glance, which it is: the one gun whose round touches nothing on the way.
+    g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 3;
+    g.beginPath(); g.arc(16, CY, 11, 0, Math.PI * 2); g.fill(); g.stroke();
+    poly([[14, CY - 9], [36, CY - 10], [36, CY + 10], [14, CY + 9]], METAL, DARK, 3);
+    poly([[18, CY - 7], [32, CY - 7], [32, CY - 3], [18, CY - 3]], METAL_HI);
+    // The tube, thicker than either cannon barrel and alone on the centreline.
+    poly([[34, CY - 6], [58, CY - 5.5], [58, CY + 5.5], [34, CY + 6]], METAL, DARK, 2.5);
+    // Emitter: a dark muzzle cap with the plasma ring set into it, and a soft glow past the lip.
+    poly([[56, CY - 6], [62, CY - 6], [62, CY + 6], [56, CY + 6]], DARK);
+    g.strokeStyle = PLASMA; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(60, CY, 4, 0, Math.PI * 2); g.stroke();
+    g.globalAlpha = 0.4;
+    g.fillStyle = PLASMA;
+    g.beginPath(); g.arc(62, CY, 6, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 1;
+    // A coolant stripe down the tube in the dim plasma tone, so the blue is a scheme, not a dot.
+    poly([[36, CY - 2], [54, CY - 2], [54, CY + 2], [36, CY + 2]], PLASMA_DIM);
+  } else {
+    // mg: the smallest mount there is - a snub ring and three thin rotary barrels. Sits on top of
+    // the stack, so it has to clear the phase tube's muzzle at x=62 with room to read.
+    g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(16, CY, 9, 0, Math.PI * 2); g.fill(); g.stroke();
+    poly([[14, CY - 7], [30, CY - 8], [30, CY + 8], [14, CY + 7]], METAL, DARK, 2.5);
+    poly([[17, CY - 5], [27, CY - 5], [27, CY - 2], [17, CY - 2]], METAL_HI);
+    for (const dy of [-4, 0, 4]) {
+      poly([[28, CY + dy - 1.5], [48, CY + dy - 1.5], [48, CY + dy + 1.5], [28, CY + dy + 1.5]], METAL, DARK, 2);
+      poly([[44, CY + dy - 1.5], [48, CY + dy - 1.5], [48, CY + dy + 1.5], [44, CY + dy + 1.5]], DARK);
+    }
   }
 
   g.beginPath(); g.arc(16, CY, 4.5, 0, Math.PI * 2); g.fillStyle = DARK; g.fill();
@@ -524,10 +573,12 @@ async function main() {
     }
     console.log(`  ${hero.key.padEnd(16)} body + ${WALK_FRAMES} frames   ${(n / 1024).toFixed(1)} kB`);
   }
-  await write('turret', await page.evaluate(`(${DRAW_TURRET})()`));
+  await write('turret', await page.evaluate(`(${DRAW_TURRET})('cannon')`));
+  await write('turret_phase', await page.evaluate(`(${DRAW_TURRET})('phase')`));
+  await write('turret_mg', await page.evaluate(`(${DRAW_TURRET})('mg')`));
 
   await browser.close();
-  const count = HEROES.length * (1 + WALK_FRAMES) + 1;
+  const count = HEROES.length * (1 + WALK_FRAMES) + 3;
   console.log(`\n${count} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 

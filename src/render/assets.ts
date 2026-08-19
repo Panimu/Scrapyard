@@ -286,6 +286,10 @@ export interface GameTextures {
    */
   readonly mechLegs: readonly (readonly Texture[])[];
   readonly turret: Texture;
+  /** The Phase Cannon's mount - shorter than the Cannon's, drawn stacked above it. */
+  readonly turretPhase: Texture;
+  /** The Machine Gun's snout - the shortest of the three, top of the stack. */
+  readonly turretMg: Texture;
   /**
    * Creature art by level id, each indexed by `EnemyPool.typeId` within THAT level's table.
    *
@@ -464,7 +468,7 @@ export async function loadGameTextures(
     keys.push(k);
     for (let f = 0; f < MECH_WALK_FRAMES; f++) keys.push(`${k}_w${f}`);
   }
-  keys.push('turret');
+  keys.push('turret', 'turret_phase', 'turret_mg');
 
   // EVERY LEVEL'S CREATURES, from the level catalog rather than from a global enemy table. There
   // is no global enemy table any more: each level owns its own, and adding a level's creatures is
@@ -551,6 +555,8 @@ export async function loadGameTextures(
       Array.from({ length: MECH_WALK_FRAMES }, (_, f) => get(`${h.sprite}_w${f}`)),
     ),
     turret: get('turret'),
+    turretPhase: get('turret_phase'),
+    turretMg: get('turret_mg'),
     drone: get('drone'),
     // `row * 4 + col`, matching the neighbour test that produces the two indices.
     wallTiles: Array.from({ length: WALL_TILE_COUNT }, (_, i) =>

@@ -40,6 +40,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-19T05:53Z',
+    title: 'TURRETS YOU CAN BELIEVE',
+    notes: [
+      'The mech no longer wears a barrel it has no gun for. Three weapons have a drawn turret now — the Cannon\'s full twin mount, the Phase Cannon\'s shorter plasma tube, the Machine Gun\'s stubby snout — each appearing only while that gun is aboard, each tracking and recoiling for its own shots. Hold all three and they stack, three mounts swinging at three targets.',
+      'Everything else fires from where it actually lives: the racks, drums and spine tubes baked into the chassis, the sky, or the drones themselves. A chassis with none of the three shows no turret at all — which also retires the barrel that gunless Plum used to carry around pointing wherever it walked.',
+    ],
+  },
+  {
+    at: '2026-08-19T05:53Z',
+    title: 'LASERS FIRE FROM REAL HARDPOINTS',
+    notes: [
+      'Beams now leave the mech from mounted emitters instead of the middle of the sprite: one laser fires from the nose, a pair fires from the two shoulders, three light up all three mounts. The mounts turn with the chassis, so which shoulder faces the fight is now something you steer.',
+      'The hardpoint is the true origin, not a decoration — the beam\'s reach and what blocks it are measured from the emitter itself, so a beam reaches a touch further ahead of its mount and a touch shorter behind it.',
+    ],
+  },
+  {
     at: '2026-08-17T20:01Z',
     title: 'THE TURRET ONLY RECOILS FOR ITS OWN SHOTS',
     notes: [

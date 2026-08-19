@@ -113,6 +113,7 @@ import { HERO_TRAITS } from '../data/traits.js';
 import type { HeroTrait, ShotCtx } from '../data/heroes.js';
 import {
   BEHAVIOUR_ID,
+  LASER_HARDPOINTS,
   SPLIT_SEC,
   type FirePattern,
   type FirePatternId,
@@ -746,6 +747,25 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
  * runt into orbit; the buffer carries no knockback field at all, so this is structural rather
  * than a number set to zero.
  */
+/**
+ * Which hardpoint this beam fires from, by HOW MANY beams the loadout holds - see the
+ * LASER_HARDPOINTS doc for the assignment (1 -> nose, 2 -> shoulders, 3 -> all, slot order).
+ * At most three beams can ever be held (one card per laser; the Chain Laser is the Medium), so
+ * `mine` is always inside the table; clamped anyway rather than trusted.
+ */
+function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: number; y: number }> {
+  let held = 0;
+  let mine = 0;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam') continue;
+    if (i === weaponIdx) mine = held;
+    held++;
+  }
+  if (held <= 1) return LASER_HARDPOINTS[0];
+  if (held === 2) return LASER_HARDPOINTS[mine + 1 < 3 ? mine + 1 : 2];
+  return LASER_HARDPOINTS[mine < 3 ? mine : 2];
+}
+
 export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
   const def = world.weaponCatalog[inst.defId] as WeaponDef;
   const stats = inst.stats;
@@ -753,29 +773,42 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   const aim = world.scratch.v2;
 
   const target = targetCount > 0 ? targets[0] : -1;
-  aimInto(world, target, inst.turretX, inst.turretY, aim);
 
-  const px = world.player.x;
-  const py = world.player.y;
-  // The emitter head, offset along the firing line exactly as a shell leaves the barrel. This is
-  // where the beam is DRAWN from, and that is all it is.
-  const x0 = px + aim.x * def.muzzleOffset;
-  const y0 = py + aim.y * def.muzzleOffset;
+  // THE HARDPOINT IS THE TRUE ORIGIN - the ray starts there AND the line is drawn from there,
+  // one fact rather than two. Body-space offsets from LASER_HARDPOINTS, rotated by the chassis
+  // FACING (the way it is walking, which is what the art rotates by), never by the aim: the
+  // shoulder emitters swap sides as the mech steers, exactly as mounted hardware would.
+  //
+  // The old blind spot cannot recur here, and the geometry is worth stating since a comment in
+  // this spot used to exist to prevent it: the muzzle-cast bug displaced the origin ALONG THE
+  // FIRING LINE, so everything nearer than the offset sat behind the ray start. A hardpoint is a
+  // FIXED body point and the aim below is computed FROM it TO the body - the target is in front
+  // of the origin by construction, however close it is pressed against the hull.
+  //
+  // What this deliberately changes: reach is measured from the hardpoint, so a beam reaches a
+  // hair further ahead of the mount and a hair shorter behind it. That asymmetry is the feature -
+  // the gun is somewhere, and where it is matters - and losing the exact centre-cast symmetry was
+  // accepted when the hardpoints became real.
+  const hp = laserHardpoint(world, weaponIdx);
+  const player = world.player;
+  const fx = player.faceX;
+  const fy = player.faceY;
+  const x0 = player.x + hp.x * fx - hp.y * fy;
+  const y0 = player.y + hp.x * fy + hp.y * fx;
 
-  // THE RAY STARTS AT THE PLAYER CENTRE, NOT AT THE MUZZLE, and this is not a detail.
-  //
-  // Casting from the muzzle makes the weapon blind at point-blank range: the ray only looks
-  // forward, so any body whose centre is nearer than `muzzleOffset - radius` sits entirely BEHIND
-  // the origin and is skipped. At a 22 u offset against a 13 u runt that is everything inside
-  // 9 u - which is to say, everything actually pressed against the mech. Measured standing in a
-  // crowd, 84.7% of the Short Laser's beams hit nothing at all and 100% of those had their target
-  // inside that blind spot: it fired over the top of the bodies touching it, into open ground,
-  // and paid full heat for the privilege.
-  //
-  // Casting from the centre also makes the ray's reach exactly the targeting radius, since
-  // targeting measures `rangeSq` from the centre too. The muzzle version silently reached
-  // `range + muzzleOffset`.
-  const hit = raycastNearestEnemy(world, px, py, aim.x, aim.y, stats.range);
+  if (target >= 0) {
+    const len = normalizeInto(world.enemies.x[target] - x0, world.enemies.y[target] - y0, aim);
+    if (len <= 0) {
+      // The target's centre is ON the emitter - no direction exists, so fire down the mount.
+      aim.x = inst.turretX;
+      aim.y = inst.turretY;
+    }
+  } else {
+    aim.x = inst.turretX;
+    aim.y = inst.turretY;
+  }
+
+  const hit = raycastNearestEnemy(world, x0, y0, aim.x, aim.y, stats.range);
 
   // Step 5. No target, no shot - and no heat either. Unreachable for the three lasers (all set
   // `requiresTarget`, so updateWeapons has already skipped them), but a beam must never pay heat
@@ -797,7 +830,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // Compared against the RAY'S OWN reach rather than the target's distance, because the beam bills
   // whatever it touches first - scrap nearer than the enemy the ray found is genuinely between the
   // two, and scrap beyond it is behind the thing being burned and does not matter.
-  const blocked = sceneryRayHit(world.scenery, px, py, aim.x, aim.y, stats.range);
+  const blocked = sceneryRayHit(world.scenery, x0, y0, aim.x, aim.y, stats.range);
   if (blocked >= 0 && (hit < 0 || blocked < BEAM.hitT)) {
     coolBeam(world, weaponIdx, inst, dt);
     return;
@@ -822,7 +855,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // body behind it, so a laser build fought as though the wood was not there and spent almost nothing
   // on it. Two minutes of bot play on Mossy felled three stems with the Medium Laser and opened no
   // cell at all, against 16-21 stems for the shell weapons, which stop in the wood as a shell should.
-  const tree = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, stats.range);
+  const tree = destructibleRayHit(world.scenery, x0, y0, aim.x, aim.y, stats.range);
   const treeT = tree >= 0 ? destructibleRayDistance() : -1;
   const treeFirst =
     world.scenery.kind === 'walls' && tree >= 0 && (hit < 0 || treeT < BEAM.hitT);
@@ -834,8 +867,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     breakLootIn(world, tx, ty, 0, stats.damage * dt);
     // Drawn to the wood and billing nobody: NO_BEAM_TARGET is what tells updateDamage there is
     // nothing to charge, and the player sees the beam stop where it is actually stopping.
-    const stopT = treeT > def.muzzleOffset ? treeT : def.muzzleOffset;
-    pushBeam(world.beams, weaponIdx, NO_BEAM_TARGET, 0, x0, y0, px + aim.x * stopT, py + aim.y * stopT);
+    pushBeam(world.beams, weaponIdx, NO_BEAM_TARGET, 0, x0, y0, x0 + aim.x * treeT, y0 + aim.y * treeT);
     heatBeam(world, weaponIdx, inst, stats, dt);
     return;
   }
@@ -849,11 +881,9 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   const reach = hit >= 0 ? BEAM.hitT : stats.range;
   const damage = hit >= 0 ? stats.damage * dt : 0;
 
-  // `reach` is measured from the CENTRE while the line is drawn from the MUZZLE, so a contact
-  // inside the muzzle offset would otherwise draw a beam pointing backwards out of the emitter.
-  // Clamped to the muzzle, a point-blank burn is a stub of light at the barrel - which is exactly
-  // what it should look like.
-  const endT = reach > def.muzzleOffset ? reach : def.muzzleOffset;
+  // Ray origin and drawn origin are the same hardpoint, so `reach` needs no muzzle clamp any
+  // more: a point-blank burn is a genuinely short beam, which is exactly what it is.
+  const endT = reach;
 
   pushBeam(
     world.beams,
@@ -862,8 +892,8 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     damage,
     x0,
     y0,
-    px + aim.x * endT,
-    py + aim.y * endT,
+    x0 + aim.x * endT,
+    y0 + aim.y * endT,
   );
 
   // A BEAM TAKES DRUMS WITH IT. Barrels are exempt from beam occlusion (they have to be, or the
@@ -875,7 +905,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // Running this on Mossy as well would burn a clump standing BEHIND the body being burned, through
   // a beam that terminates at that body - damage out of nowhere, to a tree the shot never reached.
   if (world.scenery.kind !== 'walls') {
-    const drum = destructibleRayHit(world.scenery, px, py, aim.x, aim.y, endT);
+    const drum = destructibleRayHit(world.scenery, x0, y0, aim.x, aim.y, endT);
     if (drum >= 0) {
       // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per
       // tick, so a laser saws through a clump over a second or two rather than felling one per frame.
@@ -887,7 +917,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // scenery, so `destructibleRayHit` cannot see it; this is the one extra line that reason costs.
   // The point is handed back to `breakLootIn` rather than the animal being taken here, so the loot
   // it was carrying drops through the one door every other weapon uses.
-  const grazing = sheepRayHit(world, px, py, aim.x, aim.y, endT);
+  const grazing = sheepRayHit(world, x0, y0, aim.x, aim.y, endT);
   if (grazing >= 0) {
     breakLootIn(world, world.sheep.x[grazing], world.sheep.y[grazing], 0, damage);
   }
@@ -905,7 +935,7 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
     chainsFrom > 0 &&
     inst.level >= chainsFrom
   ) {
-    chainFrom(world, weaponIdx, stats, hit, px, py, aim, endT, damage);
+    chainFrom(world, weaponIdx, stats, hit, x0, y0, aim, endT, damage);
   }
 
   // Step 6. Heat for the tick, which every path that actually FIRED has to pay - see `heatBeam`.
