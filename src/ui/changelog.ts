@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T09:06Z',
+    title: 'ELITES AND BOSSES GET THEIR OWN NUMBER',
+    notes: [
+      'The run summary now shows elites and bosses killed as a stat of its own, beside Peak horde. Total kills mostly tells you how long you lasted; these two are the bodies a run actually had to solve, and they were buried in the kills-by-type list at the bottom.',
+    ],
+  },
+  {
     at: '2026-08-19T08:47Z',
     title: 'THE SUMMARY SAYS WHAT YOU ACTUALLY WON',
     notes: [

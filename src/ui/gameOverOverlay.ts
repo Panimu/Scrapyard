@@ -11,6 +11,8 @@
 
 import {
   RANKS,
+  RANK_BOSS,
+  RANK_ELITE,
   HERO_CATALOG,
   RUN_PHASE_VICTORY,
   type World,
@@ -131,6 +133,26 @@ export class GameOverOverlay {
       if (n > 0) upgrades.push(`${world.upgradeCatalog[i].name}|x${n}`);
     }
 
+    /**
+     * THE TWO KILLS THAT ARE NOT CHAFF, promoted out of the list below to a tile of their own.
+     *
+     * The numbers are the same `killsByRank` the "Kills by type" list is built from - this is not a
+     * second counter, and it must not become one: the sim has tracked kills by rank since the
+     * ladder landed, and a duplicate tally is a tally that can disagree with the first.
+     *
+     * WHY IT EARNS A TILE WHEN THE LIST ALREADY HAS THE ROWS. `Kills` says 1486 and every run says
+     * something like it - the number is a proxy for how long you survived. Elites and bosses are
+     * the two bodies a run actually has to solve, they arrive a handful of times, and one more or
+     * fewer is the difference between two builds. That is a headline number sitting in a list
+     * three scrolls down, next to "regular 1471".
+     *
+     * ONE TILE, BOTH NUMBERS, in ladder order. They are read together - "how far up the ladder did
+     * this run get and what did it put down" is one question - and two tiles for two numbers that
+     * are never four digits would spend a whole row of a phone screen saying less.
+     */
+    const elites = s.killsByRank[RANK_ELITE] ?? 0;
+    const bosses = s.killsByRank[RANK_BOSS] ?? 0;
+
     // BY RANK, not by chassis: under the cycle ladder every enemy in a cycle shares one body
     // class, so a runt/grunt/bruiser split says nothing the clock did not already say.
     const byArchetype: string[] = [];
@@ -182,6 +204,7 @@ export class GameOverOverlay {
         ${stat('Level', String(world.player.level))}
         ${stat('Kills', String(s.kills))}
         ${stat('Peak horde', String(s.peakEnemies))}
+        ${elites > 0 || bosses > 0 ? stat('Elites / bosses', `${elites} / ${bosses}`) : ''}
         ${stat('Damage dealt', compact(s.damageDealt))}
         ${stat('Damage taken', compact(s.damageTaken))}
         ${stat('Accuracy', `${accuracy}%`)}
