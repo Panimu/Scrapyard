@@ -54,6 +54,7 @@ export type AchievementId =
   | 'twin-mount'
   | 'radiator-bank'
   | 'phase-cannon'
+  | 'shaped-charges'
   | `mech-${HeroId}`
   | `level-${LevelId}`;
 
@@ -127,6 +128,7 @@ function cardUnlock(id: UpgradeId): UnlockCond {
 }
 const RADIATOR_UNLOCK = cardUnlock('p-radiator');
 const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
+const BLAST_UNLOCK = cardUnlock('p-blast');
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -265,5 +267,16 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // the entry the Scrapopedia's UNLABELED progress bar hangs off - `unlockProgress` reads this
     // same object, so the bar, the trophy and the card all move on the identical count.
     cond: PHASE_CANNON_UNLOCK,
+  },
+  {
+    id: 'shaped-charges',
+    platformKey: 'scrapyard_shaped_charges',
+    name: 'Collateral',
+    icon: 'icon_p-blast',
+    description: describeUnlockDone(BLAST_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE - the card's own `splashKillsTotal` condition, and the third sealed row to
+    // carry the unlabeled career progress bar.
+    cond: BLAST_UNLOCK,
   },
 ]);

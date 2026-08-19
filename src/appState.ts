@@ -162,6 +162,11 @@ export interface Settings {
    */
   careerKills: Partial<Record<WeaponId, number>>;
   /**
+   * KILLING BLOWS EVER LANDED BY SPLASH, every run ever played - the blast-damage career total
+   * behind `splashKillsTotal` conditions. Banked beside `careerKills` by the same delta ledger.
+   */
+  careerSplashKills: number;
+  /**
    * Workshop purchases owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
    *
    * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
@@ -224,6 +229,7 @@ const DEFAULTS: Settings = {
   heldAscensions: [],
   unlockedLevels: [],
   careerKills: {},
+  careerSplashKills: 0,
   metaTiers: {},
 };
 
@@ -343,6 +349,7 @@ function loadSettings(): Settings {
       // Career kill tallies: unknown weapon ids dropped, counts clamped to sane integers - the
       // same hostile-storage stance as everything else in this function.
       careerKills: readCareerKills(parsed.careerKills),
+      careerSplashKills: clampInt(parsed.careerSplashKills, 0, 1_000_000_000, 0),
       metaTiers: meta.owned,
       // Filtered against ALL THREE namespaces that share this array - see BESTIARY_KEYS. It used
       // to check two of them, which silently deleted every Scrapopedia page on every reload.
@@ -635,10 +642,13 @@ export class AppState {
    * polls before the reload had banked. There is no run-resume for it to be wrong about.
    */
   private bankedRunKills: Partial<Record<WeaponId, number>> = {};
+  /** Splash kills already banked from the run in progress - the same ledger, one number wide. */
+  private bankedRunSplash = 0;
 
   /** Called at run start: the new run has banked nothing yet. */
   beginRunTally(): void {
     this.bankedRunKills = {};
+    this.bankedRunSplash = 0;
   }
 
   /**
@@ -662,12 +672,20 @@ export class AppState {
       this.bankedRunKills[def.id] = now;
       dirty = true;
     }
+    if (run.splashKills > this.bankedRunSplash) {
+      this.settings.careerSplashKills = Math.min(
+        1_000_000_000,
+        this.settings.careerSplashKills + (run.splashKills - this.bankedRunSplash),
+      );
+      this.bankedRunSplash = run.splashKills;
+      dirty = true;
+    }
     if (dirty) this.saveSettings();
   }
 
   /** The career as the evaluator wants it - see CareerRecord in core/data/unlocks.ts. */
   career(): CareerRecord {
-    return { killsWith: this.settings.careerKills };
+    return { killsWith: this.settings.careerKills, splashKills: this.settings.careerSplashKills };
   }
 
   /**

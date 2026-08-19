@@ -40,6 +40,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-19T06:38Z',
+    title: 'NEW PASSIVE: SHAPED CHARGES',
+    notes: [
+      'A new passive for the demolition builds: every blast reaches wider — the artillery barrage, a drone going out, the burst on a phase bolt. The deck only offers it while you hold something that explodes.',
+      'It starts locked, behind 2000 kills with blast damage counted across your whole career — and yes, its sealed achievement carries the third unlabeled progress bar.',
+    ],
+  },
+  {
+    at: '2026-08-19T06:38Z',
+    title: 'HEAVIER MOUNTS, FASTER WALLS',
+    notes: [
+      'The Cannon and Machine Gun turrets traverse 10% slower — a crowd forming behind you costs that little bit more barrel time.',
+      'Heavy bodies walk 10% faster again. The wall keeps coming.',
+    ],
+  },
+  {
     at: '2026-08-19T06:30Z',
     title: 'TIER 8: THE CANNON BECOMES THE TWIN MOUNT',
     notes: [

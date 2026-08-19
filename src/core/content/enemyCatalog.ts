@@ -82,25 +82,24 @@ export const FLAV_SPIKY = 3;
 /**
  * HEAVY - a SET-PIECE-ONLY flavour. See "flavours the director cannot roll", above.
  *
- * x10 HP at x0.1307 speed is a wall that walks. Both halves matter: ten times the hit points would
+ * x10 HP at x0.1437 speed is a wall that walks. Both halves matter: ten times the hit points would
  * be a wandering roadblock, and an eleventh of the speed alone would be a free kill. Together
  * they are a thing you must either grind down or go around, and it will still be there when you
  * come back.
  *
- * THE SPEED HAS NOW GONE UP A FIFTH TWICE, THEN HALF AGAIN - 0.0605, then 0.0726, then 0.0871, and
- * now 0.1307. In absolute terms a Heavy walks at 6.1 to 13.5 u/s depending on which archetype the
- * cycle is spending (it was 4.1 to 9.0, and 3.4 to 7.5, and 2.8 to 6.2 before that). The complaint
- * each time was the same one: the back of a siege ring took long enough to close that a player
- * could simply leave, deal with something else and come back to find it barely moved. Three
- * fifth-sized nudges had chipped at that without solving it, so this move is half again rather than
- * a fourth fifth. Every figure below that is measured in "seconds of its walking" moves with it,
- * and they are updated rather than left to rot - a derived number in a comment is worth nothing the
- * moment the thing it was derived from moves.
+ * THE SPEED HAS CLIMBED IN STEPS - 0.0605, 0.0726, 0.0871 (a fifth at a time), 0.1307 (half
+ * again), and now 0.1437 (a tenth more). In absolute terms a Heavy walks at 6.8 to 14.8 u/s
+ * depending on which archetype the cycle is spending (it was 6.1 to 13.5 the step before). The
+ * complaint behind every step was the same one: the back of a siege ring took long enough to
+ * close that a player could simply leave, deal with something else and come back to find it
+ * barely moved. Every figure below that is measured in "seconds of its walking" moves with each
+ * step, and they are updated rather than left to rot - a derived number in a comment is worth
+ * nothing the moment the thing it was derived from moves.
  *
  * AND IT TAKES A QUARTER OF THE KNOCKBACK. A body this slow is one you fight by pushing, and a
- * Cannon shell throwing it as far as it walks in nine seconds turned the wall into something you
+ * Cannon shell throwing it as far as it walks in eight seconds turned the wall into something you
  * could sweep aside for free. Half was not enough - at 190 impulse on a 0.5-mass body that was
- * still 95 u/s, eleven seconds of its walking per shell. A quarter still moves it visibly; it is
+ * still 95 u/s, ten seconds of its walking per shell. A quarter still moves it visibly; it is
  * not the Scraplord's outright immunity. It just stops one shell being worth more than the whole
  * approach. The push itself is unchanged by the speed above - it comes from mass and knockback
  * resistance, neither of which moved - so only how much of the Heavy's OWN walking it buys back
@@ -248,7 +247,7 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.13068, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.143748, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
   // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
   // fragility, and every extra dial turned here is one more thing to explain when it arrives.
   Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),

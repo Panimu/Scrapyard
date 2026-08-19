@@ -121,6 +121,7 @@ const ICONS = [
   'p-shield',
   'p-repair',
   'p-radiator',
+  'p-blast',
 ];
 
 const DRAW = `(id) => {
@@ -564,6 +565,28 @@ const DRAW = `(id) => {
     g.strokeStyle = STEEL;
     g.lineWidth = 4;
     g.beginPath(); g.moveTo(CX, CY); g.lineTo(CX, CY - 26); g.stroke();
+  }
+
+  if (id === 'p-blast') {
+    // AN EXPANDING BLAST: a bright core, a solid ring where the blast IS, and a wider fading ring
+    // where the card puts it. Growth is the glyph - p-range says reach with arcs going somewhere,
+    // this says AREA with circles getting bigger around a centre.
+    g.fillStyle = KEY;
+    g.beginPath(); g.arc(CX, CY, 9, 0, 6.284); g.fill();
+    for (const [r, w, a] of [[22, 5, 1], [34, 4, 0.55], [46, 3, 0.3]]) {
+      g.globalAlpha = a;
+      g.strokeStyle = KEY;
+      g.lineWidth = w;
+      g.beginPath(); g.arc(CX, CY, r, 0, 6.284); g.stroke();
+    }
+    g.globalAlpha = 1;
+    // Four fragments leaving the core on the diagonals, so it reads as a blast, not a target.
+    g.fillStyle = KEY;
+    for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      g.beginPath();
+      g.arc(CX + sx * 15, CY + sy * 15, 3, 0, 6.284);
+      g.fill();
+    }
   }
 
   if (id === 'p-shield') {

@@ -119,10 +119,10 @@ describe('meetsUnlock', () => {
     const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 1001 } as const;
     // The run on its own is far short; the career carries the other nine hundred.
     const shortRun = run({ killsWith: { 'phase-cannon': 101 } });
-    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1001 } })).toBe(true);
-    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1000 } })).toBe(false);
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1001 }, splashKills: 0 })).toBe(true);
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { 'phase-cannon': 1000 }, splashKills: 0 })).toBe(false);
     // A weapon the condition does not name contributes nothing, however storied the career.
-    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { cannon: 1_000_000 } })).toBe(false);
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: { cannon: 1_000_000 }, splashKills: 0 })).toBe(false);
   });
 
   it('killsWithTotal degrades to the run itself when no career is supplied', () => {
@@ -133,15 +133,28 @@ describe('meetsUnlock', () => {
     expect(meetsUnlock(cond, run({ killsWith: { 'phase-cannon': 99 } }), IDS)).toBe(false);
   });
 
+  it('splashKillsTotal reads the career, and degrades to the run without one', () => {
+    const cond = { kind: 'splashKillsTotal', count: 2000 } as const;
+    const shortRun = run({ splashKills: 50 });
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: {}, splashKills: 2000 })).toBe(true);
+    expect(meetsUnlock(cond, shortRun, IDS, { killsWith: {}, splashKills: 1999 })).toBe(false);
+    // No career in hand: the run's own tally is the answer, same fallback as killsWithTotal.
+    expect(meetsUnlock(cond, run({ splashKills: 2000 }), IDS)).toBe(true);
+    expect(meetsUnlock(cond, run({ splashKills: 1999 }), IDS)).toBe(false);
+    // And it feeds the unlabeled bar like the other career kinds.
+    expect(unlockProgress(cond, { killsWith: {}, splashKills: 500 })).toBeCloseTo(0.25, 10);
+    expect(unlockProgress(cond, { killsWith: {}, splashKills: 9999 })).toBe(1);
+  });
+
   it('unlockProgress reports a career fraction for career kinds and -1 for everything else', () => {
     const cond = { kind: 'killsWithTotal', weapons: ['phase-cannon'], count: 1000 } as const;
-    expect(unlockProgress(cond, { killsWith: {} })).toBe(0);
-    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 250 } })).toBeCloseTo(0.25, 10);
+    expect(unlockProgress(cond, { killsWith: {}, splashKills: 0 })).toBe(0);
+    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 250 }, splashKills: 0 })).toBeCloseTo(0.25, 10);
     // Clamped: a career past the line reads as full, never as 200%.
-    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 2000 } })).toBe(1);
+    expect(unlockProgress(cond, { killsWith: { 'phase-cannon': 2000 }, splashKills: 0 })).toBe(1);
     // Everything that is not a career count has no bar to show - an event either happened or it
     // did not, and a one-run tally resets too often to be drawn outside the run.
-    const career = { killsWith: { 'phase-cannon': 500 } };
+    const career = { killsWith: { 'phase-cannon': 500 }, splashKills: 0 };
     expect(unlockProgress({ kind: 'wave', wave: 3 }, career)).toBe(-1);
     expect(unlockProgress({ kind: 'win' }, career)).toBe(-1);
     expect(unlockProgress({ kind: 'never' }, career)).toBe(-1);

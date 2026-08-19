@@ -284,7 +284,7 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
 // ---------------------------------------------------------------------------------------------
 
 /**
- * 90 deg/s = 1.5707963267948966 rad/s, DOWN FROM 220.
+ * 81 deg/s now (see the trim note below), originally DOWN FROM 220 to 90.
  *
  * THE OLD NUMBER WAS CHOSEN SO THE TURRET WAS ALWAYS LAID ON: 220 deg/s sweeps 278 deg during a
  * 1.263 s cooldown against a 180 deg worst-case re-lay, so switching targets cost the Cannon
@@ -293,10 +293,13 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
  * every weapon in the game held at tier 7, it took 18.9% of a run's damage against a four-way
  * cluster at 14.2%.
  *
- * At 90 deg/s the sweep is 114 deg per cooldown at tier 1 and 80 deg at tier 7, against that same
- * 180 deg worst case. So the gun now HAS TO TRACK, and it loses shots exactly when the horde is
- * spread around the mech rather than in front of it - a situational cost rather than a flat one,
- * and one that grows as its own fire-rate tiers land.
+ * At 90 deg/s the sweep was 114 deg per cooldown at tier 1 and 80 deg at tier 7, against that
+ * same 180 deg worst case. So the gun now HAS TO TRACK, and it loses shots exactly when the horde
+ * is spread around the mech rather than in front of it - a situational cost rather than a flat
+ * one, and one that grows as its own fire-rate tiers land.
+ *
+ * TRIMMED A FURTHER 10% (90 -> 81 deg/s): 102 deg per cooldown at tier 1, 72 at tier 7. Same
+ * lever, one more notch - the Machine Gun's mount was slowed by the same tenth in the same pass.
  *
  * WHAT THIS DOES NOT CHANGE: hold-fire still does not reset the cooldown, and a target lock is
  * still wrong - it would contradict the specced highest-HP rule (DESIGN.md §0, "biggest design
@@ -308,7 +311,7 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
  * `degToRad` is a single exactly-rounded multiply, evaluated once at module init - not a trig
  * call, and not in a loop.
  */
-const CANNON_TURRET_TRAVERSE = degToRad(90);
+const CANNON_TURRET_TRAVERSE = degToRad(81);
 
 /**
  * 12 deg. A PERMISSION gate, not a dispersion cone: within this arc the weapon is allowed to
@@ -843,7 +846,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     knockback: 14, // barely a nudge, but 22 a second adds up against a runt
     splashRadius: 0,
     splashFrac: 0,
-    turretTraverse: degToRad(900), // whips around; it has to keep up with its own rate of fire
+    turretTraverse: degToRad(810), // whips around (trimmed 10% with the Cannon's); still far ahead of its rate of fire
     fireArc: degToRad(20),
     heatPerSec: 0,
     heatCapacity: HEAT_CAPACITY_BASE,

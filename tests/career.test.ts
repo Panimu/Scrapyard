@@ -73,6 +73,25 @@ describe('the career kill ledger', () => {
     expect(state.recordRun(record)).toContain('indigo');
   });
 
+  it('banks splash kills by the same delta ledger, and earns Shaped Charges across runs', () => {
+    const state = new AppState();
+
+    state.beginRunTally();
+    state.recordCareerKills(run({ splashKills: 800 }));
+    // Re-polling the same tally banks nothing more.
+    state.recordCareerKills(run({ splashKills: 800 }));
+    expect(state.career().splashKills).toBe(800);
+    expect(state.achievementProgress('shaped-charges')).toBeCloseTo(800 / 2000, 10);
+
+    state.beginRunTally();
+    const second = run({ splashKills: 1200 });
+    state.recordCareerKills(second);
+    expect(state.career().splashKills).toBe(2000);
+    // 800 + 1200 crosses the line: the card is earned on the poll that banked it.
+    expect(state.recordCards(second).map((d) => d.id)).toContain('p-blast');
+    expect(state.hasCard('p-blast')).toBe(true);
+  });
+
   it('earns the Phase Cannon card across two runs that each fall short alone', () => {
     const state = new AppState();
 

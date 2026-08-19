@@ -114,6 +114,14 @@ export type UnlockCond =
       readonly weapons: readonly WeaponId[];
       readonly count: number;
     }
+  /**
+   * Land `count` killing blows WITH BLAST DAMAGE, across every run ever played - the second
+   * career condition, keyed to a MECHANIC rather than a weapon: any splash that finishes a body
+   * counts, whether the artillery's barrage, a Phase Cannon burst or a drone's death detonation
+   * threw it. Same career plumbing as `killsWithTotal`, same fallback to the run's own tally when
+   * no career is supplied.
+   */
+  | { readonly kind: 'splashKillsTotal'; readonly count: number }
   /** Land the KILLING BLOW on a boss with any of `weapons`. Same rule as `killsWith`. */
   | { readonly kind: 'bossKillBy'; readonly weapons: readonly WeaponId[] }
   /**
@@ -233,6 +241,8 @@ export interface RunRecord {
   readonly fullRepairs: number;
   /** All three lasers held and overheated on the same tick, at some point. See RunStats. */
   readonly lasersOverheated: boolean;
+  /** Killing blows landed by splash this run. See RunStats.splashKills. */
+  readonly splashKills: number;
 }
 
 /**
@@ -246,6 +256,8 @@ export interface RunRecord {
 export interface CareerRecord {
   /** Killing blows ever landed, by weapon, every run included. Absent key = none. */
   readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
+  /** Killing blows ever landed by splash, every run included. */
+  readonly splashKills: number;
 }
 
 /**
@@ -299,6 +311,9 @@ export function meetsUnlock(
       for (const w of cond.weapons) n += totals[w] ?? 0;
       return n >= cond.count;
     }
+    case 'splashKillsTotal':
+      // Same career-or-run fallback as killsWithTotal, for the same reasons.
+      return (career?.splashKills ?? run.splashKills) >= cond.count;
     case 'bossKillBy':
       return cond.weapons.some((w) => run.bossKillsBy.includes(w));
     case 'contactHits':
@@ -331,6 +346,10 @@ export function meetsUnlock(
  * promise with a pulse in it. This function therefore returns a bare number and no words.
  */
 export function unlockProgress(cond: UnlockCond, career: CareerRecord): number {
+  if (cond.kind === 'splashKillsTotal') {
+    const f = career.splashKills / cond.count;
+    return f > 1 ? 1 : f;
+  }
   if (cond.kind !== 'killsWithTotal') return -1;
   let n = 0;
   for (const w of cond.weapons) n += career.killsWith[w] ?? 0;
@@ -390,6 +409,8 @@ export function describeUnlockDone(
       return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}.`;
     case 'killsWithTotal':
       return `Destroyed ${cond.count} with ${listNames(cond.weapons, weaponNames)}, across every run.`;
+    case 'splashKillsTotal':
+      return `Destroyed ${cond.count} with blast damage, across every run.`;
     case 'bossKillBy':
       return `Finished a boss with ${listNames(cond.weapons, weaponNames)}.`;
     case 'fullRepair':

@@ -267,6 +267,13 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'They come back on their own, and a finished shield carries a second rim that recharges in its turn.',
     ],
   },
+  'p-blast': {
+    aims: 'Does nothing at all unless something you hold explodes.',
+    notes: [
+      'Every blast reaches wider — the artillery barrage, a drone going out, the burst on a phase bolt. Guns that do not explode never notice it, which is why the deck will not offer it until you hold something that does.',
+      'Area grows faster than the ring: widening a circle by half more than doubles the ground it covers. The number on the floor is the radius; the value is the crowd inside it.',
+    ],
+  },
   'p-radiator': {
     aims: 'Does nothing at all unless you are holding a laser.',
     notes: [

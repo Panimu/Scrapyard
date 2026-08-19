@@ -80,6 +80,7 @@ export function testRunRecord(over: Partial<RunRecord> = {}): RunRecord {
     contactHits: 0,
     fullRepairs: 0,
     lasersOverheated: false,
+    splashKills: 0,
     diedTo: '',
     ...over,
   };

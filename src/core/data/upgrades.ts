@@ -30,7 +30,7 @@
  * Showing fewer numbers is not showing false ones, and every number that IS shown - a heat bar, a
  * damage figure in the summary - is still exact.
  *
- * SIXTEEN CARDS: nine weapons and seven passives, every one of them SEVEN TIERS deep. Tier 1 puts
+ * SEVENTEEN CARDS: nine weapons and eight passives, every one of them SEVEN TIERS deep. Tier 1 puts
  * the thing in your hands; tiers 2-7 change what it does. A run has five weapon slots and five
  * passive slots, so nothing here is a collection to complete - 112 tiers exist and a long run
  * takes perhaps 30 of them.
@@ -72,7 +72,8 @@ export type UpgradeId =
   | 'p-armour'
   | 'p-shield'
   | 'p-repair'
-  | 'p-radiator';
+  | 'p-radiator'
+  | 'p-blast';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -276,9 +277,10 @@ function laserTierText(): readonly string[] {
 // ---------------------------------------------------------------------------------------------
 // PASSIVES
 //
-// SEVEN cards for FIVE slots (MAX_PASSIVES), so a finished build has deliberately left two behind.
+// EIGHT cards for FIVE slots (MAX_PASSIVES), so a finished build has deliberately left three
+// behind.
 //
-// Five of the seven are percentage cards on the shared ramp below. Energy Shield is not a
+// Six of the eight are percentage cards on the shared ramp below. Energy Shield is not a
 // percentage of anything - it installs a mechanism - and Radiator Bank splits its ramp across two
 // keys instead of one; both are authored at the bottom of the catalog with their own reasoning.
 //
@@ -903,6 +905,43 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * `lasersOverheated` and RunStats.lasersOverheated.
      */
     unlock: Object.freeze({ kind: 'lasersOverheated' as const }),
+  },
+  {
+    id: 'p-blast',
+    kind: 'passive',
+    /**
+     * SHAPED CHARGES - the blast specialist, the Radiator Bank's shape aimed at the other
+     * mechanic. Its whole effect is `splashRadius`, so it is a guaranteed no-op on anything that
+     * does not blast (a share of zero is zero) - hence `requiresWeaponHeld` keeps it out of the
+     * deck for a loadout with nothing that explodes, exactly the dead-pick rule the radiator
+     * established. The three ids listed are the three carriers of a splashRadius today: the
+     * artillery's barrage, the drone's death detonation, the Phase Cannon's burst.
+     *
+     * Area grows with the SQUARE of the radius, so the finished card's +50% radius is ~+125%
+     * ground covered - which is why the ramp key is the radius and not some invented "area" stat:
+     * the ring on the floor is what the player sees, and the ring is what grows.
+     */
+    name: 'Shaped Charges',
+    description: 'Every blast reaches wider.',
+    tiers: rampText(
+      'Every blast reaches a little wider.',
+      'Every blast reaches wider.',
+      'Every blast reaches much wider.',
+    ),
+    tierEffects: rampEffects('weapon', ['splashRadius']),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+    requiresWeaponHeld: Object.freeze(['artillery', 'drone', 'phase-cannon']),
+    /**
+     * BEHIND TWO THOUSAND BLAST KILLS, ACROSS EVERY RUN - the mechanic's own career condition:
+     * a save that has finished two thousand bodies with splash has spent real time under its own
+     * barrages, and is exactly who this card is for. See UnlockCond `splashKillsTotal` and
+     * RunStats.splashKills; the career banking is recordCareerKills in appState.ts, and the
+     * sealed achievement row gets the unlabeled progress bar through the same unlockProgress
+     * path as the other career conditions.
+     */
+    unlock: Object.freeze({ kind: 'splashKillsTotal' as const, count: 2000 }),
   },
 ] as const) as readonly UpgradeDef[];
 

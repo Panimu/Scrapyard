@@ -430,6 +430,7 @@ async function boot(): Promise<void> {
       contactHits: world.stats.contactHits,
       fullRepairs: world.stats.fullRepairs,
       lasersOverheated: world.stats.lasersOverheated > 0,
+      splashKills: world.stats.splashKills,
       diedTo: RANKS[world.stats.killedByRank]?.name ?? '',
     };
   }

@@ -154,6 +154,23 @@ describe('the bolt', () => {
     expect(w.projectiles.count).toBe(0);
   });
 
+  it('counts a body finished by the burst as a SPLASH kill, and the mark itself as not', () => {
+    const w = makeWorld(9);
+    // The mark survives the bolt; the two neighbours die to the blast alone.
+    const mark = addEnemy(w, 220, 0, 5000);
+    const fragA = addEnemy(w, 220, 40, 5);
+    const fragB = addEnemy(w, 220, -40, 5);
+    ticks(w, 40);
+
+    expect(w.enemies.hp[0]).toBeLessThan(5000); // the mark took the bolt (sole survivor: dense 0)
+    expect(w.enemies.count).toBe(1);
+    // Two splash kills, not three: the direct hit is the bolt's, whatever it did.
+    expect(w.stats.splashKills).toBe(2);
+    void mark;
+    void fragA;
+    void fragB;
+  });
+
   it('flies on and bursts at the end of its run when the mark dies mid-flight', () => {
     const w = makeWorld();
     const mark = addEnemy(w, 200, 0, 500);

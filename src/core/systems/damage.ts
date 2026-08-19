@@ -385,7 +385,12 @@ function applySplash(
       scaled,
       enemies.slot[ed],
     );
-    if (enemies.hp[ed] <= 0) killEnemy(world, ed, slot);
+    if (enemies.hp[ed] <= 0 && (enemies.flags[ed] & ENEMY_FLAG_DEAD) === 0) {
+      // The blast was the killing blow. Guarded on DEAD exactly as killEnemy itself is, so a
+      // body two blasts reach in one tick counts one splash kill, not two.
+      killEnemy(world, ed, slot);
+      world.stats.splashKills++;
+    }
   }
 }
 

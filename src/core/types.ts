@@ -483,6 +483,13 @@ export interface RunStats {
    */
   lasersOverheated: number;
   /**
+   * KILLING BLOWS LANDED BY SPLASH - the blast was what finished the body, whatever weapon threw
+   * it. The artillery's every kill lands here (its damage IS the blast); a Phase Cannon burst or
+   * a drone's death detonation counts exactly when the blast, not the bolt, was fatal. Career-
+   * banked by the app layer for the `splashKillsTotal` condition - see recordCareerKills.
+   */
+  splashKills: number;
+  /**
    * Rank of the enemy whose touch killed the player, or -1.
    *
    * Set exactly once, on the contact that takes hp to zero, and never cleared - a run has one
