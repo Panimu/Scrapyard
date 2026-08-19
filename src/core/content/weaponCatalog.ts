@@ -722,13 +722,18 @@ export function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: n
  * key (see WeaponDef.gigaFrom), so Shaped Charges' +50% takes it to 18 and the drawn beam grows
  * with it - the width on screen IS the width that burns.
  *
- * 12 u half - a 24 u channel, plus each body's own radius - is sized against the crowd it is
+ * 9.6 u half - a 19.2 u channel, plus each body's own radius - is sized against the crowd it is
  * aimed at: the densest-cluster rule points it at a knot, and a knot's bodies stand roughly a
- * radius apart, so a runt column two abreast fits inside the swath while a spread line across it
- * catches one or two. Wide enough to be unmistakably a different weapon; narrow enough that where
- * the mech faces still matters.
+ * radius apart, so a runt column two abreast still fits inside the swath while a spread line
+ * across it catches one or two. Wide enough to be unmistakably a different weapon; narrow enough
+ * that where the mech faces still matters.
+ *
+ * DOWN 20% FROM THE 12 IT SHIPPED AT. Area is what this number really buys - the swath bills
+ * everything it covers - so a fifth off the half-width is a fifth off the ground covered at every
+ * range, which is the most direct lever the weapon has and the one that leaves its damage, its
+ * burst and its reach alone.
  */
-export const GIGA_HALF_WIDTH = 12;
+export const GIGA_HALF_WIDTH = 9.6;
 
 function laser(
   id: WeaponId,

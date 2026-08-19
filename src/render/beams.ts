@@ -150,10 +150,94 @@ const BREATHE_DEPTH = 0.07;
 /** Impact bloom throb, also radians per second. */
 const IMPACT_BEAT_RATE = 21;
 
-/** Flare diameters, world units, scaled by the weapon's own width so a long laser hits harder. */
+/**
+ * Flare diameters, as multiples of the layer they cap, so a wider beam gets a proportionate bloom
+ * rather than one keyed to a half-width that means different things on different weapons - see the
+ * width-regime note below.
+ *
+ * `MUZZLE_UNITS` is gone rather than set to something: the emitter is now three flares sized off
+ * the drawn outer width (a cap, a throat and a backwash), and a single number could not express
+ * any of them. A constant nobody reads is a constant that rots.
+ */
 const IMPACT_UNITS = 10;
 const IMPACT_HOT_UNITS = 4.2;
-const MUZZLE_UNITS = 5;
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * TWO WIDTH REGIMES, AND THE MULTIPLIERS ABOVE ONLY EVER MEANT ONE OF THEM
+ * ---------------------------------------------------------------------------------------------
+ * Every layer above is authored as a MULTIPLE of the beam's half-width, and that is right for a
+ * LINE: the three ordinary lasers are 1.6 to 2.7 units of half-width, so a 9x halo is 24 units of
+ * soft light around a thin bright thread, which is what light looks like.
+ *
+ * The Giga Laser broke the assumption by making `half` mean something else. Its half-width is its
+ * HITBOX - the swath bills every body inside it - so the same multipliers drew a 9.6 u beam with
+ * an 86 u halo and a core WIDER THAN THE THING THAT BURNS. On screen that is a flat slab of red
+ * with a wash around it: no thread, no profile, nothing to look at, and a square end sticking out
+ * of the mech twice the width of the chassis.
+ *
+ * So the widths are computed rather than multiplied, and the rule is:
+ *
+ *   THE GLOW IS A RIM, NOT A SCALE. Each layer is the beam's own width plus an ADDITIVE rim, and
+ *   the rim is sized off `RIM_REF` - a nominal thin beam - rather than off the beam itself. At or
+ *   below RIM_REF the arithmetic is exactly the old multiplication, so the three lasers are
+ *   pixel-identical to before. Above it the rim stops growing and a wide beam gets a halo instead
+ *   of a weather system.
+ *
+ *   THE CORE BECOMES A FILAMENT. On a thin beam the core IS the beam and is drawn slightly wider
+ *   than the nominal line. On a wide one it collapses to a bright thread down the middle, and the
+ *   INNER layer takes over carrying the true width - so the cross-section reads hot centre, body,
+ *   halo, dark rim rather than one solid bar. That is the whole of "not a boring red slab", and it
+ *   costs no new sprites: the four layers were always a profile, they were just all the same size
+ *   once `half` got big.
+ */
+const RIM_REF = 3;
+
+/** The filament's share of a wide beam's half-width. Narrow enough to read as a thread inside it. */
+const FILAMENT_FRAC = 0.42;
+
+/**
+ * How much brighter a wide beam's BODY is drawn than a thin one's, as a multiple of INNER_ALPHA.
+ *
+ * THE BODY IS THE HITBOX AND IT HAS TO BE LEGIBLE. On a thin laser the `inner` layer is a soft
+ * halo around a bright core - a suggestion of light, correctly faint. On a swath it is the actual
+ * width of the thing that burns, and a player who cannot see where the burning stops cannot aim
+ * it. Measured in a mock: at the thin beam's own alpha the 19 u channel read as a wash and the
+ * filament looked like the whole weapon, which is the opposite of the mistake it was fixing.
+ */
+const WIDE_BODY_ALPHA = 1.9;
+
+/** A wide beam's dark sheath, as a multiple of its body - an OUTLINE around the burn channel. */
+const WIDE_SHEATH_MUL = 1.15;
+
+/**
+ * Layer widths for a beam of half-width `half`, plus how WIDE the beam counts as (0..1) for the
+ * alphas that depend on it. Allocation-free: fills and returns the module scratch, which the
+ * caller reads immediately.
+ */
+const WIDTHS = { sheath: 0, outer: 0, inner: 0, core: 0, pulse: 0, wide: 0 };
+
+function layerWidths(half: number): typeof WIDTHS {
+  // The rim is what a thin beam's multiplier WOULD have added, frozen once the beam is wider than
+  // a thin one. `ref` is the beam's own width while it is thin, so `half * MUL` survives exactly.
+  const ref = half < RIM_REF ? half : RIM_REF;
+  // 0 for anything at or under a thin beam, ramping to 1 at twice that. Everything below blends on
+  // this one number, so nothing pops at the boundary and a thin beam takes the old path exactly.
+  const wide = half <= RIM_REF ? 0 : Math.min(1, (half - RIM_REF) / RIM_REF);
+  WIDTHS.wide = wide;
+  WIDTHS.outer = half + ref * (OUTER_MUL - 1);
+  WIDTHS.inner = half + ref * (INNER_MUL - 1);
+  WIDTHS.pulse = half + ref * (PULSE_MUL - 1);
+  // The core is the one layer that goes the OTHER way as the beam widens: a thread down a channel
+  // rather than the channel itself.
+  WIDTHS.core = half * (CORE_MUL + (FILAMENT_FRAC - CORE_MUL) * wide);
+  // The sheath is a dark band UNDER the light, and on a thin beam it sits inside the halo. On a
+  // wide one it has to clear the BODY instead, or the burn channel has no edge and the swath
+  // bleeds into the floor exactly where the player needs to see it stop.
+  const sheathBase = half + ref * (SHEATH_MUL - 1);
+  WIDTHS.sheath = sheathBase + wide * (WIDTHS.inner * WIDE_SHEATH_MUL - sheathBase);
+  return WIDTHS;
+}
 
 /** Emitter heat glow: diameter at cold and at capacity, again in beam half-widths. */
 const HEAT_UNITS_COLD = 3;
@@ -528,23 +612,29 @@ export class BeamLayer {
         const ux = Math.cos(angle);
         const uy = Math.sin(angle);
 
+        // Widths by regime - see layerWidths. For the three lasers this is the old multiplication
+        // to the last bit; for a swath it is a rim and a filament instead of a slab.
+        const lw = layerWidths(half);
+
         // The sheath fades on the SQUARE of the envelope so the dark band is always gone before
         // the light is - it exists to make a bright beam readable, never to outlive one.
-        const sheathW = half * SHEATH_MUL * wmul;
-        place(this.sheath[n], x0, y0, angle, len, sheathW, SHEATH_TINT, SHEATH_ALPHA * env * env);
+        place(this.sheath[n], x0, y0, angle, len, lw.sheath * wmul, SHEATH_TINT, SHEATH_ALPHA * env * env);
         const halo = purify(colour, OUTER_PURITY);
-        place(this.outer[n], x0, y0, angle, len, half * OUTER_MUL * wmul, halo, OUTER_ALPHA * amul);
+        place(this.outer[n], x0, y0, angle, len, lw.outer * wmul, halo, OUTER_ALPHA * amul);
         // One `purify` for the two mid layers; the pulse is the same light, just whiter.
         const pure = purify(colour, INNER_PURITY);
         const mid = whiten(pure, INNER_WHITEN);
-        place(this.inner[n], x0, y0, angle, len, half * INNER_MUL * wmul, mid, INNER_ALPHA * amul);
+        // The body carries the burn width, and on a swath it is drawn to be READ rather than felt -
+        // see WIDE_BODY_ALPHA.
+        const bodyAlpha = INNER_ALPHA * (1 + (WIDE_BODY_ALPHA - 1) * lw.wide);
+        place(this.inner[n], x0, y0, angle, len, lw.inner * wmul, mid, bodyAlpha * amul);
         place(
           this.core[n],
           x0,
           y0,
           angle,
           len,
-          half * CORE_MUL * wideCore * breathe,
+          lw.core * wideCore * breathe,
           whiten(colour, CORE_WHITEN),
           CORE_ALPHA * coreFade * flicker,
         );
@@ -574,7 +664,7 @@ export class BeamLayer {
               y0 + uy * from,
               angle,
               segLen,
-              half * PULSE_MUL * wmul,
+              lw.pulse * wmul,
               whiten(pure, PULSE_WHITEN),
               PULSE_ALPHA * amul * rise,
             );
@@ -586,7 +676,34 @@ export class BeamLayer {
         // already has the previous link's impact bloom sitting on it, and a second flare there
         // would double it.
         if (s === 0) {
-          flare(flares, x0, y0, half * MUZZLE_UNITS * wmul, whiten(colour, 0.5), 0.5 * amul);
+          // THE EMITTER END, WHICH IS THE ONE THE PLAYER LOOKS AT. The beam is a quad, so it
+          // begins with a HARD SQUARE EDGE at the hardpoint - on a thin laser the muzzle flare
+          // buries that, and on a swath it did not: a 19 u slab started dead flat on the hull and
+          // read as a plank bolted to the mech rather than as light leaving it.
+          //
+          // Three things fix it, and all three are sized off the DRAWN OUTER WIDTH rather than off
+          // `half`, because that is the edge actually needing covered:
+          //
+          //   THE CAP is a flare wide enough to swallow the square end whole (the old one was
+          //   5 x half, which is generous on a 2 u line and less than the beam's own width on a
+          //   10 u one).
+          //   THE THROAT is a second, tighter and whiter flare a little way FORWARD along the
+          //   axis, so the brightest point sits just outside the hull the way a real emitter's
+          //   would - the beam then reads as coming OUT of something.
+          //   THE BACKWASH is the same cap pulled slightly BEHIND the origin, which puts a little
+          //   of the beam's own light on the chassis it is mounted to instead of leaving the hull
+          //   flat and unlit next to a bar of red.
+          const capW = lw.outer * wmul * 2.2;
+          flare(flares, x0 - ux * capW * 0.10, y0 - uy * capW * 0.10, capW, whiten(colour, 0.35), 0.34 * amul);
+          flare(flares, x0, y0, capW * 0.62, whiten(colour, 0.5), 0.5 * amul);
+          flare(
+            flares,
+            x0 + ux * lw.core * 1.6,
+            y0 + uy * lw.core * 1.6,
+            lw.core * 3.4 * wmul,
+            whiten(colour, 0.82),
+            0.6 * amul,
+          );
         }
 
         // Contact only when the beam actually stopped on a body. NO_BEAM_TARGET means it reached
@@ -598,8 +715,11 @@ export class BeamLayer {
           const beat = 0.88 + 0.24 * (0.5 + 0.5 * Math.sin(clockSec * IMPACT_BEAT_RATE + ph));
           // Two flares: a wide bloom in the weapon's hue, and a small near-white contact point.
           const bloom = beat * wideGlow;
-          flare(flares, x1, y1, half * IMPACT_UNITS * bloom, whiten(colour, 0.45), 0.85 * amul);
-          flare(flares, x1, y1, half * IMPACT_HOT_UNITS * bloom, 0xfff2e0, 0.9 * amul);
+          // Sized off the DRAWN width for the reason the muzzle is: `half * 10` is a proportionate
+          // bloom on a thin line and a screen-filling disc on a swath. The hot centre stays keyed
+          // to the filament, so the contact point is a point rather than a second wide blob.
+          flare(flares, x1, y1, lw.inner * (IMPACT_UNITS / INNER_MUL) * bloom, whiten(colour, 0.45), 0.85 * amul);
+          flare(flares, x1, y1, lw.core * (IMPACT_HOT_UNITS / CORE_MUL) * bloom, 0xfff2e0, 0.9 * amul);
 
           // Debris and scorch are spawned ONLY while the sim is actually publishing the beam, on
           // a real-seconds throttle so the rate does not change with frame rate. THE THROTTLE IS

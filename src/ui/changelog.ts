@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T11:35Z',
+    title: 'THE GIGA LASER LOOKS LIKE A LASER',
+    notes: [
+      'The swath is 20% narrower. Area is what that number buys, so a fifth off the width is a fifth off the ground it covers, and its damage, burst and reach are untouched.',
+      'It is drawn properly now. It was a flat slab of red with a wash around it and a square end bolted to the hull; it is now a hot thread running down a channel of light, with an edge you can actually see, and it leaves the mech through a lit emitter instead of starting in mid-air. The bright band is the part that burns \u2014 what you see is what it hits.',
+      'The three ordinary lasers are drawn exactly as before, to the pixel.',
+    ],
+  },
+  {
     at: '2026-08-19T11:19Z',
     title: 'FOUR GUNS, AND A FIFTH TO BUY',
     notes: [
