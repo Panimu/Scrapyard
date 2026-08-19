@@ -618,7 +618,7 @@ const SIEGE_RING_RADIUS = 520;
  * spawn in the run exactly where it was. A ring rolled from the stream would have re-rolled the
  * entire horde downstream of 06:00.
  */
-function spawnSiege(world: World, t: DirectorTuning): void {
+export function spawnSiege(world: World, t: DirectorTuning): void {
   const p = world.enemies;
   const dir = world.director;
   const c = dir.cycle;
@@ -693,6 +693,15 @@ function spawnSiege(world: World, t: DirectorTuning): void {
     p.contactTimer[d] = 0;
     p.xpValue[d] = c.xp * r.xp * f.xp;
     p.flags[d] = 0;
+
+    // THE FIXATION - see FlavourDef.fixateSec. The mark is the player's position NOW, at the
+    // moment the ring closes, and it is the SAME point for every body in it: the whole formation
+    // converges on where you were standing, not on fifty slightly different readings of you.
+    if (f.fixateSec > 0) {
+      p.fixateX[d] = px;
+      p.fixateY[d] = py;
+      p.fixateLeft[d] = f.fixateSec;
+    }
 
     pushEvent(world.events, EV_ENEMY_SPAWNED, world.tick, x, y, p.slot[d], typeId);
   }
@@ -773,6 +782,15 @@ function spawnRank(world: World, rank: Rank, t: DirectorTuning, forced = -1): nu
       : rank === RANK_ELITE
         ? ENEMY_FLAG_ELITE
         : 0;
+
+  // THE FIXATION - see FlavourDef.fixateSec. No rollable flavour carries one today, but the rule
+  // is the flavour's rather than the siege's, so a future set-piece that `forced`s a Heavy through
+  // here inherits the behaviour instead of quietly getting a Heavy that chases.
+  if (f.fixateSec > 0) {
+    p.fixateX[d] = world.player.x;
+    p.fixateY[d] = world.player.y;
+    p.fixateLeft[d] = f.fixateSec;
+  }
 
   // c carries the SLOT: that is how the renderer maintains spriteBySlot as an O(1) typed-array
   // load with no Map and no hashing. d carries typeId so it can pick the atlas frame without

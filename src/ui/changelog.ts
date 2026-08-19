@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T07:03Z',
+    title: 'THE SIEGE REMEMBERS WHERE YOU WERE',
+    notes: [
+      'Siege Heavies no longer track you as you move. The whole ring converges on the spot you were standing when it closed, for a full minute and a half — stand your ground and it is a tightening noose; step out of it and it becomes a slow grey knot forming on the yard where you used to be. When the time is up, the mass turns and comes for you after all.',
+    ],
+  },
+  {
     at: '2026-08-19T06:44Z',
     title: 'THE HORNET BREAKS EARLIER',
     notes: [

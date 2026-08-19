@@ -233,13 +233,32 @@ export interface FlavourDef {
    * across the yard misses.
    */
   readonly relocate: number;
+  /**
+   * SECONDS OF WALKING AT A MARK INSTEAD OF AT THE PLAYER. 0 is "chase the player from the first
+   * tick", which is everything except the Heavy.
+   *
+   * A body with a fixation snapshots the player's position ONCE, at its own spawn, and walks at
+   * that fixed point until the timer runs out - then reverts to ordinary pursuit. The point does
+   * not update, and that is the design: a siege ring is centred on where you were STANDING when it
+   * was sprung, so all fifty Heavies collapse on that one spot. Stand still and it is a closing
+   * noose; step out of it and it becomes a landmark - a slow grey knot forming on the yard where
+   * you used to be, which you can watch, farm the edges of, or be somewhere else entirely when the
+   * timer ends and the whole mass turns and starts coming for you after all.
+   *
+   * NINETY SECONDS for the Heavy, chosen against its own speed: a siege body crossing from the
+   * 520 u ring at roughly 10 u/s needs most of a minute to reach the centre, so the fixation has
+   * to outlast the collapse or the ring would revert to a plain (very slow) horde mid-walk and the
+   * knot would never form. A body that ARRIVES at the mark early stands on it until the timer
+   * ends - see the arrival deadzone in the seek pass.
+   */
+  readonly fixateSec: number;
 }
 
 export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
-  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, xp: 1, dropsChest: false, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
-  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, xp: 1, dropsChest: false, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_PLAIN, name: 'plain', hp: 1, speed: 1, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1, fixateSec: 0 }),
+  Object.freeze({ id: FLAV_SWIFT, name: 'swift', hp: 0.85, speed: 1.18, dmg: 0.9, xp: 1, dropsChest: false, renderScale: 0.92, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1, fixateSec: 0 }),
+  Object.freeze({ id: FLAV_TOUGH, name: 'tough', hp: 1.3, speed: 0.88, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.18, renderGlow: false, renderTint: 0xffffff, knockback: 1, relocate: 1, fixateSec: 0 }),
+  Object.freeze({ id: FLAV_SPIKY, name: 'spiky', hp: 0.95, speed: 1, dmg: 1.35, xp: 1, dropsChest: false, renderScale: 1, renderGlow: true, renderTint: 0xffffff, knockback: 1, relocate: 1, fixateSec: 0 }),
   // `renderScale` is a RENDER HINT and does not move the hitbox - the same compromise `tough`
   // already makes at 1.18. Kept to 1.3 for that reason: a Heavy has to read as a different object
   // at a glance, and every unit past that is a unit of lie between the sprite and the circle.
@@ -247,15 +266,15 @@ export const FLAVOURS: readonly FlavourDef[] = Object.freeze([
   // SLIGHT is the brief - an orange hauler goes grey-brown and is still obviously an orange
   // hauler. A neutral grey of the same weight only dimmed it, and pushing further (0x9aa8b8)
   // stopped reading as a tinge and started reading as a different paint job.
-  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.143748, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4 }),
+  Object.freeze({ id: FLAV_HEAVY, name: 'heavy', hp: 10, speed: 0.143748, dmg: 1, xp: 1, dropsChest: false, renderScale: 1.3, renderGlow: false, renderTint: 0xa8b2bd, knockback: 0.25, relocate: 4, fixateSec: 90 }),
   // Contact damage, size and knockback are all left at the plain body's: the brief is speed and
   // fragility, and every extra dial turned here is one more thing to explain when it arrives.
-  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_SWARMER, name: 'swarmer', hp: 0.6, speed: 2, dmg: 1, xp: 1, dropsChest: false, renderScale: 1, renderGlow: false, renderTint: 0xffeeb0, knockback: 1, relocate: 1, fixateSec: 0 }),
   // Contact damage and knockback are left alone deliberately: this is an elite that pays out, not
   // an elite that hits differently, and the player should recognise it by its colour rather than
   // have to learn a second bite. `renderScale` is left at 1 for the same reason - the rank already
   // makes it big, and the gold is the signal.
-  Object.freeze({ id: FLAV_CHEST_DROPPER, name: 'chest dropper', hp: 3, speed: 1.05, dmg: 1, xp: 0.5, dropsChest: true, renderScale: 1, renderGlow: false, renderTint: 0xf0b429, knockback: 1, relocate: 1 }),
+  Object.freeze({ id: FLAV_CHEST_DROPPER, name: 'chest dropper', hp: 3, speed: 1.05, dmg: 1, xp: 0.5, dropsChest: true, renderScale: 1, renderGlow: false, renderTint: 0xf0b429, knockback: 1, relocate: 1, fixateSec: 0 }),
 ] as const) as readonly FlavourDef[];
 
 export interface ArchetypeDef {

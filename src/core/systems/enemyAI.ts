@@ -185,6 +185,9 @@ function seek(world: World, dt: number): void {
   const speed = p.speed;
   const flags = p.flags;
   const chargeLeft = p.chargeLeft;
+  const fixateX = p.fixateX;
+  const fixateY = p.fixateY;
+  const fixateLeft = p.fixateLeft;
   const radius = p.radius;
   const spawnId = p.spawnId;
   const n = p.count;
@@ -212,11 +215,37 @@ function seek(world: World, dt: number): void {
       speed[d] *= SWARM_SLOW_FRAC;
     }
 
-    const dx = px - x[d];
-    const dy = py - y[d];
+    // A FIXATED BODY WALKS AT A MARK, NOT AT YOU. The mark is where the player stood when this
+    // body spawned (see FlavourDef.fixateSec) and it never updates - so a siege's fifty Heavies
+    // all converge on ONE point, and stepping out of the ring turns the trap into a landmark.
+    // When the timer runs out the body falls through to ordinary pursuit, mid-stride, with no
+    // transition state to keep.
+    let tgtX = px;
+    let tgtY = py;
+    let fixated = false;
+    const fix = fixateLeft[d];
+    if (fix > 0) {
+      const rest = fix - dt;
+      if (rest > 0) {
+        fixateLeft[d] = rest;
+        tgtX = fixateX[d];
+        tgtY = fixateY[d];
+        fixated = true;
+      } else {
+        fixateLeft[d] = 0;
+      }
+    }
+
+    const dx = tgtX - x[d];
+    const dy = tgtY - y[d];
     const l2 = dx * dx + dy * dy;
-    if (l2 === 0) {
-      // Exactly coincident with the player. No direction exists; separation will part them.
+    // ARRIVAL DEADZONE, fixated bodies only: within its own radius of the mark a body STANDS
+    // rather than seeking, because a full-speed seek at a point it is already on flips its
+    // velocity every tick - a vibrating knot instead of a standing one. Separation still acts,
+    // so early arrivals spread into a disc around the mark instead of stacking on the pixel.
+    if (l2 === 0 || (fixated && l2 <= radius[d] * radius[d])) {
+      // (l2 === 0 without the fixation: exactly coincident with the player. No direction exists;
+      // separation will part them.)
       vx[d] = 0;
       vy[d] = 0;
       continue;
@@ -241,7 +270,11 @@ function seek(world: World, dt: number): void {
     const r = radius[d];
     const reach = r + AVOID_LOOKAHEAD;
     const ahead = sceneryOverlap(world.scenery, x[d] + ux * reach, y[d] + uy * reach, r);
-    if (ahead >= 0 && flowDirFor(world.flow, x[d], y[d], ux, uy, spawnId[d])) {
+    // NOT THE FLOW FIELD FOR A FIXATED BODY: the field is one search from the PLAYER, and every
+    // direction it offers strictly closes on them - the wrong goal entirely while this body's
+    // goal is the mark. It takes the wall-follower fallback below instead, which steers by the
+    // obstacle rather than by any destination and so works for both.
+    if (ahead >= 0 && !fixated && flowDirFor(world.flow, x[d], y[d], ux, uy, spawnId[d])) {
       // AND NOT ALL THE SAME WAY ROUND. The field records every neighbour that gets closer, not
       // just the closest, and this body takes whichever of them best matches its own fixed lean on
       // the bearing to the player. Every option strictly reduces the distance, so each is a route
@@ -575,5 +608,10 @@ function relocateStragglers(world: World): void {
     p.prevY[d] = pos.y;
     p.pushX[d] = 0;
     p.pushY[d] = 0;
+    // THE FIXATION IS CLEARED, or a Heavy set down in front of the player would immediately walk
+    // AWAY from them toward its stale mark, fall off the leash again, and ping-pong between the
+    // ring and the relocation for the rest of its timer. Being outrun this far already means the
+    // formation has dissolved; the body arrives as an ordinary (slow) pursuer.
+    p.fixateLeft[d] = 0;
   }
 }

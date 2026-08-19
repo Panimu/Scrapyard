@@ -83,6 +83,19 @@ export interface EnemyPool {
   readonly chargeX: Float32Array;
   readonly chargeY: Float32Array;
   readonly chargeLeft: Float32Array;
+  /**
+   * THE FIXATION - a fixed point this body walks at INSTEAD of the player, and the seconds left
+   * of it. Zero on everything except a body whose flavour asks for one (FlavourDef.fixateSec);
+   * today that is the siege's Heavies, marked with where the player stood when the ring closed.
+   *
+   * A POINT rather than a heading, unlike the charge above, because the two say different things:
+   * a charge is "commit to a direction and cross the yard", a fixation is "converge on a place".
+   * Fifty Heavies charging snapshot bearings would fan straight through the centre and out the
+   * other side; fifty walking at one point form the knot and stay a knot.
+   */
+  readonly fixateX: Float32Array;
+  readonly fixateY: Float32Array;
+  readonly fixateLeft: Float32Array;
   readonly contactDamage: Float32Array;
   /** Per-enemy contact cooldown. Replaces global i-frames: one runt must not be able to
    *  soak the player's invulnerability window on behalf of a bruiser. */
@@ -148,6 +161,9 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oChargeX = L.f32(capacity);
   const oChargeY = L.f32(capacity);
   const oChargeLeft = L.f32(capacity);
+  const oFixateX = L.f32(capacity);
+  const oFixateY = L.f32(capacity);
+  const oFixateLeft = L.f32(capacity);
   const oContactDamage = L.f32(capacity);
   const oContactTimer = L.f32(capacity);
   const oSpawnId = L.u32(capacity);
@@ -195,6 +211,9 @@ export function createEnemyPool(capacity: number): EnemyPool {
     chargeX: f32(oChargeX),
     chargeY: f32(oChargeY),
     chargeLeft: f32(oChargeLeft),
+    fixateX: f32(oFixateX),
+    fixateY: f32(oFixateY),
+    fixateLeft: f32(oFixateLeft),
     contactDamage: f32(oContactDamage),
     contactTimer: f32(oContactTimer),
     xpValue: u16(oXpValue),
@@ -222,6 +241,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
     p.x, p.y, p.vx, p.vy, p.pushX, p.pushY,
     p.hp, p.maxHp, p.radius, p.speed, p.mass, p.knockbackTake,
     p.chargeX, p.chargeY, p.chargeLeft,
+    p.fixateX, p.fixateY, p.fixateLeft,
     p.contactDamage, p.contactTimer,
     p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags, p.cycleIndex,
     p.spawnId, p.slot,
@@ -285,6 +305,9 @@ export function allocEnemy(
   p.chargeX[d] = 0;
   p.chargeY[d] = 0;
   p.chargeLeft[d] = 0;
+  p.fixateX[d] = 0;
+  p.fixateY[d] = 0;
+  p.fixateLeft[d] = 0;
   p.contactDamage[d] = 0;
   p.contactTimer[d] = 0;
   p.xpValue[d] = 0;
@@ -343,6 +366,9 @@ export function reapEnemies(p: EnemyPool): void {
       p.chargeX[d] = p.chargeX[last];
       p.chargeY[d] = p.chargeY[last];
       p.chargeLeft[d] = p.chargeLeft[last];
+      p.fixateX[d] = p.fixateX[last];
+      p.fixateY[d] = p.fixateY[last];
+      p.fixateLeft[d] = p.fixateLeft[last];
       p.contactDamage[d] = p.contactDamage[last];
       p.contactTimer[d] = p.contactTimer[last];
       p.xpValue[d] = p.xpValue[last];
