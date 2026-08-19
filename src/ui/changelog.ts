@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T07:29Z',
+    title: 'A FOURTH ASCENSION EXISTS',
+    notes: [
+      'Somewhere past tier seven, one of the weapons you know can become something else again. What it takes and what it becomes is yours to find — the Scrapopedia counts one more silhouette.',
+    ],
+  },
+  {
     at: '2026-08-19T07:03Z',
     title: 'THE SIEGE REMEMBERS WHERE YOU WERE',
     notes: [

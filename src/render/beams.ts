@@ -386,7 +386,13 @@ export class BeamLayer {
       this.ly0[at] = y0;
       this.lang[at] = Math.atan2(dy, dx);
       this.llen[at] = len;
-      this.lhalf[w] = def.beamWidth;
+      // A GIGA BEAM IS DRAWN AS WIDE AS IT BURNS: its half-width is the live `splashRadius` stat
+      // (that is the ascension's hitbox - see fireGiga), so Shaped Charges visibly widens the
+      // beam the moment a tier lands. Everything else keeps its cosmetic def width.
+      this.lhalf[w] =
+        def.gigaFrom !== undefined && inst.level >= def.gigaFrom
+          ? inst.stats.splashRadius
+          : def.beamWidth;
       this.lcolour[w] = def.beamColour;
       // enemyDense is NOT resolved to an enemy here and must never be: reapDead can invalidate
       // that dense index before this layer runs. Only the sentinel test is safe.

@@ -196,6 +196,27 @@ export interface WeaponDef {
    * collapse back into one big shell with extra steps.
    */
   readonly twinFrom?: number;
+  /**
+   * Tier at which this beam goes GIGA - the Long Laser's tier 8 - or absent for a beam that never
+   * does. A tier rather than a boolean, on the WeaponDef, for exactly the reason the other three
+   * ascension fields are: the ascension is the SAME WeaponDef at level 8.
+   *
+   * What the tier switches on, all in one place because each piece lives in a different system:
+   *
+   *   TARGETING swaps to `densest` - the Phase Cannon's rule - so the beam aims where the crowd
+   *   is thickest rather than at the weakest straggler (updateWeapons).
+   *   THE BEAM BECOMES A SWATH: it runs its FULL RANGE through everything - scrap, trees, drums,
+   *   bodies - and damages every enemy inside its half-width instead of stopping on the first
+   *   (fireGiga). The hold-fire-for-scrap rule does not apply; nothing occludes it.
+   *   THE HALF-WIDTH IS `splashRadius`, granted by the tier-8 rung below - which is what makes
+   *   "it gets wider with AoE effects" true by construction: Shaped Charges and a chassis blast
+   *   bonus multiply splashRadius, so they widen this beam through the same key that widens a
+   *   barrage, with no giga-specific branch anywhere in the stats.
+   *   THE NOSE HARDPOINT IS ITS BY RIGHT - see laserHardpoint. Other beams move to the shoulders.
+   *   +100% HEAT CAPACITY, also on the tier-8 rung: the burst is twice as long, the mechanic
+   *   (and the gap after it) unchanged.
+   */
+  readonly gigaFrom?: number;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -542,6 +563,19 @@ export const LASER_HARDPOINTS: readonly Readonly<{ x: number; y: number }>[] = O
   Object.freeze({ x: 5, y: 15 }), // right shoulder
 ]);
 
+/**
+ * THE GIGA LASER'S HALF-WIDTH, world units, before AoE multipliers. It rides the `splashRadius`
+ * key (see WeaponDef.gigaFrom), so Shaped Charges' +50% takes it to 18 and the drawn beam grows
+ * with it - the width on screen IS the width that burns.
+ *
+ * 12 u half - a 24 u channel, plus each body's own radius - is sized against the crowd it is
+ * aimed at: the densest-cluster rule points it at a knot, and a knot's bodies stand roughly a
+ * radius apart, so a runt column two abreast fits inside the swath while a spread line across it
+ * catches one or two. Wide enough to be unmistakably a different weapon; narrow enough that where
+ * the mech faces still matters.
+ */
+export const GIGA_HALF_WIDTH = 12;
+
 function laser(
   id: WeaponId,
   name: string,
@@ -553,7 +587,10 @@ function laser(
   beamWidth: number,
   /** Tier at which this beam starts chaining, or 0 for a beam that never does. */
   chainsFrom = 0,
+  /** Tier at which this beam goes giga, or 0 for a beam that never does. */
+  gigaFrom = 0,
 ): WeaponDef {
+  const tiers = laserTiers(damagePerSec, heatPerSec, heatDispersion);
   return Object.freeze({
     id,
     name,
@@ -588,8 +625,21 @@ function laser(
       ammoCapacity: 0,
       reloadTime: 0,
     }),
-    perLevel: laserTiers(damagePerSec, heatPerSec, heatDispersion),
+    // A GIGA BEAM'S TIER 8 IS THE ONE ASCENSION RUNG THAT CARRIES STATS, and both are the
+    // mechanic rather than a bonus stapled to it: `splashRadius` IS the swath's half-width (a
+    // width of zero would be the old beam wearing a new name), and the doubled capacity - base
+    // plus both capacity tiers over again - is what makes a beam that now bills a crowd per tick
+    // burn long enough to read as the capstone it is. Contrast the empty rung the other
+    // ascensions keep (see laserTiers T8).
+    perLevel:
+      gigaFrom > 0
+        ? Object.freeze([
+            ...tiers.slice(0, 6),
+            Object.freeze({ heatCapacity: HEAT_CAPACITY_BASE + 80, splashRadius: GIGA_HALF_WIDTH }),
+          ])
+        : tiers,
     chainsFrom,
+    ...(gigaFrom > 0 ? { gigaFrom } : {}),
     reengageMul: 1,
     visualId: VIS_SHELL,
     muzzleOffset: 22,
@@ -635,7 +685,19 @@ export const LASER_MEDIUM = laser(
   // Chains from tier 8 - the Chain Laser. See WeaponDef.chainsFrom.
   8,
 );
-export const LASER_LONG = laser('laser-long', 'Long Laser', 473, 92, 25.5, 8.0, 0xff4d4d, 2.7);
+export const LASER_LONG = laser(
+  'laser-long',
+  'Long Laser',
+  473,
+  92,
+  25.5,
+  8.0,
+  0xff4d4d,
+  2.7,
+  0,
+  // Goes giga at tier 8 - see WeaponDef.gigaFrom.
+  8,
+);
 
 /**
  * Index in this array is `WeaponInstance.defId` and is written into every replay. APPEND ONLY.

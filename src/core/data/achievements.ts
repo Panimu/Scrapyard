@@ -52,6 +52,7 @@ export type AchievementId =
   | 'chain-laser'
   | 'gtm-hornet'
   | 'twin-mount'
+  | 'giga-laser'
   | 'radiator-bank'
   | 'phase-cannon'
   | 'shaped-charges'
@@ -223,6 +224,19 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // Tier 8 is reachable by nothing but a chest paying out an ascension - see the Chain Laser's
     // note above.
     cond: { kind: 'tier', id: 'w-cannon', tier: 8 },
+  },
+  {
+    id: 'giga-laser',
+    platformKey: 'scrapyard_giga_laser',
+    name: 'Light the Yard',
+    // The ascension's own icon, the Twin Mount's choice: what makes the Giga worth finding is the
+    // channel of light, and only the tier-8 icon shows it.
+    icon: 'icon_w-giga-laser',
+    description: 'Turned the Long Laser into the Giga Laser.',
+    secret: true,
+    // Tier 8 is reachable by nothing but a chest paying out an ascension - see the Chain Laser's
+    // note above.
+    cond: { kind: 'tier', id: 'w-laser-long', tier: 8 },
   },
   {
     id: 'gtm-hornet',

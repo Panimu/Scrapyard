@@ -89,6 +89,7 @@ import {
   sceneryY,
 } from '../content/scenery.js';
 import { ENEMY_FLAG_DEAD, enemyHandleAt } from '../entity/enemyPool.js';
+import { queryCircleInto } from '../spatial/hashGrid.js';
 import {
   allocProjectile,
   PROJECTILE_FLAG_NOCONTACT,
@@ -300,7 +301,13 @@ export function updateWeapons(world: World, dt: number): void {
           ? want + claimCount
           : MAX_TARGETS
         : want;
-    let n = TARGETING[def.targeting](world, player.x, player.y, stats.rangeSq, ask, targets);
+    // A GIGA BEAM AIMS WHERE THE CROWD IS THICKEST - the Phase Cannon's densest-cluster rule -
+    // because a swath that bills everything it covers is worth exactly what it covers. The swap
+    // is tier-gated off the def like every other ascension mechanic: below tier 8 this is still
+    // the Long Laser picking off the weakest thing in range.
+    const targeting =
+      def.gigaFrom !== undefined && inst.level >= def.gigaFrom ? 'densest' : def.targeting;
+    let n = TARGETING[targeting](world, player.x, player.y, stats.rangeSq, ask, targets);
     if (beam && claimCount > 0) {
       n = dropClaimed(targets, n, claims, claimCount);
       // Back to what this weapon actually fires. `fireBeam` reads only `targets[0]` today, so the
@@ -827,6 +834,32 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
  * `mine` is always inside the table; clamped anyway rather than trusted.
  */
 function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: number; y: number }> {
+  // THE GIGA LASER OWNS THE NOSE. A beam that wide fires down the centreline or the art is a lie,
+  // so when one is held it takes hardpoint 0 unconditionally and every other beam is pushed to
+  // the shoulders - whatever the count-based rule below would have said. Losing the two-laser
+  // shoulder symmetry to it was accepted when the hardpoints became real: the gun is somewhere.
+  let gigaIdx = -1;
+  for (let i = 0; i < world.weaponCount; i++) {
+    const d = world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined;
+    if (d?.gigaFrom !== undefined && world.weapons[i].level >= d.gigaFrom) {
+      gigaIdx = i;
+      break;
+    }
+  }
+  if (gigaIdx >= 0) {
+    if (weaponIdx === gigaIdx) return LASER_HARDPOINTS[0];
+    // The remaining beams take the shoulders in slot order.
+    let shoulder = 0;
+    for (let i = 0; i < world.weaponCount; i++) {
+      if (i === gigaIdx) continue;
+      if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam')
+        continue;
+      if (i === weaponIdx) break;
+      shoulder++;
+    }
+    return LASER_HARDPOINTS[shoulder + 1 < 3 ? shoulder + 1 : 2];
+  }
+
   let held = 0;
   let mine = 0;
   for (let i = 0; i < world.weaponCount; i++) {
@@ -879,6 +912,17 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   } else {
     aim.x = inst.turretX;
     aim.y = inst.turretY;
+  }
+
+  // THE GIGA SWATH takes over from here: no raycast, no occlusion, no single hit - see fireGiga.
+  // The no-target guard still applies (a beam must never pay heat firing at nothing).
+  if (def.gigaFrom !== undefined && inst.level >= def.gigaFrom) {
+    if (target < 0) {
+      coolBeam(world, weaponIdx, inst, dt);
+      return;
+    }
+    fireGiga(world, weaponIdx, inst, stats, x0, y0, aim, dt);
+    return;
   }
 
   const hit = raycastNearestEnemy(world, x0, y0, aim.x, aim.y, stats.range);
@@ -1014,6 +1058,94 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // Step 6. Heat for the tick, which every path that actually FIRED has to pay - see `heatBeam`.
   heatBeam(world, weaponIdx, inst, stats, dt);
 };
+
+/**
+ * THE GIGA LASER'S SWATH - the Long Laser at tier 8. One full-range channel of beam,
+ * `stats.splashRadius` wide either side of the line, billing EVERY live body inside it this tick.
+ *
+ * NOTHING OCCLUDES IT. The scrap hold-fire, the tree that stops a beam, the first-body raycast -
+ * none of them apply: the swath crosses all of it and burns what it covers. That is the whole
+ * ascension, and it is why the width rides `splashRadius` - Shaped Charges (which the ascension
+ * demands) and any chassis blast bonus widen this beam through the same key that widens a barrage.
+ *
+ * ONE VISIBLE RECORD, MANY BILLS. The beam buffer's contract is one enemy per entry (see
+ * applyBeams), and the Chain Laser already pushes one entry per body - so the swath does the
+ * same: entry one carries the full-length geometry and bills nobody (NO_BEAM_TARGET), and every
+ * covered body gets a ZERO-LENGTH entry at its own position carrying its damage. The renderer
+ * draws a zero-length segment as nothing and marks its endpoint as an impact, so each burned body
+ * shows the hit; updateDamage bills them all without knowing the giga exists, which keeps every
+ * kill on the exact path a Cannon kill takes. A crowd past the buffer's capacity loses the
+ * overflow for one tick - the buffer holds 120 and a swath plausibly covers a few dozen, so the
+ * clip is a backstop, not a balance number.
+ *
+ * ONE HASH QUERY, centred on the swath's midpoint with radius half-length + width + the largest
+ * body, then an exact point-to-segment test per candidate. The disc is big but it runs once per
+ * tick per giga (there can only be one), and the exactness lives in the segment test rather than
+ * the query.
+ *
+ * DESTRUCTIBLES GO SERIALLY: the first tree or drum on the centreline takes the tick's damage
+ * (`breakLootIn`), so the swath saws through a forest stem by stem rather than deleting a row
+ * per frame - the same pacing the ordinary beam's burn-through established. Sheep on the line
+ * are taken with it, by the same door.
+ */
+function fireGiga(
+  world: World,
+  weaponIdx: number,
+  inst: WeaponInstance,
+  stats: WeaponStats,
+  x0: number,
+  y0: number,
+  aim: Vec2,
+  dt: number,
+): void {
+  const range = stats.range;
+  const half = stats.splashRadius;
+  const damage = stats.damage * dt;
+
+  pushBeam(world.beams, weaponIdx, NO_BEAM_TARGET, 0, x0, y0, x0 + aim.x * range, y0 + aim.y * range);
+
+  const p = world.enemies;
+  const candidates = world.scratch.candidates;
+  const halfLen = range * 0.5;
+  const found = queryCircleInto(
+    world.spatial,
+    x0 + aim.x * halfLen,
+    y0 + aim.y * halfLen,
+    halfLen + half + MAX_ENEMY_RADIUS,
+    candidates,
+  );
+  for (let i = 0; i < found; i++) {
+    const d = candidates[i];
+    if (d >= p.count) continue; // stale hash index
+    if ((p.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    // Exact distance from the body to the beam's centreline segment.
+    const rx = p.x[d] - x0;
+    const ry = p.y[d] - y0;
+    let t = rx * aim.x + ry * aim.y;
+    if (t < 0) t = 0;
+    else if (t > range) t = range;
+    const cx = rx - aim.x * t;
+    const cy = ry - aim.y * t;
+    const reach = half + p.radius[d];
+    if (cx * cx + cy * cy > reach * reach) continue;
+
+    pushBeam(world.beams, weaponIdx, d, damage, p.x[d], p.y[d], p.x[d], p.y[d]);
+  }
+
+  // The first thing with hit points (or a drum) on the centreline, whichever map this is: trees
+  // burn through at beam pace, drums pop. Same doors the ordinary beam uses.
+  const wood = destructibleRayHit(world.scenery, x0, y0, aim.x, aim.y, range);
+  if (wood >= 0) {
+    breakLootIn(world, sceneryX(world.scenery, wood), sceneryY(world.scenery, wood), 0, damage);
+  }
+  const grazing = sheepRayHit(world, x0, y0, aim.x, aim.y, range);
+  if (grazing >= 0) {
+    breakLootIn(world, world.sheep.x[grazing], world.sheep.y[grazing], 0, damage);
+  }
+
+  heatBeam(world, weaponIdx, inst, stats, dt);
+}
 
 /**
  * The heat a tick of beam costs, and the overheat that ends the burst.

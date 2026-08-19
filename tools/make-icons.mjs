@@ -67,6 +67,7 @@ const LASER_KEY = {
   'w-laser-medium': beamOf('laser-medium'),
   'w-laser-long': beamOf('laser-long'),
   'w-chain-laser': beamOf('laser-medium'),
+  'w-giga-laser': beamOf('laser-long'),
 };
 
 /**
@@ -113,6 +114,8 @@ const ICONS = [
   // TIER 8 AGAIN - the Long Missiles'. Same reason: the thing in your hands is not the thing you
   // were carrying, and the reel has to say so.
   'w-gtm-hornet',
+  // TIER 8 AGAIN - the Long Laser's. Same reason again.
+  'w-giga-laser',
   'p-range',
   'p-damage',
   'p-rate',
@@ -461,6 +464,26 @@ const DRAW = `(id) => {
     g.globalAlpha = 0.85; NODE(CX + 6, CY, 7);
     g.globalAlpha = 0.92; NODE(CX + 30, CY - 26, 8);
     g.globalAlpha = 1;    NODE(CX + 52, CY + 16, 9);
+  }
+
+  if (id === 'w-giga-laser') {
+    // THE LONG LASER'S BEAM AS A CHANNEL. Same emitter block, same red - it has to read as the
+    // same gun - but the beam is a broad band running the whole plate, with bodies INSIDE it as
+    // silhouettes. Ghost outlines are what the Phase Cannon uses for "ignored on the way"; these
+    // are filled dark, because nothing in this beam's path is ignored.
+    bar(22, CY - 13, 18, 26, STEEL);
+    g.fillStyle = KEY;
+    g.globalAlpha = 0.28;
+    g.fillRect(40, CY - 22, 74, 44);
+    g.globalAlpha = 0.6;
+    g.fillRect(40, CY - 14, 74, 28);
+    g.globalAlpha = 1;
+    g.fillRect(40, CY - 6, 74, 12);
+    // The covered bodies, burnt dark inside the light.
+    g.fillStyle = PLATE;
+    for (const [bx, br] of [[62, 6], [84, 8], [104, 5]]) {
+      g.beginPath(); g.arc(bx, CY + (bx % 2 === 0 ? -4 : 5), br, 0, 6.284); g.fill();
+    }
   }
 
   // --- passives ------------------------------------------------------------------------------

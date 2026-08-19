@@ -578,6 +578,20 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   },
   {
     id: 'w-laser-long',
+    /**
+     * THE GIGA LASER - the Long Laser's tier 8, and the fourth ascension. Gated on SHAPED CHARGES
+     * because the swath's width IS a splashRadius (see WeaponDef.gigaFrom): the passive that
+     * widens every blast is the passive that widens this beam, so the requirement is the build
+     * actually feeding the mechanic rather than a themed toll.
+     */
+    ascension: Object.freeze({
+      name: 'Giga Laser',
+      icon: 'w-giga-laser',
+      requires: 'p-blast' as const,
+      requiresTier: 1,
+      description:
+        'The beam becomes a channel of red light. It crosses the whole field through bodies, scrap and trees alike, burning everything it covers, aimed where the crowd is thickest - and anything that widens a blast widens it.',
+    }),
     kind: 'weapon',
     grantsWeapon: 'laser-long',
     name: 'Long Laser',
@@ -932,7 +946,15 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
-    requiresWeaponHeld: Object.freeze(['artillery', 'drone', 'phase-cannon']),
+    // THE LONG LASER IS ON THIS LIST FOR ITS ASCENSION, not for its blast - it has none below
+    // tier 8. The Giga Laser requires this card held (w-laser-long's ascension), and a card that
+    // was never offered to a laser build would make that requirement mean "also carry an
+    // unrelated blast weapon all run". So a Long Laser run may buy Shaped Charges as an
+    // investment: the card does nothing for it until the ascension lands, and then it is the
+    // beam's own width tier. The one loadout this offers a genuinely dead pick to is a Long
+    // Laser run that never finds the ascension - which is the same bet every `requires` passive
+    // purchase makes.
+    requiresWeaponHeld: Object.freeze(['artillery', 'drone', 'phase-cannon', 'laser-long']),
     /**
      * BEHIND TWO THOUSAND BLAST KILLS, ACROSS EVERY RUN - the mechanic's own career condition:
      * a save that has finished two thousand bodies with splash has spent real time under its own
