@@ -69,7 +69,7 @@ const HOMING_SEEK_RADIUS = 240;
 /**
  * THE GTM HORNET'S SPLIT. One warhead becomes two short-rack missiles, `15 deg` apart.
  *
- * WHY THIS IS A FUSE AND NOT A TIMER: the shell already carries a countdown, and "0.4 s after
+ * WHY THIS IS A FUSE AND NOT A TIMER: the shell already carries a countdown, and "0.35 s after
  * launch, unless it hit something first" is exactly what a fuse means. `fireSpread` cuts the
  * Hornet's fuse to SPLIT_SEC and flags the shell; everything else follows from the fuse running
  * out, including the "if not detonated" half - a shell that struck something was reaped long
