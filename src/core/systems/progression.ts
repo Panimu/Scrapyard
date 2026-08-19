@@ -518,12 +518,16 @@ function installWeapon(world: World, id: WeaponId): void {
  * ascension silently did nothing to a loadout that had filled its slots the ordinary way. The
  * hard bound is WEAPON_SLOTS, the size of the array, which is what actually cannot be exceeded.
  *
+ * EXPORTED FOR THE MEASUREMENT RIGS. `npm run t8` installs its weapons directly rather than
+ * through applyChoice, so without calling this it would measure a lone Short Laser wearing the
+ * Hydra's name - the exact class of quiet fiction a balance table must not print.
+ *
  * HOW MANY: one per FREE hardpoint, where free is `LASER_HARDPOINTS.length` less the beams
  * already held - counting the ascended weapon itself, which is why a run holding nothing but the
  * Short Laser ends with five and a run also carrying a Medium and a Long ends with three of them
  * and five beams in total. The mounts are the budget, not the copies.
  */
-function fillLaserMounts(world: World, id: WeaponId, level: number): void {
+export function fillLaserMounts(world: World, id: WeaponId, level: number): void {
   const defId = weaponIndexOf(world, id);
   if (defId < 0) return;
 

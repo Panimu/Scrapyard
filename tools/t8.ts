@@ -62,6 +62,7 @@ import {
   WEAPON_MAX_TIER,
 } from '../src/core/data/upgrades.js';
 import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from '../src/core/data/stats.js';
+import { fillLaserMounts } from '../src/core/systems/progression.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { RUN_LENGTH_SEC } from '../src/core/constants.js';
 import { type World } from '../src/core/types.js';
@@ -124,6 +125,35 @@ function equipAscensions(world: World): void {
     );
   }
   world.weaponCount = ASCENDED.length;
+
+  // THE HYDRA GROWS ITS COPIES HERE, because this rig installs weapons directly rather than
+  // through `applyChoice` - so the one ascension whose effect is an INSTALL would otherwise never
+  // happen, and the table would print a lone Short Laser under the Hydra's name. The same
+  // function the game calls, so the rig cannot measure a different weapon than the one that ships.
+  //
+  // Damage and kills are credited by DEF ID (see creditWeapon), so every copy accumulates into the
+  // one row - which is the question being asked: what is the Hydra worth, not what is one of its
+  // heads worth.
+  for (const a of ASCENDED) {
+    const def = WEAPON_CATALOG[a.weapon];
+    if (def.fillsMountsFrom === undefined) continue;
+    fillLaserMounts(world, def.id, WEAPON_ASCENDED_TIER);
+  }
+
+  // EVERY slot, not just the authored ones: the copies above arrived after the install loop and
+  // would otherwise carry a zeroed stat block - a beam with range 0 finds nothing and never fires.
+  for (let slot = 0; slot < world.weaponCount; slot++) {
+    const inst = world.weapons[slot];
+    resolveWeaponStats(
+      WEAPON_CATALOG[inst.defId],
+      NEUTRAL,
+      inst.level,
+      stacks,
+      UPGRADE_CATALOG,
+      inst.stats,
+    );
+  }
+
   // The Hornet's children. Resolved from a tier-7 short rack with these passives - see the header.
   resolveSplitStats(world, NEUTRAL);
 
