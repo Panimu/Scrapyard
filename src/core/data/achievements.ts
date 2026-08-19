@@ -51,6 +51,7 @@ import { describeUnlockDone, type UnlockCond } from './unlocks.js';
 export type AchievementId =
   | 'chain-laser'
   | 'gtm-hornet'
+  | 'twin-mount'
   | 'radiator-bank'
   | 'phase-cannon'
   | `mech-${HeroId}`
@@ -207,6 +208,19 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
      * needing an event, a flag on the world, or a hook inside the chest.
      */
     cond: { kind: 'tier', id: 'w-laser-medium', tier: 8 },
+  },
+  {
+    id: 'twin-mount',
+    platformKey: 'scrapyard_twin_mount',
+    name: 'Both Barrels',
+    // THE ASCENSION'S OWN ICON, the Hornet's choice rather than the Chain Laser's: what makes
+    // the Twin Mount worth finding is the pair of shells, and only the tier-8 icon shows two.
+    icon: 'icon_w-twin-mount',
+    description: 'Turned the Cannon into the Twin Mount.',
+    secret: true,
+    // Tier 8 is reachable by nothing but a chest paying out an ascension - see the Chain Laser's
+    // note above.
+    cond: { kind: 'tier', id: 'w-cannon', tier: 8 },
   },
   {
     id: 'gtm-hornet',

@@ -45,6 +45,22 @@ describe('achievements', () => {
     expect(meetsUnlock(def.cond, at(WEAPON_ASCENDED_TIER), IDS)).toBe(true);
   });
 
+  it('the Twin Mount achievement fires at tier 8 and not at tier 7', () => {
+    const def = ACHIEVEMENT_CATALOG.find((a) => a.id === 'twin-mount');
+    expect(def).toBeDefined();
+    if (def === undefined) return;
+    expect(def.secret).toBe(true);
+
+    const at = (tier: number) => {
+      const tiers = new Uint8Array(UPGRADE_CATALOG.length);
+      tiers[IDS.indexOf('w-cannon')] = tier;
+      return run({ tiers });
+    };
+    // Tier 7 is a finished Cannon and reachable from the deck alone; the trophy is for ascending.
+    expect(meetsUnlock(def.cond, at(7), IDS)).toBe(false);
+    expect(meetsUnlock(def.cond, at(WEAPON_ASCENDED_TIER), IDS)).toBe(true);
+  });
+
   it('nothing is earned by a run that did nothing', () => {
     const fresh = run({ tiers: new Uint8Array(UPGRADE_CATALOG.length) });
     expect(ACHIEVEMENT_CATALOG.filter((a) => meetsUnlock(a.cond, fresh, IDS))).toEqual([]);

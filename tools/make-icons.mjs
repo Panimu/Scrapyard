@@ -99,6 +99,10 @@ const ICONS = [
   'w-artillery',
   'w-drone',
   'w-phase-cannon',
+  // TIER 8, the Cannon's. Not a card in the deck - see the two other tier-8 icons above for why
+  // an ascension still needs a picture of its own: the reel has to say the thing in your hands
+  // is not the thing you were carrying.
+  'w-twin-mount',
   'w-laser-short',
   'w-laser-medium',
   'w-laser-long',
@@ -189,6 +193,24 @@ const DRAW = `(id) => {
     g.closePath(); g.fill();
     bar(CX - 19, 74, 38, 12, STEEL);
     bar(CX - 19, 88, 38, 8, KEY_DIM);
+  }
+
+  if (id === 'w-twin-mount') {
+    // THE CANNON'S SHELL, TWICE - the same silhouette the player has stared at all the way up the
+    // ladder, side by side and slightly slimmer so the pair fits the plate. Two of the thing you
+    // know is the whole sentence: the ascension is the second barrel, nothing else changed.
+    for (const sx of [-14, 14]) {
+      const x = CX + sx;
+      g.fillStyle = KEY;
+      g.beginPath();
+      g.moveTo(x, 32);
+      g.quadraticCurveTo(x + 11, 50, x + 11, 72);
+      g.lineTo(x - 11, 72);
+      g.quadraticCurveTo(x - 11, 50, x, 32);
+      g.closePath(); g.fill();
+      bar(x - 12, 72, 24, 10, STEEL);
+      bar(x - 12, 84, 24, 7, KEY_DIM);
+    }
   }
 
   // ONE MISSILE, drawn centred on (x, cy). Shared by the two racks and by the Hornet, so a

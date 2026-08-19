@@ -66,6 +66,7 @@ import {
   VIS_PLASMA,
   VIS_SLUG,
   VIS_STRIKE_MARKER,
+  WEAPON_ASCENDED_TIER,
   type WeaponId,
   type WeaponInstance,
   type World,
@@ -1660,6 +1661,14 @@ export class GameRenderer {
       if (inst === undefined) {
         sprite.visible = false;
         continue;
+      }
+      // THE TWIN MOUNT WEARS ITS OWN BARRELS: the Cannon's sprite is the single tube for tiers
+      // 1-7 and the original twin art from the ascension on. Reassigned per frame - a texture
+      // swap to the same texture is a no-op in Pixi, and the alternative is one more piece of
+      // state to forget when a chest lands mid-run.
+      if (TURRET_ART[i].weapon === 'cannon') {
+        sprite.texture =
+          inst.level >= WEAPON_ASCENDED_TIER ? this.tex.turretTwin : this.tex.turret;
       }
       // RECOIL: the mount slides back along its own axis and returns. The shell is long gone by
       // then - this is pure feedback, and each mount kicks only for its own shots.

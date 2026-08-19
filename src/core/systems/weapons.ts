@@ -115,6 +115,7 @@ import {
   BEHAVIOUR_ID,
   LASER_HARDPOINTS,
   SPLIT_SEC,
+  TWIN_HALF_GAP,
   type FirePattern,
   type FirePatternId,
   type WeaponDef,
@@ -631,8 +632,80 @@ function raycastNearestEnemy(
  * the turret by construction (updateWeapons gates on exactly that), so it visibly leaves the
  * barrel; secondary shells are a flak battery and are expected to fan out.
  */
+/**
+ * THE TWIN MOUNT'S VOLLEY - the Cannon from tier 8 (WeaponDef.twinFrom). Two full shells,
+ * parallel, straddling the aim line by TWIN_HALF_GAP each side.
+ *
+ * AIMED AS THE MIDPOINT, NO CONVERGENCE: both shells carry the exact bearing of the chosen
+ * target, so the pair brackets the aim point and each shell hits whatever ITS line meets - a
+ * centred bruiser takes both, a runt just off the line catches one, and neither shell is a
+ * re-engage at a discount. `reengageMul` never applies here: the second shell is not a surplus
+ * round recommitted to a taken target, it is the other barrel.
+ *
+ * NO TRAIT HOOK, like firePhase and unlike the battery below: the hook's contract is "rotate or
+ * scale THE shot", and a volley whose two rounds must stay parallel to mean anything has no
+ * single direction a hook could honestly bend.
+ */
+function fireTwin(
+  world: World,
+  weaponIdx: number,
+  inst: WeaponInstance,
+  targets: Readonly<Int32Array>,
+  targetCount: number,
+): void {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const aim = world.scratch.v2;
+
+  const dense = targetCount > 0 ? targets[0] : -1;
+  aimInto(world, dense, inst.turretX, inst.turretY, aim);
+  // Perpendicular to the aim, the pair's own axis. Unit-length because `aim` is.
+  const perpX = -aim.y;
+  const perpY = aim.x;
+
+  for (const side of [-1, 1]) {
+    const spawnId = ++world.stats.shotsFired;
+    const sx = world.player.x + aim.x * def.muzzleOffset + perpX * TWIN_HALF_GAP * side;
+    const sy = world.player.y + aim.y * def.muzzleOffset + perpY * TWIN_HALF_GAP * side;
+    const handle = allocProjectile(
+      projectiles,
+      sx,
+      sy,
+      aim.x * stats.projectileSpeed,
+      aim.y * stats.projectileSpeed,
+      stats.projectileLifetime,
+      weaponIdx,
+      BEHAVIOUR_ID[def.behaviour],
+      spawnId,
+    );
+    if (handle === NULL_HANDLE) break;
+
+    const d = projectiles.count - 1;
+    projectiles.damage[d] = stats.damage;
+    projectiles.knockback[d] = stats.knockback;
+    projectiles.splashRadius[d] = stats.splashRadius;
+    projectiles.splashFrac[d] = stats.splashFrac;
+    projectiles.radius[d] = def.shellRadius;
+    projectiles.pierceLeft[d] = stats.pierce;
+    projectiles.visualId[d] = def.visualId;
+
+    pushEvent(world.events, EV_WEAPON_FIRED, world.tick, sx, sy, aim.x, aim.y, weaponIdx);
+  }
+}
+
 export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
   const def = world.weaponCatalog[inst.defId] as WeaponDef;
+
+  // THE TWIN MOUNT - the one battery whose volley changes shape at an ascension tier, read the
+  // same way fireSpread reads `splitsFrom`: off the def and the level, never off the word
+  // "ascension".
+  const twinFrom = def.twinFrom ?? 0;
+  if (twinFrom > 0 && inst.level >= twinFrom) {
+    fireTwin(world, weaponIdx, inst, targets, targetCount);
+    return;
+  }
+
   const stats = inst.stats;
   const projectiles = world.projectiles;
   const trait = traitOf(world);

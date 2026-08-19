@@ -439,14 +439,17 @@ ${PREAMBLE}
  * makes a three-gun stack read as three mounts rather than as one smeared sprite - each layer's
  * muzzle clears the one above it.
  *
- *   turret        the Cannon. Twin barrels to x=76 - a single bar reads as a tank gun, which is
- *                 the impression this whole file exists to undo.
+ *   turret        the Cannon, tiers 1-7. ONE barrel to x=76 - because the second barrel is the
+ *                 tier 8. The mount that fires one heavy shell at a time should look like it.
+ *   turret_twin   the TWIN MOUNT - the Cannon's ascension, and the original twin-barrel art
+ *                 retired from the base gun and kept for the tier that earns it: the pair of
+ *                 barrels IS the mechanic (two parallel shells), so the art is the announcement.
  *   turret_phase  the Phase Cannon. One fat tube to x=62 with a plasma emitter at the muzzle -
  *                 the only mount with a light on it, in the bolt's own blue.
  *   turret_mg     the Machine Gun. A three-barrel gatling snout to x=48, all steel: volume of
  *                 fire, no reach.
  *
- * All three share the 80x44 canvas and the mount ring at x=16, so the renderer's one anchor and
+ * All four share the 80x44 canvas and the mount ring at x=16, so the renderer's one anchor and
  * one TURRET_SCALE serve every layer.
  */
 const TURRET_W = 80;
@@ -473,6 +476,22 @@ const DRAW_TURRET = /* js */ `
   };
 
   if (kind === 'cannon') {
+    // ONE barrel now: heavier than either of the twin's two, alone on the centreline, with a
+    // muzzle brake. The tier-8 art (below) is what this used to be.
+    g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 3;
+    g.beginPath(); g.arc(16, CY, 13, 0, Math.PI * 2); g.fill(); g.stroke();
+    poly([[14, CY - 11], [44, CY - 12], [44, CY + 12], [14, CY + 11]], METAL, DARK, 3);
+    poly([[18, CY - 8], [38, CY - 8], [38, CY - 3], [18, CY - 3]], METAL_HI);
+
+    poly([[42, CY - 5], [70, CY - 4.5], [70, CY + 4.5], [42, CY + 5]], METAL, DARK, 2.5);
+    poly([[44, CY - 3], [66, CY - 2.5], [66, CY - 0.5], [44, CY - 1]], METAL_HI);
+    // The brake: a wider block at the muzzle with a dark vent seam each side of the bore.
+    poly([[68, CY - 6.5], [76, CY - 6.5], [76, CY + 6.5], [68, CY + 6.5]], METAL, DARK, 2.5);
+    poly([[70, CY - 5], [74, CY - 5], [74, CY - 2.5], [70, CY - 2.5]], DARK);
+    poly([[70, CY + 2.5], [74, CY + 2.5], [74, CY + 5], [70, CY + 5]], DARK);
+  } else if (kind === 'twin') {
+    // THE ORIGINAL CANNON ART, verbatim - retired from tiers 1-7 and kept for the Twin Mount,
+    // whose whole mechanic is that the second barrel comes back.
     g.fillStyle = METAL; g.strokeStyle = DARK; g.lineWidth = 3;
     g.beginPath(); g.arc(16, CY, 13, 0, Math.PI * 2); g.fill(); g.stroke();
     poly([[14, CY - 11], [44, CY - 12], [44, CY + 12], [14, CY + 11]], METAL, DARK, 3);
@@ -574,11 +593,12 @@ async function main() {
     console.log(`  ${hero.key.padEnd(16)} body + ${WALK_FRAMES} frames   ${(n / 1024).toFixed(1)} kB`);
   }
   await write('turret', await page.evaluate(`(${DRAW_TURRET})('cannon')`));
+  await write('turret_twin', await page.evaluate(`(${DRAW_TURRET})('twin')`));
   await write('turret_phase', await page.evaluate(`(${DRAW_TURRET})('phase')`));
   await write('turret_mg', await page.evaluate(`(${DRAW_TURRET})('mg')`));
 
   await browser.close();
-  const count = HEROES.length * (1 + WALK_FRAMES) + 3;
+  const count = HEROES.length * (1 + WALK_FRAMES) + 4;
   console.log(`\n${count} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 

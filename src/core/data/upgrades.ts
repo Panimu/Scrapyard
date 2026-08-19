@@ -350,6 +350,26 @@ function rampEffects(
 export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   {
     id: 'w-cannon',
+    /**
+     * THE TWIN MOUNT - the Cannon's tier 8, and the third ascension.
+     *
+     * It asks for ORDNANCE HELD AT ANY TIER, the same one-rung demand the Chain Laser makes of
+     * Targeting Optics, and for the same kind of reason: the requirement names the build. The
+     * Cannon's whole identity is one heavy shell hit hard; the build that leaned into hitting
+     * harder is the one whose gun grows the second barrel.
+     *
+     * WHAT TIER 8 DOES lives in the weapon (WeaponDef.twinFrom, TWIN_HALF_GAP): the volley
+     * becomes two full parallel shells straddling the aim line, each hitting whatever its own
+     * line meets. Aimed as the midpoint, never converging.
+     */
+    ascension: Object.freeze({
+      name: 'Twin Mount',
+      icon: 'w-twin-mount',
+      requires: 'p-damage' as const,
+      requiresTier: 1,
+      description:
+        'The second barrel comes back. Every shot is two shells side by side, aimed together and landing apart - each one hits whatever its own line meets.',
+    }),
     kind: 'weapon',
     grantsWeapon: 'cannon',
     name: 'Cannon',

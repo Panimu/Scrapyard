@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-19T06:30Z',
+    title: 'TIER 8: THE CANNON BECOMES THE TWIN MOUNT',
+    notes: [
+      'The third ascension. The second barrel comes back, and every shot is two full shells side by side — aimed together as their midpoint, flying parallel, each hitting whatever its own line meets. A wide body centred on the line takes both; a runt just off it catches one, so where you stand still decides what the pair is worth.',
+      "The Cannon's drawn turret is a single barrel now, tiers one through seven — the twin-barrel mount you know is the ascension's, worn from the moment it lands. How a tier 8 arrives is the same as it has always been, and finding this one's build is the game.",
+    ],
+  },
+  {
     at: '2026-08-19T05:53Z',
     title: 'TURRETS YOU CAN BELIEVE',
     notes: [

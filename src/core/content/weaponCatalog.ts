@@ -179,6 +179,23 @@ export interface WeaponDef {
    * volley; nothing has to know the word "ascension".
    */
   readonly splitsFrom?: number;
+  /**
+   * Tier at which this weapon fires a TWIN VOLLEY - two parallel shells straddling the aim line -
+   * instead of its ordinary battery, or absent for a weapon that never does. The Twin Mount (the
+   * Cannon's tier 8) and nothing else.
+   *
+   * A TIER RATHER THAN A BOOLEAN, on the WeaponDef, for exactly the reason `chainsFrom` and
+   * `splitsFrom` are: an ascension is the SAME WeaponDef at level 8, so the thing that changes
+   * must be expressible as a function of the level. `fireBattery` reads it once per volley;
+   * nothing has to know the word "ascension".
+   *
+   * THE PAIR IS AIMED AS ITS MIDPOINT AND NEVER CONVERGES. Both shells fly the target's exact
+   * bearing, offset TWIN_HALF_GAP either side of it, each a full-damage shell with its own pierce
+   * and its own hit record - so a wide body centred on the line takes both, and a runt slightly
+   * off it catches exactly the near one. No convergence is the design: converging shells would
+   * collapse back into one big shell with extra steps.
+   */
+  readonly twinFrom?: number;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -314,6 +331,18 @@ const CANNON_COOLDOWN = 1.263;
 const CANNON_RATE_TIER_FRAC = 0.15;
 const CANNON_RATE_TIER = -CANNON_COOLDOWN * CANNON_RATE_TIER_FRAC;
 
+/**
+ * Half the distance between the Twin Mount's pair, perpendicular to the aim - each shell flies
+ * TWIN_HALF_GAP off the line, 16 u apart in total.
+ *
+ * Sized so a body CENTRED on the aim line takes both shells whatever its class: the smallest
+ * enemy (runt, radius 13) plus the shell's own 9 still comfortably covers an 8 u offset. What the
+ * gap actually buys is the miss the midpoint rule allows - a body far enough OFF the line catches
+ * one shell instead of two, so aiming the pair well is worth something and the second barrel is
+ * not a flat x2.
+ */
+export const TWIN_HALF_GAP = 8;
+
 export const CANNON: WeaponDef = Object.freeze({
   id: 'cannon',
   name: 'Cannon',
@@ -367,7 +396,14 @@ export const CANNON: WeaponDef = Object.freeze({
     { range: 62 }, // T5  309 -> 371
     { cooldown: CANNON_RATE_TIER }, // T6  1.0736 -> 0.8841 s  (0.70x base, as always)
     { pierce: 1 }, // T7  punches through one body
+    // T8 - THE TWIN MOUNT, and it carries no stats at all, exactly like the Chain Laser's rung:
+    // the tier is bought with the MECHANIC it switches on (see `twinFrom` below - the volley
+    // becomes two full parallel shells), and paying a stat rung on top would make the capstone
+    // read as a bonus stapled to a stat card.
+    {}, // T8
   ]),
+  // The second barrel comes back at tier 8 - see WeaponDef.twinFrom and TWIN_HALF_GAP.
+  twinFrom: WEAPON_ASCENDED_TIER,
   reengageMul: 0.55,
   visualId: VIS_SHELL,
   muzzleOffset: 30, // barrel tip, not chassis centre
