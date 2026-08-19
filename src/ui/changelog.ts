@@ -48,6 +48,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T10:47Z',
+    title: 'A FIFTH ASCENSION EXISTS',
+    notes: [
+      'One more of the weapons you know can become something else \u2014 and this one does not change the gun at all. What it takes and what it becomes is yours to find; the Scrapopedia counts one more silhouette.',
+      'Your lasers now have somewhere to go: the chassis carries five mounts rather than three, with a pair added at the back. Nothing fires from them yet unless you find the reason.',
+    ],
+  },
+  {
     at: '2026-08-19T10:38Z',
     title: 'VERMILION ROLLS OUT, AND IT BRINGS A FOURTH SHELL',
     notes: [

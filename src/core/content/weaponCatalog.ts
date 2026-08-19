@@ -226,6 +226,32 @@ export interface WeaponDef {
    */
   readonly gigaFrom?: number;
   /**
+   * Tier at which this weapon POPULATES EVERY FREE LASER HARDPOINT with copies of itself - the
+   * Short Laser's tier 8, the Hydra - or absent for a weapon that never does.
+   *
+   * THE ONLY ASCENSION THAT CHANGES THE LOADOUT RATHER THAN THE WEAPON. Every other one rewrites
+   * what a gun does: the beam jumps, the shell doubles, the warhead splits, the beam widens. This
+   * one leaves the Short Laser exactly as it was and gives you four more of it - so the thing that
+   * got better is the MECH, and the emitters that were bare mounting points are now guns.
+   *
+   * COPIES ARE REAL WEAPONS IN REAL SLOTS, not one weapon drawn five times. Each takes its own
+   * hardpoint (laserHardpoint assigns by slot), each picks its own target under the beam-claim
+   * rule that stops two lasers burning one body, and each carries its own heat. Five short lasers
+   * are five duty cycles running out of step, which is the whole texture of the thing: the Short
+   * Laser has the best uptime in the game and five of them are very nearly continuous.
+   *
+   * AT THE SAME TIER AS THE ORIGINAL, which is tier 8 and therefore terminal - no card can offer
+   * a ninth. So "they share the original's stats" needs no upkeep: they are resolved from the same
+   * def at the same level with the same passives, every time anything re-resolves.
+   *
+   * IT IS A TIER RATHER THAN A BOOLEAN for the reason the other four ascension fields are: an
+   * ascension is the SAME WeaponDef at level 8, so what changes has to be a function of the level.
+   * Unlike the others this one is read at the moment the tier LANDS (progression's applyChoice)
+   * rather than every time the weapon fires - filling the mounts is an event, not a behaviour -
+   * and it is also read as a question ("is the Hydra held?") by the deck and the HUD.
+   */
+  readonly fillsMountsFrom?: number;
+  /**
    * WEAPONS THAT CANNOT SHARE THE CHASSIS WITH THIS ONE. Absent on everything that fits beside
    * anything, which is every gun but the two that share a mount.
    *
@@ -717,6 +743,8 @@ function laser(
   chainsFrom = 0,
   /** Tier at which this beam goes giga, or 0 for a beam that never does. */
   gigaFrom = 0,
+  /** Tier at which this beam fills every free mount with copies of itself, or 0 for never. */
+  fillsMountsFrom = 0,
 ): WeaponDef {
   const tiers = laserTiers(damagePerSec, heatPerSec, heatDispersion);
   return Object.freeze({
@@ -787,6 +815,7 @@ function laser(
         : tiers,
     chainsFrom,
     ...(gigaFrom > 0 ? { gigaFrom } : {}),
+    ...(fillsMountsFrom > 0 ? { fillsMountsFrom } : {}),
     reengageMul: 1,
     visualId: VIS_SHELL,
     muzzleOffset: 22,
@@ -819,7 +848,20 @@ function laser(
 // arithmetic ceiling at tier 7 and gained almost nothing across six tiers, because reach, not
 // damage, was what it was short of. Range tiers do not exist on the laser ladder, so the base is
 // the only place this can be bought. `npm run dps` is where to check whether it was enough.
-export const LASER_SHORT = laser('laser-short', 'Short Laser', 165, 46, 7.5, 8.5, 0x3be86b, 1.6);
+export const LASER_SHORT = laser(
+  'laser-short',
+  'Short Laser',
+  165,
+  46,
+  7.5,
+  8.5,
+  0x3be86b,
+  1.6,
+  0,
+  0,
+  // Fills every free laser mount at tier 8 - the Hydra. See WeaponDef.fillsMountsFrom.
+  8,
+);
 export const LASER_MEDIUM = laser(
   'laser-medium',
   'Medium Laser',

@@ -114,6 +114,7 @@ import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
 import type { WeaponDef, WeaponId } from '../content/weaponCatalog.js';
+import { LASER_HARDPOINTS } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from '../data/stats.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { freeDrone } from '../entity/dronePool.js';
@@ -373,6 +374,21 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
     }
   }
 
+  // AN ASCENSION THAT FILLS THE MOUNTS. Only the Hydra does, and only on the tick it lands - the
+  // guard is the TIER, exactly like the consume above, so it cannot fire on the way up the ladder
+  // or a second time.
+  //
+  // AFTER the install and the consume, BEFORE the resolve below: the copies have to exist and be
+  // inside `weaponCount` when the loop that rebuilds every WeaponStats runs, or they would spend
+  // their first tick with a zeroed stat block - range 0, and a beam with range 0 is a beam that
+  // finds nothing and quietly never fires.
+  if (def.grantsWeapon !== undefined) {
+    const wdef = world.weaponCatalog[weaponIndexOf(world, def.grantsWeapon)] as WeaponDef | undefined;
+    if (wdef?.fillsMountsFrom !== undefined && lu.stacks[idx] >= wdef.fillsMountsFrom) {
+      fillLaserMounts(world, def.grantsWeapon, lu.stacks[idx]);
+    }
+  }
+
   const player = world.player;
   const maxHpBefore = player.stats.maxHp;
   const shieldCapBefore = player.stats.shieldLayers;
@@ -492,6 +508,54 @@ function installWeapon(world: World, id: WeaponId): void {
 }
 
 /**
+ * THE HYDRA'S DOING: puts a copy of `id` at `level` into every laser hardpoint that has nobody on
+ * it. See WeaponDef.fillsMountsFrom.
+ *
+ * IT DELIBERATELY BYPASSES BOTH OF `installWeapon`'S GUARDS, and each refusal is worth naming.
+ * `ownsWeapon` would refuse outright - the whole point is a SECOND copy of a gun already held -
+ * and MAX_WEAPONS is the DECK's cap on what a level-up may hand out, which this is not: it is a
+ * capstone the run has already earned, and letting the five-slot rule veto it would mean the
+ * ascension silently did nothing to a loadout that had filled its slots the ordinary way. The
+ * hard bound is WEAPON_SLOTS, the size of the array, which is what actually cannot be exceeded.
+ *
+ * HOW MANY: one per FREE hardpoint, where free is `LASER_HARDPOINTS.length` less the beams
+ * already held - counting the ascended weapon itself, which is why a run holding nothing but the
+ * Short Laser ends with five and a run also carrying a Medium and a Long ends with three of them
+ * and five beams in total. The mounts are the budget, not the copies.
+ */
+function fillLaserMounts(world: World, id: WeaponId, level: number): void {
+  const defId = weaponIndexOf(world, id);
+  if (defId < 0) return;
+
+  let beams = 0;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind === 'beam') {
+      beams++;
+    }
+  }
+
+  for (let free = LASER_HARDPOINTS.length - beams; free > 0; free--) {
+    if (world.weaponCount >= world.weapons.length) return;
+    const inst = world.weapons[world.weaponCount];
+    if (inst === undefined) return;
+    // Every field written, for the reason installWeapon writes every field: a slot's state must
+    // be a function of what fills it, never of what used to be there.
+    inst.defId = defId;
+    inst.level = level;
+    inst.cooldownLeft = 0;
+    inst.targetDense = -1;
+    inst.turretX = 1;
+    inst.turretY = 0;
+    inst.heat = 0;
+    inst.overheated = false;
+    inst.ammo = -1;
+    inst.reloadLeft = 0;
+    inst.scratch.fill(0);
+    world.weaponCount++;
+  }
+}
+
+/**
  * Sets the held instance of `id` to `level`, which is the stack count of its card.
  *
  * The instance is found by defId rather than by slot, because the slot a gun landed in is a
@@ -506,13 +570,34 @@ function installWeapon(world: World, id: WeaponId): void {
 function setWeaponLevel(world: World, id: WeaponId, level: number): boolean {
   const defId = weaponIndexOf(world, id);
   if (defId < 0) return false;
+  // EVERY instance, not the first. One weapon id can occupy several slots since the Hydra - see
+  // fillLaserMounts - and a card's tier is the tier of the WEAPON, so levelling one copy and
+  // leaving its twins behind would be the same gun at two tiers on one chassis. Unreachable today
+  // (the Hydra's copies land at 8, which no card can raise) and cheap to be right about anyway.
+  let found = false;
   for (let i = 0; i < world.weaponCount; i++) {
     const inst = world.weapons[i];
     if (inst.defId !== defId) continue;
     inst.level = level;
-    return true;
+    found = true;
   }
-  return false;
+  return found;
+}
+
+/** Beams in the loadout right now. One per laser hardpoint is the ceiling - see isOfferable. */
+function beamsHeld(world: World): number {
+  let n = 0;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind === 'beam') n++;
+  }
+  return n;
+}
+
+/** Does this card put a BEAM on the chassis? False for a passive and for every shell weapon. */
+function grantsBeam(world: World, def: { readonly grantsWeapon?: WeaponId }): boolean {
+  if (def.grantsWeapon === undefined) return false;
+  const idx = weaponIndexOf(world, def.grantsWeapon);
+  return idx >= 0 && (world.weaponCatalog[idx] as WeaponDef | undefined)?.kind === 'beam';
 }
 
 /** Distinct passives held. One linear pass over the catalog, once per card generated. */
@@ -647,6 +732,18 @@ function isOfferable(
   // The only way to hold a locked card is a chassis that opens with it, and a run where the gun you
   // started with could never be levelled would be a worse bug than the lock is a feature.
   if (stacks === 0 && world.cardUnlocked[index] === 0) return false;
+
+  // NO MOUNT, NO LASER. A beam has to leave the chassis from somewhere - LASER_HARDPOINTS is a
+  // real list of real points and `laserHardpoint` hands each beam its own - so a run holding as
+  // many beams as there are mounts has nowhere to put another one, and the deck stops offering
+  // them. Before the Hydra this was unreachable (three beam weapons, five mounts) and it is the
+  // Hydra that makes it bite: filling the mounts is exactly what that ascension does.
+  //
+  // THE UNLOCK ONLY. Tiers of a beam already held keep coming, and so does its ascension - a gun
+  // on the chassis is not competing for a mount it is already standing on.
+  if (grantsBeam(world, def) && stacks === 0 && beamsHeld(world) >= LASER_HARDPOINTS.length) {
+    return false;
+  }
 
   // TWO GUNS THAT CANNOT SHARE THE CHASSIS. See WeaponDef.excludes - today the Flak Cannon and
   // the Machine Gun, which are one rotary mount and one sprite between them.

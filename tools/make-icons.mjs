@@ -67,6 +67,7 @@ const LASER_KEY = {
   'w-laser-medium': beamOf('laser-medium'),
   'w-laser-long': beamOf('laser-long'),
   'w-chain-laser': beamOf('laser-medium'),
+  'w-hydra': beamOf('laser-short'),
   'w-giga-laser': beamOf('laser-long'),
 };
 
@@ -117,6 +118,9 @@ const ICONS = [
   'w-gtm-hornet',
   // TIER 8 AGAIN - the Long Laser's. Same reason again.
   'w-giga-laser',
+  // TIER 8 AGAIN - the Short Laser's, and the odd one out: it is not a changed beam but MORE
+  // beams, so its glyph is a count rather than a shape.
+  'w-hydra',
   'p-range',
   'p-damage',
   'p-rate',
@@ -509,6 +513,29 @@ const DRAW = `(id) => {
     g.fillStyle = PLATE;
     for (const [bx, br] of [[62, 6], [84, 8], [104, 5]]) {
       g.beginPath(); g.arc(bx, CY + (bx % 2 === 0 ? -4 : 5), br, 0, 6.284); g.fill();
+    }
+  }
+
+  if (id === 'w-hydra') {
+    // FIVE STUBS, FANNED. The Short Laser's own icon is one short bar from one muzzle; this is
+    // that bar five times over, from five mounts, on the arc the hardpoints actually sit on. The
+    // glyph has to say MORE OF THEM rather than BIGGER - every other tier-8 icon in the reel is a
+    // changed shape, and this ascension changes the count instead.
+    const MOUNTS = [[-0.62, 0.80], [-0.31, 0.92], [0, 1], [0.31, 0.92], [0.62, 0.80]];
+    for (let i = 0; i < MOUNTS.length; i++) {
+      const [ang, len] = MOUNTS[i];
+      const ox = 34 + Math.cos(ang) * 10;
+      const oy = CY + Math.sin(ang) * 26;
+      const ex = ox + Math.cos(ang) * 62 * len;
+      const ey = oy + Math.sin(ang) * 62 * len;
+      // The emitter block, then its beam. Middle brightest so the fan reads from the centre out.
+      bar(ox - 5, oy - 4, 10, 8, STEEL);
+      g.strokeStyle = KEY;
+      g.globalAlpha = i === 2 ? 1 : 0.78;
+      g.lineWidth = i === 2 ? 7 : 5.5;
+      g.lineCap = 'round';
+      g.beginPath(); g.moveTo(ox + 6, oy); g.lineTo(ex, ey); g.stroke();
+      g.globalAlpha = 1;
     }
   }
 

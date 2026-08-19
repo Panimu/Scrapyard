@@ -589,6 +589,24 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
   },
   {
     id: 'w-laser-short',
+    /**
+     * THE HYDRA - the Short Laser's tier 8, and the only ascension that changes the LOADOUT rather
+     * than the weapon. Every free laser mount grows a Short Laser at the same tier; see
+     * WeaponDef.fillsMountsFrom.
+     *
+     * GATED ON SERVO DRIVE because the Short Laser's problem has always been REACH - 165 units,
+     * the shortest in the game, so it only does anything from inside the crowd. The passive that
+     * buys the mech speed is the passive that lets you be inside the crowd and leave again, and a
+     * run that took it is a run already playing the way five short lasers demand.
+     */
+    ascension: Object.freeze({
+      name: 'Hydra',
+      icon: 'w-hydra',
+      requires: 'p-speed' as const,
+      requiresTier: 1,
+      description:
+        'Every empty laser mount on the chassis grows a Short Laser of its own, at the tier this one reached. They pick their own targets and run their own heat - and with the mounts full, no further beam can be fitted.',
+    }),
     kind: 'weapon',
     grantsWeapon: 'laser-short',
     name: 'Short Laser',

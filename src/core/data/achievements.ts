@@ -53,6 +53,7 @@ export type AchievementId =
   | 'gtm-hornet'
   | 'twin-mount'
   | 'giga-laser'
+  | 'hydra'
   | 'radiator-bank'
   | 'phase-cannon'
   | 'shaped-charges'
@@ -240,6 +241,17 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // BY REFERENCE, off the card itself - see cardUnlock. The card and the trophy cannot disagree
     // about what nine thousand means, and neither can be retuned without the other following.
     cond: FLAK_UNLOCK,
+  },
+  {
+    id: 'hydra',
+    platformKey: 'scrapyard_hydra',
+    name: 'Many Heads',
+    icon: 'icon_w-hydra',
+    description: 'Grew the Short Laser into the Hydra.',
+    secret: true,
+    // Tier 8 is reachable by nothing but a chest paying out an ascension - see the Chain Laser's
+    // note above.
+    cond: { kind: 'tier', id: 'w-laser-short', tier: 8 },
   },
   {
     id: 'giga-laser',

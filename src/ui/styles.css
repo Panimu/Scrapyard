@@ -324,6 +324,30 @@ body {
 .hud__heat {
   display: flex;
   gap: 8px;
+  /* WRAPPING IS WHAT LETS THE HYDRA HAVE ITS OWN LINE. The row is one line for every ordinary
+     loadout - five chips fit - and only splits when something forces a break into it. */
+  flex-wrap: wrap;
+}
+
+/* THE BREAK. A zero-height, full-width flex item: everything ordered after it is pushed onto the
+   next line. It is a SIBLING WITH AN `order` rather than DOM inserted at the right index, because
+   the chips are built once at WEAPON_SLOTS and only ever shown/hidden - moving nodes around to
+   split a row would put exactly the layout thrash into the level-up transition that the build-once
+   design exists to avoid. See Hud.updateHeat for the ordering. */
+.heat__break {
+  /* 500 sits between the ordinary chips' slot-order band (0..11) and the ascended band (1000+).
+     See Hud.updateHeat. */
+  order: 500;
+  width: 100%;
+  height: 0;
+  margin: 0;
+}
+
+.heat__break[hidden] {
+  /* `[hidden]` is the weakest rule in the UA sheet and loses to any class that sets `display`.
+     This element sets `width`, not `display`, so it would still take a flex line while hidden.
+     See CLAUDE.md - every element whose `hidden` is toggled needs its own rule. */
+  display: none;
 }
 
 /* The row is hidden outright while no weapon is held at all - which is Plum's opening minutes -

@@ -166,6 +166,8 @@ export class Hud {
   private readonly hurt: HTMLDivElement;
   private readonly debug: HTMLPreElement;
 
+  /** Full-width spacer that pushes the Hydra's lasers onto their own line. See updateHeat. */
+  private readonly heatBreak!: HTMLElement;
   /** Loadout chips: built once at WEAPON_SLOTS, shown/hidden as weapons are acquired. */
   private readonly heatRow: HTMLDivElement;
   private readonly heatChips: HTMLDivElement[] = [];
@@ -269,6 +271,14 @@ export class Hud {
       this.heatNames.push(query<HTMLElement>(chip, '[data-name]'));
       this.heatStatus.push(query<HTMLSpanElement>(chip, '[data-status]'));
     }
+    // THE HYDRA'S LINE BREAK, built once with the chips and hidden until something needs it. See
+    // `.heat__break` in styles.css for why this is an ordered sibling rather than DOM moved into
+    // position, and updateHeat for when it is shown.
+    const brk = document.createElement('div');
+    brk.className = 'heat__break';
+    brk.hidden = true;
+    heatRow.appendChild(brk);
+    this.heatBreak = brk;
 
     this.timer.addEventListener('click', cb.onToggleDebug);
   }
@@ -379,6 +389,27 @@ export class Hud {
   private updateHeat(world: World): void {
     let n = 0;
 
+    // THE HYDRA GETS ITS OWN LINE. Once the Short Laser has ascended the loadout holds several of
+    // it, and a single row of chips stops being a loadout and becomes a wall of identical green
+    // bars with the rest of the guns lost among them. So the copies are grouped and pushed below:
+    // one line for what you chose, one for what the ascension grew.
+    //
+    // BY `order`, NOT BY DOM ORDER. Chips are built once and never move (see the constructor), so
+    // grouping is a style write on a chip that was being rewritten anyway. The ascended beams take
+    // a high order band and the break sits just under it, which also handles the case that makes
+    // this worth doing properly: the original Short Laser is usually in slot 0 with other weapons
+    // after it, so the copies are NOT contiguous by slot and a break placed by index would leave
+    // one green chip stranded on the top line.
+    let ascendedBeam = -1;
+    for (let i = 0; i < world.weaponCount; i++) {
+      const d = world.weaponCatalog[world.weapons[i]?.defId ?? -1];
+      if (d?.fillsMountsFrom !== undefined && (world.weapons[i]?.level ?? 0) >= d.fillsMountsFrom) {
+        ascendedBeam = world.weapons[i].defId;
+        break;
+      }
+    }
+    this.heatBreak.hidden = ascendedBeam < 0;
+
     for (let i = 0; i < world.weaponCount && n < WEAPON_SLOTS; i++) {
       const inst = world.weapons[i];
       if (inst === undefined) continue;
@@ -412,6 +443,10 @@ export class Hud {
       if (this.heatDefId[n] !== inst.defId || this.heatLevel[n] !== inst.level) {
         this.heatDefId[n] = inst.defId;
         this.heatLevel[n] = inst.level;
+        // ORDER: the ascended beams sort into a band above the break (which sits at 500), so they
+        // land together on the second line whatever slots they occupy. Everything else keeps its
+        // slot order on the first.
+        chip.style.order = String(inst.defId === ascendedBeam ? 1000 + n : n);
         // THE COLOUR IS THE CHIP'S IDENTITY, and it is where the row does most of its work: a
         // player finds their Cannon by its yellow, not by reading four labels. A beam takes its
         // own `beamColour` so the bar and the line drawn on the field are one weapon; everything
