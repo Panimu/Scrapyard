@@ -34,7 +34,7 @@ import {
 } from '../src/core/data/stats.js';
 import { ARCHETYPES, ARCH_RUNT } from '../src/core/content/enemyCatalog.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
-import { DT } from '../src/core/constants.js';
+import { DT, MAX_WEAPONS } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { rebuildSpatialHash } from '../src/core/spatial/hashGrid.js';
 import { updateCollision } from '../src/core/systems/collision.js';
@@ -251,15 +251,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, pushing the max-everything total to 1515', () => {
-    expect(metaSpent(maxed())).toBe(1515);
+  it('costs 100, and the max-everything total is 1820', () => {
+    expect(metaSpent(maxed())).toBe(1820);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 1515', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 1820', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(1515);
+    expect(metaSpent(maxed())).toBe(1820);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 
@@ -441,5 +441,92 @@ describe('versioned purchases', () => {
     expect(reconcileMetaTiers({ 'm-damage': 'seven' }).owned['m-damage']).toBeUndefined();
     // Tiers clamp at 0: a negative count cannot mint a negative refund.
     expect(reconcileMetaTiers({ 'm-damage': { tiers: -4, version: 0, cost: 50 } }).refund).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+/** A world built on a given dense workshop-tier array, the way main.ts hands one to core. */
+function worldWith(metaTiers: readonly number[]) {
+  return createWorld({ seed: 1, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING, metaTiers });
+}
+
+describe('scrap magnetics', () => {
+  it('widens the pickup funnel and nothing else', () => {
+    const def = META_CATALOG.find((m) => m.id === 'm-magnet');
+    expect(def?.tiers).toBe(3);
+    // ONE KEY. A magnet that also made gems fly faster would be two upgrades sold as one, and the
+    // shop's promise is that a card says what it does.
+    expect(def?.effects.map((e) => e.key)).toEqual(['pickupRadius']);
+    expect(def?.effects[0].target).toBe('player');
+    expect(def?.effects[0].mode).toBe('mul');
+  });
+
+  it('reaches the pickup radius the run actually uses', () => {
+    const tiers = new Array<number>(META_CATALOG.length).fill(0);
+    const at = META_CATALOG.findIndex((m) => m.id === 'm-magnet');
+
+    const plain = worldWith(tiers);
+    tiers[at] = 3;
+    const magnetised = worldWith(tiers);
+
+    // Measured off the resolved player stat, not off the catalog: the whole risk with a meta
+    // upgrade is that it is declared and never plumbed.
+    expect(magnetised.player.stats.pickupRadius).toBeGreaterThan(plain.player.stats.pickupRadius);
+    expect(magnetised.player.stats.pickupRadius / plain.player.stats.pickupRadius).toBeCloseTo(
+      1.45,
+      6,
+    );
+  });
+});
+
+describe('reinforced mounts', () => {
+  it('is one expensive tier that buys exactly one slot', () => {
+    const def = META_CATALOG.find((m) => m.id === 'm-mounts');
+    expect(def?.tiers).toBe(1);
+    expect(def?.cost).toBe(200);
+    expect(def?.effects).toEqual([
+      { target: 'run', key: 'weaponSlots', mode: 'add', amount: 1 },
+    ]);
+  });
+
+  it('takes a run from four slots to five, and no further', () => {
+    const tiers = new Array<number>(META_CATALOG.length).fill(0);
+    const at = META_CATALOG.findIndex((m) => m.id === 'm-mounts');
+
+    expect(worldWith(tiers).maxWeapons).toBe(MAX_WEAPONS);
+    expect(worldWith(tiers).maxWeapons).toBe(4);
+
+    tiers[at] = 1;
+    expect(worldWith(tiers).maxWeapons).toBe(5);
+
+    // A save carrying more tiers than the upgrade HAS must not buy more slots - metaRunGrant
+    // clamps to `def.tiers`, and a corrupted or downgraded save is the case that finds out.
+    tiers[at] = 9;
+    expect(worldWith(tiers).maxWeapons).toBe(5);
+  });
+
+  it('is the cap the deck actually enforces, not just a number on the world', () => {
+    // THE POINT OF THE WHOLE CHANGE. A world seeded at four must refuse a fifth gun and a world
+    // seeded at five must accept it, through `isOfferable` rather than through the constant.
+    const tiers = new Array<number>(META_CATALOG.length).fill(0);
+    const at = META_CATALOG.findIndex((m) => m.id === 'm-mounts');
+
+    const fill = (w: ReturnType<typeof worldWith>): number => {
+      // Fit guns by hand up to the array's size and let the deck say where it stops.
+      for (let i = w.weaponCount; i < w.maxWeapons; i++) {
+        w.weapons[i].defId = i % w.weaponCatalog.length;
+        w.weapons[i].level = 1;
+        w.weaponCount++;
+      }
+      return w.weaponCount;
+    };
+
+    const base = worldWith(tiers);
+    expect(fill(base)).toBe(4);
+
+    tiers[at] = 1;
+    const upgraded = worldWith(tiers);
+    expect(fill(upgraded)).toBe(5);
   });
 });

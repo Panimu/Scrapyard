@@ -11,6 +11,7 @@
  */
 
 import {
+  MAX_WEAPONS,
   CHEST_MAX_PAYOUT,
   CHEST_REELS,
   DT,
@@ -279,6 +280,9 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
 
     weapons,
     weaponCount: 0,
+    // THE DECK'S CAP FOR THIS RUN - the base plus whatever Reinforced Mounts was bought at.
+    // Read once, here, and never recomputed; see World.maxWeapons.
+    maxWeapons: MAX_WEAPONS + metaRunGrant(metaTiers, 'weaponSlots'),
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
     flow: createFlowField(),

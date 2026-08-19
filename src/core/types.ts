@@ -616,6 +616,24 @@ export interface World {
    * MAX_WEAPONS for anything the player can reach. */
   readonly weapons: WeaponInstance[];
   weaponCount: number;
+  /**
+   * THE LIVE CAP on how many weapons a level-up may unlock: MAX_WEAPONS plus whatever Reinforced
+   * Mounts was bought at (data/meta.ts). Seeded once at createWorld and never recomputed.
+   *
+   * ON THE WORLD RATHER THAN READ FROM THE CONSTANT, because the cap is now a property of the SAVE
+   * and core does not know what a save is - it is handed a dense array of workshop tiers exactly
+   * the way it is handed `tuning`. Every enforcement site reads this; the constant is the base and
+   * nothing but the seeding should touch it.
+   *
+   * NOT RECOMPUTED MID-RUN on purpose. A slot count that could move while a card was open is a
+   * card that could be offered and then refused, which is the one failure updateProgression is
+   * built to avoid.
+   *
+   * IT IS NOT THE ARRAY LENGTH. `weapons` is WEAPON_SLOTS long and the Hydra deliberately installs
+   * past this cap - see fillLaserMounts - so this bounds what the DECK hands out, not what the
+   * loadout can physically hold.
+   */
+  maxWeapons: number;
 
   readonly spatial: SpatialHash;
   /**

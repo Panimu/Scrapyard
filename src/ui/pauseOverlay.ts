@@ -28,6 +28,7 @@
 import {
   MAX_PASSIVES,
   MAX_WEAPONS,
+  metaMaxGrant,
   upgradeNameAt,
   weaponNameAtTier,
   type World,
@@ -98,7 +99,10 @@ export function buildPauseOverlay(
   const loadout = document.createElement('div');
   loadout.className = 'pause__loadout';
 
-  const guns = slotGroup('Weapons', MAX_WEAPONS);
+  // Built at the CEILING - the base plus every tier the workshop can sell - and trimmed to the
+  // run's own cap in `paint`. See World.maxWeapons: a full four-slot loadout drawn against five
+  // pips would read as a slot still going spare.
+  const guns = slotGroup('Weapons', MAX_WEAPONS + metaMaxGrant('weaponSlots'));
   const passives = slotGroup('Passives', MAX_PASSIVES);
   loadout.append(guns.el, passives.el);
 
@@ -106,9 +110,10 @@ export function buildPauseOverlay(
 
   /** Fills both rows from the frozen world. Every slot is written every time - see `slotGroup`. */
   const paint = (world: World): void => {
+    guns.show(world.maxWeapons);
     // WEAPONS, in the order they were taken, which is the order the HUD shows them in.
     let n = 0;
-    for (let i = 0; i < world.weaponCount && n < MAX_WEAPONS; i++) {
+    for (let i = 0; i < world.weaponCount && n < world.maxWeapons; i++) {
       const inst = world.weapons[i];
       const def = inst === undefined ? undefined : world.weaponCatalog[inst.defId];
       if (inst === undefined || def === undefined) continue;
@@ -145,7 +150,13 @@ export function buildPauseOverlay(
 function slotGroup(
   title: string,
   count: number,
-): { el: HTMLDivElement; set: (i: number, name: string, tier: number) => void; blankFrom: (i: number) => void } {
+): {
+  el: HTMLDivElement;
+  set: (i: number, name: string, tier: number) => void;
+  blankFrom: (i: number) => void;
+  /** Show only the first `n` slots. For a cap that varies per run - see World.maxWeapons. */
+  show: (n: number) => void;
+} {
   const el = document.createElement('div');
   el.className = 'pause__group';
 
@@ -188,6 +199,12 @@ function slotGroup(
         names[i].textContent = 'Empty';
         tiers[i].textContent = '';
       }
+    },
+    // THE ROW IS BUILT AT THE LARGEST CAP AND TRIMMED PER RUN, rather than rebuilt: the weapon cap
+    // is a property of the save now (Reinforced Mounts), so a group sized once at construction
+    // would draw four pips forever or five forever, and one of those is wrong for somebody.
+    show: (n): void => {
+      for (let i = 0; i < count; i++) slots[i].hidden = i >= n;
     },
   };
 }

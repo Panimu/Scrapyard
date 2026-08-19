@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T11:19Z',
+    title: 'FOUR GUNS, AND A FIFTH TO BUY',
+    notes: [
+      'A mech now carries FOUR weapons out of the yard rather than five. The choice of what to leave behind is the run, and at five it had stopped being much of a choice.',
+      'The workshop sells the fifth slot back \u2014 Reinforced Mounts, one purchase, and not a cheap one. It is the same five guns you had; it is just yours now rather than assumed.',
+      'Also new in the workshop: Scrap Magnetics pulls cores in from further off, so the ground you cannot safely cross still pays you.',
+    ],
+  },
+  {
     at: '2026-08-19T11:02Z',
     title: 'A LONGER BREATH, AND A STEADIER SCREEN',
     notes: [

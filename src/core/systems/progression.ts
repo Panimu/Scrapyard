@@ -74,7 +74,7 @@
  * the unlock branch above can never fire for a gun the run is already holding.
  *
  * `UpgradeDef.kind` still splits the pool, because the two halves compete for DIFFERENT space:
- * MAX_WEAPONS (7) gun slots and MAX_PASSIVES (7) passive slots. Only the UNLOCK of a weapon needs
+ * `World.maxWeapons` gun slots (MAX_WEAPONS plus Reinforced Mounts) and MAX_PASSIVES passive slots. Only the UNLOCK of a weapon needs
  * a slot - tiers 2-7 need none - so the weapon cap gates `stacks === 0` alone, exactly the way
  * the passive cap gates a NEW passive and keeps levelling the ones already held. (No passive
  * exists today; the branch stays because the cap is structural, not content.)
@@ -105,7 +105,6 @@ import {
   CHEST_REELS,
   CHOOSE_REROLL,
   MAX_PASSIVES,
-  MAX_WEAPONS,
   OFFER_CREDITS,
   OFFER_HEAL,
   UPGRADE_OFFER_COUNT,
@@ -472,7 +471,7 @@ function ownsWeapon(world: World, id: WeaponId): boolean {
 /**
  * Puts a gun in the next free slot, fully reset.
  *
- * NOTHING IS ALLOCATED: all MAX_WEAPONS instances exist from createWorld, so this claims one
+ * NOTHING IS ALLOCATED: all WEAPON_SLOTS instances exist from createWorld, so this claims one
  * rather than making one - which is what keeps the loadout a fixed-shape object that hashWorld
  * can walk and the JIT can keep monomorphic.
  *
@@ -486,7 +485,9 @@ function ownsWeapon(world: World, id: WeaponId): boolean {
  * would leave `applyChoice` returning false forever on a live offer.
  */
 function installWeapon(world: World, id: WeaponId): void {
-  if (world.weaponCount >= MAX_WEAPONS) return;
+  // THE RUN'S cap, not the constant - see World.maxWeapons. Reading MAX_WEAPONS here would
+  // enforce the base and silently ignore Reinforced Mounts.
+  if (world.weaponCount >= world.maxWeapons) return;
   const defId = weaponIndexOf(world, id);
   if (defId < 0) return;
   if (ownsWeapon(world, id)) return;
@@ -513,7 +514,7 @@ function installWeapon(world: World, id: WeaponId): void {
  *
  * IT DELIBERATELY BYPASSES BOTH OF `installWeapon`'S GUARDS, and each refusal is worth naming.
  * `ownsWeapon` would refuse outright - the whole point is a SECOND copy of a gun already held -
- * and MAX_WEAPONS is the DECK's cap on what a level-up may hand out, which this is not: it is a
+ * and `World.maxWeapons` is the DECK's cap on what a level-up may hand out, which this is not: it is a
  * capstone the run has already earned, and letting the five-slot rule veto it would mean the
  * ascension silently did nothing to a loadout that had filled its slots the ordinary way. The
  * hard bound is WEAPON_SLOTS, the size of the array, which is what actually cannot be exceeded.
@@ -642,7 +643,7 @@ function generateOffers(world: World): number {
 
   // Computed ONCE per card rather than per eligibility test: neither cap can move while a single
   // card is being built, and `isOfferable` is called about forty times to fill three slots.
-  const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+  const weaponsFull = world.weaponCount >= world.maxWeapons;
   // UNARMED: every offer on this card is a gun.
   //
   // A player holding no weapon cannot kill, cannot earn XP and therefore cannot be offered a
@@ -893,7 +894,7 @@ export function ascensionReady(world: World, idx: number): boolean {
  * lie than a shell credited to a gun that never fired it. They are marked dead without pushing a
  * hit, so they simply stop rather than detonating.
  *
- * INSTANCES ARE ROTATED, NOT COPIED. `world.weapons` holds MAX_WEAPONS objects built once at
+ * INSTANCES ARE ROTATED, NOT COPIED. `world.weapons` holds WEAPON_SLOTS objects built once at
  * `createWorld` and never allocated again; moving the references keeps that true and keeps every
  * instance's preallocated `stats` and `scratch` with it.
  */
@@ -1077,7 +1078,7 @@ export function openChest(world: World): void {
   if (pool.length === 0) {
     // Everything held is maxed. Fall back to whatever a card could still offer, so a boss is
     // never worth nothing - and if THAT is empty too the run has taken every upgrade in the game.
-    const weaponsFull = world.weaponCount >= MAX_WEAPONS;
+    const weaponsFull = world.weaponCount >= world.maxWeapons;
     const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
     const unarmed = world.weaponCount === 0;
     const idx = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
