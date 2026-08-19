@@ -37,11 +37,20 @@
 /**
  * Seconds the world holds still, and therefore how long the banner is up.
  *
- * 1.2 s. Long enough to read three words and register that the field stopped moving; short enough
- * that a player who understood it in the first 200 ms is not held there waiting. The CSS animations
- * are authored against this number - change one and change the other.
+ * 4.2 s, up from 1.2. The old figure was sized to READING the banner - long enough for three
+ * words and to register that the field had stopped - and that was the wrong thing to size it to.
+ * A save fires at the exact moment a run was about to end, which means it fires with the mech
+ * buried in whatever was killing it: the player comes back from the freeze into the same crowd,
+ * at full hull and briefly untouchable, with no time to decide which way out. The pause is not a
+ * banner, it is the beat where you look at the board and pick a direction, so it is now long
+ * enough to do that.
+ *
+ * THE CSS ANIMATIONS ARE AUTHORED AGAINST THIS NUMBER - change one and change the other. They
+ * hold their end state (`forwards`), so a longer freeze leaves the banner sitting at full
+ * opacity rather than replaying or flickering; the flash still resolves on its own shorter
+ * curve, which is what keeps the moment of the save distinct from the pause that follows it.
  */
-export const SAVE_PAUSE_SEC = 1.2;
+export const SAVE_PAUSE_SEC = 4.2;
 
 export class SavedOverlay {
   readonly element: HTMLDivElement;

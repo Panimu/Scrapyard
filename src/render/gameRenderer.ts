@@ -824,7 +824,8 @@ export class GameRenderer {
           );
           if (row >= 0) {
             this.turretKicks[row] = TURRET_KICK_SEC;
-            this.camera.kick(c, d);
+            // The barrel always recoils; only some mounts shove the camera as well.
+            if (TURRET_ART[row].shake) this.camera.kick(c, d);
           }
           break;
         }
@@ -1887,10 +1888,23 @@ const TURRET_ART: readonly {
    */
   readonly weapons: readonly WeaponId[];
   readonly tex: 'turret' | 'turretPhase' | 'turretMg';
+  /**
+   * Does firing this mount KICK THE CAMERA, on top of the barrel's own recoil?
+   *
+   * THE BARREL ALWAYS RECOILS; the screen does not. The two were one decision and should not have
+   * been: recoil is feedback about the GUN and belongs to every mount, while a camera kick is a
+   * claim about the WHOLE MECH being shoved, and that claim is only true for the heavy single
+   * shells. The rotary snout fires 11 to 23 times a second - at that rate a per-shot kick is not
+   * weight, it is a vibration the player cannot read through, and it makes the two fastest guns
+   * in the game the two hardest to aim by feel.
+   */
+  readonly shake: boolean;
 }[] = [
-  { weapons: ['cannon'], tex: 'turret' },
-  { weapons: ['phase-cannon'], tex: 'turretPhase' },
-  { weapons: ['machine-gun', 'flak-cannon'], tex: 'turretMg' },
+  { weapons: ['cannon'], tex: 'turret', shake: true },
+  { weapons: ['phase-cannon'], tex: 'turretPhase', shake: true },
+  // The rotary mount, and the one row that does not shake - see `shake` above. Both guns on it
+  // are high rate of fire, and both lost the kick for the same reason.
+  { weapons: ['machine-gun', 'flak-cannon'], tex: 'turretMg', shake: false },
 ];
 
 /** The held instance of `id`, or undefined - slot order does not matter, ids are unique. */

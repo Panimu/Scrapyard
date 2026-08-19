@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T11:02Z',
+    title: 'A LONGER BREATH, AND A STEADIER SCREEN',
+    notes: [
+      'When Mech Insurance saves you, the world now holds still for four seconds instead of just over one. You come back from a save standing in the crowd that nearly killed you \u2014 that pause is for picking a way out, not for reading three words.',
+      'The Machine Gun and the Flak Cannon no longer shake the screen. Their barrels still kick; the camera does not. Eleven to twenty-three shots a second was not weight, it was a vibration you could not aim through.',
+      'The Flak Cannon\u2019s mount comes round 10% slower than the belt gun\u2019s. A degree of lag disappears inside a sixty-degree cone, and what you feel instead is the weight of the thing swinging onto a new crowd.',
+    ],
+  },
+  {
     at: '2026-08-19T10:59Z',
     title: 'MOSSY MAYHEM HAS A FACE',
     notes: [

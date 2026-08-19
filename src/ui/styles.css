@@ -2286,6 +2286,10 @@ body {
       rgba(231, 185, 0, 0) 58%
     ),
     radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 34%, rgba(0, 0, 0, 0.72) 100%);
+  /* DELIBERATELY SHORTER THAN THE FREEZE (SAVE_PAUSE_SEC, 4.2s). The flash is the MOMENT of the
+     save and resolves to opacity 0 on its own curve; the seconds after it are the player reading
+     the board and picking a way out, which wants a clear screen rather than a gold wash sitting
+     over it. `forwards` holds that transparent end state for the rest of the pause. */
   animation: saved-flash 1.2s ease-out forwards;
 }
 
@@ -2318,6 +2322,9 @@ body {
   z-index: 1;
   text-align: center;
   transform: translateY(-150%);
+  /* Also shorter than the freeze, and `forwards` is what makes that correct: the words arrive on
+     this curve and then SIT at their end state for the remainder of SAVE_PAUSE_SEC rather than
+     replaying or flickering. */
   animation: saved-words 1.2s cubic-bezier(0.14, 0.9, 0.24, 1) forwards;
 }
 

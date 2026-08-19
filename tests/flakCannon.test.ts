@@ -264,9 +264,12 @@ describe('the shared mount: Flak Cannon and Machine Gun are mutually exclusive',
     // ONE declaration, not two that can drift - the check is what makes it symmetric.
     expect(FLAK_CANNON.excludes).toContain('machine-gun');
     expect(MACHINE_GUN.excludes).toBeUndefined();
-    // Same traverse: it is the same physical mount, and the render layer draws one sprite for it.
-    expect(FLAK_CANNON.base.turretTraverse).toBe(MACHINE_GUN.base.turretTraverse);
+    // THE SAME MOUNT, NOT THE SAME SLEW. One sprite draws both, so the muzzle sits in the same
+    // place - but the flak battery comes round 10% slower than the belt gun, which is the weight
+    // of it. Asserted as a RATIO rather than a literal so a retune of either moves this with it.
     expect(FLAK_CANNON.muzzleOffset).toBe(MACHINE_GUN.muzzleOffset);
+    expect(FLAK_CANNON.base.turretTraverse).toBeCloseTo(MACHINE_GUN.base.turretTraverse * 0.9, 4);
+    expect(FLAK_CANNON.base.turretTraverse).toBeLessThan(MACHINE_GUN.base.turretTraverse);
   });
 });
 

@@ -1200,9 +1200,15 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     knockback: 18,
     splashRadius: 0,
     splashFrac: 0,
-    // The Machine Gun's mount, because it IS the Machine Gun's mount - the same sprite draws
-    // both, and only one of the two can ever be held.
-    turretTraverse: degToRad(810),
+    // THE MACHINE GUN'S MOUNT WEARING MORE WEIGHT. The same sprite draws both - only one of the
+    // two can ever be held - but this one slews 10% slower than the belt gun's 810 deg/s.
+    //
+    // It costs this weapon less than it would cost the Machine Gun, which is why it is the one
+    // that pays: the belt gun puts two rounds down a line and wants the line laid exactly, while
+    // this throws three shells into a sixty-degree cone where a degree of lag is inside the spread
+    // already. What the player feels instead is the mount's WEIGHT - a flak battery swinging onto
+    // a new crowd is a heavier thing coming round than a machine gun is.
+    turretTraverse: degToRad(729),
     // Wider than the belt gun's 20 deg. A weapon that sprays a sixty-degree cone has no business
     // waiting to be precisely laid on first; the gate would be finer than the weapon.
     fireArc: degToRad(30),
