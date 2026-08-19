@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T10:59Z',
+    title: 'MOSSY MAYHEM HAS A FACE',
+    notes: [
+      'The level select shows Mossy Mayhem\u2019s own art now \u2014 its moss and one of its trees \u2014 instead of the blank plate it has been wearing since it opened. Both yards now tell you where they are taking you before you press them.',
+    ],
+  },
+  {
     at: '2026-08-19T10:47Z',
     title: 'A FIFTH ASCENSION EXISTS',
     notes: [

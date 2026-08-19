@@ -32,7 +32,11 @@ export const MOSSY_MAYHEM: LevelDef = Object.freeze({
   id: 'mossy-mayhem' as const,
   name: 'Mossy Mayhem',
   blurb: 'Open moss and turf, running out further than you can walk. No fence, no corners.',
-  art: '',
+  // ITS OWN GROUND AND ITS OWN TREE, composited by `npm run levelart` - see tools/make-level-art.mjs
+  // for why this is a generated file rather than a scenery sprite pointed at directly, the way the
+  // Scrapyard's card points at `scrap_0`. It used to be `''`, which drew the placeholder plate: the
+  // one card in the game that said nothing about where it would take you.
+  art: 'level_mossy',
   playable: true,
   /**
    * EARNED BY FINISHING THE SCRAPYARD - the whole yard, every Scraplord down, not merely surviving
