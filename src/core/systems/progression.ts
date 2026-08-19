@@ -357,9 +357,11 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
   // half-written; before, because a stripped weapon must not be in `weaponCount` when the loop
   // that rebuilds every WeaponStats runs.
   //
-  // THE TIERS GO BACK TO ZERO, which is what makes the promise honest: the slot is free AND the
-  // card returns to the deck, so the run can put a genuinely new gun there - including the same
-  // rack again, from tier 1, if the deck offers it.
+  // THE TIERS GO BACK TO ZERO, which is what makes the promise honest: the slot is genuinely
+  // free for a new gun. The eaten card itself does NOT come back - `isOfferable` withholds a
+  // consumed card while its consumer stands at the ascended tier, and the reset here is what
+  // keeps that state honest too: a run that somehow lost the Hornet again would find the rack
+  // waiting at tier 1, not at a ghost of seven.
   const consumed = def.ascension?.consumes;
   if (consumed !== undefined && lu.stacks[idx] === WEAPON_ASCENDED_TIER) {
     for (let i = 0; i < world.upgradeCatalog.length; i++) {
@@ -625,6 +627,18 @@ function isOfferable(
   if (def === undefined) return false;
   const stacks = world.levelUp.stacks[index];
   if (stacks >= def.maxStacks) return false;
+
+  // EATEN BY A STANDING ASCENSION. A card some other card's ascension consumed stays out of the
+  // deck for the rest of the run - the Hornet already IS the short rack's ceiling, and offering
+  // the rack back would sell seven tiers whose whole payoff the run has just cashed in. Derived
+  // from the ascension table (`consumes` + the consumer's tier), not from a per-card flag, so a
+  // second consuming ascension inherits the rule for free. The consumER needs no twin check: at
+  // the ascended tier it sits above its own maxStacks and fell out two lines up.
+  for (let i = 0; i < world.upgradeCatalog.length; i++) {
+    const other = world.upgradeCatalog[i];
+    if (other?.ascension?.consumes !== def.id) continue;
+    if (world.levelUp.stacks[i] >= WEAPON_ASCENDED_TIER) return false;
+  }
 
   // NOT EARNED YET. Set by the app from the save file (World.cardUnlocked); every card is offerable
   // unless it says otherwise, which is all of them but one.

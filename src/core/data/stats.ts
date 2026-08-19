@@ -35,7 +35,7 @@ import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
 // RUNTIME, and it does not close a cycle: weaponCatalog reaches back here for `WeaponStatKey`
 // alone, which is a type and is erased.
-import { MISSILE_SHORT } from '../content/weaponCatalog.js';
+import { MISSILE_SHORT, SPLIT_TURN_MUL } from '../content/weaponCatalog.js';
 import { WEAPON_MAX_TIER } from './upgrades.js';
 import type { World } from '../types.js';
 import type { HeroDef, HeroWeaponBonus } from './heroes.js';
@@ -547,4 +547,14 @@ export function resolveSplitStats(world: World, hero: HeroDef): void {
     world.splitStats,
     world.meta,
   );
+
+  // The children turn 20% harder than the rack they are copied from - see SPLIT_TURN_MUL. After
+  // the resolve, so it multiplies the finished figure (passives included) exactly as a hero's own
+  // weapon bonus would; the precomputed turn step has to be redone from the new rate or the bonus
+  // would exist only in the number nothing reads.
+  const st = world.splitStats;
+  st.turnRate *= SPLIT_TURN_MUL;
+  const turnStep = st.turnRate * DT;
+  st.cosTurnStep = Math.cos(turnStep);
+  st.sinTurnStep = Math.sin(turnStep);
 }

@@ -81,7 +81,9 @@ const HOMING_SEEK_RADIUS = 240;
  * would become a chain reaction and then the pool ceiling.
  *
  * THE NUMBERS ARE THE SHORT RACK'S AT TIER SEVEN, off `World.splitStats` - the rack itself has
- * been eaten by the time any of this runs, so there is no instance to read. They stay credited to
+ * been eaten by the time any of this runs, so there is no instance to read. One exception: the
+ * children turn 20% harder than the rack ever did (SPLIT_TURN_MUL, applied in resolveSplitStats),
+ * because they are born mid-field pointing 7.5 degrees off everything. They stay credited to
  * the Hornet through `ownerWeapon`, because the Hornet is what fired them.
  *
  * `Math.cos`/`Math.sin` are banned in core, so the half-angle arrives precomputed as its two

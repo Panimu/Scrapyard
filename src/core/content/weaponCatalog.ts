@@ -792,6 +792,15 @@ export const SPLIT_SEC = 0.35;
 export const SPLIT_COS = 0.9914448613738104; // cos(7.5 deg)
 export const SPLIT_SIN = 0.13052619222005157; // sin(7.5 deg)
 
+/**
+ * THE CHILDREN CORNER HARDER THAN THE RACK THEY ARE COPIED FROM: +20% turn rate over the short
+ * rack's own tier-7 figure. A child is born mid-field already pointing 7.5 degrees off anything,
+ * with whatever is left of a short fuse to come around in - the tightness the rack earns over
+ * seven tiers is tuned for missiles that leave the tubes aimed, and a split child never does.
+ * Applied in `resolveSplitStats`, so it stacks with the same passives a held rack would get.
+ */
+export const SPLIT_TURN_MUL = 1.2;
+
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
   3, 10, 4.2, 42, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,

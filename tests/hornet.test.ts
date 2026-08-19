@@ -20,7 +20,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { CHOOSE_REROLL, DT } from '../src/core/constants.js';
-import { SPLIT_SEC } from '../src/core/content/weaponCatalog.js';
+import { SPLIT_SEC, SPLIT_TURN_MUL } from '../src/core/content/weaponCatalog.js';
 import { PROJECTILE_FLAG_DEAD } from '../src/core/entity/projectilePool.js';
 import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../src/core/data/upgrades.js';
 import { ascensionReady, openChest, updateProgression } from '../src/core/systems/progression.js';
@@ -169,5 +169,39 @@ describe('the GTM Hornet', () => {
     // Five tubes at tier 8.
     expect(beforeSplit).toBe(5);
     expect(after).toBe(beforeSplit * 2);
+  });
+
+  it('gives the children 20% more turn than the tier-7 rack they are copied from', () => {
+    const w = makeWorld();
+    const { srm } = bothRacksMaxed(w);
+
+    // The rack is still held and at seven here, so its own resolved instance is the exact figure
+    // splitStats copies from - same hero, same passives, same tier. Read it BEFORE the ascension
+    // eats it.
+    let rackTurn = -1;
+    for (let i = 0; i < w.weaponCount; i++) {
+      if (w.weaponCatalog[w.weapons[i].defId].id === 'missile-short') rackTurn = w.weapons[i].stats.turnRate;
+    }
+    expect(rackTurn).toBeGreaterThan(0);
+    expect(w.levelUp.stacks[srm]).toBe(WEAPON_MAX_TIER);
+    expect(w.splitStats.turnRate).toBeCloseTo(rackTurn * SPLIT_TURN_MUL, 10);
+  });
+
+  it('withholds both missile racks from the deck once the Hornet stands', () => {
+    const w = makeWorld();
+    const { lrm, srm } = bothRacksMaxed(w);
+    openChest(w);
+    w.input.chooseIndex = 0;
+    updateProgression(w, DT);
+    w.input.chooseIndex = -1;
+    expect(w.levelUp.stacks[lrm]).toBe(WEAPON_ASCENDED_TIER);
+    expect(w.levelUp.stacks[srm]).toBe(0);
+
+    // takeCard rerolls up to `tries` times hunting for the index - a false return means the deck
+    // never put it on a card. The long rack sits above its own maxStacks; the short rack is the
+    // one the new rule has to hold out, because its tiers just reset to zero and it would
+    // otherwise be a fresh, offerable gun in a freshly emptied slot.
+    expect(takeCard(w, srm, 80)).toBe(false);
+    expect(takeCard(w, lrm, 80)).toBe(false);
   });
 });
