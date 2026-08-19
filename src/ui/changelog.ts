@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T08:19Z',
+    title: 'HOT EMITTERS SIT WHERE THE GUNS ARE',
+    notes: [
+      'A laser\u2019s heat glow and the sputter it makes when it cuts out now sit on the emitter that is actually straining \u2014 the shoulder or nose mount the beam leaves from \u2014 instead of floating out in front of the chassis. Second and third lasers were the worst offenders: theirs could end up hanging in open ground nowhere near the mech.',
+    ],
+  },
+  {
     at: '2026-08-19T07:29Z',
     title: 'A FOURTH ASCENSION EXISTS',
     notes: [

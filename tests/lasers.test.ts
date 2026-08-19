@@ -30,6 +30,7 @@ import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import {
   CANNON,
   LASER_HARDPOINTS,
+  laserHardpoint,
   LASER_LONG,
   LASER_MEDIUM,
   LASER_SHORT,
@@ -1373,6 +1374,36 @@ describe('lasers spread out: a body one laser has claimed is invisible to the ne
     expect(w.beams.count).toBe(1);
     expect(w.beams.x0[0]).toBeCloseTo(0, 6);
     expect(w.beams.y0[0]).toBeCloseTo(LASER_HARDPOINTS[0].x, 6);
+  });
+
+  it('hands the renderer the SAME hardpoint the ray leaves from, for every slot', () => {
+    // THE CONTRACT THE EMITTER GLOW RIDES ON. `laserHardpoint` has two callers now - `fireBeam`
+    // for the ray's true origin, and the render layer for where the heat glow and the cut-out
+    // sputter sit while the weapon is NOT firing and there is no published beam to read. They
+    // must never disagree: the render layer used to derive its own point (down the AIM vector
+    // from the chassis CENTRE) and a cooling laser's glow hung in front of the nose while the
+    // gun itself sat on a shoulder.
+    //
+    // Asserted against the PUBLISHED ORIGIN rather than against the table, so it stays true
+    // through whatever the assignment rule becomes: whatever the beam leaves from, the function
+    // returns - for the second slot as well as the first.
+    const w = twoLaserWorld();
+    addEnemy(w, 200, 0, 400);
+    addEnemy(w, 200, 60, 400);
+    tick(w);
+    expect(w.beams.count).toBe(2);
+
+    const fx = w.player.faceX;
+    const fy = w.player.faceY;
+    for (let i = 0; i < w.beams.count; i++) {
+      const slot = w.beams.weaponIdx[i];
+      const hp = laserHardpoint(w, slot);
+      // The same body-space -> world rotation fireBeam does, and the renderer now does too.
+      expect(w.beams.x0[i]).toBeCloseTo(w.player.x + hp.x * fx - hp.y * fy, 6);
+      expect(w.beams.y0[i]).toBeCloseTo(w.player.y + hp.x * fy + hp.y * fx, 6);
+    }
+    // And the two slots genuinely got DIFFERENT mounts - otherwise this passes on a stub.
+    expect(laserHardpoint(w, 0)).not.toBe(laserHardpoint(w, 1));
   });
 
   it('does not reserve a body for a laser that has cut out', () => {

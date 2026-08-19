@@ -114,7 +114,7 @@ import { HERO_TRAITS } from '../data/traits.js';
 import type { HeroTrait, ShotCtx } from '../data/heroes.js';
 import {
   BEHAVIOUR_ID,
-  LASER_HARDPOINTS,
+  laserHardpoint,
   SPLIT_SEC,
   TWIN_HALF_GAP,
   type FirePattern,
@@ -827,51 +827,6 @@ export const fireBattery: FirePattern = (world, weaponIdx, inst, targets, target
  * runt into orbit; the buffer carries no knockback field at all, so this is structural rather
  * than a number set to zero.
  */
-/**
- * Which hardpoint this beam fires from, by HOW MANY beams the loadout holds - see the
- * LASER_HARDPOINTS doc for the assignment (1 -> nose, 2 -> shoulders, 3 -> all, slot order).
- * At most three beams can ever be held (one card per laser; the Chain Laser is the Medium), so
- * `mine` is always inside the table; clamped anyway rather than trusted.
- */
-function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: number; y: number }> {
-  // THE GIGA LASER OWNS THE NOSE. A beam that wide fires down the centreline or the art is a lie,
-  // so when one is held it takes hardpoint 0 unconditionally and every other beam is pushed to
-  // the shoulders - whatever the count-based rule below would have said. Losing the two-laser
-  // shoulder symmetry to it was accepted when the hardpoints became real: the gun is somewhere.
-  let gigaIdx = -1;
-  for (let i = 0; i < world.weaponCount; i++) {
-    const d = world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined;
-    if (d?.gigaFrom !== undefined && world.weapons[i].level >= d.gigaFrom) {
-      gigaIdx = i;
-      break;
-    }
-  }
-  if (gigaIdx >= 0) {
-    if (weaponIdx === gigaIdx) return LASER_HARDPOINTS[0];
-    // The remaining beams take the shoulders in slot order.
-    let shoulder = 0;
-    for (let i = 0; i < world.weaponCount; i++) {
-      if (i === gigaIdx) continue;
-      if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam')
-        continue;
-      if (i === weaponIdx) break;
-      shoulder++;
-    }
-    return LASER_HARDPOINTS[shoulder + 1 < 3 ? shoulder + 1 : 2];
-  }
-
-  let held = 0;
-  let mine = 0;
-  for (let i = 0; i < world.weaponCount; i++) {
-    if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam') continue;
-    if (i === weaponIdx) mine = held;
-    held++;
-  }
-  if (held <= 1) return LASER_HARDPOINTS[0];
-  if (held === 2) return LASER_HARDPOINTS[mine + 1 < 3 ? mine + 1 : 2];
-  return LASER_HARDPOINTS[mine < 3 ? mine : 2];
-}
-
 export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCount): void => {
   const def = world.weaponCatalog[inst.defId] as WeaponDef;
   const stats = inst.stats;

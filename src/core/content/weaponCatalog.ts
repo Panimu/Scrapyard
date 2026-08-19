@@ -564,6 +564,59 @@ export const LASER_HARDPOINTS: readonly Readonly<{ x: number; y: number }>[] = O
 ]);
 
 /**
+ * Which hardpoint this beam fires from, by HOW MANY beams the loadout holds - see the
+ * LASER_HARDPOINTS doc for the assignment (1 -> nose, 2 -> shoulders, 3 -> all, slot order).
+ * At most three beams can ever be held (one card per laser; the Chain Laser is the Medium), so
+ * `mine` is always inside the table; clamped anyway rather than trusted.
+ *
+ * IT LIVES IN THE CATALOG, BESIDE THE TABLE, BECAUSE IT HAS TWO CALLERS AND THEY MUST NOT
+ * DISAGREE. `fireBeam` uses it for the ray's true origin; the render layer uses it to place the
+ * emitter's heat glow and the cut-out sputter. Systems are not on the public barrel, so the
+ * renderer's only other option was a mirrored copy of the assignment - and a mirrored copy is
+ * exactly how a glow ends up hanging in the air beside a beam that leaves from somewhere else.
+ * The rule is a fact about where a gun SITS ON THE CHASSIS, which is the same kind of fact as
+ * the offsets themselves, so this is where it belongs.
+ */
+export function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: number; y: number }> {
+  // THE GIGA LASER OWNS THE NOSE. A beam that wide fires down the centreline or the art is a lie,
+  // so when one is held it takes hardpoint 0 unconditionally and every other beam is pushed to
+  // the shoulders - whatever the count-based rule below would have said. Losing the two-laser
+  // shoulder symmetry to it was accepted when the hardpoints became real: the gun is somewhere.
+  let gigaIdx = -1;
+  for (let i = 0; i < world.weaponCount; i++) {
+    const d = world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined;
+    if (d?.gigaFrom !== undefined && world.weapons[i].level >= d.gigaFrom) {
+      gigaIdx = i;
+      break;
+    }
+  }
+  if (gigaIdx >= 0) {
+    if (weaponIdx === gigaIdx) return LASER_HARDPOINTS[0];
+    // The remaining beams take the shoulders in slot order.
+    let shoulder = 0;
+    for (let i = 0; i < world.weaponCount; i++) {
+      if (i === gigaIdx) continue;
+      if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam')
+        continue;
+      if (i === weaponIdx) break;
+      shoulder++;
+    }
+    return LASER_HARDPOINTS[shoulder + 1 < 3 ? shoulder + 1 : 2];
+  }
+
+  let held = 0;
+  let mine = 0;
+  for (let i = 0; i < world.weaponCount; i++) {
+    if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam') continue;
+    if (i === weaponIdx) mine = held;
+    held++;
+  }
+  if (held <= 1) return LASER_HARDPOINTS[0];
+  if (held === 2) return LASER_HARDPOINTS[mine + 1 < 3 ? mine + 1 : 2];
+  return LASER_HARDPOINTS[mine < 3 ? mine : 2];
+}
+
+/**
  * THE GIGA LASER'S HALF-WIDTH, world units, before AoE multipliers. It rides the `splashRadius`
  * key (see WeaponDef.gigaFrom), so Shaped Charges' +50% takes it to 18 and the drawn beam grows
  * with it - the width on screen IS the width that burns.

@@ -60,7 +60,13 @@
  */
 
 import { Container, FillGradient, Graphics, GraphicsContext, type Sprite } from 'pixi.js';
-import { MAX_CHAIN_LINKS, WEAPON_SLOTS, NO_BEAM_TARGET, type World } from '../core/index.js';
+import {
+  MAX_CHAIN_LINKS,
+  WEAPON_SLOTS,
+  NO_BEAM_TARGET,
+  laserHardpoint,
+  type World,
+} from '../core/index.js';
 import { SpritePool } from './spritePool.js';
 import { PARTICLE_SRC, type GameTextures } from './assets.js';
 import type { Effects } from './effects.js';
@@ -431,17 +437,35 @@ export class BeamLayer {
         const heatFrac = capacity > 0 ? clamp01(inst.heat / capacity) : 0;
         const overheated = inst.overheated;
 
-        // Muzzle position: the published origin while firing (so the glow sits exactly on the
-        // beam), else the turret vector off the interpolated chassis, which is where the muzzle
-        // would be if it fired this instant.
+        // THE EMITTER IS AT THE HARDPOINT, FIRING OR NOT - and both branches below have to
+        // agree on that, because the player sees them one after the other: the glow strains at
+        // the mount, the beam leaves from the mount, the cut-out sputters at the mount.
+        //
+        // WHILE FIRING, the published origin, so the glow sits exactly on the beam whatever the
+        // sim did with it. The index is `w * MAX_CHAIN_LINKS`, the slot's FIRST segment - a bare
+        // `[w]` reads slot 0's chain links for every slot above the first, which put slot 1's
+        // heat glow on another laser's jump or, with nothing latched there yet, at the world
+        // origin. Segment 0 is always the muzzle shot (see the latch above); the jumps after it
+        // start somewhere out in the crowd and are not where the gun is.
+        //
+        // OTHERWISE, the hardpoint itself, rotated by the chassis FACING off the interpolated
+        // body - the same body-space offset `fireBeam` casts its ray from, through the same
+        // function. It used to be `turretX * muzzleOffset`: a point down the AIM vector from the
+        // chassis CENTRE, which is where a beam came from before the hardpoints became real. A
+        // laser cooling on the left shoulder had its heat glow floating out in front of the nose,
+        // and the further the turret swung off the facing the further the two separated.
         let mx: number;
         let my: number;
         if (firing) {
-          mx = this.lx0[w];
-          my = this.ly0[w];
+          const at0 = w * MAX_CHAIN_LINKS;
+          mx = this.lx0[at0];
+          my = this.ly0[at0];
         } else {
-          mx = px + inst.turretX * def.muzzleOffset;
-          my = py + inst.turretY * def.muzzleOffset;
+          const hp = laserHardpoint(world, w);
+          const fx = world.player.faceX;
+          const fy = world.player.faceY;
+          mx = px + hp.x * fx - hp.y * fy;
+          my = py + hp.x * fy + hp.y * fx;
         }
 
         if (overheated && this.wasOverheated[w] === 0) {
