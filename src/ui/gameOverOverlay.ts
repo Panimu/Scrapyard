@@ -18,6 +18,31 @@ import {
 import { seedToCode } from '../appState.js';
 import { formatClock } from './hud.js';
 
+/**
+ * ONE THING A RUN UNLOCKED, and which of the three kinds it is.
+ *
+ * The kind is carried rather than inferred because the summary cannot tell them apart from a
+ * name: "Phase Cannon" is a card and "Brass" is a chassis, and both are just strings by the time
+ * they reach this overlay.
+ */
+export interface Earned {
+  readonly name: string;
+  readonly kind: 'chassis' | 'card' | 'yard';
+}
+
+/**
+ * What each kind is CALLED to a player. Lower case, because it sits in the row's right-hand cell
+ * as a quiet label beside the name rather than as a heading of its own.
+ *
+ * "Yard" rather than "level" or "map" - it is what the game calls its arenas everywhere else, and
+ * a summary that invented a fourth word for them would be the only place it did.
+ */
+const EARNED_LABEL: Readonly<Record<Earned['kind'], string>> = {
+  chassis: 'chassis',
+  card: 'card',
+  yard: 'yard',
+};
+
 export interface GameOverCallbacks {
   /** Same hero, new seed. */
   readonly onRetry: () => void;
@@ -77,13 +102,20 @@ export class GameOverOverlay {
    * than read from storage here, so this overlay stays a pure function of what it is handed.
    */
   /**
-   * `earned` is the chassis this run just unlocked, by name.
+   * `earned` is everything this run UNLOCKED - and it has never been only chassis. Three kinds
+   * arrive on it: a mech, an upgrade card, a yard.
    *
-   * IT GOES AT THE TOP, above every statistic. A run that earned a mech has produced exactly one
-   * piece of news, and burying it under the damage breakdown means a player finds out by noticing
-   * a tile has changed on the picker three runs later - which is not finding out.
+   * SO EACH ROW SAYS WHICH IT IS. The heading was "Chassis earned" and the right-hand cell was a
+   * constant "unlocked", which meant a run that earned the Phase Cannon CARD announced it as a
+   * chassis - wrong, and wrong in the one place the player is being told what they won. The
+   * heading is now the generic news and the kind moved into the row, which costs nothing: that
+   * cell was spending itself on a word every row already implied.
+   *
+   * IT GOES AT THE TOP, above every statistic. A run that earned something has produced exactly
+   * one piece of news, and burying it under the damage breakdown means a player finds out by
+   * noticing a tile has changed on the picker three runs later - which is not finding out.
    */
-  show(world: World, seed: number, banked = 0, earned: readonly string[] = []): void {
+  show(world: World, seed: number, banked = 0, earned: readonly Earned[] = []): void {
     const won = world.phase === RUN_PHASE_VICTORY;
     this.eyebrow.textContent = won ? 'Scraplord down' : 'Run over';
     this.title.textContent = won ? 'SURVIVED' : 'SCRAPPED';
@@ -135,8 +167,13 @@ export class GameOverOverlay {
       ${
         earned.length > 0
           ? `<div class="list summary__earned">
-        <div class="eyebrow">Chassis earned</div>
-        ${earned.map((n) => `<div class="list__row"><span>${escapeHtml(n)}</span><span>unlocked</span></div>`).join('')}
+        <div class="eyebrow">Unlocked</div>
+        ${earned
+          .map(
+            (e) =>
+              `<div class="list__row"><span>${escapeHtml(e.name)}</span><span>${EARNED_LABEL[e.kind]}</span></div>`,
+          )
+          .join('')}
       </div>`
           : ''
       }

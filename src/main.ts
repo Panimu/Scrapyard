@@ -53,7 +53,7 @@ import { AchievementToast } from './ui/achievementToast.js';
 import { SAVE_PAUSE_SEC, SavedOverlay } from './ui/savedOverlay.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
-import { GameOverOverlay } from './ui/gameOverOverlay.js';
+import { GameOverOverlay, type Earned } from './ui/gameOverOverlay.js';
 import { buildChangelogOverlay } from './ui/changelog.js';
 import { buildPauseOverlay } from './ui/pauseOverlay.js';
 import { VirtualJoystick } from './ui/virtualJoystick.js';
@@ -436,13 +436,16 @@ async function boot(): Promise<void> {
   }
 
   /**
-   * Chassis earned during the run in progress, by name, for the summary to announce.
+   * Everything the run in progress has UNLOCKED, for the summary to announce - and it has never
+   * been only chassis. Three different kinds land on this list (a mech, an upgrade card, a yard),
+   * so each row carries the kind it is rather than the summary guessing: the banner used to be
+   * headed "Chassis earned" and cheerfully announced a newly earned CARD as a chassis.
    *
    * IT HAS TO BE ACCUMULATED RATHER THAN ASKED FOR AT THE END, because unlocks are banked while the
    * run is still going: by the time the summary appears, `recordRun` has long since reported the
    * chassis as new and will not report it again. Cleared at run start.
    */
-  let earnedThisRun: string[] = [];
+  let earnedThisRun: Earned[] = [];
 
   /**
    * EVERYTHING A RUN HAS EARNED SO FAR, WRITTEN TO THE SAVE. Called once a second, when the run
@@ -470,15 +473,15 @@ async function boot(): Promise<void> {
       world.stats.killsByCycleRank,
     );
     for (const id of state.recordRun(record)) {
-      earnedThisRun.push(HERO_CATALOG.find((h) => h.id === id)?.name ?? id);
+      earnedThisRun.push({ name: HERO_CATALOG.find((h) => h.id === id)?.name ?? id, kind: 'chassis' });
     }
     // A card earned by this run joins the same list the summary announces. It is not a chassis, but
     // it is the same kind of news - something the next run can do that this one could not.
-    for (const def of state.recordCards(record)) earnedThisRun.push(def.name);
+    for (const def of state.recordCards(record)) earnedThisRun.push({ name: def.name, kind: 'card' });
     // A YARD, on the same list, and it is the biggest thing on it: finishing the Scrapyard opens
     // Mossy Mayhem. Banked through the same poll as everything else, so a win that ends in a tab
     // reload still leaves the map open.
-    for (const def of state.recordLevels(record)) earnedThisRun.push(def.name);
+    for (const def of state.recordLevels(record)) earnedThisRun.push({ name: def.name, kind: 'yard' });
   }
 
   function startRun(heroId: number, seed: number): void {

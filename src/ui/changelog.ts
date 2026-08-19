@@ -48,6 +48,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T08:47Z',
+    title: 'THE SUMMARY SAYS WHAT YOU ACTUALLY WON',
+    notes: [
+      'The run summary\u2019s unlock banner was headed \u201cChassis earned\u201d and announced everything that way \u2014 so a run that earned a new CARD was told it had earned a chassis. It now just says \u201cUnlocked\u201d, and each line tells you whether it was a chassis, a card or a yard.',
+      'Siege Heavies hold their mark for 50 seconds now rather than 90. The knot still forms; you no longer wait a minute and a half for it to turn on you.',
+    ],
+  },
+  {
     at: '2026-08-19T08:36Z',
     title: 'NEW WEAPON: THE FLAK CANNON',
     notes: [
