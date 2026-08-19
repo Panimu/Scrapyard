@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T10:38Z',
+    title: 'VERMILION ROLLS OUT, AND IT BRINGS A FOURTH SHELL',
+    notes: [
+      'Vermilion now opens with the Flak Cannon and throws an extra shell every burst \u2014 four instead of three, out of the same magazine, which empties that much sooner for it. Those rotary drums were always more flak than missile rack.',
+      'It is earned by having six other chassis in the bay: the first thing in the game unlocked by what your save has collected rather than by what one run did.',
+      'The Flak Cannon card is sealed until you have put down a great many enemies with the gun itself \u2014 which is what Vermilion is for. Its achievement will tell you the number when you get there.',
+    ],
+  },
+  {
     at: '2026-08-19T09:09Z',
     title: 'THE GIGA LASER COOLS SLOWER',
     notes: [

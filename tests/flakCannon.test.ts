@@ -25,6 +25,10 @@ import {
   type WeaponId,
 } from '../src/core/content/weaponCatalog.js';
 import { UPGRADE_CATALOG, upgradeIndex } from '../src/core/data/upgrades.js';
+import { HERO_CATALOG, heroIndex } from '../src/core/data/heroes.js';
+import { ACHIEVEMENT_CATALOG } from '../src/core/data/achievements.js';
+import { meetsUnlock } from '../src/core/data/unlocks.js';
+import { testRunRecord } from './fixtures.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
 import { NULL_HANDLE } from '../src/core/entity/handle.js';
 import { PROJECTILE_FLAG_DEAD } from '../src/core/entity/projectilePool.js';
@@ -274,5 +278,77 @@ describe('Copper opens with it', () => {
     expect(w.weaponCount).toBe(1);
     expect(w.weaponCatalog[w.weapons[0].defId].id).toBe('flak-cannon');
     void weaponDefIndex;
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe('Vermilion', () => {
+  it('opens with the Flak Cannon and throws a fourth shell', () => {
+    const w = createWorld(
+      { seed: 2, heroId: heroIndex('vermilion'), runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: HERO_CATALOG, weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    w.phase = RUN_PHASE_RUNNING;
+
+    expect(w.weaponCatalog[w.weapons[0].defId].id).toBe('flak-cannon');
+    // THE BONUS IS ADDITIVE AND IT LANDS: the base burst is three, this frame's is four.
+    expect(FLAK_CANNON.base.projectileCount).toBe(3);
+    expect(w.weapons[0].stats.projectileCount).toBe(4);
+  });
+
+  it('actually fires four shells, and spends four rounds doing it', () => {
+    const w = createWorld(
+      { seed: 2, heroId: heroIndex('vermilion'), runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { heroes: HERO_CATALOG, weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
+    );
+    w.phase = RUN_PHASE_RUNNING;
+    addEnemy(w, 200, 0);
+    const before = w.weapons[0].stats.ammoCapacity;
+    tick(w);
+
+    expect(shellAngles(w).length).toBe(4);
+    // The belt pays for it - see fireCone, which spends a round per SHELL.
+    expect(w.weapons[0].ammo).toBe(before - 4);
+  });
+
+  it('is earned by owning six other chassis, and by nothing else', () => {
+    const vermilion = HERO_CATALOG[heroIndex('vermilion')];
+    expect(vermilion.unlock).toEqual({ kind: 'chassisOwned', count: 6 });
+
+    const record = testRunRecord({});
+    const career = (heroesOwned: number) => ({ killsWith: {}, splashKills: 0, heroesOwned });
+    const ids = UPGRADE_CATALOG.map((d) => d.id);
+    expect(meetsUnlock(vermilion.unlock, record, ids, career(5))).toBe(false);
+    expect(meetsUnlock(vermilion.unlock, record, ids, career(6))).toBe(true);
+    // No career in hand is no save to count - it must not read as earned.
+    expect(meetsUnlock(vermilion.unlock, record, ids)).toBe(false);
+  });
+});
+
+describe('the card is locked behind the gun', () => {
+  it('needs 9001 career kills with the Flak Cannon', () => {
+    const card = UPGRADE_CATALOG.find((d) => d.id === 'w-flak-cannon');
+    expect(card?.unlock).toEqual({ kind: 'killsWithTotal', weapons: ['flak-cannon'], count: 9001 });
+  });
+
+  it('is reachable at all only because a chassis opens with it', () => {
+    // THE CIRCLE THAT ISN'T ONE. The card is gated on kills WITH the gun the card grants, which
+    // would be unearnable if the card were the only route. It is not: `isOfferable` gates the
+    // lock on `stacks === 0`, so a chassis that opens with the weapon holds it and levels it
+    // normally while the card is still sealed. At least one such chassis must exist, and at least
+    // one of those must itself be earnable, or the gun is content nobody can reach.
+    const openers = HERO_CATALOG.filter((h) => h.startingWeapon === 'flak-cannon');
+    expect(openers.length).toBeGreaterThan(0);
+    expect(openers.some((h) => h.unlock.kind !== 'never')).toBe(true);
+  });
+
+  it('carries an achievement that reads the card by reference', () => {
+    const card = UPGRADE_CATALOG.find((d) => d.id === 'w-flak-cannon');
+    const achv = ACHIEVEMENT_CATALOG.find((a) => a.id === 'flak-cannon');
+    expect(achv).toBeDefined();
+    // BY REFERENCE, not by value - the same object, so the two cannot be retuned apart.
+    expect(achv?.cond).toBe(card?.unlock);
+    expect(achv?.secret).toBe(true);
   });
 });

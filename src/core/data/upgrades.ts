@@ -496,6 +496,22 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
     effects: [],
+    /**
+     * OVER NINE THOUSAND KILLS WITH IT, ACROSS EVERY RUN. The career condition again (see
+     * `killsWithTotal`), and by a distance the largest number in the game - nine times the Phase
+     * Cannon's 1001.
+     *
+     * IT IS EARNED WITH THE GUN, WHICH THE CARD DOES NOT GIVE YOU. The same shape the Phase
+     * Cannon established and the same reason it works: `isOfferable` tests `stacks === 0` for the
+     * lock, so a chassis that OPENS with the weapon holds it and levels it normally while the card
+     * is still sealed. Vermilion and Copper are those chassis, and a Vermilion run throws four
+     * shells a burst rather than three - which is also the fastest route to nine thousand.
+     *
+     * A number this large is a long-horizon goal rather than a run's worth of work, and that is
+     * the intent: the card is not the gun, it is the gun becoming available to every OTHER
+     * chassis in the bay.
+     */
+    unlock: Object.freeze({ kind: 'killsWithTotal' as const, weapons: ['flak-cannon'] as const, count: 9001 }),
   },
   {
     id: 'w-artillery',

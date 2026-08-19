@@ -685,7 +685,13 @@ export class AppState {
 
   /** The career as the evaluator wants it - see CareerRecord in core/data/unlocks.ts. */
   career(): CareerRecord {
-    return { killsWith: this.settings.careerKills, splashKills: this.settings.careerSplashKills };
+    return {
+      killsWith: this.settings.careerKills,
+      splashKills: this.settings.careerSplashKills,
+      // READ LIVE, so a pass that unlocks the sixth chassis can unlock the one that wanted six in
+      // the same pass - `recordRun` calls this per hero. See CareerRecord.heroesOwned.
+      heroesOwned: this.settings.unlockedHeroes.length,
+    };
   }
 
   /**

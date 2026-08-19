@@ -19,8 +19,9 @@
  *     Long Laser      ember, rust
  *     Cannon          amber, brass
  *     Short Missiles  ash                            <- one
- *     Long Missiles   onyx, vermilion
- *     Machine Gun     bone, copper
+ *     Long Missiles   onyx                           <- one
+ *     Machine Gun     bone                           <- one
+ *     Flak Cannon     copper, vermilion
  *     Heavy Artillery plum, indigo
  *     Drones          fern                           <- and nobody else, by design
  *
@@ -30,8 +31,13 @@
  *
  * Two-per-weapon was a real property and it is worth naming what replaced it: a player who has
  * used one green mech knows what the other green mech does, and that no longer holds for the
- * missile racks. Onyx was moved to the long rack deliberately; rebalancing to 2/2 means moving
- * vermilion or indigo to the short rack, which is a one-line change if the split starts to grate.
+ * racks. Three weapons now have a single opener - the short rack, the long rack and the belt gun -
+ * and rebalancing any of them to 2/2 is a one-line change if the split starts to grate.
+ *
+ * THE FLAK CANNON HAS TWO OPENERS AND ONE OF THEM IS SEALED. Copper is still `never`, so Vermilion
+ * is the whole route to the gun until Copper's criteria are written - which is why Vermilion's own
+ * condition had to be a real one rather than another `never`: a weapon whose only door is locked is
+ * a weapon nobody can reach, and its card is gated behind kills WITH IT.
  *
  * WHEN FULLER VARIETY RETURNS, nothing structural has to change:
  *   - `player` and `weapon` are already multiplier maps consumed by resolvePlayerStats /
@@ -420,6 +426,39 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     weaponBonus: { 'phase-cannon': { mul: { damage: 1.1 } } },
   },
   {
+    id: 'vermilion',
+    /**
+     * SIX OTHER CHASSIS IN THE BAY - a breadth milestone rather than a feat, and the first
+     * condition in the game that asks about the SAVE instead of about a run. See UnlockCond
+     * `chassisOwned`. It sits naturally on this frame: the reward for having earned six mechs is
+     * the one that fires more of everything.
+     *
+     * SIX of the sixteen, one of which is Slate and free, so it is five earned - reachable well
+     * before the roster runs out and late enough to be a milestone rather than a formality.
+     */
+    unlock: { kind: 'chassisOwned', count: 6 },
+    name: 'Vermilion',
+    identity:
+      'Light hover, rotary drums. Opens with the Flak Cannon, and throws an extra shell every burst.',
+    sprite: 'mech_vermilion',
+    gait: 'hover',
+    startingWeapon: 'flak-cannon',
+    player: {},
+    weapon: {},
+    /**
+     * A FOURTH SHELL, not a percentage - `add` rather than `mul`, and the one bonus in the roster
+     * that changes what a burst IS rather than what it is worth. Three shells become four: a third
+     * more of the cone filled, a third of the belt gone faster, and the reload arriving sooner for
+     * it. The Flak Cannon spends its magazine per SHELL (see fireCone), so this bonus pays for
+     * itself out of the same belt rather than being free damage.
+     *
+     * It is also why the cone is the right weapon for it. A fourth shell on a gun that AIMS would
+     * be a flat damage increase; on a gun that sprays, it is a denser spray - the same decision the
+     * weapon already asks the player to make, made more often.
+     */
+    weaponBonus: { 'flak-cannon': { add: { projectileCount: 1 } } },
+  },
+  {
     id: 'jade',
     unlock: { kind: 'never' }, // criteria to be defined
     name: 'Jade',
@@ -452,18 +491,6 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
     sprite: 'mech_cobalt',
     gait: 'walk',
     startingWeapon: 'laser-medium',
-    player: {},
-    weapon: {},
-  },
-  {
-    id: 'vermilion',
-    unlock: { kind: 'never' }, // criteria to be defined
-    name: 'Vermilion',
-    identity:
-      'Light hover, rotary drums. Opens with the Long Missiles.',
-    sprite: 'mech_vermilion',
-    gait: 'hover',
-    startingWeapon: 'missile-long',
     player: {},
     weapon: {},
   },

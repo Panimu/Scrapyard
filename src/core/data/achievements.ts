@@ -56,6 +56,7 @@ export type AchievementId =
   | 'radiator-bank'
   | 'phase-cannon'
   | 'shaped-charges'
+  | 'flak-cannon'
   | `mech-${HeroId}`
   | `level-${LevelId}`;
 
@@ -130,6 +131,7 @@ function cardUnlock(id: UpgradeId): UnlockCond {
 const RADIATOR_UNLOCK = cardUnlock('p-radiator');
 const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
 const BLAST_UNLOCK = cardUnlock('p-blast');
+const FLAK_UNLOCK = cardUnlock('w-flak-cannon');
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -224,6 +226,20 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // Tier 8 is reachable by nothing but a chest paying out an ascension - see the Chain Laser's
     // note above.
     cond: { kind: 'tier', id: 'w-cannon', tier: 8 },
+  },
+  {
+    id: 'flak-cannon',
+    platformKey: 'scrapyard_flak_cannon',
+    // The number is the joke and the joke is the target. It is the only achievement name in the
+    // table that states its own figure, because nine thousand and one is not a threshold a player
+    // would ever infer - and because a player who gets there will have been counting.
+    name: "It's Over Nine Thousand",
+    icon: 'icon_w-flak-cannon',
+    description: 'Killed 9001 enemies with the Flak Cannon.',
+    secret: true,
+    // BY REFERENCE, off the card itself - see cardUnlock. The card and the trophy cannot disagree
+    // about what nine thousand means, and neither can be retuned without the other following.
+    cond: FLAK_UNLOCK,
   },
   {
     id: 'giga-laser',

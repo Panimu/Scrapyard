@@ -67,6 +67,16 @@ export type UnlockCond =
    * `kind` that is not a question about the run at all.
    */
   | { readonly kind: 'never' }
+  /**
+   * Own at least `count` OTHER chassis. A milestone rather than a feat: it asks for a save that
+   * has been played broadly instead of one that did a particular thing once.
+   *
+   * "OTHER" IS FREE HERE AND WORTH STATING. The condition is only ever asked about a chassis that
+   * is still locked - `recordRun` skips anything already earned - so the count it reads cannot
+   * include the chassis being tested. There is no self-reference to exclude and no way for one to
+   * unlock itself.
+   */
+  | { readonly kind: 'chassisOwned'; readonly count: number }
   /** Reach wave `wave` - i.e. survive into the Nth 120 s cycle. 1 is the opening wave. */
   | { readonly kind: 'wave'; readonly wave: number }
   /** Survive `sec` seconds of RUN time. Intro and level-up pauses do not count; `runSec` is the clock. */
@@ -258,6 +268,18 @@ export interface CareerRecord {
   readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
   /** Killing blows ever landed by splash, every run included. */
   readonly splashKills: number;
+  /**
+   * HOW MANY CHASSIS THE SAVE HAS EARNED, counted at the moment the condition is asked.
+   *
+   * The first career fact here that is not a tally of kills, and it belongs beside them for the
+   * reason the header gives: it is a property of the SAVE rather than of the run, and a RunRecord
+   * field would be a number about the save file smuggled into the record of one fight.
+   *
+   * COUNTED LIVE, NOT SNAPSHOTTED. `recordRun` rebuilds this per hero as it walks the catalog, so
+   * unlocking the sixth chassis and the chassis that WANTS six can happen in one pass. Without
+   * that the reward for a milestone would arrive a whole run after the milestone.
+   */
+  readonly heroesOwned: number;
 }
 
 /**
@@ -280,6 +302,9 @@ export function meetsUnlock(
       return true;
     case 'never':
       return false;
+    case 'chassisOwned':
+      // No career in hand means no save to count - the same fallback every career kind takes.
+      return (career?.heroesOwned ?? 0) >= cond.count;
     case 'wave':
       return run.wave >= cond.wave;
     case 'survive':
@@ -391,6 +416,8 @@ export function describeUnlockDone(
     case 'always':
     case 'never':
       return '';
+    case 'chassisOwned':
+      return `Had ${cond.count} other chassis in the bay.`;
     case 'wave':
       return `Reached wave ${cond.wave}.`;
     case 'survive':

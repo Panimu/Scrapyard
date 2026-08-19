@@ -195,6 +195,7 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'Three shells a burst, each one thrown down its own randomly drawn line inside a wide cone. It is the only weapon here that cannot be aimed: two bursts at the same body are never the same shape, and no tier narrows the spread.',
       'It reaches further than any other shell in the game and hits almost nothing at that distance. What it is really firing at is the GROUND BEHIND its target - it shoots the nearest body so the cone opens into whatever is walking up behind it, which is why a wave eats a whole burst and a single straggler eats one shell of it.',
       'It shares the Machine Gun\u2019s mount, and the two can never be carried together. A run picks the stream or the spray.',
+      'Vermilion throws a fourth shell every burst \u2014 a denser spray out of the same belt, which empties that much sooner for it.',
       'A magazine, like the belt gun: a long stretch of fire and then a long silence you have already paid for.',
     ],
   },
