@@ -30,6 +30,7 @@ import {
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import {
   CANNON,
+  BEAM_MOUNTS,
   LASER_HARDPOINTS,
   laserHardpoint,
   LASER_LONG,
@@ -1389,6 +1390,62 @@ describe('lasers spread out: a body one laser has claimed is invisible to the ne
     expect(w.beams.count).toBe(1);
     expect(w.beams.x0[0]).toBeCloseTo(0, 6);
     expect(w.beams.y0[0]).toBeCloseTo(LASER_HARDPOINTS[0].x, 6);
+  });
+
+  it('assigns every mount row without collision, up to five beams', () => {
+    // FOUR AND FIVE BEAMS CANNOT BE REACHED THROUGH THE DECK - there are only three beam weapons,
+    // and neither ascension adds one - so the loadout is fitted by hand. That is the point of the
+    // test rather than a shortcut around it: BEAM_MOUNTS defines those rows, and a rule nothing
+    // exercises is a rule that is wrong by the time something does.
+    for (let count = 1; count <= LASER_HARDPOINTS.length; count++) {
+      const w = makeWorld('laser-short');
+      // Slot 0 already holds a beam; fill up to `count` with more of the same kind.
+      for (let i = 1; i < count; i++) {
+        const inst = w.weapons[w.weaponCount];
+        inst.defId = weaponDefIndex('laser-medium');
+        inst.level = 1;
+        w.weaponCount++;
+      }
+      expect(w.weaponCount).toBe(count);
+
+      const row = BEAM_MOUNTS[count];
+      const seen = new Set<string>();
+      for (let slot = 0; slot < count; slot++) {
+        const hp = laserHardpoint(w, slot);
+        // The mount this slot got is the one the table names for its position in the row.
+        expect(hp, `count ${count} slot ${slot}`).toBe(LASER_HARDPOINTS[row[slot]]);
+        seen.add(`${hp.x},${hp.y}`);
+      }
+      // NO TWO BEAMS SHARE A MOUNT. The whole reason the assignment exists is that two guns
+      // firing from one point is indistinguishable from one gun.
+      expect(seen.size, `count ${count}`).toBe(count);
+    }
+  });
+
+  it('keeps every BEAM_MOUNTS row the right length and inside the table', () => {
+    // The invariant the table encodes: row n has n mounts, and every entry is a real hardpoint.
+    expect(BEAM_MOUNTS.length).toBe(LASER_HARDPOINTS.length + 1);
+    for (let n = 0; n < BEAM_MOUNTS.length; n++) {
+      expect(BEAM_MOUNTS[n].length, `row ${n}`).toBe(n);
+      expect(new Set(BEAM_MOUNTS[n]).size, `row ${n} repeats a mount`).toBe(n);
+      for (const idx of BEAM_MOUNTS[n]) {
+        expect(idx).toBeGreaterThanOrEqual(0);
+        expect(idx).toBeLessThan(LASER_HARDPOINTS.length);
+      }
+    }
+  });
+
+  it('puts the back pair behind the shoulders and clear of the tail', () => {
+    const [nose, shoulderL, shoulderR, backL, backR] = LASER_HARDPOINTS;
+    // Behind centre, and behind the shoulders - which is what makes them a BACK pair.
+    expect(backL.x).toBeLessThan(0);
+    expect(backL.x).toBeLessThan(shoulderL.x);
+    // "Not very far back": nearer the middle than the nose is, rather than out at the exhaust.
+    expect(Math.abs(backL.x)).toBeLessThan(nose.x);
+    // Mirrored, on the shoulders' own lateral line.
+    expect(backL.y).toBe(-backR.y);
+    expect(backL.y).toBe(shoulderL.y);
+    expect(backR.y).toBe(shoulderR.y);
   });
 
   it('hands the renderer the SAME hardpoint the ray leaves from, for every slot', () => {

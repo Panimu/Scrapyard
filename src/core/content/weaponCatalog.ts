@@ -567,27 +567,69 @@ function laserTiers(
  * drawn from there, one fact rather than two (the old emitter was cosmetic and the ray came from
  * the centre; the two could visibly disagree at point-blank range).
  *
- * THREE POINTS, ASSIGNED BY HOW MANY BEAMS THE LOADOUT HOLDS - which is at most three, since each
- * laser is one card and the Chain Laser is the Medium at tier 8:
+ * FIVE POINTS - a nose and four corners - ASSIGNED BY HOW MANY BEAMS THE LOADOUT HOLDS. See
+ * BEAM_MOUNTS below for the assignment itself; the shape of it is:
  *
  *   one laser     the NOSE - a single gun mounts on the centreline
  *   two lasers    the two SHOULDERS - a pair mounts symmetrically
  *   three         nose and both shoulders, in slot order
+ *   four          the four CORNERS, nose empty - four guns want the wide square, not a spine
+ *   five          all of them
+ *
+ * THE BACK PAIR IS NOT REACHABLE YET AND THAT IS DELIBERATE RATHER THAN AN OVERSIGHT. Only three
+ * beam weapons exist (short, medium, long - the Chain Laser is the Medium at tier 8 and the Giga
+ * is the Long, so an ascension adds no beam), and three of them fit the front trio. The four- and
+ * five-beam rows are what the rule DOES rather than what it currently does, and they are covered
+ * by tests that hold four and five beams directly - so the day a fourth beam ships, or a weapon
+ * fires from more than one mount at once, the mounts are already on the chassis and already
+ * correct instead of being invented under pressure.
  *
  * The numbers are read off the generated chassis art (tools/make-mechs.mjs): the nose sits ~54 px
  * ahead of centre and the shoulder line at SY = 38K px, on a 148 px canvas drawn 58 world units
- * wide - so ~21 u forward, and ~5 u forward by ~15 u out. ONE trio for all sixteen chassis rather
- * than sixteen hand-fitted trios: the frames differ by a weight class the offsets sit comfortably
- * inside, and per-chassis fitting is a decision for the day a chassis ships whose silhouette
- * actually contradicts these. Rough symmetry over precision, by design.
+ * wide - so ~21 u forward, and ~5 u forward by ~15 u out. The back pair sits ~23 px BEHIND centre
+ * on the same lateral line as the shoulders: ~9 u aft by ~15 u out. Behind the shoulders and well
+ * clear of the tail - the rear thruster block starts ~42 px back and the hull ends around 48 -
+ * which is what "not very far back" buys: the mounts read as rear quarters of the same hull
+ * rather than as guns bolted to the exhaust.
+ *
+ * ONE SET FOR ALL SIXTEEN CHASSIS rather than sixteen hand-fitted sets: the frames differ by a
+ * weight class the offsets sit comfortably inside, and per-chassis fitting is a decision for the
+ * day a chassis ships whose silhouette actually contradicts these. Rough symmetry over precision,
+ * by design - the back pair shares the shoulders' ~15 u half-width for exactly that reason, which
+ * on a light frame is a unit or so proud of the hull and on a heavy one a unit or so inside it.
  *
  * IN CORE, NOT THE RENDERER, because the origin is now a SIMULATION fact: it decides what the ray
  * hits, so it has to live where the ray lives and land in the replay.
  */
 export const LASER_HARDPOINTS: readonly Readonly<{ x: number; y: number }>[] = Object.freeze([
-  Object.freeze({ x: 21, y: 0 }), // nose
-  Object.freeze({ x: 5, y: -15 }), // left shoulder
-  Object.freeze({ x: 5, y: 15 }), // right shoulder
+  Object.freeze({ x: 21, y: 0 }), // 0  nose
+  Object.freeze({ x: 5, y: -15 }), // 1  left shoulder
+  Object.freeze({ x: 5, y: 15 }), // 2  right shoulder
+  Object.freeze({ x: -9, y: -15 }), // 3  back left
+  Object.freeze({ x: -9, y: 15 }), // 4  back right
+]);
+
+/**
+ * WHICH MOUNTS ARE USED FOR A GIVEN NUMBER OF BEAMS, indexed by that number. Row `n` has exactly
+ * `n` entries and every entry is an index into LASER_HARDPOINTS.
+ *
+ * A TABLE RATHER THAN THE ARITHMETIC IT REPLACED. This used to be three lines of index juggling
+ * with `< 3 ? : 2` clamps in them, which was already hard to read for three points and would have
+ * been unreadable for five - and the clamps were load-bearing in a way nothing stated. As data,
+ * the assignment is legible at a glance, the row length IS the invariant (row n has n mounts), and
+ * a test can walk every row instead of trusting the arithmetic.
+ *
+ * FOUR BEAMS TAKE THE CORNERS AND LEAVE THE NOSE EMPTY, which is the one row worth arguing about.
+ * Nose-plus-three would put an odd gun on the centreline and break the symmetry the other rows
+ * keep; four guns on four corners is what the hull is shaped for.
+ */
+export const BEAM_MOUNTS: readonly (readonly number[])[] = Object.freeze([
+  Object.freeze([]), // 0 - no beams held
+  Object.freeze([0]), // 1 - nose
+  Object.freeze([1, 2]), // 2 - shoulders
+  Object.freeze([0, 1, 2]), // 3 - nose and shoulders
+  Object.freeze([1, 2, 3, 4]), // 4 - the four corners
+  Object.freeze([0, 1, 2, 3, 4]), // 5 - everything
 ]);
 
 /**
@@ -619,16 +661,19 @@ export function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: n
   }
   if (gigaIdx >= 0) {
     if (weaponIdx === gigaIdx) return LASER_HARDPOINTS[0];
-    // The remaining beams take the shoulders in slot order.
-    let shoulder = 0;
+    // Every other beam takes the remaining mounts in slot order - shoulders first, then the back
+    // pair. The nose is spoken for, so this walks LASER_HARDPOINTS from 1 rather than consulting
+    // BEAM_MOUNTS: the count-based rows all assume the nose is available to give away.
+    let nth = 0;
     for (let i = 0; i < world.weaponCount; i++) {
       if (i === gigaIdx) continue;
       if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind !== 'beam')
         continue;
       if (i === weaponIdx) break;
-      shoulder++;
+      nth++;
     }
-    return LASER_HARDPOINTS[shoulder + 1 < 3 ? shoulder + 1 : 2];
+    const at = nth + 1;
+    return LASER_HARDPOINTS[at < LASER_HARDPOINTS.length ? at : LASER_HARDPOINTS.length - 1];
   }
 
   let held = 0;
@@ -638,9 +683,12 @@ export function laserHardpoint(world: World, weaponIdx: number): Readonly<{ x: n
     if (i === weaponIdx) mine = held;
     held++;
   }
-  if (held <= 1) return LASER_HARDPOINTS[0];
-  if (held === 2) return LASER_HARDPOINTS[mine + 1 < 3 ? mine + 1 : 2];
-  return LASER_HARDPOINTS[mine < 3 ? mine : 2];
+  // Straight off the table - see BEAM_MOUNTS. Both lookups are clamped rather than trusted: more
+  // beams than there are mounts is not reachable today and must not become an undefined read the
+  // day it is.
+  const row = BEAM_MOUNTS[held < BEAM_MOUNTS.length ? held : BEAM_MOUNTS.length - 1];
+  if (row.length === 0) return LASER_HARDPOINTS[0];
+  return LASER_HARDPOINTS[row[mine < row.length ? mine : row.length - 1]];
 }
 
 /**
