@@ -10,10 +10,12 @@
  * weapons in the game - the ones a run is actually built toward - have never been measured against
  * anything.
  *
- * So this is the other half: EVERY WEAPON THAT HAS A TIER 8, AT TIER 8, AND NOTHING ELSE. Two guns
- * today, and the table says how the Chain Laser and the GTM Hornet compare when neither is standing
- * behind six others taking the bodies. Every ascension added from here appears in this table for
- * free, which is the reason the set is derived from the catalog rather than listed.
+ * So this is the other half: EVERY WEAPON THAT HAS A TIER 8, AT TIER 8, AND NOTHING ELSE. Four guns
+ * today - the Twin Mount, the GTM Hornet, the Chain Laser and the Giga Laser - and the table says
+ * how they compare when none of them is standing behind six others taking the bodies. Every
+ * ascension added from here appears in this table for free, which is the reason the set is derived
+ * from the catalog rather than listed: it was written when there were two, and it has been correct
+ * through both additions without being touched.
  *
  * WHAT IT IS NOT: a picture of a real build. Nobody reaches tier 8 on two weapons and holds nothing
  * else - three or four T7 guns is what an actual run looks like, and those guns are most of its
