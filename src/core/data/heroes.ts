@@ -470,12 +470,17 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   {
     id: 'copper',
     unlock: { kind: 'never' }, // criteria to be defined
+    // THE FLAK CANNON'S OPENER. It was a second bare Machine Gun chassis - same gun as Bone, no
+    // bonus, nothing of its own - and every gun in the catalog has to be somebody's opener or it
+    // is content a player only meets by chance (heroes.test.ts pins that). Bone keeps the belt
+    // gun and its +30% round; this frame takes the weapon that was already written on it, since
+    // "rotary drums" describes a flak mount better than it ever described a machine gun.
     name: 'Copper',
     identity:
-      'Heavy quad, rotary drums. Opens with the Machine Gun.',
+      'Heavy quad, rotary drums. Opens with the Flak Cannon.',
     sprite: 'mech_copper',
     gait: 'walk',
-    startingWeapon: 'machine-gun',
+    startingWeapon: 'flak-cannon',
     player: {},
     weapon: {},
   },

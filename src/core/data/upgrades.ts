@@ -62,6 +62,7 @@ export type UpgradeId =
   | 'w-missile-short'
   | 'w-missile-long'
   | 'w-machine-gun'
+  | 'w-flak-cannon'
   | 'w-artillery'
   | 'w-drone'
   | 'w-phase-cannon'
@@ -466,6 +467,30 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'A deeper magazine.',
       'Reaches further.',
       'A much harder-hitting round.',
+      'Reloads much faster.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    effects: [],
+  },
+  {
+    id: 'w-flak-cannon',
+    kind: 'weapon',
+    grantsWeapon: 'flak-cannon',
+    name: 'Flak Cannon',
+    // NO CONE ANGLE AND NO SHELL COUNT-IN-DEGREES. "Wide spray" is the decision; sixty degrees is
+    // arithmetic. The SHELL COUNT does appear, per the house rule - three shells is a different
+    // thing happening, not a bigger number - and so does the fact that it is inaccurate, because
+    // that is the whole trade the card is asking the player to take.
+    description:
+      'Three shells a burst into a wide, random spray at the nearest enemy - far-reaching and wildly inaccurate. A deep magazine, then a long reload.',
+    tiers: Object.freeze([
+      'Unlock.',
+      'A harder-hitting shell.',
+      'Fires faster.',
+      'A deeper magazine.',
+      'Reaches further.',
+      'A much harder-hitting shell.',
       'Reloads much faster.',
     ]),
     maxStacks: WEAPON_MAX_TIER,

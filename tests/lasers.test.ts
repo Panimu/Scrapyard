@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { testHero } from './fixtures.js';
 
 import {
+  CHOOSE_REROLL,
   DT,
   HEAT_CAPACITY_BASE,
   HEAT_RESUME_FRAC,
@@ -870,8 +871,22 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     return -1;
   }
 
-  /** Levels up until `idx` is on the card and takes it. Returns false if it never appeared. */
+  /**
+   * Levels up until `idx` is on the card and takes it. Returns false if it never appeared.
+   *
+   * REROLLS RATHER THAN TAKING WHATEVER IS OFFERED, and that distinction is load-bearing - it is
+   * the same one hornet.test.ts documents. A hunt that blind-picks index 0 every miss fills all
+   * five weapon slots and five passive slots within a dozen levels, `isOfferable` then has
+   * nothing eligible left, and the hunt ends early reporting "the card never came up" when what
+   * actually happened is "the deck ran dry". That failure is also SEED-COUPLED: it appears and
+   * disappears when a card is added to the catalog, which is exactly how it surfaced - the Flak
+   * Cannon joined the pool and this test started failing for a reason unrelated to lasers.
+   *
+   * Rerolling keeps the loadout to whatever the test itself fitted, which is the premise these
+   * tests are built on. `infiniteRerolls` is the game's own switch for it.
+   */
   function takeCard(world: World, idx: number, tries = 200): boolean {
+    world.infiniteRerolls = true;
     for (let i = 0; i < tries; i++) {
       if (world.phase !== RUN_PHASE_LEVEL_UP) gainOneLevel(world);
       if (world.phase !== RUN_PHASE_LEVEL_UP) return false;
@@ -880,7 +895,7 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
         choose(world, slot);
         return true;
       }
-      choose(world, 0);
+      choose(world, CHOOSE_REROLL);
     }
     return false;
   }

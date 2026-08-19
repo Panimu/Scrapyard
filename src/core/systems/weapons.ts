@@ -1337,6 +1337,100 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
 
 
 /**
+ * `cone` - the Flak Cannon. N shells per burst, each on ITS OWN randomly drawn heading inside a
+ * `spreadAngle`-wide arc centred on the turret's aim line.
+ *
+ * RANDOM PER SHELL, NOT A FAN. `spread` lays its shells at fixed offsets, so a Machine Gun burst
+ * is the same shape every time and the pattern is something the player can aim; here each shell
+ * draws its own angle, so no two bursts are alike and none of them can be placed. That is the
+ * whole weapon - it is not a gun you aim, it is a volume you fill - and it is why the cone is the
+ * one thing the tier ladder deliberately never narrows.
+ *
+ * FROM `rng.weapon`, WHICH IS WHY THE STREAM EXISTS. One draw per shell, from the weapon stream
+ * and no other, so a run's spawns and loot are identical whether or not this gun was ever taken.
+ * Taking the rolls from `rng.spawn` would make the horde itself depend on how many bursts had
+ * been fired - see rng.ts.
+ *
+ * `Math.cos`/`Math.sin` ARE PERMITTED HERE, unlike in the flow field's swirl table or the
+ * Hornet's split angle, and the reason is the same one that permits them in `spread` and
+ * `barrage`: this runs a few times a second at fire time rather than per entity per tick, and
+ * every consumer of the result is a float that is already being written to the pool. The ban in
+ * CLAUDE.md is on the HOT deterministic paths where an implementation-defined last bit compounds;
+ * a volley's heading is drawn from the RNG in the first place.
+ *
+ * AMMUNITION IS SPENT PER SHELL, exactly as `spread` spends it, so a three-shell burst empties a
+ * belt three times as fast as its burst count suggests. A burst that runs dry halfway simply
+ * ends; updateWeapons starts the reload on the next tick, so all magazine state moves in one
+ * place.
+ */
+export const fireCone: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const rng = world.rng.weapon;
+  const player = world.player;
+
+  const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
+  const behaviour = BEHAVIOUR_ID[def.behaviour];
+
+  // The turret's aim line, never the chassis facing: this gun tracks a body.
+  const baseX = inst.turretX;
+  const baseY = inst.turretY;
+  const half = stats.spreadAngle * 0.5;
+
+  for (let i = 0; i < count; i++) {
+    if (stats.ammoCapacity > 0) {
+      if (inst.ammo <= 0) break;
+      inst.ammo--;
+    }
+
+    // Uniform across the full arc: -half to +half. A shell is as likely to go to the edge of the
+    // cone as down the middle, which is what makes the spray read as a spray rather than as a
+    // fan with jitter.
+    const a = (rng.nextFloat() * 2 - 1) * half;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    const dirX = baseX * c - baseY * sn;
+    const dirY = baseX * sn + baseY * c;
+
+    const spawnId = ++world.stats.shotsFired;
+    const handle = allocProjectile(
+      projectiles,
+      player.x + dirX * def.muzzleOffset,
+      player.y + dirY * def.muzzleOffset,
+      dirX * stats.projectileSpeed,
+      dirY * stats.projectileSpeed,
+      stats.projectileLifetime,
+      weaponIdx,
+      behaviour,
+      spawnId,
+    );
+    if (handle === NULL_HANDLE) break;
+
+    const d = projectiles.count - 1;
+    projectiles.damage[d] = stats.damage;
+    projectiles.knockback[d] = stats.knockback;
+    projectiles.splashRadius[d] = stats.splashRadius;
+    projectiles.splashFrac[d] = stats.splashFrac;
+    projectiles.radius[d] = def.shellRadius;
+    projectiles.pierceLeft[d] = stats.pierce;
+    projectiles.visualId[d] = def.visualId;
+
+    pushEvent(
+      world.events,
+      EV_WEAPON_FIRED,
+      world.tick,
+      projectiles.x[d],
+      projectiles.y[d],
+      dirX,
+      dirY,
+      weaponIdx,
+    );
+  }
+};
+
+
+/**
  * `barrage` - Heavy Artillery. Shells fall on random ground near the mech.
  *
  * NOTHING IS AIMED AT. No target is selected, the player's facing is ignored, and enemy positions
@@ -1472,6 +1566,7 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
   spread: fireSpread,
+  cone: fireCone,
   barrage: fireBarrage,
   beam: fireBeam,
   phase: firePhase,

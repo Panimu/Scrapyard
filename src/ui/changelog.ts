@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T08:36Z',
+    title: 'NEW WEAPON: THE FLAK CANNON',
+    notes: [
+      'Three shells a burst, thrown into a wide random spray at the nearest enemy. It reaches further than any other shell in the game and it cannot be aimed \u2014 no two bursts are the same shape, and nothing you can take will tighten it. Fire it at a loner and most of the belt goes into the dirt; fire it into a wave and almost every shell finds something.',
+      'It bolts onto the Machine Gun\u2019s mount, so the deck will never offer you both. A run picks the stream or the spray.',
+      'Copper now rolls out with the Flak Cannon \u2014 those rotary drums were always more flak than machine gun. Bone still opens with the belt gun and still hits 30% harder with it.',
+    ],
+  },
+  {
     at: '2026-08-19T08:19Z',
     title: 'HOT EMITTERS SIT WHERE THE GUNS ARE',
     notes: [

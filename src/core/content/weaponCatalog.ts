@@ -38,6 +38,7 @@ export type WeaponId =
   | 'missile-short'
   | 'missile-long'
   | 'machine-gun'
+  | 'flak-cannon'
   | 'artillery'
   | 'drone'
   | 'phase-cannon';
@@ -80,7 +81,14 @@ export const VIS_PLASMA = 6;
  */
 export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp' | 'densest';
 
-export type FirePatternId = 'battery' | 'beam' | 'spread' | 'barrage' | 'factory' | 'phase';
+export type FirePatternId =
+  | 'battery'
+  | 'beam'
+  | 'spread'
+  | 'barrage'
+  | 'factory'
+  | 'phase'
+  | 'cone';
 
 export type BehaviourId = 'straight' | 'homing' | 'phase'; // grows: | 'arc'
 
@@ -217,6 +225,25 @@ export interface WeaponDef {
    *   (and the gap after it) unchanged.
    */
   readonly gigaFrom?: number;
+  /**
+   * WEAPONS THAT CANNOT SHARE THE CHASSIS WITH THIS ONE. Absent on everything that fits beside
+   * anything, which is every gun but the two that share a mount.
+   *
+   * The Flak Cannon bolts onto the SAME rotary mount the Machine Gun uses - one snout, drawn from
+   * one sprite (render's TURRET_ART) - so a loadout holding both would be two guns claiming one
+   * piece of hardware and one barrel visibly firing for both. They are also the same IDEA at two
+   * ranges, and a deck that offered both would routinely spend two of five weapon slots on it.
+   *
+   * DECLARED ONCE, ENFORCED BOTH WAYS. `isOfferable` asks whether THIS card's gun excludes
+   * anything held AND whether anything held excludes this card's gun, so the pair needs only one
+   * of the two defs to name the other. A `excludes` on each would be two facts that can drift
+   * apart, and the drift would be silent: the deck would simply start offering the pair in one
+   * order and not the other.
+   *
+   * IT IS A FACT ABOUT THE HARDWARE, so it lives on the weapon rather than on the upgrade card -
+   * the card is how you get the gun, not what the gun is bolted to.
+   */
+  readonly excludes?: readonly WeaponId[];
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -1000,6 +1027,116 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 });
 
 // ---------------------------------------------------------------------------------------------
+// The Flak Cannon
+//
+// The Machine Gun's opposite number on the same mount, and the two cannot be held together (see
+// WeaponDef.excludes). Where the belt gun is a precise stream that only works INSIDE the crowd,
+// this throws three shells at once into a sixty-degree cone at four hundred units - the longest
+// reach of any projectile weapon here - and most of them miss.
+//
+//   3 shells   0.13 s cycle   9 damage   60 deg cone   300 rounds   13 s reload
+//
+// THE CONE IS THE WEAPON, and it is genuinely random rather than a fan: three shells drawn
+// independently from the spread each burst, so no two bursts are the same shape and none of them
+// can be aimed. On paper that is 23 rounds a second and 207 dps, well past the Machine Gun's 122 -
+// and it is a paper number, because a sixty-degree cone at four hundred units is about four
+// hundred units of arc for a body eighteen units wide to be standing in. What the weapon actually
+// delivers is a function of HOW MANY BODIES ARE IN THE CONE, which is the trade being sold: fire
+// it at a loner across the yard and most of the belt goes into the dirt; fire it into a wave and
+// nearly every shell finds something.
+//
+// IT SHOOTS THE NEAREST BODY, not the weakest, and that is what makes the cone usable: the aim
+// point is the near edge of the crowd, so the cone opens INTO the mass behind it rather than
+// reaching past it at something buried. Aiming at the weakest would point a shotgun at whatever
+// happened to be most nearly dead.
+//
+// THE BELT IS DEEPER AND THE RELOAD SHORTER than the Machine Gun's (300/13 s against 200/15 s),
+// which is not generosity - it is the miss rate priced in. 100 bursts at 0.13 s is 13 s of fire
+// against 13 s of silence: 50% uptime, the best of any magazine weapon, and it still spends half
+// its rounds on empty ground.
+//
+// NOT MEASURED YET. Every figure above is a first pass, not a claim - see CLAUDE.md, "measure
+// balance changes, do not assert them". `npm run dps` and `npm run loadout` are owed before any
+// of it is defended.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * THE CONE, and it is the FULL width rather than the angle between neighbours.
+ *
+ * `spreadAngle` means something slightly different in the two patterns that read it, which is
+ * worth stating out loud: in `spread` (the missile racks, the Machine Gun) it is the gap BETWEEN
+ * adjacent shells of a fixed fan, and in `cone` it is the total width of the arc each shell is
+ * drawn from independently. Same key, because both are "how wide does this volley go" and a
+ * second key would need a second column in WeaponStats that six weapons would carry as zero.
+ */
+export const FLAK_CONE = degToRad(60);
+
+export const FLAK_CANNON: WeaponDef = Object.freeze({
+  id: 'flak-cannon',
+  name: 'Flak Cannon',
+  // THE NEAREST BODY. See the header: the cone has to open into the crowd, and the near edge of
+  // it is the only aim point that guarantees that.
+  targeting: 'nearest',
+  kind: 'projectile',
+  pattern: 'cone',
+  behaviour: 'straight',
+  requiresTarget: true,
+  base: Object.freeze({
+    damage: 9, // moderate: well over the belt gun's 5.5, nowhere near a Cannon shell
+    cooldown: 0.13, // 7.7 bursts/s = 23 rounds/s
+    range: 400, // the longest projectile reach in the game - and the least accurate
+    projectileSpeed: 620, // 0.65 s to maximum range: the spread is VISIBLE opening in flight
+    projectileCount: 3,
+    pierce: 0,
+    knockback: 18,
+    splashRadius: 0,
+    splashFrac: 0,
+    // The Machine Gun's mount, because it IS the Machine Gun's mount - the same sprite draws
+    // both, and only one of the two can ever be held.
+    turretTraverse: degToRad(810),
+    // Wider than the belt gun's 20 deg. A weapon that sprays a sixty-degree cone has no business
+    // waiting to be precisely laid on first; the gate would be finer than the weapon.
+    fireArc: degToRad(30),
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: FLAK_CONE,
+    flightTime: 0,
+    ammoCapacity: 300,
+    reloadTime: 13,
+  }),
+  /**
+   * THE SAME LADDER SHAPE AS THE MACHINE GUN, rung for rung: damage, rate, magazine, range,
+   * damage, reload. Both weapons live and die by the same three questions - how hard is a round,
+   * how many are there, and how long is the silence - so the ladder that answers them for one
+   * answers them for the other.
+   *
+   * NOTHING TIGHTENS THE CONE, deliberately. A spread tier would be the obvious seventh rung and
+   * it is the one thing this weapon must not sell: the cone is the identity, and a Flak Cannon
+   * that can be upgraded into accuracy is a Machine Gun with extra steps.
+   */
+  perLevel: Object.freeze([
+    { damage: 2.5 }, // T2  9.0 -> 11.5
+    { cooldown: -0.026 }, // T3  0.130 -> 0.104 s  (~29 rounds/s)
+    { ammoCapacity: 120 }, // T4  300 -> 420 rounds
+    { range: 70 }, // T5  400 -> 470
+    { damage: 4.5 }, // T6  11.5 -> 16.0
+    { reloadTime: -4 }, // T7  13.0 -> 9.0 s
+  ]),
+  // Declared HERE and nowhere else - the check runs both directions. See WeaponDef.excludes.
+  excludes: Object.freeze(['machine-gun'] as const),
+  reengageMul: 1,
+  visualId: VIS_SLUG,
+  muzzleOffset: 28,
+  shellRadius: 5,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: false,
+  detonateOnExpiry: false,
+});
+
+// ---------------------------------------------------------------------------------------------
 // Heavy Artillery
 //
 // The only weapon in the game that does not care where anything is. Two shells fall on random
@@ -1332,6 +1469,7 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   MISSILE_SHORT,
   MISSILE_LONG,
   MACHINE_GUN,
+  FLAK_CANNON,
   ARTILLERY,
   DRONE,
   PHASE_CANNON,

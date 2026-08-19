@@ -97,6 +97,7 @@ const ICONS = [
   'w-missile-short',
   'w-missile-long',
   'w-machine-gun',
+  'w-flak-cannon',
   'w-artillery',
   'w-drone',
   'w-phase-cannon',
@@ -421,6 +422,31 @@ const DRAW = `(id) => {
     g.globalAlpha = 1;
     g.beginPath(); g.arc(104, CY, 11, 0, 6.284); g.fillStyle = PLASMA; g.fill();
     g.beginPath(); g.arc(104, CY, 5, 0, 6.284); g.fillStyle = '#d9f2ff'; g.fill();
+  }
+
+  if (id === 'w-flak-cannon') {
+    // A SPRAY, and it has to read as the machine gun's opposite at a glance: the belt gun is one
+    // straight line of shrinking rounds, this is the same muzzle throwing shells NOWHERE IN
+    // PARTICULAR. Three ragged lines at uneven angles inside a faint cone - uneven on purpose,
+    // because an evenly fanned three would draw the missile rack's tidy volley instead.
+    bar(24, CY - 11, 18, 22, STEEL);
+    // The cone itself, barely there: it is the volume, not the shot.
+    g.globalAlpha = 0.16;
+    g.fillStyle = KEY;
+    g.beginPath();
+    g.moveTo(42, CY);
+    g.lineTo(116, CY - 40);
+    g.lineTo(116, CY + 40);
+    g.closePath(); g.fill();
+    g.globalAlpha = 1;
+    // Three shells, three different angles, three different distances along them.
+    for (const [ang, far] of [[-0.42, 0.95], [-0.05, 0.7], [0.36, 0.88]]) {
+      const ex = 42 + Math.cos(ang) * 72 * far;
+      const ey = CY + Math.sin(ang) * 72 * far;
+      g.strokeStyle = KEY_DIM; g.lineWidth = 3.5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(46, CY + Math.sin(ang) * 4); g.lineTo(ex, ey); g.stroke();
+      g.beginPath(); g.arc(ex, ey, 6.5, 0, 6.284); g.fillStyle = KEY; g.fill();
+    }
   }
 
   if (id === 'w-artillery') {

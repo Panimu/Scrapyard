@@ -819,7 +819,9 @@ export class GameRenderer {
           // the drone bug below, rediscovered one event kind over. The fifth payload carries the
           // firing weapon's slot; it maps to a TURRET_ART row or the shot moves nothing.
           const firedId = world.weaponCatalog[world.weapons[r.e[i]]?.defId ?? -1]?.id;
-          const row = TURRET_ART.findIndex((t) => t.weapon === firedId);
+          const row = TURRET_ART.findIndex(
+            (t) => firedId !== undefined && t.weapons.includes(firedId),
+          );
           if (row >= 0) {
             this.turretKicks[row] = TURRET_KICK_SEC;
             this.camera.kick(c, d);
@@ -1657,7 +1659,14 @@ export class GameRenderer {
     // into the chassis art, or from nowhere the mech could show.
     for (let i = 0; i < TURRET_ART.length; i++) {
       const sprite = this.barrels[i];
-      const inst = heldWeapon(world, TURRET_ART[i].weapon);
+      // The first of the row's mounts that is actually held. Rows name one weapon each except
+      // the shared rotary snout, and the two that share it are mutually exclusive - so this can
+      // never have to choose between two live guns.
+      let inst: WeaponInstance | undefined;
+      for (const id of TURRET_ART[i].weapons) {
+        inst = heldWeapon(world, id);
+        if (inst !== undefined) break;
+      }
       if (inst === undefined) {
         sprite.visible = false;
         continue;
@@ -1666,7 +1675,7 @@ export class GameRenderer {
       // 1-7 and the original twin art from the ascension on. Reassigned per frame - a texture
       // swap to the same texture is a no-op in Pixi, and the alternative is one more piece of
       // state to forget when a chest lands mid-run.
-      if (TURRET_ART[i].weapon === 'cannon') {
+      if (TURRET_ART[i].weapons[0] === 'cannon') {
         sprite.texture =
           inst.level >= WEAPON_ASCENDED_TIER ? this.tex.turretTwin : this.tex.turret;
       }
@@ -1869,10 +1878,19 @@ function lerp(a: number, b: number, t: number): number {
  * is what lets a three-gun loadout read as three mounts tracking three targets rather than one
  * smeared sprite. Hold any subset and the stack simply has gaps.
  */
-const TURRET_ART: readonly { readonly weapon: WeaponId; readonly tex: 'turret' | 'turretPhase' | 'turretMg' }[] = [
-  { weapon: 'cannon', tex: 'turret' },
-  { weapon: 'phase-cannon', tex: 'turretPhase' },
-  { weapon: 'machine-gun', tex: 'turretMg' },
+const TURRET_ART: readonly {
+  /**
+   * The mounts this row draws. USUALLY ONE, and a list only because two guns can share a piece
+   * of hardware: the Flak Cannon bolts onto the Machine Gun's rotary snout, and WeaponDef.excludes
+   * guarantees a loadout can never hold both - so the row shows whichever of them is held and
+   * there is no case where it owes two barrels at once.
+   */
+  readonly weapons: readonly WeaponId[];
+  readonly tex: 'turret' | 'turretPhase' | 'turretMg';
+}[] = [
+  { weapons: ['cannon'], tex: 'turret' },
+  { weapons: ['phase-cannon'], tex: 'turretPhase' },
+  { weapons: ['machine-gun', 'flak-cannon'], tex: 'turretMg' },
 ];
 
 /** The held instance of `id`, or undefined - slot order does not matter, ids are unique. */

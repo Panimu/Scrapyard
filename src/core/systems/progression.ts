@@ -113,7 +113,7 @@ import {
 import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
-import type { WeaponId } from '../content/weaponCatalog.js';
+import type { WeaponDef, WeaponId } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from '../data/stats.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { freeDrone } from '../entity/dronePool.js';
@@ -647,6 +647,30 @@ function isOfferable(
   // The only way to hold a locked card is a chassis that opens with it, and a run where the gun you
   // started with could never be levelled would be a worse bug than the lock is a feature.
   if (stacks === 0 && world.cardUnlocked[index] === 0) return false;
+
+  // TWO GUNS THAT CANNOT SHARE THE CHASSIS. See WeaponDef.excludes - today the Flak Cannon and
+  // the Machine Gun, which are one rotary mount and one sprite between them.
+  //
+  // BOTH DIRECTIONS FROM ONE DECLARATION. The pair names each other only once, so this asks the
+  // question twice: does the gun this card would grant refuse anything already held, and does
+  // anything already held refuse it. Reading only the card's own `excludes` would enforce the
+  // rule in whichever order the player happened to be offered the two, which is the worst kind
+  // of bug - correct half the time and seed-dependent.
+  //
+  // A card ALREADY TAKEN keeps levelling. The test is on the grant, and by the time a gun is in
+  // your hands the exclusion has already done its job; refusing its tiers here would strand a
+  // weapon at whatever tier it was holding.
+  const grants = def.grantsWeapon;
+  if (grants !== undefined && stacks === 0) {
+    for (let i = 0; i < world.weaponCount; i++) {
+      const held = world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined;
+      if (held === undefined) continue;
+      if (held.id === grants) continue;
+      if (held.excludes?.includes(grants) === true) return false;
+      const mine = world.weaponCatalog[weaponIndexOf(world, grants)] as WeaponDef | undefined;
+      if (mine?.excludes?.includes(held.id) === true) return false;
+    }
+  }
 
   // WHAT THE LOADOUT HOLDS RIGHT NOW, not what the save has earned - a different question from
   // `cardUnlocked` above and checked every card rather than once at run start, because it is a

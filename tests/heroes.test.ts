@@ -96,6 +96,7 @@ describe('the roster', () => {
       'missile-short': 'Short Missiles',
       'missile-long': 'Long Missiles',
       'machine-gun': 'Machine Gun',
+      'flak-cannon': 'Flak Cannon',
       drone: 'Drones',
       artillery: 'Heavy Artillery',
       'phase-cannon': 'Phase Cannon',
