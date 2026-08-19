@@ -48,6 +48,13 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T09:09Z',
+    title: 'THE GIGA LASER COOLS SLOWER',
+    notes: [
+      'The Giga Laser sheds heat 10% slower than the beam it ascends from. The burst is exactly as long and exactly as wide \u2014 the wait between bursts is what got longer. It was carrying more of a run than any other ascension by a wide margin, and a beam that bills a whole crowd every tick should pay for it in silence rather than in a smaller shot.',
+    ],
+  },
+  {
     at: '2026-08-19T09:06Z',
     title: 'ELITES AND BOSSES GET THEIR OWN NUMBER',
     notes: [

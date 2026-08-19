@@ -131,6 +131,22 @@ describe('the tier-8 rung', () => {
     expect(w.weapons[0].stats.splashRadius).toBe(GIGA_HALF_WIDTH);
   });
 
+  it('sheds heat exactly 10% slower than the tier-7 beam it ascends from', () => {
+    const w = makeWorld();
+    setTier(w, 0, WEAPON_MAX_TIER);
+    const atSeven = w.weapons[0].stats.heatDispersion;
+    setTier(w, 0, WEAPON_ASCENDED_TIER);
+    // THE ASCENSION'S ONE COST. Derived from the tier-7 figure rather than pinned to a literal,
+    // so a retune of the laser's authored dispersion keeps this meaning "10% worse" instead of
+    // quietly becoming some other fraction - which is the whole reason the rung computes its
+    // delta from the base rather than carrying a number.
+    expect(w.weapons[0].stats.heatDispersion).toBeCloseTo(atSeven * 0.9, 9);
+    // And the burst is untouched: this buys silence, not a smaller shot.
+    const capAtEight = w.weapons[0].stats.heatCapacity;
+    setTier(w, 0, WEAPON_MAX_TIER);
+    expect(capAtEight).toBe(w.weapons[0].stats.heatCapacity * 2);
+  });
+
   it('widens with Shaped Charges, by exactly the ramp the catalog sells', () => {
     const w = makeWorld();
     const blast = upgradeIndex('p-blast');

@@ -705,17 +705,36 @@ function laser(
       ammoCapacity: 0,
       reloadTime: 0,
     }),
-    // A GIGA BEAM'S TIER 8 IS THE ONE ASCENSION RUNG THAT CARRIES STATS, and both are the
+    // A GIGA BEAM'S TIER 8 IS THE ONE ASCENSION RUNG THAT CARRIES STATS, and they are the
     // mechanic rather than a bonus stapled to it: `splashRadius` IS the swath's half-width (a
     // width of zero would be the old beam wearing a new name), and the doubled capacity - base
     // plus both capacity tiers over again - is what makes a beam that now bills a crowd per tick
     // burn long enough to read as the capstone it is. Contrast the empty rung the other
     // ascensions keep (see laserTiers T8).
+    //
+    // AND IT SHEDS HEAT 10% SLOWER, which is the one number here that is a COST. Measured
+    // (`npm run t8`, five seeds, every ascension at 8 with every passive): the Giga took 37.3% of
+    // all damage against the Chain Laser's 24.9%, the Twin Mount's 20.1% and the Hornet's 17.5% -
+    // top of the table on every single seed. A beam that bills every body it covers scales with
+    // the crowd in a way none of the other three do, so the lever is UPTIME rather than damage:
+    // uptime is dispersion / (generation + dispersion), and taking dispersion down lengthens the
+    // silence between bursts without touching what a burst is worth. The alternative - cutting
+    // dps - would have made the swath feel weaker per body while still covering the same ground,
+    // which is trimming the wrong half of what the measurement actually found.
+    //
+    // -0.2x THE AUTHORED BASE, because the deltas here are ADDITIVE and cumulative dispersion at
+    // tier 7 is `base + 2 x (0.5 x base)` = `2 x base` (see laserTiers). A tenth of that is
+    // `0.2 x base`, so this stays exactly 10% through any retune of the number it is derived from
+    // rather than being a literal that silently stops meaning 10%.
     perLevel:
       gigaFrom > 0
         ? Object.freeze([
             ...tiers.slice(0, 6),
-            Object.freeze({ heatCapacity: HEAT_CAPACITY_BASE + 80, splashRadius: GIGA_HALF_WIDTH }),
+            Object.freeze({
+              heatCapacity: HEAT_CAPACITY_BASE + 80,
+              splashRadius: GIGA_HALF_WIDTH,
+              heatDispersion: -heatDispersion * 0.2,
+            }),
           ])
         : tiers,
     chainsFrom,
