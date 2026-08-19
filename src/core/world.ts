@@ -331,7 +331,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       bossKillsByWeapon: new Uint32Array(catalogs.weapons.length),
       killsByFlavour: new Uint32Array(FLAVOUR_COUNT),
       killsByWeapon: new Uint32Array(catalogs.weapons.length),
-      bossKillsByKiller: new Uint32Array(catalogs.weapons.length),
+      killsByWeaponRank: new Uint32Array(catalogs.weapons.length * RANKS.length),
       contactHits: 0,
       fullRepairs: 0,
       lasersOverheated: 0,

@@ -439,7 +439,9 @@ function killEnemy(world: World, ed: number, killerSlot: number): void {
   const killer = killerSlot >= 0 ? (world.weapons[killerSlot]?.defId ?? -1) : -1;
   if (killer >= 0) {
     stats.killsByWeapon[killer]++;
-    if (isBoss) stats.bossKillsByKiller[killer]++;
+    // The same kill again, against the rank it was standing on - see RunStats.killsByWeaponRank.
+    // The row sum of this IS killsByWeapon above, which a test pins.
+    stats.killsByWeaponRank[killer * RANKS.length + rank]++;
   }
 
   pushKill(

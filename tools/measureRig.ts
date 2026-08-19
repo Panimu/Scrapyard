@@ -34,6 +34,7 @@ import { DT } from '../src/core/constants.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
 import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../src/core/content/levels.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
+import { RANKS, RANK_BOSS, RANK_ELITE } from '../src/core/content/cycles.js';
 import { Simulation } from '../src/core/simulation.js';
 import { RUN_PHASE_DEAD, RUN_PHASE_VICTORY, type World } from '../src/core/types.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../src/core/entity/enemyPool.js';
@@ -71,6 +72,15 @@ export interface Outcome {
   byWeapon: number[];
   /** KILLING BLOWS by WEAPON_CATALOG index. See the header - it does not sum to the run's kills. */
   killsByWeapon: number[];
+  /**
+   * THE TWO RANKS THAT ARE NOT CHAFF, by the weapon that finished them - the elite and boss
+   * columns of RunStats.killsByWeaponRank, pulled out here because they are the two a reader of
+   * this table actually asks about. `killsByWeapon` above is every rank together, and against a
+   * horde it is overwhelmingly regulars: a gun can take a third of the kill column and never have
+   * finished a single thing that mattered.
+   */
+  eliteKills: number[];
+  bossKills: number[];
   byShield: number;
   /**
    * BOSSES STILL STANDING when the run ended. Victory needs the clock AND an empty yard, so this is
@@ -141,6 +151,8 @@ export function runOne(seed: number, levelId: string, equip: (w: World) => void)
     damageTaken: s.damageTaken,
     byWeapon: Array.from(s.damageByWeapon),
     killsByWeapon: Array.from(s.killsByWeapon),
+    eliteKills: WEAPON_CATALOG.map((_, i) => s.killsByWeaponRank[i * RANKS.length + RANK_ELITE] ?? 0),
+    bossKills: WEAPON_CATALOG.map((_, i) => s.killsByWeaponRank[i * RANKS.length + RANK_BOSS] ?? 0),
     byShield: s.damageByShield,
     bossesAlive,
   };
@@ -167,14 +179,18 @@ export type WeaponLabel = (catalogIndex: number) => string;
 
 function printTable(
   title: string,
-  rows: { name: string; amount: number; kills: number }[],
+  rows: { name: string; amount: number; kills: number; elites: number; bosses: number }[],
   total: number,
   totalKills: number,
 ): void {
   console.log(`\n  ${title}`);
+  // `elite` and `boss` are COUNTS, not shares. Bosses arrive seven times in a run and elites a few
+  // dozen; a percentage of a number that small reads as precision the sample does not have, and
+  // "this gun finished 4 of the 7 bosses" is the sentence a reader wants anyway.
   console.log(
     `    ${'weapon'.padEnd(18)}${'damage'.padStart(10)}${'share'.padStart(8)}` +
-      `${'kills'.padStart(9)}${'share'.padStart(8)}${'dmg/kill'.padStart(10)}`,
+      `${'kills'.padStart(9)}${'share'.padStart(8)}${'dmg/kill'.padStart(10)}` +
+      `${'elite'.padStart(8)}${'boss'.padStart(7)}`,
   );
   for (const r of rows) {
     const share = total > 0 ? (r.amount / total) * 100 : 0;
@@ -184,12 +200,15 @@ function printTable(
     console.log(
       `    ${r.name.padEnd(18)}${Math.round(r.amount).toLocaleString('en-US').padStart(10)}` +
         `${`${share.toFixed(1)}%`.padStart(8)}${r.kills.toLocaleString('en-US').padStart(9)}` +
-        `${`${kShare.toFixed(1)}%`.padStart(8)}${(r.kills > 0 ? per.toFixed(0) : '--').padStart(10)}`,
+        `${`${kShare.toFixed(1)}%`.padStart(8)}${(r.kills > 0 ? per.toFixed(0) : '--').padStart(10)}` +
+        `${r.elites.toLocaleString('en-US').padStart(8)}${r.bosses.toLocaleString('en-US').padStart(7)}`,
     );
   }
   console.log(
     `    ${'TOTAL'.padEnd(18)}${Math.round(total).toLocaleString('en-US').padStart(10)}${'100.0%'.padStart(8)}` +
-      `${totalKills.toLocaleString('en-US').padStart(9)}${'100.0%'.padStart(8)}${''.padStart(10)}`,
+      `${totalKills.toLocaleString('en-US').padStart(9)}${'100.0%'.padStart(8)}${''.padStart(10)}` +
+      `${rows.reduce((a, r) => a + r.elites, 0).toLocaleString('en-US').padStart(8)}` +
+      `${rows.reduce((a, r) => a + r.bosses, 0).toLocaleString('en-US').padStart(7)}`,
   );
 }
 
@@ -208,9 +227,18 @@ export function report(
 
   for (const o of outcomes) {
     const rows = o.byWeapon
-      .map((amount, i) => ({ name: label(i), amount, kills: o.killsByWeapon[i] ?? 0 }))
+      .map((amount, i) => ({
+        name: label(i),
+        amount,
+        kills: o.killsByWeapon[i] ?? 0,
+        elites: o.eliteKills[i] ?? 0,
+        bosses: o.bossKills[i] ?? 0,
+      }))
       .filter((r) => r.amount > 0);
-    if (o.byShield > 0) rows.push({ name: 'Energy Shield', amount: o.byShield, kills: 0 });
+    // The shield's backlash lands killing blows and is credited to no slot - see killEnemy - so
+    // its elite and boss counts are structurally zero rather than merely unmeasured.
+    if (o.byShield > 0)
+      rows.push({ name: 'Energy Shield', amount: o.byShield, kills: 0, elites: 0, bosses: 0 });
     rows.sort((a, b) => b.amount - a.amount);
     // `damageDealt` ALREADY INCLUDES the shield's burn - types.ts guarantees the weapon array plus
     // damageByShield sums to it - so the total is that figure, not that figure plus shield. The KILL
@@ -222,20 +250,31 @@ export function report(
   if (outcomes.length > 1) {
     const pooled = new Array<number>(WEAPON_CATALOG.length).fill(0);
     const pooledKills = new Array<number>(WEAPON_CATALOG.length).fill(0);
+    const pooledElites = new Array<number>(WEAPON_CATALOG.length).fill(0);
+    const pooledBosses = new Array<number>(WEAPON_CATALOG.length).fill(0);
     let shield = 0;
     let total = 0;
     for (const o of outcomes) {
       for (let i = 0; i < pooled.length; i++) {
         pooled[i] += o.byWeapon[i] ?? 0;
         pooledKills[i] += o.killsByWeapon[i] ?? 0;
+        pooledElites[i] += o.eliteKills[i] ?? 0;
+        pooledBosses[i] += o.bossKills[i] ?? 0;
       }
       shield += o.byShield;
       total += o.damageDealt;
     }
     const rows = pooled
-      .map((amount, i) => ({ name: label(i), amount, kills: pooledKills[i] }))
+      .map((amount, i) => ({
+        name: label(i),
+        amount,
+        kills: pooledKills[i],
+        elites: pooledElites[i],
+        bosses: pooledBosses[i],
+      }))
       .filter((r) => r.amount > 0);
-    if (shield > 0) rows.push({ name: 'Energy Shield', amount: shield, kills: 0 });
+    if (shield > 0)
+      rows.push({ name: 'Energy Shield', amount: shield, kills: 0, elites: 0, bosses: 0 });
     rows.sort((a, b) => b.amount - a.amount);
     printTable(
       `ALL ${outcomes.length} SEEDS POOLED`,

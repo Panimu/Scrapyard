@@ -449,8 +449,29 @@ export interface RunStats {
    * and there is no slot to name. So this does NOT sum to `kills`.
    */
   readonly killsByWeapon: Uint32Array;
-  /** Bosses by the weapon that landed the killing blow. Same rule, same exclusion. */
-  readonly bossKillsByKiller: Uint32Array;
+  /**
+   * THE SAME KILLS AGAIN, SPLIT BY RANK: `killsByWeaponRank[defId * RANKS.length + rank]`, the
+   * weapon that landed the killing blow against what it was standing on. Same rule and same
+   * exclusion as `killsByWeapon` - the shield's backlash names no slot and is credited to nothing.
+   *
+   * FLATTENED 2D, exactly like `killsByCycleRank` a few fields up, and for the same reason: it is
+   * a typed array indexed by arithmetic rather than an array of arrays, so a per-kill increment
+   * stays one store and the whole struct stays snapshottable.
+   *
+   * WHY IT REPLACED `bossKillsByKiller`, which was this array's boss column and nothing else.
+   * "Which gun killed the bosses" turned out to be half a question - the other half is "which gun
+   * killed the ELITES", and those are the two bodies a run actually has to solve (regulars are a
+   * proxy for how long you survived). A second boss-shaped array beside the first would have been
+   * two counters that can disagree; one table answers every rank including ones nobody has asked
+   * about yet, and the boss column is still one index away for the unlock condition that reads it.
+   *
+   * IT DOES NOT REPLACE `killsByWeapon`, and the overlap is deliberate. That one is the TOTAL and
+   * is read every second by the career banking and by every `killsWith` condition; making those
+   * sum three entries would put arithmetic on a hot path to save an array the size of the weapon
+   * catalog. The two must agree - `killsByWeapon[d]` is the row sum here - and a test pins that so
+   * the redundancy cannot rot into a contradiction.
+   */
+  readonly killsByWeaponRank: Uint32Array;
   /**
    * How many times an enemy's touch actually cost the player hit points.
    *

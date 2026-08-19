@@ -33,6 +33,7 @@ import {
   Simulation,
   UPGRADE_CATALOG,
   RANKS,
+  RANK_BOSS,
   quantiseAxis,
   type InputFrame,
   type RunRecord,
@@ -424,8 +425,10 @@ async function boot(): Promise<void> {
           .map((w, i) => [w.id, world.stats.killsByWeapon[i]] as const)
           .filter(([, n]) => n > 0),
       ),
+      // The boss column of the weapon x rank table - see RunStats.killsByWeaponRank, which
+      // replaced the boss-only array this used to read.
       bossKillsBy: world.weaponCatalog
-        .filter((_, i) => world.stats.bossKillsByKiller[i] > 0)
+        .filter((_, i) => world.stats.killsByWeaponRank[i * RANKS.length + RANK_BOSS] > 0)
         .map((w) => w.id),
       contactHits: world.stats.contactHits,
       fullRepairs: world.stats.fullRepairs,
