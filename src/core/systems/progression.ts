@@ -113,7 +113,7 @@ import { WEAPON_ASCENDED_TIER, WEAPON_MAX_TIER } from '../data/upgrades.js';
 import { xpToNextLevel } from '../config/tuning.js';
 import type { Rng } from '../rng.js';
 import type { WeaponDef, WeaponId } from '../content/weaponCatalog.js';
-import { LASER_HARDPOINTS } from '../content/weaponCatalog.js';
+import { HYDRA_MOUNTS, LASER_HARDPOINTS } from '../content/weaponCatalog.js';
 import { resolvePlayerStats, resolveSplitStats, resolveWeaponStats } from '../data/stats.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { freeDrone } from '../entity/dronePool.js';
@@ -596,7 +596,11 @@ function ownsWeapon(world: World, id: WeaponId): boolean {
 function installWeapon(world: World, id: WeaponId): void {
   // THE RUN'S cap, not the constant - see World.maxWeapons. Reading MAX_WEAPONS here would
   // enforce the base and silently ignore Reinforced Mounts.
-  if (world.weaponCount >= world.maxWeapons) return;
+  //
+  // COUNTED IN GUNS, matching `weaponsFull` in generateOffers, or this guard would refuse the
+  // very pick that rule had just declared offerable to a mech carrying the Hydra's copies.
+  if (gunsHeld(world) >= world.maxWeapons) return;
+  if (world.weaponCount >= world.weapons.length) return;
   const defId = weaponIndexOf(world, id);
   if (defId < 0) return;
   if (ownsWeapon(world, id)) return;
@@ -632,23 +636,32 @@ function installWeapon(world: World, id: WeaponId): void {
  * through applyChoice, so without calling this it would measure a lone Short Laser wearing the
  * Hydra's name - the exact class of quiet fiction a balance table must not print.
  *
- * HOW MANY: one per FREE hardpoint, where free is `LASER_HARDPOINTS.length` less the beams
- * already held - counting the ascended weapon itself, which is why a run holding nothing but the
- * Short Laser ends with five and a run also carrying a Medium and a Long ends with three of them
- * and five beams in total. The mounts are the budget, not the copies.
+ * HOW MANY: up to `HYDRA_MOUNTS` copies IN TOTAL, counting the one that ascended - so two more
+ * are grown, not four, and two hardpoints are deliberately left standing. The free mounts are
+ * still a hard ceiling on top of that: a run already carrying a Medium and a Long has two
+ * hardpoints spare and gets both, ending on three Short Lasers all the same; a run that somehow
+ * had only one spare would get one. Whichever of the two budgets is smaller wins.
+ *
+ * COPIES ALREADY HELD ARE COUNTED, not assumed to be one. Nothing can grow a second Short Laser
+ * except this, so it is one today - but the arithmetic that says "three of them" should be the
+ * arithmetic that counts them, or a second route to a duplicate would quietly hand out six.
  */
 export function fillLaserMounts(world: World, id: WeaponId, level: number): void {
   const defId = weaponIndexOf(world, id);
   if (defId < 0) return;
 
   let beams = 0;
+  let mine = 0;
   for (let i = 0; i < world.weaponCount; i++) {
+    if (world.weapons[i].defId === defId) mine++;
     if ((world.weaponCatalog[world.weapons[i].defId] as WeaponDef | undefined)?.kind === 'beam') {
       beams++;
     }
   }
 
-  for (let free = LASER_HARDPOINTS.length - beams; free > 0; free--) {
+  const spare = LASER_HARDPOINTS.length - beams;
+  const wanted = HYDRA_MOUNTS - mine;
+  for (let free = wanted < spare ? wanted : spare; free > 0; free--) {
     if (world.weaponCount >= world.weapons.length) return;
     const inst = world.weapons[world.weaponCount];
     if (inst === undefined) return;
@@ -696,6 +709,36 @@ function setWeaponLevel(world: World, id: WeaponId, level: number): boolean {
     found = true;
   }
   return found;
+}
+
+/**
+ * GUNS in the loadout - DISTINCT weapon ids, not occupied slots. This is what `World.maxWeapons`
+ * caps, and the distinction only exists because of the Hydra.
+ *
+ * A slot is a GUN, not a barrel. The Hydra puts two more Short Lasers on the chassis without the
+ * player ever choosing a second weapon, and counting those against the deck's cap meant a
+ * four-slot mech came out of the ascension with nothing left to be offered - not another beam,
+ * not another anything. The card that was supposed to open a laser build out was ending the run's
+ * weapon choices instead, which is the same fault the mount rule had and in a place the mount rule
+ * could not see.
+ *
+ * It reads `weaponCount` slots and dedupes by defId rather than keeping a second counter, because
+ * a counter is a fact that can drift from the array it describes and this cannot.
+ */
+function gunsHeld(world: World): number {
+  let n = 0;
+  for (let i = 0; i < world.weaponCount; i++) {
+    const id = world.weapons[i].defId;
+    let seen = false;
+    for (let j = 0; j < i; j++) {
+      if (world.weapons[j].defId === id) {
+        seen = true;
+        break;
+      }
+    }
+    if (!seen) n++;
+  }
+  return n;
 }
 
 /** Beams in the loadout right now. One per laser hardpoint is the ceiling - see isOfferable. */
@@ -752,7 +795,7 @@ function generateOffers(world: World): number {
 
   // Computed ONCE per card rather than per eligibility test: neither cap can move while a single
   // card is being built, and `isOfferable` is called about forty times to fill three slots.
-  const weaponsFull = world.weaponCount >= world.maxWeapons;
+  const weaponsFull = gunsHeld(world) >= world.maxWeapons;
   // UNARMED: every offer on this card is a gun.
   //
   // A player holding no weapon cannot kill, cannot earn XP and therefore cannot be offered a
@@ -850,8 +893,12 @@ function isOfferable(
   // NO MOUNT, NO LASER. A beam has to leave the chassis from somewhere - LASER_HARDPOINTS is a
   // real list of real points and `laserHardpoint` hands each beam its own - so a run holding as
   // many beams as there are mounts has nowhere to put another one, and the deck stops offering
-  // them. Before the Hydra this was unreachable (three beam weapons, five mounts) and it is the
-  // Hydra that makes it bite: filling the mounts is exactly what that ascension does.
+  // them.
+  //
+  // IT IS NOW GENUINELY HARD TO HIT, AND THAT IS THE INTENT. The Hydra takes three of the five
+  // mounts (HYDRA_MOUNTS), so a run that ascends the Short Laser can still be offered the Medium
+  // and the Long afterwards and only closes the deck by taking both. The rule stays because it is
+  // the truth about the chassis, not because something is expected to trip it.
   //
   // THE UNLOCK ONLY. Tiers of a beam already held keep coming, and so does its ascension - a gun
   // on the chassis is not competing for a mount it is already standing on.

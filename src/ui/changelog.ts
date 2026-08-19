@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-19T12:31Z',
+    title: 'THE HYDRA LEAVES YOU ROOM',
+    notes: [
+      'The Hydra now grows two more Short Lasers rather than four — three beams in all. It used to take every mount on the chassis, which meant the moment your laser build paid off was also the moment it stopped being able to take another laser.',
+      'Two mounts stay free, so a Hydra run can still be offered the Medium and the Long afterwards and finish with five beams firing from five points on the hull.',
+      'Its extra lasers no longer count against your weapon slots either. They are copies of a gun you already chose, not choices you made — so the mech comes out of the ascension with the same room for a new weapon it walked in with.',
+    ],
+  },
+  {
     at: '2026-08-19T12:20Z',
     title: 'AUTO LEVEL GETS OUT OF THE WAY',
     notes: [

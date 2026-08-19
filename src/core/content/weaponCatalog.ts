@@ -602,13 +602,11 @@ function laserTiers(
  *   four          the four CORNERS, nose empty - four guns want the wide square, not a spine
  *   five          all of them
  *
- * THE BACK PAIR IS NOT REACHABLE YET AND THAT IS DELIBERATE RATHER THAN AN OVERSIGHT. Only three
- * beam weapons exist (short, medium, long - the Chain Laser is the Medium at tier 8 and the Giga
- * is the Long, so an ascension adds no beam), and three of them fit the front trio. The four- and
- * five-beam rows are what the rule DOES rather than what it currently does, and they are covered
- * by tests that hold four and five beams directly - so the day a fourth beam ships, or a weapon
- * fires from more than one mount at once, the mounts are already on the chassis and already
- * correct instead of being invented under pressure.
+ * THE BACK PAIR IS REACHED BY THE HYDRA AND ONLY BY THE HYDRA. Three beam weapons exist (short,
+ * medium, long - the Chain Laser is the Medium at tier 8 and the Giga is the Long, so an ascension
+ * adds no beam), so the ordinary route tops out at the front trio; the Hydra puts a second and a
+ * third Short Laser on the chassis (HYDRA_MOUNTS), which is what takes a laser build to four and
+ * five beams and out onto the rear quarters.
  *
  * The numbers are read off the generated chassis art (tools/make-mechs.mjs): the nose sits ~54 px
  * ahead of centre and the shoulder line at SY = 38K px, on a 148 px canvas drawn 58 world units
@@ -636,6 +634,22 @@ export const LASER_HARDPOINTS: readonly Readonly<{ x: number; y: number }>[] = O
 ]);
 
 /**
+ * HOW MANY MOUNTS THE HYDRA TAKES - the total number of Short Lasers a chassis ends up with when
+ * that ascension lands, counting the one that ascended. See `fillLaserMounts`.
+ *
+ * THREE, NOT FIVE, AND THE DIFFERENCE IS THE POINT. It used to be "every free hardpoint", which
+ * on a pure Short Laser run meant all five - and five of one gun is not a build, it is the end of
+ * one: with the mounts full the deck stops offering beams (see `isOfferable`), so the ascension
+ * that was supposed to be a laser run's reward was also the moment its laser choices stopped.
+ * Three leaves two mounts standing, which is exactly enough for a Medium and a Long, so the Hydra
+ * now BUYS a wider laser build instead of closing it.
+ *
+ * It is still a ceiling rather than a promise: a run already carrying a Medium and a Long has two
+ * hardpoints free, not four, and gets what fits.
+ */
+export const HYDRA_MOUNTS = 3;
+
+/**
  * WHICH MOUNTS ARE USED FOR A GIVEN NUMBER OF BEAMS, indexed by that number. Row `n` has exactly
  * `n` entries and every entry is an index into LASER_HARDPOINTS.
  *
@@ -661,7 +675,7 @@ export const BEAM_MOUNTS: readonly (readonly number[])[] = Object.freeze([
 /**
  * Which hardpoint this beam fires from, by HOW MANY beams the loadout holds - see the
  * LASER_HARDPOINTS doc for the assignment (1 -> nose, 2 -> shoulders, 3 -> all, slot order).
- * At most three beams can ever be held (one card per laser; the Chain Laser is the Medium), so
+ * Five beams is the ceiling - three laser cards, and the Hydra's two extra Short Lasers - so
  * `mine` is always inside the table; clamped anyway rather than trusted.
  *
  * IT LIVES IN THE CATALOG, BESIDE THE TABLE, BECAUSE IT HAS TWO CALLERS AND THEY MUST NOT

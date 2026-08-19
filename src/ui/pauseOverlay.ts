@@ -141,11 +141,20 @@ export function buildPauseOverlay(
 
     guns.show(world.maxWeapons);
     // WEAPONS, in the order they were taken, which is the order the HUD shows them in.
+    //
+    // ONE PIP PER GUN, NOT PER MOUNT. The Hydra puts three Short Lasers on the chassis and the
+    // deck counts that as one gun against the run's cap (see `gunsHeld`), so listing each copy
+    // would fill the row and say the loadout was full when the next card can still hand out
+    // another weapon. The HUD's chip row DOES show every copy, and should: those chips are heat
+    // bars, and three lasers have three of them.
     let n = 0;
+    const shown: number[] = [];
     for (let i = 0; i < world.weaponCount && n < world.maxWeapons; i++) {
       const inst = world.weapons[i];
       const def = inst === undefined ? undefined : world.weaponCatalog[inst.defId];
       if (inst === undefined || def === undefined) continue;
+      if (shown.includes(inst.defId)) continue;
+      shown.push(inst.defId);
       // The NAME IS A FUNCTION OF THE TIER - an ascended Medium Laser is a Chain Laser - so it is
       // re-derived here rather than read off the def. Same rule as the HUD chip.
       guns.set(n++, weaponNameAtTier(def.id, inst.level) || def.name, inst.level);

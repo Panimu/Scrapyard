@@ -591,13 +591,19 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     id: 'w-laser-short',
     /**
      * THE HYDRA - the Short Laser's tier 8, and the only ascension that changes the LOADOUT rather
-     * than the weapon. Every free laser mount grows a Short Laser at the same tier; see
-     * WeaponDef.fillsMountsFrom.
+     * than the weapon. Two more Short Lasers grow on spare mounts at the same tier, three in all;
+     * see WeaponDef.fillsMountsFrom and HYDRA_MOUNTS.
+     *
+     * THREE RATHER THAN FIVE, and the two mounts left standing are the reason. At five it took
+     * every hardpoint on the chassis, which meant the deck stopped offering beams the moment the
+     * ascension landed - a laser run's capstone was also the end of its laser choices. At three a
+     * Hydra build can still pick up the Medium and the Long afterwards, so the reward opens the
+     * build out instead of sealing it.
      *
      * GATED ON SERVO DRIVE because the Short Laser's problem has always been REACH - 165 units,
      * the shortest in the game, so it only does anything from inside the crowd. The passive that
      * buys the mech speed is the passive that lets you be inside the crowd and leave again, and a
-     * run that took it is a run already playing the way five short lasers demand.
+     * run that took it is a run already playing the way a bank of short lasers demands.
      */
     ascension: Object.freeze({
       name: 'Hydra',
@@ -605,7 +611,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       requires: 'p-speed' as const,
       requiresTier: 1,
       description:
-        'Every empty laser mount on the chassis grows a Short Laser of its own, at the tier this one reached. They pick their own targets and run their own heat - and with the mounts full, no further beam can be fitted.',
+        'Two more Short Lasers grow from the chassis, at the tier this one reached - three in all. Each picks its own target and runs its own heat, and the mounts they leave standing are still yours to fit another beam to.',
     }),
     kind: 'weapon',
     grantsWeapon: 'laser-short',
