@@ -130,6 +130,15 @@ export function buildPauseOverlay(
 
   /** Fills both rows from the frozen world. Every slot is written every time - see `slotGroup`. */
   const paint = (world: World): void => {
+    // THE SWITCH IS RE-READ FROM THE WORLD, not trusted to the copy taken when this menu was
+    // built. Auto-level can also be thrown from the level-up card, and a mirror set once at
+    // startup does not hear about that: the pause screen went on saying OFF for a run that had
+    // been auto-picking for ten levels, and the next tap on it read as "turn ON" while actually
+    // being the first press of a switch that was already on. `world.autoLevel` is the only place
+    // that knows, so it is the place this asks.
+    auto = world.autoLevel !== 0;
+    paintAuto();
+
     guns.show(world.maxWeapons);
     // WEAPONS, in the order they were taken, which is the order the HUD shows them in.
     let n = 0;

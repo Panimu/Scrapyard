@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-19T12:20Z',
+    title: 'AUTO LEVEL GETS OUT OF THE WAY',
+    notes: [
+      'Levelling up with Auto level on no longer takes the stick off you. The card was being drawn for a frame before the game picked it — long enough to drop a thumb already mid-drag and leave the mech standing still until you lifted and pressed again. Nothing appears now, and the stick never lets go.',
+      'The pick’s name floats over the mech with no plate behind it — just the words, outlined so they read over rust, moss or a crowd. It was a dark chip sitting on top of the one thing you were watching.',
+      'The pause menu now shows Auto level as it actually is. Turning it on from a level-up card used to leave the pause switch still saying OFF, so the next tap on it was a wasted press.',
+    ],
+  },
+  {
     at: '2026-08-19T06:54Z',
     title: 'THE HORNET, SHARPENED',
     notes: [

@@ -810,7 +810,12 @@ async function boot(): Promise<void> {
         state.recordHeldUpgrades(world.levelUp.stacks);
       }
 
-      if (world.phase === RUN_PHASE_LEVEL_UP) levelUp.show(world);
+      // AND ONLY WHEN A DECISION IS ACTUALLY BEING ASKED FOR. Auto-level leaves the world in
+      // LEVEL_UP for the one tick `serveCard` needs to take the card (progression.ts), and without
+      // this guard that tick DREW the card: a full-screen overlay flashing over the fight once per
+      // level, on top of every other overlay, in the middle of a thumb drag. The phase is still
+      // what decides - the flag only says whether anyone is being asked.
+      if (world.phase === RUN_PHASE_LEVEL_UP && world.autoLevel === 0) levelUp.show(world);
       else if (levelUp.visible) {
         levelUp.hide();
         // A CARD TAKEN IS A PAGE UNLOCKED, banked the moment the overlay closes rather than at the
@@ -833,8 +838,16 @@ async function boot(): Promise<void> {
       // difference between two overlays is exactly the kind of thing this coupling should not be
       // sensitive to, so the phase - which is the actual truth - now decides. `setEnabled` returns
       // early when the value has not changed, so calling it every frame costs a comparison.
+      //
+      // AUTO-LEVEL IS THE EXCEPTION, and it has to be. The world still passes through LEVEL_UP for
+      // a tick while `serveCard` takes the card for the player (progression.ts) - but no card is
+      // ever drawn, so there is nothing for the stick to be out of the way of. Killing it for that
+      // tick was not a cosmetic flicker: `setEnabled(false)` sets `display:none` and releases the
+      // latched pointer, so a thumb already mid-drag lost the stick and the mech stopped dead
+      // until the player lifted and pressed again - once per level, in the middle of a fight.
       joystick.setEnabled(
-        world.phase !== RUN_PHASE_CHEST && world.phase !== RUN_PHASE_LEVEL_UP,
+        world.phase !== RUN_PHASE_CHEST &&
+          (world.phase !== RUN_PHASE_LEVEL_UP || world.autoLevel !== 0),
       );
 
       if (world.phase === RUN_PHASE_DEAD || world.phase === RUN_PHASE_VICTORY) {
@@ -906,6 +919,11 @@ async function boot(): Promise<void> {
           // than as the card that grew into it.
           pickToast.show(upgradeNameAt(def, sim.world.levelUp.stacks[idx]));
         }
+        // A CARD TAKEN IS A PAGE UNLOCKED, and with the overlay never drawn there is no close to
+        // hang that on any more. This edge is the one thing that fires once per auto-pick, so it
+        // is where the banking goes. Same call the card's own close makes: a set union that
+        // reports only what is new, so the overlap with the run-end sweep costs a short scan.
+        state.recordHeldUpgrades(sim.world.levelUp.stacks);
       }
       lastPicksSeen = picks;
     }

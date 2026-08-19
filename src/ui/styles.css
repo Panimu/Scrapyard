@@ -2914,13 +2914,23 @@ body {
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: #f3f7ff;
-  /* A DARK SCRIM RATHER THAN A TEXT SHADOW, the lesson the drone readout and the saved banner both
-     paid for: a shadow works over one floor and vanishes over the next, and this has to be legible
-     over rust, over moss and over a crowd. */
-  background: rgba(11, 14, 19, 0.72);
-  border: 1px solid rgba(240, 180, 41, 0.5);
-  border-radius: 999px;
-  padding: 5px 12px;
+  /* NO CHIP BEHIND IT. This used to be a dark pill with an amber rim, on the reasoning that a
+     scrim is legible over any floor where a shadow is not - true of a HUD readout parked in a
+     corner, wrong for this: the label sits ON the mech for a second and a half, and an opaque
+     plate there hides the one thing the player is looking at.
+     Legibility instead comes from an OUTLINE built out of SHADOWS - four offsets around the glyph
+     plus a soft halo - so the letters keep a dark edge over rust, over moss and over a crowd
+     without covering any of it.
+     Deliberately NOT `-webkit-text-stroke`: without `paint-order: stroke` the stroke is painted
+     over the fill and eats half its width out of the glyph, and `paint-order` on HTML text is
+     recent enough that the fallback would be a smeared label on exactly the old phones this game
+     is meant to run on. Shadows work everywhere. */
+  text-shadow:
+    1px 1px 0 rgba(9, 11, 15, 0.95),
+    -1px 1px 0 rgba(9, 11, 15, 0.95),
+    1px -1px 0 rgba(9, 11, 15, 0.95),
+    -1px -1px 0 rgba(9, 11, 15, 0.95),
+    0 0 7px rgba(9, 11, 15, 0.9);
   animation: picktoast-rise 1.5s ease-out forwards;
 }
 
