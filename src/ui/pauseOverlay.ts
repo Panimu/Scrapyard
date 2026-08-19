@@ -38,6 +38,8 @@ export function buildPauseOverlay(
   onResume: () => void,
   infiniteRerolls: boolean,
   onInfiniteRerolls: (on: boolean) => void,
+  autoLevel: boolean,
+  onAutoLevel: (on: boolean) => void,
   onQuit: () => void,
   onChangelog: () => void,
 ): { element: HTMLDivElement; paint: (world: World) => void } {
@@ -89,6 +91,24 @@ export function buildPauseOverlay(
     onInfiniteRerolls(cheat);
   });
 
+  // AUTO-LEVEL, next to the reroll switch because they are the same KIND of control - both change
+  // what happens the next time a card is owed - even though only one of them is a cheat. This one
+  // is a preference and is remembered between runs (see Settings.autoLevel).
+  let auto = autoLevel;
+  const autoBtn = document.createElement('button');
+  autoBtn.type = 'button';
+  autoBtn.className = 'btn';
+  const paintAuto = (): void => {
+    autoBtn.textContent = `Auto level: ${auto ? 'ON' : 'OFF'}`;
+    autoBtn.setAttribute('aria-pressed', auto ? 'true' : 'false');
+  };
+  paintAuto();
+  autoBtn.addEventListener('click', () => {
+    auto = !auto;
+    paintAuto();
+    onAutoLevel(auto);
+  });
+
   // THE LOADOUT, between the title and the buttons.
   //
   // It goes HERE and not on the HUD because it is the answer to a question you ask while stopped -
@@ -106,7 +126,7 @@ export function buildPauseOverlay(
   const passives = slotGroup('Passives', MAX_PASSIVES);
   loadout.append(guns.el, passives.el);
 
-  el.append(title, loadout, resume, changes, rerolls, quit);
+  el.append(title, loadout, resume, changes, autoBtn, rerolls, quit);
 
   /** Fills both rows from the frozen world. Every slot is written every time - see `slotGroup`. */
   const paint = (world: World): void => {

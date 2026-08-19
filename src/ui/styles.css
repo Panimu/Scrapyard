@@ -2888,3 +2888,64 @@ body {
   color: var(--accent);
   flex: 0 0 auto;
 }
+
+
+/* -------------------------------------------------------------------------------------------
+ * THE AUTO-LEVEL PICK LABEL - src/ui/pickToast.ts
+ *
+ * Centred on the viewport, which is where the mech is: the camera centres exactly on the followed
+ * point, so this needs no projection. Lifted a little ABOVE centre so it clears the chassis rather
+ * than sitting on it - the mech is the thing the player is watching, and a label over its face is
+ * a label in the way.
+ *
+ * `pointer-events: none` throughout: it floats over a live fight and must never eat a tap meant
+ * for the joystick.
+ * ------------------------------------------------------------------------------------------- */
+.picktoast {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* -50% centres it; the extra lift puts it clear of the chassis sprite. */
+  transform: translate(-50%, -160%);
+  pointer-events: none;
+  z-index: 6;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #f3f7ff;
+  /* A DARK SCRIM RATHER THAN A TEXT SHADOW, the lesson the drone readout and the saved banner both
+     paid for: a shadow works over one floor and vanishes over the next, and this has to be legible
+     over rust, over moss and over a crowd. */
+  background: rgba(11, 14, 19, 0.72);
+  border: 1px solid rgba(240, 180, 41, 0.5);
+  border-radius: 999px;
+  padding: 5px 12px;
+  animation: picktoast-rise 1.5s ease-out forwards;
+}
+
+/* `[hidden]` is the weakest rule in the UA sheet and this class sets `position`, not `display` -
+   so without its own rule the label would keep its box while hidden. See CLAUDE.md. */
+.picktoast[hidden] {
+  display: none;
+}
+
+@keyframes picktoast-rise {
+  /* In fast - it is a confirmation, and a confirmation that fades in has already been read. */
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -130%) scale(0.94);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -160%) scale(1);
+  }
+  /* Holds legible for most of its life, then lifts away and dissolves. */
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260%);
+  }
+}

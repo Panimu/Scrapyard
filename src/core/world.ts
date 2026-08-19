@@ -307,6 +307,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       offers: new Int32Array(UPGRADE_OFFER_COUNT).fill(-1),
       stacks: new Uint8Array(catalogs.upgrades.length),
       picksTaken: 0,
+      lastTaken: -1,
       // THE RUN'S REROLLS: the tuning's baseline plus whatever the workshop has permanently added.
       // Seeded once and never recomputed - a reroll is spent, not resolved, so an upgrade to it is
       // a bigger pile at the start rather than a multiplier on anything. See meta.ts 'm-rerolls'.
@@ -355,6 +356,10 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     droneStacks: new Uint8Array(catalogs.upgrades.length),
     // ALL OFFERABLE unless the app says otherwise. See World.cardUnlocked.
     cardUnlocked: new Uint8Array(catalogs.upgrades.length).fill(1),
+    // All-0: a world nobody has told otherwise is a first-time player, which is the safe default
+    // for a mask whose whole job is withholding a secret. See World.ascensionSeen.
+    ascensionSeen: new Uint8Array(catalogs.upgrades.length),
+    autoLevel: 0,
     events: createEventRing(EVENT_RING_CAPACITY),
 
     hits: createHitBuffer(MAX_HITS_PER_TICK),

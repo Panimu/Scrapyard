@@ -61,6 +61,14 @@ export interface Settings {
    */
   infiniteRerolls: boolean;
   /**
+   * AUTO-LEVEL: the card is never shown and the game picks for you. See World.autoLevel for the
+   * rules and why they live in core.
+   *
+   * PERSISTENT, unlike the reroll cheat beside it, because it is a preference rather than a
+   * mid-run indulgence - somebody who wants the cards picked for them wants that next run too.
+   */
+  autoLevel: boolean;
+  /**
    * CREDITS BANKED ACROSS EVERY RUN EVER PLAYED. The one number in this file that is a game
    * mechanic rather than a preference.
    *
@@ -220,6 +228,7 @@ const DEFAULTS: Settings = {
   dprCap: 2,
   debug: false,
   infiniteRerolls: false,
+  autoLevel: false,
   credits: 0,
   unlockedUpgrades: [SEED_UPGRADE],
   unlockedHeroes: [SEED_HERO],
@@ -303,6 +312,7 @@ function loadSettings(): Settings {
       dprCap: parsed.dprCap === 1 ? 1 : 2,
       debug: parsed.debug === true,
       infiniteRerolls: parsed.infiniteRerolls === true,
+      autoLevel: parsed.autoLevel === true,
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
       // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
       // The refund from any version-bumped workshop purchase is folded in here, under the same
@@ -625,6 +635,26 @@ export class AppState {
     if (def === undefined) return false;
     if (def.unlock === undefined) return true;
     return this.settings.earnedCards.includes(id);
+  }
+
+  /**
+   * Has this save ever completed `id`'s tier-8 ascension?
+   *
+   * DERIVED FROM THE ACHIEVEMENT rather than stored a second time. Every ascension already has a
+   * secret trophy whose condition is exactly `{ tier: <card> 8 }` (data/achievements.ts), so the
+   * fact is on disk already - a `seenAscensions` list beside `earnedCards` would be a second copy
+   * of it, and the two would eventually disagree about what "found the Hydra" means.
+   *
+   * Feeds World.ascensionSeen, and nothing else reads it: auto-level steers toward an ascension a
+   * player has met, and must never hand one to somebody who has not.
+   */
+  hasSeenAscension(id: UpgradeId): boolean {
+    for (const achv of ACHIEVEMENT_CATALOG) {
+      const cond = achv.cond;
+      if (cond.kind !== 'tier' || cond.id !== id || cond.tier !== WEAPON_ASCENDED_TIER) continue;
+      return this.settings.unlockedAchievements.includes(achv.id);
+    }
+    return false;
   }
 
   // -------------------------------------------------------------------------------------------

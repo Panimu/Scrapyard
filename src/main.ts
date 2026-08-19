@@ -32,6 +32,7 @@ import {
   RUN_PHASE_VICTORY,
   Simulation,
   UPGRADE_CATALOG,
+  upgradeNameAt,
   RANKS,
   RANK_BOSS,
   quantiseAxis,
@@ -52,6 +53,7 @@ import { ScrapopediaScreen } from './ui/scrapopediaScreen.js';
 import { UpgradesScreen } from './ui/upgradesScreen.js';
 import { AchievementToast } from './ui/achievementToast.js';
 import { SAVE_PAUSE_SEC, SavedOverlay } from './ui/savedOverlay.js';
+import { PickToast } from './ui/pickToast.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
 import { GameOverOverlay, type Earned } from './ui/gameOverOverlay.js';
@@ -206,6 +208,14 @@ async function boot(): Promise<void> {
     // The pick becomes ordinary player intent on the next tick. No out-of-band event exists
     // anywhere in this loop, which is the single most valuable simplification in the design.
     pendingChoice = index;
+  }, () => {
+    // FROM THE CARD IN FRONT OF THEM. Saved like the pause switch, pushed into the open world,
+    // and the card resolves on the very next tick - `serveCard` checks the flag before it reads
+    // input, so the offer being looked at is the one auto-level takes.
+    state.settings.autoLevel = true;
+    state.saveSettings();
+    sim.world.autoLevel = 1;
+    levelUp.hide();
   });
 
   // The chest's Collect button becomes ordinary player intent on the next tick, exactly as a
@@ -272,6 +282,7 @@ async function boot(): Promise<void> {
   });
   const toast = new AchievementToast();
   const saved = new SavedOverlay();
+  const pickToast = new PickToast();
 
   const scrapopedia = new ScrapopediaScreen(() => showScreen('title'), {
     upgrade: (id) => state.hasUpgrade(id),
@@ -315,6 +326,14 @@ async function boot(): Promise<void> {
       state.saveSettings();
       sim.world.infiniteRerolls = on;
     },
+    // Auto-level is a PREFERENCE, so it is saved - and pushed into the open world, which is what
+    // makes throwing it while a card is up resolve that card rather than the next one.
+    state.settings.autoLevel,
+    (on) => {
+      state.settings.autoLevel = on;
+      state.saveSettings();
+      sim.world.autoLevel = on ? 1 : 0;
+    },
     // Abandoning goes to the TITLE, not to the mech picker. Quitting a run is a decision to stop
     // playing this one, which is not the same as a decision to start another.
     () => {
@@ -342,6 +361,7 @@ async function boot(): Promise<void> {
     // the only thing that matters is that a pause menu opened during the freeze sits over it rather
     // than under it.
     saved.element,
+    pickToast.element,
     levelUp.element,
     chest.element,
     pauseOverlay.element,
@@ -377,6 +397,8 @@ async function boot(): Promise<void> {
    * always worked this way.
    */
   let savePauseLeft = 0;
+  /** Edge-detects a pick so the auto-level label fires once per card. */
+  let lastPicksSeen = 0;
   let saveSeen = false;
 
   /**
@@ -502,6 +524,15 @@ async function boot(): Promise<void> {
       levelId: state.levelId,
     });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
+    // AUTO-LEVEL, and the mask its first rule needs. Both are pushed IN like `cardUnlocked`: core
+    // never reads the save, it is handed what it needs to know.
+    sim.world.autoLevel = state.settings.autoLevel ? 1 : 0;
+    for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+      sim.world.ascensionSeen[i] =
+        UPGRADE_CATALOG[i].ascension !== undefined && state.hasSeenAscension(UPGRADE_CATALOG[i].id)
+          ? 1
+          : 0;
+    }
     // THE DECK'S GATE, pushed in at run start. Core never reads the save; it is handed a mask.
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
       sim.world.cardUnlocked[i] = state.hasCard(UPGRADE_CATALOG[i].id) ? 1 : 0;
@@ -517,8 +548,10 @@ async function boot(): Promise<void> {
     pendingChoice = -1;
     lastDamageTaken = 0;
     savePauseLeft = 0;
+    lastPicksSeen = 0;
     saveSeen = false;
     saved.hide();
+    pickToast.hide();
 
     renderer.reset(sim.world);
     // Every menu screen down, whichever one we came from - including the deep-link path, where
@@ -859,6 +892,26 @@ async function boot(): Promise<void> {
     // Same clock as the toast and for the same reason: the banner is up for 1.2 s of the player
     // actually being present, not of a backgrounded tab.
     saved.update(dtSec);
+    // AUTO-LEVEL SAYS WHAT IT TOOK. `picksTaken` moving is the edge - it ticks once per pick,
+    // including the several a boss core can grant in one tick, and `lastTaken` says which. Only
+    // while auto-level is on: a manual pick was made ON a card that already showed the player
+    // exactly what they were choosing, and repeating it over the mech would be noise.
+    const picks = sim.world.levelUp.picksTaken;
+    if (picks !== lastPicksSeen) {
+      const idx = sim.world.levelUp.lastTaken;
+      if (sim.world.autoLevel !== 0 && idx >= 0) {
+        const def = UPGRADE_CATALOG[idx];
+        if (def !== undefined) {
+          // The name AT ITS NEW TIER, so an ascension announces itself as what it became rather
+          // than as the card that grew into it.
+          pickToast.show(upgradeNameAt(def, sim.world.levelUp.stacks[idx]));
+        }
+      }
+      lastPicksSeen = picks;
+    }
+    // FROZEN THROUGH THE INSURANCE PAUSE, so the label is still up and still readable for the
+    // whole of it rather than dissolving over a world that has stopped - see PickToast.update.
+    pickToast.update(dtSec, savePauseLeft > 0);
 
     if (!hud.element.hidden) {
       if (state.settings.debug) {

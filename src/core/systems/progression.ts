@@ -216,17 +216,123 @@ function openCardIfOwed(world: World): void {
 }
 
 /**
+ * AUTO-LEVEL'S PICK: which of the offers on the card the game takes for the player.
+ *
+ * Returns a SLOT (0..offerCount), never a catalog index, because that is what `applyChoice`
+ * takes and going through the same door as a tap is the whole point - the auto-picker chooses,
+ * it does not have a private way to apply things.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE RULES, IN ORDER, FIRST MATCH WINS
+ * ---------------------------------------------------------------------------------------------
+ *   1. AN ASCENSION IT CAN COMPLETE. An offer that would leave some weapon's tier-8 requirements
+ *      satisfied - and only for an ascension the save has already met (World.ascensionSeen).
+ *   2. A NEW WEAPON. Breadth first: an empty slot is worth more than a tier.
+ *   3. AN EXISTING WEAPON. Then depth on what is already firing.
+ *   4. AN EXISTING PASSIVE. Depth on what is already helping.
+ *   5. ANYTHING, drawn from `rng.upgrade`.
+ *
+ * A NEW PASSIVE FALLS TO RULE 5 RATHER THAN HAVING A RULE, which is a deliberate reading of the
+ * order given: rules 2-4 name new weapons, existing weapons and existing passives, and a new
+ * passive is none of those. It still gets taken often - it is usually what rule 5 is choosing
+ * between - it simply does not outrank deepening something the build already has.
+ *
+ * TIES GO TO THE LOWEST SLOT. Deterministic, and cheaper to explain than a second roll; the
+ * offers themselves were already drawn at random, so slot 0 carries no meaning to bias toward.
+ *
+ * ONLY RULE 5 DRAWS FROM THE RNG, and it draws from `rng.upgrade` - the stream that produced the
+ * offers in the first place. An auto-picked run therefore cannot perturb spawns or loot.
+ */
+function autoPick(world: World): number {
+  const lu = world.levelUp;
+  const n = lu.offerCount;
+  if (n <= 0) return -1;
+
+  // ---- rule 1: an ascension this pick would complete ----------------------------------------
+  // Asked by SIMULATING the pick rather than by reimplementing what an ascension needs: bump the
+  // stack, ask `ascensionReady` - the same function the chest asks - and put it back. That keeps
+  // one definition of "ready" in the game, which is the whole reason the chest and this agree.
+  for (let s = 0; s < n; s++) {
+    const idx = lu.offers[s];
+    if (idx < 0) continue;
+    const def = world.upgradeCatalog[idx];
+    if (def === undefined || lu.stacks[idx] >= def.maxStacks) continue;
+
+    lu.stacks[idx]++;
+    let completes = false;
+    for (let i = 0; i < world.upgradeCatalog.length && !completes; i++) {
+      // ALREADY READY DOES NOT COUNT. If the run could take that ascension before this pick, the
+      // pick did not earn it and rule 1 has no business claiming credit for it.
+      if (world.ascensionSeen[i] === 0) continue;
+      if (!ascensionReady(world, i)) continue;
+      lu.stacks[idx]--;
+      const before = ascensionReady(world, i);
+      lu.stacks[idx]++;
+      if (!before) completes = true;
+    }
+    lu.stacks[idx]--;
+    if (completes) return s;
+  }
+
+  // ---- rules 2-4: breadth, then depth --------------------------------------------------------
+  let newWeapon = -1;
+  let heldWeapon = -1;
+  let heldPassive = -1;
+  for (let s = 0; s < n; s++) {
+    const idx = lu.offers[s];
+    if (idx < 0) continue; // OFFER_HEAL / OFFER_CREDITS - the consolation pair, rule 5's business
+    const def = world.upgradeCatalog[idx];
+    if (def === undefined) continue;
+    const held = lu.stacks[idx] > 0;
+    if (def.kind === 'weapon' && !held && newWeapon < 0) newWeapon = s;
+    else if (def.kind === 'weapon' && held && heldWeapon < 0) heldWeapon = s;
+    else if (def.kind !== 'weapon' && held && heldPassive < 0) heldPassive = s;
+  }
+  if (newWeapon >= 0) return newWeapon;
+  if (heldWeapon >= 0) return heldWeapon;
+  if (heldPassive >= 0) return heldPassive;
+
+  // ---- rule 5 --------------------------------------------------------------------------------
+  const roll = Math.floor(world.rng.upgrade.nextFloat() * n);
+  return roll < n ? roll : n - 1;
+}
+
+/**
  * One tick with the card open. Returns silently while the player has not chosen: that is the
  * normal state for however many ticks it takes someone to read three cards on a phone.
  */
 function serveCard(world: World): void {
-  const lu = world.levelUp;
+  // AUTO-LEVEL RESOLVES THE CARD ON THE TICK IT OPENED, before any input is read. The phase still
+  // passes through LEVEL_UP for exactly one tick, which is what keeps every other system's freeze
+  // contract intact - nothing here has to know that the card was never drawn.
+  //
+  // CHECKED EVERY TICK RATHER THAN AT OPEN, so throwing the switch on the card in front of you
+  // takes that card too. That is the behaviour the level-up screen's own toggle needs.
+  if (world.autoLevel !== 0) {
+    const slot = autoPick(world);
+    if (slot >= 0 && applyChoice(world, slot)) {
+      finishPick(world);
+      return;
+    }
+  }
+
   if (world.input.chooseIndex === CHOOSE_REROLL) {
     tryReroll(world);
     return;
   }
   if (!applyChoice(world, world.input.chooseIndex)) return;
+  finishPick(world);
+}
 
+/**
+ * What happens after a pick lands, whoever made it - the player's tap or auto-level's rules.
+ *
+ * Extracted the moment there were two callers rather than copied, because the "another level is
+ * owed" branch is the subtle one: a boss core can grant four levels at once, and a copy that
+ * forgot to re-generate would silently drop three of them.
+ */
+function finishPick(world: World): void {
+  const lu = world.levelUp;
   lu.pending--;
   if (lu.pending > 0 && generateOffers(world) > 0) {
     // Another level is owed and there is still something to offer: stay in LEVEL_UP with a NEW
@@ -310,6 +416,7 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
     const hp = player.hp + heal;
     player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;
     lu.picksTaken++;
+    lu.lastTaken = -1; // no catalog entry - see LevelUpState.lastTaken
     pushEvent(world.events, EV_UPGRADE_TAKEN, world.tick, idx, slot, heal, 0);
     return true;
   }
@@ -317,6 +424,7 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
     const t = world.config.tuning.pickups;
     world.stats.credits += t.consolationCredits;
     lu.picksTaken++;
+    lu.lastTaken = -1;
     pushEvent(world.events, EV_UPGRADE_TAKEN, world.tick, idx, slot, t.consolationCredits, 0);
     return true;
   }
@@ -334,6 +442,7 @@ function applyUpgrade(world: World, idx: number, slot: number): boolean {
 
   lu.stacks[idx]++;
   lu.picksTaken++;
+  lu.lastTaken = idx;
 
   // BEFORE the resolve calls below, so the new gun is inside `weaponCount` and gets its stats
   // built by the same loop that re-resolves everything else. A weapon installed after it would

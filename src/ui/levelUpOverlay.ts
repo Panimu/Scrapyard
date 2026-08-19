@@ -72,7 +72,11 @@ export class LevelUpOverlay {
   /** Identifies the offer set currently on screen, so a re-render is skipped when nothing moved. */
   private signature = '';
 
-  constructor(private readonly onChoose: (index: number) => void) {
+  constructor(
+    private readonly onChoose: (index: number) => void,
+    /** Turns auto-level on from the card itself. See the button built below. */
+    private readonly onAutoLevel: () => void = () => {},
+  ) {
     const el = document.createElement('div');
     el.className = 'overlay levelup';
     el.hidden = true;
@@ -120,6 +124,25 @@ export class LevelUpOverlay {
     reroll.addEventListener('click', () => this.onChoose(CHOOSE_REROLL));
     el.appendChild(reroll);
     this.reroll = reroll;
+
+    // AUTO-LEVEL, OFFERED WHERE IT IS WANTED. The pause menu has the switch, but the moment a
+    // player decides they are tired of choosing is the moment a card is in front of them - and
+    // making them pause, find a menu and come back is asking them to do the thing they just said
+    // they did not want to do.
+    //
+    // ONE-WAY, and deliberately: there is no "off" here because turning it off is a thing you do
+    // when NO card is up (auto-level means you never see this screen again), and a button that
+    // only ever reads ON would be a switch you cannot throw back. The pause menu is where it goes
+    // off, and it says so.
+    //
+    // BELOW THE REROLL, which is already below the cards: this is the least-reached control on
+    // the screen and the one with the largest consequence, so it sits furthest from the thumb.
+    const auto = document.createElement('button');
+    auto.type = 'button';
+    auto.className = 'btn levelup__auto';
+    auto.textContent = 'Auto level from here';
+    auto.addEventListener('click', () => this.onAutoLevel());
+    el.appendChild(auto);
 
     this.element = el;
   }

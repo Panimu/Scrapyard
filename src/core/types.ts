@@ -318,6 +318,19 @@ export interface LevelUpState {
   /** Total picks applied. Cheap sanity check for the harness and the summary screen. */
   picksTaken: number;
   /**
+   * Catalog index of the MOST RECENT pick, or -1 for one of the consolation offers (which take no
+   * stack and have no catalog entry).
+   *
+   * FOR THE UI, and specifically for auto-level: the card is never shown, so the only way a player
+   * learns what they just got is a label saying so, and `picksTaken` moving tells you a pick
+   * happened without telling you what it was. Paired with `picksTaken` as an edge trigger.
+   *
+   * SIMULATION STATE RATHER THAN AN EVENT, because it is a fact about the run that survives the
+   * tick: the event ring is drained by the renderer during the draw, and a second consumer racing
+   * it for the same entry is the kind of coupling this codebase keeps having to unpick.
+   */
+  lastTaken: number;
+  /**
    * REROLLS LEFT THIS RUN. Seeded from `tuning.xp.rerollsPerRun` at run start and spent one per
    * re-dealt card. Not per level-up: it is a run-long resource, which is what makes holding it
    * back for a level that matters an actual decision.
@@ -702,6 +715,32 @@ export interface World {
    * keeps every test, fixture and headless run offering the whole deck without having to say so.
    */
   readonly cardUnlocked: Uint8Array;
+  /**
+   * 1 where the player has ALREADY EARNED that card's tier-8 ascension in some previous run.
+   *
+   * Set by the APP at run start from the save, exactly like `cardUnlocked` above and for the same
+   * reason: what a save has seen is not something core can know. All-0 by default, so a fixture or
+   * a headless run behaves as a first-time player.
+   *
+   * IT EXISTS FOR AUTO-LEVEL AND FOR NOTHING ELSE. The auto-picker will steer a build toward an
+   * ascension it can complete, but only one the player has met before - otherwise the feature
+   * would hand out the game's one genuine secret to somebody who had never found it, which is the
+   * opposite of what a convenience toggle should do.
+   */
+  readonly ascensionSeen: Uint8Array;
+  /**
+   * 1 while AUTO-LEVEL is on: the card is never shown and updateProgression picks for the player.
+   *
+   * ON THE WORLD RATHER THAN IN THE APP, so the choice is made inside the simulation and lands in
+   * the replay like any other. An app-side picker feeding `chooseIndex` would work too and would
+   * be wrong in one specific way: the rules need to know what the loadout holds and what an
+   * ascension requires, which is core's knowledge, and a second copy of it in the UI layer is a
+   * second copy that can disagree.
+   *
+   * A NUMBER rather than a boolean, matching `lasersOverheated` and every other flag in this
+   * struct, and settable mid-run - the pause menu and the level-up card can both throw it.
+   */
+  autoLevel: number;
   readonly events: EventRing;
 
   readonly hits: HitBuffer;

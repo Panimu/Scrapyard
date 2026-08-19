@@ -48,6 +48,15 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
+    at: '2026-08-19T11:47Z',
+    title: 'AUTO LEVEL',
+    notes: [
+      'A new option: let the game pick your upgrades. Turn it on from the pause menu, or straight off a level-up card when you have had enough of choosing \u2014 that card gets picked too.',
+      'It picks with a plan rather than at random. It will complete an ascension you already know how to build; failing that it takes a gun you do not have, then deepens a gun you do, then a passive you do. It will never hand you an ascension you have not found for yourself.',
+      'Each pick floats its name over the mech for a moment so the build never changes behind your back \u2014 and if Mech Insurance fires, the label holds for the whole pause instead of dissolving over a stopped world.',
+    ],
+  },
+  {
     at: '2026-08-19T11:35Z',
     title: 'THE GIGA LASER LOOKS LIKE A LASER',
     notes: [
