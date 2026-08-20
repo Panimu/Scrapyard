@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T19:32Z',
+    title: 'LOOK WHO IS DRIVING',
+    notes: [
+      'Every machine in City Chaos is drawn turned toward you now instead of in flat profile. The four animal-piloted bosses were the reason: side-on, a bee, a flamingo, a frog and a red panda are four identical glass boxes with a lump inside, and they are the whole point of the back half of the run. You can see their faces.',
+      'The rest of the roster came along and is better for it — the tank has two tracks and a hull instead of reading as a side elevation, and the rover has four wheels.',
+    ],
+  },
+  {
     at: '2026-08-20T17:03Z',
     title: 'AUTO LEVEL STARTS OFF, EVERY TIME',
     notes: [

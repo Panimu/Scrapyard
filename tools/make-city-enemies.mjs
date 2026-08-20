@@ -12,7 +12,9 @@
  *
  * ONE CAMERA FOR THE WHOLE ROSTER. Elevation 50, a quarter-turn of yaw per model so every machine
  * faces EAST (+x) - `ART_FACING_BY_LEVEL['city-chaos']` is 1, and the renderer mirrors for
- * westward travel. A roster shot from per-model angles would read as clip art from three
+ * westward travel - and then a shared THREE-QUARTER turn toward the camera on top of that, so the
+ * things that tell one machine from another are pointed at the player rather than edge-on. See
+ * `TURN_TO_CAMERA`. A roster shot from per-model angles would read as clip art from three
  * different games; the single rig is what makes nineteen models one army.
  *
  * ---------------------------------------------------------------------------------------------
@@ -87,6 +89,31 @@ const JOBS = [
 const RENDER_SIZE = 448;
 /** Camera elevation, degrees. One rig for the whole roster - see the header. */
 const ELEVATION = 50;
+
+/**
+ * DEGREES EVERY MODEL IS TURNED TOWARD THE CAMERA, on top of the per-model `yaw` that faces it
+ * east. Added to every row, so this is still ONE rig - see the header - just a three-quarter one
+ * rather than a flat side elevation.
+ *
+ * THE ROSTER HAD NO FACES AT 0. A pure profile is the worst angle this pack could be shot from:
+ * the four animal-piloted quad mechs differ almost entirely in the PILOT - a bee, a flamingo, a
+ * frog, a red panda, each sitting in an identical glass box - and side-on you see one eye and a
+ * silhouette. The bosses of cycles 5 to 8 were four interchangeable lumps, which is the whole
+ * reason those four models were chosen. It is not only the animals: the tank read as a flat side
+ * elevation with one track, and the rover showed two wheels of four.
+ *
+ * 30 is the number that buys the faces without costing the heading. Far enough that both eyes,
+ * the flamingo's neck, the frog's snout and the panda's markings all land; near enough that the
+ * machine still plainly points the way it is walking, which matters because the renderer MIRRORS
+ * these sprites for westward travel and a near-front-on view mirrors into an ambiguous one. A
+ * three-quarter view is the standard answer here for exactly that reason.
+ *
+ * The SIGN was read off a contact sheet, not derived - the same rule the per-model yaws follow,
+ * and for the same reason: +30 turns these models toward the camera and -30 turns them away,
+ * which is the opposite of what the rotation maths predicts once each pack's own forward axis is
+ * folded in.
+ */
+const TURN_TO_CAMERA = 30;
 
 /**
  * The studio page. three.js is served out of node_modules by the same little file server that
@@ -317,7 +344,16 @@ async function main() {
   for (const job of JOBS) {
     const raw = await page.evaluate(
       ([u, s, e, y, t]) => window.bake(u, s, e, y, t),
-      [`http://127.0.0.1:${port}/${job.model}`, RENDER_SIZE, ELEVATION, job.yaw, job.tint ?? null],
+      [
+        `http://127.0.0.1:${port}/${job.model}`,
+        RENDER_SIZE,
+        ELEVATION,
+        // `yaw` is the empirical "this model faces east" quarter turn; the shared offset is what
+        // makes the whole roster a three-quarter view. Kept as two numbers rather than folded
+        // into the table so a re-probed model and a restyled roster stay separate edits.
+        job.yaw + TURN_TO_CAMERA,
+        job.tint ?? null,
+      ],
     );
     const trimmed = await page.evaluate(`(${TRIM})(${JSON.stringify(raw)})`);
     if (trimmed === null) {
