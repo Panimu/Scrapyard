@@ -41,6 +41,16 @@ const LEVELS = [
     // rest pose, so the icon is not a tree caught mid-lean.
     prop: 'mwall_tree0',
     frame: 0,
+    frames: SWAY_FRAMES,
+  },
+  {
+    out: 'level_city',
+    floor: 'floor_city',
+    // The Panda mech - the map's final boss, and the sprite with the most personality at 84 px.
+    // A single-frame bake, so `frames: 1`.
+    prop: 'city_panda',
+    frame: 0,
+    frames: 1,
   },
 ];
 
@@ -64,7 +74,6 @@ const dataUri = async (key) =>
 
 const DRAW = `async (job) => {
   const S = ${S};
-  const FRAMES = ${SWAY_FRAMES};
   const load = (src) => new Promise((ok, no) => {
     const im = new Image();
     im.onload = () => ok(im);
@@ -109,7 +118,7 @@ const DRAW = `async (job) => {
   // ---- one tree, lifted off the sway sheet at its own aspect and centred low, the way it stands
   // on the field: roots near the bottom edge, canopy filling the upper two thirds.
   const sheet = await load(job.prop);
-  const fw = Math.round(sheet.width / FRAMES);
+  const fw = Math.round(sheet.width / job.frames);
   const fh = sheet.height;
   const scale = Math.min((S * 0.78) / fw, (S * 0.86) / fh);
   const dw = fw * scale;
@@ -133,6 +142,7 @@ async function main() {
       floor: await dataUri(level.floor),
       prop: await dataUri(level.prop),
       frame: level.frame,
+      frames: level.frames,
     };
     const uri = await page.evaluate(`(${DRAW})(${JSON.stringify(job)})`);
     const buf = Buffer.from(uri.split(',')[1], 'base64');

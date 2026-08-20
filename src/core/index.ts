@@ -43,6 +43,7 @@ export * from './content/cycles.js';
 export * from './content/levels.js';
 export * from './content/scenery.js';
 export * from './content/wallsMossy.js';
+export * from './content/wallsCity.js';
 export * from './data/heroes.js';
 export * from './data/upgrades.js';
 export * from './data/meta.js';

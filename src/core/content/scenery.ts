@@ -60,6 +60,23 @@ import {
   wallKindAt,
   type MossWalls,
 } from './wallsMossy.js';
+import {
+  breakCityCell,
+  cityCellX,
+  cityCellY,
+  cityCentre,
+  cityDestructibleOverlap,
+  cityDestructibleRayHit,
+  cityKindAt,
+  cityLastRayT,
+  cityOverlap,
+  cityRayHit,
+  CITY_FENCE,
+  CITY_HALF,
+  damageCityCell,
+  pushOutOfCity,
+  type CityBlocks,
+} from './wallsCity.js';
 
 /** Cell edge. One pile per cell, at most. 16 x 16 = 256 cells across a 12 288 u yard. */
 export const SCENERY_CELL = 768;
@@ -224,8 +241,11 @@ export interface ScrapPiles {
  * it.
  *
  * A third terrain is a third member and six more branches here, and still no system edits.
+ *
+ * AND HERE IT IS: City Chaos's road grid, `wallsCity.ts`. As predicted - a third member, a
+ * branch per question below, and not one system touched.
  */
-export type Scenery = ScrapPiles | MossWalls;
+export type Scenery = ScrapPiles | MossWalls | CityBlocks;
 
 /**
  * An allocated but EMPTY world. Used by a level that generates its terrain some other way, or not
@@ -325,6 +345,7 @@ function cellOf(v: number): number {
  */
 export function sceneryOverlap(s: Scenery, x: number, y: number, r: number): number {
   if (s.kind === 'walls') return wallOverlap(s, x, y, r);
+  if (s.kind === 'city') return cityOverlap(s, x, y, r);
   const c0 = cellOf(x);
   const r0 = cellOf(y);
 
@@ -383,6 +404,7 @@ export function pushOutOfScenery(
   r: number,
 ): Readonly<SceneryPush> {
   if (s.kind === 'walls') return pushOutOfWalls(s, x, y, r);
+  if (s.kind === 'city') return pushOutOfCity(s, x, y, r);
   PUSH.x = x;
   PUSH.y = y;
   PUSH.nx = 0;
@@ -443,6 +465,7 @@ export function sceneryRayHit(
   maxT: number,
 ): number {
   if (s.kind === 'walls') return wallRayHit(s, ox, oy, dx, dy, maxT);
+  if (s.kind === 'city') return cityRayHit(s, ox, oy, dx, dy, maxT);
   const c0 = cellOf(ox + dx * maxT * 0.5);
   const r0 = cellOf(oy + dy * maxT * 0.5);
   // Cells to either side of the midpoint that the ray can still touch. Half the ray plus the
@@ -486,6 +509,7 @@ export function sceneryRayHit(
 /** True if this cell holds something a weapon can break. */
 export function isDestructible(s: Scenery, i: number): boolean {
   if (s.kind === 'walls') return wallKindAt(s, wallCellX(i), wallCellY(i)) === WALL_TREE;
+  if (s.kind === 'city') return cityKindAt(s, cityCellX(i), cityCellY(i)) === CITY_FENCE;
   return s.radius[i] > 0 && s.variant[i] === SCRAP_BARREL;
 }
 
@@ -500,6 +524,7 @@ export function isDestructible(s: Scenery, i: number): boolean {
  */
 export function destructibleOverlap(s: Scenery, x: number, y: number, r: number): number {
   if (s.kind === 'walls') return wallDestructibleOverlap(s, x, y, r);
+  if (s.kind === 'city') return cityDestructibleOverlap(s, x, y, r);
   const c0 = cellOf(x);
   const r0 = cellOf(y);
 
@@ -544,6 +569,7 @@ export function destructibleOverlap(s: Scenery, x: number, y: number, r: number)
  */
 export function damageScenery(s: Scenery, i: number, amount: number): number {
   if (s.kind === 'walls') return damageWallCell(s, i, amount);
+  if (s.kind === 'city') return damageCityCell(s, i, amount);
   if (s.radius[i] === 0) return 0;
   destroyScenery(s, i);
   return 1;
@@ -551,6 +577,7 @@ export function damageScenery(s: Scenery, i: number, amount: number): number {
 
 export function destroyScenery(s: Scenery, i: number): void {
   if (s.kind === 'walls') return breakWallCell(s, i);
+  if (s.kind === 'city') return breakCityCell(s, i);
   if (s.radius[i] === 0) return;
   s.radius[i] = 0;
   s.count--;
@@ -598,7 +625,8 @@ export const BARREL_REGROW_MIN_DIST = 560;
  */
 export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): number {
   // Walls do not come back. See wallsMossy.ts: a wood the player cut through stays cut.
-  if (s.kind === 'walls') return -1;
+  // Nor do fences: a construction site the player opened stays open.
+  if (s.kind === 'walls' || s.kind === 'city') return -1;
   const n = s.radius.length;
   const min2 = BARREL_REGROW_MIN_DIST * BARREL_REGROW_MIN_DIST;
 
@@ -664,6 +692,11 @@ export function destructibleRayHit(
     lastRayT = wallLastRayT();
     return cell;
   }
+  if (s.kind === 'city') {
+    const cell = cityDestructibleRayHit(s, ox, oy, dx, dy, maxT);
+    lastRayT = cityLastRayT();
+    return cell;
+  }
   const c0 = cellOf(ox + dx * maxT * 0.5);
   const r0 = cellOf(oy + dy * maxT * 0.5);
   const span = 1 + Math.floor((maxT * 0.5 + RADIUS_MAX) / SCENERY_CELL);
@@ -718,16 +751,22 @@ export function destructibleRayHit(
  * whatever it hit and puts an event there, and both terrains answer.
  */
 export function sceneryX(s: Scenery, i: number): number {
-  return s.kind === 'walls' ? wallCentre(wallCellX(i)) : s.x[i];
+  if (s.kind === 'walls') return wallCentre(wallCellX(i));
+  if (s.kind === 'city') return cityCentre(cityCellX(i));
+  return s.x[i];
 }
 
 export function sceneryY(s: Scenery, i: number): number {
-  return s.kind === 'walls' ? wallCentre(wallCellY(i)) : s.y[i];
+  if (s.kind === 'walls') return wallCentre(wallCellY(i));
+  if (s.kind === 'city') return cityCentre(cityCellY(i));
+  return s.y[i];
 }
 
 /** Sizes the burst the renderer plays where something went up. Half a cell, for a wall. */
 export function sceneryRadius(s: Scenery, i: number): number {
-  return s.kind === 'walls' ? WALL_HALF : s.radius[i];
+  if (s.kind === 'walls') return WALL_HALF;
+  if (s.kind === 'city') return CITY_HALF;
+  return s.radius[i];
 }
 
 /**

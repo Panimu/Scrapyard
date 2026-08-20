@@ -40,6 +40,25 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T11:39Z',
+    title: 'CITY CHAOS',
+    notes: [
+      'A third map. Streets on an endless grid, and a full city block between every pair of them: solid buildings to fight around, fenced-off construction sites you can break into — or out of — courtyard buildings with one way in, and open plazas. Every run opens at a crossroads.',
+      'Finish Mossy Mayhem to unlock it.',
+      'The construction fences come down when you shoot them, and a half-broken fence shows it. The buildings do not — a city block is a wall, and the streets are the way round it.',
+      'A flock of sheep has somehow got into the city. They carry the same salvage they carry on the moss. Nobody knows how they got there.',
+    ],
+  },
+  {
+    at: '2026-08-20T11:39Z',
+    title: 'THE MACHINES THAT OWN THE STREETS',
+    notes: [
+      'Seventeen new enemies, none shared with the other maps: feral junkbots, sentry drones on legs and in the air — later with guns — hijacked rovers, strafing fighters, and a wall of dozer-yellow tanks.',
+      'Eight bosses: four bipedal war mechs, then four quad mechs with something alive at the controls — a bee, a flamingo, a frog and a red panda.',
+      'EVERY BOSS GETS PROMOTED. The machine you fought alone as a boss returns in the next cycle as its elite, walking in pairs behind a new horde while something worse takes its place. Cycle 1 is the only elite that is not a returned boss.',
+    ],
+  },
+  {
     at: '2026-08-19T12:31Z',
     title: 'THE HYDRA LEAVES YOU ROOM',
     notes: [

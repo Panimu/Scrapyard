@@ -29,7 +29,9 @@
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
     "dps": "tsx tools/dps.ts",
     "loadout": "tsx tools/loadout.ts",
-    "t8": "tsx tools/t8.ts"
+    "t8": "tsx tools/t8.ts",
+    "cityenemies": "node tools/make-city-enemies.mjs",
+    "citywalls": "node tools/make-city-walls.mjs"
   },
   "dependencies": {
     "pixi.js": "8.19.0"
@@ -37,6 +39,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/node": "^22.10.2",
+    "three": "^0.185.1",
     "tsx": "^4.19.2",
     "typescript": "5.9.3",
     "vite": "^8.2.1",

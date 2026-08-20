@@ -1,73 +1,79 @@
 /**
- * CITY CHAOS - A STUB. Named, listed, and not playable.
+ * CITY CHAOS. An unbounded grid of streets, and the blocks between them.
  *
  * ---------------------------------------------------------------------------------------------
- * WHAT A STUB IS FOR, AND WHY IT IS BETTER THAN AN EMPTY FILE
+ * NOT "MOSSY WITH BUILDINGS"
  * ---------------------------------------------------------------------------------------------
- * It reserves the NAME and the SHAPE. The picker walks `LEVEL_CATALOG` and greys out anything
- * `playable: false`, so this appears as a third entry a player can see and cannot enter - which is
- * the honest state of it. Everything downstream that has to know a third level exists finds out
- * now, at compile time, rather than on the day the level is actually built: `LevelId` is a union,
- * `DRESSING_BY_LEVEL` is a total Record over it, and adding this id made the compiler name every
- * place that had quietly assumed there were two.
+ * It shares the mechs, the guns and the machinery of cycles, and past that everything specific to
+ * it lives in its own files: its terrain in `wallsCity.ts`, its nineteen machines in
+ * `creaturesCity.ts`, its ladder and the boss-promotion rule in `cyclesCity.ts`. Nothing about it
+ * is a flag on a shared table, so a change to this level cannot alter the other two.
  *
  * ---------------------------------------------------------------------------------------------
- * EVERY UNBUILT FIELD FAILS LOUDLY RATHER THAN PRETENDING
+ * ITS TERRAIN IS A ROAD GRID, AND IT GOES ON FOREVER
  * ---------------------------------------------------------------------------------------------
- * `LevelDef` demands a working level - terrain, creatures, a ladder - and this has none of them.
- * The temptation is to borrow the Scrapyard's so the types are satisfied, and that is exactly the
- * wrong move: it would produce a level that RUNS, badly, wearing another map's animals, and the
- * failure would be a confusing playable thing instead of an obvious missing one.
+ * Streets every 768 units on both axes, and every square between them a city block the size of
+ * the screen: most filled with solid building, some fenced off as construction sites with a
+ * gateway or two (the fences break; the buildings never do), some courtyard buildings you can
+ * fight inside, some open plazas. The whole plane is a pure function of the run seed - see
+ * wallsCity.ts - and every run opens at a crossroads.
  *
- * So the generators THROW. They are unreachable while `playable` is false - `levelOrDefault`
- * refuses a non-playable id and hands back the first playable one, so even a save pointing here
- * lands somewhere real - and if a future change ever does reach them, a thrown error naming this
- * file is worth a great deal more than a silently empty yard.
- *
- * The data fields are empty rather than borrowed for the same reason, and the empties are load
- * bearing: `creatures: []` and `cycleCount: 0` are what make the Scrapopedia's bestiary walk find
- * nothing here, and `floor: ''` is what keeps `levelFloorKeys` from asking the asset loader for a
- * texture nobody has drawn.
+ * ---------------------------------------------------------------------------------------------
+ * ITS ENEMIES ARE MACHINES, AND EVERY BOSS GETS PROMOTED
+ * ---------------------------------------------------------------------------------------------
+ * The city's own rule, from the design brief: the boss of cycle N returns as cycle N+1's elite.
+ * Eight bosses - four bipedal war mechs, then the four animal-piloted quad mechs - each of them
+ * fought once alone and then again in pairs behind the next horde. See cyclesCity.ts.
  */
 
-import type { Scenery } from './scenery.js';
+import { createCityBlocks } from './wallsCity.js';
+import { CITY, CITY_CREATURES } from './creaturesCity.js';
+import { CITY_LADDER, resolveCityCycle } from './cyclesCity.js';
 import type { LevelDef } from './levels.js';
-import { ARENA_HALF } from '../constants.js';
-
-/** Shared by both unbuilt generators, so the message is one string rather than two that drift. */
-function unbuilt(what: string): never {
-  throw new Error(
-    `City Chaos is a stub: ${what} has not been written. This level is playable: false, so ` +
-      'nothing should have reached here - see src/core/content/levelCityChaos.ts.',
-  );
-}
+import type { Scenery } from './scenery.js';
 
 export const CITY_CHAOS: LevelDef = Object.freeze({
   id: 'city-chaos' as const,
   name: 'City Chaos',
-  // Says what the ground is, in the same voice as the other two, because the card is shown - it is
-  // greyed, not hidden, and a placeholder blurb reading "TBD" would be the one line in the picker
-  // written for the developer rather than the player.
-  blurb: 'Streets, and whatever is still moving in them.',
-  // The placeholder plate. Mossy Mayhem carried '' for months and it read as unfinished, which is
-  // correct here and was not there - see tools/make-level-art.mjs.
-  art: '',
-  // THE FLAG THAT MAKES ALL THE THROWING BELOW UNREACHABLE.
-  playable: false,
-  // Not "hard to earn" - not designed. The same `never` the sealed chassis use, and it means the
-  // same thing: no criteria have been written, and a guessed one would be a design decision made
-  // by accident.
-  unlock: { kind: 'never' as const },
+  blurb: 'Streets on a grid, blocks to fight around, and the machines that own them now.',
+  // Its own composited card - see tools/make-level-art.mjs, same reasoning as Mossy's.
+  art: 'level_city',
+  playable: true,
 
-  // Sane rather than meaningful: nothing reads it while the level cannot be entered, and a
-  // plausible number is easier to read past than a 0 that invites a divide.
-  arenaHalf: ARENA_HALF,
-  floor: '',
+  /**
+   * EARNED BY FINISHING MOSSY MAYHEM - the same shape as Mossy's own unlock, one map further
+   * along. The campaign is a chain: finish the yard to reach the moss, finish the moss to reach
+   * the city. Named by level rather than `win` for the reason Mossy's comment gives: a condition
+   * that unlocks itself is not a condition.
+   */
+  unlock: { kind: 'winLevel', level: 'mossy-mayhem' } as const,
 
-  makeScenery: (_seed: number): Scenery => unbuilt('its terrain'),
-  creatures: Object.freeze([]),
-  cycleCount: 0,
-  sheep: 0,
-  bestiaryBody: 0,
-  resolveCycle: (_index: number) => unbuilt('its cycle ladder'),
+  /** No edge in any direction - same deliberate Infinity as Mossy, see that file's note. */
+  arenaHalf: Infinity,
+  floor: 'floor_city',
+
+  /**
+   * THE SAME FOUR AS THE MOSS, FOR THE SAME MEASURED REASON. A sheep is this map's fuel barrel -
+   * the buildings give nothing back when you cannot break them - and the flock's operating
+   * footprint (the 1500 u cull radius, see systems/sheep.ts) is level-independent, so Mossy's
+   * measurement against the Scrapyard's drum density carries over unchanged. That a flock of
+   * sheep has wandered into the city is, on reflection, exactly the sort of thing the name
+   * "City Chaos" promises.
+   */
+  sheep: 4,
+
+  /** The whole city, from the seed alone. Pure arithmetic - not even a cache. See wallsCity.ts. */
+  makeScenery: (seed: number): Scenery => createCityBlocks(seed),
+
+  creatures: CITY_CREATURES,
+  resolveCycle: resolveCityCycle,
+  cycleCount: CITY_LADDER.length,
+
+  /**
+   * THE SENTRY - the unarmed two-legged security bot of cycle 2. A runt, like the Rustling and
+   * the Jackal beside it on the Scrapopedia row, so the three maps' bodies compare at the same
+   * scale; and the most unmistakable small silhouette this roster has - a domed eye on two bent
+   * legs reads at 34 px where the boxy junkbot would smear.
+   */
+  bestiaryBody: CITY.TWOLEGS,
 });

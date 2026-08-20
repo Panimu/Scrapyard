@@ -367,6 +367,23 @@ export interface GameTextures {
   /** The same trees felled. Index-paired with `wallTrees`: stump N is tree N cut down. */
   readonly wallStumps: readonly Texture[];
   /**
+   * CITY CHAOS'S TERRAIN, drawn by `npm run citywalls` (tools/make-city-walls.mjs).
+   *
+   * `cityRoofTiles` is the same 4x4 autotile scheme as `wallTiles` - indexed `row * 4 + col`
+   * off the same neighbour test, run by `dressingCity.ts`. The rest are what the road grid
+   * needs: asphalt and its painted line, the site fences in both runs, the piles and the rubble
+   * they become, and the props scattered on roofs.
+   */
+  readonly cityRoofTiles: readonly Texture[];
+  readonly cityFaces: readonly Texture[];
+  readonly cityRoad: Texture;
+  readonly cityRoadDash: Texture;
+  readonly cityFenceH: Texture;
+  readonly cityFenceV: Texture;
+  readonly cityPiles: readonly Texture[];
+  readonly cityRubble: readonly Texture[];
+  readonly cityRoofProps: readonly Texture[];
+  /**
    * THE FLOCK, as two cycles: heads down and walking. One TextureSource each, for the reason the
    * trees have one - a field of sheep is phase-staggered by necessity, so a screenful shows most
    * of a cycle's frames at once. See tools/make-sheep.mjs.
@@ -380,6 +397,11 @@ export const WALL_TILE_COUNT = 16;
 export const WALL_FACE_COUNT = 4;
 export const WALL_TREE_COUNT = 3;
 export const WALL_BUSH_COUNT = 4;
+/** How many pieces each city set has. See tools/make-city-walls.mjs. */
+export const CITY_FACE_COUNT = 4;
+export const CITY_PILE_COUNT = 2;
+export const CITY_RUBBLE_COUNT = 2;
+export const CITY_ROOF_PROP_COUNT = 3;
 /**
  * Frames in the sheep's two cycles. MUST match the sheets in tools/make-sheep.mjs - which are the
  * pack's own frame counts, not a choice this project made.
@@ -504,6 +526,15 @@ export async function loadGameTextures(
   for (let i = 0; i < WALL_TREE_COUNT; i++) keys.push(`mwall_tree${i}`, `mwall_stump${i}`);
   for (let i = 0; i < WALL_BUSH_COUNT; i++) keys.push(`mwall_bush${i}`);
   keys.push('msheep_graze', 'msheep_walk');
+  // City Chaos's terrain. `cwall_t<col><row>` is the roof autotile; see GameTextures.
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) keys.push(`cwall_t${col}${row}`);
+  }
+  for (let i = 0; i < CITY_FACE_COUNT; i++) keys.push(`cface${i}`);
+  keys.push('croad', 'croad_dash', 'cfence_h', 'cfence_v');
+  for (let i = 0; i < CITY_PILE_COUNT; i++) keys.push(`cpile${i}`);
+  for (let i = 0; i < CITY_RUBBLE_COUNT; i++) keys.push(`crubble${i}`);
+  for (let i = 0; i < CITY_ROOF_PROP_COUNT; i++) keys.push(`croofprop${i}`);
 
   // `UnresolvedAsset` carries a `[key: string]: any` index signature, so an ARRAY of them also
   // satisfies the single-asset overload and TypeScript picks that one first. Naming the record
@@ -569,6 +600,17 @@ export async function loadGameTextures(
     wallTrees: Array.from({ length: WALL_TREE_COUNT }, (_, i) => sway(get(`mwall_tree${i}`))),
     wallBushes: Array.from({ length: WALL_BUSH_COUNT }, (_, i) => sway(get(`mwall_bush${i}`))),
     wallStumps: Array.from({ length: WALL_TREE_COUNT }, (_, i) => get(`mwall_stump${i}`)),
+    cityRoofTiles: Array.from({ length: WALL_TILE_COUNT }, (_, i) =>
+      get(`cwall_t${i % 4}${Math.floor(i / 4)}`),
+    ),
+    cityFaces: Array.from({ length: CITY_FACE_COUNT }, (_, i) => get(`cface${i}`)),
+    cityRoad: get('croad'),
+    cityRoadDash: get('croad_dash'),
+    cityFenceH: get('cfence_h'),
+    cityFenceV: get('cfence_v'),
+    cityPiles: Array.from({ length: CITY_PILE_COUNT }, (_, i) => get(`cpile${i}`)),
+    cityRubble: Array.from({ length: CITY_RUBBLE_COUNT }, (_, i) => get(`crubble${i}`)),
+    cityRoofProps: Array.from({ length: CITY_ROOF_PROP_COUNT }, (_, i) => get(`croofprop${i}`)),
     sheepGraze: cutStrip(get('msheep_graze'), SHEEP_GRAZE_FRAMES),
     sheepWalk: cutStrip(get('msheep_walk'), SHEEP_WALK_FRAMES),
     creatures,
