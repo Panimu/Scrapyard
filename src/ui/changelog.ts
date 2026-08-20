@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T11:50Z',
+    title: 'THE FLOCK STOPPED HAUNTING THE FIELD',
+    notes: [
+      "A sheep taken — or one that simply wandered off screen — used to leave its sprite standing exactly where it last was, forever. Mossy Mayhem's field could fill up with these motionless leftovers over a long run. Fixed: the flock is drawn fresh every frame now, same as everything else.",
+    ],
+  },
+  {
     at: '2026-08-20T11:39Z',
     title: 'CITY CHAOS',
     notes: [

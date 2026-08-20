@@ -1242,7 +1242,6 @@ export class GameRenderer {
     const p = world.sheep;
     const pool = this.sheep;
     pool.begin();
-    if (p.count === 0) return;
 
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
@@ -1269,6 +1268,13 @@ export class GameRenderer {
       s.tint = 0xffffff;
       s.alpha = 1;
     }
+    // HIDES WHATEVER WAS NOT ACQUIRED THIS FRAME. Missing before: a sheep taken (freeSheep drops
+    // p.count) or one that walked out of camera range (the `continue` above) meant fewer sprites
+    // acquired than last frame, and every pool sprite past the new count kept `visible = true` at
+    // wherever it was last drawn - a corpse standing in the field forever. Worst case was the
+    // early return this function used to take at `p.count === 0`, which skipped `end()` entirely
+    // and left the WHOLE flock's sprites on screen the moment the last sheep was taken.
+    pool.end();
   }
 
   private drawPickups(world: World, alpha: number): void {
