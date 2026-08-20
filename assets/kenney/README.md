@@ -10,7 +10,7 @@ No attribution is required, but Kenney appreciates a credit.
 | `sci-fi-rts/` | https://kenney.nl/assets/sci-fi-rts | Enemy unit sprites (top-down) |
 | `particle-pack/` | https://kenney.nl/assets/particle-pack | Weapon/impact/explosion effects |
 | `space-shooter-extension/` | https://kenney.nl/assets/space-shooter-extension | Lasers, bullets, additional effects |
-| `top-down-tanks/` | https://kenney.nl/assets/top-down-tanks | Barrels and sandbags — the Scrapyard's loot drums, and City Chaos's construction-site material piles |
+| `top-down-tanks/` | https://kenney.nl/assets/top-down-tanks | Barrels and sandbags |
 | `medieval-rts/` | https://kenney.nl/assets/medieval-rts | Second map: grass, dirt paths, trees, boulders |
 
 Each pack keeps its own `License.txt` from the original download.
