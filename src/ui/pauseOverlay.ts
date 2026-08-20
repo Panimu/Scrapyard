@@ -92,8 +92,9 @@ export function buildPauseOverlay(
   });
 
   // AUTO-LEVEL, next to the reroll switch because they are the same KIND of control - both change
-  // what happens the next time a card is owed - even though only one of them is a cheat. This one
-  // is a preference and is remembered between runs (see Settings.autoLevel).
+  // what happens the next time a card is owed - even though only one of them is a cheat. Unlike
+  // the reroll switch this one is NOT remembered: it belongs to the open run and every new run
+  // starts with it off. See the note where `Settings.autoLevel` used to be.
   let auto = autoLevel;
   const autoBtn = document.createElement('button');
   autoBtn.type = 'button';

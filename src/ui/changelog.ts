@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T17:03Z',
+    title: 'AUTO LEVEL STARTS OFF, EVERY TIME',
+    notes: [
+      'Auto level is no longer remembered between runs. Turning it on to get through a stretch used to leave it on for every run afterwards, quietly taking the cards out of your hands long after you had forgotten asking. It now belongs to the run you threw it in, and every new run starts with it off.',
+    ],
+  },
+  {
     at: '2026-08-20T16:54Z',
     title: 'NO MORE TWO-HEADED SHEEP',
     notes: [

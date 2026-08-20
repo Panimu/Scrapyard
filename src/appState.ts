@@ -60,14 +60,18 @@ export interface Settings {
    * to be found again every time.
    */
   infiniteRerolls: boolean;
-  /**
-   * AUTO-LEVEL: the card is never shown and the game picks for you. See World.autoLevel for the
-   * rules and why they live in core.
+  /*
+   * WHERE `autoLevel` WENT: nowhere persistent. It is a per-run switch now and lives only on the
+   * open `World` (see World.autoLevel), so every run starts with it OFF.
    *
-   * PERSISTENT, unlike the reroll cheat beside it, because it is a preference rather than a
-   * mid-run indulgence - somebody who wants the cards picked for them wants that next run too.
+   * It used to be saved here, on the reasoning that somebody who wants the cards picked for them
+   * wants that next run too. That reads well and plays badly: auto-level is thrown mid-run, from
+   * the card in front of you, usually to get through a stretch quickly - and then it is still on
+   * three runs later, silently taking every choice in the game away from a player who has long
+   * forgotten they asked. A switch whose most common use is momentary should not outlive the run
+   * it was thrown in. Nothing reads a stored value any more, so an old save carrying the field is
+   * simply ignored.
    */
-  autoLevel: boolean;
   /**
    * CREDITS BANKED ACROSS EVERY RUN EVER PLAYED. The one number in this file that is a game
    * mechanic rather than a preference.
@@ -228,7 +232,6 @@ const DEFAULTS: Settings = {
   dprCap: 2,
   debug: false,
   infiniteRerolls: false,
-  autoLevel: false,
   credits: 0,
   unlockedUpgrades: [SEED_UPGRADE],
   unlockedHeroes: [SEED_HERO],
@@ -317,7 +320,6 @@ function loadSettings(): Settings {
       dprCap: parsed.dprCap === 1 ? 1 : 2,
       debug: parsed.debug === true,
       infiniteRerolls: parsed.infiniteRerolls === true,
-      autoLevel: parsed.autoLevel === true,
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-
       // edited or corrupt value must degrade to a number, never to NaN spreading through the sum.
       // The refund from any version-bumped workshop purchase is folded in here, under the same

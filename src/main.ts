@@ -209,11 +209,10 @@ async function boot(): Promise<void> {
     // anywhere in this loop, which is the single most valuable simplification in the design.
     pendingChoice = index;
   }, () => {
-    // FROM THE CARD IN FRONT OF THEM. Saved like the pause switch, pushed into the open world,
-    // and the card resolves on the very next tick - `serveCard` checks the flag before it reads
-    // input, so the offer being looked at is the one auto-level takes.
-    state.settings.autoLevel = true;
-    state.saveSettings();
+    // FROM THE CARD IN FRONT OF THEM, into the open world and nowhere else - it is a per-run
+    // switch, so there is nothing to save. The card resolves on the very next tick: `serveCard`
+    // checks the flag before it reads input, so the offer being looked at is the one auto-level
+    // takes.
     sim.world.autoLevel = 1;
     levelUp.hide();
   });
@@ -326,12 +325,11 @@ async function boot(): Promise<void> {
       state.saveSettings();
       sim.world.infiniteRerolls = on;
     },
-    // Auto-level is a PREFERENCE, so it is saved - and pushed into the open world, which is what
-    // makes throwing it while a card is up resolve that card rather than the next one.
-    state.settings.autoLevel,
+    // Auto-level is PER RUN, so nothing is saved and this initial value is only what the button
+    // says before the first `paint` - which re-reads `world.autoLevel` anyway, precisely because
+    // the switch can also be thrown from a level-up card. Every run opens with it off.
+    false,
     (on) => {
-      state.settings.autoLevel = on;
-      state.saveSettings();
       sim.world.autoLevel = on ? 1 : 0;
     },
     // Abandoning goes to the TITLE, not to the mech picker. Quitting a run is a decision to stop
@@ -524,9 +522,11 @@ async function boot(): Promise<void> {
       levelId: state.levelId,
     });
     sim.world.infiniteRerolls = state.settings.infiniteRerolls;
-    // AUTO-LEVEL, and the mask its first rule needs. Both are pushed IN like `cardUnlocked`: core
-    // never reads the save, it is handed what it needs to know.
-    sim.world.autoLevel = state.settings.autoLevel ? 1 : 0;
+    // EVERY RUN OPENS WITH AUTO-LEVEL OFF, and this line is what says so. `createWorld` already
+    // zeroes it, so the assignment is redundant to the machine and load-bearing to the reader:
+    // this used to push a saved preference in, and the whole point of the change is that a run
+    // no longer inherits one. Deleting it would leave nothing here to notice.
+    sim.world.autoLevel = 0;
     for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
       sim.world.ascensionSeen[i] =
         UPGRADE_CATALOG[i].ascension !== undefined && state.hasSeenAscension(UPGRADE_CATALOG[i].id)
