@@ -49,8 +49,11 @@ const OUT_DIR = join(ROOT, 'public', 'sprites');
  *
  * `yaw` is the quarter-turn that faces the machine east, found by CONTACT SHEET rather than
  * assumed. Blender's forward axis survives each exporter differently - the cyberpunk sentries
- * and the rover come out east at 90, the war mechs and quad mechs at 270, the fighter at 270
- * and the tank at 180 - so every value below was read off a rendered probe, not derived.
+ * and the rover come out east at 90, the war mechs and quad mechs at 270, and the tank at 180.
+ * The fighter was first recorded at 270 too, on the same assumption as the other yaw-270 rows,
+ * but its pack's forward axis does not match theirs: 270 baked it nose-to-the-west, and every run
+ * it flew showed a jet backing sideways into the horde. 90 is what the rendered PNG actually
+ * shows nose east - so every value below was read off a rendered probe, not derived.
  *
  * `tint` is one of the recolour modes documented above; most rows have none.
  */
@@ -62,7 +65,7 @@ const JOBS = [
   { key: 'city_rover', model: 'assets/quaternius/ultimate-space-kit/Rover_1.gltf', yaw: 90, tint: 'atlasTeal' },
   { key: 'city_2legs_gun', model: 'assets/quaternius/cyberpunk-game-kit/Enemy_2Legs_Gun.gltf', yaw: 90 },
   { key: 'city_flying_gun', model: 'assets/quaternius/cyberpunk-game-kit/Enemy_Flying_Gun.gltf', yaw: 90 },
-  { key: 'city_fighter', model: 'assets/quaternius/lowpoly-spaceships/Spaceship3.obj', yaw: 270, tint: 'hullGreen' },
+  { key: 'city_fighter', model: 'assets/quaternius/lowpoly-spaceships/Spaceship3.obj', yaw: 90, tint: 'hullGreen' },
   { key: 'city_tank', model: 'assets/quaternius/animated-tanks/Tank.obj', yaw: 180, tint: 'dozerYellow' },
 
   // Cycle 1's elite.

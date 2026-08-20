@@ -64,13 +64,16 @@ export const CITY_CELL = 64;
 /**
  * Cells from one road's left edge to the next road's left edge - the period of the whole city.
  *
- * 12 cells = 768 u. Two of them are road, ten are block. A 10-cell block is 640 u square, sized
- * against the camera's 616 x 440 view (measured off the real renderer, see wallsMossy's own
- * sizing note): ONE BLOCK ABOUT FILLS THE SCREEN, which is the brief in as many words. Bigger and
- * a filled block becomes a featureless wall for seconds at a time; smaller and the city turns
- * into a lattice of alleys with no room for the horde to flank in.
+ * 10 cells = 640 u. Two of them are road, eight are block. An 8-cell block is 512 u square,
+ * sized against the camera's 616 x 440 view (measured off the real renderer, see wallsMossy's
+ * own sizing note): ONE BLOCK FITS WITH ROOM ON EVERY SIDE, which is the brief in as many words.
+ * A first pass at 12/10 measured a block that read as oversized by roughly a cell on every edge -
+ * it never fully cleared the view on any orientation, so the "one shape in front of you" promise
+ * Mossy's own sizing note describes never actually landed. Bigger and a filled block becomes a
+ * featureless wall for seconds at a time; smaller and the city turns into a lattice of alleys
+ * with no room for the horde to flank in.
  */
-export const CITY_PERIOD = 12;
+export const CITY_PERIOD = 10;
 
 /**
  * Cells of road between blocks. 2 cells = 128 u of open street: two mechs wide with room, enough
@@ -279,7 +282,7 @@ const SCATTER_SPAN = 3;
  * WHAT THE BLOCK PUTS IN LOCAL CELL (lx, ly), 0..CITY_BLOCK_CELLS-1 on both axes, before the
  * broken set is consulted. Pure in (hash of block, lx, ly).
  *
- * The layouts below all speak in the same terms: the interior is a 10x10 field of cells, ring 0
+ * The layouts below all speak in the same terms: the interior is an 8x8 field of cells, ring 0
  * is its outermost cells (the pavement - always open, so nothing built ever touches the street),
  * and structures live from ring 1 inward.
  */
@@ -302,7 +305,7 @@ function blockCellKind(h: number, lx: number, ly: number): number {
   if (type === BLOCK_PLAZA) return CITY_EMPTY;
 
   if (type === BLOCK_FILLED) {
-    // The mass spans rings 1+ (an 8x8 slab). Three silhouettes, dealt by one roll.
+    // The mass spans rings 1+ (a 6x6 slab). Three silhouettes, dealt by one roll.
     const shape = blockInt(h, Q_SHAPE, 3);
     if (shape === 1) {
       // The L: the full slab minus one quadrant. Which corner is bitten out is the same roll's

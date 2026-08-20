@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T12:50Z',
+    title: 'CITY CHAOS, TIGHTENED UP',
+    notes: [
+      "City blocks are smaller — the open ground between crossroads was running about a tile oversized on every side, so a filled block never quite fit on screen. It fits with room to spare now.",
+      'The strafing fighter was flying in backwards — nose trailing, tail leading — on every pass. It flies nose-first now, same as the rest of the roster.',
+    ],
+  },
+  {
     at: '2026-08-20T11:50Z',
     title: 'THE FLOCK STOPPED HAUNTING THE FIELD',
     notes: [
