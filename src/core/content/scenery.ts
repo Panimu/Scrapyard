@@ -62,6 +62,8 @@ import {
 } from './wallsMossy.js';
 import {
   breakCityCell,
+  CITY_BARREL,
+  CITY_BARREL_HALF,
   cityCellX,
   cityCellY,
   cityCentre,
@@ -509,7 +511,10 @@ export function sceneryRayHit(
 /** True if this cell holds something a weapon can break. */
 export function isDestructible(s: Scenery, i: number): boolean {
   if (s.kind === 'walls') return wallKindAt(s, wallCellX(i), wallCellY(i)) === WALL_TREE;
-  if (s.kind === 'city') return cityKindAt(s, cityCellX(i), cityCellY(i)) === CITY_FENCE;
+  if (s.kind === 'city') {
+    const kind = cityKindAt(s, cityCellX(i), cityCellY(i));
+    return kind === CITY_FENCE || kind === CITY_BARREL;
+  }
   return s.radius[i] > 0 && s.variant[i] === SCRAP_BARREL;
 }
 
@@ -765,7 +770,11 @@ export function sceneryY(s: Scenery, i: number): number {
 /** Sizes the burst the renderer plays where something went up. Half a cell, for a wall. */
 export function sceneryRadius(s: Scenery, i: number): number {
   if (s.kind === 'walls') return WALL_HALF;
-  if (s.kind === 'city') return CITY_HALF;
+  // A drum is not half a block: the burst that plays where one went up has to be the size of the
+  // drum, or a barrel in the street detonates like a building coming down.
+  if (s.kind === 'city') {
+    return cityKindAt(s, cityCellX(i), cityCellY(i)) === CITY_BARREL ? CITY_BARREL_HALF : CITY_HALF;
+  }
   return s.radius[i];
 }
 

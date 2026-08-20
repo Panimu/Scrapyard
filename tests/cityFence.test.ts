@@ -17,12 +17,14 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import {
+  CITY_BARREL,
   CITY_EMPTY,
   CITY_FENCE,
   FENCE_SECTIONS,
   FENCE_SECTION_HP,
   cityCentre,
   cityFenceRing,
+  cityIsRoad,
   cityKindAt,
   citySectionsStanding,
   isCityBroken,
@@ -61,8 +63,10 @@ describe('breaking a site fence', () => {
     const pickups = w.pickups.count;
     const barrels = w.stats.barrelsBroken;
 
-    // The mech shoving (damage 0) opens nothing - fences are shot down or not at all. This is
-    // the exact call updatePlayerMovement makes, and on the barrel path it took the cell.
+    // A zero-damage touch opens nothing. On the barrel path it took the whole cell, because a drum
+    // ignores the amount by design - which is what made the fences free. (The mech's own shove is
+    // not zero: `updatePlayerMovement` spends MECH_SHOVE_DPS, so leaning on a fence does open it,
+    // over about a second. That is the same deal Mossy's trees give and it is intended.)
     expect(breakLootIn(w, x, y, 30, 0)).toBe(false);
     expect(cityKindAt(city, cx, cy)).toBe(CITY_FENCE);
 
@@ -79,5 +83,67 @@ describe('breaking a site fence', () => {
     // And through all of it: nothing dropped, nothing counted as a barrel.
     expect(w.pickups.count).toBe(pickups);
     expect(w.stats.barrelsBroken).toBe(barrels);
+  });
+});
+
+/**
+ * THE DRUMS THAT REPLACED THE FLOCK. Two promises, and the first one is the one a player would
+ * notice being broken: a barrel standing in the middle of a road is a barrel in the one place the
+ * whole map is designed to keep clear, and it would be there on every seed at once.
+ */
+describe('city fuel drums', () => {
+  it('never stand on a road', () => {
+    // Every seed, every cell of a six-period window - this is cheap and the property is absolute,
+    // so there is no reason to sample it.
+    for (const seed of [1, 2, 3, 7, 12345]) {
+      const w = createWorld({
+        seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING, levelId: 'city-chaos',
+      });
+      if (w.scenery.kind !== 'city') throw new Error('expected the city grid');
+      for (let cy = -30; cy < 30; cy++) {
+        for (let cx = -30; cx < 30; cx++) {
+          if (!cityIsRoad(cx, cy)) continue;
+          expect(cityKindAt(w.scenery, cx, cy)).toBe(CITY_EMPTY);
+        }
+      }
+    }
+  });
+
+  it('pay out and go over on contact, the way a yard drum does', () => {
+    const w = createWorld({
+      seed: 3, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING, levelId: 'city-chaos',
+    });
+    if (w.scenery.kind !== 'city') throw new Error('expected the city grid');
+    const city = w.scenery;
+
+    const drums: Array<[number, number]> = [];
+    for (let cy = -40; cy < 40; cy++) {
+      for (let cx = -40; cx < 40; cx++) {
+        if (cityKindAt(city, cx, cy) === CITY_BARREL) drums.push([cx, cy]);
+      }
+    }
+    // A window this size with no drums at all would mean the share is wrong, which is worth
+    // failing on rather than skipping past. Twelve is comfortably under what 80x80 cells yields.
+    expect(drums.length, 'seed 3 should have drums near the origin').toBeGreaterThan(12);
+
+    const barrels = w.stats.barrelsBroken;
+    const pickups = w.pickups.count;
+
+    for (const [cx, cy] of drums.slice(0, 12)) {
+      const fx = cityCentre(cx);
+      const fy = cityCentre(cy);
+      // On screen, or the drum is spared - the same guard the yard's own barrels get.
+      w.player.x = fx + 60;
+      w.player.y = fy;
+      // ANY damage takes it: no section pool, no dimmed half state. One shell, one drum.
+      expect(breakLootIn(w, fx, fy, 0, 1)).toBe(true);
+      expect(cityKindAt(city, cx, cy)).toBe(CITY_EMPTY);
+    }
+
+    expect(w.stats.barrelsBroken).toBe(barrels + 12);
+    // Twelve drums' worth of rolls. The empty chance means no single one is guaranteed, so this
+    // asserts the PATH is wired rather than a particular roll - the same reasoning the flock's
+    // own test uses, and twelve consecutive empties is not a thing this seed does.
+    expect(w.pickups.count).toBeGreaterThan(pickups);
   });
 });

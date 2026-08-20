@@ -49,6 +49,7 @@ import { describeUnlockDone, type UnlockCond } from './unlocks.js';
  * rather than a list, so it is written as one. See MECH_ACHIEVEMENTS below.
  */
 export type AchievementId =
+  | 'cleared-scrapyard'
   | 'chain-laser'
   | 'gtm-hornet'
   | 'twin-mount'
@@ -195,6 +196,34 @@ const MECH_ACHIEVEMENTS: readonly AchievementDef[] = HERO_CATALOG.filter(
  * earned achievements by `id` - so it can be reordered freely.
  */
 export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
+  /**
+   * CLEARING THE FIRST MAP, as a feat in its own right.
+   *
+   * WHY THIS IS HAND-WRITTEN WHEN THE OTHER MAPS' ARE GENERATED. `LEVEL_ACHIEVEMENTS` turns each
+   * level's OWN unlock into a trophy, which is the right rule and gives the wrong answer here: the
+   * Scrapyard's unlock is `always` - it is the map an empty save starts on - so the generator
+   * skips it, and the only map everybody actually plays first had nothing to show for finishing.
+   *
+   * IT FIRES ALONGSIDE "Mossy Mayhem", and that is intended rather than an oversight. Both are
+   * true at the same moment and they say different things: one is "the moss is open", which is a
+   * door, and this one is "you survived fifteen minutes in the yard", which is the thing you did.
+   * Games hand out the chapter-complete and the next-chapter-unlocked together as a matter of
+   * course, and a first clear is the single loudest moment this game has.
+   *
+   * NOT SECRET, for the same reason the generated map trophies are not: the yard is on screen from
+   * the first second and there is nothing about its existence to keep back.
+   */
+  {
+    id: 'cleared-scrapyard',
+    platformKey: 'scrapyard_cleared_scrapyard',
+    name: 'Closing Time',
+    // The yard's own ground texture, which is the picture a player has spent their whole first
+    // run looking at. `scrap_0` is the crushed car - the level card's art, already loaded.
+    icon: 'scrap_0',
+    description: 'Survived a full run in the Scrapyard.',
+    secret: false,
+    cond: { kind: 'winLevel', level: 'scrapyard' },
+  },
   ...LEVEL_ACHIEVEMENTS,
   ...MECH_ACHIEVEMENTS,
   {

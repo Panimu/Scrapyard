@@ -929,8 +929,14 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   // cell at all, against 16-21 stems for the shell weapons, which stop in the wood as a shell should.
   const tree = destructibleRayHit(world.scenery, x0, y0, aim.x, aim.y, stats.range);
   const treeT = tree >= 0 ? destructibleRayDistance() : -1;
-  const treeFirst =
-    world.scenery.kind === 'walls' && tree >= 0 && (hit < 0 || treeT < BEAM.hitT);
+  // THE CITY'S FENCES ARE TREES TOO, and this used to say `=== 'walls'`, which is the whole of
+  // the bug: a site fence has a hit-point pool exactly as a clump does, and a beam was passing
+  // straight through one to hit the machine behind it while separately chipping the fence from
+  // the sweep below. Same symptom the measurement on Mossy caught - a laser build fought as
+  // though the barrier was not there. A city DRUM is caught here as well and that is harmless:
+  // it has no pool, so it goes over on the first tick and the beam is through on the next.
+  const stopsBeams = world.scenery.kind === 'walls' || world.scenery.kind === 'city';
+  const treeFirst = stopsBeams && tree >= 0 && (hit < 0 || treeT < BEAM.hitT);
   if (treeFirst) {
     const tx = sceneryX(world.scenery, tree);
     const ty = sceneryY(world.scenery, tree);
@@ -974,9 +980,10 @@ export const fireBeam: FirePattern = (world, weaponIdx, inst, targets, targetCou
   //
   // THE SCRAPYARD ONLY. A drum has no hit points, so a beam passing over one costs the shot nothing
   // and there is nothing to spend; a TREE stops the beam outright and was already dealt with above.
-  // Running this on Mossy as well would burn a clump standing BEHIND the body being burned, through
-  // a beam that terminates at that body - damage out of nowhere, to a tree the shot never reached.
-  if (world.scenery.kind !== 'walls') {
+  // Running this on a map whose destructibles stop beams would burn something standing BEHIND the
+  // body being burned, through a beam that terminates at that body - damage out of nowhere, to a
+  // thing the shot never reached. That now rules out the city as well as the moss.
+  if (!stopsBeams) {
     const drum = destructibleRayHit(world.scenery, x0, y0, aim.x, aim.y, endT);
     if (drum >= 0) {
       // The beam's damage for THIS TICK, which is what `damage` already is here - a beam is paid per

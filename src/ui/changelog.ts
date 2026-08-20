@@ -40,11 +40,39 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T16:32Z',
+    title: 'THE SHEEP HAVE LEFT THE CITY',
+    notes: [
+      'City Chaos no longer has a flock wandering its streets. Fuel drums have taken over the job — the Scrapyard\'s own, standing on pavements and in yards, paying out exactly as they do back home. They never appear on a road.',
+    ],
+  },
+  {
+    at: '2026-08-20T16:32Z',
+    title: 'LASERS STOP AT THE FENCE NOW',
+    notes: [
+      'A beam used to pass straight through a construction fence and burn the machine standing behind it. It burns the fence instead, the way it already burned through Mossy\'s trees — so a laser build has to open the site rather than shooting past it.',
+    ],
+  },
+  {
+    at: '2026-08-20T16:32Z',
+    title: 'CLOSING TIME',
+    notes: [
+      'A new achievement for surviving a full run in the Scrapyard. It was the one map that gave you nothing for finishing it.',
+    ],
+  },
+  {
+    at: '2026-08-20T16:32Z',
+    title: 'NO TWO BITS OF DEBRIS ALIKE',
+    notes: [
+      'Construction-site litter no longer drops the same plank or the same cable coil right next to itself — neighbouring pieces are always different now, and each one is turned and sized a little differently.',
+    ],
+  },
+  {
     at: '2026-08-20T15:20Z',
     title: 'FENCES ARE NOT PIÑATAS',
     notes: [
       'Site fences and material piles were paying out a consumable per cell, like barrels — every construction site was a wall of free spanners. They drop nothing now: what you get for breaking a fence is the hole.',
-      'They also went down in one touch, which was never the deal. A fence cell now takes real damage in two stages — half gone, it visibly sags — and the mech can no longer open a site by leaning on it. Shoot your way in.',
+      'They also went down in one touch, which was never the deal. A fence cell now takes real damage in two stages — half gone, it visibly sags. Shooting one open is quick; shouldering through takes a second of standing still, which is a second you may not have.',
     ],
   },
   {

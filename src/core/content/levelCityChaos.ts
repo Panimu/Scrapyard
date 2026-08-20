@@ -53,14 +53,16 @@ export const CITY_CHAOS: LevelDef = Object.freeze({
   floor: 'floor_city',
 
   /**
-   * THE SAME FOUR AS THE MOSS, FOR THE SAME MEASURED REASON. A sheep is this map's fuel barrel -
-   * the buildings give nothing back when you cannot break them - and the flock's operating
-   * footprint (the 1500 u cull radius, see systems/sheep.ts) is level-independent, so Mossy's
-   * measurement against the Scrapyard's drum density carries over unchanged. That a flock of
-   * sheep has wandered into the city is, on reflection, exactly the sort of thing the name
-   * "City Chaos" promises.
+   * NO FLOCK. This map opened with four of Mossy's sheep, on the sound reasoning that a map whose
+   * terrain gives nothing back needs a loot prop and the moss had already solved that. What it
+   * gives back now is FUEL DRUMS, standing in the streets - see CITY_BARREL in wallsCity.ts.
+   *
+   * The drum is the better answer on every count: it is the game's own loot prop with its own art,
+   * it needs no pool and no upkeep tick because the city grid is a pure function of the seed, and
+   * it cannot wander into a road. The sheep were also, on reflection, the one joke in this level
+   * that nobody was going to laugh at twice.
    */
-  sheep: 4,
+  sheep: 0,
 
   /** The whole city, from the seed alone. Pure arithmetic - not even a cache. See wallsCity.ts. */
   makeScenery: (seed: number): Scenery => createCityBlocks(seed),

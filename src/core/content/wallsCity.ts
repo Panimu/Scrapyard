@@ -101,6 +101,21 @@ export const CITY_EMPTY = 0;
 export const CITY_BUILDING = 1;
 /** Construction-site fencing or a material pile. Breakable; leaves rubble. */
 export const CITY_FENCE = 2;
+/**
+ * A FUEL DRUM - the Scrapyard's, standing in the city's streets. Breakable, and the only thing on
+ * this map that pays out when it goes.
+ *
+ * WHY THE CITY HAS BARRELS AND NOT A FLOCK. This map opened with Mossy's sheep because the moss
+ * had solved the same problem: a map whose terrain gives nothing back needs a loot prop, and a
+ * building cannot be broken. Sheep in a city was always the weakest joke in the level, and the
+ * yard's own drum is the better answer - it is already the game's loot prop, it already has art,
+ * and unlike an animal it does not have to be walked about by a whole simulation system.
+ *
+ * IT IS A CELL, not an entity, which is what makes it free: the city grid is a pure function of
+ * the seed, so barrels need no pool, no upkeep tick and no cull radius. They cannot land on a road
+ * because roads are answered before any block layout is consulted at all.
+ */
+export const CITY_BARREL = 3;
 
 /**
  * HIT POINTS OF ONE FENCE CELL, split into two visible sections the way a Mossy cell splits into
@@ -113,6 +128,35 @@ export const CITY_FENCE = 2;
  */
 export const FENCE_SECTION_HP = 90;
 export const FENCE_SECTIONS = 2;
+
+/**
+ * Half-extent of a drum's collider, world units - and it is NOT half a cell.
+ *
+ * 20, quoted from the Scrapyard's own `BARREL_RADIUS` and for the reason recorded there: at 30 a
+ * drum was 60 u across against a 58 u mech and read as a small pile rather than as a barrel. The
+ * cell it sits in is 64 u, so the collider is an inset box - every query in this file already
+ * measures against a box, and handing them a smaller one is the whole of the change.
+ */
+export const CITY_BARREL_HALF = 20;
+
+/**
+ * Share of a block's OPEN cells that hold a drum.
+ *
+ * DERIVED FROM THE OTHER TWO MAPS RATHER THAN PICKED. Both of them independently land on about the
+ * same density of loot props per unit of ground:
+ *
+ *     Scrapyard   SCENERY_FILL 0.7315 x 41.36% fuel barrels, per 768 u cell   = 5.1e-7 / u^2
+ *     Mossy       4 sheep alive inside the 1500 u cull radius                 = 5.7e-7 / u^2
+ *
+ * A city cell is 64 u square = 4096 u^2, so matching ~5.4e-7 wants 0.0022 drums per cell of GROUND.
+ * Open cells are roughly a third of the plane here (36% of it is road, and much of each block is
+ * solid building), which puts the share of OPEN cells at about 0.7%.
+ *
+ * That is deliberately the measured figure and not a flattering one: it is around one drum per two
+ * or three blocks, so a screen shows one about half the time. Both other maps play at that density
+ * and neither reads as starved.
+ */
+const CITY_BARREL_SHARE = 0.007;
 
 /**
  * Block type shares, as a CDF over the block hash.
@@ -248,6 +292,23 @@ function blockFrac(h: number, q: number): number {
   return ((v ^ (v >>> 15)) >>> 0) / 4294967296;
 }
 
+/**
+ * A stable 0..1 for question `q` about ONE CELL of a block, rather than about the block as a whole.
+ *
+ * `blockFrac` answers "where is this block's gateway"; this answers "is there a drum in this
+ * particular cell", which needs the local coordinates in the mix. Same construction and the same
+ * reason for it: the raw bits of the block hash are far too correlated between neighbouring cells
+ * to slice, and a drum every Nth cell on a diagonal is exactly what that looks like on screen.
+ */
+function cellFrac(h: number, lx: number, ly: number, q: number): number {
+  let v = Math.imul(h ^ Math.imul(lx + 1, 0x2545f491), 0x9e3779b1);
+  v = Math.imul(v ^ Math.imul(ly + 1, 0x85ebca6b), 0xc2b2ae35);
+  v ^= Math.imul(q + 1, 0x27d4eb2f);
+  v ^= v >>> 15;
+  v = Math.imul(v, 0x2c1b3c6d);
+  return ((v ^ (v >>> 13)) >>> 0) / 4294967296;
+}
+
 /** A stable integer in [0, n) for question `q`. */
 function blockInt(h: number, q: number, n: number): number {
   const v = Math.floor(blockFrac(h, q) * n);
@@ -273,7 +334,9 @@ const Q_GATE_ALONG = 3;
 const Q_GATE2 = 4;
 const Q_GATE2_SIDE = 5;
 const Q_GATE2_ALONG = 6;
-const Q_SCATTER = 7; // ..and the six after it, one per possible pile.
+const Q_SCATTER = 7; // ..and the ten after it, two per possible pile.
+/** Well clear of Q_SCATTER's run: five piles claim up to question 16. */
+const Q_BARREL = 24;
 
 /** Material piles a construction site scatters inside its fence. */
 const SCATTER_MIN = 3;
@@ -296,7 +359,14 @@ function blockTypeOf(h: number): number {
   return BLOCK_PLAZA;
 }
 
-function blockCellKind(h: number, lx: number, ly: number): number {
+/**
+ * The block's own layout in local cell (lx, ly), before drums are scattered over what it left open.
+ *
+ * Split from `blockCellKind` when the barrels arrived, so that "where does this block put its
+ * walls" and "where does the ground get a drum" are two questions with one answer each - a drum
+ * roll folded into the layout would have had to be repeated in all four of the early returns.
+ */
+function blockCellBase(h: number, lx: number, ly: number): number {
   const n = CITY_BLOCK_CELLS;
   // Ring 0 is pavement on every block type. Structures start one cell in, which is what keeps a
   // building face from sitting flush against the asphalt and reading as a wall of the street.
@@ -373,6 +443,29 @@ function blockCellKind(h: number, lx: number, ly: number): number {
     }
   }
   return CITY_EMPTY;
+}
+
+/**
+ * WHAT THE BLOCK PUTS IN LOCAL CELL (lx, ly): the layout, plus any drum standing on it.
+ *
+ * A drum goes on ground the block left OPEN, which is what keeps it out of walls and - because
+ * roads never reach a block layout at all - off the streets. Two cells are refused:
+ *
+ *   THE GATEWAY LANES, for the reason the material piles avoid them: a drum parked in a doorway
+ *   is a doorway you have to shoot, and the "walk into every block" test would fail on it.
+ *   THE BLOCK'S OWN CORNER at (0, 0), which is where four pavement runs meet - a drum there sits
+ *   in the diagonal everything cuts across on its way round a block.
+ */
+function blockCellKind(h: number, lx: number, ly: number): number {
+  const base = blockCellBase(h, lx, ly);
+  if (base !== CITY_EMPTY) return base;
+  if (lx === 0 && ly === 0) return CITY_EMPTY;
+  const thick = RING_THICKNESS;
+  if (inGatewayLane(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly)) return CITY_EMPTY;
+  if (blockFrac(h, Q_GATE2) < 0.5 && inGatewayLane(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly)) {
+    return CITY_EMPTY;
+  }
+  return cellFrac(h, lx, ly, Q_BARREL) < CITY_BARREL_SHARE ? CITY_BARREL : CITY_EMPTY;
 }
 
 /** Width of every gateway, cells. Two: the same clearance as a street is narrow enough. */
@@ -496,7 +589,11 @@ export function cityKindAt(c: CityBlocks, cx: number, cy: number): number {
   const lx = localOf(cx) - CITY_ROAD_CELLS;
   const ly = localOf(cy) - CITY_ROAD_CELLS;
   const kind = blockCellKind(hashBlock(c.seed, bx, by), lx, ly);
-  if (kind === CITY_FENCE && c.broken.has(cellKey(cx, cy))) return CITY_EMPTY;
+  // Both breakables consult it. A drum that stayed in the grid after it went up would be an
+  // invisible collider standing in the street forever, and would re-pay its loot on every touch.
+  if ((kind === CITY_FENCE || kind === CITY_BARREL) && c.broken.has(cellKey(cx, cy))) {
+    return CITY_EMPTY;
+  }
   return kind;
 }
 
@@ -524,12 +621,25 @@ export function cityCellY(i: number): number {
 export const CITY_HALF = CITY_CELL / 2;
 
 /** Squared distance from (x, y) to the nearest point of cell (cx, cy); 0 when inside it. */
-function cellDist2(cx: number, cy: number, x: number, y: number): number {
-  const x0 = cx * CITY_CELL;
-  const y0 = cy * CITY_CELL;
-  const dx = x < x0 ? x0 - x : x > x0 + CITY_CELL ? x - (x0 + CITY_CELL) : 0;
-  const dy = y < y0 ? y0 - y : y > y0 + CITY_CELL ? y - (y0 + CITY_CELL) : 0;
-  return dx * dx + dy * dy;
+function cellDist2(cx: number, cy: number, x: number, y: number, half = CITY_HALF): number {
+  const mx = cityCentre(cx);
+  const my = cityCentre(cy);
+  const dx = Math.abs(x - mx) - half;
+  const dy = Math.abs(y - my) - half;
+  const ex = dx > 0 ? dx : 0;
+  const ey = dy > 0 ? dy : 0;
+  return ex * ex + ey * ey;
+}
+
+/**
+ * The half-extent of a cell's collider. A wall or a fence fills its cell; a DRUM does not - it is
+ * a lone object standing on the ground, so it gets the Scrapyard's measured 20 u instead of the
+ * cell's 32. Written as one function because every query below has to agree about it: a barrel
+ * that stopped shells at one size and the mech at another is the kind of mismatch nobody sees
+ * until they are standing next to it.
+ */
+function cellHalf(kind: number): number {
+  return kind === CITY_BARREL ? CITY_BARREL_HALF : CITY_HALF;
 }
 
 /**
@@ -547,8 +657,9 @@ export function cityOverlap(c: CityBlocks, x: number, y: number, r: number): num
   const r1 = cityCellOf(y + r);
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
-      if (cityKindAt(c, cx, cy) === CITY_EMPTY) continue;
-      const d2 = cellDist2(cx, cy, x, y);
+      const kind = cityKindAt(c, cx, cy);
+      if (kind === CITY_EMPTY) continue;
+      const d2 = cellDist2(cx, cy, x, y, cellHalf(kind));
       if (d2 === 0 || d2 < r * r) return packCityCell(cx, cy);
     }
   }
@@ -565,8 +676,10 @@ export function cityDestructibleOverlap(c: CityBlocks, x: number, y: number, r: 
   let bestD2 = 0;
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
-      if (cityKindAt(c, cx, cy) !== CITY_FENCE) continue;
-      const d2 = cellDist2(cx, cy, x, y);
+      const kind = cityKindAt(c, cx, cy);
+      // Both breakables: a fence spends its section pool, a drum goes over on contact.
+      if (kind !== CITY_FENCE && kind !== CITY_BARREL) continue;
+      const d2 = cellDist2(cx, cy, x, y, cellHalf(kind));
       if (d2 !== 0 && d2 >= r * r) continue;
       if (best < 0 || d2 < bestD2) {
         best = packCityCell(cx, cy);
@@ -611,24 +724,32 @@ export function pushOutOfCity(
     let bestCx = 0;
     let bestCy = 0;
     let bestD2 = r * r;
+    let bestHalf = CITY_HALF;
     let found = false;
     for (let cy = r0; cy <= r1; cy++) {
       for (let cx = c0; cx <= c1; cx++) {
-        if (cityKindAt(c, cx, cy) === CITY_EMPTY) continue;
-        const d2 = cellDist2(cx, cy, px, py);
+        const kind = cityKindAt(c, cx, cy);
+        if (kind === CITY_EMPTY) continue;
+        const half = cellHalf(kind);
+        const d2 = cellDist2(cx, cy, px, py, half);
         if (d2 >= bestD2) continue;
         bestD2 = d2;
         bestCx = cx;
         bestCy = cy;
+        bestHalf = half;
         found = true;
       }
     }
     if (!found) break;
 
-    const x0 = bestCx * CITY_CELL;
-    const y0 = bestCy * CITY_CELL;
-    const x1 = x0 + CITY_CELL;
-    const y1 = y0 + CITY_CELL;
+    // The collider's own box, which for a drum is inset from the cell - see `cellHalf`. Everything
+    // below is written against these four numbers, so the smaller box needs no special case.
+    const mx = cityCentre(bestCx);
+    const my = cityCentre(bestCy);
+    const x0 = mx - bestHalf;
+    const y0 = my - bestHalf;
+    const x1 = mx + bestHalf;
+    const y1 = my + bestHalf;
 
     if (bestD2 > 0) {
       const qx = px < x0 ? x0 : px > x1 ? x1 : px;
@@ -699,11 +820,18 @@ function rayWalk(
   dy: number,
   maxT: number,
   want: number,
+  /**
+   * A second kind that also counts, or -1. Exists for the destructibles: a beam is stopped by a
+   * site fence AND by a drum, and walking the grid twice to ask about each would let a fence
+   * beyond a barrel win.
+   */
+  want2 = -1,
 ): number {
   let cx = cityCellOf(ox);
   let cy = cityCellOf(oy);
+  const wanted = (k: number): boolean => k === want || k === want2;
 
-  if (cityKindAt(c, cx, cy) === want) {
+  if (wanted(cityKindAt(c, cx, cy))) {
     rayCellX = cx;
     rayCellY = cy;
     return 0;
@@ -731,7 +859,7 @@ function rayWalk(
       tMaxY += tDeltaY;
     }
     if (t > maxT) return -1;
-    if (cityKindAt(c, cx, cy) === want) {
+    if (wanted(cityKindAt(c, cx, cy))) {
       rayCellX = cx;
       rayCellY = cy;
       return t;
@@ -770,10 +898,18 @@ export function cityDestructibleRayHit(
   dy: number,
   maxT: number,
 ): number {
-  const t = rayWalk(c, ox, oy, dx, dy, maxT, CITY_FENCE);
+  // Both breakables. The drum's collider is inset from its cell (see `cellHalf`) and this walks
+  // whole cells, so a beam can stop up to 12 u short of the paint - invisible on a barrel that is
+  // about to go up anyway, and the alternative is a per-cell ray-box clip in the hot loop.
+  const t = rayWalk(c, ox, oy, dx, dy, maxT, CITY_FENCE, CITY_BARREL);
   rayHitT = t;
   if (t < 0) return -1;
   return packCityCell(rayCellX, rayCellY);
+}
+
+/** True when a standing drum occupies this cell. The dressing draws one; `breakLootIn` pays out. */
+export function cityIsBarrel(c: CityBlocks, cx: number, cy: number): boolean {
+  return cityKindAt(c, cx, cy) === CITY_BARREL;
 }
 
 /** Breaks the fence in a packed cell. One write; every query forgets it at once. */
@@ -793,6 +929,9 @@ export function breakCityCell(c: CityBlocks, i: number): void {
 export function citySectionsStanding(c: CityBlocks, cx: number, cy: number): number {
   const i = cellKey(cx, cy);
   if (c.broken.has(i)) return 0;
+  // A DRUM HAS NO SECTIONS. It is whole or it is gone, so it never draws the dimmed half state -
+  // and it must not, or a barrel would advertise damage it cannot take.
+  if (cityKindAt(c, cx, cy) === CITY_BARREL) return FENCE_SECTIONS;
   const left = c.hurt.get(i);
   if (left === undefined) return FENCE_SECTIONS;
   const up = Math.ceil(left / FENCE_SECTION_HP);
@@ -806,6 +945,15 @@ export function citySectionsStanding(c: CityBlocks, cx: number, cy: number): num
  */
 export function damageCityCell(c: CityBlocks, i: number, amount: number): number {
   if (amount <= 0 || c.broken.has(i)) return 0;
+
+  // A DRUM IGNORES THE AMOUNT, exactly as the Scrapyard's does: it is a thing you set off, not a
+  // thing you grind down. Any damage that reaches it takes it, and it reports one "section" so the
+  // caller's per-section event loop fires once.
+  if (cityKindAt(c, cityCellX(i), cityCellY(i)) === CITY_BARREL) {
+    breakCityCell(c, i);
+    return 1;
+  }
+
   const before = c.hurt.get(i) ?? FENCE_SECTIONS * FENCE_SECTION_HP;
   const after = before - amount;
   const standingBefore = Math.ceil(before / FENCE_SECTION_HP);

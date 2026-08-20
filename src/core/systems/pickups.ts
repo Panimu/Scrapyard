@@ -80,7 +80,7 @@ import {
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
 import { wallCellX, wallCellY, wallStemsStanding } from '../content/wallsMossy.js';
-import { cityCellX, cityCellY, citySectionsStanding } from '../content/wallsCity.js';
+import { cityCellX, cityCellY, cityIsBarrel, citySectionsStanding } from '../content/wallsCity.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import {
   PICKUP_FLAG_AUTO,
@@ -273,16 +273,21 @@ export function breakLootIn(
   // construction site - loot is what BARRELS are for, and a fence is a shortcut you buy with
   // ammunition), and each cell counted toward `barrelsBroken`.
   if (world.scenery.kind === 'city') {
-    const downed = damageScenery(world.scenery, i, damage);
-    if (downed <= 0) return false;
-    const br = sceneryRadius(world.scenery, i);
-    const standing = citySectionsStanding(world.scenery, cityCellX(i), cityCellY(i));
-    // One event per section, exactly as the moss throws one per tree: two thuds when a shell
-    // takes a whole cell, one when it takes half.
-    for (let k = 0; k < downed; k++) {
-      pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, standing);
+    // A DRUM IN THE CITY IS A DRUM, and takes the barrel path below rather than this one: it pays
+    // out, it counts, and it goes up with a fireball. Asked BEFORE anything is damaged, because
+    // the answer stops existing the moment the cell breaks.
+    if (!cityIsBarrel(world.scenery, cityCellX(i), cityCellY(i))) {
+      const downed = damageScenery(world.scenery, i, damage);
+      if (downed <= 0) return false;
+      const br = sceneryRadius(world.scenery, i);
+      const standing = citySectionsStanding(world.scenery, cityCellX(i), cityCellY(i));
+      // One event per section, exactly as the moss throws one per tree: two thuds when a shell
+      // takes a whole cell, one when it takes half.
+      for (let k = 0; k < downed; k++) {
+        pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, standing);
+      }
+      return true;
     }
-    return true;
   }
 
   // OFF SCREEN, SO IT SURVIVES. See BARREL_BREAK_RADIUS: a drum the player cannot see is a drum

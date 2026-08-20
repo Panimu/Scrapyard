@@ -28,6 +28,8 @@
 import { Container } from 'pixi.js';
 
 import {
+  CITY_BARREL,
+  CITY_BARREL_HALF,
   CITY_BUILDING,
   CITY_CELL,
   CITY_EMPTY,
@@ -45,6 +47,7 @@ import {
   type CityBlocks,
   type World,
 } from '../core/index.js';
+import { SCRAP_BARREL } from '../core/index.js';
 import {
   CITY_CONE_COUNT,
   CITY_FACE_COUNT,
@@ -108,6 +111,29 @@ function cellHash(cx: number, cy: number): number {
   h = Math.imul(h, 0x85ebca6b);
   h ^= h >>> 13;
   return h >>> 0;
+}
+
+/**
+ * WHICH DECAL, CHOSEN SO THAT NO TWO CELLS TOUCHING EACH OTHER CAN SHARE ONE.
+ *
+ * A plain `hash % COUNT` is what shipped, and with five variants on a fifth of the cells it put
+ * two identical cable coils or two identical paint crosses within a couple of metres constantly -
+ * the exact thing that reads as tiled rather than strewn.
+ *
+ * The fix is a LATTICE rather than a roll. `cx + 2 * cy` mod the variant count changes by 1 across
+ * a horizontal step, by 2 across a vertical one, and by 1 or 3 diagonally - so for any count of 3
+ * or more, none of a cell's eight neighbours can land on the same variant. It is exact, it is one
+ * multiply, and unlike a "roll again if a neighbour matches" scheme there is no order-dependence
+ * and no cycle to reason about.
+ *
+ * WHY THE REGULARITY DOES NOT SHOW. The obvious objection to a lattice is that it repeats on a
+ * diagonal every COUNT cells. Only a fifth of cells carry litter at all, and each instance gets
+ * its own rotation and size from the cell hash below, so what reaches the screen is a handful of
+ * differently-turned objects that are merely guaranteed not to have a twin beside them.
+ */
+function litterVariant(cx: number, cy: number): number {
+  const v = (cx + 2 * cy) % CITY_LITTER_COUNT;
+  return v < 0 ? v + CITY_LITTER_COUNT : v;
 }
 
 export class CityDressing implements LevelDressing {
@@ -313,17 +339,21 @@ export class CityDressing implements LevelDressing {
           if ((h & 0xfff) / 4096 < LITTER_SHARE) {
             const d = this.litter.acquire();
             if (d !== undefined) {
-              const t = this.tex.cityLitter[(h >>> 12) % CITY_LITTER_COUNT];
+              const variant = litterVariant(cx, cy);
+              const t = this.tex.cityLitter[variant];
               d.texture = t;
               d.anchor.set(0.5);
               d.position.set(
                 (cx + 0.28 + ((h >>> 16) & 127) / 288) * CITY_CELL,
                 (cy + 0.28 + ((h >>> 23) & 127) / 288) * CITY_CELL,
               );
-              d.scale.set(LITTER_SIZE / t.width);
+              // Size varies +-20% per instance. The lattice above guarantees no NEIGHBOUR shares a
+              // variant; this is what keeps two of the same piece further apart from reading as a
+              // copy-paste when they do both end up on screen.
+              d.scale.set((LITTER_SIZE * (0.8 + ((h >>> 2) & 63) / 160)) / t.width);
               // Stains, spills and cable land at any angle; only the paint marks (4) stay square,
               // because a surveyor sprays along the grid they are marking out.
-              d.rotation = (h >>> 12) % CITY_LITTER_COUNT === 4 ? 0 : ((h >>> 4) & 255) * 0.0245;
+              d.rotation = variant === 4 ? 0 : ((h >>> 4) & 255) * 0.0245;
               d.alpha = 1;
               d.tint = 0xffffff;
             }
@@ -345,6 +375,24 @@ export class CityDressing implements LevelDressing {
               d.alpha = 1;
               d.tint = 0xffffff;
             }
+          }
+          continue;
+        }
+
+        // A FUEL DRUM, drawn from the Scrapyard's own sprite - it is the same object, so it is
+        // the same picture. Sized from the collider rather than the cell: the drum's box is inset
+        // (CITY_BARREL_HALF), and paint that overhung it would be a barrel you could shoot past.
+        if (kind === CITY_BARREL) {
+          const s = this.street.acquire();
+          if (s !== undefined) {
+            const t = this.tex.scrap[SCRAP_BARREL];
+            s.texture = t;
+            s.anchor.set(0.5);
+            s.position.set((cx + 0.5) * CITY_CELL, (cy + 0.5) * CITY_CELL);
+            s.scale.set((CITY_BARREL_HALF * 2) / t.width);
+            s.alpha = 1;
+            s.tint = 0xffffff;
+            s.rotation = 0;
           }
           continue;
         }
