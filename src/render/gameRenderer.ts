@@ -900,11 +900,12 @@ export class GameRenderer {
           break;
 
         case EV_WALL_BROKEN:
-          // A TREE COMING DOWN IS NOT A DRUM GOING UP. No fireball and no scorch mark: a green
-          // sparkle for the foliage and a dust puff at the base, which is all the confirmation
-          // needed because the thing the player is actually watching for - the gap - is the
-          // stump the dressing starts drawing on the very next frame.
-          this.effects.sparkle(a, b, 0x6fbf4f);
+          // A TREE COMING DOWN IS NOT A DRUM GOING UP. No fireball and no scorch mark: a sparkle
+          // and a dust puff at the base, which is all the confirmation needed because the thing
+          // the player is actually watching for - the gap - is the stump or rubble the dressing
+          // starts drawing on the very next frame. The sparkle is the colour of the thing that
+          // broke: foliage green on the moss, barrier orange for a city site fence.
+          this.effects.sparkle(a, b, world.scenery.kind === 'city' ? 0xe07b28 : 0x6fbf4f);
           this.effects.puff(a, b, c * 1.4);
           break;
 

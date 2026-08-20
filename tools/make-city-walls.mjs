@@ -23,6 +23,8 @@
  *      cfence_m<1..15>_<0|1>  construction barriers as a CONNECTIVITY SET - see below
  *      cpile0..3         material piles inside a site (same collider kind as a fence cell)
  *      crubble0/1        what a broken fence cell leaves behind
+ *      clitter0..4       site-litter ground decals: oil, spilt aggregate, offcuts, cable, paint
+ *      ccone0/1          a traffic cone, standing and knocked over - art-only, nothing collides
  *      croofprop0..2     AC unit, vent, skylight - scattered on roof middles by the dressing
  *
  * THE FENCE IS A MASK SET, NOT AN H PIECE AND A V PIECE. The first version shipped exactly two
@@ -390,6 +392,141 @@ const DRAW = `(P) => {
     g.fillRect(-30, 6, 52, 10);
     g.restore();
     out['crubble' + v] = c.toDataURL('image/png');
+  }
+
+  // ---- site litter. What a working construction site actually looks like from above: not the
+  // stock (that is the piles) but the MESS - stains, spills, offcuts, markings. Ground decals,
+  // drawn by the dressing UNDER the fences and piles, scattered only over construction blocks.
+  // 64 px canvases like the roof props; the dressing sizes them well under a cell so they read
+  // as texture on the ground rather than as objects standing on it.
+  {
+    // clitter0: an oil stain. Two overlapping translucent blotches - the one litter piece with no
+    // hard edge anywhere, which is what makes it read as soaked in rather than dropped on.
+    const [c, g] = mk(64, 64);
+    g.fillStyle = 'rgba(40, 38, 34, 0.30)';
+    g.beginPath();
+    g.ellipse(30, 34, 22, 16, 0.4, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = 'rgba(40, 38, 34, 0.35)';
+    g.beginPath();
+    g.ellipse(40, 26, 12, 9, -0.3, 0, Math.PI * 2);
+    g.fill();
+    out['clitter0'] = c.toDataURL('image/png');
+  }
+  {
+    // clitter1: a spill of aggregate, the heap's own material trodden about.
+    const [c, g] = mk(64, 64);
+    for (let k = 0; k < 26; k++) {
+      const a = hash(k, 5, 80) * Math.PI * 2;
+      const r = Math.sqrt(hash(k, 6, 81)) * 24;
+      const t = hash(k, 7, 82);
+      g.fillStyle = t < 0.4 ? P.gravelDark : t < 0.75 ? P.gravel : P.gravelLite;
+      g.fillRect(32 + Math.cos(a) * r, 32 + Math.sin(a) * r * 0.7, 3, 3);
+    }
+    out['clitter1'] = c.toDataURL('image/png');
+  }
+  {
+    // clitter2: two plank offcuts, crossed the way thrown things land.
+    const [c, g] = mk(64, 64);
+    g.save();
+    g.translate(30, 34);
+    g.rotate(0.5);
+    g.fillStyle = P.plank;
+    g.fillRect(-20, -5, 40, 9);
+    g.restore();
+    g.save();
+    g.translate(36, 30);
+    g.rotate(-0.25);
+    g.fillStyle = P.plankLight;
+    g.fillRect(-16, -4, 34, 8);
+    g.restore();
+    out['clitter2'] = c.toDataURL('image/png');
+  }
+  {
+    // clitter3: a coil of cable, dropped flat.
+    const [c, g] = mk(64, 64);
+    g.strokeStyle = P.fenceFrame;
+    g.lineWidth = 5;
+    g.beginPath();
+    g.ellipse(32, 33, 15, 12, 0.2, 0, Math.PI * 2);
+    g.stroke();
+    g.lineWidth = 4;
+    g.beginPath();
+    g.ellipse(33, 31, 10, 8, -0.3, 0, Math.PI * 2);
+    g.stroke();
+    // The loose end, running off the coil.
+    g.beginPath();
+    g.moveTo(45, 40);
+    g.quadraticCurveTo(56, 44, 58, 52);
+    g.stroke();
+    out['clitter3'] = c.toDataURL('image/png');
+  }
+  {
+    // clitter4: surveyor's spray marks - a bar and a cross in site orange, the thing crews paint
+    // on the ground everywhere and nobody else ever draws.
+    const [c, g] = mk(64, 64);
+    g.strokeStyle = P.fence;
+    g.globalAlpha = 0.75;
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(12, 40);
+    g.lineTo(44, 36);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(44, 20);
+    g.lineTo(56, 32);
+    g.moveTo(56, 20);
+    g.lineTo(44, 32);
+    g.stroke();
+    g.globalAlpha = 1;
+    out['clitter4'] = c.toDataURL('image/png');
+  }
+
+  // ---- the cones. The one piece of FOREGROUND litter - a thing standing on the site rather than
+  // soaked into it - so it gets the fence's own orange and a white band to sit in the same family.
+  // Two states, upright and knocked over, because a site where every cone is standing has never
+  // had a vehicle on it.
+  {
+    const [c, g] = mk(64, 64);
+    g.fillStyle = 'rgba(30, 28, 24, 0.25)';
+    g.beginPath();
+    g.ellipse(34, 46, 15, 6, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = P.fence;
+    g.fillRect(18, 40, 30, 8); // base plate
+    g.beginPath(); // the cone seen from above-ish: concentric squares
+    g.moveTo(24, 42);
+    g.lineTo(42, 42);
+    g.lineTo(37, 22);
+    g.lineTo(29, 22);
+    g.fill();
+    g.fillStyle = P.fenceStripe;
+    g.fillRect(27, 30, 12, 6);
+    g.fillStyle = P.fenceFade;
+    g.fillRect(30, 18, 6, 6); // tip
+    out['ccone0'] = c.toDataURL('image/png');
+  }
+  {
+    const [c, g] = mk(64, 64);
+    g.fillStyle = 'rgba(30, 28, 24, 0.25)';
+    g.beginPath();
+    g.ellipse(33, 42, 20, 6, 0, 0, Math.PI * 2);
+    g.fill();
+    g.save();
+    g.translate(32, 36);
+    g.rotate(1.35);
+    g.fillStyle = P.fence;
+    g.fillRect(-15, -4, 30, 8);
+    g.beginPath();
+    g.moveTo(-9, -6);
+    g.lineTo(-9, 6);
+    g.lineTo(-30, 3);
+    g.lineTo(-30, -3);
+    g.fill();
+    g.fillStyle = P.fenceStripe;
+    g.fillRect(-22, -4, 6, 8);
+    g.restore();
+    out['ccone1'] = c.toDataURL('image/png');
   }
 
   // ---- roof props. Small, and drawn once each: variety comes from which roofs get which prop,

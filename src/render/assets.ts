@@ -386,6 +386,10 @@ export interface GameTextures {
   readonly cityFence: readonly Texture[];
   readonly cityPiles: readonly Texture[];
   readonly cityRubble: readonly Texture[];
+  /** Site-litter ground decals, scattered over construction blocks. Art only; nothing collides. */
+  readonly cityLitter: readonly Texture[];
+  /** The traffic cone, standing and knocked over. Same deal: dressing, not scenery. */
+  readonly cityCones: readonly Texture[];
   readonly cityRoofProps: readonly Texture[];
   /**
    * THE FLOCK, as two cycles: heads down and walking. One TextureSource each, for the reason the
@@ -406,6 +410,8 @@ export const CITY_FACE_COUNT = 4;
 export const CITY_FENCE_VARIANTS = 2;
 export const CITY_PILE_COUNT = 4;
 export const CITY_RUBBLE_COUNT = 2;
+export const CITY_LITTER_COUNT = 5;
+export const CITY_CONE_COUNT = 2;
 export const CITY_ROOF_PROP_COUNT = 3;
 /**
  * Frames in the sheep's two cycles. MUST match the sheets in tools/make-sheep.mjs - which are the
@@ -542,6 +548,8 @@ export async function loadGameTextures(
   }
   for (let i = 0; i < CITY_PILE_COUNT; i++) keys.push(`cpile${i}`);
   for (let i = 0; i < CITY_RUBBLE_COUNT; i++) keys.push(`crubble${i}`);
+  for (let i = 0; i < CITY_LITTER_COUNT; i++) keys.push(`clitter${i}`);
+  for (let i = 0; i < CITY_CONE_COUNT; i++) keys.push(`ccone${i}`);
   for (let i = 0; i < CITY_ROOF_PROP_COUNT; i++) keys.push(`croofprop${i}`);
 
   // `UnresolvedAsset` carries a `[key: string]: any` index signature, so an ARRAY of them also
@@ -619,6 +627,8 @@ export async function loadGameTextures(
     ),
     cityPiles: Array.from({ length: CITY_PILE_COUNT }, (_, i) => get(`cpile${i}`)),
     cityRubble: Array.from({ length: CITY_RUBBLE_COUNT }, (_, i) => get(`crubble${i}`)),
+    cityLitter: Array.from({ length: CITY_LITTER_COUNT }, (_, i) => get(`clitter${i}`)),
+    cityCones: Array.from({ length: CITY_CONE_COUNT }, (_, i) => get(`ccone${i}`)),
     cityRoofProps: Array.from({ length: CITY_ROOF_PROP_COUNT }, (_, i) => get(`croofprop${i}`)),
     sheepGraze: cutStrip(get('msheep_graze'), SHEEP_GRAZE_FRAMES),
     sheepWalk: cutStrip(get('msheep_walk'), SHEEP_WALK_FRAMES),

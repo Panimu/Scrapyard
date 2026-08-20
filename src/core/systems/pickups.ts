@@ -80,6 +80,7 @@ import {
 import { NULL_HANDLE } from '../entity/handle.js';
 import { ENEMY_FLAG_BOSS } from '../entity/enemyPool.js';
 import { wallCellX, wallCellY, wallStemsStanding } from '../content/wallsMossy.js';
+import { cityCellX, cityCellY, citySectionsStanding } from '../content/wallsCity.js';
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import {
   PICKUP_FLAG_AUTO,
@@ -259,6 +260,26 @@ export function breakLootIn(
     // ONE EVENT PER TREE, so a shell that brings two down throws leaves twice. `d` carries how many
     // are left, which is what tells the renderer whether that was the last one.
     for (let k = 0; k < felled; k++) {
+      pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, standing);
+    }
+    return true;
+  }
+
+  // A SITE FENCE IS A TREE, NOT A DRUM - it has the section pool, it is opened by gunfire, and it
+  // DROPS NOTHING. It shipped on the barrel path below by omission, which was wrong three ways at
+  // once: every fence cell burst like a drum on first contact (the two-section hit-point pool was
+  // never spent, so the half-broken dimmed state never appeared and the mech could open a site by
+  // leaning on it), it paid out a consumable per cell (a free spanner dispenser lining every
+  // construction site - loot is what BARRELS are for, and a fence is a shortcut you buy with
+  // ammunition), and each cell counted toward `barrelsBroken`.
+  if (world.scenery.kind === 'city') {
+    const downed = damageScenery(world.scenery, i, damage);
+    if (downed <= 0) return false;
+    const br = sceneryRadius(world.scenery, i);
+    const standing = citySectionsStanding(world.scenery, cityCellX(i), cityCellY(i));
+    // One event per section, exactly as the moss throws one per tree: two thuds when a shell
+    // takes a whole cell, one when it takes half.
+    for (let k = 0; k < downed; k++) {
       pushEvent(world.events, EV_WALL_BROKEN, world.tick, bx, by, br, standing);
     }
     return true;

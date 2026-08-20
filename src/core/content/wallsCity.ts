@@ -287,6 +287,15 @@ const SCATTER_SPAN = 3;
  * is its outermost cells (the pavement - always open, so nothing built ever touches the street),
  * and structures live from ring 1 inward.
  */
+/** Which of the four layouts a block deals, from its hash: the Q_TYPE roll against the CDF. */
+function blockTypeOf(h: number): number {
+  const roll = blockFrac(h, Q_TYPE);
+  for (let i = 0; i < BLOCK_CDF.length; i++) {
+    if (roll < BLOCK_CDF[i]) return i;
+  }
+  return BLOCK_PLAZA;
+}
+
 function blockCellKind(h: number, lx: number, ly: number): number {
   const n = CITY_BLOCK_CELLS;
   // Ring 0 is pavement on every block type. Structures start one cell in, which is what keeps a
@@ -294,14 +303,7 @@ function blockCellKind(h: number, lx: number, ly: number): number {
   const ring = Math.min(lx, ly, n - 1 - lx, n - 1 - ly);
   if (ring === 0) return CITY_EMPTY;
 
-  const roll = blockFrac(h, Q_TYPE);
-  let type = BLOCK_PLAZA;
-  for (let i = 0; i < BLOCK_CDF.length; i++) {
-    if (roll < BLOCK_CDF[i]) {
-      type = i;
-      break;
-    }
-  }
+  const type = blockTypeOf(h);
 
   if (type === BLOCK_PLAZA) return CITY_EMPTY;
 
@@ -413,6 +415,17 @@ export function cityFenceRing(cx: number, cy: number): boolean {
   const n = CITY_BLOCK_CELLS;
   const ring = Math.min(lx, ly, n - 1 - lx, n - 1 - ly);
   return ring >= 1 && ring <= RING_THICKNESS;
+}
+
+/**
+ * True when (cx, cy) lies in a block that dealt CONSTRUCTION - roads excluded. Exported for the
+ * dressing, which scatters site litter over exactly these blocks: mess belongs inside the hoarding
+ * and on the pavement in front of it, not on a plaza three streets away. Pure arithmetic on the
+ * block hash, so the renderer can ask it per visible cell without the simulation keeping anything.
+ */
+export function cityIsConstructionBlock(c: CityBlocks, cx: number, cy: number): boolean {
+  if (cityIsRoad(cx, cy)) return false;
+  return blockTypeOf(hashBlock(c.seed, blockIndexOf(cx), blockIndexOf(cy))) === BLOCK_CONSTRUCTION;
 }
 
 /**

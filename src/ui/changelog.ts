@@ -40,6 +40,21 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T15:20Z',
+    title: 'FENCES ARE NOT PIÑATAS',
+    notes: [
+      'Site fences and material piles were paying out a consumable per cell, like barrels — every construction site was a wall of free spanners. They drop nothing now: what you get for breaking a fence is the hole.',
+      'They also went down in one touch, which was never the deal. A fence cell now takes real damage in two stages — half gone, it visibly sags — and the mech can no longer open a site by leaning on it. Shoot your way in.',
+    ],
+  },
+  {
+    at: '2026-08-20T15:20Z',
+    title: 'A WORKING SITE LOOKS WORKED',
+    notes: [
+      'Construction sites are littered now: oil stains, spilt aggregate, plank offcuts, dropped cable coils, surveyor’s paint marks, and traffic cones — the odd one knocked over. Strictly scenery; none of it gets in your way.',
+    ],
+  },
+  {
     at: '2026-08-20T14:59Z',
     title: 'FENCES THAT MEET AT THE CORNERS',
     notes: [

@@ -15,9 +15,11 @@
  * ---------------------------------------------------------------------------------------------
  *   1. roads     asphalt over every road cell; the pavement between blocks is the floor itself
  *   2. dashes    the painted centre line, on each road's middle seam, skipped at crossings
- *   3. roofs     the building autotile - same 16-piece neighbour test as the moss walls
- *   4. faces     a windowed frontage under any building cell with nothing below it
- *   5. street    fences, piles, rubble - the things that stand ON the ground
+ *   3. litter    construction-site mess - stains, spills, offcuts, cones - UNDER the street
+ *                layer, because a stain that painted over a fence would read as a glitch
+ *   4. roofs     the building autotile - same 16-piece neighbour test as the moss walls
+ *   5. faces     a windowed frontage under any building cell with nothing below it
+ *   6. street    fences, piles, rubble - the things that stand ON the ground
  *
  * Faces come after roofs because a face hangs into the (empty, by definition) cell below its
  * own; without the ordering a roof drawn later would paint over the frontage above it.
@@ -34,6 +36,7 @@ import {
   CITY_ROAD_CELLS,
   cityCellOf,
   cityFenceRing,
+  cityIsConstructionBlock,
   cityIsRoad,
   cityIsRoadCell,
   cityKindAt,
@@ -43,8 +46,10 @@ import {
   type World,
 } from '../core/index.js';
 import {
+  CITY_CONE_COUNT,
   CITY_FACE_COUNT,
   CITY_FENCE_VARIANTS,
+  CITY_LITTER_COUNT,
   CITY_PILE_COUNT,
   CITY_ROOF_PROP_COUNT,
   CITY_RUBBLE_COUNT,
@@ -79,6 +84,19 @@ const DASH_CAPACITY = 96;
 const ROOF_CAPACITY = 256;
 const FACE_CAPACITY = 96;
 const STREET_CAPACITY = 256;
+const LITTER_CAPACITY = 128;
+
+/**
+ * Litter density, as thresholds on a per-cell hash roll. Ground decals land on roughly a fifth of
+ * a site's open cells, cones on a twentieth - a site should read as messy at a glance and still
+ * leave the ground legible, because the litter shares its palette with things that DO matter
+ * (fence orange, pile browns) and a floor of it would bury them.
+ */
+const LITTER_SHARE = 0.21;
+const CONE_SHARE = 0.05;
+/** Decal sizes, world units. Well under the 64 u cell so litter reads as ON the ground. */
+const LITTER_SIZE = 34;
+const CONE_SIZE = 24;
 
 /**
  * One hash per cell for the art-only choices - which face variant, which prop, which rubble.
@@ -98,6 +116,7 @@ export class CityDressing implements LevelDressing {
   private readonly tex: GameTextures;
   private readonly roads: SpritePool;
   private readonly dashes: SpritePool;
+  private readonly litter: SpritePool;
   private readonly roofs: SpritePool;
   private readonly faces: SpritePool;
   private readonly street: SpritePool;
@@ -107,12 +126,14 @@ export class CityDressing implements LevelDressing {
     this.container = new Container({ label: 'dressing-city' });
     this.roads = new SpritePool({ capacity: ROAD_CAPACITY, label: 'city-roads' });
     this.dashes = new SpritePool({ capacity: DASH_CAPACITY, label: 'city-dashes' });
+    this.litter = new SpritePool({ capacity: LITTER_CAPACITY, label: 'city-litter' });
     this.roofs = new SpritePool({ capacity: ROOF_CAPACITY, label: 'city-roofs' });
     this.faces = new SpritePool({ capacity: FACE_CAPACITY, label: 'city-faces' });
     this.street = new SpritePool({ capacity: STREET_CAPACITY, label: 'city-street' });
     this.container.addChild(
       this.roads.container,
       this.dashes.container,
+      this.litter.container,
       this.street.container,
       this.faces.container,
       this.roofs.container,
@@ -129,8 +150,10 @@ export class CityDressing implements LevelDressing {
     const roofs = this.roofs;
     const faces = this.faces;
     const street = this.street;
+    const litter = this.litter;
     roads.begin();
     dashes.begin();
+    litter.begin();
     roofs.begin();
     faces.begin();
     street.begin();
@@ -139,6 +162,7 @@ export class CityDressing implements LevelDressing {
     if (city.kind !== 'city') {
       roads.end();
       dashes.end();
+      litter.end();
       roofs.end();
       faces.end();
       street.end();
@@ -157,6 +181,7 @@ export class CityDressing implements LevelDressing {
 
     roads.end();
     dashes.end();
+    litter.end();
     roofs.end();
     faces.end();
     street.end();
@@ -274,6 +299,51 @@ export class CityDressing implements LevelDressing {
               face.alpha = 1;
               face.tint = 0xffffff;
               face.rotation = 0;
+            }
+          }
+          continue;
+        }
+
+        // PASS 3: litter, on the open ground of construction blocks only - the interior AND the
+        // pavement apron, because a working site's mess never respects its own hoarding line.
+        // Art only: the simulation has never heard of a cone, and nothing here collides. Skipped
+        // on felled cells so the rubble stays legible as "the fence you broke".
+        if (kind === CITY_EMPTY && !isCityBroken(city, cx, cy) && cityIsConstructionBlock(city, cx, cy)) {
+          const h = cellHash(cx, cy);
+          if ((h & 0xfff) / 4096 < LITTER_SHARE) {
+            const d = this.litter.acquire();
+            if (d !== undefined) {
+              const t = this.tex.cityLitter[(h >>> 12) % CITY_LITTER_COUNT];
+              d.texture = t;
+              d.anchor.set(0.5);
+              d.position.set(
+                (cx + 0.28 + ((h >>> 16) & 127) / 288) * CITY_CELL,
+                (cy + 0.28 + ((h >>> 23) & 127) / 288) * CITY_CELL,
+              );
+              d.scale.set(LITTER_SIZE / t.width);
+              // Stains, spills and cable land at any angle; only the paint marks (4) stay square,
+              // because a surveyor sprays along the grid they are marking out.
+              d.rotation = (h >>> 12) % CITY_LITTER_COUNT === 4 ? 0 : ((h >>> 4) & 255) * 0.0245;
+              d.alpha = 1;
+              d.tint = 0xffffff;
+            }
+          }
+          if (((h >>> 19) & 0xfff) / 4096 < CONE_SHARE) {
+            const d = this.litter.acquire();
+            if (d !== undefined) {
+              const t = this.tex.cityCones[(h >>> 9) % CITY_CONE_COUNT];
+              d.texture = t;
+              d.anchor.set(0.5);
+              d.position.set(
+                (cx + 0.32 + ((h >>> 13) & 63) / 192) * CITY_CELL,
+                (cy + 0.32 + ((h >>> 26) & 63) / 192) * CITY_CELL,
+              );
+              d.scale.set(CONE_SIZE / t.width);
+              // Never rotated: the cone's shadow is baked in, and a shadow that swung round per
+              // cone would read as five suns. The knocked-over variant carries its own angle.
+              d.rotation = 0;
+              d.alpha = 1;
+              d.tint = 0xffffff;
             }
           }
           continue;
