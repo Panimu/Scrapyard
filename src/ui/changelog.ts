@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T19:39Z',
+    title: 'FERN IS EARNED NOW',
+    notes: [
+      'Fern is no longer sitting in the picker from the first launch. Clear the Scrapyard and it is yours — which is the same moment Drones come off their own lock, so finishing your first map hands you the weapon and the chassis built around it together.',
+      'Slate is now the only mech an empty save starts with.',
+      'There is a trophy for it, like every other chassis.',
+    ],
+  },
+  {
     at: '2026-08-20T19:32Z',
     title: 'LOOK WHO IS DRIVING',
     notes: [

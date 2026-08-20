@@ -25,9 +25,16 @@
  *     Heavy Artillery plum, indigo
  *     Drones          fern                           <- and nobody else, by design
  *
- * FERN IS THE ONLY WAY INTO DRONES until the yard has been beaten - the card is locked in the deck
- * (data/upgrades.ts), so the chassis is the door. That is why Fern is `always` alongside Slate, and
- * it is also why the Heavy Artillery now has only one opener.
+ * DRONES ARE THE REWARD FOR CLEARING THE YARD, from both directions at once. The card is locked in
+ * the deck behind `win` (data/upgrades.ts) and Fern is locked behind clearing the Scrapyard, so
+ * the weapon does not exist for a player until they have finished their first map - and then it
+ * arrives twice over, as a card in the deck and as a chassis that opens with it.
+ *
+ * Fern used to be `always` alongside Slate, on the reasoning that a locked card needs an unlocked
+ * door or the weapon is unreachable. The door is now the yard itself, which is a better answer:
+ * the two conditions land on the same moment (the first win any save can have is on the Scrapyard,
+ * because every other map is gated behind it), so nothing is stranded - and SLATE IS NOW THE ONLY
+ * `always` CHASSIS, which is what an empty save needs and no more than that.
  *
  * Two-per-weapon was a real property and it is worth naming what replaced it: a player who has
  * used one green mech knows what the other green mech does, and that no longer holds for the
@@ -347,9 +354,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
-    // AVAILABLE FROM THE START, alongside Slate. It is the chassis that opens with Drones, and the
-    // only way to fly them before the yard has been beaten - the card itself is locked.
-    unlock: { kind: 'always' },
+    // EARNED BY CLEARING THE SCRAPYARD, which is the same moment the Drones card comes off its own
+    // lock (`win`, in data/upgrades.ts). Finishing your first map hands you the weapon and the
+    // chassis built around it together; before that, Drones are something you have not met.
+    unlock: { kind: 'winLevel', level: 'scrapyard' },
     name: 'Fern',
     identity:
       'Light hover, forward claw arms. Opens with Drones, and builds them 10% faster.',
