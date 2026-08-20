@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T14:27Z',
+    title: 'ROOMS WITH NO DOOR',
+    notes: [
+      'Courtyard buildings could generate sealed — a room you could see into from the street and had no way of entering, on about a quarter of them. Every courtyard has a real gateway now.',
+      'Courtyards are roomier: the wall around them is half as thick, so the space inside is four times the size. Enough to actually fight in, which was the idea.',
+      'Construction sites sometimes stacked their material piles right behind the gate, so the way in was a wall of crates. The gateway lane is kept clear now — you can drive straight in and choose what to break once you are inside.',
+    ],
+  },
+  {
     at: '2026-08-20T12:50Z',
     title: 'CITY CHAOS, TIGHTENED UP',
     notes: [

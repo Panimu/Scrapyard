@@ -36,8 +36,9 @@
  *                     fence around an open interior, with one or two gateway gaps, and a few
  *                     material piles scattered inside. The fences and piles come down like
  *                     Mossy's trees and leave rubble.
- *      COURTYARD      A building drawn as a thick ring around an open centre, one gateway cut
- *                     through the ring. A room to fight in, with walls that mean it.
+ *      COURTYARD      A building drawn as a ring around an open centre, one gateway cut through
+ *                     it. A room to fight in, with walls that mean it - the ring is permanent,
+ *                     so the gateway is the only way in and out.
  *      PLAZA          Open ground. What stops the city reading as a maze.
  *
  * ---------------------------------------------------------------------------------------------
@@ -326,20 +327,20 @@ function blockCellKind(h: number, lx: number, ly: number): number {
     return CITY_BUILDING;
   }
 
-  // Both remaining types are a RING WITH GATEWAYS: construction fences a thin ring at ring 1,
-  // a courtyard builds a thick one at rings 1..2. Shared gateway logic, so a gap is always
-  // GATE_WIDTH cells and always cut square through the ring's full thickness.
-  const thick = type === BLOCK_COURTYARD ? 2 : 1;
+  // Both remaining types are a RING WITH GATEWAYS, one cell thick, cut by a gap that goes all the
+  // way through. Shared gateway logic, so a gap is always GATE_WIDTH cells wide and always square
+  // through the ring - see `inGateway` for why the gap's POSITION has to know the thickness.
+  const thick = RING_THICKNESS;
   const onRing = ring >= 1 && ring <= thick;
 
   if (onRing) {
-    if (inGateway(h, Q_GATE_SIDE, Q_GATE_ALONG, lx, ly)) return CITY_EMPTY;
+    if (inGateway(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly)) return CITY_EMPTY;
     // Construction sites sometimes get a second way in; courtyards never do - one door is what
     // makes a courtyard a commitment.
     if (
       type === BLOCK_CONSTRUCTION &&
       blockFrac(h, Q_GATE2) < 0.5 &&
-      inGateway(h, Q_GATE2_SIDE, Q_GATE2_ALONG, lx, ly)
+      inGateway(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly)
     ) {
       return CITY_EMPTY;
     }
@@ -347,14 +348,26 @@ function blockCellKind(h: number, lx: number, ly: number): number {
   }
 
   // Inside a construction site: a few material piles, at hashed cells strictly inside the fence.
-  if (type === BLOCK_CONSTRUCTION && ring >= 2) {
-    const piles = SCATTER_MIN + blockInt(h, Q_SCATTER, SCATTER_SPAN);
-    const lo = 2;
-    const span = n - 2 * lo;
-    for (let k = 0; k < piles; k++) {
-      const px = lo + blockInt(h, Q_SCATTER + 1 + k * 2, span);
-      const py = lo + blockInt(h, Q_SCATTER + 2 + k * 2, span);
-      if (px === lx && py === ly) return CITY_FENCE;
+  //
+  // EXCEPT IN A GATEWAY'S AISLE. A pile is the same breakable kind as the fence, so one dealt into
+  // the cell just behind the gap turned the gap into a wall you had to shoot anyway - the site
+  // still had "one or two entrances" in the generator and none on screen. Keeping the gate's own
+  // two lanes clear, at every depth, means a doorway is always a doorway: you can drive in, and
+  // what you break once inside is a choice rather than the price of entry.
+  if (type === BLOCK_CONSTRUCTION && ring > thick) {
+    const secondGate = blockFrac(h, Q_GATE2) < 0.5;
+    const inAisle =
+      inGatewayLane(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly) ||
+      (secondGate && inGatewayLane(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly));
+    if (!inAisle) {
+      const piles = SCATTER_MIN + blockInt(h, Q_SCATTER, SCATTER_SPAN);
+      const lo = thick + 1;
+      const span = n - 2 * lo;
+      for (let k = 0; k < piles; k++) {
+        const px = lo + blockInt(h, Q_SCATTER + 1 + k * 2, span);
+        const py = lo + blockInt(h, Q_SCATTER + 2 + k * 2, span);
+        if (px === lx && py === ly) return CITY_FENCE;
+      }
     }
   }
   return CITY_EMPTY;
@@ -364,21 +377,77 @@ function blockCellKind(h: number, lx: number, ly: number): number {
 const GATE_WIDTH = 2;
 
 /**
+ * HOW MANY CELLS THICK A RING BLOCK'S WALL IS - the same for both ring types.
+ *
+ * Courtyards used to build two, and that is the change. At the 10-cell period this map settled
+ * on, a block interior is 8 cells and its outermost ring is pavement, so a two-cell wall left a
+ * 2x2 courtyard: a 128 u room behind a wall as thick as the room is wide. One cell turns that
+ * into a 4x4, 256 u room with a 64 u wall round it, which is the "room to fight in" the block was
+ * always for. It also gives the gateway somewhere to move - see `inGateway` - where a two-cell
+ * wall left exactly one legal position and no variety at all.
+ *
+ * The clamp is a safety net rather than live arithmetic: a ring needs enough lanes to seat a
+ * GATE_WIDTH gap clear of the wall on both sides, so if a future period shrinks the block past
+ * that, the wall thins instead of sealing the middle. `inGateway` derives its range from this
+ * same number, so the two cannot disagree about what a gateway has to cut through.
+ */
+const RING_THICKNESS = Math.min(1, Math.floor((CITY_BLOCK_CELLS - GATE_WIDTH - 1) / 2));
+
+/**
  * Is local cell (lx, ly) inside the gateway named by questions (qSide, qAlong)? A gateway is a
  * GATE_WIDTH-wide band cut perpendicular through one side of the ring, its position drawn from
- * the block hash, kept off the corners so a ring can never be opened at a corner and fall into
- * two loose walls.
+ * the block hash.
+ *
+ * THE BAND'S RANGE HAS TO KNOW HOW THICK THE RING IS, and that is the bug this argument exists to
+ * fix. The range used to be a flat 1..n-1-GATE_WIDTH - "anywhere but hard against a corner" -
+ * which is the right answer only for a one-cell wall. Cut that band near a corner of a THICKER
+ * ring and it opens a notch into the wall's own corner and stops: the cells behind it are still
+ * wall, so the middle stays sealed. A courtyard came out as a room with no door, visible from the
+ * street and impossible to enter, on about a quarter of the courtyards generated.
+ *
+ * So the band is constrained to the lanes that are actually INTERIOR - `thick + 1` through
+ * `n - 2 - thick` - which is exactly the set of lanes where a straight cut from outside reaches
+ * open ground. That also keeps the gap off the corners for free, which is what the old range was
+ * reaching for.
  */
-function inGateway(h: number, qSide: number, qAlong: number, lx: number, ly: number): boolean {
+function inGateway(
+  h: number,
+  qSide: number,
+  qAlong: number,
+  thick: number,
+  lx: number,
+  ly: number,
+): boolean {
   const n = CITY_BLOCK_CELLS;
   const side = blockInt(h, qSide, 4);
-  // 1..n-1-GATE_WIDTH keeps the whole gap off both corners.
-  const along = 1 + blockInt(h, qAlong, n - 2 - GATE_WIDTH);
-  const inBand = (v: number): boolean => v >= along && v < along + GATE_WIDTH;
-  if (side === 0) return ly <= 2 && inBand(lx); // north
-  if (side === 1) return ly >= n - 3 && inBand(lx); // south
-  if (side === 2) return lx <= 2 && inBand(ly); // west
-  return lx >= n - 3 && inBand(ly); // east
+  // Depth is the ring's own thickness: the cut goes through the wall and no further.
+  const throughWall =
+    side === 0 ? ly <= thick : side === 1 ? ly >= n - 1 - thick : side === 2 ? lx <= thick : lx >= n - 1 - thick;
+  return throughWall && inGatewayLane(h, qSide, qAlong, thick, lx, ly);
+}
+
+/**
+ * The gateway's LANE, at any depth into the block - the two-cell aisle running straight in from
+ * the gap. `inGateway` is this intersected with the wall's thickness; the pile scatter uses the
+ * lane on its own, to keep the way in clear. Sharing the band arithmetic between the two is the
+ * point: a pile that avoided a differently-computed lane would be avoiding the wrong cells.
+ */
+function inGatewayLane(
+  h: number,
+  qSide: number,
+  qAlong: number,
+  thick: number,
+  lx: number,
+  ly: number,
+): boolean {
+  const n = CITY_BLOCK_CELLS;
+  const side = blockInt(h, qSide, 4);
+  const lo = thick + 1;
+  // The last start position whose whole band still lands on interior lanes.
+  const span = n - 1 - thick - GATE_WIDTH - lo + 1;
+  const along = lo + blockInt(h, qAlong, Math.max(1, span));
+  const across = side === 0 || side === 1 ? lx : ly;
+  return across >= along && across < along + GATE_WIDTH;
 }
 
 /**
