@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T16:54Z',
+    title: 'NO MORE TWO-HEADED SHEEP',
+    notes: [
+      'Sheep on Mossy Mayhem could be dropped into the field on top of one another — close enough to look like a single animal, right up until it paid out twice. New arrivals now keep a clear distance from the rest of the flock.',
+    ],
+  },
+  {
     at: '2026-08-20T16:32Z',
     title: 'THE SHEEP HAVE LEFT THE CITY',
     notes: [

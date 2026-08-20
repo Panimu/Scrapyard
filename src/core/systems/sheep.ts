@@ -117,6 +117,44 @@ const MOVING_SPEED2 = 100;
 export const SHEEP_RADIUS = 17;
 
 /**
+ * HOW FAR A NEW SHEEP MUST BE FROM EVERY SHEEP ALREADY OUT THERE.
+ *
+ * Placement is a blind draw on a ring - an angle and a radius - and nothing used to look at where
+ * the rest of the flock was standing. Measured over three seeds of a flock being shot and topped
+ * up: the closest placements came out at 14, 30 and 40 u, against bodies that touch at 34. So
+ * animals were landing not merely close but genuinely inside one another, which reads as one sheep
+ * until it pays out twice - and they STAY there, because grazing is the default state and a
+ * grazing sheep does not move.
+ *
+ * 5 x the body radius. Two bodies merely not overlapping is 2 x, which still reads as one animal
+ * with a strange outline; 85 u is a clear field between them at the size they are drawn, and it is
+ * small enough against the 560-800 u spawn ring that the rejection below almost never has to try
+ * twice.
+ */
+export const SHEEP_SPAWN_GAP = SHEEP_RADIUS * 5;
+const SPAWN_GAP2 = SHEEP_SPAWN_GAP * SHEEP_SPAWN_GAP;
+
+/**
+ * How many placements to try before giving up on this top-up.
+ *
+ * GIVING UP IS THE CORRECT FAILURE and it costs nothing: the flock is topped up on a timer, so a
+ * skipped attempt is retried a second later against a field that has moved on. The alternative -
+ * looping until a gap is found - is an unbounded search inside the tick for a condition that a
+ * crowded enough field may not satisfy at all.
+ */
+const SPAWN_TRIES = 8;
+
+/** True when (x, y) is inside another animal's personal space. Linear over a flock of four. */
+function crowded(p: World['sheep'], x: number, y: number): boolean {
+  for (let d = 0; d < p.count; d++) {
+    const dx = p.x[d] - x;
+    const dy = p.y[d] - y;
+    if (dx * dx + dy * dy < SPAWN_GAP2) return true;
+  }
+  return false;
+}
+
+/**
  * One tick of the flock. Cheap by construction: `LevelDef.sheep` animals, one neighbour query each
  * and only when one is actually deciding where to go.
  */
@@ -157,10 +195,20 @@ export function updateSheep(world: World, dt: number): void {
       const vx = player.vx;
       const vy = player.vy;
       const moving = vx * vx + vy * vy > MOVING_SPEED2;
-      const base = moving ? Math.atan2(vy, vx) : rng.nextFloat() * TWO_PI;
-      const a = moving ? base + (rng.nextFloat() * 2 - 1) * SPAWN_ARC : base;
-      const r = SPAWN_MIN + rng.nextFloat() * SPAWN_SPAN;
-      allocSheep(p, player.x + dcos(a) * r, player.y + dsin(a) * r, world.tick);
+
+      // REJECTION SAMPLED AGAINST THE FLOCK. Each attempt draws exactly the two values the single
+      // attempt used to draw - one angle, one radius - so an attempt that is thrown away costs the
+      // stream the same as one that lands, and the whole loop stays deterministic.
+      for (let attempt = 0; attempt < SPAWN_TRIES; attempt++) {
+        const base = moving ? Math.atan2(vy, vx) : rng.nextFloat() * TWO_PI;
+        const a = moving ? base + (rng.nextFloat() * 2 - 1) * SPAWN_ARC : base;
+        const r = SPAWN_MIN + rng.nextFloat() * SPAWN_SPAN;
+        const sx = player.x + dcos(a) * r;
+        const sy = player.y + dsin(a) * r;
+        if (crowded(p, sx, sy)) continue;
+        allocSheep(p, sx, sy, world.tick);
+        break;
+      }
     }
   }
 
