@@ -378,8 +378,12 @@ export interface GameTextures {
   readonly cityFaces: readonly Texture[];
   readonly cityRoad: Texture;
   readonly cityRoadDash: Texture;
-  readonly cityFenceH: Texture;
-  readonly cityFenceV: Texture;
+  /**
+   * The site fences, one piece per N/E/S/W neighbour mask like the scrap paths' `path_1..15`,
+   * times CITY_FENCE_VARIANTS board variants. Indexed `(mask - 1) * CITY_FENCE_VARIANTS + v`;
+   * there is no mask-0 entry because an isolated breakable cell draws as a material pile.
+   */
+  readonly cityFence: readonly Texture[];
   readonly cityPiles: readonly Texture[];
   readonly cityRubble: readonly Texture[];
   readonly cityRoofProps: readonly Texture[];
@@ -399,7 +403,8 @@ export const WALL_TREE_COUNT = 3;
 export const WALL_BUSH_COUNT = 4;
 /** How many pieces each city set has. See tools/make-city-walls.mjs. */
 export const CITY_FACE_COUNT = 4;
-export const CITY_PILE_COUNT = 2;
+export const CITY_FENCE_VARIANTS = 2;
+export const CITY_PILE_COUNT = 4;
 export const CITY_RUBBLE_COUNT = 2;
 export const CITY_ROOF_PROP_COUNT = 3;
 /**
@@ -531,7 +536,10 @@ export async function loadGameTextures(
     for (let col = 0; col < 4; col++) keys.push(`cwall_t${col}${row}`);
   }
   for (let i = 0; i < CITY_FACE_COUNT; i++) keys.push(`cface${i}`);
-  keys.push('croad', 'croad_dash', 'cfence_h', 'cfence_v');
+  keys.push('croad', 'croad_dash');
+  for (let m = 1; m <= 15; m++) {
+    for (let v = 0; v < CITY_FENCE_VARIANTS; v++) keys.push(`cfence_m${m}_${v}`);
+  }
   for (let i = 0; i < CITY_PILE_COUNT; i++) keys.push(`cpile${i}`);
   for (let i = 0; i < CITY_RUBBLE_COUNT; i++) keys.push(`crubble${i}`);
   for (let i = 0; i < CITY_ROOF_PROP_COUNT; i++) keys.push(`croofprop${i}`);
@@ -606,8 +614,9 @@ export async function loadGameTextures(
     cityFaces: Array.from({ length: CITY_FACE_COUNT }, (_, i) => get(`cface${i}`)),
     cityRoad: get('croad'),
     cityRoadDash: get('croad_dash'),
-    cityFenceH: get('cfence_h'),
-    cityFenceV: get('cfence_v'),
+    cityFence: Array.from({ length: 15 * CITY_FENCE_VARIANTS }, (_, i) =>
+      get(`cfence_m${Math.floor(i / CITY_FENCE_VARIANTS) + 1}_${i % CITY_FENCE_VARIANTS}`),
+    ),
     cityPiles: Array.from({ length: CITY_PILE_COUNT }, (_, i) => get(`cpile${i}`)),
     cityRubble: Array.from({ length: CITY_RUBBLE_COUNT }, (_, i) => get(`crubble${i}`)),
     cityRoofProps: Array.from({ length: CITY_ROOF_PROP_COUNT }, (_, i) => get(`croofprop${i}`)),

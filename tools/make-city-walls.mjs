@@ -20,10 +20,20 @@
  *      cface0..3         building street faces, hung under a roof cell with nothing below it
  *      croad             asphalt, one cell
  *      croad_dash        the painted centre line, a thin strip the dressing lays on road seams
- *      cfence_h/_v       construction barriers, horizontal and vertical runs
- *      cpile0/1          material piles inside a site (same collider kind as a fence cell)
+ *      cfence_m<1..15>_<0|1>  construction barriers as a CONNECTIVITY SET - see below
+ *      cpile0..3         material piles inside a site (same collider kind as a fence cell)
  *      crubble0/1        what a broken fence cell leaves behind
  *      croofprop0..2     AC unit, vent, skylight - scattered on roof middles by the dressing
+ *
+ * THE FENCE IS A MASK SET, NOT AN H PIECE AND A V PIECE. The first version shipped exactly two
+ * fence sprites and let the renderer guess, and a corner cell - which has both a horizontal and a
+ * vertical neighbour - guessed horizontal: every corner of every site drew as a run that just
+ * stopped, visibly detached from the run it was supposed to meet. The scrap paths solved this
+ * years ago with `path_1..15`, one piece per N/E/S/W neighbour mask, and this is the same scheme:
+ * each piece draws a board arm from the cell centre toward each connected edge, so corners, tees,
+ * crossings and ends all have real art. Posts sit ON the joins - cell centres and shared edges -
+ * which is also what hides the stripe restart at every tile boundary. Two board variants per
+ * mask, picked per cell by the dressing's hash, so a long run is not one image repeating.
  *
  * The floor gets the same wrap-seam check make-floor.mjs runs, because it tiles the whole world
  * and a directional edge would grow a visible grid.
@@ -65,13 +75,20 @@ const PAL = {
   window: '#2c3038',
   windowLit: '#ffd980',
   fence: '#e07b28',
+  fenceFade: '#cf873f',
   fenceStripe: '#f2ede2',
+  fenceFrame: '#453f38',
   fenceLeg: '#5a5148',
+  fencePostLit: '#7d7466',
   crate: '#c8a56a',
   crateShade: '#a8854e',
   pipe: '#8d939e',
   pipeShade: '#6e747f',
   plank: '#b08a55',
+  plankLight: '#c29a63',
+  gravel: '#96938a',
+  gravelLite: '#a7a49a',
+  gravelDark: '#807d74',
   rubble: '#7d7a72',
   acBox: '#9aa0aa',
   acShade: '#5d6270',
@@ -202,42 +219,74 @@ const DRAW = `(P) => {
     }
   }
 
-  // ---- the site fences. A bar with striped hazard boards and two feet; the vertical variant is
-  // its own drawing rather than a rotation, so its feet still sit at the bottom of the boards.
+  // ---- the site fences: one piece per N/E/S/W neighbour mask, two board variants each.
+  //
+  // Every piece is built from the same three moves, in this order:
+  //   1. FRAME: the union of the arms, painted 3 px oversize in a dark tone. Because it is drawn
+  //      per arm and the boards go OVER it, corners come out with a clean continuous outline for
+  //      free - no mitre arithmetic anywhere.
+  //   2. BOARDS: the arms clipped and filled with one diagonal stripe pass across the whole tile,
+  //      so the stripes of a corner's two arms line up at the elbow like a real mitred barrier.
+  //   3. POSTS: one on the cell centre, one half on each connected edge. The neighbouring cell
+  //      draws the matching half, so a run reads post-panel-post at 64 u spacing - and the post on
+  //      the shared edge is exactly what covers the stripe restart between two baked tiles.
+  //
+  // An arm reaches from the centre to a connected edge, so a run ENDS at a centre post rather
+  // than dead-stopping mid-air, and an end piece needs no special case at all.
   {
-    const drawBoards = (g, x, y, w, h) => {
-      g.fillStyle = P.fence;
-      g.fillRect(x, y, w, h);
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.fillStyle = P.fenceStripe;
-      for (let i = -h; i < w + h; i += 28) {
-        g.beginPath();
-        g.moveTo(x + i, y + h);
-        g.lineTo(x + i + h, y);
-        g.lineTo(x + i + h + 12, y);
-        g.lineTo(x + i + 12, y + h);
-        g.fill();
-      }
-      g.restore();
+    const BAND = 40;
+    const B0 = (T - BAND) / 2; // 44: band near edge, both axes - centred, so all arms meet.
+    const ARMS = [
+      [1, B0, 0, BAND, T / 2], //  N
+      [2, T / 2, B0, T / 2, BAND], // E
+      [4, B0, T / 2, BAND, T / 2], // S
+      [8, 0, B0, T / 2, BAND], //  W
+    ];
+    const post = (g, cx, cy) => {
+      g.fillStyle = P.fenceLeg;
+      g.fillRect(cx - 11, cy - 11, 22, 22);
+      g.fillStyle = P.fencePostLit;
+      g.fillRect(cx - 11, cy - 11, 22, 6);
+      g.fillStyle = P.fenceFrame;
+      g.fillRect(cx - 3, cy - 2, 6, 6);
     };
-    {
-      const [c, g] = mk(T, T);
-      g.fillStyle = P.fenceLeg;
-      g.fillRect(14, 78, 12, 18);
-      g.fillRect(T - 26, 78, 12, 18);
-      drawBoards(g, 0, 42, T, 40);
-      out['cfence_h'] = c.toDataURL('image/png');
-    }
-    {
-      const [c, g] = mk(T, T);
-      g.fillStyle = P.fenceLeg;
-      g.fillRect(56, 20, 16, 10);
-      g.fillRect(56, T - 30, 16, 10);
-      drawBoards(g, 44, 0, 40, T);
-      out['cfence_v'] = c.toDataURL('image/png');
+    for (let mask = 1; mask < 16; mask++) {
+      for (let v = 0; v < 2; v++) {
+        const [c, g] = mk(T, T);
+        const arms = ARMS.filter(([bit]) => (mask & bit) !== 0);
+
+        g.fillStyle = P.fenceFrame;
+        for (const [, x, y, w, h] of arms) g.fillRect(x - 3, y - 3, w + 6, h + 6);
+
+        g.save();
+        g.beginPath();
+        for (const [, x, y, w, h] of arms) g.rect(x, y, w, h);
+        g.clip();
+        // Variant 1 is the same barrier a season later: shifted phase, sun-faded orange.
+        g.fillStyle = v === 0 ? P.fence : P.fenceFade;
+        g.fillRect(0, 0, T, T);
+        g.fillStyle = P.fenceStripe;
+        for (let i = -T; i < T * 2; i += 32) {
+          const x0 = i + v * 16;
+          g.beginPath();
+          g.moveTo(x0, T + 4);
+          g.lineTo(x0 + T + 8, -4);
+          g.lineTo(x0 + T + 8 + 14, -4);
+          g.lineTo(x0 + 14, T + 4);
+          g.fill();
+        }
+        g.restore();
+
+        for (const [bit] of arms) {
+          if (bit === 1) post(g, T / 2, 0);
+          if (bit === 2) post(g, T, T / 2);
+          if (bit === 4) post(g, T / 2, T);
+          if (bit === 8) post(g, 0, T / 2);
+        }
+        post(g, T / 2, T / 2);
+
+        out['cfence_m' + mask + '_' + v] = c.toDataURL('image/png');
+      }
     }
   }
 
@@ -272,6 +321,53 @@ const DRAW = `(P) => {
       g.fill();
     }
     out['cpile1'] = c.toDataURL('image/png');
+  }
+
+  // ---- cpile2: a stack of planks on two bearers, the lumber the fences are built from. Each
+  // course is jittered a couple of pixels by the hash so the stack reads as thrown together by a
+  // crew, not extruded.
+  {
+    const [c, g] = mk(T, T);
+    g.fillStyle = P.fenceLeg;
+    g.fillRect(24, 88, 16, 12);
+    g.fillRect(88, 88, 16, 12);
+    for (let i = 0; i < 5; i++) {
+      const x = 12 + Math.floor(hash(i, 0, 70) * 10);
+      const y = 82 - i * 11;
+      g.fillStyle = i % 2 === 0 ? P.plank : P.plankLight;
+      g.fillRect(x, y, 98, 10);
+      g.fillStyle = P.crateShade;
+      g.fillRect(x, y + 8, 98, 2);
+    }
+    out['cpile2'] = c.toDataURL('image/png');
+  }
+
+  // ---- cpile3: a heap of aggregate. Two stacked ellipses and speckle in three greys - the one
+  // pile with no straight edge on it, which is what stops a site reading as a warehouse of boxes.
+  {
+    const [c, g] = mk(T, T);
+    g.fillStyle = P.gravelDark;
+    g.beginPath();
+    g.ellipse(64, 74, 44, 28, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = P.gravel;
+    g.beginPath();
+    g.ellipse(62, 68, 38, 23, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = P.gravelLite;
+    g.beginPath();
+    g.ellipse(56, 60, 24, 14, 0, 0, Math.PI * 2);
+    g.fill();
+    for (let k = 0; k < 46; k++) {
+      const a = hash(k, 1, 71) * Math.PI * 2;
+      const r = Math.sqrt(hash(k, 2, 72));
+      const x = 62 + Math.cos(a) * r * 36;
+      const y = 68 + Math.sin(a) * r * 21;
+      const t = hash(k, 3, 73);
+      g.fillStyle = t < 0.33 ? P.gravelDark : t < 0.66 ? P.gravelLite : P.rubble;
+      g.fillRect(x, y, 3, 3);
+    }
+    out['cpile3'] = c.toDataURL('image/png');
   }
 
   // ---- the rubble a broken fence cell leaves. Planks and grey debris, deliberately low and

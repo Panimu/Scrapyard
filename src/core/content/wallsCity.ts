@@ -393,6 +393,28 @@ const GATE_WIDTH = 2;
  */
 const RING_THICKNESS = Math.min(1, Math.floor((CITY_BLOCK_CELLS - GATE_WIDTH - 1) / 2));
 
+/** The same number, for the renderer - see `cityFenceRing` for what it wants it for. */
+export const CITY_RING_THICKNESS = RING_THICKNESS;
+
+/**
+ * True when (cx, cy) sits on a block's WALL RING - the cells a construction fence or courtyard
+ * wall can occupy. False on roads, on the pavement apron, and anywhere deeper inside the block.
+ *
+ * Exported for the dressing, which draws two different things out of one cell kind: a CITY_FENCE
+ * cell ON the ring is a run of site barrier and joins up with its neighbours, while a CITY_FENCE
+ * cell deeper in is a free-standing material pile. Distance from the block edge is the fact that
+ * separates them, and it lives here because the ring geometry lives here - a renderer-side copy
+ * of `localOf` would be the phase constant existing twice.
+ */
+export function cityFenceRing(cx: number, cy: number): boolean {
+  if (cityIsRoad(cx, cy)) return false;
+  const lx = localOf(cx) - CITY_ROAD_CELLS;
+  const ly = localOf(cy) - CITY_ROAD_CELLS;
+  const n = CITY_BLOCK_CELLS;
+  const ring = Math.min(lx, ly, n - 1 - lx, n - 1 - ly);
+  return ring >= 1 && ring <= RING_THICKNESS;
+}
+
 /**
  * Is local cell (lx, ly) inside the gateway named by questions (qSide, qAlong)? A gateway is a
  * GATE_WIDTH-wide band cut perpendicular through one side of the ring, its position drawn from

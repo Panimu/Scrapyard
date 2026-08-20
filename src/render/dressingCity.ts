@@ -33,6 +33,7 @@ import {
   CITY_PERIOD,
   CITY_ROAD_CELLS,
   cityCellOf,
+  cityFenceRing,
   cityIsRoad,
   cityIsRoadCell,
   cityKindAt,
@@ -43,6 +44,7 @@ import {
 } from '../core/index.js';
 import {
   CITY_FACE_COUNT,
+  CITY_FENCE_VARIANTS,
   CITY_PILE_COUNT,
   CITY_ROOF_PROP_COUNT,
   CITY_RUBBLE_COUNT,
@@ -296,20 +298,34 @@ export class CityDressing implements LevelDressing {
           continue;
         }
 
-        // A fence cell with fence neighbours is a RUN and orients to match; one with none is a
-        // material pile inside the site. The half-damaged state dims - one section down out of
-        // two - which with a 64-unit cell is as much health bar as a fence deserves.
-        const fenceL = cityKindAt(city, cx - 1, cy) === CITY_FENCE;
-        const fenceR = cityKindAt(city, cx + 1, cy) === CITY_FENCE;
-        const fenceU = cityKindAt(city, cx, cy - 1) === CITY_FENCE;
-        const fenceD = cityKindAt(city, cx, cy + 1) === CITY_FENCE;
-        const isRun = fenceL || fenceR || fenceU || fenceD;
-
+        // A breakable cell ON THE BLOCK'S WALL RING is site fencing; one deeper inside is a
+        // material pile. The split used to be "has it a fence neighbour", which broke two ways at
+        // once: a pile that happened to touch the ring dressed itself as a stray fence segment,
+        // and the ring cell it touched would have sprouted an arm toward it. Ring membership is
+        // the actual fact, and the simulation owns it - see cityFenceRing.
+        //
+        // A ring cell picks its piece by which NEIGHBOURING RING CELLS are still standing - the
+        // same N/E/S/W mask the scrap paths use - so corners, tees and ends all get real art, and
+        // breaking a cell heals its neighbours' masks into end pieces on the next frame. The
+        // half-damaged state dims - one section down of two - which with a 64-unit cell is as
+        // much health bar as a fence deserves.
         let t;
-        if (!isRun) {
+        if (!cityFenceRing(cx, cy)) {
           t = this.tex.cityPiles[h % CITY_PILE_COUNT];
         } else {
-          t = fenceL || fenceR ? this.tex.cityFenceH : this.tex.cityFenceV;
+          const ringFence = (x: number, y: number): boolean =>
+            cityKindAt(city, x, y) === CITY_FENCE && cityFenceRing(x, y);
+          const mask =
+            (ringFence(cx, cy - 1) ? 1 : 0) |
+            (ringFence(cx + 1, cy) ? 2 : 0) |
+            (ringFence(cx, cy + 1) ? 4 : 0) |
+            (ringFence(cx - 1, cy) ? 8 : 0);
+          // A ring cell with no standing ring neighbours (both sides broken away) falls back to
+          // a pile rather than indexing piece -1: a lone orphaned stub of barrier.
+          t =
+            mask === 0
+              ? this.tex.cityPiles[h % CITY_PILE_COUNT]
+              : this.tex.cityFence[(mask - 1) * CITY_FENCE_VARIANTS + (h >>> 6) % CITY_FENCE_VARIANTS];
         }
         s.texture = t;
         s.anchor.set(0.5);

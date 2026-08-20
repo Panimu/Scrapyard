@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T14:59Z',
+    title: 'FENCES THAT MEET AT THE CORNERS',
+    notes: [
+      'Site fencing used to be two sprites — a horizontal bit and a vertical bit — so every corner of every construction site was a run that just stopped, hanging detached from the run it was meant to meet. The barrier is now a full set of pieces: corners, tees, crossings and proper ends, with posts on the joins, so a fence line reads as one built thing.',
+      'Two board patterns instead of one, mixed along each run, and two new kinds of material pile inside the sites — a stack of lumber and a heap of aggregate — so a construction zone is no longer the same image repeating.',
+      'A pile standing against the site fence used to dress itself as a stray bit of fence. Piles are piles now, wherever they stand.',
+    ],
+  },
+  {
     at: '2026-08-20T14:27Z',
     title: 'ROOMS WITH NO DOOR',
     notes: [
