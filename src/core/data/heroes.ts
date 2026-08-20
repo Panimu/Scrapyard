@@ -25,16 +25,18 @@
  *     Heavy Artillery plum, indigo
  *     Drones          fern                           <- and nobody else, by design
  *
- * DRONES ARE THE REWARD FOR CLEARING THE YARD, from both directions at once. The card is locked in
- * the deck behind `win` (data/upgrades.ts) and Fern is locked behind clearing the Scrapyard, so
- * the weapon does not exist for a player until they have finished their first map - and then it
- * arrives twice over, as a card in the deck and as a chassis that opens with it.
+ * FERN IS THE DOOR INTO DRONES, and the two locks on the weapon are deliberately NOT the same
+ * condition. Fern herself is earned by clearing the Scrapyard (below); the DECK CARD is earned by
+ * 1984 career kills with the gun (data/upgrades.ts) - the same two-lock shape Vermilion and the
+ * Flak Cannon already use, where the chassis's own unlock only has to be REACHABLE, not tied to
+ * the card's number, because `isOfferable` lets a chassis that opens with a weapon hold and level
+ * it while the card stays sealed for everyone else. Beat the yard once and Fern can start grinding
+ * toward 1984 immediately; nothing here waits on the other.
  *
  * Fern used to be `always` alongside Slate, on the reasoning that a locked card needs an unlocked
- * door or the weapon is unreachable. The door is now the yard itself, which is a better answer:
- * the two conditions land on the same moment (the first win any save can have is on the Scrapyard,
- * because every other map is gated behind it), so nothing is stranded - and SLATE IS NOW THE ONLY
- * `always` CHASSIS, which is what an empty save needs and no more than that.
+ * door or the weapon is unreachable. Gating Fern behind the yard instead is a better answer to the
+ * same problem and makes SLATE THE ONLY `always` CHASSIS, which is what an empty save needs and no
+ * more than that.
  *
  * Two-per-weapon was a real property and it is worth naming what replaced it: a player who has
  * used one green mech knows what the other green mech does, and that no longer holds for the
@@ -354,9 +356,10 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'fern',
-    // EARNED BY CLEARING THE SCRAPYARD, which is the same moment the Drones card comes off its own
-    // lock (`win`, in data/upgrades.ts). Finishing your first map hands you the weapon and the
-    // chassis built around it together; before that, Drones are something you have not met.
+    // EARNED BY CLEARING THE SCRAPYARD - see the header for why this is a separate lock from the
+    // card's own 1984 career kills rather than the same condition twice. Finishing the yard is
+    // what makes Drones reachable at all; the card coming off its own lock is a later milestone,
+    // ground out by actually flying them.
     unlock: { kind: 'winLevel', level: 'scrapyard' },
     name: 'Fern',
     identity:

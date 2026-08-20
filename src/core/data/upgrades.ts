@@ -551,9 +551,20 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     ]),
     maxStacks: WEAPON_MAX_TIER,
     weight: 10,
-    // LOCKED UNTIL THE YARD IS BEATEN. The one card in the deck that has to be earned - see
-    // `unlock` above, and the chassis that opens with it for the way in that does not.
-    unlock: { kind: 'win' },
+    /**
+     * 1984 KILLS WITH IT, ACROSS EVERY RUN. The career condition Phase Cannon and Flak Cannon
+     * already use (see `killsWithTotal`), sitting between their 1001 and 9001 - and the number is
+     * the joke: a drone that "flies escort, hunts anything that comes close" is a surveillance
+     * state with rotors, and Orwell's year is not a threshold anyone would infer on their own,
+     * which is exactly the property `describeUnlockDone` wants for a trophy worth reading.
+     *
+     * IT IS EARNED WITH THE GUN, WHICH THE CARD DOES NOT GIVE YOU. The same shape as Flak Cannon:
+     * `isOfferable` tests `stacks === 0` for the lock, so a chassis that OPENS with the weapon
+     * holds it and levels it normally while the card is still sealed. Fern is that chassis, and
+     * Fern's own unlock (clearing the Scrapyard, see heroes.ts) is unrelated to this number - it
+     * only has to be earnable, not simultaneous, or the gun would be content nobody could reach.
+     */
+    unlock: { kind: 'killsWithTotal', weapons: ['drone'], count: 1984 },
     effects: [],
   },
   {

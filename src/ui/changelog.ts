@@ -40,10 +40,18 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T20:07Z',
+    title: 'DRONES ARE A DESTINATION, NOT A DOOR PRIZE',
+    notes: [
+      'The Drones card no longer unlocks the moment any run is won. It takes 1984 kills with the gun, across every run — the same shape the Phase Cannon and Flak Cannon already use. Fern still opens with Drones from the moment she is earned, so the grind starts as soon as you can fly her.',
+      'There is a trophy for it.',
+    ],
+  },
+  {
     at: '2026-08-20T19:39Z',
     title: 'FERN IS EARNED NOW',
     notes: [
-      'Fern is no longer sitting in the picker from the first launch. Clear the Scrapyard and it is yours — which is the same moment Drones come off their own lock, so finishing your first map hands you the weapon and the chassis built around it together.',
+      'Fern is no longer sitting in the picker from the first launch. Clear the Scrapyard and it is yours.',
       'Slate is now the only mech an empty save starts with.',
       'There is a trophy for it, like every other chassis.',
     ],

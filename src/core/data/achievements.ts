@@ -59,6 +59,7 @@ export type AchievementId =
   | 'phase-cannon'
   | 'shaped-charges'
   | 'flak-cannon'
+  | 'drones'
   | `mech-${HeroId}`
   | `level-${LevelId}`;
 
@@ -134,6 +135,7 @@ const RADIATOR_UNLOCK = cardUnlock('p-radiator');
 const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
 const BLAST_UNLOCK = cardUnlock('p-blast');
 const FLAK_UNLOCK = cardUnlock('w-flak-cannon');
+const DRONE_UNLOCK = cardUnlock('w-drone');
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -260,9 +262,11 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
   {
     id: 'flak-cannon',
     platformKey: 'scrapyard_flak_cannon',
-    // The number is the joke and the joke is the target. It is the only achievement name in the
+    // The number is the joke and the joke is the target. It is the only achievement NAME in the
     // table that states its own figure, because nine thousand and one is not a threshold a player
-    // would ever infer - and because a player who gets there will have been counting.
+    // would ever infer - and because a player who gets there will have been counting. Drones'
+    // trophy carries a joke number too (1984), but the joke there is the YEAR, not the count, so
+    // it reads in the name as a reference rather than as a total - the description still states it.
     name: "It's Over Nine Thousand",
     icon: 'icon_w-flak-cannon',
     description: 'Killed 9001 enemies with the Flak Cannon.',
@@ -270,6 +274,21 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // BY REFERENCE, off the card itself - see cardUnlock. The card and the trophy cannot disagree
     // about what nine thousand means, and neither can be retuned without the other following.
     cond: FLAK_UNLOCK,
+  },
+  {
+    id: 'drones',
+    platformKey: 'scrapyard_drones',
+    // Orwell's year, not the kill count spelled out - a player who has been racking up drone
+    // kills and lands on this title gets the joke immediately; the description states the actual
+    // number, the same split Phase Cannon's trophy uses.
+    name: 'Big Brother Is Watching',
+    icon: 'icon_w-drone',
+    description: describeUnlockDone(DRONE_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like the other career-kill trophies: the card's own `killsWithTotal`
+    // condition, so this and the deck unlock (and the Scrapopedia's progress bar, which reads the
+    // same object) can never disagree about what 1984 means.
+    cond: DRONE_UNLOCK,
   },
   {
     id: 'hydra',
