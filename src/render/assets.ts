@@ -399,8 +399,8 @@ export const WALL_TREE_COUNT = 3;
 export const WALL_BUSH_COUNT = 4;
 /** How many pieces each city set has. See tools/make-city-walls.mjs. */
 export const CITY_FACE_COUNT = 4;
-export const CITY_PILE_COUNT = 2;
-export const CITY_RUBBLE_COUNT = 2;
+export const CITY_PILE_COUNT = 5;
+export const CITY_RUBBLE_COUNT = 4;
 export const CITY_ROOF_PROP_COUNT = 3;
 /**
  * Frames in the sheep's two cycles. MUST match the sheets in tools/make-sheep.mjs - which are the

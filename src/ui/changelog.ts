@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-20T13:25Z',
+    title: 'CONSTRUCTION SITES, DRESSED PROPERLY',
+    notes: [
+      "Site fences now stand on real posts with a top and bottom rail, instead of reading as a single stretched hazard-stripe image. They cast a shadow, too.",
+      'Five kinds of material pile instead of two — crates, a pipe stack, a barrel cluster, a sandbag revetment, and a mixed pile — plus twice the rubble variety when a fence comes down.',
+    ],
+  },
+  {
     at: '2026-08-20T12:50Z',
     title: 'CITY CHAOS, TIGHTENED UP',
     notes: [
