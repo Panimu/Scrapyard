@@ -118,7 +118,7 @@ export interface DirectorTuning {
    *
    * Pressure, not headcount: a regular weighs 1, an elite 3, a boss 6 (RankDef.pressure). So a
    * boss on the field displaces six regulars' worth of spawning for as long as it lives, which is
-   * what buys the player room to actually fight it. 14 -> 45.5 across the eight authored cycles.
+   * what buys the player room to actually fight it. 28 -> 89.25 across the eight authored cycles.
    */
   readonly pressureBase: number;
   readonly pressurePerCycle: number;
@@ -273,8 +273,13 @@ const DIRECTOR: DirectorTuning = {
   // a population - so doubling the target is what doubles the horde standing around the player.
   // Elites and bosses still weigh 3 and 6 against it, so a boss displaces the same six regulars'
   // worth of spawning it always did; there is simply twice as much room behind it.
+  //
+  // perCycle EASED BACK 9 -> 8.75: the slope, not the base, because the ask was to cool the field
+  // at 16 MINUTES specifically rather than flatten the whole curve - cycle 0 (0:00-2:00) is
+  // untouched, and the cut grows with run length. cycleIndexAt(16 min) = floor(960 / 120) = 8, so
+  // targetPressure drops from 28 + 9x8 = 100 to 28 + 8.75x8 = 98 right there.
   pressureBase: 28,
-  pressurePerCycle: 9,
+  pressurePerCycle: 8.75,
   eliteIntervalBase: 8,
   eliteIntervalPerCycle: 0.4,
   eliteIntervalMin: 4.5,

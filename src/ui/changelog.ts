@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T19:41Z',
+    title: 'THE HORDE EASES OFF LATE-RUN',
+    notes: [
+      'The field stays exactly as hot for the first two minutes, but every cycle after that spawns a little less than before - about two fewer enemies\' worth of pressure by the sixteen-minute mark, and more the longer a run goes.',
+    ],
+  },
+  {
     at: '2026-08-21T17:01Z',
     title: 'FIXED: THE MECH SHADOW SPINNING WITH THE CHASSIS',
     notes: [

@@ -25,7 +25,7 @@
  * Regulars drip in while LOCAL PRESSURE - the sum of `RankDef.pressure` over live enemies within
  * THREAT_RADIUS (900 u) - sits under a target that rises one step per cycle:
  *
- *      targetPressure(cycle) = 14 + 4.5 x cycle          14 in cycle 0 -> 45.5 in cycle 7
+ *      targetPressure(cycle) = 28 + 8.75 x cycle          28 in cycle 0 -> 89.25 in cycle 7
  *
  * A regular weighs 1, an elite 3, a boss 6. Three consequences that a flat spawn rate does not
  * give you:
