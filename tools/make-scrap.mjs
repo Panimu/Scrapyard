@@ -370,17 +370,72 @@ const DRAW_CONSUMABLE = `(kind) => {
   gr.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = gr; g.beginPath(); g.arc(CX, CY + 3, S * 0.42, 0, 6.284); g.fill();
 
-  const coin = (px, py, rad, faceCol, edgeCol) => {
-    g.beginPath(); g.arc(px + 1, py + 2, rad, 0, 6.284);
-    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill();
+  /**
+   * ONE STRUCK COIN. Rebuilt because the old one did not read as money.
+   *
+   * It was a flat disc in two blues with a round white dot on it, and every one of those choices
+   * says SPHERE. A circular specular highlight is the single strongest cue for a ball - it is how
+   * every marble, bubble and gem in every game is drawn - so a blue circle wearing one reads as a
+   * blue bubble, which is what these looked like, and worse, it reads as a cousin of the blue XP
+   * gems rather than as the currency.
+   *
+   * Four things make it a coin instead, in the order they matter at 34 world units:
+   *
+   *   THICKNESS. A second disc offset downward in a darker tone, so the silhouette is a short
+   *   cylinder seen slightly from above rather than an outline. This does most of the work.
+   *   A RAISED RIM. The face is inset, so an unbroken ring of the darker tone runs all the way
+   *   round - what you actually see on a struck coin, and what a flat two-tone disc has no way of
+   *   saying.
+   *   ONE STAMPED NUT, AND NOTHING ELSE ON THE FACE. There was a milled ring inside the rim as
+   *   well, and it had to go: rim plus ring plus a small nut is THREE CONCENTRIC CIRCLES, and at
+   *   the size this is actually drawn - a single coin is about thirteen pixels across on screen -
+   *   concentric circles are a dartboard. Checked by downsampling the sprite to its real size
+   *   rather than by looking at the 96 px source, which flatters everything. One bold hexagon
+   *   filling most of the face survives that; a ring and a dot do not.
+   *   A CRESCENT, NOT A DOT. The highlight is an arc along the upper-left RIM. Light catching an
+   *   edge is a disc; light pooling in a circle is a ball.
+   *
+   * The face carries a vertical gradient rather than a flat fill, which is the cheapest thing that
+   * says "metal" and costs nothing at any size - it survives downsampling when line work does not.
+   *
+   * Still blue: the credit is the blue currency everywhere else in the game - the collect sparkle,
+   * the summary, the mech-select bank - and repainting it gold here would leave those disagreeing.
+   */
+  const coin = (px, py, rad, faceCol, edgeCol, deepCol, liteCol) => {
+    // Contact shadow, flattened: these lie on the floor rather than hovering over it.
+    g.beginPath(); g.ellipse(px + 1, py + rad * 0.44, rad * 0.96, rad * 0.40, 0, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.34)'; g.fill();
+
+    // The edge of the blank, showing under the face.
+    g.beginPath(); g.arc(px, py + rad * 0.17, rad, 0, 6.284);
+    g.fillStyle = deepCol; g.fill();
+
+    // The rim, then the face inset inside it, lit from above.
     g.beginPath(); g.arc(px, py, rad, 0, 6.284);
     g.fillStyle = edgeCol; g.fill();
-    g.beginPath(); g.arc(px, py, rad * 0.74, 0, 6.284);
-    g.fillStyle = faceCol; g.fill();
-    g.beginPath(); g.arc(px - rad * 0.22, py - rad * 0.26, rad * 0.26, 0, 6.284);
-    g.fillStyle = 'rgba(255,255,255,0.5)'; g.fill();
+    const fg = g.createLinearGradient(px, py - rad, px, py + rad);
+    fg.addColorStop(0, liteCol);
+    fg.addColorStop(1, faceCol);
+    g.beginPath(); g.arc(px, py, rad * 0.78, 0, 6.284);
+    g.fillStyle = fg; g.fill();
+
+    // The nut stamped in the middle - the only mark on the face.
+    const nut = rad * 0.44;
+    g.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.283185 + 0.5236;
+      const nx = px + Math.cos(a) * nut, ny = py + Math.sin(a) * nut;
+      if (i === 0) g.moveTo(nx, ny); else g.lineTo(nx, ny);
+    }
+    g.closePath();
+    g.fillStyle = edgeCol; g.fill();
+
+    // Light on the upper-left rim.
+    g.lineWidth = Math.max(1, rad * 0.15);
+    g.strokeStyle = 'rgba(255,255,255,0.55)';
+    g.beginPath(); g.arc(px, py, rad * 0.88, 3.32, 4.80); g.stroke();
   };
-  const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8';
+  const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8', COIN_DEEP = '#12456b', COIN_LITE = '#a8e0ff';
 
   // --- 0: SPANNER --------------------------------------------------------------------------
   // An OPEN-END wrench. The first attempt drew two closed rings on a shaft and read as a barbell:
@@ -421,19 +476,31 @@ const DRAW_CONSUMABLE = `(kind) => {
   }
 
   // --- 1..4: COINS, one / small stack / large stack / bag ------------------------------------
-  if (kind === 1) coin(CX, CY, S * 0.20, COIN_FACE, COIN_EDGE);
+  if (kind === 1) coin(CX, CY, S * 0.20, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
 
   if (kind === 2) {
     const spots = [[-0.12, 0.08], [0.11, 0.10], [-0.01, -0.09]];
-    for (const [fx, fy] of spots) coin(CX + fx * S, CY + fy * S, S * 0.155, COIN_FACE, COIN_EDGE);
+    for (const [fx, fy] of spots) coin(CX + fx * S, CY + fy * S, S * 0.155, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
   }
 
   if (kind === 3) {
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * 6.284, d = i === 0 ? 0 : S * 0.155;
-      coin(CX + Math.cos(a) * d, CY + Math.sin(a) * d * 0.85, S * 0.135, COIN_FACE, COIN_EDGE);
+    // SIX ROUND ONE, NOT EIGHT PLUS TWO. This drew nine coins on a ring barely wider than a coin,
+    // so every rim crossed two others and the whole sprite resolved into a spiral - a pinwheel,
+    // not a heap of money. Found by downsampling to the size it is actually drawn at; at the 96 px
+    // source it merely looked busy. Six on a wider ring touch without burying each other.
+    //
+    // DRAWN BACK TO FRONT. Sorting by y before drawing means a coin lower on the screen overlaps
+    // the one behind it, which is the only thing that makes a flat ring of discs read as a pile
+    // rather than as a pattern.
+    const ring = [];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.284 + 0.4;
+      ring.push([CX + Math.cos(a) * S * 0.17, CY + Math.sin(a) * S * 0.17 * 0.85]);
     }
-    coin(CX, CY - S * 0.03, S * 0.145, COIN_FACE, COIN_EDGE);
+    ring.sort((p, q) => p[1] - q[1]);
+    for (const [rx, ry] of ring) coin(rx, ry, S * 0.115, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
+    // The one on top of the heap, a shade larger and drawn last.
+    coin(CX, CY - S * 0.02, S * 0.13, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
   }
 
   if (kind === 4) {
@@ -452,7 +519,7 @@ const DRAW_CONSUMABLE = `(kind) => {
     g.beginPath(); g.ellipse(CX, CY - S * 0.13, S * 0.17, S * 0.09, 0, 0, 6.284); g.fill();
     for (let i = 0; i < 7; i++) {
       const a = rnd() * 6.284;
-      coin(CX + Math.cos(a) * S * 0.16, CY - S * 0.16 + Math.sin(a) * S * 0.06, S * 0.10, COIN_FACE, COIN_EDGE);
+      coin(CX + Math.cos(a) * S * 0.16, CY - S * 0.16 + Math.sin(a) * S * 0.06, S * 0.10, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
     }
   }
 

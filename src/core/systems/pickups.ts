@@ -672,23 +672,54 @@ function magnetAndCollect(world: World, dt: number): void {
     // spanner is simply not TAKEN. It stays in the pool, keeps its position, and is collected the
     // moment the player comes back to it having lost something.
     if (pool.kind[d] !== PICKUP_KIND_GEM) {
-      if (d2 <= consumableR2 && !wouldBeWasted(world, pool.kind[d])) takeConsumable(world, d);
-      continue;
-    }
+      if (d2 <= consumableR2 && !wouldBeWasted(world, pool.kind[d])) {
+        takeConsumable(world, d);
+        continue;
+      }
+      // A RUNNING MAGNET SWEEPS UP COINS AND SPANNERS TOO, and only while it is running.
+      //
+      // The default stands and the note above still holds: left alone a consumable does not chase
+      // and is not chased, because a spanner that flew to you answers the question the barrel
+      // asked. But the MAGNET is the one pickup whose entire proposition is that it collects for
+      // you, and a magnet that hoovered the XP off the floor while leaving the money and the
+      // repairs lying there reads as broken rather than as restraint.
+      //
+      // NOT the dice and not a chest. A chest is a set-piece you walk to and it stops the run to
+      // open; dragging either would be the magnet reaching past what it is for.
+      //
+      // `d2 === 0` IS FOLDED IN, and it is not theoretical here the way it is for a gem. A gem at
+      // zero distance was collected two lines above and never reaches the normalise. A spanner is
+      // the one thing in the pool that can sit at EXACTLY zero and stay there: dragged to the mech
+      // at full hull, refused by `wouldBeWasted`, and parked on the pixel. `1 / sqrt(0)` is
+      // Infinity, `0 * Infinity` is NaN, and a NaN position is a pickup that can never be
+      // collected again and never draws.
+      const dragged =
+        magnetAll &&
+        d2 !== 0 &&
+        (pool.kind[d] === PICKUP_KIND_CREDIT || pool.kind[d] === PICKUP_KIND_REPAIR);
+      if (!dragged) {
+        pool.vx[d] = 0;
+        pool.vy[d] = 0;
+        continue;
+      }
+      // A SPANNER AT FULL HULL IS STILL NOT TAKEN - it falls through to the same magnet terms as
+      // everything else and simply arrives, then waits at the mech's feet for the hit that makes
+      // it worth something. `wouldBeWasted` above is what refuses it, and it keeps refusing.
+    } else {
+      // `d2 === 0` is folded in here so the normalise below can never divide by zero: a gem
+      // sitting exactly on the player is, by any reading, collected.
+      if (d2 <= collectR2 || d2 === 0) {
+        collect(world, d);
+        continue;
+      }
 
-    // `d2 === 0` is folded in here so the normalise below can never divide by zero: a gem sitting
-    // exactly on the player is, by any reading, collected.
-    if (d2 <= collectR2 || d2 === 0) {
-      collect(world, d);
-      continue;
-    }
-
-    if (!magnetAll && d2 > pickupR2 && pool.tier[d] < bossTier) {
-      // Outside the field. The magnet is a field, not a launcher - a gem that leaves it stops
-      // rather than coasting on a drag constant that does not exist in Tuning.
-      pool.vx[d] = 0;
-      pool.vy[d] = 0;
-      continue;
+      if (!magnetAll && d2 > pickupR2 && pool.tier[d] < bossTier) {
+        // Outside the field. The magnet is a field, not a launcher - a gem that leaves it stops
+        // rather than coasting on a drag constant that does not exist in Tuning.
+        pool.vx[d] = 0;
+        pool.vy[d] = 0;
+        continue;
+      }
     }
 
     const inv = 1 / Math.sqrt(d2);

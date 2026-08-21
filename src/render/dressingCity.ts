@@ -42,6 +42,7 @@ import {
   cityIsRoad,
   cityIsRoadCell,
   cityKindAt,
+  cityPristineKindAt,
   citySectionsStanding,
   isCityBroken,
   type CityBlocks,
@@ -397,7 +398,16 @@ export class CityDressing implements LevelDressing {
           continue;
         }
 
-        const felled = kind === CITY_EMPTY && isCityBroken(city, cx, cy);
+        // A BROKEN DRUM LEAVES NOTHING. Fences and drums share the broken set, so "was something
+        // here" is true for both - and rubble is fence rubble, splintered boards and a length of
+        // hazard board, which is nonsense lying where a fuel drum went up. Asking what was
+        // ORIGINALLY in the cell is the only way to tell the two apart after the fact. The drum
+        // gets the scorch mark the effects layer already draws off EV_BARREL_BROKEN, and that is
+        // the whole of its aftermath.
+        const felled =
+          kind === CITY_EMPTY &&
+          isCityBroken(city, cx, cy) &&
+          cityPristineKindAt(city, cx, cy) === CITY_FENCE;
         if (kind !== CITY_FENCE && !felled) continue;
 
         const h = cellHash(cx, cy);

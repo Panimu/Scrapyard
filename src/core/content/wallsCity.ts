@@ -597,6 +597,25 @@ export function cityKindAt(c: CityBlocks, cx: number, cy: number): number {
   return kind;
 }
 
+/**
+ * WHAT WOULD BE IN CELL (cx, cy) IF NOTHING HAD EVER BEEN BROKEN. The generated terrain, before
+ * the broken set is applied.
+ *
+ * The dressing needs this and only the dressing: once broken, a fence cell and a drum cell are
+ * both CITY_EMPTY and `isCityBroken` says yes to both, so with nothing else to ask, a drum that
+ * went up left a heap of splintered fence boards lying in the street. A drum leaves a scorch mark
+ * (the effects layer draws one off EV_BARREL_BROKEN) and nothing else.
+ *
+ * NOT FOR THE SIMULATION, ever: collision, rays and loot must all see the one world `cityKindAt`
+ * reports, or a broken fence starts blocking shells again.
+ */
+export function cityPristineKindAt(c: CityBlocks, cx: number, cy: number): number {
+  if (cityIsRoad(cx, cy)) return CITY_EMPTY;
+  const lx = localOf(cx) - CITY_ROAD_CELLS;
+  const ly = localOf(cy) - CITY_ROAD_CELLS;
+  return blockCellKind(hashBlock(c.seed, blockIndexOf(cx), blockIndexOf(cy)), lx, ly);
+}
+
 /** True if this cell held fencing that has since been broken. The dressing draws rubble there. */
 export function isCityBroken(c: CityBlocks, cx: number, cy: number): boolean {
   return c.broken.has(cellKey(cx, cy));
