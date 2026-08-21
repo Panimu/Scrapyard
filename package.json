@@ -30,6 +30,7 @@
     "dps": "tsx tools/dps.ts",
     "loadout": "tsx tools/loadout.ts",
     "t8": "tsx tools/t8.ts",
+    "passives": "tsx tools/passives.ts",
     "cityenemies": "node tools/make-city-enemies.mjs",
     "citywalls": "node tools/make-city-walls.mjs"
   },
