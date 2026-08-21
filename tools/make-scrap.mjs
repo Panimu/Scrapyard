@@ -437,48 +437,6 @@ const DRAW_CONSUMABLE = `(kind) => {
   };
   const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8', COIN_DEEP = '#12456b', COIN_LITE = '#a8e0ff';
 
-  /**
-   * A COLUMN OF COINS, seen from a shallow angle - the shape everyone reads as savings.
-   *
-   * Each coin in the stack shows only the front band of its edge, so it is drawn as an ellipse
-   * whose lower half is the shadowed side and whose upper sliver catches the light; stacking them
-   * upward at less than a full band's height is what leaves each one's rim visible under the next.
-   * Only the TOP coin gets a face, because only the top coin has one you can see.
-   *
-   * rw/rh are the ellipse radii - rh well under rw is the whole tilt.
-   */
-  const coinStack = (px, baseY, n, rw, rh) => {
-    g.beginPath(); g.ellipse(px + 1, baseY + rh * 0.55, rw * 1.04, rh * 0.72, 0, 0, 6.284);
-    g.fillStyle = 'rgba(0,0,0,0.36)'; g.fill();
-
-    const step = rh * 1.15;
-    for (let i = 0; i < n; i++) {
-      const y = baseY - i * step;
-      // The coin's edge, shadowed underneath.
-      g.beginPath(); g.ellipse(px, y, rw, rh, 0, 0, 6.284);
-      g.fillStyle = COIN_DEEP; g.fill();
-      // The lit band across its middle, which is what separates it from the coin below.
-      g.beginPath(); g.ellipse(px, y - rh * 0.30, rw * 0.985, rh * 0.80, 0, 0, 6.284);
-      g.fillStyle = COIN_EDGE; g.fill();
-    }
-
-    // The top face, inset inside its own rim, with the same nut the flat coins carry.
-    const ty = baseY - (n - 1) * step - rh * 0.30;
-    const fg = g.createLinearGradient(px, ty - rh, px, ty + rh);
-    fg.addColorStop(0, COIN_LITE);
-    fg.addColorStop(1, COIN_FACE);
-    g.beginPath(); g.ellipse(px, ty, rw * 0.76, rh * 0.72, 0, 0, 6.284);
-    g.fillStyle = fg; g.fill();
-    const nut = rw * 0.36;
-    g.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * 6.283185 + 0.5236;
-      const nx = px + Math.cos(a) * nut, ny = ty + Math.sin(a) * nut * (rh / rw);
-      if (i === 0) g.moveTo(nx, ny); else g.lineTo(nx, ny);
-    }
-    g.closePath();
-    g.fillStyle = COIN_EDGE; g.fill();
-  };
 
   // --- 0: SPANNER --------------------------------------------------------------------------
   // An OPEN-END wrench. The first attempt drew two closed rings on a shaft and read as a barbell:
@@ -527,19 +485,23 @@ const DRAW_CONSUMABLE = `(kind) => {
   }
 
   if (kind === 3) {
-    // THREE STACKS, SEMI SIDE-ON. A flat ring of discs seen from directly above was tried twice
-    // and is a dead end at this size: nine coins resolved into a pinwheel, six into a flower.
-    // The problem is not the count, it is the CAMERA - money seen from straight overhead has no
-    // silhouette that says "a lot of it", because a pile of coins is tall and a top-down pile is
-    // not. Tipping to a shallow angle gives every coin an edge band, and a column of edge bands
-    // is the one arrangement of discs everybody reads as savings.
+    // SIX ROUND ONE, NOT EIGHT PLUS TWO. This drew nine coins on a ring barely wider than a coin,
+    // so every rim crossed two others and the whole sprite resolved into a spiral - a pinwheel,
+    // not a heap of money. Found by downsampling to the size it is actually drawn at; at the 96 px
+    // source it merely looked busy. Six on a wider ring touch without burying each other.
     //
-    // Uneven heights and a slight stagger, so it is three stacks rather than a bar chart. Drawn
-    // back to front: the rearmost stack first, so the front ones overlap it.
-    const stacks = [[-0.175, 0.045, 4], [0.165, 0.035, 3], [-0.01, 0.10, 5]];
-    for (const [fx, fy, n] of stacks) {
-      coinStack(CX + fx * S, CY + fy * S, n, S * 0.115, S * 0.052);
+    // DRAWN BACK TO FRONT. Sorting by y before drawing means a coin lower on the screen overlaps
+    // the one behind it, which is the only thing that makes a flat ring of discs read as a pile
+    // rather than as a pattern.
+    const ring = [];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.284 + 0.4;
+      ring.push([CX + Math.cos(a) * S * 0.17, CY + Math.sin(a) * S * 0.17 * 0.85]);
     }
+    ring.sort((p, q) => p[1] - q[1]);
+    for (const [rx, ry] of ring) coin(rx, ry, S * 0.115, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
+    // The one on top of the heap, a shade larger and drawn last.
+    coin(CX, CY - S * 0.02, S * 0.13, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
   }
 
   if (kind === 4) {
