@@ -925,8 +925,8 @@ export const LASER_LONG = laser(
 // off to one side. That is why the tier ladders spend two rungs on turn radius.
 //
 //                  volley   spread   rearm   damage   flight   turn      reach
-//   SRM              2       15 deg   3.0 s     62     1.15 s  4.8 rad/s  ~345
-//   LRM              3       10 deg   4.2 s     42     2.00 s  1.95 rad/s ~660
+//   SRM              2       15 deg   3.0 s     68     1.15 s  4.8 rad/s  ~345
+//   LRM              3       10 deg   4.2 s     46     2.00 s  1.95 rad/s ~660
 //
 // SRM is the panic button: a slow, heavy, close-in double tap. LRM is a commitment - a wider,
 // slower, longer-reaching salvo that has to be aimed a second in advance.
@@ -937,6 +937,10 @@ export const LASER_LONG = laser(
 // homing" had stopped being a characterful drawback and become a weapon that mostly misses. The
 // two turn-rate rungs on each ladder still exist and still matter; they now start from a rate
 // that can actually curve onto something.
+//
+// BASE DAMAGE IS UP A SHADE ON BOTH RACKS - 62 and 42 before this - a small correction rather than
+// a rework: `npm run passives` had both racks landing near the bottom of the T7 table even fully
+// built, well below what a homing weapon that finally connects ought to manage.
 // ---------------------------------------------------------------------------------------------
 
 function missile(
@@ -1022,11 +1026,11 @@ function missile(
 
 export const MISSILE_SHORT = missile(
   'missile-short', 'Short Missiles',
-  2, 15, 3.0, 62, 280, 300, 1.15, 4.8, 0, 0, 210, VIS_MISSILE_SHORT,
+  2, 15, 3.0, 68, 280, 300, 1.15, 4.8, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
-    { damage: 22 }, // T4  62 -> 84
+    { damage: 22 }, // T4  68 -> 90
     { cooldown: -0.45 }, // T5  2.55 -> 2.10 s
     { turnRate: 0.7 }, // T6  3.1 -> 3.8 rad/s
     { projectileCount: 1 }, // T7  a third missile
@@ -1073,11 +1077,11 @@ export const SPLIT_TURN_MUL = 1.2;
 
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
-  3, 10, 4.2, 42, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
+  3, 10, 4.2, 46, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
   Object.freeze([
     { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
     { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s
-    { damage: 15 }, // T4  42 -> 57
+    { damage: 15 }, // T4  46 -> 61
     { projectileCount: 1 }, // T5  a fourth missile
     { flightTime: 0.6 }, // T6  2.0 -> 2.6 s, reach ~860
     { projectileCount: 1 }, // T7  a fifth missile
@@ -1162,16 +1166,13 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // this throws three shells at once into a sixty-degree cone at four hundred units - the longest
 // reach of any projectile weapon here - and most of them miss.
 //
-//   3 shells   0.13 s cycle   9 damage   60 deg cone   300 rounds   13 s reload
+//   3 shells   0.13 s cycle   4 damage   60 deg cone   300 rounds   13 s reload
 //
 // THE CONE IS THE WEAPON, and it is genuinely random rather than a fan: three shells drawn
 // independently from the spread each burst, so no two bursts are the same shape and none of them
-// can be aimed. On paper that is 23 rounds a second and 207 dps, well past the Machine Gun's 122 -
-// and it is a paper number, because a sixty-degree cone at four hundred units is about four
-// hundred units of arc for a body eighteen units wide to be standing in. What the weapon actually
-// delivers is a function of HOW MANY BODIES ARE IN THE CONE, which is the trade being sold: fire
-// it at a loner across the yard and most of the belt goes into the dirt; fire it into a wave and
-// nearly every shell finds something.
+// can be aimed. What the weapon actually delivers is a function of HOW MANY BODIES ARE IN THE
+// CONE, which is the trade being sold: fire it at a loner across the yard and most of the belt
+// goes into the dirt; fire it into a wave and nearly every shell finds something.
 //
 // IT SHOOTS THE NEAREST BODY, not the weakest, and that is what makes the cone usable: the aim
 // point is the near edge of the crowd, so the cone opens INTO the mass behind it rather than
@@ -1183,9 +1184,25 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 // against 13 s of silence: 50% uptime, the best of any magazine weapon, and it still spends half
 // its rounds on empty ground.
 //
-// NOT MEASURED YET. Every figure above is a first pass, not a claim - see CLAUDE.md, "measure
-// balance changes, do not assert them". `npm run dps` and `npm run loadout` are owed before any
-// of it is defended.
+// MEASURED, AND CUT FOR IT. `npm run passives` (T7, isolated, real sim) originally had this
+// outdamaging the Machine Gun by 50-60% both bare and with every passive held: 163.8 dps against
+// 103.8 with nothing else in play, 260.9 against 171.9 fully built. It took three passes to land
+// under the belt gun in both states rather than one - DAMAGE DOES NOT SCALE EFFECTIVE DPS
+// LINEARLY, because a lot of what a smaller shell stops wasting is OVERKILL on a body that was
+// already about to die, and a straight percentage cut recovers less of that than it looks like it
+// should. Worse, THE TWO STATES DID NOT MOVE TOGETHER: the cone's damage share of its fully-built
+// DPS shrinks faster than the belt gun's does, because a stacked build kills faster, which keeps a
+// wider, denser crowd in front of a weapon whose whole trade is coverage rather than precision - so
+// a cut that cleared the bare comparison left the built one essentially tied (114.3/103.8 bare,
+// 192.8/171.9 built, after the first cut alone).
+//
+// Per-shot damage now runs 4/5.0/6.5 across the ladder, under the Machine Gun's own 5.5/7.0/10.0
+// at every rung, landing at 87.4 bare and 163.9 built against the belt gun's 103.8 and 171.9 -
+// below in both states with room either side of the line. What is left to sell is volume and
+// reach, not a harder-hitting shell too.
+//
+// OWED A FRESH `npm run passives` after any further retune of either gun - see CLAUDE.md, "measure
+// balance changes, do not assert them". The numbers above are what motivated this one.
 // ---------------------------------------------------------------------------------------------
 
 /**
@@ -1210,7 +1227,7 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    damage: 9, // moderate: well over the belt gun's 5.5, nowhere near a Cannon shell
+    damage: 4, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
     cooldown: 0.13, // 7.7 bursts/s = 23 rounds/s
     range: 400, // the longest projectile reach in the game - and the least accurate
     projectileSpeed: 620, // 0.65 s to maximum range: the spread is VISIBLE opening in flight
@@ -1251,11 +1268,11 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
    * that can be upgraded into accuracy is a Machine Gun with extra steps.
    */
   perLevel: Object.freeze([
-    { damage: 2.5 }, // T2  9.0 -> 11.5
+    { damage: 1.0 }, // T2  4.0 -> 5.0
     { cooldown: -0.026 }, // T3  0.130 -> 0.104 s  (~29 rounds/s)
     { ammoCapacity: 120 }, // T4  300 -> 420 rounds
     { range: 70 }, // T5  400 -> 470
-    { damage: 4.5 }, // T6  11.5 -> 16.0
+    { damage: 1.5 }, // T6  5.0 -> 6.5
     { reloadTime: -4 }, // T7  13.0 -> 9.0 s
   ]),
   // Declared HERE and nowhere else - the check runs both directions. See WeaponDef.excludes.

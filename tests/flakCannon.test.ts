@@ -104,7 +104,13 @@ describe('the catalog numbers', () => {
     // Ordered against the Machine Gun rather than pinned to literals - these are balance dials,
     // and what has to stay true is the RELATIONSHIP that makes them two different weapons.
     expect(s.range).toBeGreaterThan(MACHINE_GUN.base.range * 2);
-    expect(s.damage).toBeGreaterThan(MACHINE_GUN.base.damage);
+    // NOT per-shell any more - the cut that brought the Flak Cannon's DPS under the Machine
+    // Gun's left its own shell a shade CHEAPER than a belt round (see weaponCatalog.ts's header
+    // for the numbers). What still has to hold is the trade the cone is actually selling: more
+    // total damage per pull of the trigger, spread across three shells that can each miss.
+    expect(s.damage * s.projectileCount).toBeGreaterThan(
+      MACHINE_GUN.base.damage * MACHINE_GUN.base.projectileCount,
+    );
     expect(s.ammoCapacity).toBeGreaterThan(MACHINE_GUN.base.ammoCapacity);
     // Rapid: a burst cycle well under a fifth of a second.
     expect(s.cooldown).toBeLessThan(0.2);

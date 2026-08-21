@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T10:31Z',
+    title: 'FLAK TAKES A CUT, BOTH MISSILE RACKS HIT A LITTLE HARDER',
+    notes: [
+      'The Flak Cannon does less damage per shell. Measured, it was quietly outdamaging the Machine Gun by 50-60% at full tier despite the two sharing a mount and a philosophy — it should have been the wider, riskier choice, not the strictly better one.',
+      'Short Missiles and Long Missiles hit a little harder per warhead — both were landing near the bottom of the damage table even fully built, which is not what a rack that finally corners onto something should feel like.',
+    ],
+  },
+  {
     at: '2026-08-21T09:07Z',
     title: 'FOUR NEW THINGS IN THE WORKSHOP',
     notes: [
