@@ -644,6 +644,7 @@ async function boot(): Promise<void> {
     switch (screen) {
       case 'title':
         title.setCredits(state.settings.credits);
+        title.setUpgradesBadge(state.canAffordMeta());
         title.show();
         break;
       case 'heroSelect':

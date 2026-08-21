@@ -25,6 +25,7 @@ import {
   type WeaponId,
 } from '../src/core/content/weaponCatalog.js';
 import { UPGRADE_CATALOG, upgradeIndex } from '../src/core/data/upgrades.js';
+import { META_CATALOG, metaIndex } from '../src/core/data/meta.js';
 import { HERO_CATALOG, heroIndex } from '../src/core/data/heroes.js';
 import { ACHIEVEMENT_CATALOG } from '../src/core/data/achievements.js';
 import { meetsUnlock } from '../src/core/data/unlocks.js';
@@ -204,9 +205,9 @@ describe('the cone', () => {
 
 describe('the shared mount: Flak Cannon and Machine Gun are mutually exclusive', () => {
   /** The real upgrade catalog, so the deck is the game's own. */
-  function deckWorld(startingWeapon: WeaponId, seed: number): World {
+  function deckWorld(startingWeapon: WeaponId, seed: number, metaTiers?: Uint8Array): World {
     const w = createWorld(
-      { seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING },
+      { seed, heroId: 0, runLengthSec: 900, tuning: DEFAULT_TUNING, metaTiers },
       { heroes: [testHero({ startingWeapon })], weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
     );
     w.phase = RUN_PHASE_RUNNING;
@@ -246,7 +247,13 @@ describe('the shared mount: Flak Cannon and Machine Gun are mutually exclusive',
   it('still offers the pair to a run holding neither, and still levels the one taken', () => {
     // The exclusion must not read as "one of these is banned": a run with neither can be offered
     // either, and taking one keeps ITS ladder available all the way up.
-    const w = deckWorld('cannon', 9);
+    //
+    // FULL REINFORCED MOUNTS, so the run has room for five weapons rather than the base three -
+    // this test is about the exclusion, not about whether the tight starting loadout happens to
+    // fill up on other guns first over 60 level-ups.
+    const tiers = new Uint8Array(META_CATALOG.length);
+    tiers[metaIndex('m-mounts')] = 2;
+    const w = deckWorld('cannon', 9, tiers);
     const flak = upgradeIndex('w-flak-cannon');
     const mg = upgradeIndex('w-machine-gun');
     const offered = offersOver(w, 60);

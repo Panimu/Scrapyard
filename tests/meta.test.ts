@@ -118,6 +118,11 @@ describe('what the screen says a tier is worth', () => {
     expect(metaEffectText(byId('m-blast'), 3)).toBe('+30% blast radius');
   });
 
+  it('pluralises a count past one, unlike a flat number', () => {
+    expect(metaEffectText(byId('m-mounts'), 1)).toBe('1 extra mount');
+    expect(metaEffectText(byId('m-mounts'), 2)).toBe('2 extra mounts');
+  });
+
   it('reports rate of fire as rate, not as the cooldown behind it', () => {
     expect(metaEffectText(byId('m-rate'), 1)).toBe('+3.3% rate of fire');
     expect(metaEffectText(byId('m-rate'), 2)).toBe('+6.7% rate of fire');
@@ -251,15 +256,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, and the max-everything total is 1820', () => {
-    expect(metaSpent(maxed())).toBe(1820);
+  it('costs 100, and the max-everything total is 2020', () => {
+    expect(metaSpent(maxed())).toBe(2020);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 1820', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 2020', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(1820);
+    expect(metaSpent(maxed())).toBe(2020);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 
@@ -481,23 +486,26 @@ describe('scrap magnetics', () => {
 });
 
 describe('reinforced mounts', () => {
-  it('is one expensive tier that buys exactly one slot', () => {
+  it('is two tiers, sold separately, each worth one slot', () => {
     const def = META_CATALOG.find((m) => m.id === 'm-mounts');
-    expect(def?.tiers).toBe(1);
+    expect(def?.tiers).toBe(2);
     expect(def?.cost).toBe(200);
     expect(def?.effects).toEqual([
       { target: 'run', key: 'weaponSlots', mode: 'add', amount: 1 },
     ]);
   });
 
-  it('takes a run from four slots to five, and no further', () => {
+  it('takes a run from three slots to four, then to five, and no further', () => {
     const tiers = new Array<number>(META_CATALOG.length).fill(0);
     const at = META_CATALOG.findIndex((m) => m.id === 'm-mounts');
 
     expect(worldWith(tiers).maxWeapons).toBe(MAX_WEAPONS);
-    expect(worldWith(tiers).maxWeapons).toBe(4);
+    expect(worldWith(tiers).maxWeapons).toBe(3);
 
     tiers[at] = 1;
+    expect(worldWith(tiers).maxWeapons).toBe(4);
+
+    tiers[at] = 2;
     expect(worldWith(tiers).maxWeapons).toBe(5);
 
     // A save carrying more tiers than the upgrade HAS must not buy more slots - metaRunGrant
@@ -507,8 +515,9 @@ describe('reinforced mounts', () => {
   });
 
   it('is the cap the deck actually enforces, not just a number on the world', () => {
-    // THE POINT OF THE WHOLE CHANGE. A world seeded at four must refuse a fifth gun and a world
-    // seeded at five must accept it, through `isOfferable` rather than through the constant.
+    // THE POINT OF THE WHOLE CHANGE. A world seeded at three must refuse a fourth gun, a world
+    // seeded at four must refuse a fifth, and a world seeded at five must accept it - all through
+    // `isOfferable` rather than through the constant.
     const tiers = new Array<number>(META_CATALOG.length).fill(0);
     const at = META_CATALOG.findIndex((m) => m.id === 'm-mounts');
 
@@ -523,11 +532,15 @@ describe('reinforced mounts', () => {
     };
 
     const base = worldWith(tiers);
-    expect(fill(base)).toBe(4);
+    expect(fill(base)).toBe(3);
 
     tiers[at] = 1;
-    const upgraded = worldWith(tiers);
-    expect(fill(upgraded)).toBe(5);
+    const oneTier = worldWith(tiers);
+    expect(fill(oneTier)).toBe(4);
+
+    tiers[at] = 2;
+    const fullyMounted = worldWith(tiers);
+    expect(fill(fullyMounted)).toBe(5);
   });
 });
 

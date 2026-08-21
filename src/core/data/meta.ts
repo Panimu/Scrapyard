@@ -138,10 +138,11 @@ export interface MetaDisplay {
    *   percent         a share of base, shown as +X%
    *   rateOfFire      a cooldown REDUCTION, shown as the increase in shots per second it produces
    *   flat            absolute units, shown as a bare number
+   *   count           a whole number of named things, `noun` pluralised past one
    *   secondsFaster   a negative `add` in seconds, shown as how much sooner
    *   flag            no magnitude at all - it either happens or it does not, and `noun` says what
    */
-  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'secondsFaster' | 'flag';
+  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'count' | 'secondsFaster' | 'flag';
   /** The thing being bought, as the player would name it. For `flag`, the whole sentence. */
   readonly noun: string;
 }
@@ -220,6 +221,42 @@ function effectTotal(fx: MetaEffect, tiers: number): number {
 }
 
 export const META_CATALOG: readonly MetaDef[] = Object.freeze([
+  {
+    id: 'm-mounts',
+    name: 'Reinforced Mounts',
+    blurb: 'The chassis carries another gun mount. Every run, whichever mech you take out.',
+    tiers: 2,
+    cost: 200,
+    version: 2,
+    /**
+     * THE MOST BUILD-CHANGING THING IN THE SHOP, first in the list because of it - and the reason
+     * the base sits at THREE rather than this being a fourth and fifth mount bolted onto five.
+     *
+     * A run is a series of decisions about what NOT to carry, and that decision is only sharp
+     * while the loadout is tight. Selling two extra mounts on top of five would have blunted the
+     * decision for everyone who bought them and changed nothing for anyone who did not; moving the
+     * floor to three sharpens it for a new save and makes this purchase the moment the run opens
+     * back up, twice over on the way to the same five guns a fully-upgraded save always ends at.
+     *
+     * TWO TIERS, SOLD SEPARATELY RATHER THAN AS ONE PURCHASE. A player who has only banked enough
+     * for the first tier still gets something for it - three-to-four matters on its own, not only
+     * as a stepping stone to five - and 200 credits a tier is deliberately several runs' worth
+     * each.
+     *
+     * A RUN GRANT rather than a stat, seeded into `World.maxWeapons` at createWorld - see
+     * MAX_WEAPONS, which is now the BASE rather than the ceiling. Nothing recomputes it mid-run,
+     * which is correct: a slot count that could change while a card was open is a card that could
+     * be offered and then refused.
+     */
+    effects: Object.freeze([
+      { target: 'run' as const, key: 'weaponSlots' as const, mode: 'add' as const, amount: 1 },
+    ]),
+    // A COUNT, now that it is a ladder rather than a single flip. Tier one is a fourth mount and
+    // tier two a fifth, and the two states have to read differently - `count` pluralises past one,
+    // so this reads "1 extra mount" and then "2 extra mounts" rather than restating a fixed ordinal
+    // ("fifth") at a tier that has only bought the fourth.
+    display: { key: 'weaponSlots', as: 'count', noun: 'extra mount' },
+  },
   {
     id: 'm-damage',
     name: 'Ordnance Stores',
@@ -473,46 +510,6 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     ]),
     display: { key: 'pickupRadius', as: 'percent', noun: 'pickup range' },
   },
-  {
-    id: 'm-mounts',
-    name: 'Reinforced Mounts',
-    blurb: 'The chassis carries a fifth gun. Every run, whichever mech you take out.',
-    tiers: 1,
-    cost: 200,
-    version: 1,
-    /**
-     * THE MOST BUILD-CHANGING THING IN THE SHOP, and the reason the base moved DOWN to four rather
-     * than this being a sixth slot bolted onto five.
-     *
-     * A run is a series of decisions about what NOT to carry, and that decision is only sharp
-     * while the loadout is tight. Selling a sixth slot on top of five would have blunted the
-     * decision for everyone who bought it and changed nothing for anyone who did not; moving the
-     * floor to four sharpens it for a new save and makes this purchase the moment the run opens
-     * back up. The same total - five guns - is now something the workshop hands you rather than
-     * something you always had.
-     *
-     * ONE TIER, AND EXPENSIVE. There is no ladder here: a slot is a slot, you either have it or
-     * you do not, and 200 credits is deliberately several runs' worth. It is the purchase a
-     * returning player should feel bought them something structural rather than another few
-     * percent.
-     *
-     * A RUN GRANT rather than a stat, seeded into `World.maxWeapons` at createWorld - see
-     * MAX_WEAPONS, which is now the BASE rather than the ceiling. Nothing recomputes it mid-run,
-     * which is correct: a slot count that could change while a card was open is a card that could
-     * be offered and then refused.
-     */
-    effects: Object.freeze([
-      { target: 'run' as const, key: 'weaponSlots' as const, mode: 'add' as const, amount: 1 },
-    ]),
-    // A FLAG, like Mech Insurance, not a count. `flat` rendered this as "1 weapon slots" - a
-    // plural for a quantity that is always one, on an upgrade that is not really a quantity at
-    // all. You either carry a fifth gun or you do not.
-    //
-    // "FIFTH" IS COUPLED TO MAX_WEAPONS BEING FOUR. If the base ever moves, this string moves with
-    // it - it is the one place the shop states the resulting total rather than the delta, and it
-    // is worth that risk because "one more weapon slot" is a worse sentence than the number.
-    display: { as: 'flag', noun: 'A fifth weapon slot' },
-  },
 ]);
 
 /** Trims a trailing `.0` so a whole number reads as one. 12.857 -> "12.9", 30 -> "30". */
@@ -547,6 +544,7 @@ export function metaEffectValue(def: MetaDef, tiers: number): number {
     case 'rateOfFire':
       return 1 / (1 + total) - 1;
     case 'flat':
+    case 'count':
       return total;
     case 'secondsFaster':
       return -total;
@@ -570,6 +568,8 @@ export function metaEffectText(def: MetaDef, tiers: number, bare = false): strin
       return bare ? `+${oneDecimal(v * 100)}%` : `+${oneDecimal(v * 100)}% ${d.noun}`;
     case 'flat':
       return bare ? oneDecimal(v) : `${oneDecimal(v)} ${d.noun}`;
+    case 'count':
+      return bare ? oneDecimal(v) : `${oneDecimal(v)} ${d.noun}${v === 1 ? '' : 's'}`;
     case 'secondsFaster':
       return bare ? `${oneDecimal(v)}s` : `Drones build ${oneDecimal(v)}s faster`;
   }

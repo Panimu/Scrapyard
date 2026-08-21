@@ -56,18 +56,20 @@ export const MAX_QUERY_CANDIDATES = 2048;
 export const EVENT_RING_CAPACITY = 1024;
 
 /**
- * FOUR weapon slots to start with, and five passive slots.
+ * THREE weapon slots to start with, and five passive slots.
  *
  * `MAX_WEAPONS` IS A BASE, NOT A CEILING - the live cap is `World.maxWeapons`, seeded here plus
  * whatever Reinforced Mounts adds (data/meta.ts). Nothing but that seeding should read this
  * constant: a system that enforces the base is a system that ignores the upgrade.
  *
- * WHY FOUR. Eleven weapons exist and only a handful can be carried, which makes a run a CHOICE
+ * WHY THREE. Eleven weapons exist and only a handful can be carried, which makes a run a CHOICE
  * rather than a collection: at the cap the pool stops offering new guns and every later card
  * deepens what you already hold. That decision is only sharp while the loadout is tight, and at
- * five it had gone slack - most runs reached five without ever refusing anything. Four is the
- * number that makes the fourth pick cost something, and it is also what gives the workshop a
- * structural thing to sell: the fifth slot is now earned rather than assumed.
+ * four it had already gone slack once before - see the note this replaced, which moved five down
+ * to four for exactly this reason and still found four too roomy. Three is the number that makes
+ * the third pick cost something, and it is also what gives the workshop a two-step ladder to sell:
+ * Reinforced Mounts now earns a fourth slot and then a fifth, rather than handing over the whole
+ * difference in one purchase.
  *
  * FIVE passives against five slots is unchanged, and it bites hardest on the two defensive ones:
  * Ablative Plate and Energy Shield cover opposite halves of the same problem (see the shield card
@@ -77,7 +79,7 @@ export const EVENT_RING_CAPACITY = 1024;
  * to offer tiers for anything already held, so hitting the cap narrows the pool instead of ending
  * progression.
  */
-export const MAX_WEAPONS = 4;
+export const MAX_WEAPONS = 3;
 export const MAX_PASSIVES = 5;
 
 /**

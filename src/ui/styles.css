@@ -2765,54 +2765,27 @@ body {
   color: var(--ink-dim);
 }
 
-/* ---- the NEW sticker on the Upgrades button --------------------------------------------------
- * Slapped on at an angle, which is the point: everything else on the title screen is square to the
- * world, so the one thing that is not is the one thing the eye goes to. It hangs off the corner
- * rather than sitting inside the button, so it reads as stuck ON rather than printed IN.
+/* ---- the Upgrades attract badge, on the title screen and the game-over screen ----------------
+ * Slapped on at an angle and wobbling, which is the point: everything else on both screens is
+ * square to the world and holding still, so the one thing that is neither is the one thing the eye
+ * goes to. It hangs off the corner rather than sitting inside the button, so it reads as stuck ON
+ * rather than printed IN.
+ *
+ * BOTH ONLY APPEAR WHEN THERE IS SOMETHING TO BUY - `AppState.canAffordMeta` says whether the bank
+ * covers a tier of anything not already owned - so the badge is a genuine "there is something to
+ * spend that on" rather than a permanent fixture nobody reads twice. The title screen's picks a
+ * fresh line from `ATTRACT_STRINGS` every time it is shown, for the same reason: a sticker that
+ * always says the same word is one a returning player's eye has learned to skip.
  *
  * The button needs `position: relative` for this to anchor to, and `overflow: visible` so the
  * corner it hangs off is not clipped away. */
-.title__upgrades {
-  position: relative;
-  overflow: visible;
-}
-
-.title__new {
-  position: absolute;
-  top: -9px;
-  right: -10px;
-  transform: rotate(12deg);
-  transform-origin: center;
-  padding: 3px 9px;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #1a1205;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1.1;
-  /* Lifts it off the button so the angle reads as a separate object rather than as a skewed edge. */
-  box-shadow: 0 2px 6px rgb(0 0 0 / 55%);
-  /* THE DARK EDGE IS LOAD-BEARING, not trim. The badge takes the accent, and the button directly
-     above it on this menu is New Game - which is also the accent, being the one thing that should
-     be brightest. Hanging a yellow sticker over a yellow button merged the two into one shape; the
-     border is what keeps the corner it overlaps readable whatever it lands on. */
-  border: 2px solid var(--bg);
-  pointer-events: none;
-}
-
-/* ---- the Upgrades sticker on the game-over screen ---------------------------------------------
- * Same corner-badge shape as the title screen's NEW sticker, but this one has somewhere specific
- * to point: it only shows when the bank covers a tier the player does not already own (see
- * `AppState.canAffordMeta`), so it is a genuine "there is something to spend that on" rather than
- * a permanent fixture. IT ROTATES, back and forth rather than settling at one angle like the NEW
- * sticker does - a run just ended and the eye is already on this screen, so the badge earns its
- * keep by moving instead of by shouting. */
+.title__upgrades,
 .summary__title-btn {
   position: relative;
   overflow: visible;
 }
 
+.title__new,
 .summary__upgrades-badge {
   position: absolute;
   top: -9px;
@@ -2826,21 +2799,27 @@ body {
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.1;
+  /* Lifts it off the button so the angle reads as a separate object rather than as a skewed edge. */
   box-shadow: 0 2px 6px rgb(0 0 0 / 55%);
+  /* THE DARK EDGE IS LOAD-BEARING, not trim. The badge takes the accent, and the button directly
+     above it on the title menu is New Game - which is also the accent, being the one thing that
+     should be brightest. Hanging a yellow sticker over a yellow button merged the two into one
+     shape; the border is what keeps the corner it overlaps readable whatever it lands on. */
   border: 2px solid var(--bg);
   pointer-events: none;
-  animation: summary-badge-wobble 1.6s ease-in-out infinite;
+  animation: badge-wobble 1.6s ease-in-out infinite;
 }
 
 /* See CLAUDE.md: `[hidden]` is the weakest rule in the UA sheet, so any element whose `hidden` is
-   toggled needs its own `display: none` here rather than trusting the default - this class does
-   not set `display` itself, but the rule that has shipped twice as a bug is cheap enough to keep
-   as a habit rather than a case-by-case judgement call. */
+   toggled needs its own `display: none` here rather than trusting the default - neither class sets
+   `display` itself, but the rule that has shipped twice as a bug is cheap enough to keep as a habit
+   rather than a case-by-case judgement call. */
+.title__new[hidden],
 .summary__upgrades-badge[hidden] {
   display: none;
 }
 
-@keyframes summary-badge-wobble {
+@keyframes badge-wobble {
   0%,
   100% {
     transform: rotate(-8deg);

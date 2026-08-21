@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T08:07Z',
+    title: 'MOUNTS TAKE TWO TRIPS, AND THE STICKER EARNS ITS KEEP',
+    notes: [
+      'Chassis start with three weapon mounts now instead of four. Reinforced Mounts, in the workshop, sells the fourth and the fifth as two separate purchases rather than one big one — and it is the first thing on the shelf now, not the last.',
+      'The Upgrades button on the title screen only wears its corner sticker when you can actually afford something in the workshop you do not already own, and it stops saying NEW every time — GO SHOP, SPEND ME, CASH IN and a few others take turns.',
+    ],
+  },
+  {
     at: '2026-08-21T07:49Z',
     title: 'RANDOM, TRY AGAIN, AND A NUDGE TOWARDS THE WORKSHOP',
     notes: [

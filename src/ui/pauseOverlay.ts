@@ -121,8 +121,8 @@ export function buildPauseOverlay(
   loadout.className = 'pause__loadout';
 
   // Built at the CEILING - the base plus every tier the workshop can sell - and trimmed to the
-  // run's own cap in `paint`. See World.maxWeapons: a full four-slot loadout drawn against five
-  // pips would read as a slot still going spare.
+  // run's own cap in `paint`. See World.maxWeapons: a full three-slot loadout drawn against five
+  // pips would read as slots still going spare.
   const guns = slotGroup('Weapons', MAX_WEAPONS + metaMaxGrant('weaponSlots'));
   const passives = slotGroup('Passives', MAX_PASSIVES);
   loadout.append(guns.el, passives.el);
@@ -240,8 +240,9 @@ function slotGroup(
       }
     },
     // THE ROW IS BUILT AT THE LARGEST CAP AND TRIMMED PER RUN, rather than rebuilt: the weapon cap
-    // is a property of the save now (Reinforced Mounts), so a group sized once at construction
-    // would draw four pips forever or five forever, and one of those is wrong for somebody.
+    // is a property of the save now (Reinforced Mounts, in two steps), so a group sized once at
+    // construction would draw the same number of pips for every save regardless of which of the
+    // three caps it is actually running at.
     show: (n): void => {
       for (let i = 0; i < count; i++) slots[i].hidden = i >= n;
     },

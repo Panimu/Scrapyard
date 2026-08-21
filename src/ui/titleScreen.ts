@@ -20,10 +20,19 @@ import { RUN_LENGTH_SEC } from '../core/index.js';
 import { BUILD_LABEL } from '../buildInfo.js';
 import { spriteUrl } from '../render/assets.js';
 
+/**
+ * WHAT THE UPGRADES BADGE SAYS, when it says anything. One is picked at random every time it is
+ * shown, rather than always reading NEW - the badge now only appears when there is actually
+ * something to buy (see `setUpgradesBadge`), and it earns a returning glance more than once by not
+ * saying the same word every time it does.
+ */
+const ATTRACT_STRINGS = ['NEW', 'GO SHOP', 'SPEND ME', 'TREAT IT', 'CASH IN', 'GEAR UP'];
+
 export class TitleScreen {
   readonly element: HTMLDivElement;
 
   private readonly bank: HTMLDivElement;
+  private readonly upgradesBadge: HTMLSpanElement;
 
   constructor(actions: {
     onNewGame: () => void;
@@ -97,12 +106,13 @@ export class TitleScreen {
     const upgradesBtn = button('Upgrades', 'btn title__upgrades', actions.onUpgrades);
     const badge = document.createElement('span');
     badge.className = 'title__new';
-    badge.textContent = 'NEW';
-    // Decoration: the button already says Upgrades, and a screen reader announcing "NEW Upgrades"
-    // would be reading the sticker rather than the label.
+    badge.hidden = true;
+    // Decoration: the button already says Upgrades, and a screen reader announcing the sticker's
+    // word would be reading an attract line rather than the label.
     badge.setAttribute('aria-hidden', 'true');
     upgradesBtn.appendChild(badge);
     menu.appendChild(upgradesBtn);
+    this.upgradesBadge = badge;
     // Above Settings on purpose: it is about the GAME, and Settings is about the device.
     menu.appendChild(button('Scrapopedia', 'btn', actions.onScrapopedia));
     menu.appendChild(button('Settings', 'btn', actions.onSettings));
@@ -128,6 +138,23 @@ export class TitleScreen {
   setCredits(total: number): void {
     this.bank.hidden = total <= 0;
     this.bank.textContent = `${total} credits banked`;
+  }
+
+  /**
+   * `canAfford` is whether the bank covers a tier of something not yet owned - see
+   * `AppState.canAffordMeta`. The badge is a nudge towards spending, so it has nothing to say once
+   * there is nothing left the player could buy: a permanent sticker stops meaning anything the
+   * first time it is seen not to be true.
+   *
+   * A fresh word is drawn every time this is called instead of once at construction, since the
+   * whole point is that a returning player's eye should not learn to skip it.
+   */
+  setUpgradesBadge(canAfford: boolean): void {
+    this.upgradesBadge.hidden = !canAfford;
+    if (canAfford) {
+      this.upgradesBadge.textContent =
+        ATTRACT_STRINGS[Math.floor(Math.random() * ATTRACT_STRINGS.length)];
+    }
   }
 
   show(): void {
