@@ -29,11 +29,13 @@
  *   matter how carefully the limbs are drawn. See the walk cycle below.
  *
  * ---------------------------------------------------------------------------------------------
- * TWO LAYERS, AND A SIX-FRAME HALF-CYCLE
+ * THREE LAYERS, AND A SIX-FRAME HALF-CYCLE
  * ---------------------------------------------------------------------------------------------
- * Each chassis emits a BODY (`mech_x.png` - torso, mount, cockpit, thrusters) and SIX LEG frames
- * (`mech_x_w0..5.png` - ground shadow and limbs). The renderer stacks them and swaps only the leg
- * texture, so the paint and the guns are stored once instead of once per frame.
+ * Each chassis emits a BODY (`mech_x.png` - torso, mount, cockpit, thrusters), a SHADOW
+ * (`mech_x_shadow.png` - one static blob) and SIX LEG frames (`mech_x_w0..5.png` - limbs only).
+ * The renderer stacks them and swaps only the leg texture, so the paint and the guns are stored
+ * once instead of once per frame. The shadow is separate from both because it is the one layer
+ * that must NOT rotate with the chassis - see its own doc comment below.
  *
  * SIX FRAMES COVER HALF A GAIT CYCLE, AND THE OTHER HALF IS A VERTICAL FLIP. A walker at gait
  * phase φ+π is exactly itself at φ with left and right legs exchanged - and since every chassis is
@@ -190,6 +192,29 @@ const PREAMBLE = /* js */ `
 `;
 
 /**
+ * THE SHADOW LAYER: one static texture per chassis, on its OWN sprite that never rotates.
+ *
+ * It used to be baked into every leg frame and spun with the rest of the chassis, which put a
+ * shadow that is supposed to say "the light comes from up there" at a different screen angle
+ * every time the mech turned to face a new direction - worst when strafing, where the mech spends
+ * whole seconds facing 90 degrees off its shadow's original down-right lean. A shadow is cast by
+ * something that is not the chassis, so its direction has to be independent of the chassis's own
+ * rotation. Same canvas, same anchor as the body and legs, so it still registers exactly - the
+ * renderer just never rotates this one sprite with the others.
+ */
+const DRAW_SHADOW = /* js */ `
+(m) => {
+${PREAMBLE}
+  g.filter = 'blur(6px)';
+  g.fillStyle = SHADOW;
+  g.beginPath();
+  g.ellipse(CX + 5, CY + 6, 58 * (heavy ? 1.02 : 0.96), 48 * REACH, 0, 0, Math.PI * 2);
+  g.fill();
+  return c.toDataURL('image/png');
+}
+`;
+
+/**
  * THE LEG LAYER, at half-cycle phase `t` in [0, 1).
  *
  * The swing is `SWING * side * sin(pi * t)`, added to the x of the knee, the ankle and the foot.
@@ -208,18 +233,6 @@ ${PREAMBLE}
   const SW = Math.sin(Math.PI * t);
   const SWING = (m.legs === 'strider' ? 11 : 9) * REACH;
   const PULSE = Math.sin(2 * Math.PI * t);
-
-  // ---- ground shadow ---------------------------------------------------------------------
-  // Bottom of the whole stack, and on the leg layer rather than the body so it is drawn once
-  // under everything. Soft and offset down-right, matching the baked drop shadows on the enemy
-  // sprites so the mech stands on the same imaginary floor they do.
-  g.save();
-  g.filter = 'blur(6px)';
-  g.fillStyle = SHADOW;
-  g.beginPath();
-  g.ellipse(CX + 5, CY + 6, 58 * (heavy ? 1.02 : 0.96), 48 * REACH, 0, 0, Math.PI * 2);
-  g.fill();
-  g.restore();
 
   if (m.legs === 'chicken') {
     // The default walker. Hip forward, knee back and outboard, ankle forward again.
@@ -615,10 +628,11 @@ async function main() {
   for (const hero of HEROES) {
     const arg = JSON.stringify(hero);
     let n = await write(hero.key, await page.evaluate(`(${DRAW_BODY})(${arg})`));
+    n += await write(`${hero.key}_shadow`, await page.evaluate(`(${DRAW_SHADOW})(${arg})`));
     for (let f = 0; f < WALK_FRAMES; f++) {
       n += await write(`${hero.key}_w${f}`, await page.evaluate(`(${DRAW_LEGS})(${arg}, ${f / WALK_FRAMES})`));
     }
-    console.log(`  ${hero.key.padEnd(16)} body + ${WALK_FRAMES} frames   ${(n / 1024).toFixed(1)} kB`);
+    console.log(`  ${hero.key.padEnd(16)} body + shadow + ${WALK_FRAMES} frames   ${(n / 1024).toFixed(1)} kB`);
   }
   await write('turret', await page.evaluate(`(${DRAW_TURRET})('cannon')`));
   await write('turret_twin', await page.evaluate(`(${DRAW_TURRET})('twin')`));
@@ -626,7 +640,7 @@ async function main() {
   await write('turret_mg', await page.evaluate(`(${DRAW_TURRET})('mg')`));
 
   await browser.close();
-  const count = HEROES.length * (1 + WALK_FRAMES) + 4;
+  const count = HEROES.length * (2 + WALK_FRAMES) + 4;
   console.log(`\n${count} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 

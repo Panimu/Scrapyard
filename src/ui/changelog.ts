@@ -40,6 +40,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T17:01Z',
+    title: 'FIXED: THE MECH SHADOW SPINNING WITH THE CHASSIS',
+    notes: [
+      "Every chassis's ground shadow now stays cast in one direction, whichever way the mech is facing - it used to be baked into the walking legs and would swing around with the machine, worst while strafing sideways.",
+    ],
+  },
+  {
     at: '2026-08-21T12:06Z',
     title: 'MECH ART PASS',
     notes: [

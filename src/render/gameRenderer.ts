@@ -440,6 +440,8 @@ export class GameRenderer {
   private readonly barrels: Sprite[];
   private readonly mech: Sprite;
   private readonly legs: Sprite;
+  /** The ground shadow. Positioned with the chassis but NEVER rotated with it - see drawPlayer. */
+  private readonly shadow: Sprite;
   private readonly shieldRim: Graphics;
   /** Layer count currently DRAWN into `shieldRim`. -1 forces a redraw on the first frame. */
   private shieldRimDrawn = -1;
@@ -541,19 +543,25 @@ export class GameRenderer {
     this.mech = new Sprite({ texture: tex.mechs[0], roundPixels: true });
     this.mech.anchor.set(0.5, 0.5);
     this.mech.scale.set(MECH_SCALE);
-    // The leg layer carries the walk cycle AND the ground shadow, so it goes under everything.
-    // Same canvas size and same anchor as the body, so the two register exactly whatever the
-    // chassis - no per-hero offset table to drift out of date.
+    // The leg layer carries the walk cycle, so it goes under the body. Same canvas size and same
+    // anchor as the body, so the two register exactly whatever the chassis - no per-hero offset
+    // table to drift out of date.
     this.legs = new Sprite({ texture: tex.mechLegs[0][0], roundPixels: true });
     this.legs.anchor.set(0.5, 0.5);
     this.legs.scale.set(MECH_SCALE);
+    // Bottom of the whole stack, and on its OWN sprite rather than baked into the legs: a shadow
+    // is cast by something that is not the chassis, so unlike the body and legs it must never
+    // rotate with `facing` - see drawPlayer. Same canvas and anchor as the other two layers.
+    this.shadow = new Sprite({ texture: tex.mechShadows[0], roundPixels: true });
+    this.shadow.anchor.set(0.5, 0.5);
+    this.shadow.scale.set(MECH_SCALE);
     // The rim goes ABOVE the turret so it is never half-hidden behind a barrel swinging through
     // it. It is a field around the whole machine, and a field that the gun occludes reads as a
     // decal painted on the floor.
     this.shieldRim = new Graphics({ label: 'shield-rim' });
     // Turret ON TOP of the chassis: the mech walks one way and shoots another, and the turret is
     // the only thing on screen that says where the shot is going before it arrives.
-    this.playerLayer.addChild(this.legs, this.mech, ...this.barrels, this.shieldRim);
+    this.playerLayer.addChild(this.shadow, this.legs, this.mech, ...this.barrels, this.shieldRim);
 
     this.drones = new SpritePool({
       capacity: DRONE_SPRITES,
@@ -1655,6 +1663,12 @@ export class GameRenderer {
     this.legs.rotation = facing + yaw;
     this.legs.scale.set(MECH_SCALE, MECH_SCALE * flip);
     this.legs.tint = tint;
+
+    // Position only - NEVER rotation. The shadow's whole point is a light direction that holds
+    // steady in screen space; rotating it with `facing` was the old bug, worst while strafing,
+    // where the chassis spends whole seconds sideways to a shadow drawn for facing forward.
+    this.shadow.texture = this.tex.mechShadows[pl.heroId] ?? this.tex.mechShadows[0];
+    this.shadow.position.set(px, py);
 
     // The chassis faces velocity; the turret is independent and driven by the weapon instance,
     // which is what makes the mech read as "walking one way, shooting another".

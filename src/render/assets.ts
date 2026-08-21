@@ -279,6 +279,12 @@ export interface GameTextures {
   /** Body layer, indexed by HERO_CATALOG position, resolved through each hero's `sprite` key. */
   readonly mechs: readonly Texture[];
   /**
+   * Ground shadow, indexed by HERO_CATALOG position. One static texture per chassis, drawn on a
+   * sprite the renderer never rotates - unlike the body and legs, a shadow's screen direction has
+   * to stay put regardless of which way the chassis is facing.
+   */
+  readonly mechShadows: readonly Texture[];
+  /**
    * Leg layer: `[heroIndex][frame]`, MECH_WALK_FRAMES frames covering HALF a gait cycle. The
    * renderer plays them forwards then again mirrored vertically, because a walker at phase
    * `phi + pi` is itself at `phi` with its legs exchanged - and every chassis is drawn mirrored
@@ -500,7 +506,7 @@ export async function loadGameTextures(
   // The eight heroes reference only four hues x two finishes, and two heroes could in principle
   // share a sprite key, so de-duplicate before asking the loader for them.
   for (const k of new Set(mechKeys)) {
-    keys.push(k);
+    keys.push(k, `${k}_shadow`);
     for (let f = 0; f < MECH_WALK_FRAMES; f++) keys.push(`${k}_w${f}`);
   }
   keys.push('turret', 'turret_twin', 'turret_phase', 'turret_mg');
@@ -600,6 +606,7 @@ export async function loadGameTextures(
 
   return {
     mechs: HERO_CATALOG.map((h) => get(h.sprite)),
+    mechShadows: HERO_CATALOG.map((h) => get(`${h.sprite}_shadow`)),
     mechLegs: HERO_CATALOG.map((h) =>
       Array.from({ length: MECH_WALK_FRAMES }, (_, f) => get(`${h.sprite}_w${f}`)),
     ),
