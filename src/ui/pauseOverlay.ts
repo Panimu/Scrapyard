@@ -121,10 +121,10 @@ export function buildPauseOverlay(
   loadout.className = 'pause__loadout';
 
   // Built at the CEILING - the base plus every tier the workshop can sell - and trimmed to the
-  // run's own cap in `paint`. See World.maxWeapons: a full three-slot loadout drawn against five
-  // pips would read as slots still going spare.
+  // run's own cap in `paint`. See World.maxWeapons and World.maxPassives: a loadout drawn at its
+  // base cap against a row sized for a fully-upgraded save would read as slots still going spare.
   const guns = slotGroup('Weapons', MAX_WEAPONS + metaMaxGrant('weaponSlots'));
-  const passives = slotGroup('Passives', MAX_PASSIVES);
+  const passives = slotGroup('Passives', MAX_PASSIVES + metaMaxGrant('passiveSlots'));
   loadout.append(guns.el, passives.el);
 
   el.append(title, loadout, resume, changes, autoBtn, rerolls, quit);
@@ -141,6 +141,7 @@ export function buildPauseOverlay(
     paintAuto();
 
     guns.show(world.maxWeapons);
+    passives.show(world.maxPassives);
     // WEAPONS, in the order they were taken, which is the order the HUD shows them in.
     //
     // ONE PIP PER GUN, NOT PER MOUNT. The Hydra puts three Short Lasers on the chassis and the
@@ -165,7 +166,7 @@ export function buildPauseOverlay(
     // PASSIVES, in catalog order. A passive's TIER is how many times it has been taken: there is
     // no instance to carry one, the stack IS the level.
     let p = 0;
-    for (let i = 0; i < world.upgradeCatalog.length && p < MAX_PASSIVES; i++) {
+    for (let i = 0; i < world.upgradeCatalog.length && p < world.maxPassives; i++) {
       const stacks = world.levelUp.stacks[i] ?? 0;
       const def = world.upgradeCatalog[i];
       if (stacks <= 0 || def === undefined || def.kind === 'weapon') continue;

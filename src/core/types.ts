@@ -647,6 +647,12 @@ export interface World {
    * loadout can physically hold.
    */
   maxWeapons: number;
+  /**
+   * THE PASSIVE-SIDE TWIN of `maxWeapons`: MAX_PASSIVES plus whatever Auxiliary Bay was bought at
+   * (data/meta.ts). Same rules apply - seeded once at createWorld, never recomputed mid-run, and
+   * it bounds what the deck hands out rather than any array length.
+   */
+  maxPassives: number;
 
   readonly spatial: SpatialHash;
   /**

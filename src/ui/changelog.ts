@@ -40,6 +40,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T09:07Z',
+    title: 'FOUR NEW THINGS IN THE WORKSHOP',
+    notes: [
+      'Hull Reserves adds permanent hull points, straight up. Nothing in the shop had ever sold that before.',
+      'Repair Bay runs a slow trickle-charge repair clock from the first second of every run — a fraction of what Field Repair manages once you find it, but running even before you have.',
+      'Heat Sinks widens every beam\'s heat buffer a little, the permanent shadow of Radiator Bank\'s other dial.',
+      'Auxiliary Bay is the workshop\'s biggest purchase yet: two expensive tiers that take a chassis from five passive slots to six, then to seven.',
+    ],
+  },
+  {
     at: '2026-08-21T08:07Z',
     title: 'MOUNTS TAKE TWO TRIPS, AND THE STICKER EARNS ITS KEEP',
     notes: [

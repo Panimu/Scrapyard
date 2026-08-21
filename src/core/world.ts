@@ -12,6 +12,7 @@
 
 import {
   MAX_WEAPONS,
+  MAX_PASSIVES,
   CHEST_MAX_PAYOUT,
   CHEST_REELS,
   DT,
@@ -283,6 +284,8 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     // THE DECK'S CAP FOR THIS RUN - the base plus whatever Reinforced Mounts was bought at.
     // Read once, here, and never recomputed; see World.maxWeapons.
     maxWeapons: MAX_WEAPONS + metaRunGrant(metaTiers, 'weaponSlots'),
+    // Its passive-side twin - the base plus whatever Auxiliary Bay was bought at.
+    maxPassives: MAX_PASSIVES + metaRunGrant(metaTiers, 'passiveSlots'),
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
     flow: createFlowField(),

@@ -68,12 +68,16 @@ export type MetaId =
   | 'm-armour'
   | 'm-speed'
   | 'm-laser'
+  | 'm-heatcap'
   | 'm-drone'
   | 'm-blast'
   | 'm-insurance'
   | 'm-rerolls'
   | 'm-magnet'
-  | 'm-mounts';
+  | 'm-mounts'
+  | 'm-passives'
+  | 'm-hp'
+  | 'm-repair';
 
 /**
  * One stat change, per tier owned.
@@ -90,7 +94,7 @@ export type MetaId =
  * because these never reach `resolveOne` - `accumulateMeta` filters on `target` and a `run` effect
  * is invisible to every resolver by construction.
  */
-export type RunGrantKey = 'rerolls' | 'weaponSlots';
+export type RunGrantKey = 'rerolls' | 'weaponSlots' | 'passiveSlots';
 
 export interface MetaEffect {
   /**
@@ -258,6 +262,32 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'weaponSlots', as: 'count', noun: 'extra mount' },
   },
   {
+    id: 'm-passives',
+    name: 'Auxiliary Bay',
+    blurb: 'The chassis carries another passive mount. Every run, whichever mech you take out.',
+    tiers: 2,
+    cost: 400,
+    version: 1,
+    /**
+     * REINFORCED MOUNTS' TWIN, on the other half of the loadout - and priced well above it on
+     * purpose. A sixth weapon slot competes against eleven guns; a sixth and seventh PASSIVE slot
+     * compete against the entire passive catalog, which is short enough that a build with two
+     * spare bays can hold nearly all of it. That is the purchase that finally lets a finished save
+     * stop choosing what to leave out of the DEFENSIVE half of a loadout, on top of the offensive
+     * half Reinforced Mounts already opened up - which is exactly why it costs twice as much.
+     *
+     * TWO TIERS FOR THE SAME REASON REINFORCED MOUNTS IS TWO: five-to-six is worth buying on its
+     * own, not only as a stepping stone to seven.
+     *
+     * A RUN GRANT, seeded into `World.maxPassives` at createWorld exactly the way Reinforced
+     * Mounts seeds `World.maxWeapons` - see MAX_PASSIVES, the base rather than the ceiling.
+     */
+    effects: Object.freeze([
+      { target: 'run' as const, key: 'passiveSlots' as const, mode: 'add' as const, amount: 1 },
+    ]),
+    display: { key: 'passiveSlots', as: 'count', noun: 'extra passive slot' },
+  },
+  {
     id: 'm-damage',
     name: 'Ordnance Stores',
     blurb:
@@ -340,6 +370,60 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'armour', as: 'flat', noun: 'armour' },
   },
   {
+    id: 'm-hp',
+    name: 'Hull Reserves',
+    blurb:
+      'The chassis carries more hull to start with. Nothing about it stops the horde reaching you - it just takes more to end the run.',
+    tiers: 4,
+    cost: 40,
+    version: 1,
+    // THE ONE BASIC STAT THE SHOP HAD NEVER SOLD. Hull Plating takes a flat amount off every hit
+    // and Mech Insurance covers the run's single worst moment outright - but nothing here had ever
+    // grown the pool those two are protecting. 20 hull at full ladder against a 120 hp base is real
+    // without being a second Hull Plating: armour is worth more against a swarm of small hits, this
+    // is worth the same against anything that lands.
+    effects: Object.freeze([
+      { target: 'player' as const, key: 'maxHp' as const, mode: 'add' as const, amount: 5 },
+    ]),
+    display: { key: 'maxHp', as: 'flat', noun: 'max hull' },
+  },
+  {
+    id: 'm-repair',
+    name: 'Repair Bay',
+    blurb:
+      'A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.',
+    tiers: 3,
+    cost: 30,
+    version: 1,
+    /**
+     * FIELD REPAIR'S PERMANENT SHADOW, DELIBERATELY MUCH WEAKER. The card ticks five hull points
+     * back every five seconds at full ladder - 1 hp/s against a 120 hp hull, as its own comment
+     * states. This tops out at three hull points every fifteen seconds: a fifth of that rate, for
+     * a run that has not found Field Repair yet, or never will. It is not meant to compete with the
+     * card - it exists so "no repair at all" stops being the default before you have.
+     *
+     * THE INTERVAL IS SET ONCE, AT TIER 1, AND NEVER TOUCHED AGAIN - unlike the card, which spends
+     * two of its seven tiers shortening it. Every tier here buys the same plain thing: one more
+     * hit point on the same slow clock. That keeps the headline number honest under a `flat`
+     * display, where every tier is supposed to be worth exactly the same as every other - a ladder
+     * that also sped up the clock would make the later tiers worth more per credit than the first.
+     *
+     * STACKS WITH FIELD REPAIR IF BOTH ARE HELD, the same way every additive stat in this game
+     * does: the two clocks' amounts sum and their intervals sum, precisely like the card's own two
+     * dials already combine with each other.
+     */
+    effects: Object.freeze([
+      { target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 },
+      {
+        target: 'player' as const,
+        key: 'repairInterval' as const,
+        mode: 'add' as const,
+        amount: [15, 0, 0],
+      },
+    ]),
+    display: { key: 'repairAmount', as: 'flat', noun: 'hp per tick' },
+  },
+  {
     id: 'm-speed',
     name: 'Servo Tuning',
     blurb: 'The chassis walks quicker, whichever chassis it is.',
@@ -384,6 +468,33 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       },
     ]),
     display: { key: 'heatDispersion', as: 'percent', noun: 'heat dispersion' },
+  },
+  {
+    id: 'm-heatcap',
+    name: 'Heat Sinks',
+    blurb: 'Every beam runs a bigger heat buffer before it has to cut out.',
+    tiers: 1,
+    cost: 80,
+    version: 1,
+    // COOLANT BAFFLES' TWIN, on the other of Radiator Bank's two dials: dispersion buys a shorter
+    // silence between bursts, this buys a longer burst before the cut-out. Both are permanent
+    // shadows of that in-run card at a fraction of its strength - Radiator Bank spends three tiers
+    // on capacity for +30% at full, this is one tier at a little over a quarter of that.
+    //
+    // A NO-OP FOR ANYTHING THAT DOES NOT BUILD HEAT, the same shelter every other heat upgrade
+    // here relies on - not because a projectile weapon's `heatCapacity` is always zero (most
+    // declare `HEAT_CAPACITY_BASE` regardless), but because a buffer only matters once heat is
+    // rising toward it, and a projectile weapon's `heatPerSec` is zero: the buffer sits there and
+    // is simply never approached.
+    effects: Object.freeze([
+      {
+        target: 'weapon' as const,
+        key: 'heatCapacity' as const,
+        mode: 'mul' as const,
+        amount: 0.08,
+      },
+    ]),
+    display: { key: 'heatCapacity', as: 'percent', noun: 'heat capacity' },
   },
   {
     id: 'm-drone',

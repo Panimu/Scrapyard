@@ -25,7 +25,7 @@ import {
 import { AppState, reconcileMetaTiers } from '../src/appState.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
-import { ARTILLERY, CANNON } from '../src/core/content/weaponCatalog.js';
+import { ARTILLERY, CANNON, LASER_SHORT } from '../src/core/content/weaponCatalog.js';
 import {
   resolvePlayerStats,
   resolveWeaponStats,
@@ -34,7 +34,7 @@ import {
 } from '../src/core/data/stats.js';
 import { ARCHETYPES, ARCH_RUNT } from '../src/core/content/enemyCatalog.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
-import { DT, MAX_WEAPONS } from '../src/core/constants.js';
+import { DT, MAX_PASSIVES, MAX_WEAPONS } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { rebuildSpatialHash } from '../src/core/spatial/hashGrid.js';
 import { updateCollision } from '../src/core/systems/collision.js';
@@ -256,15 +256,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, and the max-everything total is 2020', () => {
-    expect(metaSpent(maxed())).toBe(2020);
+  it('costs 100, and the max-everything total is 3150', () => {
+    expect(metaSpent(maxed())).toBe(3150);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 2020', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 3150', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(2020);
+    expect(metaSpent(maxed())).toBe(3150);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 
@@ -541,6 +541,147 @@ describe('reinforced mounts', () => {
     tiers[at] = 2;
     const fullyMounted = worldWith(tiers);
     expect(fill(fullyMounted)).toBe(5);
+  });
+});
+
+describe('auxiliary bay', () => {
+  it('is two tiers, sold separately, each worth one passive slot', () => {
+    const def = META_CATALOG.find((m) => m.id === 'm-passives');
+    expect(def?.tiers).toBe(2);
+    expect(def?.cost).toBe(400);
+    expect(def?.effects).toEqual([
+      { target: 'run', key: 'passiveSlots', mode: 'add', amount: 1 },
+    ]);
+  });
+
+  it('costs twice what Reinforced Mounts does at full ladder - it is meant to be the shop\'s most expensive purchase', () => {
+    const mounts = META_CATALOG.find((m) => m.id === 'm-mounts')!;
+    const bay = META_CATALOG.find((m) => m.id === 'm-passives')!;
+    expect(bay.cost * bay.tiers).toBe(mounts.cost * mounts.tiers * 2);
+  });
+
+  it('takes a run from five passive slots to six, then to seven, and no further', () => {
+    const tiers = new Array<number>(META_CATALOG.length).fill(0);
+    const at = META_CATALOG.findIndex((m) => m.id === 'm-passives');
+
+    expect(worldWith(tiers).maxPassives).toBe(MAX_PASSIVES);
+    expect(worldWith(tiers).maxPassives).toBe(5);
+
+    tiers[at] = 1;
+    expect(worldWith(tiers).maxPassives).toBe(6);
+
+    tiers[at] = 2;
+    expect(worldWith(tiers).maxPassives).toBe(7);
+
+    // A save carrying more tiers than the upgrade HAS must not buy more slots - metaRunGrant
+    // clamps to `def.tiers`, and a corrupted or downgraded save is the case that finds out.
+    tiers[at] = 9;
+    expect(worldWith(tiers).maxPassives).toBe(7);
+  });
+});
+
+describe('hull reserves', () => {
+  it('is a flat, linear add to max hull', () => {
+    const def = META_CATALOG.find((m) => m.id === 'm-hp');
+    expect(def?.tiers).toBe(4);
+    expect(accumulateMeta(tiersOf('m-hp', 2), 'player', 'maxHp', undefined).add).toBe(10);
+    expect(accumulateMeta(tiersOf('m-hp', 4), 'player', 'maxHp', undefined).add).toBe(20);
+  });
+
+  it('reaches the resolved player stat', () => {
+    const hero = HERO_CATALOG[0];
+    const stacks = new Uint8Array(UPGRADE_CATALOG.length);
+    const out = {} as PlayerStats;
+    resolvePlayerStats(hero, stacks, UPGRADE_CATALOG, out);
+    const base = out.maxHp;
+    resolvePlayerStats(hero, stacks, UPGRADE_CATALOG, out, undefined, {
+      tiers: tiersOf('m-hp', 4),
+    });
+    expect(out.maxHp).toBe(base + 20);
+  });
+});
+
+describe('heat sinks', () => {
+  it('is a single tier, unscoped, mirroring Radiator Bank\'s capacity dial at a fraction of it', () => {
+    const def = META_CATALOG.find((m) => m.id === 'm-heatcap');
+    expect(def?.tiers).toBe(1);
+    expect(def?.effects).toEqual([
+      { target: 'weapon', key: 'heatCapacity', mode: 'mul', amount: 0.08 },
+    ]);
+    expect(metaEffectText(def!, 1)).toBe('+8% heat capacity');
+    // Radiator Bank's own capacity half sums to +30% at full - this permanent shadow of it must
+    // land well under that.
+    expect(fullMul('m-heatcap', 'weapon', 'heatCapacity')).toBeLessThan(0.3);
+  });
+
+  it('actually widens a beam\'s heat buffer', () => {
+    const hero = HERO_CATALOG[0];
+    const stacks = new Uint8Array(UPGRADE_CATALOG.length);
+    const out = {} as WeaponStats;
+    resolveWeaponStats(LASER_SHORT, hero, 1, stacks, UPGRADE_CATALOG, out);
+    const before = out.heatCapacity;
+    resolveWeaponStats(LASER_SHORT, hero, 1, stacks, UPGRADE_CATALOG, out, {
+      tiers: tiersOf('m-heatcap', 1),
+    });
+    expect(out.heatCapacity).toBeCloseTo(before * 1.08, 6);
+  });
+
+  it('changes nothing about a gun that never builds heat, whatever its own capacity is', () => {
+    const hero = HERO_CATALOG[0];
+    const stacks = new Uint8Array(UPGRADE_CATALOG.length);
+    const out = {} as WeaponStats;
+    resolveWeaponStats(CANNON, hero, 1, stacks, UPGRADE_CATALOG, out, {
+      tiers: tiersOf('m-heatcap', 1),
+    });
+    // A wider buffer is never approached by a gun whose heat never rises - the same shelter every
+    // other heat upgrade in the shop relies on.
+    expect(out.heatPerSec).toBe(0);
+  });
+});
+
+describe('repair bay', () => {
+  it('carries the amount and interval it was specified with - the interval is set once and never moves again', () => {
+    const want: [number, number][] = [
+      [1, 15],
+      [2, 15],
+      [3, 15],
+    ];
+    for (let t = 1; t <= 3; t++) {
+      const tiers = tiersOf('m-repair', t);
+      const amount = accumulateMeta(tiers, 'player', 'repairAmount', undefined).add;
+      const interval = accumulateMeta(tiers, 'player', 'repairInterval', undefined).add;
+      expect([amount, interval], `tier ${t}`).toEqual(want[t - 1]);
+    }
+  });
+
+  it('is significantly weaker than Field Repair at full ladder', () => {
+    // Field Repair's own full state is 5 hp every 5 seconds - a rate of 1 hp/s (tests/repair.test
+    // pins the ladder that produces it). This permanent shadow of it has to land well under that.
+    const tiers = tiersOf('m-repair', 3);
+    const rate =
+      accumulateMeta(tiers, 'player', 'repairAmount', undefined).add /
+      accumulateMeta(tiers, 'player', 'repairInterval', undefined).add;
+    const fieldRepairFullRate = 5 / 5;
+    expect(rate).toBeLessThan(fieldRepairFullRate / 3);
+  });
+
+  it('does nothing at all with no tiers owned', () => {
+    const empty = new Uint8Array(META_CATALOG.length);
+    expect(accumulateMeta(empty, 'player', 'repairAmount', undefined).add).toBe(0);
+    expect(accumulateMeta(empty, 'player', 'repairInterval', undefined).add).toBe(0);
+  });
+
+  it('stacks additively with Field Repair when both are held', () => {
+    const hero = HERO_CATALOG[0];
+    const cardIdx = UPGRADE_CATALOG.findIndex((d) => d.id === 'p-repair');
+    const stacks = new Uint8Array(UPGRADE_CATALOG.length);
+    stacks[cardIdx] = 7; // Field Repair, fully levelled: 5 hp / 5 s
+    const out = {} as PlayerStats;
+    resolvePlayerStats(hero, stacks, UPGRADE_CATALOG, out, undefined, {
+      tiers: tiersOf('m-repair', 3), // Repair Bay, fully levelled: 3 hp / 15 s
+    });
+    expect(out.repairAmount).toBe(8); // 5 + 3
+    expect(out.repairInterval).toBe(20); // 5 + 15
   });
 });
 

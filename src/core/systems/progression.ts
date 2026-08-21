@@ -74,7 +74,7 @@
  * the unlock branch above can never fire for a gun the run is already holding.
  *
  * `UpgradeDef.kind` still splits the pool, because the two halves compete for DIFFERENT space:
- * `World.maxWeapons` gun slots (MAX_WEAPONS plus Reinforced Mounts) and MAX_PASSIVES passive slots. Only the UNLOCK of a weapon needs
+ * `World.maxWeapons` gun slots (MAX_WEAPONS plus Reinforced Mounts) and `World.maxPassives` passive slots (MAX_PASSIVES plus Auxiliary Bay). Only the UNLOCK of a weapon needs
  * a slot - tiers 2-7 need none - so the weapon cap gates `stacks === 0` alone, exactly the way
  * the passive cap gates a NEW passive and keeps levelling the ones already held. (No passive
  * exists today; the branch stays because the cap is structural, not content.)
@@ -104,7 +104,6 @@
 import {
   CHEST_REELS,
   CHOOSE_REROLL,
-  MAX_PASSIVES,
   OFFER_CREDITS,
   OFFER_HEAL,
   UPGRADE_OFFER_COUNT,
@@ -802,7 +801,7 @@ function generateOffers(world: World): number {
   // second card - so a card of three passives is not a bad draw, it is the end of the run. Only
   // an unarmed chassis (Plum) can ever be in this state, and only until it takes its first card.
   const unarmed = world.weaponCount === 0;
-  const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
+  const passivesFull = passiveSlotsUsed(world) >= world.maxPassives;
 
   for (let slot = 0; slot < UPGRADE_OFFER_COUNT; slot++) {
     let total = 0;
@@ -1235,7 +1234,7 @@ export function openChest(world: World): void {
     // Everything held is maxed. Fall back to whatever a card could still offer, so a boss is
     // never worth nothing - and if THAT is empty too the run has taken every upgrade in the game.
     const weaponsFull = world.weaponCount >= world.maxWeapons;
-    const passivesFull = passiveSlotsUsed(world) >= MAX_PASSIVES;
+    const passivesFull = passiveSlotsUsed(world) >= world.maxPassives;
     const unarmed = world.weaponCount === 0;
     const idx = rollOfferable(world, rng, weaponsFull, passivesFull, unarmed);
     if (idx >= 0) pool.push(idx);
