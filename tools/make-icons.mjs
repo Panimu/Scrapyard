@@ -130,6 +130,7 @@ const ICONS = [
   'p-repair',
   'p-radiator',
   'p-blast',
+  'p-ammo',
 ];
 
 const DRAW = `(id) => {
@@ -728,6 +729,31 @@ const DRAW = `(id) => {
       g.stroke();
     }
     g.globalAlpha = 1;
+  }
+
+  if (id === 'p-ammo') {
+    // A DRUM MAGAZINE - a full disc with a feed neck at the top, the one shape in this set that
+    // reads as "more rounds" rather than "more of anything else". Rounds visible around the rim
+    // as short radial ticks are what keep a filled disc from reading as Shaped Charges' blast
+    // core, which is the other solid circle in this set.
+    const R = 30;
+    g.fillStyle = KEY_DIM;
+    g.fillRect(CX - 8, CY - R - 12, 16, 16);
+    g.fillStyle = KEY;
+    g.beginPath(); g.arc(CX, CY, R, 0, 6.284); g.fill();
+    g.strokeStyle = PLATE;
+    g.lineWidth = 4;
+    g.beginPath(); g.arc(CX, CY, R, 0, 6.284); g.stroke();
+    g.strokeStyle = STEEL;
+    g.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * 6.284;
+      const x1 = CX + Math.cos(a) * (R - 15);
+      const y1 = CY + Math.sin(a) * (R - 15);
+      const x2 = CX + Math.cos(a) * (R - 6);
+      const y2 = CY + Math.sin(a) * (R - 6);
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    }
   }
 
   return c.toDataURL('image/png');

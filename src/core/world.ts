@@ -344,6 +344,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       fullRepairs: 0,
       lasersOverheated: 0,
       splashKills: 0,
+      reloads: 0,
       killedByRank: -1,
       damageByShield: 0,
       gemsCollected: 0,

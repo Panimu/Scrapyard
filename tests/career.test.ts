@@ -92,6 +92,25 @@ describe('the career kill ledger', () => {
     expect(state.hasCard('p-blast')).toBe(true);
   });
 
+  it('banks reloads by the same delta ledger, and earns Ammo Drums across runs', () => {
+    const state = new AppState();
+
+    state.beginRunTally();
+    state.recordCareerKills(run({ reloads: 900 }));
+    // Re-polling the same tally banks nothing more.
+    state.recordCareerKills(run({ reloads: 900 }));
+    expect(state.career().reloads).toBe(900);
+    expect(state.achievementProgress('ammo-drums')).toBeCloseTo(900 / 1911, 10);
+
+    state.beginRunTally();
+    const second = run({ reloads: 1011 });
+    state.recordCareerKills(second);
+    expect(state.career().reloads).toBe(1911);
+    // 900 + 1011 crosses the line: the card is earned on the poll that banked it.
+    expect(state.recordCards(second).map((d) => d.id)).toContain('p-ammo');
+    expect(state.hasCard('p-ammo')).toBe(true);
+  });
+
   it('earns the Phase Cannon card across two runs that each fall short alone', () => {
     const state = new AppState();
 

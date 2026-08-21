@@ -292,6 +292,14 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'It never touches how hard a beam hits, only how long it can keep hitting. Ordnance is the card for the first half of that trade; this is the card for the second.',
     ],
   },
+  'p-ammo': {
+    aims: 'Does nothing at all unless you are holding a magazine gun.',
+    notes: [
+      'Deeper drums on the belt guns - the Machine Gun and the Flak Cannon, the only two that ever run dry. Everything else in the loadout never notices it, which is why the deck will not offer it until you hold one.',
+      'It never touches the reload itself - that is Feed Systems, and the two stack. This is purely how much fires before the belt runs out at all.',
+      'Locked until proven. It stays out of the deck entirely until a save has spent a long time listening to its own guns click empty and reload.',
+    ],
+  },
 };
 
 /**

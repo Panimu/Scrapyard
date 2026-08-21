@@ -179,6 +179,12 @@ export interface Settings {
    */
   careerSplashKills: number;
   /**
+   * MAGAZINES EVER REFILLED, every run ever played - the reload career total behind
+   * `reloadsTotal` conditions. Banked beside `careerKills` and `careerSplashKills` by the same
+   * delta ledger.
+   */
+  careerReloads: number;
+  /**
    * Workshop purchases owned, keyed by `MetaId`. Absent key means none bought. See core/data/meta.ts.
    *
    * A RECORD KEYED BY ID, not an array by catalog index, for the reason every other list in here
@@ -242,6 +248,7 @@ const DEFAULTS: Settings = {
   unlockedLevels: [],
   careerKills: {},
   careerSplashKills: 0,
+  careerReloads: 0,
   metaTiers: {},
 };
 
@@ -367,6 +374,7 @@ function loadSettings(): Settings {
       // same hostile-storage stance as everything else in this function.
       careerKills: readCareerKills(parsed.careerKills),
       careerSplashKills: clampInt(parsed.careerSplashKills, 0, 1_000_000_000, 0),
+      careerReloads: clampInt(parsed.careerReloads, 0, 1_000_000_000, 0),
       metaTiers: meta.owned,
       // Filtered against ALL THREE namespaces that share this array - see BESTIARY_KEYS. It used
       // to check two of them, which silently deleted every Scrapopedia page on every reload.
@@ -693,20 +701,23 @@ export class AppState {
   private bankedRunKills: Partial<Record<WeaponId, number>> = {};
   /** Splash kills already banked from the run in progress - the same ledger, one number wide. */
   private bankedRunSplash = 0;
+  /** Reloads already banked from the run in progress - the same ledger again. */
+  private bankedRunReloads = 0;
 
   /** Called at run start: the new run has banked nothing yet. */
   beginRunTally(): void {
     this.bankedRunKills = {};
     this.bankedRunSplash = 0;
+    this.bankedRunReloads = 0;
   }
 
   /**
-   * Banks the run's killing blows into the career totals - the growth since the last call only,
-   * so calling it every poll is free and calling it after the run ends banks the tail.
+   * Banks the run's killing blows AND reloads into the career totals - the growth since the last
+   * call only, so calling it every poll is free and calling it after the run ends banks the tail.
    *
    * MUST RUN BEFORE THE EVALUATORS in each poll (see bankProgress in main.ts): `career()` is what
-   * a `killsWithTotal` condition reads, and it should include the kills of the very tick that
-   * completed it rather than trailing one poll behind.
+   * a `killsWithTotal` (or `reloadsTotal`) condition reads, and it should include the tick that
+   * completed one rather than trailing one poll behind.
    */
   recordCareerKills(run: RunRecord): void {
     let dirty = false;
@@ -729,6 +740,14 @@ export class AppState {
       this.bankedRunSplash = run.splashKills;
       dirty = true;
     }
+    if (run.reloads > this.bankedRunReloads) {
+      this.settings.careerReloads = Math.min(
+        1_000_000_000,
+        this.settings.careerReloads + (run.reloads - this.bankedRunReloads),
+      );
+      this.bankedRunReloads = run.reloads;
+      dirty = true;
+    }
     if (dirty) this.saveSettings();
   }
 
@@ -737,6 +756,7 @@ export class AppState {
     return {
       killsWith: this.settings.careerKills,
       splashKills: this.settings.careerSplashKills,
+      reloads: this.settings.careerReloads,
       // READ LIVE, so a pass that unlocks the sixth chassis can unlock the one that wanted six in
       // the same pass - `recordRun` calls this per hero. See CareerRecord.heroesOwned.
       heroesOwned: this.settings.unlockedHeroes.length,

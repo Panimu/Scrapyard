@@ -60,6 +60,7 @@ export type AchievementId =
   | 'shaped-charges'
   | 'flak-cannon'
   | 'drones'
+  | 'ammo-drums'
   | `mech-${HeroId}`
   | `level-${LevelId}`;
 
@@ -136,6 +137,7 @@ const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
 const BLAST_UNLOCK = cardUnlock('p-blast');
 const FLAK_UNLOCK = cardUnlock('w-flak-cannon');
 const DRONE_UNLOCK = cardUnlock('w-drone');
+const AMMO_UNLOCK = cardUnlock('p-ammo');
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -368,5 +370,19 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // BY REFERENCE - the card's own `splashKillsTotal` condition, and the third sealed row to
     // carry the unlabeled career progress bar.
     cond: BLAST_UNLOCK,
+  },
+  {
+    id: 'ammo-drums',
+    platformKey: 'scrapyard_ammo_drums',
+    // The 1911's own nickname, not the count spelled out - a player who has been listening to
+    // their own guns click empty and lands on this title gets the joke immediately, the same
+    // split Flak Cannon's and Drones' trophies both use. The description states the actual number.
+    name: 'Old Reliable',
+    icon: 'icon_p-ammo',
+    description: describeUnlockDone(AMMO_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like every other career trophy here - the card's own `reloadsTotal`
+    // condition, and the fourth sealed row to carry the unlabeled career progress bar.
+    cond: AMMO_UNLOCK,
   },
 ]);

@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T10:52Z',
+    title: 'NEW PASSIVE: AMMO DRUMS',
+    notes: [
+      'A new passive for magazine builds: deeper drums on the Machine Gun and the Flak Cannon, the only two guns that ever run dry. The deck only offers it while you hold one, and it stacks with Feed Systems rather than competing with it — that card buys a shorter reload, this buys a longer belt.',
+      'It starts locked, behind 1911 magazine reloads counted across your whole career — and yes, its sealed achievement carries the fourth unlabeled progress bar.',
+    ],
+  },
+  {
     at: '2026-08-21T10:31Z',
     title: 'FLAK TAKES A CUT, BOTH MISSILE RACKS HIT A LITTLE HARDER',
     notes: [

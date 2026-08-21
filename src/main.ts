@@ -454,6 +454,7 @@ async function boot(): Promise<void> {
       fullRepairs: world.stats.fullRepairs,
       lasersOverheated: world.stats.lasersOverheated > 0,
       splashKills: world.stats.splashKills,
+      reloads: world.stats.reloads,
       diedTo: RANKS[world.stats.killedByRank]?.name ?? '',
     };
   }

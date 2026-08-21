@@ -265,6 +265,7 @@ export function updateWeapons(world: World, dt: number): void {
           inst.reloadLeft = 0;
           inst.ammo = stats.ammoCapacity;
           pushEvent(world.events, EV_WEAPON_RELOADED, world.tick, i, stats.ammoCapacity, 0, 0);
+          world.stats.reloads++;
         }
         inst.targetDense = -1;
         continue;

@@ -126,3 +126,50 @@ describe('Radiator Bank is only offered to a loadout with a laser', () => {
     }
   });
 });
+
+describe('Ammo Drums is only offered to a loadout with a magazine weapon', () => {
+  it('never comes up for a chassis holding neither magazine gun', () => {
+    const ammo = cardIndex('p-ammo');
+    const carriers = UPGRADE_CATALOG[ammo].requiresWeaponHeld;
+    expect(carriers, 'the card declares its carriers').toBeDefined();
+
+    let checked = 0;
+    for (let heroId = 0; heroId < HERO_CATALOG.length; heroId++) {
+      const w = makeWorld(heroId, 200 + heroId);
+      // Only the chassis that open with neither of the two magazine guns.
+      if (heldWeaponIds(w).some((id) => carriers?.includes(id as never) === true)) continue;
+      checked++;
+      expect(surveyOffers(w, 60).has(ammo), `hero ${heroId} was offered Ammo Drums`).toBe(false);
+    }
+    expect(checked, 'at least one chassis opens without a magazine gun').toBeGreaterThan(0);
+  });
+
+  it('DOES come up once a magazine gun is on the chassis', () => {
+    // Whichever chassis opens with the Machine Gun - same deck, same rerolls, the only
+    // difference is the loadout.
+    const ammo = cardIndex('p-ammo');
+    const gunner = HERO_CATALOG.findIndex((h) => h.startingWeapon === 'machine-gun');
+    expect(gunner, 'a chassis opens with the Machine Gun').toBeGreaterThanOrEqual(0);
+    const w = makeWorld(gunner, 8);
+    expect(surveyOffers(w, 120).has(ammo)).toBe(true);
+  });
+
+  it('lists every weapon in the game that actually carries a magazine', () => {
+    // THE LIST GOES STALE, THE RULE DOES NOT - the same risk Shaped Charges' list carries. A
+    // third magazine weapon that nobody adds here would make this card unreachable for the exact
+    // build it was written for, silently.
+    const carriers = UPGRADE_CATALOG[cardIndex('p-ammo')].requiresWeaponHeld ?? [];
+    for (const def of WEAPON_CATALOG) {
+      if (def.base.ammoCapacity <= 0) continue;
+      expect(carriers, `${def.id} carries a magazine and must be on the list`).toContain(def.id);
+    }
+    for (const id of carriers) {
+      const def = WEAPON_CATALOG.find((d) => d.id === id);
+      expect(def, `${id} is a real weapon`).toBeDefined();
+      expect(
+        (def as WeaponDef).base.ammoCapacity,
+        `${id} is on the list but has no magazine`,
+      ).toBeGreaterThan(0);
+    }
+  });
+});

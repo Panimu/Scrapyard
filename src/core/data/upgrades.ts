@@ -74,7 +74,8 @@ export type UpgradeId =
   | 'p-shield'
   | 'p-repair'
   | 'p-radiator'
-  | 'p-blast';
+  | 'p-blast'
+  | 'p-ammo';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -1040,6 +1041,47 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * path as the other career conditions.
      */
     unlock: Object.freeze({ kind: 'splashKillsTotal' as const, count: 2000 }),
+  },
+  {
+    id: 'p-ammo',
+    kind: 'passive',
+    /**
+     * AMMO DRUMS - the magazine specialist, and Feed Systems' shape aimed at the one dial that
+     * card does not touch. Feed Systems already sells a shorter cooldown, faster heat dispersion
+     * and a shorter reload; it never touches how DEEP the magazine is. This card is that missing
+     * lever, exactly the way Radiator Bank's capacity half is Coolant Baffles' missing lever - a
+     * new card earns its place by moving a stat nothing else in the deck reaches, not by taking an
+     * existing one further.
+     *
+     * `ammoCapacity` IS THE ONLY KEY, and it needs no scoping to be a no-op everywhere it does not
+     * apply: today that is every weapon but the Machine Gun and the Flak Cannon, the only two with
+     * a magazine at all. A share of zero is zero, the same trick every heat and blast passive here
+     * already leans on.
+     *
+     * `requiresWeaponHeld` KEEPS IT OUT OF A DECK WITH NEITHER GUN HELD, exactly the dead-pick
+     * rule Radiator Bank and Shaped Charges both follow - a card that does nothing for the loadout
+     * in front of it should not be offered at all.
+     */
+    name: 'Ammo Drums',
+    description: 'Every magazine on the chassis carries more rounds.',
+    tiers: rampText(
+      'A little more in every drum.',
+      'More in every drum.',
+      'Much more in every drum.',
+    ),
+    tierEffects: rampEffects('weapon', ['ammoCapacity']),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 9,
+    effects: [],
+    requiresWeaponHeld: Object.freeze(['machine-gun', 'flak-cannon']),
+    /**
+     * LOCKED BEHIND THE MAGAZINE ITSELF - not a kill total, a RELOAD total, across every run ever
+     * played: the one career mechanic in this catalog that is not about what a gun killed. 1911 is
+     * the joke and the reference both at once, the same shape Flak Cannon's 9001 and Drones' 1984
+     * are - the year (and the model) of the Colt M1911, the reload a whole century of shooters
+     * have been racking ever since. See UnlockCond `reloadsTotal` and RunStats.reloads.
+     */
+    unlock: Object.freeze({ kind: 'reloadsTotal' as const, count: 1911 }),
   },
 ] as const) as readonly UpgradeDef[];
 

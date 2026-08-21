@@ -524,6 +524,12 @@ export interface RunStats {
    */
   splashKills: number;
   /**
+   * MAGAZINES REFILLED - any weapon with `ammoCapacity > 0` finishing a reload, counted the moment
+   * the belt is full again rather than when it starts emptying. Career-banked by the app layer for
+   * the `reloadsTotal` condition, the same shape `splashKills` already uses.
+   */
+  reloads: number;
+  /**
    * Rank of the enemy whose touch killed the player, or -1.
    *
    * Set exactly once, on the contact that takes hp to zero, and never cleared - a run has one
