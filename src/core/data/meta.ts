@@ -224,43 +224,10 @@ function effectTotal(fx: MetaEffect, tiers: number): number {
   return sum;
 }
 
+// ORDERED BY POWER, ROUGHLY, MOST TO LEAST - a rough sort rather than a measured one: two
+// structural slot purchases first, then the big always-on percentages, then flat stats and
+// safety nets, then the narrow weapon-specific and utility items, weakest last.
 export const META_CATALOG: readonly MetaDef[] = Object.freeze([
-  {
-    id: 'm-mounts',
-    name: 'Reinforced Mounts',
-    blurb: 'The chassis carries another gun mount. Every run, whichever mech you take out.',
-    tiers: 2,
-    cost: 200,
-    version: 2,
-    /**
-     * THE MOST BUILD-CHANGING THING IN THE SHOP, first in the list because of it - and the reason
-     * the base sits at THREE rather than this being a fourth and fifth mount bolted onto five.
-     *
-     * A run is a series of decisions about what NOT to carry, and that decision is only sharp
-     * while the loadout is tight. Selling two extra mounts on top of five would have blunted the
-     * decision for everyone who bought them and changed nothing for anyone who did not; moving the
-     * floor to three sharpens it for a new save and makes this purchase the moment the run opens
-     * back up, twice over on the way to the same five guns a fully-upgraded save always ends at.
-     *
-     * TWO TIERS, SOLD SEPARATELY RATHER THAN AS ONE PURCHASE. A player who has only banked enough
-     * for the first tier still gets something for it - three-to-four matters on its own, not only
-     * as a stepping stone to five - and 200 credits a tier is deliberately several runs' worth
-     * each.
-     *
-     * A RUN GRANT rather than a stat, seeded into `World.maxWeapons` at createWorld - see
-     * MAX_WEAPONS, which is now the BASE rather than the ceiling. Nothing recomputes it mid-run,
-     * which is correct: a slot count that could change while a card was open is a card that could
-     * be offered and then refused.
-     */
-    effects: Object.freeze([
-      { target: 'run' as const, key: 'weaponSlots' as const, mode: 'add' as const, amount: 1 },
-    ]),
-    // A COUNT, now that it is a ladder rather than a single flip. Tier one is a fourth mount and
-    // tier two a fifth, and the two states have to read differently - `count` pluralises past one,
-    // so this reads "1 extra mount" and then "2 extra mounts" rather than restating a fixed ordinal
-    // ("fifth") at a tier that has only bought the fourth.
-    display: { key: 'weaponSlots', as: 'count', noun: 'extra mount' },
-  },
   {
     id: 'm-passives',
     name: 'Auxiliary Bay',
@@ -286,6 +253,43 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       { target: 'run' as const, key: 'passiveSlots' as const, mode: 'add' as const, amount: 1 },
     ]),
     display: { key: 'passiveSlots', as: 'count', noun: 'extra passive slot' },
+  },
+  {
+    id: 'm-mounts',
+    name: 'Reinforced Mounts',
+    blurb: 'The chassis carries another gun mount. Every run, whichever mech you take out.',
+    tiers: 2,
+    cost: 200,
+    version: 2,
+    /**
+     * THE OTHER MOST BUILD-CHANGING THING IN THE SHOP, near the top of the list because of it -
+     * and the reason the base sits at THREE rather than this being a fourth and fifth mount bolted
+     * onto five.
+     *
+     * A run is a series of decisions about what NOT to carry, and that decision is only sharp
+     * while the loadout is tight. Selling two extra mounts on top of five would have blunted the
+     * decision for everyone who bought them and changed nothing for anyone who did not; moving the
+     * floor to three sharpens it for a new save and makes this purchase the moment the run opens
+     * back up, twice over on the way to the same five guns a fully-upgraded save always ends at.
+     *
+     * TWO TIERS, SOLD SEPARATELY RATHER THAN AS ONE PURCHASE. A player who has only banked enough
+     * for the first tier still gets something for it - three-to-four matters on its own, not only
+     * as a stepping stone to five - and 200 credits a tier is deliberately several runs' worth
+     * each.
+     *
+     * A RUN GRANT rather than a stat, seeded into `World.maxWeapons` at createWorld - see
+     * MAX_WEAPONS, which is now the BASE rather than the ceiling. Nothing recomputes it mid-run,
+     * which is correct: a slot count that could change while a card was open is a card that could
+     * be offered and then refused.
+     */
+    effects: Object.freeze([
+      { target: 'run' as const, key: 'weaponSlots' as const, mode: 'add' as const, amount: 1 },
+    ]),
+    // A COUNT, now that it is a ladder rather than a single flip. Tier one is a fourth mount and
+    // tier two a fifth, and the two states have to read differently - `count` pluralises past one,
+    // so this reads "1 extra mount" and then "2 extra mounts" rather than restating a fixed ordinal
+    // ("fifth") at a tier that has only bought the fourth.
+    display: { key: 'weaponSlots', as: 'count', noun: 'extra mount' },
   },
   {
     id: 'm-damage',
@@ -320,6 +324,28 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'damage', as: 'percent', noun: 'damage' },
   },
   {
+    id: 'm-blast',
+    name: 'Bursting Charges',
+    blurb: 'Everything that explodes, explodes wider - the artillery barrage and a spent drone alike.',
+    tiers: 3,
+    cost: 70,
+    version: 1,
+    // UNSCOPED ON PURPOSE, and a no-op for anything that does not blast: only the Heavy Artillery
+    // (75 u) and the drone's death detonation (70 u) carry a `splashRadius` at all, and a share of
+    // zero is zero for everything else - the same trick the heat upgrades lean on. Area grows with
+    // the SQUARE of the radius, so +30% radius is ~+69% ground covered at full ladder; the radius
+    // is still the number shown, because it is the ring the player actually sees on the floor.
+    effects: Object.freeze([
+      {
+        target: 'weapon' as const,
+        key: 'splashRadius' as const,
+        mode: 'mul' as const,
+        amount: 0.3 / 3,
+      },
+    ]),
+    display: { key: 'splashRadius', as: 'percent', noun: 'blast radius' },
+  },
+  {
     id: 'm-range',
     name: 'Optical Array',
     blurb: 'Everything reaches further, so the horde is dying before it arrives.',
@@ -330,98 +356,6 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       { target: 'weapon' as const, key: 'range' as const, mode: 'mul' as const, amount: 0.15 / 5 },
     ]),
     display: { key: 'range', as: 'percent', noun: 'range' },
-  },
-  {
-    id: 'm-rate',
-    name: 'Autoloaders',
-    blurb: 'Shorter gaps between shots on everything that has a gap.',
-    tiers: 3,
-    // COOLDOWN ONLY, unlike Feed Systems, which also buys heat dispersion and reload seconds. The
-    // workshop sells those separately - dispersion IS Coolant Baffles - and one upgrade that
-    // quietly contained another would make the cheaper one pointless.
-    cost: 40,
-    version: 1,
-    // A SHAPED LADDER, and the only one here. Equal cooldown steps would advertise 3.1 / 6.5 / 10
-    // because rate is cooldown's reciprocal, which makes the first tier the worst buy of the three
-    // for the same money. `rateLadder` authors it in rate instead: 3.3 / 6.7 / 10, equal thirds of
-    // the DPS it promises, at the cost of stored deltas that shrink slightly as they go.
-    effects: Object.freeze([
-      {
-        target: 'weapon' as const,
-        key: 'cooldown' as const,
-        mode: 'mul' as const,
-        amount: rateLadder(0.1, 3),
-      },
-    ]),
-    display: { key: 'cooldown', as: 'rateOfFire', noun: 'rate of fire' },
-  },
-  {
-    id: 'm-armour',
-    name: 'Hull Plating',
-    blurb: 'Takes a little off every hit you take, for the whole run.',
-    // FLAT, because base armour is 0 and a percentage of nothing is nothing - the same reason
-    // Ablative Plate is flat. Two armour is small against an elite and real against a swarm.
-    tiers: 2,
-    cost: 50,
-    version: 1,
-    effects: Object.freeze([
-      { target: 'player' as const, key: 'armour' as const, mode: 'add' as const, amount: 1 },
-    ]),
-    display: { key: 'armour', as: 'flat', noun: 'armour' },
-  },
-  {
-    id: 'm-hp',
-    name: 'Hull Reserves',
-    blurb:
-      'The chassis carries more hull to start with. Nothing about it stops the horde reaching you - it just takes more to end the run.',
-    tiers: 4,
-    cost: 40,
-    version: 1,
-    // THE ONE BASIC STAT THE SHOP HAD NEVER SOLD. Hull Plating takes a flat amount off every hit
-    // and Mech Insurance covers the run's single worst moment outright - but nothing here had ever
-    // grown the pool those two are protecting. 20 hull at full ladder against a 120 hp base is real
-    // without being a second Hull Plating: armour is worth more against a swarm of small hits, this
-    // is worth the same against anything that lands.
-    effects: Object.freeze([
-      { target: 'player' as const, key: 'maxHp' as const, mode: 'add' as const, amount: 5 },
-    ]),
-    display: { key: 'maxHp', as: 'flat', noun: 'max hull' },
-  },
-  {
-    id: 'm-repair',
-    name: 'Repair Bay',
-    blurb:
-      'A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.',
-    tiers: 3,
-    cost: 30,
-    version: 1,
-    /**
-     * FIELD REPAIR'S PERMANENT SHADOW, DELIBERATELY MUCH WEAKER. The card ticks five hull points
-     * back every five seconds at full ladder - 1 hp/s against a 120 hp hull, as its own comment
-     * states. This tops out at three hull points every fifteen seconds: a fifth of that rate, for
-     * a run that has not found Field Repair yet, or never will. It is not meant to compete with the
-     * card - it exists so "no repair at all" stops being the default before you have.
-     *
-     * THE INTERVAL IS SET ONCE, AT TIER 1, AND NEVER TOUCHED AGAIN - unlike the card, which spends
-     * two of its seven tiers shortening it. Every tier here buys the same plain thing: one more
-     * hit point on the same slow clock. That keeps the headline number honest under a `flat`
-     * display, where every tier is supposed to be worth exactly the same as every other - a ladder
-     * that also sped up the clock would make the later tiers worth more per credit than the first.
-     *
-     * STACKS WITH FIELD REPAIR IF BOTH ARE HELD, the same way every additive stat in this game
-     * does: the two clocks' amounts sum and their intervals sum, precisely like the card's own two
-     * dials already combine with each other.
-     */
-    effects: Object.freeze([
-      { target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 },
-      {
-        target: 'player' as const,
-        key: 'repairInterval' as const,
-        mode: 'add' as const,
-        amount: [15, 0, 0],
-      },
-    ]),
-    display: { key: 'repairAmount', as: 'flat', noun: 'hp per tick' },
   },
   {
     id: 'm-speed',
@@ -448,6 +382,139 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
       },
     ]),
     display: { key: 'moveMaxSpeed', as: 'percent', noun: 'movement speed' },
+  },
+  {
+    id: 'm-rate',
+    name: 'Autoloaders',
+    blurb: 'Shorter gaps between shots on everything that has a gap.',
+    tiers: 3,
+    // COOLDOWN ONLY, unlike Feed Systems, which also buys heat dispersion and reload seconds. The
+    // workshop sells those separately - dispersion IS Coolant Baffles - and one upgrade that
+    // quietly contained another would make the cheaper one pointless.
+    cost: 40,
+    version: 1,
+    // A SHAPED LADDER, and the only one here. Equal cooldown steps would advertise 3.1 / 6.5 / 10
+    // because rate is cooldown's reciprocal, which makes the first tier the worst buy of the three
+    // for the same money. `rateLadder` authors it in rate instead: 3.3 / 6.7 / 10, equal thirds of
+    // the DPS it promises, at the cost of stored deltas that shrink slightly as they go.
+    effects: Object.freeze([
+      {
+        target: 'weapon' as const,
+        key: 'cooldown' as const,
+        mode: 'mul' as const,
+        amount: rateLadder(0.1, 3),
+      },
+    ]),
+    display: { key: 'cooldown', as: 'rateOfFire', noun: 'rate of fire' },
+  },
+  {
+    id: 'm-magnet',
+    name: 'Scrap Magnetics',
+    blurb: 'Cores come to you from further off, so the ground you cannot safely cross still pays.',
+    tiers: 3,
+    cost: 35,
+    version: 1,
+    /**
+     * THE QUIETEST THING IN THE SHOP AND ONE OF THE MOST FELT. Every other entry here makes a run
+     * hit harder or last longer; this one stops it LOSING something it already earned. The late
+     * game is a wall of bodies, and XP lying in ground you cannot safely re-cross is the most
+     * common invisible loss in a run - invisible precisely because nothing on the summary screen
+     * counts the gems you walked away from.
+     *
+     * A MULTIPLIER ON `pickupRadius`, which is the radius inside which a core starts CHASING you
+     * (see tuning's magnetAccel - it accelerates, it does not teleport). So this widens the mouth
+     * of the funnel rather than making anything move faster, and the drum's magnet consumable
+     * stays a different thing: that one sweeps the whole field once, this one changes every second
+     * of every run by a little.
+     *
+     * 45% ACROSS THREE TIERS. Bigger than Servo Tuning's 15% because it is worth strictly less per
+     * point: speed is offence, defence and escape at once, while a wider funnel is only ever the
+     * gems you would otherwise have left - and a player buying this is buying fewer regrets rather
+     * than more power.
+     */
+    effects: Object.freeze([
+      {
+        target: 'player' as const,
+        key: 'pickupRadius' as const,
+        mode: 'mul' as const,
+        amount: 0.45 / 3,
+      },
+    ]),
+    display: { key: 'pickupRadius', as: 'percent', noun: 'pickup range' },
+  },
+  {
+    id: 'm-hp',
+    name: 'Hull Reserves',
+    blurb:
+      'The chassis carries more hull to start with. Nothing about it stops the horde reaching you - it just takes more to end the run.',
+    tiers: 4,
+    cost: 40,
+    version: 1,
+    // THE ONE BASIC STAT THE SHOP HAD NEVER SOLD. Hull Plating takes a flat amount off every hit
+    // and Mech Insurance covers the run's single worst moment outright - but nothing here had ever
+    // grown the pool those two are protecting. 20 hull at full ladder against a 120 hp base is real
+    // without being a second Hull Plating: armour is worth more against a swarm of small hits, this
+    // is worth the same against anything that lands.
+    effects: Object.freeze([
+      { target: 'player' as const, key: 'maxHp' as const, mode: 'add' as const, amount: 5 },
+    ]),
+    display: { key: 'maxHp', as: 'flat', noun: 'max hull' },
+  },
+  {
+    id: 'm-armour',
+    name: 'Hull Plating',
+    blurb: 'Takes a little off every hit you take, for the whole run.',
+    // FLAT, because base armour is 0 and a percentage of nothing is nothing - the same reason
+    // Ablative Plate is flat. Two armour is small against an elite and real against a swarm.
+    tiers: 2,
+    cost: 50,
+    version: 1,
+    effects: Object.freeze([
+      { target: 'player' as const, key: 'armour' as const, mode: 'add' as const, amount: 1 },
+    ]),
+    display: { key: 'armour', as: 'flat', noun: 'armour' },
+  },
+  {
+    id: 'm-insurance',
+    name: 'Mech Insurance',
+    blurb:
+      'The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.',
+    tiers: 1,
+    cost: 100,
+    version: 1,
+    /**
+     * NO STAT EFFECTS AT ALL, and it is the first upgrade here with none.
+     *
+     * Everything else in this shop is a number the resolver folds in. This is a BEHAVIOUR: it
+     * changes what happens at the moment `damage.ts` would set RUN_PHASE_DEAD, which is not
+     * something any multiplier can express. So `effects` is empty and the whole of it lives at that
+     * one site - see `insuranceSaves`.
+     *
+     * ONCE PER RUN, tracked on the player rather than in the save. A second death is a real death,
+     * and the latch resets when the next run starts because it is run state, not a possession.
+     */
+    effects: Object.freeze([]),
+    display: { as: 'flag', noun: 'Survives your first death' },
+  },
+  {
+    id: 'm-drone',
+    name: 'Fabricator Feed',
+    blurb: 'The drone bay turns a new drone around sooner.',
+    tiers: 2,
+    cost: 80,
+    version: 1,
+    // SCOPED TO THE DRONE, and it has to be: build time IS the drone weapon's `cooldown`, so an
+    // unscoped -1s would take a second off every gun in the game and be worth many times its price.
+    effects: Object.freeze([
+      {
+        target: 'weapon' as const,
+        key: 'cooldown' as const,
+        mode: 'add' as const,
+        amount: -1,
+        weapon: 'drone' as const,
+      },
+    ]),
+    display: { key: 'cooldown', as: 'secondsFaster', noun: 'drone build time' },
   },
   {
     id: 'm-laser',
@@ -497,70 +564,6 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'heatCapacity', as: 'percent', noun: 'heat capacity' },
   },
   {
-    id: 'm-drone',
-    name: 'Fabricator Feed',
-    blurb: 'The drone bay turns a new drone around sooner.',
-    tiers: 2,
-    cost: 80,
-    version: 1,
-    // SCOPED TO THE DRONE, and it has to be: build time IS the drone weapon's `cooldown`, so an
-    // unscoped -1s would take a second off every gun in the game and be worth many times its price.
-    effects: Object.freeze([
-      {
-        target: 'weapon' as const,
-        key: 'cooldown' as const,
-        mode: 'add' as const,
-        amount: -1,
-        weapon: 'drone' as const,
-      },
-    ]),
-    display: { key: 'cooldown', as: 'secondsFaster', noun: 'drone build time' },
-  },
-  {
-    id: 'm-blast',
-    name: 'Bursting Charges',
-    blurb: 'Everything that explodes, explodes wider - the artillery barrage and a spent drone alike.',
-    tiers: 3,
-    cost: 70,
-    version: 1,
-    // UNSCOPED ON PURPOSE, and a no-op for anything that does not blast: only the Heavy Artillery
-    // (75 u) and the drone's death detonation (70 u) carry a `splashRadius` at all, and a share of
-    // zero is zero for everything else - the same trick the heat upgrades lean on. Area grows with
-    // the SQUARE of the radius, so +30% radius is ~+69% ground covered at full ladder; the radius
-    // is still the number shown, because it is the ring the player actually sees on the floor.
-    effects: Object.freeze([
-      {
-        target: 'weapon' as const,
-        key: 'splashRadius' as const,
-        mode: 'mul' as const,
-        amount: 0.3 / 3,
-      },
-    ]),
-    display: { key: 'splashRadius', as: 'percent', noun: 'blast radius' },
-  },
-  {
-    id: 'm-insurance',
-    name: 'Mech Insurance',
-    blurb:
-      'The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.',
-    tiers: 1,
-    cost: 100,
-    version: 1,
-    /**
-     * NO STAT EFFECTS AT ALL, and it is the first upgrade here with none.
-     *
-     * Everything else in this shop is a number the resolver folds in. This is a BEHAVIOUR: it
-     * changes what happens at the moment `damage.ts` would set RUN_PHASE_DEAD, which is not
-     * something any multiplier can express. So `effects` is empty and the whole of it lives at that
-     * one site - see `insuranceSaves`.
-     *
-     * ONCE PER RUN, tracked on the player rather than in the save. A second death is a real death,
-     * and the latch resets when the next run starts because it is run state, not a possession.
-     */
-    effects: Object.freeze([]),
-    display: { as: 'flag', noun: 'Survives your first death' },
-  },
-  {
     id: 'm-rerolls',
     name: 'Rerolls',
     blurb:
@@ -587,39 +590,40 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     display: { key: 'rerolls', as: 'flat', noun: 'rerolls' },
   },
   {
-    id: 'm-magnet',
-    name: 'Scrap Magnetics',
-    blurb: 'Cores come to you from further off, so the ground you cannot safely cross still pays.',
+    id: 'm-repair',
+    name: 'Repair Bay',
+    blurb:
+      'A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.',
     tiers: 3,
-    cost: 35,
+    cost: 30,
     version: 1,
     /**
-     * THE QUIETEST THING IN THE SHOP AND ONE OF THE MOST FELT. Every other entry here makes a run
-     * hit harder or last longer; this one stops it LOSING something it already earned. The late
-     * game is a wall of bodies, and XP lying in ground you cannot safely re-cross is the most
-     * common invisible loss in a run - invisible precisely because nothing on the summary screen
-     * counts the gems you walked away from.
+     * FIELD REPAIR'S PERMANENT SHADOW, DELIBERATELY MUCH WEAKER. The card ticks five hull points
+     * back every five seconds at full ladder - 1 hp/s against a 120 hp hull, as its own comment
+     * states. This tops out at three hull points every fifteen seconds: a fifth of that rate, for
+     * a run that has not found Field Repair yet, or never will. It is not meant to compete with the
+     * card - it exists so "no repair at all" stops being the default before you have.
      *
-     * A MULTIPLIER ON `pickupRadius`, which is the radius inside which a core starts CHASING you
-     * (see tuning's magnetAccel - it accelerates, it does not teleport). So this widens the mouth
-     * of the funnel rather than making anything move faster, and the drum's magnet consumable
-     * stays a different thing: that one sweeps the whole field once, this one changes every second
-     * of every run by a little.
+     * THE INTERVAL IS SET ONCE, AT TIER 1, AND NEVER TOUCHED AGAIN - unlike the card, which spends
+     * two of its seven tiers shortening it. Every tier here buys the same plain thing: one more
+     * hit point on the same slow clock. That keeps the headline number honest under a `flat`
+     * display, where every tier is supposed to be worth exactly the same as every other - a ladder
+     * that also sped up the clock would make the later tiers worth more per credit than the first.
      *
-     * 45% ACROSS THREE TIERS. Bigger than Servo Tuning's 15% because it is worth strictly less per
-     * point: speed is offence, defence and escape at once, while a wider funnel is only ever the
-     * gems you would otherwise have left - and a player buying this is buying fewer regrets rather
-     * than more power.
+     * STACKS WITH FIELD REPAIR IF BOTH ARE HELD, the same way every additive stat in this game
+     * does: the two clocks' amounts sum and their intervals sum, precisely like the card's own two
+     * dials already combine with each other.
      */
     effects: Object.freeze([
+      { target: 'player' as const, key: 'repairAmount' as const, mode: 'add' as const, amount: 1 },
       {
         target: 'player' as const,
-        key: 'pickupRadius' as const,
-        mode: 'mul' as const,
-        amount: 0.45 / 3,
+        key: 'repairInterval' as const,
+        mode: 'add' as const,
+        amount: [15, 0, 0],
       },
     ]),
-    display: { key: 'pickupRadius', as: 'percent', noun: 'pickup range' },
+    display: { key: 'repairAmount', as: 'flat', noun: 'hp per tick' },
   },
 ]);
 
