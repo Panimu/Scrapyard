@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T10:59Z',
+    title: 'AUTO LEVEL STOPS WASTING THE REPAIR CARD',
+    notes: [
+      'When the deck has nothing left to offer but the small repair-or-credits consolation pair, Auto Level now always takes the repair while you are under full hull, and always takes the credits instead once you are not - it used to leave that to chance.',
+      'Ammo Drums wears new art: a spent magazine flying clear of the gun, instead of a drum.',
+    ],
+  },
+  {
     at: '2026-08-21T10:52Z',
     title: 'NEW PASSIVE: AMMO DRUMS',
     notes: [

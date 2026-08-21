@@ -732,28 +732,54 @@ const DRAW = `(id) => {
   }
 
   if (id === 'p-ammo') {
-    // A DRUM MAGAZINE - a full disc with a feed neck at the top, the one shape in this set that
-    // reads as "more rounds" rather than "more of anything else". Rounds visible around the rim
-    // as short radial ticks are what keep a filled disc from reading as Shaped Charges' blast
-    // core, which is the other solid circle in this set.
-    const R = 30;
-    g.fillStyle = KEY_DIM;
-    g.fillRect(CX - 8, CY - R - 12, 16, 16);
-    g.fillStyle = KEY;
-    g.beginPath(); g.arc(CX, CY, R, 0, 6.284); g.fill();
-    g.strokeStyle = PLATE;
-    g.lineWidth = 4;
-    g.beginPath(); g.arc(CX, CY, R, 0, 6.284); g.stroke();
+    // A SPENT MAGAZINE EJECTING FROM THE GUN - a moment, not an object. Every other icon in this
+    // set is something you would hold still and look at; this is the one thing here that is
+    // caught mid-motion, because "the belt just ran dry" is an event and a drawn-out magazine is
+    // just as much a picture of "more rounds" as a drum but reads as this card's own mechanic
+    // rather than as a generic ammo glyph.
+
+    // THE RECEIVER, just enough of it to say this came out of a gun rather than fell out of the
+    // sky - a stub with an ejection port, not a whole weapon.
+    g.fillStyle = STEEL;
+    g.fillRect(CX - 18, 16, 36, 15);
+    g.fillStyle = PLATE;
+    g.fillRect(CX - 7, 29, 14, 8);
+
+    // MOTION LINES, in the gap between the port and the magazine - drawn before it so the
+    // magazine sits on top, and bold enough to actually read at reel size.
     g.strokeStyle = STEEL;
-    g.lineWidth = 3;
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * 6.284;
-      const x1 = CX + Math.cos(a) * (R - 15);
-      const y1 = CY + Math.sin(a) * (R - 15);
-      const x2 = CX + Math.cos(a) * (R - 6);
-      const y2 = CY + Math.sin(a) * (R - 6);
-      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    g.lineWidth = 4;
+    g.lineCap = 'round';
+    g.globalAlpha = 0.55;
+    for (const d of [0, 8, 16]) {
+      g.beginPath();
+      g.moveTo(CX + 6 - d * 0.5, 38 + d * 0.55);
+      g.lineTo(CX - 2 - d * 0.5, 45 + d * 0.55);
+      g.stroke();
     }
+    g.globalAlpha = 1;
+
+    // THE MAGAZINE ITSELF - a long tapered box tumbling clear, angled down and away from the
+    // port rather than sitting square, which is the whole difference between "spent" and
+    // "loaded". Long enough to dominate the tile, the way a falling object should.
+    g.save();
+    g.translate(CX - 2, 74);
+    g.rotate(0.6);
+    g.fillStyle = KEY;
+    g.beginPath();
+    g.moveTo(-15, -30);
+    g.lineTo(15, -30);
+    g.lineTo(10, 32);
+    g.lineTo(-10, 32);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = KEY_DIM;
+    g.lineWidth = 3;
+    g.stroke();
+    // The feed lips, the one detail that reads as "magazine" rather than "block".
+    g.fillStyle = PLATE;
+    g.fillRect(-8, -30, 16, 7);
+    g.restore();
   }
 
   return c.toDataURL('image/png');

@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
-import { DT } from '../src/core/constants.js';
+import { DT, OFFER_CREDITS, OFFER_HEAL } from '../src/core/constants.js';
 import { WEAPON_MAX_TIER, upgradeIndex } from '../src/core/data/upgrades.js';
 import { updateProgression } from '../src/core/systems/progression.js';
 import { createWorld } from '../src/core/world.js';
@@ -67,6 +67,39 @@ describe('resolving without input', () => {
     serve(w);
     expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
     expect(w.levelUp.picksTaken).toBe(0);
+  });
+});
+
+describe('rule 0: the consolation repair, routed on hull', () => {
+  it('always takes the repair when under full hull - not merely rule 5 happening to roll it', () => {
+    // Several seeds, because without a dedicated rule this is what rule 5's random draw would
+    // give you half the time anyway - a single seed proves nothing about "always".
+    for (let seed = 0; seed < 8; seed++) {
+      const w = makeWorld(seed);
+      w.player.hp = w.player.stats.maxHp - 10;
+      dealCard(w, [OFFER_HEAL, OFFER_CREDITS]);
+      const creditsBefore = w.stats.credits;
+
+      serve(w);
+
+      expect(w.player.hp, `seed ${seed}`).toBeGreaterThan(w.player.stats.maxHp - 10);
+      expect(w.player.hp, `seed ${seed}`).toBeLessThanOrEqual(w.player.stats.maxHp);
+      // The credits half of the pair was not the one taken.
+      expect(w.stats.credits, `seed ${seed}`).toBe(creditsBefore);
+    }
+  });
+
+  it('never takes the repair at full hull - the credits instead', () => {
+    const w = makeWorld();
+    w.player.hp = w.player.stats.maxHp;
+    dealCard(w, [OFFER_HEAL, OFFER_CREDITS]);
+    const creditsBefore = w.stats.credits;
+
+    serve(w);
+
+    // Still capped at the ceiling - nothing to heal, so nothing changed here.
+    expect(w.player.hp).toBe(w.player.stats.maxHp);
+    expect(w.stats.credits).toBeGreaterThan(creditsBefore);
   });
 });
 

@@ -224,6 +224,8 @@ function openCardIfOwed(world: World): void {
  * ---------------------------------------------------------------------------------------------
  * THE RULES, IN ORDER, FIRST MATCH WINS
  * ---------------------------------------------------------------------------------------------
+ *   0. THE CONSOLATION REPAIR, routed on hull alone rather than ranked against anything else -
+ *      see the rule 0 block below for why it outranks even an ascension.
  *   1. AN ASCENSION IT CAN COMPLETE. An offer that would leave some weapon's tier-8 requirements
  *      satisfied - and only for an ascension the save has already met (World.ascensionSeen).
  *   2. A NEW WEAPON. Breadth first: an empty slot is worth more than a tier.
@@ -246,6 +248,17 @@ function autoPick(world: World): number {
   const lu = world.levelUp;
   const n = lu.offerCount;
   if (n <= 0) return -1;
+
+  // ---- rule 0: the consolation repair, routed on hull alone ----------------------------------
+  // OFFER_HEAL only ever exists as one half of the two-card consolation pair - see
+  // generateOffers, which puts it at offers[0] with OFFER_CREDITS at offers[1] and nothing else
+  // on the card. That makes the choice binary rather than a ranking: below full hull the repair
+  // is never a bad pick and rules 1-5 have nothing to weigh it against, so it is taken
+  // unconditionally rather than merely preferred. At full hull it heals nothing, so the credits
+  // are strictly better and are taken instead - never left to rule 5's roll to maybe waste it.
+  if (lu.offers[0] === OFFER_HEAL) {
+    return world.player.hp < world.player.stats.maxHp ? 0 : 1;
+  }
 
   // ---- rule 1: an ascension this pick would complete ----------------------------------------
   // Asked by SIMULATING the pick rather than by reimplementing what an ascension needs: bump the
