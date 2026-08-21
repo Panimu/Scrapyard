@@ -46,7 +46,7 @@ import {
   sceneryX,
   sceneryY,
 } from '../content/scenery.js';
-import { FLOW_X, FLOW_Y, flowDirFor } from '../spatial/flowField.js';
+import { FLOW_X, FLOW_Y, flowDetours, flowDirFor } from '../spatial/flowField.js';
 import { ENEMY_FLAG_BOSS, ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { queryCircleInto } from '../spatial/hashGrid.js';
 import { rollRingPosition } from './spawning.js';
@@ -267,14 +267,23 @@ function seek(world: World, dt: number): void {
     // WHEN SOMETHING IS THERE, THE FIELD SAYS WHERE TO GO. One search from the player, shared by
     // the whole horde, and it has already seen the whole neighbourhood - so unlike a body feeling
     // its way round, it cannot be fooled by a pocket or a room with the door on the far side.
+    // TWO TRIGGERS, AND THE SECOND ONE IS WHY A COURTYARD WORKS. `ahead` is the short probe -
+    // something is touching this body's nose right now - and it is the right trigger for stepping
+    // round a pile. It is NOT enough on its own: a body in a room whose door is on the far side
+    // has to walk AWAY from the player for several cells, and the moment it takes the first step
+    // the probe comes back clear, the bearing snaps back to the player, and it walks into the
+    // inside of the wall again. `flowDetours` asks the field the question the probe cannot -
+    // "does stepping straight at them actually get me any closer?" - which stays true for the
+    // whole way round rather than only while something is in front. See flowDetours.
     const r = radius[d];
     const reach = r + AVOID_LOOKAHEAD;
     const ahead = sceneryOverlap(world.scenery, x[d] + ux * reach, y[d] + uy * reach, r);
+    const detouring = !fixated && flowDetours(world.flow, x[d], y[d], ux, uy);
     // NOT THE FLOW FIELD FOR A FIXATED BODY: the field is one search from the PLAYER, and every
     // direction it offers strictly closes on them - the wrong goal entirely while this body's
     // goal is the mark. It takes the wall-follower fallback below instead, which steers by the
     // obstacle rather than by any destination and so works for both.
-    if (ahead >= 0 && !fixated && flowDirFor(world.flow, x[d], y[d], ux, uy, spawnId[d])) {
+    if ((ahead >= 0 || detouring) && !fixated && flowDirFor(world.flow, x[d], y[d], ux, uy, spawnId[d])) {
       // AND NOT ALL THE SAME WAY ROUND. The field records every neighbour that gets closer, not
       // just the closest, and this body takes whichever of them best matches its own fixed lean on
       // the bearing to the player. Every option strictly reduces the distance, so each is a route

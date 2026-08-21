@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T05:39Z',
+    title: 'NOWHERE TO HIDE IN THE CITY',
+    notes: [
+      'Enemies caught inside a courtyard or behind a building could get stuck against the far side of the wall and never come for you — sometimes standing perfectly still two cells from an open gateway. They find their way round now, whichever side of the block you are on.',
+      'They also stop grinding on corners. A machine squeezing through a gateway now aims for the middle of it rather than clipping the building beside it.',
+    ],
+  },
+  {
     at: '2026-08-20T20:07Z',
     title: 'DRONES ARE A DESTINATION, NOT A DOOR PRIZE',
     notes: [

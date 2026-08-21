@@ -382,6 +382,64 @@ const SWIRL_SIN = Object.freeze([
   -0.6427876096865393, -0.24192189559966773, 0.24192189559966773, 0.6427876096865393,
 ]);
 
+/** tan(22.5 degrees). Where the eight-way quantisation below switches between axis and diagonal. */
+const OCTANT = 0.41421356237309503;
+
+/**
+ * WOULD WALKING STRAIGHT AT THE PLAYER ACTUALLY GET ANY CLOSER? False in open ground, true when
+ * the body is behind something and its own nose is lying to it.
+ *
+ * THE BUG THIS EXISTS TO FIX. Steering used to consult the field only when a short probe found
+ * terrain DIRECTLY AHEAD, which is right for stepping round a pile and useless for a room with the
+ * door on the far side: a body in a courtyard walks to the inner wall, gets a field direction
+ * pointing back toward the gateway, takes one step along it - and now nothing is in front of it
+ * any more, so the next tick it turns straight back at the player and walks into the wall again.
+ * Measured on the real map before this: 161 of 236 courtyard trials never got out at all.
+ *
+ * WHY THIS COMPARES CELLS AND NOT LENGTHS. The first version of this asked whether the field's
+ * distance was more than 1.6x the straight line - and a ratio is a CONTINUOUS quantity tested
+ * against a fixed threshold, which chatters for every body that happens to sit near it. Measured:
+ * a body that had escaped its courtyard then oscillated on the pavement outside, ratio hovering
+ * around the threshold, field distance alternating 15, 16, 15, 16 and its velocity flipping a full
+ * 180 degrees every few ticks - it never got anywhere. This asks the question the field can answer
+ * EXACTLY instead: take the one cell the straight bearing would step into, and compare its
+ * distance with this cell's. Both are integers, both change only when the body crosses a cell
+ * boundary, and the answer either side of that boundary agrees on which way to travel - so there
+ * is no threshold to sit on and nothing to chatter.
+ *
+ * It is also stateless, which the latch-a-timer-on-the-body alternative is not: no new per-enemy
+ * field, no place in the hash, no swap-remove bookkeeping, and it cannot get out of step with
+ * terrain that has just changed.
+ */
+export function flowDetours(f: FlowField, x: number, y: number, ux: number, uy: number): boolean {
+  if (f.builtTick < 0) return false;
+  const rx = flowCellOf(x) - f.originCx;
+  const ry = flowCellOf(y) - f.originCy;
+  if (rx < 0 || ry < 0 || rx >= FLOW_CELLS || ry >= FLOW_CELLS) return false;
+  const here = f.dist[ry * FLOW_CELLS + rx];
+  // -1 is unreachable (the field has no route to offer from here) and 0 is the player's own cell.
+  if (here <= 0) return false;
+
+  // The neighbour the straight bearing steps into, the bearing rounded to one of the eight.
+  const ax = ux < 0 ? -ux : ux;
+  const ay = uy < 0 ? -uy : uy;
+  let ox = 0;
+  let oy = 0;
+  if (ay <= ax * OCTANT) ox = ux < 0 ? -1 : 1;
+  else if (ax <= ay * OCTANT) oy = uy < 0 ? -1 : 1;
+  else {
+    ox = ux < 0 ? -1 : 1;
+    oy = uy < 0 ? -1 : 1;
+  }
+
+  const nx = rx + ox;
+  const ny = ry + oy;
+  if (nx < 0 || ny < 0 || nx >= FLOW_CELLS || ny >= FLOW_CELLS) return false;
+  const there = f.dist[ny * FLOW_CELLS + nx];
+  // Walled off, or no closer than standing still: either way the straight line is not a route.
+  return there < 0 || there >= here;
+}
+
 /**
  * The direction THIS body should take out of its cell, given where it wants to go and who it is.
  *
@@ -438,7 +496,37 @@ export function flowDirFor(
     }
   }
   if (best < 0) return false;
-  FLOW_X = DIR_X[best];
-  FLOW_Y = DIR_Y[best];
+
+  // AT THE CENTRE OF THE CELL BEING STEPPED INTO, not along a bare axis - and this is the half of
+  // the field that was missing rather than a refinement of it.
+  //
+  // `blocked` is sampled at CELL CENTRES: a cell is open when a body could stand in the MIDDLE of
+  // it. A body is almost never in the middle of anything. One hugging the top edge of its cell,
+  // handed a bare "west", walks west along that edge - and its radius-18 circle clips the corner
+  // of the building diagonally north-west of it, which is a cell the four-way flood never had to
+  // consider because the step it approved was the orthogonal one. The push-out then removes
+  // exactly the westward component (`integrate` keeps the tangent and drops the normal), the
+  // velocity comes out as precisely zero, and the next tick sets up the identical frame. Measured:
+  // a body parked against the inside of a courtyard for 20 s with a clear gateway two cells away,
+  // the field pointing at it the whole time, velocity (0, 0) every tick.
+  //
+  // Aiming at the target cell's centre folds re-centring into the steering for free: the pull
+  // toward the middle of the corridor is a component of the same vector that carries the body
+  // along it, so it rounds the corner instead of grinding on it. A body already centred gets the
+  // bare axis back, exactly as before, so nothing changes in open ground.
+  const tx = (f.originCx + rx + OFF_X[best] + 0.5) * FLOW_CELL;
+  const ty = (f.originCy + ry + OFF_Y[best] + 0.5) * FLOW_CELL;
+  const vx = tx - x;
+  const vy = ty - y;
+  const l2 = vx * vx + vy * vy;
+  // Dead centre of the target cell: no vector exists, and the axis is the same answer anyway.
+  if (l2 === 0) {
+    FLOW_X = DIR_X[best];
+    FLOW_Y = DIR_Y[best];
+    return true;
+  }
+  const inv = 1 / Math.sqrt(l2);
+  FLOW_X = vx * inv;
+  FLOW_Y = vy * inv;
   return true;
 }
