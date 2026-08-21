@@ -344,8 +344,10 @@ const DRAW = `(variant, barrels, hulls, mechs) => {
  * gets ONE silhouette and ONE colour that nothing else in the game uses.
  *
  *   SPANNER   green, the only green object on the field, in the shape everyone reads as "repair".
- *   COIN      blue, in four escalating piles - and the pile IS the amount, so a player learns to
- *             judge a coin's worth by its shape before they ever see the number.
+ *   COIN      blue, in four escalating drops - one, three, a cluster, and then a stack of BULLION
+ *             BARS rather than a fourth pile of coins. The shape IS the amount, so a player learns
+ *             to judge a drop's worth before they ever see the number, and the top rung reads as a
+ *             different class of thing rather than as "several more of those".
  *   MAGNET    the classic red horseshoe with grey poles. Nothing else in the game is that red.
  */
 const DRAW_CONSUMABLE = `(kind) => {
@@ -437,6 +439,37 @@ const DRAW_CONSUMABLE = `(kind) => {
   };
   const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8', COIN_DEEP = '#12456b', COIN_LITE = '#a8e0ff';
 
+  /**
+   * ONE INGOT, at the same shallow angle the coins are drawn at: a lit top face narrowing away
+   * from the viewer, and a front band below it. 'grounded' draws the contact shadow and must be
+   * false for any bar resting on other bars - see the note on the pyramid below.
+   */
+  const BAR_TOP = '#5fc2ff', BAR_FACE = '#2f86c4', BAR_SIDE = '#17537f', BAR_LITE = '#b6e6ff';
+  const bar = (px, py, w, h, grounded) => {
+    if (grounded) {
+      g.beginPath(); g.ellipse(px + 1, py + h * 0.75, w * 0.58, h * 0.42, 0, 0, 6.284);
+      g.fillStyle = 'rgba(0,0,0,0.34)'; g.fill();
+    } else {
+      g.fillStyle = 'rgba(0,0,0,0.30)';
+      g.fillRect(px - w / 2, py + h * 0.55, w, h * 0.10);
+    }
+    g.fillStyle = BAR_SIDE;
+    g.fillRect(px - w / 2, py, w, h * 0.55);
+    g.fillStyle = BAR_FACE;
+    g.fillRect(px - w / 2, py, w, h * 0.18);
+    const ins = h * 0.42;
+    g.beginPath();
+    g.moveTo(px - w / 2, py); g.lineTo(px + w / 2, py);
+    g.lineTo(px + w / 2 - ins, py - h * 0.62); g.lineTo(px - w / 2 + ins, py - h * 0.62);
+    g.closePath();
+    g.fillStyle = BAR_TOP; g.fill();
+    g.beginPath();
+    g.moveTo(px - w / 2 + 2, py - 1); g.lineTo(px - w / 2 + ins + 2, py - h * 0.60);
+    g.lineTo(px - w / 2 + ins + 7, py - h * 0.60); g.lineTo(px - w / 2 + 7, py - 1);
+    g.closePath();
+    g.fillStyle = BAR_LITE; g.globalAlpha = 0.5; g.fill(); g.globalAlpha = 1;
+  };
+
 
   // --- 0: SPANNER --------------------------------------------------------------------------
   // An OPEN-END wrench. The first attempt drew two closed rings on a shaft and read as a barbell:
@@ -505,74 +538,22 @@ const DRAW_CONSUMABLE = `(kind) => {
   }
 
   if (kind === 4) {
-    // THE SACK, and the coins coming out of it are the point.
+    // BULLION. The top of the credit ladder, and the one rung that is not simply more coins.
     //
-    // What was here was a flat brown ellipse with a second ellipse on top for a neck and seven
-    // full-size coins scattered over it at random angles - which read as a puddle with some
-    // buttons dropped in it. Three things fix it: a SILHOUETTE that narrows to a tied neck so the
-    // shape itself says sack, coins that are SMALL against the bag (they were nearly a third of
-    // its width, so the bag looked like a coaster), and coins placed as a STREAM over the front
-    // lip and down onto the ground rather than sprinkled.
-    const BX = CX, BY = CY + S * 0.07;
-    const CLOTH = '#8a7757', CLOTH_DK = '#5f5139', CLOTH_HI = '#a3906c';
-    const SMALL = S * 0.062;
-
-    // Ground shadow, flat.
-    g.beginPath(); g.ellipse(BX + 2, BY + S * 0.20, S * 0.31, S * 0.095, 0, 0, 6.284);
-    g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
-
-
-    // The bag: wide and heavy at the bottom, drawn in to a tied neck.
-    g.beginPath();
-    g.moveTo(BX - S * 0.085, BY - S * 0.115);
-    g.bezierCurveTo(BX - S * 0.33, BY - S * 0.01, BX - S * 0.30, BY + S * 0.20, BX, BY + S * 0.20);
-    g.bezierCurveTo(BX + S * 0.30, BY + S * 0.20, BX + S * 0.33, BY - S * 0.01, BX + S * 0.085, BY - S * 0.115);
-    g.closePath();
-    g.fillStyle = CLOTH; g.fill();
-
-    // Weight in the bottom and light on the left shoulder - without these the silhouette is a
-    // paper cut-out.
-    g.save(); g.clip();
-    g.beginPath(); g.ellipse(BX + S * 0.06, BY + S * 0.20, S * 0.30, S * 0.15, 0, 0, 6.284);
-    g.fillStyle = 'rgba(0,0,0,0.20)'; g.fill();
-    g.beginPath(); g.ellipse(BX - S * 0.15, BY + S * 0.02, S * 0.10, S * 0.13, -0.4, 0, 6.284);
-    g.fillStyle = 'rgba(255,255,255,0.10)'; g.fill();
-    g.restore();
-
-    // The tie, and the gathered cloth above it.
-    g.fillStyle = CLOTH_DK;
-    g.fillRect(BX - S * 0.095, BY - S * 0.135, S * 0.19, S * 0.035);
-    g.fillStyle = CLOTH_HI;
-    g.beginPath();
-    g.moveTo(BX - S * 0.085, BY - S * 0.135);
-    g.lineTo(BX - S * 0.115, BY - S * 0.215);
-    g.lineTo(BX + S * 0.115, BY - S * 0.215);
-    g.lineTo(BX + S * 0.085, BY - S * 0.135);
-    g.closePath(); g.fill();
-
-    // The open mouth, and the coins coming over its front lip.
-    g.beginPath(); g.ellipse(BX, BY - S * 0.215, S * 0.115, S * 0.045, 0, 0, 6.284);
-    g.fillStyle = CLOTH_DK; g.fill();
-    // TWO HEAPS AND ONE IN THE AIR - not a line of coins.
+    // A sack was here and it was the wrong object twice over: it is cloth and brown against a
+    // palette where every other pickup is a hard blue disc, and it needs coins spilling out of it
+    // to say what is inside - which put a chain of small circles round the outside of a bag and
+    // read as a necklace at the size this is drawn. Bars need nothing spelling out. The shape IS
+    // the value, so the sprite is six of them and no coins at all.
     //
-    // The first pass ran an evenly-spaced arc of identical discs from the mouth down and around,
-    // and evenly-spaced identical discs on a smooth curve are a CHAIN. It read as a necklace
-    // draped over a sack every time, at both sizes. What fixes it is clustering: coins heaped in
-    // the mouth and coins heaped where they landed, each group overlapping itself at slightly
-    // different sizes, with a single coin caught mid-fall to say which way the money is going.
-    // One is a falling coin; six in a row is jewellery.
-    const heap = [
-      // Piled up in the mouth, spilling over the near lip.
-      [-0.055, -0.238, 1.0], [0.025, -0.246, 0.92], [-0.012, -0.219, 0.86],
-      [0.098, -0.203, 0.95],
-      // The one still on its way down.
-      [0.196, -0.075, 0.9],
-      // And the pile at the foot of the bag.
-      [0.268, 0.128, 1.0], [0.340, 0.170, 0.88], [0.232, 0.190, 0.94], [0.310, 0.206, 0.82],
-    ];
-    for (const [fx, fy, k] of heap) {
-      coin(BX + fx * S, BY + fy * S, SMALL * k, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
-    }
+    // ONLY THE BOTTOM ROW IS GROUNDED. A soft contact shadow under a bar that is resting on two
+    // other bars shows through the gap between them and reads as a hole punched in the stack -
+    // which is exactly how the first pass looked. The upper rows get a hairline under the front
+    // band instead, which seats them without casting anything into the gap.
+    const BW = S * 0.30, BH = S * 0.16;
+    for (const fx of [-0.300, 0, 0.300]) bar(CX + fx * S, CY + S * 0.20, BW, BH, true);
+    for (const fx of [-0.150, 0.150]) bar(CX + fx * S, CY + S * 0.04, BW, BH, false);
+    bar(CX, CY - S * 0.12, BW, BH, false);
   }
 
   // --- 5: MAGNET ----------------------------------------------------------------------------
