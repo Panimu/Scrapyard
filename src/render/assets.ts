@@ -100,7 +100,7 @@ export const MECH_SCALE = MECH_DRAW_W / MECH_SRC_W;
  * Leg frames per chassis, covering HALF a gait cycle (tools/make-mechs.mjs). The full cycle is
  * `2 * MECH_WALK_FRAMES` poses; the second half is the first half mirrored.
  */
-export const MECH_WALK_FRAMES = 4;
+export const MECH_WALK_FRAMES = 6;
 
 /** Turret canvas (tools/make-mechs.mjs), and its drawn length in world units. */
 export const TURRET_SRC_W = 80;

@@ -148,10 +148,12 @@ const PLAYER_FLASH_SEC = 0.12;
 const HEAL_FLASH_SEC = 0.45;
 
 /**
- * World units walked per leg-frame. Eight frames make a full cycle, so a stride is 8 x this =
- * 184 u, against a 195 u/s mech: a little over one cycle a second at a flat run. FEEL.
+ * World units walked per leg-frame. `2 * MECH_WALK_FRAMES` frames make a full cycle, so a stride
+ * is that many x this = ~184 u, against a 195 u/s mech: a little over one cycle a second at a flat
+ * run. FEEL. Scale this inversely with MECH_WALK_FRAMES if that ever changes, or the cadence
+ * changes with it - this value is 184 / (2 * MECH_WALK_FRAMES).
  */
-const STRIDE_UNITS = 23;
+const STRIDE_UNITS = 184 / (2 * MECH_WALK_FRAMES);
 /** Peak chassis yaw across a gait cycle, radians. Deliberately small - weight shift, not a waddle. */
 const GAIT_YAW = 0.045;
 /** A hover's idle drift through its own cycle, in equivalent world units per second. */

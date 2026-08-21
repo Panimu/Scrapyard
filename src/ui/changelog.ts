@@ -40,6 +40,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T12:06Z',
+    title: 'MECH ART PASS',
+    notes: [
+      'Every chassis walks smoother now: the leg cycle runs on six frames a side instead of four, half again as many poses without changing how fast anyone actually walks.',
+      'Legs show a visible knee joint and a hydraulic highlight down each limb, torsos carry rivets and panel seams sized to their own hull instead of a fixed spot, and hull plating catches a thin rim light along its lit edge - all sixteen chassis and both weight classes at once.',
+    ],
+  },
+  {
     at: '2026-08-21T10:59Z',
     title: 'AUTO LEVEL STOPS WASTING THE REPAIR CARD',
     notes: [

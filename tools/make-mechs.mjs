@@ -29,20 +29,20 @@
  *   matter how carefully the limbs are drawn. See the walk cycle below.
  *
  * ---------------------------------------------------------------------------------------------
- * TWO LAYERS, AND A FOUR-FRAME HALF-CYCLE
+ * TWO LAYERS, AND A SIX-FRAME HALF-CYCLE
  * ---------------------------------------------------------------------------------------------
- * Each chassis emits a BODY (`mech_x.png` - torso, mount, cockpit, thrusters) and FOUR LEG frames
- * (`mech_x_w0..3.png` - ground shadow and limbs). The renderer stacks them and swaps only the leg
+ * Each chassis emits a BODY (`mech_x.png` - torso, mount, cockpit, thrusters) and SIX LEG frames
+ * (`mech_x_w0..5.png` - ground shadow and limbs). The renderer stacks them and swaps only the leg
  * texture, so the paint and the guns are stored once instead of once per frame.
  *
- * FOUR FRAMES COVER HALF A GAIT CYCLE, AND THE OTHER HALF IS A VERTICAL FLIP. A walker at gait
+ * SIX FRAMES COVER HALF A GAIT CYCLE, AND THE OTHER HALF IS A VERTICAL FLIP. A walker at gait
  * phase φ+π is exactly itself at φ with left and right legs exchanged - and since every chassis is
  * mirrored about its own centreline, exchanging the legs IS mirroring the sprite. So the renderer
- * plays 0,1,2,3 then 0,1,2,3 flipped, and gets eight distinct poses out of four textures. The
+ * plays 0..5 then 0..5 flipped, and gets twelve distinct poses out of six textures. The
  * quads trot on diagonals, which flips the same way: front-left with rear-right becomes
  * front-right with rear-left.
  *
- * The hovers have no legs to swing, so their four frames pulse the lift skirt and flicker the
+ * The hovers have no legs to swing, so their six frames pulse the lift skirt and flicker the
  * nozzles instead - they are the one chassis type that must animate while standing still, because
  * a hover that goes completely still has landed.
  *
@@ -71,7 +71,7 @@ const CX = W / 2;
 const CY = H / 2;
 
 /** Frames per HALF gait cycle. The renderer mirrors these for the other half. */
-const WALK_FRAMES = 4;
+const WALK_FRAMES = 6;
 
 /** Structural metal, shared by every chassis: legs, joints, mounts, thrusters. */
 const DARK = '#262b33';
@@ -162,10 +162,13 @@ const PREAMBLE = /* js */ `
   const bothSides = (fn) => { fn(1); fn(-1); };
   /** A y offset dy from the centreline, on side s. */
   const my = (s, dy) => CY + s * dy;
-  /** A jointed limb: dark stroke underneath, lighter stroke on top. Round caps make the joints. */
+  /**
+   * A jointed limb: dark stroke underneath, lighter stroke on top, and a thin specular line down
+   * the middle of that - the piston rod inside the actuator sleeve. Round caps make the joints.
+   */
   const limb = (pts, w) => {
     g.lineCap = 'round'; g.lineJoin = 'round';
-    for (const pass of [[w + 6, DARK], [w, METAL_HI]]) {
+    for (const pass of [[w + 6, DARK], [w, METAL_HI], [Math.max(1.5, w * 0.28), 'rgba(255,255,255,0.22)']]) {
       g.lineWidth = pass[0]; g.strokeStyle = pass[1];
       g.beginPath();
       g.moveTo(pts[0][0], pts[0][1]);
@@ -173,6 +176,8 @@ const PREAMBLE = /* js */ `
       g.stroke();
     }
   };
+  /** A knee: smaller and dimmer than a hip disc, so the joint reads without competing with it. */
+  const knee = (x, y, w) => disc(x, y, w * 0.5, METAL_HI, DARK, 2);
   /** A foot pad pointing forward, with toe notches. */
   const foot = (x, s, dy, len, wid) => {
     poly([[x, my(s, dy)], [x + len, my(s, dy + 4)], [x + len, my(s, dy + 4 + wid)], [x - 2, my(s, dy + wid)]], METAL, DARK, 3);
@@ -220,13 +225,15 @@ ${PREAMBLE}
     // The default walker. Hip forward, knee back and outboard, ankle forward again.
     bothSides((s) => {
       const d = SWING * s * SW;
-      limb([[56, my(s, 20 * REACH)], [26 + d * 0.5, my(s, 46 * REACH)], [56 + d, my(s, 60 * REACH)]], LIMB);
+      const kx = 26 + d * 0.5, ky = my(s, 46 * REACH);
+      limb([[56, my(s, 20 * REACH)], [kx, ky], [56 + d, my(s, 60 * REACH)]], LIMB);
       g.save();
       g.translate(46 + d, my(s, 54 * REACH));
       g.scale(1 + 0.06 * s * SW, 1 + 0.06 * s * SW);
       g.translate(-(46 + d), -my(s, 54 * REACH));
       foot(46 + d, s, 54 * REACH, 40, 14);
       g.restore();
+      knee(kx, ky, LIMB);
       disc(56, my(s, 20 * REACH), LIMB * 0.85, METAL_HI, DARK, 3);
       disc(56, my(s, 20 * REACH), 4, DARK);
     });
@@ -235,13 +242,15 @@ ${PREAMBLE}
     // the frame whose swing is widest because that is what the proportions are promising.
     bothSides((s) => {
       const d = SWING * s * SW;
-      limb([[60, my(s, 16 * REACH)], [16 + d * 0.5, my(s, 50 * REACH)], [52 + d, my(s, 66 * REACH)]], LIMB - 2);
+      const kx = 16 + d * 0.5, ky = my(s, 50 * REACH);
+      limb([[60, my(s, 16 * REACH)], [kx, ky], [52 + d, my(s, 66 * REACH)]], LIMB - 2);
       g.save();
       g.translate(44 + d, my(s, 62 * REACH));
       g.scale(1 + 0.07 * s * SW, 1 + 0.07 * s * SW);
       g.translate(-(44 + d), -my(s, 62 * REACH));
       foot(44 + d, s, 62 * REACH, 34, 11);
       g.restore();
+      knee(kx, ky, LIMB - 2);
       disc(60, my(s, 16 * REACH), LIMB * 0.8, METAL_HI, DARK, 3);
       disc(60, my(s, 16 * REACH), 3.5, DARK);
     });
@@ -252,10 +261,14 @@ ${PREAMBLE}
     bothSides((s) => {
       const df = SWING * 0.8 * s * SW;
       const dr = -SWING * 0.8 * s * SW;
-      limb([[88, my(s, 22 * REACH)], [72 + df * 0.5, my(s, 46 * REACH)], [96 + df, my(s, 56 * REACH)]], LIMB - 3);
+      const fkx = 72 + df * 0.5, fky = my(s, 46 * REACH);
+      const rkx = 18 + dr * 0.5, rky = my(s, 46 * REACH);
+      limb([[88, my(s, 22 * REACH)], [fkx, fky], [96 + df, my(s, 56 * REACH)]], LIMB - 3);
       foot(88 + df, s, 52 * REACH, 26, 10);
-      limb([[44, my(s, 22 * REACH)], [18 + dr * 0.5, my(s, 46 * REACH)], [42 + dr, my(s, 58 * REACH)]], LIMB - 2);
+      limb([[44, my(s, 22 * REACH)], [rkx, rky], [42 + dr, my(s, 58 * REACH)]], LIMB - 2);
       foot(34 + dr, s, 54 * REACH, 30, 12);
+      knee(fkx, fky, LIMB - 3);
+      knee(rkx, rky, LIMB - 2);
       disc(88, my(s, 22 * REACH), 7, METAL_HI, DARK, 2.5);
       disc(44, my(s, 22 * REACH), 8, METAL_HI, DARK, 2.5);
     });
@@ -339,10 +352,25 @@ ${PREAMBLE}
   }
   poly(shade, m.trim);
 
-  // Panel seams.
+  // Rim light: a thin bright stroke along the lit flank, mirroring the shaded one below. Sells
+  // the hull as a rolled plate rather than a flat decal, on every torso shape at once because it
+  // is walked off the hull's own outline rather than hand-placed.
+  g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(hullPts[0][0], hullPts[0][1]);
+  for (let i = 1; i <= half; i++) g.lineTo(hullPts[i][0], hullPts[i][1]);
+  g.stroke();
+
+  // Panel seams, spaced off the hull's OWN nose-to-tail span rather than fixed x's, so a spear's
+  // long taper and a slab's short one both get seams that land inside the plate instead of near
+  // its edge. A rivet caps each seam where it meets the flank.
+  const hullXs = hullPts.map((p) => p[0]);
+  const rearX = Math.min(...hullXs), noseX2 = Math.max(...hullXs), span = noseX2 - rearX;
   g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = 2.5;
-  for (const x of [48, 70]) {
+  for (const frac of [0.34, 0.6]) {
+    const x = rearX + span * frac;
     g.beginPath(); g.moveTo(x, my(1, 22 * K)); g.lineTo(x, my(-1, 22 * K)); g.stroke();
+    bothSides((s) => disc(x, my(s, 22 * K), 1.8, DARK));
   }
 
   // ---- weapon mount ----------------------------------------------------------------------
