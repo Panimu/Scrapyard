@@ -224,8 +224,8 @@ async function boot(): Promise<void> {
   });
 
   const summary = new GameOverOverlay({
-    onRetry: () => startRun(state.heroId, newSeed()),
-    onChangeMech: () => showScreen('heroSelect'),
+    onTryAgain: () => showScreen('heroSelect'),
+    onTitleScreen: () => showScreen('title'),
   });
 
   // ---------------------------------------------------------------------------------------
@@ -870,7 +870,13 @@ async function boot(): Promise<void> {
         // showing it over the summary costs nothing.
         toast.clear();
         bankProgress(world);
-        summary.show(world, state.seed, state.settings.credits, earnedThisRun);
+        summary.show(
+          world,
+          state.seed,
+          state.settings.credits,
+          earnedThisRun,
+          state.canAffordMeta(),
+        );
         state.set('summary');
       }
 

@@ -2801,6 +2801,55 @@ body {
   pointer-events: none;
 }
 
+/* ---- the Upgrades sticker on the game-over screen ---------------------------------------------
+ * Same corner-badge shape as the title screen's NEW sticker, but this one has somewhere specific
+ * to point: it only shows when the bank covers a tier the player does not already own (see
+ * `AppState.canAffordMeta`), so it is a genuine "there is something to spend that on" rather than
+ * a permanent fixture. IT ROTATES, back and forth rather than settling at one angle like the NEW
+ * sticker does - a run just ended and the eye is already on this screen, so the badge earns its
+ * keep by moving instead of by shouting. */
+.summary__title-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.summary__upgrades-badge {
+  position: absolute;
+  top: -9px;
+  right: -10px;
+  transform-origin: center;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #1a1205;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 55%);
+  border: 2px solid var(--bg);
+  pointer-events: none;
+  animation: summary-badge-wobble 1.6s ease-in-out infinite;
+}
+
+/* See CLAUDE.md: `[hidden]` is the weakest rule in the UA sheet, so any element whose `hidden` is
+   toggled needs its own `display: none` here rather than trusting the default - this class does
+   not set `display` itself, but the rule that has shipped twice as a bug is cheap enough to keep
+   as a habit rather than a case-by-case judgement call. */
+.summary__upgrades-badge[hidden] {
+  display: none;
+}
+
+@keyframes summary-badge-wobble {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
 /* ---- bestiary bodies -------------------------------------------------------------------
  * ONE BODY PER LEVEL on every variant and rank page, each from that level's own creature table.
  * A single stand-in used to serve both maps, which meant a scrap machine explaining what a swift

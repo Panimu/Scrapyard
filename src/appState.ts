@@ -583,6 +583,18 @@ export class AppState {
   }
 
   /**
+   * True when the banked total covers the next tier of at least one upgrade that is not already
+   * full. Asked by the game-over screen, which wants to point a player at the workshop only when
+   * there is actually something in it to buy - not merely something left to buy eventually.
+   */
+  canAffordMeta(): boolean {
+    for (const def of META_CATALOG) {
+      if (this.metaTier(def.id) < def.tiers && this.settings.credits >= def.cost) return true;
+    }
+    return false;
+  }
+
+  /**
    * Buys the next tier of one upgrade. Returns true if it was bought.
    *
    * REFUSES RATHER THAN CLAMPS on both failure modes - already at full tier, or not enough credits.

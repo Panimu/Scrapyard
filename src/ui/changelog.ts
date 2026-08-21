@@ -40,6 +40,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-21T07:49Z',
+    title: 'RANDOM, TRY AGAIN, AND A NUDGE TOWARDS THE WORKSHOP',
+    notes: [
+      'Mech select has a Random button now, for anyone who does not want to pick — it lands on any chassis you have actually unlocked.',
+      'The run-over screen is Try Again and Title Screen. Try Again drops you back at mech select rather than straight into another run with the same chassis, so changing your mind after a bad run no longer means a detour through Change Mech first.',
+      'Title Screen gets a jaunty little "Upgrades" tag on its corner whenever you have banked enough to buy something in the workshop you do not already own.',
+    ],
+  },
+  {
     at: '2026-08-21T07:02Z',
     title: 'COINS THAT LOOK LIKE COINS',
     notes: [

@@ -46,10 +46,10 @@ const EARNED_LABEL: Readonly<Record<Earned['kind'], string>> = {
 };
 
 export interface GameOverCallbacks {
-  /** Same hero, new seed. */
-  readonly onRetry: () => void;
-  /** Back to the mech picker. */
-  readonly onChangeMech: () => void;
+  /** Back to the mech picker, to run again - possibly in something else entirely. */
+  readonly onTryAgain: () => void;
+  /** Back to the title. */
+  readonly onTitleScreen: () => void;
 }
 
 export class GameOverOverlay {
@@ -58,6 +58,7 @@ export class GameOverOverlay {
   private readonly title: HTMLDivElement;
   private readonly eyebrow: HTMLDivElement;
   private readonly body: HTMLDivElement;
+  private readonly upgradesBadge: HTMLSpanElement;
 
   constructor(cb: GameOverCallbacks) {
     const el = document.createElement('div');
@@ -79,15 +80,28 @@ export class GameOverOverlay {
 
     const actions = document.createElement('div');
     actions.className = 'summary__actions';
-    const again = button('Run it again', 'btn btn--primary', cb.onRetry);
-    const change = button('Change mech', 'btn', cb.onChangeMech);
-    actions.append(again, change);
+    const tryAgain = button('Try Again', 'btn btn--primary', cb.onTryAgain);
+    const titleScreen = button('Title Screen', 'btn summary__title-btn', cb.onTitleScreen);
+
+    // A STICKER, NOT A LABEL CHANGE. "Title Screen" stays true to what the button does whether or
+    // not the shop has anything in it - the badge is what says there is a reason to detour through
+    // Upgrades on the way, and only appears when there actually is one (see `show`).
+    const badge = document.createElement('span');
+    badge.className = 'summary__upgrades-badge';
+    badge.textContent = 'Upgrades';
+    badge.hidden = true;
+    // Decoration on top of a button whose own label already says where it goes.
+    badge.setAttribute('aria-hidden', 'true');
+    titleScreen.appendChild(badge);
+
+    actions.append(tryAgain, titleScreen);
     el.appendChild(actions);
 
     this.element = el;
     this.title = head.querySelector('[data-title]') as HTMLDivElement;
     this.eyebrow = head.querySelector('[data-eyebrow]') as HTMLDivElement;
     this.body = body;
+    this.upgradesBadge = badge;
   }
 
   get visible(): boolean {
@@ -117,7 +131,14 @@ export class GameOverOverlay {
    * one piece of news, and burying it under the damage breakdown means a player finds out by
    * noticing a tile has changed on the picker three runs later - which is not finding out.
    */
-  show(world: World, seed: number, banked = 0, earned: readonly Earned[] = []): void {
+  show(
+    world: World,
+    seed: number,
+    banked = 0,
+    earned: readonly Earned[] = [],
+    canAffordUpgrade = false,
+  ): void {
+    this.upgradesBadge.hidden = !canAffordUpgrade;
     const won = world.phase === RUN_PHASE_VICTORY;
     this.eyebrow.textContent = won ? 'Scraplord down' : 'Run over';
     this.title.textContent = won ? 'SURVIVED' : 'SCRAPPED';

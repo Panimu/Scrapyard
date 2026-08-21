@@ -22,7 +22,7 @@ import {
   metaSpent,
   type MetaDef,
 } from '../src/core/data/meta.js';
-import { reconcileMetaTiers } from '../src/appState.js';
+import { AppState, reconcileMetaTiers } from '../src/appState.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { ARTILLERY, CANNON } from '../src/core/content/weaponCatalog.js';
@@ -528,5 +528,33 @@ describe('reinforced mounts', () => {
     tiers[at] = 1;
     const upgraded = worldWith(tiers);
     expect(fill(upgraded)).toBe(5);
+  });
+});
+
+/**
+ * WHETHER THE BANK COVERS SOMETHING - the game-over screen's badge asks this once a run, and it
+ * has to say no as readily as it says yes: a player sitting on more credits than the cheapest tier
+ * costs, with every upgrade already maxed, has nothing left to point them at.
+ */
+describe('canAffordMeta', () => {
+  const cheapest = Math.min(...META_CATALOG.map((d) => d.cost));
+
+  it('is false with nothing banked, and true once the cheapest tier is covered', () => {
+    const state = new AppState();
+    state.settings.credits = 0;
+    expect(state.canAffordMeta()).toBe(false);
+    state.settings.credits = cheapest - 1;
+    expect(state.canAffordMeta()).toBe(false);
+    state.settings.credits = cheapest;
+    expect(state.canAffordMeta()).toBe(true);
+  });
+
+  it('is false once every upgrade is maxed, however much is banked', () => {
+    const state = new AppState();
+    state.settings.credits = 100000;
+    for (const def of META_CATALOG) {
+      for (let i = 0; i < def.tiers; i++) expect(state.buyMeta(def.id)).toBe(true);
+    }
+    expect(state.canAffordMeta()).toBe(false);
   });
 });

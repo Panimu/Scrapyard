@@ -120,13 +120,22 @@ export class HeroSelect {
     back.textContent = 'Back';
     back.addEventListener('click', onBack);
 
+    // A THIRD OPTION FOR THE PLAYER WHO DOES NOT CARE WHICH CHASSIS - it picks the tile a tap
+    // would have, so it goes through the exact same `select`, not a separate path that could pick
+    // a locked one. It only ever lands on something owned.
+    const random = document.createElement('button');
+    random.type = 'button';
+    random.className = 'btn';
+    random.textContent = 'Random';
+    random.addEventListener('click', () => this.selectRandom());
+
     const go = document.createElement('button');
     go.type = 'button';
     go.className = 'btn btn--primary';
     go.textContent = 'Next';
     go.addEventListener('click', () => this.onNext(this.selected));
 
-    row.append(back, go);
+    row.append(back, random, go);
     el.appendChild(row);
 
     this.element = el;
@@ -178,6 +187,17 @@ export class HeroSelect {
   private firstUnlocked(): number {
     const i = this.unlocked.indexOf(true);
     return i < 0 ? 0 : i;
+  }
+
+  /** Picks uniformly among unlocked chassis and scrolls it into view - a grid of sixteen can run
+   * well past the fold, and a selection nobody can see is not a pick. */
+  private selectRandom(): void {
+    const candidates: number[] = [];
+    for (let i = 0; i < this.unlocked.length; i++) if (this.unlocked[i]) candidates.push(i);
+    if (candidates.length === 0) return;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    this.select(pick);
+    this.tiles[pick].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   hide(): void {
