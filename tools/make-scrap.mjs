@@ -437,6 +437,49 @@ const DRAW_CONSUMABLE = `(kind) => {
   };
   const COIN_FACE = '#4fb8ff', COIN_EDGE = '#1d6ea8', COIN_DEEP = '#12456b', COIN_LITE = '#a8e0ff';
 
+  /**
+   * A COLUMN OF COINS, seen from a shallow angle - the shape everyone reads as savings.
+   *
+   * Each coin in the stack shows only the front band of its edge, so it is drawn as an ellipse
+   * whose lower half is the shadowed side and whose upper sliver catches the light; stacking them
+   * upward at less than a full band's height is what leaves each one's rim visible under the next.
+   * Only the TOP coin gets a face, because only the top coin has one you can see.
+   *
+   * rw/rh are the ellipse radii - rh well under rw is the whole tilt.
+   */
+  const coinStack = (px, baseY, n, rw, rh) => {
+    g.beginPath(); g.ellipse(px + 1, baseY + rh * 0.55, rw * 1.04, rh * 0.72, 0, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.36)'; g.fill();
+
+    const step = rh * 1.15;
+    for (let i = 0; i < n; i++) {
+      const y = baseY - i * step;
+      // The coin's edge, shadowed underneath.
+      g.beginPath(); g.ellipse(px, y, rw, rh, 0, 0, 6.284);
+      g.fillStyle = COIN_DEEP; g.fill();
+      // The lit band across its middle, which is what separates it from the coin below.
+      g.beginPath(); g.ellipse(px, y - rh * 0.30, rw * 0.985, rh * 0.80, 0, 0, 6.284);
+      g.fillStyle = COIN_EDGE; g.fill();
+    }
+
+    // The top face, inset inside its own rim, with the same nut the flat coins carry.
+    const ty = baseY - (n - 1) * step - rh * 0.30;
+    const fg = g.createLinearGradient(px, ty - rh, px, ty + rh);
+    fg.addColorStop(0, COIN_LITE);
+    fg.addColorStop(1, COIN_FACE);
+    g.beginPath(); g.ellipse(px, ty, rw * 0.76, rh * 0.72, 0, 0, 6.284);
+    g.fillStyle = fg; g.fill();
+    const nut = rw * 0.36;
+    g.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.283185 + 0.5236;
+      const nx = px + Math.cos(a) * nut, ny = ty + Math.sin(a) * nut * (rh / rw);
+      if (i === 0) g.moveTo(nx, ny); else g.lineTo(nx, ny);
+    }
+    g.closePath();
+    g.fillStyle = COIN_EDGE; g.fill();
+  };
+
   // --- 0: SPANNER --------------------------------------------------------------------------
   // An OPEN-END wrench. The first attempt drew two closed rings on a shaft and read as a barbell:
   // at 34 world units a closed jaw is just a circle, and two circles on a bar is a dumbbell to
@@ -484,42 +527,89 @@ const DRAW_CONSUMABLE = `(kind) => {
   }
 
   if (kind === 3) {
-    // SIX ROUND ONE, NOT EIGHT PLUS TWO. This drew nine coins on a ring barely wider than a coin,
-    // so every rim crossed two others and the whole sprite resolved into a spiral - a pinwheel,
-    // not a heap of money. Found by downsampling to the size it is actually drawn at; at the 96 px
-    // source it merely looked busy. Six on a wider ring touch without burying each other.
+    // THREE STACKS, SEMI SIDE-ON. A flat ring of discs seen from directly above was tried twice
+    // and is a dead end at this size: nine coins resolved into a pinwheel, six into a flower.
+    // The problem is not the count, it is the CAMERA - money seen from straight overhead has no
+    // silhouette that says "a lot of it", because a pile of coins is tall and a top-down pile is
+    // not. Tipping to a shallow angle gives every coin an edge band, and a column of edge bands
+    // is the one arrangement of discs everybody reads as savings.
     //
-    // DRAWN BACK TO FRONT. Sorting by y before drawing means a coin lower on the screen overlaps
-    // the one behind it, which is the only thing that makes a flat ring of discs read as a pile
-    // rather than as a pattern.
-    const ring = [];
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * 6.284 + 0.4;
-      ring.push([CX + Math.cos(a) * S * 0.17, CY + Math.sin(a) * S * 0.17 * 0.85]);
+    // Uneven heights and a slight stagger, so it is three stacks rather than a bar chart. Drawn
+    // back to front: the rearmost stack first, so the front ones overlap it.
+    const stacks = [[-0.175, 0.045, 4], [0.165, 0.035, 3], [-0.01, 0.10, 5]];
+    for (const [fx, fy, n] of stacks) {
+      coinStack(CX + fx * S, CY + fy * S, n, S * 0.115, S * 0.052);
     }
-    ring.sort((p, q) => p[1] - q[1]);
-    for (const [rx, ry] of ring) coin(rx, ry, S * 0.115, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
-    // The one on top of the heap, a shade larger and drawn last.
-    coin(CX, CY - S * 0.02, S * 0.13, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
   }
 
   if (kind === 4) {
-    // A sack with the neck open and coins spilling over the lip.
+    // THE SACK, and the coins coming out of it are the point.
+    //
+    // What was here was a flat brown ellipse with a second ellipse on top for a neck and seven
+    // full-size coins scattered over it at random angles - which read as a puddle with some
+    // buttons dropped in it. Three things fix it: a SILHOUETTE that narrows to a tied neck so the
+    // shape itself says sack, coins that are SMALL against the bag (they were nearly a third of
+    // its width, so the bag looked like a coaster), and coins placed as a STREAM over the front
+    // lip and down onto the ground rather than sprinkled.
+    const BX = CX, BY = CY + S * 0.07;
+    const CLOTH = '#8a7757', CLOTH_DK = '#5f5139', CLOTH_HI = '#a3906c';
+    const SMALL = S * 0.062;
+
+    // Ground shadow, flat.
+    g.beginPath(); g.ellipse(BX + 2, BY + S * 0.20, S * 0.31, S * 0.095, 0, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
+
+
+    // The bag: wide and heavy at the bottom, drawn in to a tied neck.
     g.beginPath();
-    g.ellipse(CX + 2, CY + S * 0.10, S * 0.30, S * 0.26, 0, 0, 6.284);
-    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fill();
+    g.moveTo(BX - S * 0.085, BY - S * 0.115);
+    g.bezierCurveTo(BX - S * 0.33, BY - S * 0.01, BX - S * 0.30, BY + S * 0.20, BX, BY + S * 0.20);
+    g.bezierCurveTo(BX + S * 0.30, BY + S * 0.20, BX + S * 0.33, BY - S * 0.01, BX + S * 0.085, BY - S * 0.115);
+    g.closePath();
+    g.fillStyle = CLOTH; g.fill();
+
+    // Weight in the bottom and light on the left shoulder - without these the silhouette is a
+    // paper cut-out.
+    g.save(); g.clip();
+    g.beginPath(); g.ellipse(BX + S * 0.06, BY + S * 0.20, S * 0.30, S * 0.15, 0, 0, 6.284);
+    g.fillStyle = 'rgba(0,0,0,0.20)'; g.fill();
+    g.beginPath(); g.ellipse(BX - S * 0.15, BY + S * 0.02, S * 0.10, S * 0.13, -0.4, 0, 6.284);
+    g.fillStyle = 'rgba(255,255,255,0.10)'; g.fill();
+    g.restore();
+
+    // The tie, and the gathered cloth above it.
+    g.fillStyle = CLOTH_DK;
+    g.fillRect(BX - S * 0.095, BY - S * 0.135, S * 0.19, S * 0.035);
+    g.fillStyle = CLOTH_HI;
     g.beginPath();
-    g.ellipse(CX, CY + S * 0.08, S * 0.29, S * 0.25, 0, 0, 6.284);
-    g.fillStyle = '#7a6a4e'; g.fill();
-    g.beginPath();
-    g.ellipse(CX, CY + S * 0.08, S * 0.29, S * 0.25, 0, 3.34, 6.08);
-    g.strokeStyle = '#5c4f3a'; g.lineWidth = 3; g.stroke();
-    // Neck.
-    g.fillStyle = '#8d7b5b';
-    g.beginPath(); g.ellipse(CX, CY - S * 0.13, S * 0.17, S * 0.09, 0, 0, 6.284); g.fill();
-    for (let i = 0; i < 7; i++) {
-      const a = rnd() * 6.284;
-      coin(CX + Math.cos(a) * S * 0.16, CY - S * 0.16 + Math.sin(a) * S * 0.06, S * 0.10, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
+    g.moveTo(BX - S * 0.085, BY - S * 0.135);
+    g.lineTo(BX - S * 0.115, BY - S * 0.215);
+    g.lineTo(BX + S * 0.115, BY - S * 0.215);
+    g.lineTo(BX + S * 0.085, BY - S * 0.135);
+    g.closePath(); g.fill();
+
+    // The open mouth, and the coins coming over its front lip.
+    g.beginPath(); g.ellipse(BX, BY - S * 0.215, S * 0.115, S * 0.045, 0, 0, 6.284);
+    g.fillStyle = CLOTH_DK; g.fill();
+    // TWO HEAPS AND ONE IN THE AIR - not a line of coins.
+    //
+    // The first pass ran an evenly-spaced arc of identical discs from the mouth down and around,
+    // and evenly-spaced identical discs on a smooth curve are a CHAIN. It read as a necklace
+    // draped over a sack every time, at both sizes. What fixes it is clustering: coins heaped in
+    // the mouth and coins heaped where they landed, each group overlapping itself at slightly
+    // different sizes, with a single coin caught mid-fall to say which way the money is going.
+    // One is a falling coin; six in a row is jewellery.
+    const heap = [
+      // Piled up in the mouth, spilling over the near lip.
+      [-0.055, -0.238, 1.0], [0.025, -0.246, 0.92], [-0.012, -0.219, 0.86],
+      [0.098, -0.203, 0.95],
+      // The one still on its way down.
+      [0.196, -0.075, 0.9],
+      // And the pile at the foot of the bag.
+      [0.268, 0.128, 1.0], [0.340, 0.170, 0.88], [0.232, 0.190, 0.94], [0.310, 0.206, 0.82],
+    ];
+    for (const [fx, fy, k] of heap) {
+      coin(BX + fx * S, BY + fy * S, SMALL * k, COIN_FACE, COIN_EDGE, COIN_DEEP, COIN_LITE);
     }
   }
 

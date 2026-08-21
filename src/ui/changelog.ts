@@ -43,7 +43,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-21T07:02Z',
     title: 'COINS THAT LOOK LIKE COINS',
     notes: [
-      'The credits have been redrawn. They were flat blue circles with a round highlight on them — which is how you draw a bubble, not money — and next to the blue XP gems they read as more of the same. They are struck discs now: a raised rim, a stamped nut on the face, and a bit of thickness under it.',
+      'The credits have been redrawn. They were flat blue circles with a round highlight on them — which is how you draw a bubble, not money — and next to the blue XP gems they read as more of the same. They are struck discs now: a raised rim, a stamped nut on the face, and a bit of thickness under it. The bigger denominations changed too: the large pile is three side-on stacks, and the sack actually looks like a sack, with coins heaped in the mouth and spilled at its foot.',
       'A magnet now sweeps up credits and spanners as well as XP. Left alone they still sit where they fell — walking over to them is the choice a barrel is asking you to make — but a magnet is the one thing whose whole job is collecting, and it was leaving the money on the floor.',
       'Fuel drums no longer leave a heap of splintered fence boards behind when they go up. They leave a scorch mark, which is all a drum should leave.',
     ],
