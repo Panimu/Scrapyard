@@ -23,6 +23,9 @@ public static class Constants
     /// </summary>
     public const double Dt = 1.0 / 60.0;
 
+    /// <summary>Fraction of heat capacity a cut-out weapon must cool to before it may fire again.</summary>
+    public const double HeatResumeFrac = 0.5;
+
     public const double IntroSec = 3;
 
     /// <summary>
@@ -144,8 +147,73 @@ public sealed class SteeringTuning
     public double PushEpsilon = 1.5;
 }
 
+/// <summary>
+/// DESIGN.md §8.1. <c>MoveDrag</c> is DELIBERATELY ABSENT: it is derived as
+/// <c>MoveAccel / MoveMaxSpeed</c> in <c>Stats.ResolvePlayerStats</c>, which is what makes terminal
+/// velocity EQUAL <c>MoveMaxSpeed</c> for every hero. An independent number here is the exact bug
+/// that once put a chassis's real top speed above a runt's and broke kiting for it.
+/// </summary>
+public sealed class PlayerBaseTuning
+{
+    /// <summary>Six runts in contact is ~50 dps: dead in 2.4 s. Being encircled should kill you.</summary>
+    public double MaxHp = 120;
+
+    public double HpRegen = 0;
+    public double Armour = 0;
+    public double MoveAccel = 700;
+
+    /// <summary>tau = 195/700 = 0.279 s; releasing the stick coasts 54 u, about one mech length.</summary>
+    public double MoveMaxSpeed = 195;
+
+    public double PickupRadius = 105;
+
+    /// <summary>Gems are sparse and often abandoned while kiting; the curve is paid here.</summary>
+    public double XpGain = 5.6;
+
+    public double DamageTakenMul = 1;
+
+    /// <summary>Collision radius. Constant 26 u (drawn 52 u); lives here so systems have one place to read it.</summary>
+    public double Radius = 26;
+
+    // ENERGY SHIELD - all three 0 at base, exactly like Armour: the numbers arrive on the card
+    // that grants them (p-shield). A mech with no shield card has zero layers.
+    public double ShieldLayers = 0;
+    public double ShieldRecharge = 0;
+    public double ShieldImmune = 0;
+
+    // FIELD REPAIR, both zero at base - the card (p-repair) is the whole mechanism, so a run
+    // without it has no repair clock at all rather than a slow one.
+    public double RepairAmount = 0;
+    public double RepairInterval = 0;
+}
+
+/// <summary>Combat constants that are not a resolved stat - nothing here has a tier or a hero multiplier.</summary>
+public sealed class CombatTuning
+{
+    /// <summary>
+    /// <c>taken = max(raw * ArmourMinFrac, raw - armour) * damageTakenMul</c>. Flat armour with a
+    /// 25% floor is strong against runts and weak against elites BY DESIGN - it buys tolerance for
+    /// being surrounded, never for being hit by the big thing.
+    /// </summary>
+    public double ArmourMinFrac = 0.25;
+
+    /// <summary>Damage multiplier applied to each pass after a piercing shell's first.</summary>
+    public double PierceFalloff = 0.75;
+
+    public double PlayerHitFlashSec = 0.12;
+
+    /// <summary>
+    /// Damage to the enemy whose contact broke an Energy Shield layer. Flat and small on purpose:
+    /// sized to one-shot a first-cycle Rustling (22 HP, 28.6 with the ramp run) and nothing past
+    /// that - a moment of feedback, not a damage source to build around.
+    /// </summary>
+    public double ShieldBreakDamage = 30;
+}
+
 public sealed class Tuning
 {
+    public readonly PlayerBaseTuning Player = new();
+    public readonly CombatTuning Combat = new();
     public readonly DirectorTuning Director = new();
     public readonly SteeringTuning Steering = new();
 }

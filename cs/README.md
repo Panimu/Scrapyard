@@ -1,8 +1,9 @@
 # Scrapyard.Core — the C# port
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
-the director and targeting, every content catalog, and the trig the whole port depends on are done
-and proven. `stats.ts` is the natural next step — every catalog it reads now exists.
+the director and targeting, every content catalog, `stats.ts`, and the trig the whole port depends
+on are done and proven. `weapons`, `projectiles` and `drones` are next — `stats` was the last thing
+blocking them.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -46,8 +47,8 @@ dotnet test
 | `UpgradeCatalog` — 11 weapon cards, 10 passives, 5 ascensions | done, incl. the sparse-tier key-set check |
 | `HeroCatalog` / `HeroTraits` — 16 chassis | done, every multiplier map bit-compared |
 | `MetaCatalog` — 16 workshop upgrades, `AccumulateMeta` | done, table + driven probes + a function-level unit test |
+| `Stats` — `ResolvePlayerStats` / `ResolveWeaponStats` / `ResolveSplitStats` | done, 8 + 11 + 3 driven cases, incl. the four-pool scale identity |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
-| `stats.ts` — `resolveWeaponStats` / `resolvePlayerStats` | not started — the next natural step, now that every catalog it reads exists |
 | The other 8 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
@@ -195,6 +196,17 @@ characteristic mistake:
   directly on `EffectTotal`, which does fail on it — the lesson being that an integration probe is
   not a substitute for a function-level test when a downstream rounding step can absorb the exact
   bits a bug changes.
+- **`ResolveOne`'s scale identity reordered** to the algebraically-equal
+  `heroMul + bonusMul + accMul + metaMul - 3` — fails on `four-pools-weapon`'s `heatPerSec`, one
+  bit off (`...e14a` vs `...e14b`), exactly the last-bit divergence the TypeScript's own comment
+  predicts for this exact substitution.
+- **A weapon's cooldown floor dropped** — fails `medium-laser-t7-slate` with a resolved cooldown of
+  `0`, which nothing downstream should ever see (the fire-rate ceiling exists precisely so a stack
+  of reductions cannot reach it).
+- **`ResolveSplitStats` resolving at `WeaponMaxTier - 1`** instead of the true max — fails
+  `split-not-held`'s `projectileCount` (2 instead of 3): the short rack's third missile is a tier-7
+  rung, and the split children are specified to always be the FINISHED rack regardless of what the
+  run actually holds.
 
 ### Known untested branch
 
@@ -269,19 +281,16 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Eight systems remain: `stats`, `playerMovement`, `weapons`, `projectiles`, `drones`, `sheep`,
-`damage`, `pickups`, `progression` — nine, really, since `stats.ts` sits in `data/` but is a system
-in every way that matters here (it is called at run start and every upgrade, not read as a table).
+Eight systems remain: `playerMovement`, `weapons`, `projectiles`, `drones`, `sheep`, `damage`,
+`pickups`, `progression`.
 
 In rough dependency order:
 
-- **`stats`** is unblocked *now* — `WeaponCatalog`, `UpgradeCatalog`, `HeroCatalog` and
-  `MetaCatalog` are all it was waiting on. `resolveWeaponStats` and `resolvePlayerStats` are the
-  two functions everything else in this list calls to turn a catalog entry into a number a system
-  can use.
-- **`sheep`** has no content dependency left either — it was always the simplest of the eight.
+- **`sheep`** has no content dependency left at all - it is the simplest of the eight and the
+  obvious place to start.
 - **`playerMovement`** needs `breakLootIn` from `pickups`.
-- **`weapons`, `projectiles`, `drones`** need `stats` (above) and the catalogs it resolves.
+- **`weapons`, `projectiles`, `drones`** need `Stats.ResolveWeaponStats`, which is done - they are
+  next.
 - **`pickups`** needs `progression`, `sheep` and both unported terrains (`MossWalls`/`CityBlocks`).
 - **`damage`** needs `pickups` and the per-level creature ladders (the rest of `enemyCatalog.ts`
   and `cycles.ts`, not yet ported).
