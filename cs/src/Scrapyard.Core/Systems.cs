@@ -359,3 +359,60 @@ public static class Collision
         }
     }
 }
+
+/// <summary>
+/// The layer boundary: turning a joystick's float into the int8 a replay records.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is the single most consequential function in the port that is not the RNG. Every byte of
+/// every recorded run passes through it, so getting it wrong makes every replay diverge before the
+/// simulation has run a single tick.
+/// </para>
+/// <para>
+/// AND IT CONTAINS THE WORST C# TRAP FOUND SO FAR. JavaScript's <c>Math.round</c> rounds halves
+/// toward POSITIVE INFINITY: <c>Math.round(2.5) === 3</c>, <c>Math.round(-2.5) === -2</c>. C#'s
+/// <c>Math.Round</c> defaults to BANKER'S ROUNDING - to even - so <c>Math.Round(2.5)</c> is
+/// <c>2</c> and <c>Math.Round(0.5)</c> is <c>0</c>. They disagree on every exact half, and a
+/// joystick sitting on one is not rare.
+/// </para>
+/// <para>
+/// <c>MidpointRounding.AwayFromZero</c> is NOT the fix either: it rounds -2.5 to -3 where
+/// JavaScript gives -2.
+/// </para>
+/// <para>
+/// The naive <c>Math.Floor(x + 0.5)</c> is right for every value this game produces, and is still
+/// not what is written below, because it is wrong for <c>0.49999999999999994</c> - the addition
+/// rounds up to exactly 1 before the floor sees it, giving 1 where JavaScript gives 0. Comparing
+/// the fractional part avoids the addition entirely.
+/// </para>
+/// </remarks>
+public static class Input
+{
+    /// <summary>
+    /// JavaScript's <c>Math.round</c>, exactly: round half toward positive infinity, with no
+    /// intermediate addition that could round first.
+    /// </summary>
+    public static double JsRound(double x)
+    {
+        double floor = Math.Floor(x);
+        return x - floor >= 0.5 ? floor + 1 : floor;
+    }
+
+    /// <summary>
+    /// A unit-disc axis to int8. The clamp is at 127 rather than 128 so the range is symmetric -
+    /// a stick pushed fully left and fully right produce values that negate exactly.
+    /// </summary>
+    public static int QuantiseAxis(double v)
+    {
+        double q = JsRound(v * 127);
+        return (int)(q < -127 ? -127 : q > 127 ? 127 : q);
+    }
+
+    /// <summary>
+    /// Back to a unit-disc axis. Multiplication by the reciprocal, NOT division by 127: the
+    /// TypeScript writes <c>q * (1 / 127)</c>, and <c>1/127</c> is not exactly representable, so
+    /// <c>q / 127</c> gives a different double for some q.
+    /// </summary>
+    public static double DequantiseAxis(int q) => q * (1.0 / 127.0);
+}

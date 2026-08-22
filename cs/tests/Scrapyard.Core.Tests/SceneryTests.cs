@@ -27,7 +27,7 @@ public class SceneryTests
     {
         var s = new ScrapPiles(ArenaSize);
         Assert.Equal(Root.GetProperty("cols").GetInt32(), s.Cols);
-        Assert.Equal(Root.GetProperty("cell").GetInt32(), ScrapPiles.Cell);
+        Assert.Equal(ScrapPiles.Cell, Root.GetProperty("cell").GetInt32());
         Assert.Equal(Root.GetProperty("arenaHalf").GetDouble(), s.ArenaHalf);
     }
 

@@ -31,6 +31,8 @@ dotnet test
 | `SpatialHash` — counting-sort broad phase | done, build and queries compared |
 | `Collision` — S8, detection only | done, 6 cases tick-by-tick |
 | `ScrapPiles` — the Scrapyard's terrain | done, 6 seeded grids cell-for-cell |
+| `FlowField` — the field the horde steers by | done, 48x48 grids compared in full |
+| `Input` — quantise / dequantise | done, 569 samples incl. every exact half |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
 | The other 10 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
@@ -112,6 +114,12 @@ characteristic mistake:
   the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
   **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
   deterministically correct, and a neat statement of the whole argument.
+- **Banker's rounding in `QuantiseAxis`** — C#'s `Math.Round` default — fails on the first exact
+  half. This is the layer boundary every byte of every recorded run passes through, so it would
+  diverge a replay before the simulation ran a tick. `MidpointRounding.AwayFromZero` is not the fix
+  either: it sends −2.5 to −3 where JavaScript gives −2.
+- **Dropping the flow field's diagonal shoulder test** — which lets a body cut the corner between
+  two walls that meet at a point — changes `dir` at cell (42,3) of the very first case.
 - **The scenery generator short-circuiting after the fill roll** — the obvious optimisation,
   skipping four draws on a quarter of the cells — fails three tests. Every yard from every seed
   comes out different, because the RNG stream slips by four draws on the first empty cell and never
@@ -169,8 +177,9 @@ sites is a coin-flip on whether the port agrees. It needs a decision before `wea
 Eleven systems remain, in rough order of independence:
 
 - `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-- `targeting` and `projectiles` need scenery (`sceneryRayHit`, `sceneryOverlap`), so scenery is
-  the next unlock.
+- `enemyAI` needs the flow field (**done**) plus the enemy catalog.
+- `targeting` and `projectiles` have their scenery dependency met, but both reach the open trig
+  question — see above.
 - `spawning`, `enemyAI` need the content catalogs and the flow field.
 - `weapons` and `progression` are the two largest (1,586 and 1,400 lines) and depend on most of
   the rest.

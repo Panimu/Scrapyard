@@ -84,6 +84,19 @@ describe('the golden-master corpus', () => {
   // One case per run rather than a loop inside one case: a failure names the run that broke, and
   // the rest still report, which is how you tell "everything moved" (a shared constant) from
   // "one level moved" (that level's content).
+  /**
+   * A GENEROUS TIMEOUT, and not an arbitrary one.
+   *
+   * The full-length run is 35,640 ticks and takes about 2.7 s on an idle machine - comfortably
+   * inside vitest's 5 s default. Under load, sharing a machine with the other 47 test files, it
+   * took 5.2 s and failed. A determinism guard that goes red because CI was busy teaches everyone
+   * to re-run it, and a guard people re-run is a guard nobody reads.
+   *
+   * 60 s is ten times the worst measured time. If a run ever genuinely approaches it, the run is
+   * too long for a unit suite and belongs behind `npm run golden -- verify` instead.
+   */
+  const REPLAY_TIMEOUT_MS = 60_000;
+
   for (const run of corpus.runs) {
     it(`replays ${run.name} exactly (${run.ticks} ticks)`, () => {
       const divergences = verifyRun(run);
@@ -95,6 +108,6 @@ describe('the golden-master corpus', () => {
             `expected ${first.expected}, got ${first.actual}. ` +
             `Bisect with: npm run golden -- bisect ${run.name}`,
       ).toBe('exact');
-    });
+    }, REPLAY_TIMEOUT_MS);
   }
 });
