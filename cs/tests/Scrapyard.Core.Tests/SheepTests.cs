@@ -156,8 +156,8 @@ public class SheepTests
                 AssertF32Row(expect, "dirX", w.Sheep.DirX, n, where);
                 AssertF32Row(expect, "dirY", w.Sheep.DirY, n, where);
                 AssertF32Row(expect, "timer", w.Sheep.Timer, n, where);
-                AssertIntRow(expect, "state", w.Sheep.State, n, where);
-                AssertIntRow(expect, "spawnId", w.Sheep.SpawnId, n, where);
+                AssertStateRow(expect, w.Sheep.State, n, where);
+                AssertSpawnIdRow(expect, w.Sheep.SpawnId, n, where);
 
                 prev = now;
                 w.Tick++;
@@ -282,13 +282,19 @@ public class SheepTests
         Assert.True(want == got, $"{where}: expected {want:x8}, got {got:x8} ({actual:R})");
     }
 
+    /// <summary>
+    /// One packed column: eight hex digits per float32, concatenated. See the fixture generator for
+    /// why the columns are strings rather than arrays - written out as JSON arrays this fixture came
+    /// to 4.9 MB, more than every other golden in the repository put together.
+    /// </summary>
     private static void AssertF32Row(JsonElement expect, string key, float[] actual, int count, string where)
     {
-        var e = expect.GetProperty(key).EnumerateArray().ToArray();
-        Assert.True(e.Length == count, $"{where}: {key} length expected {e.Length}, got {count}");
-        for (int i = 0; i < e.Length; i++)
+        string packed = expect.GetProperty(key).GetString()!;
+        Assert.True(packed.Length == count * 8,
+            $"{where}: {key} holds {packed.Length / 8} values, got {count}");
+        for (int i = 0; i < count; i++)
         {
-            uint want = Convert.ToUInt32(e[i].GetString()!, 16);
+            uint want = Convert.ToUInt32(packed.Substring(i * 8, 8), 16);
             uint got = unchecked((uint)BitConverter.SingleToInt32Bits(actual[i]));
             // First mismatch only: once one animal diverges the rest follow through the shared
             // stream, and a wall of failures buries the one that carries information.
@@ -299,29 +305,28 @@ public class SheepTests
         }
     }
 
-    private static void AssertIntRow(JsonElement expect, string key, byte[] actual, int count, string where)
+    /// <summary>The state column: one digit each, since the three states are 0, 1 and 2.</summary>
+    private static void AssertStateRow(JsonElement expect, byte[] actual, int count, string where)
     {
-        var e = expect.GetProperty(key).EnumerateArray().ToArray();
-        Assert.True(e.Length == count, $"{where}: {key} length expected {e.Length}, got {count}");
-        for (int i = 0; i < e.Length; i++)
+        string packed = expect.GetProperty("state").GetString()!;
+        Assert.True(packed.Length == count, $"{where}: state holds {packed.Length} values, got {count}");
+        for (int i = 0; i < count; i++)
         {
-            if (e[i].GetInt32() != actual[i])
-            {
-                Assert.Fail($"{where}: {key}[{i}] expected {e[i].GetInt32()}, got {actual[i]}");
-            }
+            int want = packed[i] - '0';
+            if (want != actual[i]) Assert.Fail($"{where}: state[{i}] expected {want}, got {actual[i]}");
         }
     }
 
-    private static void AssertIntRow(JsonElement expect, string key, int[] actual, int count, string where)
+    /// <summary>The spawn-id column: comma-joined decimals, and empty when the flock is.</summary>
+    private static void AssertSpawnIdRow(JsonElement expect, int[] actual, int count, string where)
     {
-        var e = expect.GetProperty(key).EnumerateArray().ToArray();
-        Assert.True(e.Length == count, $"{where}: {key} length expected {e.Length}, got {count}");
-        for (int i = 0; i < e.Length; i++)
+        string packed = expect.GetProperty("spawnId").GetString()!;
+        var parts = packed.Length == 0 ? Array.Empty<string>() : packed.Split(',');
+        Assert.True(parts.Length == count, $"{where}: spawnId holds {parts.Length} values, got {count}");
+        for (int i = 0; i < count; i++)
         {
-            if (e[i].GetInt32() != actual[i])
-            {
-                Assert.Fail($"{where}: {key}[{i}] expected {e[i].GetInt32()}, got {actual[i]}");
-            }
+            int want = int.Parse(parts[i]);
+            if (want != actual[i]) Assert.Fail($"{where}: spawnId[{i}] expected {want}, got {actual[i]}");
         }
     }
 

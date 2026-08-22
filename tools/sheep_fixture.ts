@@ -193,7 +193,18 @@ function buildCase(spec: CaseSpec) {
     updateSheep(w, DT);
 
     const n = w.sheep.count;
-    const col = (a: Float32Array): string[] => Array.from({ length: n }, (_, i) => f32(a[i]));
+    // COLUMNS PACKED AS ONE STRING EACH, eight hex digits per float32 - the same trick the walls
+    // fixtures use on their cell sweeps, and for the same reason. A JSON array indented one space
+    // per element costs about fifteen bytes for every eight bytes of information, and this fixture
+    // holds nine columns for up to twenty-four animals across nearly three thousand ticks: written
+    // out naively it came to 4.9 MB, more than every other golden in the repository put together.
+    // Nothing is lost - the values are the identical bit patterns, and a packed row diffs as one
+    // line rather than twenty-four.
+    const col = (a: Float32Array): string => {
+      let out = '';
+      for (let i = 0; i < n; i++) out += f32(a[i]);
+      return out;
+    };
     perTick.push({
       count: n,
       x: col(w.sheep.x),
@@ -203,8 +214,10 @@ function buildCase(spec: CaseSpec) {
       dirX: col(w.sheep.dirX),
       dirY: col(w.sheep.dirY),
       timer: col(w.sheep.timer),
-      state: Array.from({ length: n }, (_, i) => w.sheep.state[i]),
-      spawnId: Array.from({ length: n }, (_, i) => w.sheep.spawnId[i]),
+      // One digit each: the three states are 0, 1 and 2.
+      state: Array.from({ length: n }, (_, i) => w.sheep.state[i]).join(''),
+      // Comma-joined rather than hex - these are ordinary small integers and stay readable.
+      spawnId: Array.from({ length: n }, (_, i) => w.sheep.spawnId[i]).join(','),
       rng: rngState(w),
       draws: drawsBetween(rngPrev, rngState(w)),
     });
@@ -385,7 +398,9 @@ const cases = [
       ...ring(9, 680, 0, 0),
       ...ring(4, 760, 0, 0),
     ],
-    ticks: 300,
+    // Long enough to cover every top-up and multi-animal roll this seed produces - the last of them
+    // lands at t=251.
+    ticks: 260,
   }),
 
   // THE SPAWN LOOP, ISOLATED SO ITS DRAWS CAN BE COUNTED. Every animal is armed with a timer no
@@ -410,7 +425,11 @@ const cases = [
       ...ring(9, 690, 0, 0),
       ...ring(5, 780, 0, 0),
     ].map((a) => ({ ...a, timer: 100 })),
-    ticks: 600,
+    // THREE TOP-UPS IS THE WHOLE CASE. They land 108 ticks apart, and by design nothing else here
+    // moves or rolls - so every tick between them repeats twenty-four identical columns. 220 covers
+    // an accepted placement (t=0), one that took a rejection first (t=108) and another accepted one
+    // (t=216); 600 covered three more of the same and cost two thirds of a megabyte to say so.
+    ticks: 220,
   }),
 
   // THE ORDER OF THE TWO MULTIPLICATIONS IN THE INTEGRATE, pinned deliberately.
@@ -454,7 +473,9 @@ const cases = [
     runTicks: 0,
     player: { x: 0, y: 0, ...STILL },
     animals: [{ x: 700, y: 700 }],
-    ticks: 200,
+    // Two top-up boundaries crossed (t=0 and t=108) with nothing placed at either, which is the
+    // whole claim.
+    ticks: 120,
   }),
 
   // CULLING STRAYS, including one in the MIDDLE of the array - the pool swap-removes, so a port
