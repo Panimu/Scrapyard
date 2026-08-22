@@ -27,6 +27,8 @@ dotnet test
 | `HashWorld` / `HashRunStats` | done, bit-exact including section order |
 | `Systems.BeginTick` / `EndTick` / `ReapDead` / `UpdateDifficulty` | done, 14 cases |
 | `EventRing` — the sim/renderer seam | done |
+| `MathCore` — scalar, deterministic trig, vec2 | done, 82 trig samples bit-exact |
+| `SpatialHash` — counting-sort broad phase | done, build and queries compared |
 | The other 11 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
 | Golden corpus replay | not started — needs all of `stepWorld` |
@@ -103,6 +105,15 @@ characteristic mistake:
 - **The difficulty catch-up loop running one iteration too many** (`s <= whole` for `s < whole`)
   fails on the plainest case in the fixture — one second crossed, one multiply expected, two
   applied. Bit-exact comparison is what catches it; a tolerance would not.
+- **`Trig.Sin` delegating to `Math.Sin`** — the exact thing that type exists to avoid — fails on
+  the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
+  **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
+  deterministically correct, and a neat statement of the whole argument.
+- **Truncation instead of floor** in the spatial hash (`(int)(v * inv)` for
+  `(int)Math.Floor(v * inv)`) fails on the origin-straddling case. C# casts toward zero, so the
+  whole strip between `-cellSize` and 0 folds into cell 0 and those enemies land in the wrong
+  bucket — where the query quietly misses them. **This has no TypeScript equivalent**: it is a
+  hazard the port introduces, which is why it gets a test of its own.
 
 Both reverted; the committed tree is green. If you change `Rng.cs`, `Hash.cs` or `EnemyPool.cs`, do
 that again. The failure mode all of this guards against is one where the numbers still look random,
@@ -140,7 +151,8 @@ corpus is still a long way from running.
 Eleven systems remain, in rough order of independence:
 
 - `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-- `collision`, `targeting`, `projectiles` need the spatial hash.
+- `collision`, `targeting`, `projectiles` need the spatial hash — **which now exists**, so these
+  are the next candidates.
 - `spawning`, `enemyAI` need the content catalogs and the flow field.
 - `weapons` and `progression` are the two largest (1,586 and 1,400 lines) and depend on most of
   the rest.
