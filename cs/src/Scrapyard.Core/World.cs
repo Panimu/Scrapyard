@@ -247,14 +247,49 @@ public sealed class SpawnDirector
     public double TargetPressure;
     public int LiveElites;
     public double SpawnAccumulator;
-    public int NextSpawnId;
+
+    /// <summary>
+    /// The next enemy's spawn id.
+    /// </summary>
+    /// <remarks>
+    /// STARTS AT 1, NOT 0: spawn id 0 is reserved as "none", so the projectile hit ring can use 0
+    /// for an empty slot. Starting at 0 shifts every body's id by one, which is invisible in the
+    /// horde and changes which enemy the cannon shoots - spawn id is its final tie-break.
+    /// </remarks>
+    public int NextSpawnId = 1;
+
     public int CycleIndex;
     public int CyclePhase;
     public double EliteTimer;
-    public int BossCycle;
-    public int EventCycle;
+
+    /// <summary>
+    /// The cycle whose boss has already been placed.
+    /// </summary>
+    /// <remarks>
+    /// -1, NOT 0. Zero is a real cycle index, so a director initialised to 0 believes cycle 0's
+    /// boss has already been spawned and never places it - a run that is missing its first
+    /// set-piece and looks merely easy.
+    /// </remarks>
+    public int BossCycle = -1;
+
+    /// <summary>The cycle whose mid-wave event has already been rolled. -1 for the same reason.</summary>
+    public int EventCycle = -1;
+
     public int BossSpawned;
-    public int BossHandle;
+
+    /// <summary>The most recent boss, or the null handle.</summary>
+    public int BossHandle = unchecked((int)Handle.Null);
+
+    /// <summary>
+    /// The cycle currently being spawned. Refilled in place at each rollover.
+    /// </summary>
+    /// <remarks>
+    /// <c>Index</c> starts at -1 so the FIRST tick of a run is a rollover: the director compares it
+    /// against the cycle the clock says it is in, and -1 can never equal that. A port that started
+    /// it at 0 would skip cycle 0's rollover entirely, which means no resolve, no opening event
+    /// roll, and an elite timer that was never zeroed.
+    /// </remarks>
+    public readonly ResolvedCycle Cycle = new();
 }
 
 public sealed class DifficultyState

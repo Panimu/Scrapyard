@@ -35,10 +35,14 @@ dotnet test
 | `FlowField` — the field the horde steers by | done, 48x48 grids compared in full |
 | `Input` — quantise / dequantise | done, 569 samples incl. every exact half |
 | `Spawning.RollRingPosition` + disc sampler | done, stream state compared per roll |
+| `Targeting` — 4 rules, line of sight, top-K | done, 28 probes x 4 rules; near-edge and barrel cases posed |
+| `SpecialEvents` — the wave table | done, all four ids reached by a searched seed |
+| `ScrapyardLadder` / `ResolvedCycle` | done, incl. the past-the-table extrapolation loop |
+| `Director` — the whole of S2 | done, 752 checkpoints over 12 cases, 805 bodies compared |
 | `Flavours` / `Archetypes` / `Ranks` tables | done, every field bit-compared |
 | `EnemyAI` — seek, separate, integrate, relocate | done, 7 crowds over 256 driven ticks |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
-| The other 10 systems | not started — **this is the remaining job** |
+| The other 8 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
@@ -124,6 +128,36 @@ characteristic mistake:
   `Flavours` table guessed five of Heavy's numbers from a partial dump and had `Hp = 1` where the
   real value is `10`. The fixture caught it on the first run. That is why every field of every
   flavour is compared bit for bit rather than spot-checked.
+- **`(int)` where the TypeScript has `Math.floor`**, in `Trig.Sin`'s range reduction — the easiest
+  mistake in this file, because truncation and floor agree for every POSITIVE argument. Fails at
+  `sin(-2π)` and only at negative arguments, which is what the failure message says to look for.
+- **Raying to a body's centre instead of its near edge** in targeting — fails the `near-edge` case
+  as a SET difference. **Dropping the `spawnId` tie-break** fails `exact-distance-ties` as an ORDER
+  difference. The fixture records the candidate set and the chosen order separately so the message
+  says which of the two kinds of bug it is.
+- **Counting each neighbour pair once instead of for both bodies** in the phase cannon's tally —
+  fails on `hp-ties`, where the correct answer depends entirely on the counts being symmetric.
+- **The director's initial state**, which was wrong in this port and is the reason the fixture
+  exists: `NextSpawnId` defaulted to 0 where the TypeScript reserves 0 as "none" and starts at 1,
+  and `BossCycle`/`EventCycle` defaulted to 0 where 0 is a real cycle index — so cycle 0's boss
+  would never have spawned. Caught on the **first checkpoint of the first case**.
+- **Skipping the variant roll when the cycle's chance is zero**, which looks like an obvious
+  short-circuit and desynchronises the entire first minute: cycle 0 authors `variantChance: 0` and
+  still draws the float. Fails at tick 8 on the *draw count*, not on any enemy.
+- **The spawn accumulator left unclamped** — fails with 2.6 where 1.0 was expected. Note what does
+  NOT differ: the enemy count is identical, because nothing spawned either way. The accumulator is
+  recorded as a bit pattern precisely so this is visible at all.
+- **A blocked elite banking its timer** instead of dropping — fails on `pressure-shadow`, where the
+  timer sits at -0.0166 instead of a full interval.
+- **The forward-bias redraw made unconditional** — fails on the draw count at tick 16 of
+  `forward-bias-running`, and on nothing at all in the case where the player is standing still.
+
+### Known untested branch
+
+`RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
+ladder uses a single-flavour archetype as its REGULAR, and elites and bosses never reach the
+function. An injected fault there passes, and it is recorded here rather than papered over — the
+branch gets covered when a level whose ladder rides a heavy or a boss body lands.
 - **Banker's rounding in `QuantiseAxis`** — C#'s `Math.Round` default — fails on the first exact
   half. This is the layer boundary every byte of every recorded run passes through, so it would
   diverge a replay before the simulation ran a tick. `MidpointRounding.AwayFromZero` is not the fix

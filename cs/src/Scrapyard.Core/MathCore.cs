@@ -32,6 +32,50 @@ public static class Scalar
     /// bytes, where it is a different bit pattern for the same number.
     /// </summary>
     public static double SignOf(double v) => v > 0 ? 1 : v < 0 ? -1 : 0;
+
+    /// <summary>
+    /// Stores a double into a <c>ushort</c> the way JavaScript stores one into a
+    /// <c>Uint16Array</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>C#'s CAST IS NOT THE SAME OPERATION, and the difference is undefined behaviour rather
+    /// than a wrong number.</b> ECMA-262's ToUint16 truncates toward zero and then takes the result
+    /// modulo 2^16 - a total function, defined for every finite input. C#'s <c>(ushort)someDouble</c>
+    /// agrees for values already in range and is UNSPECIFIED outside it: the compiler is free to
+    /// produce anything at all, and on x64 it produces whatever <c>cvttsd2si</c> happens to leave
+    /// behind.
+    /// </para>
+    /// <para>
+    /// That is reachable rather than theoretical. Enemy XP is a <c>Uint16Array</c> column, and the
+    /// cycle ladder extrapolates past its authored rungs by compounding multipliers - so a run long
+    /// enough (somewhere past cycle 20) produces a boss worth more than 65535 XP, at which point
+    /// JavaScript wraps and a naive port does something else. It would show up as one enormously
+    /// valuable enemy in a twenty-minute run and nowhere else.
+    /// </para>
+    /// <para>
+    /// <c>%</c> on doubles is fmod in both languages and is exactly rounded, so the two agree bit
+    /// for bit including for arguments far above 2^53.
+    /// </para>
+    /// </remarks>
+    public static ushort ToU16(double v)
+    {
+        if (double.IsNaN(v) || double.IsInfinity(v)) return 0;
+        double t = System.Math.Truncate(v);
+        double m = t % 65536.0;
+        if (m < 0) m += 65536.0;
+        return (ushort)m;
+    }
+
+    /// <summary>Stores a double into a <c>byte</c> the way JavaScript stores into a <c>Uint8Array</c>.</summary>
+    public static byte ToU8(double v)
+    {
+        if (double.IsNaN(v) || double.IsInfinity(v)) return 0;
+        double t = System.Math.Truncate(v);
+        double m = t % 256.0;
+        if (m < 0) m += 256.0;
+        return (byte)m;
+    }
 }
 
 /// <summary>

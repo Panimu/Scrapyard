@@ -90,6 +90,34 @@ public sealed class DirectorTuning
     /// bias. A twentieth of the slowest chassis' top speed.
     /// </summary>
     public double ForwardBiasMinSpeed = 20;
+
+    // --- the cycle's schedule, in seconds from the cycle's own start -------------------------
+    // 0:00 regulars alone. 0:30 the wave's second event roll. 1:00 elites begin. 1:30 the boss.
+
+    public double EliteFromSec = 60;
+    public double SpecialEventMidSec = 30;
+    public double BossFromSec = 90;
+
+    // --- pressure, which is the whole feedback loop -------------------------------------------
+    // The target the drip fills toward: 28 in cycle 0 rising to 89.25 in cycle 7. Regulars weigh
+    // 1, elites 3, bosses 6, counted only within ThreatRadius - so killing things makes more
+    // things arrive immediately, and running away genuinely thins the horde.
+
+    public double PressureBase = 28;
+    public double PressurePerCycle = 8.75;
+
+    // --- the caps ------------------------------------------------------------------------------
+    // 8.0 s between elite drop-ins in cycle 0, shortening by 0.4 s a cycle, floored at 4.5 s.
+
+    public double EliteIntervalBase = 8;
+    public double EliteIntervalPerCycle = 0.4;
+    public double EliteIntervalMin = 4.5;
+
+    /// <summary>Elites stop arriving while this many are already near the player.</summary>
+    public int MaxLiveElites = 5;
+
+    /// <summary>Rate limit on the drip. Blocked spawns are never banked - see the accumulator clamp.</summary>
+    public double MaxSpawnsPerSec = 12;
 }
 
 /// <summary>How the horde pushes itself apart, and how knockback decays.</summary>

@@ -97,6 +97,13 @@ public sealed class EventRing
 public static class EventKind
 {
     public const int PhaseChanged = 6;
+
+    // Ported piecemeal, like the constants: an id arrives with the system that pushes it. The
+    // NUMBERS are the format - the renderer switches on them and the ring is hashed - so they are
+    // the TypeScript's values, not a fresh sequence.
+    public const int EnemySpawned = 0;
+    public const int BossSpawned = 12;
+    public const int SpecialEvent = 26;
 }
 
 /// <summary>

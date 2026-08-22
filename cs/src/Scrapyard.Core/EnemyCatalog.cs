@@ -89,6 +89,52 @@ public static class Archetypes
 
     /// <summary>Collision radius per archetype.</summary>
     public static readonly double[] Radius = { 13, 18, 26, 34, 56 };
+
+    public static readonly double[] Mass = { 0.5, 1.2, 3, 7, 1e9 };
+
+    /// <summary>
+    /// The flavours each body class may roll, PLAIN FIRST. The order is the format: `rollFlavour`
+    /// picks from index 1 upward, so reordering a row changes which variant a seed produces.
+    /// </summary>
+    /// <remarks>
+    /// Named FlavourPool rather than Flavours because the latter is the catalog class itself, and a
+    /// field that shadows it makes every member of it unreachable from here.
+    /// <para>
+    /// A runt has no `swift` and that is Invariant K rather than an oversight - a swift runt
+    /// outruns the heaviest chassis late in a run. A grunt may have it: 98 x 1.18 x growth peaks
+    /// well under every hero's top speed.
+    /// </para>
+    /// </remarks>
+    public static readonly int[][] FlavourPool =
+    {
+        new[] { Flavours.Plain, Flavours.Tough, Flavours.Spiky },  // runt
+        new[] { Flavours.Plain, Flavours.Swift, Flavours.Spiky },  // grunt
+        new[] { Flavours.Plain, Flavours.Spiky },                  // bruiser
+        new[] { Flavours.Plain },                                  // heavy
+        new[] { Flavours.Plain },                                  // boss
+    };
+}
+
+/// <summary>
+/// What a rank multiplies. The index is the id.
+/// </summary>
+/// <remarks>
+/// <b><c>Pressure</c> IS THE DIRECTOR'S CURRENCY</b>, and it is the one field here that is not a
+/// stat multiplier. A regular weighs 1, an elite 3, a boss 6 - so a boss standing near the player
+/// suppresses six regulars' worth of spawning while it lives. That is the design rather than a
+/// side effect: the cannon commits to the boss whether the player likes it or not, so the rule
+/// that makes the boss a problem is the same rule that clears the room to solve it.
+/// </remarks>
+public readonly struct RankDef
+{
+    public required string Name { get; init; }
+    public required double Hp { get; init; }
+    public required double Xp { get; init; }
+    public required double Speed { get; init; }
+    public required double Dmg { get; init; }
+    public required double Size { get; init; }
+    public required double Mass { get; init; }
+    public required double Pressure { get; init; }
 }
 
 public static class Ranks
@@ -97,6 +143,14 @@ public static class Ranks
     public const int Elite = 1;
     public const int Boss = 2;
     public const int Count = 3;
+
+    public static readonly RankDef[] All =
+    {
+        new() { Name = "regular", Hp = 1,  Xp = 1,  Speed = 1,    Dmg = 1,   Size = 1,   Mass = 1,    Pressure = 1 },
+        new() { Name = "elite",   Hp = 10, Xp = 8,  Speed = 0.86, Dmg = 1.5, Size = 1.5, Mass = 3,    Pressure = 3 },
+        // Mass 1e9: a boss is not pushed by anything. Written as the literal the TypeScript uses.
+        new() { Name = "boss",    Hp = 42, Xp = 60, Speed = 0.72, Dmg = 2.2, Size = 2.9, Mass = 1e9,  Pressure = 6 },
+    };
 }
 
 public static partial class Cycles

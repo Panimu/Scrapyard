@@ -33,6 +33,16 @@ public interface IScenery
     /// <summary>Distance along the ray to the first blocking piece, or -1.</summary>
     double RayHit(double ox, double oy, double dx, double dy, double maxT);
 
+    /// <summary>
+    /// Slides a circle out of whatever it is overlapping, and reports the surface normal.
+    /// </summary>
+    /// <remarks>
+    /// On the interface rather than only on <see cref="ScrapPiles"/> because both the director and
+    /// player movement call it without knowing which terrain the level has - which is the entire
+    /// argument for the terrains being a tagged union rather than a flag.
+    /// </remarks>
+    SceneryPush PushOut(double x, double y, double r);
+
     /// <summary>The nearest DESTRUCTIBLE piece overlapping the circle, or -1.</summary>
     int DestructibleOverlap(double x, double y, double r);
 
