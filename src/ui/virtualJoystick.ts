@@ -11,6 +11,9 @@
  *    stealing the gesture - leaves the player walking into the horde forever. We handle
  *    `pointercancel` and `lostpointercapture` as well as `pointerup`, and release on window
  *    blur and on visibility change. Any one of those five paths ends the drag cleanly.
+ *    A HELD KEY IS THE SAME BUG, and it took longer to notice because it needs a keyboard: an
+ *    alt-tab delivers the `keyup` to the other window, so the key stays down here forever. The
+ *    paths that lose the input stream clear the keys as well - see `releaseAll`.
  * 2. HIJACKED MOVEMENT. A second finger tapping a HUD button must not become the stick. We
  *    latch exactly one `pointerId` for the whole drag and ignore every other pointer until it
  *    ends. The surface also sits UNDER the UI in the stacking order, so a touch that lands on
@@ -71,7 +74,10 @@ export class VirtualJoystick {
     this.element.addEventListener('touchstart', preventDefault, { passive: false });
     this.element.addEventListener('touchmove', preventDefault, { passive: false });
 
-    window.addEventListener('blur', this.release);
+    // BOTH OF THESE CLEAR THE KEYS, not just the drag: they are the paths where this window
+    // stops receiving the input stream at all, so any `keyup` still owed to us is going somewhere
+    // else. See `releaseAll`.
+    window.addEventListener('blur', this.releaseAll);
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -112,6 +118,15 @@ export class VirtualJoystick {
   }
 
   /**
+   * Whether the stick is currently driving the mech at all. False while an overlay owns the
+   * screen. The gamepad reads this to decide whether its stick moves the mech or moves the
+   * focus ring - the two must not both be live, or picking a card walks you into a bruiser.
+   */
+  get driving(): boolean {
+    return this.enabled;
+  }
+
+  /**
    * Turns the stick off while an overlay owns the screen. Releasing on the way down is the
    * important half: opening a level-up card mid-drag must not leave the player moving when it
    * closes.
@@ -120,12 +135,14 @@ export class VirtualJoystick {
     if (this.enabled === on) return;
     this.enabled = on;
     this.element.style.display = on ? '' : 'none';
-    if (!on) this.release();
+    // An overlay taking the screen takes the keyboard with it - the card underneath must not be
+    // walking when it closes - so this is the full stop rather than the pointer-only one.
+    if (!on) this.releaseAll();
   }
 
   destroy(): void {
-    this.release();
-    window.removeEventListener('blur', this.release);
+    this.releaseAll();
+    window.removeEventListener('blur', this.releaseAll);
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
@@ -208,10 +225,10 @@ export class VirtualJoystick {
   };
 
   private readonly onVisibility = (): void => {
-    if (document.hidden) this.release();
+    if (document.hidden) this.releaseAll();
   };
 
-  /** The single place a drag ends. Every terminal path routes here. */
+  /** The single place a DRAG ends. Every terminal pointer path routes here. */
   private readonly release = (): void => {
     if (this.pointerId !== -1) {
       try {
@@ -225,6 +242,38 @@ export class VirtualJoystick {
     this.outY = 0;
     this.ring.classList.remove('stick--active');
     this.place(0, 0);
+  };
+
+  /**
+   * Everything stops: the drag AND the held keys. For the paths where the window is losing the
+   * input stream itself rather than one gesture ending.
+   *
+   * ---------------------------------------------------------------------------------------------
+   * WHY THE KEYS NEEDED THEIR OWN EXIT
+   * ---------------------------------------------------------------------------------------------
+   * `release` cleared the pointer and left `keys` holding whatever was down. That is bug 1 in the
+   * header wearing a keyboard, and on desktop it was the common case rather than the edge one:
+   * alt-tab while walking and the `keyup` is delivered to the window that took focus, so `'up'`
+   * stayed in the set forever. Blur also auto-pauses the run, so the mech stood still at the
+   * moment nothing looked wrong and then walked off on its own the instant the player un-paused.
+   *
+   * Clearing is safe because a held key is not state worth preserving: the OS auto-repeats
+   * `keydown` while a key stays down, so a player still physically holding W gets it back on the
+   * next repeat without touching anything.
+   *
+   * ---------------------------------------------------------------------------------------------
+   * AND WHY POINTER-UP MUST NOT COME THROUGH HERE
+   * ---------------------------------------------------------------------------------------------
+   * The obvious fix - clear the keys inside `release` and route everything to it - buys a stutter.
+   * Auto-repeat has an INITIAL DELAY, typically around half a second, before it starts repeating;
+   * that gap is invisible when the window was not focused anyway, and very visible if a mouse
+   * click clears keys mid-run. Someone driving with WASD and clicking with the mouse would have
+   * dropped half a second of movement every click. So the pointer keeps its own narrow exit and
+   * only the paths that genuinely lose the keyboard clear it.
+   */
+  private readonly releaseAll = (): void => {
+    this.release();
+    this.keys.clear();
   };
 
   private place(dx: number, dy: number): void {

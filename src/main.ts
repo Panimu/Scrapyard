@@ -60,6 +60,8 @@ import { GameOverOverlay, type Earned } from './ui/gameOverOverlay.js';
 import { buildChangelogOverlay } from './ui/changelog.js';
 import { buildPauseOverlay } from './ui/pauseOverlay.js';
 import { VirtualJoystick } from './ui/virtualJoystick.js';
+import { GamepadInput } from './ui/gamepadInput.js';
+import { applyMotion, watchSystemMotion } from './ui/motion.js';
 import './ui/styles.css';
 
 // -----------------------------------------------------------------------------------------
@@ -79,6 +81,14 @@ async function boot(): Promise<void> {
   const ui: HTMLElement = uiRoot;
 
   const state = new AppState();
+
+  // BEFORE ANYTHING IS BUILT, let alone painted. The stylesheet keys every transition and keyframe
+  // it can disarm off `data-motion`, so an attribute that arrived after the first overlay existed
+  // would let animations start and then be cancelled part-way - which looks worse than either
+  // state and is exactly what a reduced-motion player is trying to avoid. See src/ui/motion.ts.
+  applyMotion(state.settings);
+  watchSystemMotion(state.settings);
+
   const params = new URLSearchParams(location.search);
   if (params.get('debug') === '1') state.settings.debug = true;
 
@@ -192,6 +202,9 @@ async function boot(): Promise<void> {
   // ---------------------------------------------------------------------------------------
 
   const joystick = new VirtualJoystick();
+  // Polled from the frame loop rather than listening, because the Gamepad API has no axis events.
+  // Start is wired to the same toggle the HUD's pause button uses, so there is one pause path.
+  const pad = new GamepadInput({ onPause: () => togglePause() });
 
   const hud = new Hud({
     onPause: () => togglePause(),
@@ -298,6 +311,9 @@ async function boot(): Promise<void> {
       state.saveSettings();
       // The debug readout is the one setting that can be honoured immediately, so it is.
       hud.setDebugVisible(state.settings.debug);
+      // So is the motion preference - it is one attribute, and a player who has just turned
+      // animations back on to see whether it helps should not have to reload to find out.
+      applyMotion(state.settings);
     },
     onChangelog: () => {
       settings.hide();
@@ -407,10 +423,21 @@ async function boot(): Promise<void> {
 
   const sampleInput = (): Readonly<InputFrame> => {
     const v = joystick.read();
+    let mx = v.x;
+    let my = v.y;
+    // THE PAD ONLY SPEAKS WHEN THE STICK IS SILENT, rather than the two being summed. A thumb on
+    // the screen and a stick resting slightly off-centre would otherwise fight, and the touch -
+    // which is unambiguously deliberate - would lose ground to a worn analog stick.
+    if (mx === 0 && my === 0) {
+      const g = pad.read();
+      mx = g.x;
+      my = g.y;
+    }
     // Quantised to int8 at the layer boundary. The DOM produces engine-dependent floats; this is
     // what makes a recorded input stream byte-exact, 4 bytes a tick, and replayable in Node.
-    frame.moveX = quantiseAxis(v.x);
-    frame.moveY = quantiseAxis(v.y);
+    // The gamepad goes through the SAME funnel, so a controller run replays like any other.
+    frame.moveX = quantiseAxis(mx);
+    frame.moveY = quantiseAxis(my);
     frame.buttons = 0;
     frame.chooseIndex = pendingChoice;
     // Consumed exactly once: the sim applies one pick per tick and a repeat would spend the
@@ -765,6 +792,15 @@ async function boot(): Promise<void> {
 
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick);
+
+    // ONCE PER RENDERED FRAME, and before the sim advances. `sampleInput` runs once per SIM STEP -
+    // up to five times in one frame when catching up - so polling in there would read the same
+    // physical stick position five times and treat it as five separate intents.
+    //
+    // `navigating` is the whole of the mode switch: the pad drives the mech only when the stick
+    // would be, so any overlay that takes the screen hands the pad's stick to the focus ring
+    // instead. One source of truth for both, rather than a second list of which screens are modal.
+    pad.poll(state.phase !== 'running' || !joystick.driving);
 
     const raw = nowMs - lastFrameMs;
     lastFrameMs = nowMs;

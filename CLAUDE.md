@@ -13,8 +13,10 @@ catch-up sweep later — a changelog brought up to date in arrears is written fr
 of from the intent, and it shows.
 
 - Newest first, at the top of `CHANGELOG`.
-- Stamp it with the commit's own time:
-  `git log -1 --date=format-local:'%Y-%m-%dT%H:%MZ' --pretty=format:'%ad'`
+- Stamp it with the commit's own time, in UTC:
+  `TZ=UTC git log -1 --date=format-local:'%Y-%m-%dT%H:%MZ' --pretty=format:'%ad'`
+  The `TZ=UTC` is load-bearing and was missing here: `format-local` is the machine's zone, so a
+  contributor not on UTC stamped entries an hour out while the `Z` suffix still claimed UTC.
 - One entry per thing a PLAYER would notice, not one per commit. A commit that lands three
   unrelated player-facing changes gets three entries sharing a timestamp.
 - Refactors, comments and build plumbing get nothing. If it did not change the game, it is not a

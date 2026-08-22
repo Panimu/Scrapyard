@@ -6,7 +6,13 @@
  * ---------------------------------------------------------------------------------------------
  * Put it at the TOP of `CHANGELOG`, newest first, and stamp it with the commit's own time:
  *
- *     git log -1 --date=format-local:'%Y-%m-%dT%H:%MZ' --pretty=format:'%ad'
+ *     TZ=UTC git log -1 --date=format-local:'%Y-%m-%dT%H:%MZ' --pretty=format:'%ad'
+ *
+ * `TZ=UTC` is not optional, and this command used to be written without it. `format-local` means
+ * the MACHINE's zone, so anyone committing from a machine that is not on UTC stamped an entry an
+ * hour or more away from every other entry in the file while the `Z` suffix went on claiming it
+ * was UTC. Nothing catches that - the string is only ever read by a human - so the two conventions
+ * quietly interleave and the list stops being sortable by the thing it is sorted by.
  *
  * One entry per change a PLAYER would notice, not one per commit. Refactors, documentation fixes
  * and build plumbing do not belong here; if it did not change what happens on screen or what the
@@ -39,6 +45,39 @@ export interface ChangelogEntry {
 
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
+  {
+    at: '2026-08-22T08:50Z',
+    title: 'THE CHEST REELS SPIN AGAIN ON WINDOWS',
+    notes: [
+      'If your computer is set to keep animations to a minimum, the game was quietly taking that as a request to switch off the Cyber Chest entirely — the reels never spun, they just showed what you had already won. On Windows that setting is the same one that decides whether windows animate when they minimise, so a great many people had turned it off without ever meaning anything by it.',
+      'Settings now has an Animations control with three positions. Auto behaves as before and follows your device. On and Off decide for themselves, so you can have the reels back without changing anything about the rest of your computer, or keep them off on a machine where that is what you want.',
+      'The same setting governs the health and heat bars filling, the overheat pulse and the damage flash.',
+    ],
+  },
+  {
+    at: '2026-08-22T08:50Z',
+    title: 'CONTROLLER SUPPORT',
+    notes: [
+      'Plug in a gamepad and the left stick or the d-pad drives the mech. Start pauses.',
+      'A controller can work the menus too: a direction moves the highlight, A takes the highlighted thing, and B is the way back out. That covers picking a level-up card, so a run can be played start to finish without reaching for anything else.',
+    ],
+  },
+  {
+    at: '2026-08-22T08:50Z',
+    title: 'FIXED: THE MECH WALKING OFF ON ITS OWN AFTER ALT-TAB',
+    notes: [
+      'Switching to another window while holding a movement key left the mech believing that key was still down. The game pauses when it loses focus, so nothing looked wrong until you came back and un-paused — at which point the mech marched off in the last direction you had been holding. The same thing happened if a level-up card opened while you were moving.',
+    ],
+  },
+  {
+    at: '2026-08-22T08:50Z',
+    title: 'THE GAME LOOKS LIKE A GAME ON A BIG SCREEN',
+    notes: [
+      'Menus, the level-up cards and the summary no longer stretch the full width of a desktop window — they hold a sensible width and sit in the middle, the way they do on a phone.',
+      'Level-up cards sit side by side whenever there is room across, instead of only on a phone held sideways. On a desktop window they used to stack as three very wide, very short bars.',
+      'Buttons and cards light up under a mouse cursor, and whatever the keyboard or a controller has selected is now outlined.',
+    ],
+  },
   {
     at: '2026-08-21T19:41Z',
     title: 'THE HORDE EASES OFF LATE-RUN',

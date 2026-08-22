@@ -1345,11 +1345,55 @@ body {
   background: #201a00;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .switch,
-  .switch::after {
-    transition: none;
-  }
+/* A segmented control, for the settings that have three states rather than two. Each option keeps
+   a 44px tap height; the group is allowed to shrink because the label beside it is the thing that
+   has to stay readable on a narrow phone. */
+.segmented {
+  flex: 0 0 auto;
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0a0d12;
+  overflow: hidden;
+}
+
+.segmented__opt {
+  min-width: 46px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  pointer-events: auto;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+/* A hairline between options rather than a border on each, so the ends stay flush with the
+   group's own rounded corners. */
+.segmented__opt + .segmented__opt {
+  box-shadow: inset 1px 0 0 var(--line);
+}
+
+.segmented__opt--on {
+  background: var(--accent);
+  color: #201a00;
+}
+
+:root[data-motion='reduce'] .segmented__opt {
+  transition: none;
+}
+
+/* Resolved by src/ui/motion.ts - NOT a media query. See that file: the player setting and the
+   system preference have to produce one answer that both CSS and JS can read.
+   Written out flat rather than nested: CSS nesting only reached Safari 16.5, and this rule
+   has to hold on every iOS the game runs on. */
+:root[data-motion='reduce'] .switch,
+:root[data-motion='reduce'] .switch::after {
+  transition: none;
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -2408,14 +2452,17 @@ body {
 /* Landscape is not blocked - iOS ignores manifest orientation and offers no JS lock, so the
    camera fixes the field of view instead (src/render/camera.ts) and the layout just gets
    shorter. Overlays go two-column so their buttons stay above the fold. */
-@media (orientation: landscape) and (max-height: 460px) {
+/* SIDE BY SIDE IS A QUESTION ABOUT WIDTH, and it used to be asked about height. Both conditions
+   below want the same answer - "there is room across, so lay the cards out across" - but only one
+   of them was written, because at the time the only wide viewport this game ever saw was a phone
+   on its side, where wide and short arrive together.
+
+   On a desktop window they come apart. 1280x800 is wide AND tall, so it matched nothing, and the
+   level-up cards stayed in the phone's single column: three buttons roughly 1900px across and
+   78px tall, one above the other. Functional, and unmistakably a website. */
+@media (orientation: landscape) and (max-height: 460px), (min-width: 700px) {
   .heroes__grid {
     grid-template-columns: repeat(4, 1fr);
-  }
-
-  .hero__art {
-    width: 52px;
-    height: 52px;
   }
 
   .levelup__cards {
@@ -2426,6 +2473,15 @@ body {
     flex: 1 1 0;
     min-height: 96px;
   }
+}
+
+/* These two are genuinely about HEIGHT - they buy vertical room back on a short screen by giving
+   up size - so they stay where they were. A desktop window has the room and should spend it. */
+@media (orientation: landscape) and (max-height: 460px) {
+  .hero__art {
+    width: 52px;
+    height: 52px;
+  }
 
   .heroes__title,
   .summary__title {
@@ -2433,19 +2489,90 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bar__fill,
-  .heat__fill,
-  .stick,
-  .hud__hurt {
-    transition-duration: 0ms;
+/* ---------------------------------------------------------------------------------------------
+   DESKTOP. The layout is phone-first and stays that way; this stops it being STRETCHED.
+
+   Every overlay is a full-bleed flex column, which is exactly right on a phone and turns into a
+   settings row with fourteen centimetres of dead space between the label and its switch on a
+   monitor. Capping the column and centring it is the whole fix: nothing is re-laid-out, it is
+   just no longer allowed to grow past the width the design was drawn for.
+
+   760px rather than something narrower because two existing layouts need the room at this
+   breakpoint - the Scrapopedia's three-column grid and the level-up cards' row above.
+   -------------------------------------------------------------------------------------------- */
+@media (min-width: 700px) {
+  .overlay {
+    align-items: center;
   }
 
-  /* The overheat state must still be unmistakable without the pulse, which the stripes and the
-     red outline already carry on their own. */
-  .heat--out .heat__fill {
-    animation: none;
+  /* `width: 100%` alongside the cap because `align-items: center` would otherwise shrink every
+     child to its own content width, which turns a list of full-width buttons into a ragged stack
+     of differently-sized ones. */
+  .overlay > * {
+    width: 100%;
+    max-width: 760px;
   }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   HOVER, and only where hovering is a real thing.
+
+   Gated on `hover: hover` and `pointer: fine` because a touchscreen reports a "hover" that never
+   ends: tap a button on iOS and it keeps the hover style until something else is tapped, so the
+   last card you picked stays lit through the next fight. The `:active` states below/above are what
+   touch actually uses, and they are untouched.
+   -------------------------------------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: #232d3c;
+    border-color: var(--ink-faint);
+  }
+
+  .btn--primary:hover {
+    filter: brightness(1.08);
+  }
+
+  .card:hover,
+  .pedia__entry:hover,
+  .pedia__section-btn:hover {
+    background: var(--panel-2);
+    border-color: var(--ink-faint);
+  }
+
+  .segmented__opt:hover:not(.segmented__opt--on) {
+    background: #141a24;
+    color: var(--ink);
+  }
+
+  .switch:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+/* THE FOCUS RING IS NOT OPTIONAL, and it is the gamepad's cursor as well as the keyboard's - see
+   src/ui/gamepadInput.ts, which navigates by moving real DOM focus rather than by keeping its own
+   selection index. `:focus-visible` rather than `:focus` so a mouse click does not leave a ring
+   behind on a button nobody is navigating with. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Resolved by src/ui/motion.ts - NOT a media query. See that file: the player setting and the
+   system preference have to produce one answer that both CSS and JS can read.
+   Written out flat rather than nested: CSS nesting only reached Safari 16.5, and this rule
+   has to hold on every iOS the game runs on. */
+:root[data-motion='reduce'] .bar__fill,
+:root[data-motion='reduce'] .heat__fill,
+:root[data-motion='reduce'] .stick,
+:root[data-motion='reduce'] .hud__hurt {
+  transition-duration: 0ms;
+}
+
+/* The overheat state must still be unmistakable without the pulse, which the stripes and the
+   red outline already carry on their own. */
+:root[data-motion='reduce'] .heat--out .heat__fill {
+  animation: none;
 }
 
 /* Banked credits on the mech picker. Blue, matching the coin, and deliberately quiet: it is a
@@ -2667,10 +2794,12 @@ body {
   color: #ffdf7a;
   text-shadow: 0 0 10px rgba(255, 223, 122, .9), 0 0 30px rgba(240, 180, 41, .6);
 }
-@media (prefers-reduced-motion: reduce) {
-  .chest__name--in {
-    transition: none;
-  }
+/* Resolved by src/ui/motion.ts - NOT a media query. See that file: the player setting and the
+   system preference have to produce one answer that both CSS and JS can read.
+   Written out flat rather than nested: CSS nesting only reached Safari 16.5, and this rule
+   has to hold on every iOS the game runs on. */
+:root[data-motion='reduce'] .chest__name--in {
+  transition: none;
 }
 
 .chest__payout {
@@ -2737,20 +2866,22 @@ body {
 
 /* The landing classes are never added under reduced motion - chestOverlay.ts skips the whole
    schedule - but the reels frame is shared, so its two states are disarmed here as well. */
-@media (prefers-reduced-motion: reduce) {
-  .chest__payout--in { transition: none; }
-  .chest__window--land,
-  .chest__window--hot,
-  .chest__window--blaze,
-  .chest__window--land::after,
-  .chest__window--hot::after,
-  .chest__window--blaze::after,
-  .chest__reels--anticipating,
-  .chest__reels--jackpot {
-    animation: none;
-  }
-  /* --big is glow only, so it has nothing to disarm and stays as it is. */
+/* Resolved by src/ui/motion.ts - NOT a media query. See that file: the player setting and the
+   system preference have to produce one answer that both CSS and JS can read.
+   Written out flat rather than nested: CSS nesting only reached Safari 16.5, and this rule
+   has to hold on every iOS the game runs on. */
+:root[data-motion='reduce'] .chest__payout--in { transition: none; }
+:root[data-motion='reduce'] .chest__window--land,
+:root[data-motion='reduce'] .chest__window--hot,
+:root[data-motion='reduce'] .chest__window--blaze,
+:root[data-motion='reduce'] .chest__window--land::after,
+:root[data-motion='reduce'] .chest__window--hot::after,
+:root[data-motion='reduce'] .chest__window--blaze::after,
+:root[data-motion='reduce'] .chest__reels--anticipating,
+:root[data-motion='reduce'] .chest__reels--jackpot {
+  animation: none;
 }
+/* --big is glow only, so it has nothing to disarm and stays as it is. */
 
 /* The "· +30% at full" tail on a partly-bought upgrade. Quieter than the current figure beside it:
    what you are running with is the answer, and what it maxes at is the context. */

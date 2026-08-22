@@ -47,11 +47,33 @@ export type AppPhase =
   | 'paused'
   | 'summary';
 
+/**
+ * WHETHER THE GAME ANIMATES, and who gets to decide.
+ *
+ * `system` defers to `prefers-reduced-motion`, which is the right default and the only honest one
+ * on a phone: iOS has a real Reduce Motion switch under Accessibility, a player who threw it meant
+ * it, and the Cyber Chest is precisely the kind of thing they turned it off for.
+ *
+ * The two explicit modes exist because that query is NOT equally trustworthy everywhere. Chromium
+ * on Windows has nothing to answer it with except `SPI_GETCLIENTAREAANIMATION` - the single system
+ * bit behind "Show animations in Windows", which is about whether a window animates as it
+ * minimises. Plenty of people turn that off for a snappier desktop, having said nothing whatsoever
+ * about a slot machine inside a game, and the reels silently stopped spinning for all of them.
+ *
+ * So the preference is three-state rather than a boolean. A boolean would have had to pick a side:
+ * either it defaults on and overrides a real accessibility signal on the platform the game is
+ * actually built for, or it defaults off and the Windows player is back where they started. There
+ * is no honest two-state answer to "what did the operating system mean by that".
+ */
+export type MotionPref = 'system' | 'on' | 'off';
+
 export interface Settings {
   /** Index into HERO_CATALOG. Restored so the second run is one tap away. */
   lastHeroId: number;
   /** Backing-store scale cap. 2 is the shipping default; 1 halves fill rate on a struggling phone. */
   dprCap: 1 | 2;
+  /** See `MotionPref`. `system` unless the player has said otherwise. */
+  animations: MotionPref;
   /** Whether the on-device debug HUD is showing. Safari Web Inspector needs a Mac we do not have. */
   debug: boolean;
   /**
@@ -236,6 +258,7 @@ const SEED_UPGRADE: UpgradeId = 'w-laser-medium';
 const DEFAULTS: Settings = {
   lastHeroId: 0,
   dprCap: 2,
+  animations: 'system',
   debug: false,
   infiniteRerolls: false,
   credits: 0,
@@ -325,6 +348,11 @@ function loadSettings(): Settings {
       // clamp was quietly overwriting the preference it exists to restore.
       lastHeroId: clampInt(parsed.lastHeroId, 0, HERO_CATALOG.length - 1, DEFAULTS.lastHeroId),
       dprCap: parsed.dprCap === 1 ? 1 : 2,
+      // Anything that is not one of the three known modes degrades to `system` - the default is
+      // also the safe answer here, because it is the one that hands the question back to the
+      // player's own accessibility settings rather than guessing on their behalf.
+      animations:
+        parsed.animations === 'on' || parsed.animations === 'off' ? parsed.animations : 'system',
       debug: parsed.debug === true,
       infiniteRerolls: parsed.infiniteRerolls === true,
       // Clamped on the way IN as well as on the way out: storage is script-writable and a hand-

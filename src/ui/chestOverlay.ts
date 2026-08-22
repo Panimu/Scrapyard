@@ -64,14 +64,21 @@
  * timing constant - which is exactly why it is now spent on the 7% of spins with a jackpot still
  * live rather than on half of them.
  *
- * `prefers-reduced-motion` collapses the whole thing to the result - no spin, no landings, no
- * anticipation. Someone who has asked their phone not to move things has not asked for a
- * two-second spin, and certainly has not asked for the machine to shake.
+ * REDUCED MOTION collapses the whole thing to the result - no spin, no landings, no anticipation.
+ * Someone who has asked their phone not to move things has not asked for a two-second spin, and
+ * certainly has not asked for the machine to shake.
+ *
+ * That answer comes from `src/ui/motion.ts` and NOT from `matchMedia`, because it is no longer
+ * purely a system fact: Settings carries a three-state override. It had to, because Chromium on
+ * Windows answers `prefers-reduced-motion` from the same system bit as "Show animations in
+ * Windows" - a setting about whether windows animate as they minimise - so every player who had
+ * turned that off for a snappier desktop lost the reels without ever asking to.
  */
 
 import { upgradeIconAt, upgradeNameAt, type World } from '../core/index.js';
 import { OFFER_CREDITS, OFFER_HEAL, WEAPON_ASCENDED_TIER } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
+import { motionIsReduced } from './motion.js';
 
 /** The two non-upgrade grants a chest can pay once the pool is empty. Sprite keys, not ids. */
 const FILLER: Record<number, { name: string; icon: string }> = {
@@ -337,8 +344,11 @@ export class ChestOverlay {
     this.button.classList.add('chest__go--waiting');
     this.clearEffects();
 
-    const reduced =
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // NOT `matchMedia` directly. The stylesheet disarms the landing flares off `data-motion` on
+    // the root element, and this decides whether a spin is built at all; if the two ever consulted
+    // different sources, an override would produce a spin whose landings were cancelled underneath
+    // it - which is worse than either honest state. See src/ui/motion.ts.
+    const reduced = motionIsReduced();
 
     // The whole spin is planned here, before a single tile is built, because everything it depends
     // on is already decided. The last reel's duration is a function of what the first two land on.
