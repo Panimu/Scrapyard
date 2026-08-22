@@ -30,6 +30,8 @@ dotnet test
 | `MathCore` — scalar, deterministic trig, vec2 | done, 82 trig samples bit-exact |
 | `SpatialHash` — counting-sort broad phase | done, build and queries compared |
 | `Collision` — S8, detection only | done, 6 cases tick-by-tick |
+| `ScrapPiles` — the Scrapyard's terrain | done, 6 seeded grids cell-for-cell |
+| `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
 | The other 10 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
 | Golden corpus replay | not started — needs all of `stepWorld` |
@@ -110,6 +112,10 @@ characteristic mistake:
   the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
   **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
   deterministically correct, and a neat statement of the whole argument.
+- **The scenery generator short-circuiting after the fill roll** — the obvious optimisation,
+  skipping four draws on a quarter of the cells — fails three tests. Every yard from every seed
+  comes out different, because the RNG stream slips by four draws on the first empty cell and never
+  recovers. The TypeScript draws all five values unconditionally and says why.
 - **The contact timer computed in float32** (`timer[d] -= (float)dt` for compute-in-double,
   store-once) diverges at **tick 5** of a 40-tick case. Five subtractions is all it takes. This is
   the float32 rule failing exactly as advertised.
