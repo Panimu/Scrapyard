@@ -343,6 +343,79 @@ public sealed class KillFeed
 /// Per-world scratch. World-scoped rather than static so two worlds can be stepped in the same
 /// process, which the determinism suite does.
 /// </summary>
+/// <summary>
+/// THE BEAMS FIRED THIS TICK. A port of <c>BeamBuffer</c> in <c>events/ring.ts</c>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A SHELL IS AN OBJECT AND A BEAM IS AN EVENT - that is the whole reason this exists beside the
+/// projectile pool rather than in it. A projectile weapon leaves something behind that the
+/// simulation integrates for the next half second; a beam exists only for the tick that produced
+/// it, so it is written here, billed by the damage stage, drawn by the renderer, and gone.
+/// </para>
+/// <para>
+/// ONE ENTRY PER BILLED BODY, which is what lets the Chain Laser and the Giga swath work without
+/// either the damage stage or the renderer knowing they exist: a chain pushes an entry per link,
+/// and the swath pushes one full-length entry that bills nobody plus a zero-length entry at each
+/// covered body. <see cref="NoBeamTarget"/> is the "charge nobody" sentinel.
+/// </para>
+/// <para>
+/// NO KNOCKBACK FIELD, structurally rather than as a number set to zero: a continuous beam applying
+/// an impulse sixty times a second would launch a runt into orbit.
+/// </para>
+/// </remarks>
+public sealed class BeamBuffer
+{
+    /// <summary><c>EnemyDense</c> sentinel: the beam terminated in empty space, or in something
+    /// with no hit points to bill.</summary>
+    public const ushort NoBeamTarget = 0xffff;
+
+    public readonly int Capacity;
+    public int Count;
+
+    /// <summary>Index into the loadout - identifies which laser, hence colour and width.</summary>
+    public readonly byte[] WeaponIdx;
+
+    public readonly ushort[] EnemyDense;
+
+    /// <summary>Damage applied THIS TICK (dps * dt), already scaled - the damage stage does not rescale.</summary>
+    public readonly float[] Damage;
+
+    public readonly float[] X0;
+    public readonly float[] Y0;
+    public readonly float[] X1;
+    public readonly float[] Y1;
+
+    public BeamBuffer(int capacity)
+    {
+        Capacity = capacity;
+        WeaponIdx = new byte[capacity];
+        EnemyDense = new ushort[capacity];
+        Damage = new float[capacity];
+        X0 = new float[capacity];
+        Y0 = new float[capacity];
+        X1 = new float[capacity];
+        Y1 = new float[capacity];
+    }
+
+    /// <summary>
+    /// Appends one beam. A crowd past the buffer's capacity loses the overflow for one tick - the
+    /// clip is a backstop, not a balance number.
+    /// </summary>
+    public void Push(int weaponIdx, int enemyDense, double damage, double x0, double y0, double x1, double y1)
+    {
+        if (Count >= Capacity) return;
+        int i = Count++;
+        WeaponIdx[i] = (byte)weaponIdx;
+        EnemyDense[i] = (ushort)enemyDense;
+        Damage[i] = (float)damage;
+        X0[i] = (float)x0;
+        Y0[i] = (float)y0;
+        X1[i] = (float)x1;
+        Y1[i] = (float)y1;
+    }
+}
+
 public sealed class WorldScratch
 {
     /// <summary>Broad-phase query results. Sized well beyond the largest query the game issues.</summary>
@@ -356,6 +429,25 @@ public sealed class WorldScratch
 
     /// <summary>Top-K targeting output; length <see cref="Constants.MaxTargets"/>.</summary>
     public readonly int[] Targets = new int[Constants.MaxTargets];
+
+    /// <summary>
+    /// Dense indices already claimed by a BEAM this tick, so two lasers do not burn the same body.
+    /// </summary>
+    /// <remarks>
+    /// Every laser picks by the same rule - the weakest thing in range - so two of them left to
+    /// themselves choose the SAME body, and the second one's damage is spent on hit points the
+    /// first was already going to remove. Claims are taken in SLOT ORDER, which makes the outcome
+    /// deterministic. Refilled from zero every tick.
+    /// </remarks>
+    public readonly int[] BeamClaims = new int[Constants.WeaponSlots];
+
+    /// <summary>Scratch unit vectors. Named for their call sites rather than their contents, exactly
+    /// as the TypeScript's are - <c>v0</c> is the aim, <c>v1</c> the traverse result or a
+    /// renormalisation, <c>v2</c> a fire pattern's own aim.</summary>
+    public Vec2 V0;
+
+    public Vec2 V1;
+    public Vec2 V2;
 
     public WorldScratch(int maxQueryCandidates)
     {

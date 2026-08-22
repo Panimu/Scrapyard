@@ -41,6 +41,23 @@ public interface IScenery
     double RayHit(double ox, double oy, double dx, double dy, double maxT);
 
     /// <summary>
+    /// The first DESTRUCTIBLE piece the ray meets, or -1, with the contact distance in
+    /// <paramref name="hitT"/>.
+    /// </summary>
+    /// <remarks>
+    /// THE COMPLEMENT OF <see cref="RayHit"/>: that one answers "what stops a beam", this one
+    /// "what can a beam burn". They are deliberately disjoint - a fuel drum blocks nothing and
+    /// burns; a wreck blocks and cannot be burned; a tree does both, which is why the beam code
+    /// asks each in turn rather than merging them.
+    /// <para>
+    /// The TypeScript leaves the distance in a module-level <c>lastRayT</c> that the caller reads
+    /// back through <c>destructibleRayDistance()</c>. An <c>out</c> parameter here, for the reason
+    /// every other piece of module scratch became a value return in this port.
+    /// </para>
+    /// </remarks>
+    long DestructibleRayHit(double ox, double oy, double dx, double dy, double maxT, out double hitT);
+
+    /// <summary>
     /// Slides a circle out of whatever it is overlapping, and reports the surface normal.
     /// </summary>
     /// <remarks>
@@ -342,6 +359,53 @@ public sealed class ScrapPiles : IScenery
                 if (best < 0 || at < best) best = at;
             }
         }
+        return best;
+    }
+
+    /// <summary>
+    /// The first fuel drum the ray meets, or -1. Solved on the PROJECTION, exactly as
+    /// <see cref="RayHit"/> is - one square root instead of a discriminant.
+    /// </summary>
+    public long DestructibleRayHit(double ox, double oy, double dx, double dy, double maxT, out double hitT)
+    {
+        int c0 = CellOf(ox + dx * maxT * 0.5);
+        int r0 = CellOf(oy + dy * maxT * 0.5);
+        int span = 1 + (int)Math.Floor((maxT * 0.5 + RadiusMax) / Cell);
+
+        long best = -1;
+        double bestT = 0;
+        for (int dr = -span; dr <= span; dr++)
+        {
+            int row = r0 + dr;
+            if (row < 0 || row >= Cols) continue;
+            for (int dc = -span; dc <= span; dc++)
+            {
+                int col = c0 + dc;
+                if (col < 0 || col >= Cols) continue;
+                int i = row * Cols + col;
+                if (Variant[i] != Barrel) continue;
+                double pr = Radius[i];
+                if (pr == 0) continue;
+
+                double mx = X[i] - ox;
+                double my = Y[i] - oy;
+                double t = mx * dx + my * dy;
+                double perp2 = mx * mx + my * my - t * t;
+                double pr2 = pr * pr;
+                if (perp2 >= pr2) continue;
+
+                double entry = t - Math.Sqrt(pr2 - perp2);
+                double at = entry < 0 ? 0 : entry;
+                if (at > maxT) continue;
+                if (best < 0 || at < bestT)
+                {
+                    best = i;
+                    bestT = at;
+                }
+            }
+        }
+
+        hitT = best < 0 ? -1 : bestT;
         return best;
     }
 

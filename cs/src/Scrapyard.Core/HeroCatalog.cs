@@ -272,16 +272,26 @@ public static class HeroCatalog
 /// </summary>
 /// <remarks>
 /// EMPTY ON PURPOSE, exactly as the TypeScript is: hero variety is deferred, every chassis is
-/// currently a skin, and no hero registers a hook. The TypeScript's <c>HeroTrait</c> interface
-/// (<c>modifyTargets</c>/<c>onFireShell</c>, both called from updateWeapons' hot path) is not
-/// built here yet - nothing on this side of the port calls it, and a delegate-based hook table
-/// with zero registrants would be structure invented for behaviour that does not exist. What is
-/// kept is the fact of the registry: a hero id present in <see cref="HasTrait"/> has a hook, and
-/// today none does. Build the real hook type when <c>weapons.ts</c> is ported and something
-/// needs to register one.
+/// currently a skin, and no hero registers a hook. The hook TYPE is now real - see
+/// <see cref="IHeroTrait"/> - because the weapon stage calls it on the firing path and needed
+/// something to call. An earlier version of this remark said to build it when that stage landed,
+/// which is exactly what happened; the registry itself stays empty until a chassis has a rule
+/// rather than a magnitude.
 /// </remarks>
 public static class HeroTraits
 {
     /// <summary>Hero ids carrying a trait hook. Empty today - every hero is a skin.</summary>
-    public static readonly System.Collections.Generic.HashSet<int> HasTrait = new();
+    public static readonly System.Collections.Generic.Dictionary<int, IHeroTrait> Registry = new();
+
+    /// <summary>
+    /// The hook for a chassis, or null. Null for every chassis today: hero variety is deferred and
+    /// nothing registers one.
+    /// </summary>
+    /// <remarks>
+    /// The mechanism is kept wired up rather than deleted because it is the extension point that
+    /// lets a hero be a RULE rather than a magnitude - the same separation that lets weapons arrive
+    /// as pure data. Deleting it would mean re-threading the firing loop later.
+    /// </remarks>
+    public static IHeroTrait? For(int heroId) =>
+        Registry.TryGetValue(heroId, out var t) ? t : null;
 }

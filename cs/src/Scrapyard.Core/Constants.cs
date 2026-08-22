@@ -44,6 +44,38 @@ public static class Constants
     /// </summary>
     public const int ConsumableSpawnIdBase = 0x40000000;
 
+    /// <summary>
+    /// How many bodies one CHAIN LASER beam may cross, counting the first.
+    /// </summary>
+    /// <remarks>
+    /// The real limiter is the RANGE BUDGET - each jump spends the distance it covers, and the
+    /// chain stops when the next nearest body will not fit in what is left - so this is a backstop
+    /// against a pathological crowd standing shoulder to shoulder, not a balance number. It also
+    /// bounds the beam buffer, which is why the two are written next to each other.
+    /// </remarks>
+    public const int MaxChainLinks = 10;
+
+    /// <summary>
+    /// One entry per DRAWN SEGMENT, not per weapon. A chaining beam pushes one segment per jump, so
+    /// a full-length chain from every laser slot at once is the worst case - which is what this is.
+    /// </summary>
+    public const int MaxBeamsPerTick = WeaponSlots * MaxChainLinks;
+
+    /// <summary>
+    /// The annulus a barrage's shells fall in, measured from the mech.
+    /// </summary>
+    /// <remarks>
+    /// The inner bound keeps a barrage off your own feet - artillery that could land on the player
+    /// would be a self-centred nuke rather than area denial. 70-320 is a deliberate middle: area
+    /// grows with the SQUARE of the radius, so the annulus is a density dial as much as a reach
+    /// one. At 210 the barrage was concentrated and reliable but sat on top of the melee; at 520 it
+    /// reached the spawn ring and dealt a sixth of the damage, with four fifths of it landing where
+    /// no screen could show it.
+    /// </remarks>
+    public const double StrikeRadiusMin = 70;
+
+    public const double StrikeRadiusMax = 320;
+
     public const double IntroSec = 3;
 
     /// <summary>

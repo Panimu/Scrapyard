@@ -145,7 +145,8 @@ public class HeroCatalogTests
         // Pinned as a fact rather than left implicit: the day a trait lands, this test is the one
         // that is SUPPOSED to start failing, which is a better signal than a silently-stale empty
         // set nobody remembers to update.
-        Assert.Empty(HeroTraits.HasTrait);
+        Assert.Empty(HeroTraits.Registry);
+        Assert.Null(HeroTraits.For(HeroIds.Slate));
     }
 
     private static PlayerStat PlayerKeyFromName(string name) => name switch

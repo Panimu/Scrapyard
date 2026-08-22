@@ -28,6 +28,7 @@
     "golden:loot": "tsx tools/loot_fixture.ts",
     "golden:projectiles": "tsx tools/projectiles_fixture.ts",
     "golden:drones": "tsx tools/drones_fixture.ts",
+    "golden:weaponsys": "tsx tools/weapons_fixture.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",

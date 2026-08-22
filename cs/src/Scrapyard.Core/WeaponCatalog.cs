@@ -659,6 +659,76 @@ public static class WeaponCatalog
     };
 
     /// <summary>
+    /// Which hardpoint this beam fires from, by HOW MANY beams the loadout holds.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT LIVES IN THE CATALOG, BESIDE THE TABLE, BECAUSE IT HAS TWO CALLERS AND THEY MUST NOT
+    /// DISAGREE. The weapon stage uses it for the ray's true origin; the render layer uses it to
+    /// place the emitter's heat glow and the cut-out sputter. A mirrored copy is exactly how a glow
+    /// ends up hanging in the air beside a beam that leaves from somewhere else. The rule is a fact
+    /// about where a gun SITS ON THE CHASSIS, which is the same kind of fact as the offsets.
+    /// </para>
+    /// <para>
+    /// THE GIGA LASER OWNS THE NOSE. A beam that wide fires down the centreline or the art is a
+    /// lie, so when one is held it takes hardpoint 0 unconditionally and every other beam is pushed
+    /// to the shoulders - whatever the count-based rule would have said. Losing the two-laser
+    /// shoulder symmetry to it was accepted when the hardpoints became real: the gun is somewhere.
+    /// </para>
+    /// <para>
+    /// THE ONE PIECE OF THIS CATALOG THAT READS LIVE STATE, which is why it was deferred when the
+    /// rest was ported: it needs the loadout and each instance's tier, so it could not exist until
+    /// <see cref="World.WeaponDefs"/> and the weapon slots did.
+    /// </para>
+    /// </remarks>
+    public static Hardpoint LaserHardpoint(World world, int weaponIdx)
+    {
+        int gigaIdx = -1;
+        for (int i = 0; i < world.WeaponCount; i++)
+        {
+            var d = DefOf(world, world.Weapons[i].DefId);
+            if (d?.GigaFrom is int g && world.Weapons[i].Level >= g) { gigaIdx = i; break; }
+        }
+
+        if (gigaIdx >= 0)
+        {
+            if (weaponIdx == gigaIdx) return LaserHardpoints[0];
+            // Every other beam takes the remaining mounts in slot order - shoulders first, then the
+            // back pair. The nose is spoken for, so this walks the hardpoints from 1 rather than
+            // consulting BeamMounts: the count-based rows all assume the nose is available to give.
+            int nth = 0;
+            for (int i = 0; i < world.WeaponCount; i++)
+            {
+                if (i == gigaIdx) continue;
+                if (DefOf(world, world.Weapons[i].DefId)?.Kind != Scrapyard.Core.WeaponKind.Beam) continue;
+                if (i == weaponIdx) break;
+                nth++;
+            }
+            int at = nth + 1;
+            return LaserHardpoints[at < LaserHardpoints.Length ? at : LaserHardpoints.Length - 1];
+        }
+
+        int held = 0;
+        int mine = 0;
+        for (int i = 0; i < world.WeaponCount; i++)
+        {
+            if (DefOf(world, world.Weapons[i].DefId)?.Kind != Scrapyard.Core.WeaponKind.Beam) continue;
+            if (i == weaponIdx) mine = held;
+            held++;
+        }
+
+        // Straight off the table. Both lookups are clamped rather than trusted: more beams than
+        // there are mounts is not reachable today and must not become an out-of-range read the day
+        // it is.
+        int[] row = BeamMounts[held < BeamMounts.Length ? held : BeamMounts.Length - 1];
+        if (row.Length == 0) return LaserHardpoints[0];
+        return LaserHardpoints[row[mine < row.Length ? mine : row.Length - 1]];
+    }
+
+    private static WeaponDef? DefOf(World world, int defId) =>
+        defId >= 0 && defId < world.WeaponDefs.Length ? world.WeaponDefs[defId] : null;
+
+    /// <summary>
     /// The Giga Laser's half-width before AoE multipliers - it rides <c>SplashRadius</c>, so an
     /// AoE card widens the drawn beam through the same key that widens a barrage.
     /// </summary>

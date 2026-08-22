@@ -2,8 +2,8 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones` and the loot-break path are done and proven. `weapons` is next — the last
-big file, and the only remaining system that needs new infrastructure.
+`projectiles`, `drones`, `weapons` and the loot-break path are done and proven. Four systems remain,
+and none of them needs new infrastructure.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -56,7 +56,9 @@ dotnet test
 | `Pickups.BreakLootIn` / `DropConsumable` | done, all three terrains + the flock, loot stream compared per break |
 | `Projectiles` — S7, all three behaviours | done, 8 driven cases over 320 ticks, hit buffer compared too |
 | `Drones` — S6b, the bay and its escort | done, 10 driven cases over 5,210 ticks |
-| The other 5 systems | not started — **this is the remaining job** |
+| `Weapons` — S6, seven patterns, beams, heat, three ascensions | done, 21 driven cases over 6,540 ticks |
+| `BeamBuffer` / `LaserHardpoint` / hero-trait hook | done, arrived with `Weapons` |
+| The other 4 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -198,6 +200,32 @@ suite pass three times in a row is what found each flaw in the case:
 
 The case that works is ONE body just outside the player's circle and just inside a drone-anchored
 one, with nothing the drone may legitimately hold. The fault then fails at tick 12.
+
+**`Weapons` is the widest surface in the port** and the last big file: seven fire patterns, two
+whole modalities (a shell is an object, a beam is an event), a cooldown that banks exactly one shot,
+a magazine, a heat cycle with three separate per-weapon numbers, a turret that traverses, and three
+ascensions that change the shape of a volley.
+
+**The beam buffer is why this could not be checked by a world hash.** It is cleared and refilled
+inside this one stage, drained by the damage stage and the renderer, and never hashed — so a port
+that dropped the chain's extra segments, or billed the giga swath's bodies at the wrong damage,
+would leave the projectile pool byte-identical and the hash unchanged. The fixture compares it in
+full, every tick, and two dedicated tests check its *shape*: a chain's links must each start where
+the previous one ended, and a giga's bills must be zero-length at their own body while its one
+drawn segment bills nobody.
+
+**Five of the cases initially proved nothing, and all five were the fixture's fault.** Three had
+enemies placed outside the weapon's own reach — the Cannon stops at 247 and the machine gun at 130 —
+so they fired not one shot while looking like cases about a traverse and a magazine. One gave the
+turret 120 ticks to swing 180° at 1.35° a tick. And the chain used a ring whose neighbours are 100
+units apart against a budget that could afford two jumps, so it never exercised the loop it exists
+for. Each is now placed against a number read off the resolved stats rather than guessed.
+
+**The battery's surplus branch has no route to it through content.** Only the Cannon uses that
+pattern, its shell count is 1 at every tier, no passive card raises the stat, and the two hero
+bonuses that do are scoped to a rack and a flak gun. "Shell i goes to target min(i, n-1), and a
+surplus shell re-engages at a discount" is live code the shipped catalog cannot reach — so the
+fixture poses the count directly rather than leaving it untested.
 
 ## Why the RNG came first
 
@@ -453,6 +481,25 @@ characteristic mistake:
 - **The orbit's arrival gate removed**, so the phase advances while the drone is still transiting -
   the spiral that never closes. Fails on tick 0 of `engage-and-orbit`.
 
+- **A laser cooling at its GENERATION rate rather than its DISPERSION rate** — the two start equal
+  on an untiered laser and diverge the moment a tier is taken, so this silently deletes the entire
+  dispersion half of every laser's ladder: the weapon takes the tier, the card claims it, and
+  nothing on the field changes. Fails `laser-heat-cycle` at tick 364.
+- **The beam claims list never filled**, so three lasers all burn the same runt and two of them
+  spend their damage on hit points the first was already going to remove. Fails
+  `three-lasers-one-body` on tick 0 with three beams where one was expected. The paired
+  `three-lasers-three-bodies` case is what stops the opposite fix passing: a port that simply
+  refused every laser after the first would satisfy the first check and starve the second.
+- **The chain jumping from the body's CENTRE rather than from where the beam actually stopped** —
+  measured at thirteen units of daylight between the primary beam and the chain feeding off it.
+  Fails on tick 0 with an extra link, because starting nearer the mech leaves more budget.
+- **The giga's per-body bills drawn as full segments** instead of zero-length marks at each body -
+  the renderer would draw a line from the muzzle to every covered enemy rather than an impact.
+  Fails on the first covered body's origin.
+- **The drone bay run through the firing loop** instead of skipped - its build clock would tick
+  twice a tick, once here and once in the drone stage, and reset on a shot that has no meaning.
+  Fails `drone-bay-is-not-fired-here` on tick 0 with the bay's cooldown already spent.
+
 ### Known untested branch
 
 `RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
@@ -526,17 +573,11 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Five systems remain: `playerMovement`, `weapons`, `damage`, `pickups`, `progression`. (`sheep`,
-`projectiles` and `drones` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
-that several of them need.)
+Four systems remain: `playerMovement`, `damage`, `pickups`, `progression`. (`sheep`, `projectiles`,
+`drones` and `weapons` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups` that
+several of them need. Nothing left needs new infrastructure.)
 
 In rough dependency order:
-
-- **`weapons`** is the largest single file left (1,587 lines), the last big one, and the only
-  remaining system that needs new infrastructure: a beam buffer on `World`, two scratch vectors and
-  a claims array, the hero-trait hook (whose registry is empty today, so it is a no-op that has to
-  exist), and `laserHardpoint` — the one piece of `WeaponCatalog` deliberately deferred, because it
-  reads the live weapon list. `SheepRayHit` and `BreakLootIn`, its other two imports, are done.
 - **`playerMovement`** needs `breakLootIn`, which is done.
 - **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
   `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.

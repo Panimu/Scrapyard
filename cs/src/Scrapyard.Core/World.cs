@@ -51,6 +51,12 @@ public sealed class World
     /// <summary>The sim-to-renderer seam. Deliberately not hashed - see <see cref="EventRing"/>.</summary>
     public readonly EventRing Events;
 
+    /// <summary>
+    /// The beams fired this tick. Cleared at the top of the weapon stage rather than in
+    /// <c>BeginTick</c>, because the renderer reads it AFTER the step returns.
+    /// </summary>
+    public readonly BeamBuffer Beams;
+
     public readonly HitBuffer Hits;
     public readonly ContactBuffer Contacts;
     public readonly KillFeed Kills = new();
@@ -202,6 +208,7 @@ public sealed class World
         AscensionSeen = new byte[shape.UpgradeCount];
 
         Events = new EventRing(shape.EventRingCapacity > 0 ? shape.EventRingCapacity : 1024);
+        Beams = new BeamBuffer(shape.BeamCapacity > 0 ? shape.BeamCapacity : Constants.MaxBeamsPerTick);
         Hits = new HitBuffer(shape.HitCapacity > 0 ? shape.HitCapacity : 1024);
         Contacts = new ContactBuffer(shape.ContactCapacity > 0 ? shape.ContactCapacity : 256);
         Scratch = new WorldScratch(shape.MaxQueryCandidates > 0 ? shape.MaxQueryCandidates : 2048);
@@ -245,6 +252,9 @@ public readonly struct WorldShape
     public int EventRingCapacity { get; init; }
 
     public int HitCapacity { get; init; }
+
+    /// <summary>Defaults to <see cref="Constants.MaxBeamsPerTick"/> when unset.</summary>
+    public int BeamCapacity { get; init; }
     public int ContactCapacity { get; init; }
     public int MaxQueryCandidates { get; init; }
     public double CellSize { get; init; }
