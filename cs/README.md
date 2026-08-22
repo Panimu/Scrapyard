@@ -48,6 +48,7 @@ dotnet test
 | `HeroCatalog` / `HeroTraits` — 16 chassis | done, every multiplier map bit-compared |
 | `MetaCatalog` — 16 workshop upgrades, `AccumulateMeta` | done, table + driven probes + a function-level unit test |
 | `Stats` — `ResolvePlayerStats` / `ResolveWeaponStats` / `ResolveSplitStats` | done, 8 + 11 + 3 driven cases, incl. the four-pool scale identity |
+| `MossyLadder` / `CityLadder` — the other two levels' cycle ladders | done, incl. City's two elite-cascade seams |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
 | The other 8 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
@@ -66,6 +67,15 @@ condition), and animation-only fields (a hero's gait). See the remarks on `Weapo
 
 **All five pools are ported and proven.** Regenerate their fixtures with `npm run golden:pool`
 (enemy) and `npm run golden:pools` (the other four).
+
+**`enemyCatalog.ts` and `cycles.ts` needed no further porting beyond what `WeaponCatalog`,
+`UpgradeCatalog` and the ladders already required.** Checked directly rather than assumed: nothing
+in any `src/core/systems/*.ts` file reads `ENEMY_CATALOG`, `ENEMY_IDS_BY_ARCHETYPE_TIER`,
+`HULL_ARCHETYPE`, `BOSS_TYPE_ID` or `EnemyDef` (confirmed by grep, not by inspection of a handful of
+call sites) - they exist to pick a SPRITE for a `typeId` the simulation already treats as an opaque
+integer, and a headless replay has no sprite to pick. Likewise `creaturesMossy.ts`/`creaturesCity.ts`:
+only their numeric creature ids are ported (as `MossCreatures`/`CityCreatures`), never the frame
+strings or draw sizes that go with them.
 
 ## Why the RNG came first
 

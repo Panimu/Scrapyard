@@ -22,6 +22,7 @@
     "golden:heroes": "tsx tools/hero_catalog_fixture.ts",
     "golden:meta": "tsx tools/meta_catalog_fixture.ts",
     "golden:stats": "tsx tools/stats_fixture.ts",
+    "golden:cycles": "tsx tools/cycles_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",
     "golden:pool": "tsx tools/pool_fixture.ts",
     "golden:pools": "tsx tools/pools_fixture.ts",

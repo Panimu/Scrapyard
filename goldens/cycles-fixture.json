@@ -1,0 +1,513 @@
+{
+ "note": "The three level ladders, at every authored rung and several depths past it. City Chaos is additionally probed at its two elite-cascade seams, where the elite is an authored id rather than the previous rung's boss.",
+ "scrapyard": [
+  {
+   "index": 0,
+   "archetype": 0,
+   "hp": "4036000000000000",
+   "speed": "404c000000000000",
+   "contactDamage": "4014000000000000",
+   "xp": "3ff0000000000000",
+   "variantChance": "0000000000000000",
+   "typeByRank": [
+    0,
+    12,
+    24
+   ]
+  },
+  {
+   "index": 1,
+   "archetype": 0,
+   "hp": "4041000000000000",
+   "speed": "4051000000000000",
+   "contactDamage": "4018000000000000",
+   "xp": "4000000000000000",
+   "variantChance": "3fb999999999999a",
+   "typeByRank": [
+    13,
+    25,
+    37
+   ]
+  },
+  {
+   "index": 2,
+   "archetype": 1,
+   "hp": "404c000000000000",
+   "speed": "404b000000000000",
+   "contactDamage": "4022000000000000",
+   "xp": "4008000000000000",
+   "variantChance": "3fc47ae147ae147b",
+   "typeByRank": [
+    5,
+    17,
+    29
+   ]
+  },
+  {
+   "index": 3,
+   "archetype": 0,
+   "hp": "4050800000000000",
+   "speed": "4051c00000000000",
+   "contactDamage": "4020000000000000",
+   "xp": "4010000000000000",
+   "variantChance": "3fcc28f5c28f5c29",
+   "typeByRank": [
+    26,
+    38,
+    2
+   ]
+  },
+  {
+   "index": 4,
+   "archetype": 2,
+   "hp": "405a000000000000",
+   "speed": "404a800000000000",
+   "contactDamage": "402c000000000000",
+   "xp": "4018000000000000",
+   "variantChance": "3fd0a3d70a3d70a4",
+   "typeByRank": [
+    22,
+    34,
+    46
+   ]
+  },
+  {
+   "index": 5,
+   "archetype": 2,
+   "hp": "405d800000000000",
+   "speed": "4050400000000000",
+   "contactDamage": "4032000000000000",
+   "xp": "4020000000000000",
+   "variantChance": "3fd3333333333333",
+   "typeByRank": [
+    6,
+    18,
+    30
+   ]
+  },
+  {
+   "index": 6,
+   "archetype": 1,
+   "hp": "4065800000000000",
+   "speed": "404c800000000000",
+   "contactDamage": "402e000000000000",
+   "xp": "4026000000000000",
+   "variantChance": "3fd47ae147ae147b",
+   "typeByRank": [
+    41,
+    5,
+    17
+   ]
+  },
+  {
+   "index": 7,
+   "archetype": 1,
+   "hp": "406c200000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "4036000000000000",
+   "xp": "402e000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    31,
+    43,
+    7
+   ]
+  },
+  {
+   "index": 8,
+   "archetype": 1,
+   "hp": "4074640000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403a666666666666",
+   "xp": "4035000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    43,
+    7,
+    19
+   ]
+  },
+  {
+   "index": 9,
+   "archetype": 1,
+   "hp": "407d910000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403fae147ae147ad",
+   "xp": "403d666666666666",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    19,
+    31
+   ]
+  },
+  {
+   "index": 12,
+   "archetype": 1,
+   "hp": "409688c2ba5e353f",
+   "speed": "4049000000000000",
+   "contactDamage": "404b5f1bef49cf54",
+   "xp": "40542b1c432ca579",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    43,
+    7,
+    19
+   ]
+  },
+  {
+   "index": 17,
+   "archetype": 1,
+   "hp": "40c20e0717f9e49e",
+   "speed": "4049000000000000",
+   "contactDamage": "406106fb814710a9",
+   "xp": "407b1e1c99a4e865",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    19,
+    31
+   ]
+  }
+ ],
+ "mossy": [
+  {
+   "index": 0,
+   "archetype": 0,
+   "hp": "4036000000000000",
+   "speed": "404c000000000000",
+   "contactDamage": "4014000000000000",
+   "xp": "3ff0000000000000",
+   "variantChance": "0000000000000000",
+   "typeByRank": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "index": 1,
+   "archetype": 0,
+   "hp": "4041000000000000",
+   "speed": "4051000000000000",
+   "contactDamage": "4018000000000000",
+   "xp": "4000000000000000",
+   "variantChance": "3fb999999999999a",
+   "typeByRank": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "index": 2,
+   "archetype": 1,
+   "hp": "404c000000000000",
+   "speed": "404b000000000000",
+   "contactDamage": "4022000000000000",
+   "xp": "4008000000000000",
+   "variantChance": "3fc47ae147ae147b",
+   "typeByRank": [
+    4,
+    5,
+    6
+   ]
+  },
+  {
+   "index": 3,
+   "archetype": 0,
+   "hp": "4050800000000000",
+   "speed": "4051c00000000000",
+   "contactDamage": "4020000000000000",
+   "xp": "4010000000000000",
+   "variantChance": "3fcc28f5c28f5c29",
+   "typeByRank": [
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "index": 4,
+   "archetype": 1,
+   "hp": "405a000000000000",
+   "speed": "404a800000000000",
+   "contactDamage": "402c000000000000",
+   "xp": "4018000000000000",
+   "variantChance": "3fd0a3d70a3d70a4",
+   "typeByRank": [
+    10,
+    10,
+    10
+   ]
+  },
+  {
+   "index": 5,
+   "archetype": 2,
+   "hp": "405d800000000000",
+   "speed": "4050400000000000",
+   "contactDamage": "4032000000000000",
+   "xp": "4020000000000000",
+   "variantChance": "3fd3333333333333",
+   "typeByRank": [
+    11,
+    11,
+    11
+   ]
+  },
+  {
+   "index": 6,
+   "archetype": 1,
+   "hp": "4065800000000000",
+   "speed": "404c800000000000",
+   "contactDamage": "402e000000000000",
+   "xp": "4026000000000000",
+   "variantChance": "3fd47ae147ae147b",
+   "typeByRank": [
+    12,
+    13,
+    14
+   ]
+  },
+  {
+   "index": 7,
+   "archetype": 2,
+   "hp": "406c200000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "4036000000000000",
+   "xp": "402e000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "index": 8,
+   "archetype": 2,
+   "hp": "4074640000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403a666666666666",
+   "xp": "4035000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "index": 9,
+   "archetype": 2,
+   "hp": "407d910000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403fae147ae147ad",
+   "xp": "403d666666666666",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "index": 12,
+   "archetype": 2,
+   "hp": "409688c2ba5e353f",
+   "speed": "4049000000000000",
+   "contactDamage": "404b5f1bef49cf54",
+   "xp": "40542b1c432ca579",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "index": 17,
+   "archetype": 2,
+   "hp": "40c20e0717f9e49e",
+   "speed": "4049000000000000",
+   "contactDamage": "406106fb814710a9",
+   "xp": "407b1e1c99a4e865",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    15,
+    16,
+    17
+   ]
+  }
+ ],
+ "city": [
+  {
+   "index": 0,
+   "archetype": 0,
+   "hp": "4036000000000000",
+   "speed": "404c000000000000",
+   "contactDamage": "4014000000000000",
+   "xp": "3ff0000000000000",
+   "variantChance": "0000000000000000",
+   "typeByRank": [
+    0,
+    8,
+    9
+   ]
+  },
+  {
+   "index": 1,
+   "archetype": 0,
+   "hp": "4041000000000000",
+   "speed": "4051000000000000",
+   "contactDamage": "4018000000000000",
+   "xp": "4000000000000000",
+   "variantChance": "3fb999999999999a",
+   "typeByRank": [
+    1,
+    9,
+    10
+   ]
+  },
+  {
+   "index": 2,
+   "archetype": 0,
+   "hp": "404c000000000000",
+   "speed": "4051c00000000000",
+   "contactDamage": "4020000000000000",
+   "xp": "4008000000000000",
+   "variantChance": "3fc47ae147ae147b",
+   "typeByRank": [
+    2,
+    10,
+    11
+   ]
+  },
+  {
+   "index": 3,
+   "archetype": 1,
+   "hp": "4050800000000000",
+   "speed": "404b000000000000",
+   "contactDamage": "4022000000000000",
+   "xp": "4010000000000000",
+   "variantChance": "3fcc28f5c28f5c29",
+   "typeByRank": [
+    3,
+    12,
+    13
+   ]
+  },
+  {
+   "index": 4,
+   "archetype": 1,
+   "hp": "405a000000000000",
+   "speed": "404a800000000000",
+   "contactDamage": "402c000000000000",
+   "xp": "4018000000000000",
+   "variantChance": "3fd0a3d70a3d70a4",
+   "typeByRank": [
+    4,
+    13,
+    14
+   ]
+  },
+  {
+   "index": 5,
+   "archetype": 1,
+   "hp": "405d800000000000",
+   "speed": "4050400000000000",
+   "contactDamage": "4032000000000000",
+   "xp": "4020000000000000",
+   "variantChance": "3fd3333333333333",
+   "typeByRank": [
+    5,
+    14,
+    15
+   ]
+  },
+  {
+   "index": 6,
+   "archetype": 1,
+   "hp": "4065800000000000",
+   "speed": "404c800000000000",
+   "contactDamage": "402e000000000000",
+   "xp": "4026000000000000",
+   "variantChance": "3fd47ae147ae147b",
+   "typeByRank": [
+    6,
+    15,
+    16
+   ]
+  },
+  {
+   "index": 7,
+   "archetype": 2,
+   "hp": "406c200000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "4036000000000000",
+   "xp": "402e000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    17,
+    18
+   ]
+  },
+  {
+   "index": 8,
+   "archetype": 2,
+   "hp": "4074640000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403a666666666666",
+   "xp": "4035000000000000",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    17,
+    18
+   ]
+  },
+  {
+   "index": 9,
+   "archetype": 2,
+   "hp": "407d910000000000",
+   "speed": "4049000000000000",
+   "contactDamage": "403fae147ae147ad",
+   "xp": "403d666666666666",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    17,
+    18
+   ]
+  },
+  {
+   "index": 12,
+   "archetype": 2,
+   "hp": "409688c2ba5e353f",
+   "speed": "4049000000000000",
+   "contactDamage": "404b5f1bef49cf54",
+   "xp": "40542b1c432ca579",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    17,
+    18
+   ]
+  },
+  {
+   "index": 17,
+   "archetype": 2,
+   "hp": "40c20e0717f9e49e",
+   "speed": "4049000000000000",
+   "contactDamage": "406106fb814710a9",
+   "xp": "407b1e1c99a4e865",
+   "variantChance": "3fd5c28f5c28f5c3",
+   "typeByRank": [
+    7,
+    17,
+    18
+   ]
+  }
+ ]
+}
