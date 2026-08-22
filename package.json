@@ -17,6 +17,7 @@
     "golden:rng": "tsx tools/rng_fixture.ts",
     "golden:pool": "tsx tools/pool_fixture.ts",
     "golden:pools": "tsx tools/pools_fixture.ts",
+    "golden:world": "tsx tools/world_fixture.ts",
     "assets": "node tools/prepare_assets.mjs",
     "mechs": "node tools/make-mechs.mjs",
     "fence": "node tools/make-fence.mjs",

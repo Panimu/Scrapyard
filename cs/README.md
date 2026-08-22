@@ -23,8 +23,9 @@ dotnet test
 | `ProjectilePool.cs` — incl. the hit ring and `sbyte` pierce | done, 462 steps |
 | `PickupPool.cs` | done, 203 steps |
 | `DronePool` / `SheepPool` — no handles, immediate free | done, 60 + 80 steps |
-| `hashWorld` / `hashRunStats` | not started — needs `World` |
-| `World`, systems, `stepWorld` | not started |
+| `World.cs` — the state both hashes read | done, 5 states load and hash identically |
+| `HashWorld` / `HashRunStats` | done, bit-exact including section order |
+| Systems and `stepWorld` | not started — **this is now the whole remaining job** |
 | Golden corpus replay | not started — needs `stepWorld` |
 
 **All five pools are ported and proven.** Regenerate their fixtures with `npm run golden:pool`
@@ -92,19 +93,36 @@ characteristic mistake:
   one's victim list, silently unable to damage those bodies — fails at **step 27**, and fails the
   *hit-ring* hash only, not the dense one. That separation is deliberate: it points at the ring
   instead of leaving you to work out which half of the pool moved.
+- **Two RNG streams folded in the wrong order** — `event` and `sheep` swapped, which changes
+  nothing about the values and everything about the hash — fails on the first state. The world
+  fixture advances each stream a *different* number of draws precisely so a wrong order cannot
+  coincidentally match.
 
 Both reverted; the committed tree is green. If you change `Rng.cs`, `Hash.cs` or `EnemyPool.cs`, do
 that again. The failure mode all of this guards against is one where the numbers still look random,
 the pool still looks sane, and the game still runs.
 
+## What `World` deliberately is not
+
+`World.cs` holds the state the two hashes read, and nothing else. The TypeScript `World` has around
+forty-five fields; the rest — catalogs, the spatial hash, the flow field, scenery, the per-tick
+buffers — arrives with the systems that need it, and arrives verifiable. What is here is exactly
+what a divergence can be measured against today.
+
+When a system lands and needs a field this class does not have, add it — and if it is *run state*
+rather than derived, add it to `HashWorld` **and** to the TypeScript's `tests/hashCoverage.test.ts`
+in the same change. That test exists because this exact omission has already happened twice on the
+TypeScript side.
+
 ## Next
 
-1. `World` and its non-pool state: player, weapons, director, difficulty, level-up.
-2. `hashWorld` / `hashRunStats` — largely assembling pieces that already exist and are proven.
-   Every pool already exposes its own `MixInto`.
-3. `stepWorld`, system by system, each landing with its ported tests. **The float32 rule above is
-   the thing to be disciplined about here**; the pools only store, the systems compute.
-4. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
+Everything above was scaffolding. What remains is the actual simulation:
 
-Only step 4 makes the corpus meaningful, and it is the last thing that can be built rather than the
+1. `stepWorld`, system by system, each landing with its ported tests. **The float32 rule is the
+   thing to be disciplined about here** — the pools only store, the systems compute, and that is
+   where "compute in `double`, store once" stops being advice.
+2. The content catalogs — weapons, upgrades, heroes, enemies, levels — which are data, not logic.
+3. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
+
+Only step 3 makes the corpus meaningful, and it is the last thing that can be built rather than the
 first.

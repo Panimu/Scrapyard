@@ -20,7 +20,7 @@ namespace Scrapyard.Core;
 /// breaks, and it will break loudly rather than subtly.
 /// </para>
 /// </remarks>
-public static class Hash
+public static partial class Hash
 {
     public const uint FnvOffset = 0x811c9dc5;
     public const uint FnvPrime = 0x01000193;
