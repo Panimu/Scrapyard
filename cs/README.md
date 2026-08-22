@@ -25,8 +25,11 @@ dotnet test
 | `DronePool` / `SheepPool` — no handles, immediate free | done, 60 + 80 steps |
 | `World.cs` — the state both hashes read | done, 5 states load and hash identically |
 | `HashWorld` / `HashRunStats` | done, bit-exact including section order |
-| Systems and `stepWorld` | not started — **this is now the whole remaining job** |
-| Golden corpus replay | not started — needs `stepWorld` |
+| `Systems.BeginTick` / `EndTick` / `ReapDead` / `UpdateDifficulty` | done, 14 cases |
+| `EventRing` — the sim/renderer seam | done |
+| The other 11 systems | not started — **this is the remaining job** |
+| Content catalogs | not started — data, not logic |
+| Golden corpus replay | not started — needs all of `stepWorld` |
 
 **All five pools are ported and proven.** Regenerate their fixtures with `npm run golden:pool`
 (enemy) and `npm run golden:pools` (the other four).
@@ -97,6 +100,9 @@ characteristic mistake:
   nothing about the values and everything about the hash — fails on the first state. The world
   fixture advances each stream a *different* number of draws precisely so a wrong order cannot
   coincidentally match.
+- **The difficulty catch-up loop running one iteration too many** (`s <= whole` for `s < whole`)
+  fails on the plainest case in the fixture — one second crossed, one multiply expected, two
+  applied. Bit-exact comparison is what catches it; a tolerance would not.
 
 Both reverted; the committed tree is green. If you change `Rng.cs`, `Hash.cs` or `EnemyPool.cs`, do
 that again. The failure mode all of this guards against is one where the numbers still look random,
@@ -114,15 +120,30 @@ rather than derived, add it to `HashWorld` **and** to the TypeScript's `tests/ha
 in the same change. That test exists because this exact omission has already happened twice on the
 TypeScript side.
 
+## How a system gets ported
+
+Each stage lands the same way, and `SystemsTests` is the pattern:
+
+1. Read the TypeScript, comments and all, and transcribe it.
+2. Add a case block to `tools/systems_fixture.ts` that sets a world into a stated position, calls
+   **one** stage, and records what changed. Choose the cases — the edges are where systems fail,
+   and a random sweep hits the ordinary path constantly and the rollover almost never.
+3. Compare **bit-exactly**. A tolerance hides the failure the test exists to catch.
+4. Break it on purpose and check the test fails before moving on.
+
+This is narrower than the run corpus deliberately. The corpus proves the whole pipeline agrees and
+cannot say *which* stage disagreed; these say which stage, which is what the port needs while the
+corpus is still a long way from running.
+
 ## Next
 
-Everything above was scaffolding. What remains is the actual simulation:
+Eleven systems remain, in rough order of independence:
 
-1. `stepWorld`, system by system, each landing with its ported tests. **The float32 rule is the
-   thing to be disciplined about here** — the pools only store, the systems compute, and that is
-   where "compute in `double`, store once" stops being advice.
-2. The content catalogs — weapons, upgrades, heroes, enemies, levels — which are data, not logic.
-3. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
+- `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
+- `collision`, `targeting`, `projectiles` need the spatial hash.
+- `spawning`, `enemyAI` need the content catalogs and the flow field.
+- `weapons` and `progression` are the two largest (1,586 and 1,400 lines) and depend on most of
+  the rest.
 
-Only step 3 makes the corpus meaningful, and it is the last thing that can be built rather than the
-first.
+Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
+the corpus meaningful, and it is the last thing that can be built rather than the first.

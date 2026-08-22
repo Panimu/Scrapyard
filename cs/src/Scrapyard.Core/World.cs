@@ -34,6 +34,27 @@ public sealed class World
     public int RunTicks;
     public int Phase;
 
+    /// <summary>
+    /// Derived from the tick counts by <c>BeginTick</c>, never accumulated - so both are exact and
+    /// drift-free. Not hashed: <c>tick</c> and <c>runTicks</c> are, and these are a multiplication
+    /// away from them.
+    /// </summary>
+    public double TimeSec;
+
+    public double RunSec;
+
+    /// <summary>This tick's input, copied in by <c>BeginTick</c>. Never aliased to the caller's.</summary>
+    public InputFrame Input;
+
+    public readonly Tuning Tuning = new();
+
+    /// <summary>The sim-to-renderer seam. Deliberately not hashed - see <see cref="EventRing"/>.</summary>
+    public readonly EventRing Events;
+
+    public readonly HitBuffer Hits = new();
+    public readonly ContactBuffer Contacts = new();
+    public readonly KillFeed Kills = new();
+
     public readonly EnemyPool Enemies;
     public readonly ProjectilePool Projectiles;
     public readonly PickupPool Pickups;
@@ -87,6 +108,9 @@ public sealed class World
         CardUnlocked = new byte[shape.UpgradeCount];
         AscensionSeen = new byte[shape.UpgradeCount];
 
+        Events = new EventRing(shape.EventRingCapacity > 0 ? shape.EventRingCapacity : 1024);
+        Input = InputFrame.Empty;
+
         Rng = new RngStreams(seed);
         Stats = new RunStats(shape);
     }
@@ -116,6 +140,9 @@ public readonly struct WorldShape
     public int CycleRanks { get; init; }
     public int Flavours { get; init; }
     public int WeaponRanks { get; init; }
+
+    /// <summary>Power of two. Defaults to 1024 when unset, which is what the ring's mask needs.</summary>
+    public int EventRingCapacity { get; init; }
 }
 
 public sealed class PlayerState

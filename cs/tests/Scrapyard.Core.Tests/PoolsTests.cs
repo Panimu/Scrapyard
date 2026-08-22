@@ -29,7 +29,7 @@ public class PoolsTests
 
     [Fact]
     public void HitRingStrideMatches() =>
-        Assert.Equal(Root.GetProperty("hitRingStride").GetInt32(), ProjectilePool.HitRingStride);
+        Assert.Equal(ProjectilePool.HitRingStride, Root.GetProperty("hitRingStride").GetInt32());
 
     [Fact]
     public void ProjectilesReplayExactly()

@@ -1,0 +1,484 @@
+{
+ "formatVersion": 1,
+ "note": "Cross-language proof for the ported pipeline stages. Doubles are IEEE-754 bits as 16 hex digits, high word first.",
+ "dt": "3f91111111111111",
+ "introEndTick": 180,
+ "tuning": {
+  "cycleSeconds": 120,
+  "hpRampPerSec": "3ff008f714c9e693",
+  "speedRampPerSec": "3ff001fd486aa7ea"
+ },
+ "shape": {
+  "enemyCapacity": 512,
+  "projectileCapacity": 256,
+  "pickupCapacity": 768,
+  "droneCapacity": 8,
+  "sheepCapacity": 24,
+  "eventRingCapacity": 1024
+ },
+ "difficulty": [
+  {
+   "name": "fresh-zero",
+   "in": {
+    "runSec": "0000000000000000",
+    "lastWholeSecond": 0,
+    "hpRamp": "3ff0000000000000",
+    "speedRamp": "3ff0000000000000"
+   },
+   "out": {
+    "lastWholeSecond": 0,
+    "hpRamp": "3ff0000000000000",
+    "speedRamp": "3ff0000000000000"
+   }
+  },
+  {
+   "name": "no-op-fraction",
+   "in": {
+    "runSec": "400e000000000000",
+    "lastWholeSecond": 3,
+    "hpRamp": "3ff010624dd2f1aa",
+    "speedRamp": "3ff003afb7e90ff9"
+   },
+   "out": {
+    "lastWholeSecond": 3,
+    "hpRamp": "3ff010624dd2f1aa",
+    "speedRamp": "3ff003afb7e90ff9"
+   }
+  },
+  {
+   "name": "one-second",
+   "in": {
+    "runSec": "4010000000000000",
+    "lastWholeSecond": 3,
+    "hpRamp": "3ff010624dd2f1aa",
+    "speedRamp": "3ff003afb7e90ff9"
+   },
+   "out": {
+    "lastWholeSecond": 4,
+    "hpRamp": "3ff0196290c69cbf",
+    "speedRamp": "3ff005ad75aa71d8"
+   }
+  },
+  {
+   "name": "catch-up-9",
+   "in": {
+    "runSec": "4045400000000000",
+    "lastWholeSecond": 33,
+    "hpRamp": "3ff11eb851eb851f",
+    "speedRamp": "3ff04189374bc6a8"
+   },
+   "out": {
+    "lastWholeSecond": 42,
+    "hpRamp": "3ff175d071b4bae5",
+    "speedRamp": "3ff053c327f5fa50"
+   }
+  },
+  {
+   "name": "rollover",
+   "in": {
+    "runSec": "405e600000000000",
+    "lastWholeSecond": 119,
+    "hpRamp": "3ff4a3d70a3d70a4",
+    "speedRamp": "3ff0f1a9fbe76c8b"
+   },
+   "out": {
+    "lastWholeSecond": 121,
+    "hpRamp": "3ff008f714c9e693",
+    "speedRamp": "3ff001fd486aa7ea"
+   }
+  },
+  {
+   "name": "rollover-exact",
+   "in": {
+    "runSec": "405e000000000000",
+    "lastWholeSecond": 119,
+    "hpRamp": "3ff4cccccccccccd",
+    "speedRamp": "3ff0f5c28f5c28f6"
+   },
+   "out": {
+    "lastWholeSecond": 120,
+    "hpRamp": "3ff0000000000000",
+    "speedRamp": "3ff0000000000000"
+   }
+  },
+  {
+   "name": "rollover-second-cycle",
+   "in": {
+    "runSec": "406e280000000000",
+    "lastWholeSecond": 239,
+    "hpRamp": "3ff4cccccccccccd",
+    "speedRamp": "3ff0f5c28f5c28f6"
+   },
+   "out": {
+    "lastWholeSecond": 241,
+    "hpRamp": "3ff008f714c9e693",
+    "speedRamp": "3ff001fd486aa7ea"
+   }
+  },
+  {
+   "name": "mid-cycle",
+   "in": {
+    "runSec": "4073180000000000",
+    "lastWholeSecond": 300,
+    "hpRamp": "3ff1c28f5c28f5c3",
+    "speedRamp": "3ff072b020c49ba6"
+   },
+   "out": {
+    "lastWholeSecond": 305,
+    "hpRamp": "3ff1f488f141bd96",
+    "speedRamp": "3ff07cec62d23b18"
+   }
+  }
+ ],
+ "clock": [
+  {
+   "name": "intro-early",
+   "in": {
+    "name": "intro-early",
+    "tick": 5,
+    "runTicks": 0,
+    "phase": 0,
+    "input": {
+     "moveX": 12,
+     "moveY": -34,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "enemies": 0,
+    "peakEnemies": 0
+   },
+   "spawned": [],
+   "afterBegin": {
+    "timeSec": "3fb5555555555555",
+    "runSec": "0000000000000000",
+    "runTicks": 0,
+    "input": {
+     "moveX": 12,
+     "moveY": -34,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "playerPrevX": "405ed00000000000",
+    "playerPrevY": "c046e00000000000",
+    "enemyPrevAtCount": null,
+    "hits": 0,
+    "contacts": 0,
+    "kills": 0,
+    "xpBanked": "0000000000000000"
+   },
+   "afterEnd": {
+    "tick": 6,
+    "phase": 0,
+    "peakEnemies": 0,
+    "endTick": 6,
+    "eventsPushed": 0
+   }
+  },
+  {
+   "name": "intro-boundary",
+   "in": {
+    "name": "intro-boundary",
+    "tick": 179,
+    "runTicks": 0,
+    "phase": 0,
+    "input": {
+     "moveX": 0,
+     "moveY": 0,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "enemies": 3,
+    "peakEnemies": 1
+   },
+   "spawned": [
+    {
+     "x": "4025000000000000",
+     "y": "c01d000000000000"
+    },
+    {
+     "x": "4035000000000000",
+     "y": "c02d000000000000"
+    },
+    {
+     "x": "403f800000000000",
+     "y": "c035c00000000000"
+    }
+   ],
+   "afterBegin": {
+    "timeSec": "4007ddddddddddde",
+    "runSec": "0000000000000000",
+    "runTicks": 0,
+    "input": {
+     "moveX": 0,
+     "moveY": 0,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "playerPrevX": "405ed00000000000",
+    "playerPrevY": "c046e00000000000",
+    "enemyPrevAtCount": "403f800000000000",
+    "hits": 0,
+    "contacts": 0,
+    "kills": 0,
+    "xpBanked": "0000000000000000"
+   },
+   "afterEnd": {
+    "tick": 180,
+    "phase": 1,
+    "peakEnemies": 3,
+    "endTick": 180,
+    "eventsPushed": 1
+   }
+  },
+  {
+   "name": "running",
+   "in": {
+    "name": "running",
+    "tick": 400,
+    "runTicks": 220,
+    "phase": 1,
+    "input": {
+     "moveX": -127,
+     "moveY": 127,
+     "buttons": 3,
+     "chooseIndex": 2
+    },
+    "enemies": 7,
+    "peakEnemies": 4
+   },
+   "spawned": [
+    {
+     "x": "4025000000000000",
+     "y": "c01d000000000000"
+    },
+    {
+     "x": "4035000000000000",
+     "y": "c02d000000000000"
+    },
+    {
+     "x": "403f800000000000",
+     "y": "c035c00000000000"
+    },
+    {
+     "x": "4045000000000000",
+     "y": "c03d000000000000"
+    },
+    {
+     "x": "404a400000000000",
+     "y": "c042200000000000"
+    },
+    {
+     "x": "404f800000000000",
+     "y": "c045c00000000000"
+    },
+    {
+     "x": "4052600000000000",
+     "y": "c049600000000000"
+    }
+   ],
+   "afterBegin": {
+    "timeSec": "401aaaaaaaaaaaab",
+    "runSec": "400d555555555555",
+    "runTicks": 221,
+    "input": {
+     "moveX": -127,
+     "moveY": 127,
+     "buttons": 3,
+     "chooseIndex": 2
+    },
+    "playerPrevX": "405ed00000000000",
+    "playerPrevY": "c046e00000000000",
+    "enemyPrevAtCount": "4052600000000000",
+    "hits": 0,
+    "contacts": 0,
+    "kills": 0,
+    "xpBanked": "0000000000000000"
+   },
+   "afterEnd": {
+    "tick": 401,
+    "phase": 1,
+    "peakEnemies": 7,
+    "endTick": 401,
+    "eventsPushed": 0
+   }
+  },
+  {
+   "name": "level-up-frozen",
+   "in": {
+    "name": "level-up-frozen",
+    "tick": 900,
+    "runTicks": 500,
+    "phase": 2,
+    "input": {
+     "moveX": 0,
+     "moveY": 0,
+     "buttons": 0,
+     "chooseIndex": 1
+    },
+    "enemies": 11,
+    "peakEnemies": 11
+   },
+   "spawned": [
+    {
+     "x": "4025000000000000",
+     "y": "c01d000000000000"
+    },
+    {
+     "x": "4035000000000000",
+     "y": "c02d000000000000"
+    },
+    {
+     "x": "403f800000000000",
+     "y": "c035c00000000000"
+    },
+    {
+     "x": "4045000000000000",
+     "y": "c03d000000000000"
+    },
+    {
+     "x": "404a400000000000",
+     "y": "c042200000000000"
+    },
+    {
+     "x": "404f800000000000",
+     "y": "c045c00000000000"
+    },
+    {
+     "x": "4052600000000000",
+     "y": "c049600000000000"
+    },
+    {
+     "x": "4055000000000000",
+     "y": "c04d000000000000"
+    },
+    {
+     "x": "4057a00000000000",
+     "y": "c050500000000000"
+    },
+    {
+     "x": "405a400000000000",
+     "y": "c052200000000000"
+    },
+    {
+     "x": "405ce00000000000",
+     "y": "c053f00000000000"
+    }
+   ],
+   "afterBegin": {
+    "timeSec": "402e000000000000",
+    "runSec": "4020aaaaaaaaaaab",
+    "runTicks": 500,
+    "input": {
+     "moveX": 0,
+     "moveY": 0,
+     "buttons": 0,
+     "chooseIndex": 1
+    },
+    "playerPrevX": "405ed00000000000",
+    "playerPrevY": "c046e00000000000",
+    "enemyPrevAtCount": "405ce00000000000",
+    "hits": 0,
+    "contacts": 0,
+    "kills": 0,
+    "xpBanked": "0000000000000000"
+   },
+   "afterEnd": {
+    "tick": 901,
+    "phase": 2,
+    "peakEnemies": 11,
+    "endTick": 901,
+    "eventsPushed": 0
+   }
+  },
+  {
+   "name": "peak-not-exceeded",
+   "in": {
+    "name": "peak-not-exceeded",
+    "tick": 1200,
+    "runTicks": 900,
+    "phase": 1,
+    "input": {
+     "moveX": 1,
+     "moveY": 1,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "enemies": 2,
+    "peakEnemies": 40
+   },
+   "spawned": [
+    {
+     "x": "4025000000000000",
+     "y": "c01d000000000000"
+    },
+    {
+     "x": "4035000000000000",
+     "y": "c02d000000000000"
+    }
+   ],
+   "afterBegin": {
+    "timeSec": "4034000000000000",
+    "runSec": "402e000000000000",
+    "runTicks": 901,
+    "input": {
+     "moveX": 1,
+     "moveY": 1,
+     "buttons": 0,
+     "chooseIndex": -1
+    },
+    "playerPrevX": "405ed00000000000",
+    "playerPrevY": "c046e00000000000",
+    "enemyPrevAtCount": "4035000000000000",
+    "hits": 0,
+    "contacts": 0,
+    "kills": 0,
+    "xpBanked": "0000000000000000"
+   },
+   "afterEnd": {
+    "tick": 1201,
+    "phase": 1,
+    "peakEnemies": 40,
+    "endTick": 1201,
+    "eventsPushed": 0
+   }
+  }
+ ],
+ "reap": {
+  "marks": [
+   {
+    "pool": "enemies",
+    "d": 4
+   },
+   {
+    "pool": "enemies",
+    "d": 1
+   },
+   {
+    "pool": "projectiles",
+    "d": 2
+   },
+   {
+    "pool": "pickups",
+    "d": 3
+   },
+   {
+    "pool": "pickups",
+    "d": 0
+   }
+  ],
+  "before": {
+   "enemies": 6,
+   "projectiles": 4,
+   "pickups": 5
+  },
+  "after": {
+   "enemies": 4,
+   "enemiesFree": 508,
+   "projectiles": 3,
+   "projectilesFree": 253,
+   "pickups": 3,
+   "pickupsFree": 765
+  },
+  "worldHash": "b3a1007e"
+ }
+}
