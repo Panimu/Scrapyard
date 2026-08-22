@@ -68,11 +68,42 @@ public sealed class DirectorTuning
     public double HpRampPerSec = 1.00218876;
 
     public double SpeedRampPerSec = 1.00048569;
+
+    /// <summary>
+    /// Squared speed above which the player counts as going somewhere, for the spawn ring's forward
+    /// bias. A twentieth of the slowest chassis' top speed.
+    /// </summary>
+    public double ForwardBiasMinSpeed = 20;
+}
+
+/// <summary>How the horde pushes itself apart, and how knockback decays.</summary>
+public sealed class SteeringTuning
+{
+    /// <summary>Separation impulse at full overlap, before the 1/mass scale. FEEL.</summary>
+    public double SeparationStrength = 340;
+
+    /// <summary>
+    /// A CAP, not a radius. Past eight neighbours the extra push says nothing new, and the bound is
+    /// what stops a dense knot costing quadratic time.
+    /// </summary>
+    public int SeparationMaxNeighbours = 8;
+
+    /// <summary>
+    /// Padding on the separation query, sized to the staleness of the previous tick's spatial hash
+    /// - the furthest anything can have moved since it was built.
+    /// </summary>
+    public double SeparationPadding = 2.4;
+
+    public double PushDamping = 6;
+
+    /// <summary>Below this speed knockback is snapped to zero, so the column stops changing.</summary>
+    public double PushEpsilon = 1.5;
 }
 
 public sealed class Tuning
 {
     public readonly DirectorTuning Director = new();
+    public readonly SteeringTuning Steering = new();
 }
 
 /// <summary>

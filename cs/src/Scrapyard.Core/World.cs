@@ -59,6 +59,9 @@ public sealed class World
     /// <summary>Broad phase over the enemy pool. Rebuilt every tick; deliberately not hashed.</summary>
     public readonly SpatialHash Spatial;
 
+    /// <summary>The field the horde steers by. Rebuilt on staleness; deliberately not hashed.</summary>
+    public readonly FlowField Flow = new();
+
     /// <summary>
     /// The largest radius any creature in the level's ladder can have.
     /// </summary>

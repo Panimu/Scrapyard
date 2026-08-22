@@ -35,6 +35,7 @@ dotnet test
 | `Input` — quantise / dequantise | done, 569 samples incl. every exact half |
 | `Spawning.RollRingPosition` + disc sampler | done, stream state compared per roll |
 | `Flavours` / `Archetypes` / `Ranks` tables | done, every field bit-compared |
+| `EnemyAI` — seek, separate, integrate, relocate | done, 7 crowds over 256 driven ticks |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
 | The other 10 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
@@ -116,6 +117,8 @@ characteristic mistake:
   the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
   **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
   deterministically correct, and a neat statement of the whole argument.
+- **"Fixing" the coincident-bodies tie-break** to push on `y` as well as `x` — which looks more
+  correct and is not — diverges on the first tick of the `coincident` case.
 - **A hand-transcribed content table**, which is the one place a typo can reach: my first
   `Flavours` table guessed five of Heavy's numbers from a partial dump and had `Hp = 1` where the
   real value is `10`. The fixture caught it on the first run. That is why every field of every
@@ -160,9 +163,12 @@ TypeScript side.
 Each stage lands the same way, and `SystemsTests` is the pattern:
 
 1. Read the TypeScript, comments and all, and transcribe it.
-2. Add a case block to `tools/systems_fixture.ts` that sets a world into a stated position, calls
-   **one** stage, and records what changed. Choose the cases — the edges are where systems fail,
-   and a random sweep hits the ordinary path constantly and the rollover almost never.
+2. Add a fixture that sets a world into a stated position, calls **one** stage, and records what
+   changed. Choose the cases — the edges are where systems fail, and a random sweep hits the
+   ordinary path constantly and the rollover almost never.
+   *Some systems cannot be posed.* `EnemyAI` does not answer a question, it moves a crowd, and the
+   behaviour is entirely in how its four passes interact over time. Those get **driven** fixtures:
+   place a crowd, step repeatedly, dump every column every tick.
 3. Compare **bit-exactly**. A tolerance hides the failure the test exists to catch.
 4. Break it on purpose and check the test fails before moving on.
 
@@ -183,8 +189,15 @@ sites is a coin-flip on whether the port agrees. It needs a decision before `wea
 Eleven systems remain, in rough order of independence:
 
 - `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-- `enemyAI` now has everything it needs — flow field, `Flavours`, `RollRingPosition`, scenery.
-  It is trig-free, so it is the next system regardless of how the trig question lands.
+**The trig-free work is now essentially done.** What remains all reaches it:
+
+- `playerMovement` needs `breakLootIn` from `pickups`.
+- `pickups` needs `progression`, `sheep` and both unported terrains.
+- `damage` needs `pickups` and the per-level creature ladders.
+- `weapons`, `projectiles`, `stats`, `targeting`, `drones`, `sheep` all call `Math.sin`,
+  `Math.cos` or `Math.atan2` directly.
+
+So `docs/DETERMINISM-GAP-TRIG.md` is no longer something to work around — it is the next decision.
 - `targeting` and `projectiles` have their scenery dependency met, but both reach the open trig
   question — see above.
 - `spawning`, `enemyAI` need the content catalogs and the flow field.
