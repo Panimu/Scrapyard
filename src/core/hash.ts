@@ -6,38 +6,55 @@
  * comparison is what actually validates the one unproven assumption in the design - that
  * Math.sqrt is correctly rounded everywhere (DESIGN.md §2).
  *
- * Covered: the live dense range of ALL FIVE pools (in dense order), the player struct, the weapon
- * instances, the director, the difficulty scales, the level-up state, and ALL SIX RNG streams.
+ * ---------------------------------------------------------------------------------------------
+ * THE RULE FOR WHAT GOES IN
+ * ---------------------------------------------------------------------------------------------
+ * HASH THE STATE WHOSE DIVERGENCE WOULD NOT PROMPTLY SHOW UP IN STATE ALREADY HASHED.
  *
- * NOT covered, and each for a stated reason: prevX/prevY (a pure copy of last tick's x/y), the
+ * That is the whole test, and it cuts both ways. A latch like `insuranceUsed` can differ for eight
+ * minutes before the mech comes near death, and `magnetSec` until a gem happens to be in range, so
+ * both must be here. The spatial hash and the flow field are rebuilt from positions that ARE here,
+ * so a difference in them turns into a difference in enemy positions within a tick or two and is
+ * caught anyway - hashing them would cost a large walk per checkpoint to learn the same thing one
+ * tick sooner. Scenery is the same argument by a different route: a barrel that broke in one run
+ * and not the other spawns a pickup, and the pickup pool is hashed.
+ *
+ * Covered: all five pools in dense order, the projectile hit ring, the player struct including its
+ * timers and latches, the weapon instances, the director, the difficulty scales, the level-up
+ * state and its counters, the chest, the run-scoped unlock tallies, and all six RNG streams.
+ *
+ * Not covered, each for a reason above or below: prevX/prevY (a pure copy of last tick's x/y), the
  * event ring (whose read cursor belongs to the renderer, so hashing it would make the hash depend
- * on how often the renderer drained), and RunStats (which has its own hash below - see
- * `hashRunStats` for why the two are separate rather than merged).
+ * on how often the renderer drained), the spatial hash, the flow field, the scenery grid, the
+ * per-tick buffers, and RunStats (which has its own hash - see `hashRunStats` for why the two are
+ * separate rather than merged).
  *
  * ---------------------------------------------------------------------------------------------
- * IT SAID "ALL THREE POOLS" AND "ALL THREE RNG STATES", AND MEANT IT WHEN IT WAS WRITTEN
+ * THIS FUNCTION DRIFTS, AND IT HAS DRIFTED TWICE
  * ---------------------------------------------------------------------------------------------
- * Drones, sheep, the projectile hit ring, the `weapon` stream and the `event` stream all arrived
- * after this function did, and none of them was added to it. The `weapon` stream was eventually
- * wired in without this comment being updated; the drone pool, the sheep pool, the hit ring and
- * the `event` and `sheep` streams were simply never covered at all.
+ * It once said "all three pools" and "all three RNG states", which was true when it was written.
+ * By the time anyone checked there were five pools and six streams, and the drone pool, the sheep
+ * pool, the projectile hit ring, and the `event` and `sheep` streams had never been added. A
+ * second pass then found the chest state, the player's four timers and latches, the level-up
+ * counters, `director.eventCycle`, `weapon.droneBanked`, `autoLevel`, the slot caps and the three
+ * run-scoped unlock arrays - all of them live state, none of them hashed.
  *
- * The hit ring had a second excuse, and it is worth naming because it is the shape of excuse that
- * hides things: it is `capacity * HIT_RING_STRIDE` long, so it does not fit `mixPool`'s
+ * `criticalArmed` is the one that settles the argument. Its own comment reads: "A number rather
+ * than a boolean because World is hashed for replay determinism and the hash walks numeric
+ * fields." It was deliberately typed to be hashed. It was never added.
+ *
+ * The hit ring had a second excuse worth naming, because it is the shape of excuse that hides
+ * things: it is `capacity * HIT_RING_STRIDE` long, so it does not fit `mixPool`'s
  * one-element-per-slot walk. That is a reason it is absent from `denseViews`. It was never a
- * reason to leave it unhashed - it is live, swap-removed state that decides whether a piercing
- * shell may damage a body it has already hit.
+ * reason to leave it unhashed.
  *
- * That is drift rather than a decision, and it mattered: a drone or a sheep could diverge - or a
- * special-event roll could come out differently - and the determinism suite would report a match.
- * Indirectly most of it would surface eventually (a drone's shells are projectiles, a caught sheep
- * is a stat, an event spawns enemies), but "eventually and by accident" is not what a determinism
- * hash is for, and a divergence that only shows up three thousand ticks downstream is one nobody
- * can debug.
+ * THE LESSON, SINCE THIS WILL HAPPEN AGAIN: A NEW PIECE OF RUN STATE IS NOT FINISHED UNTIL IT IS
+ * IN THIS FUNCTION, or until the rule at the top says in writing why it does not need to be.
  *
- * The lesson, since this will happen again: A NEW POOL OR A NEW RNG STREAM IS NOT FINISHED UNTIL
- * IT IS IN THIS FUNCTION. There is no test that can catch its absence, because the hash is the
- * thing that would have to notice.
+ * `tests/hashCoverage.test.ts` now guards the fields that have already been missed: it mutates
+ * each one and asserts the hash moves. That retires the "nothing can test for this" excuse for
+ * everything on the list, and only for those - it cannot invent a field nobody thought of. Add the
+ * new field there as well as here, and the next person has a list to check against.
  */
 
 import { HIT_RING_STRIDE } from './entity/projectilePool.js';
@@ -205,6 +222,16 @@ export function hashWorld(world: World): number {
   h = mixU32(h, pl.shieldLayers);
   h = mixF64(h, pl.shieldTimer);
   h = mixF64(h, pl.invulnLeft);
+  // THE TIMERS AND LATCHES, and `criticalArmed`'s own comment is why they belong here: it says it
+  // is "a number rather than a boolean because World is hashed for replay determinism and the hash
+  // walks numeric fields". It was typed to be hashed and then never added. All four gate behaviour
+  // and can differ for a long time before anything observable happens - magnetSec until a gem
+  // comes near, insuranceUsed until the mech nearly dies - which is exactly the profile that needs
+  // hashing rather than the profile that does not.
+  h = mixF64(h, pl.magnetSec);
+  h = mixF64(h, pl.repairLeft);
+  h = mixU32(h, pl.criticalArmed);
+  h = mixU32(h, pl.insuranceUsed);
   for (let i = 0; i < pl.traitScratch.length; i++) h = mixF64(h, pl.traitScratch[i]);
 
   h = mixU32(h, world.weaponCount);
@@ -224,6 +251,7 @@ export function hashWorld(world: World): number {
     h = mixU32(h, w.overheated ? 1 : 0);
     h = mixU32(h, w.ammo);
     h = mixF64(h, w.reloadLeft);
+    h = mixU32(h, w.droneBanked ? 1 : 0);
     for (let k = 0; k < w.scratch.length; k++) h = mixF64(h, w.scratch[k]);
   }
 
@@ -238,6 +266,7 @@ export function hashWorld(world: World): number {
   h = mixU32(h, d.cyclePhase);
   h = mixF64(h, d.eliteTimer);
   h = mixU32(h, d.bossCycle);
+  h = mixU32(h, d.eventCycle);
   h = mixU32(h, d.bossSpawned);
   h = mixU32(h, d.bossHandle);
 
@@ -251,6 +280,28 @@ export function hashWorld(world: World): number {
   h = mixU32(h, lu.offerCount);
   for (let i = 0; i < lu.offers.length; i++) h = mixU32(h, lu.offers[i]);
   h = mixBytes(h, lu.stacks, 0, lu.stacks.length);
+  h = mixU32(h, lu.picksTaken);
+  h = mixU32(h, lu.lastTaken);
+  h = mixU32(h, lu.rerolls);
+  h = mixU32(h, lu.rerollsUsed);
+
+  // THE CHEST. Entirely unhashed until now, which meant the reels could land differently and the
+  // determinism suite would not say so - the payout only becomes visible once it has been applied
+  // to `levelUp.stacks`, and an ascension not at all.
+  const ch = world.chest;
+  h = mixIntArrayN(h, ch.reels, ch.reels.length);
+  h = mixU32(h, ch.payout);
+  h = mixIntArrayN(h, ch.grants, ch.grants.length);
+  h = mixU32(h, ch.opened);
+  h = mixU32(h, ch.ascension);
+
+  // Run-scoped tallies that nothing else reflects until much later, if at all.
+  h = mixBytes(h, world.droneStacks, 0, world.droneStacks.length);
+  h = mixBytes(h, world.cardUnlocked, 0, world.cardUnlocked.length);
+  h = mixBytes(h, world.ascensionSeen, 0, world.ascensionSeen.length);
+  h = mixU32(h, world.autoLevel);
+  h = mixU32(h, world.maxWeapons);
+  h = mixU32(h, world.maxPassives);
 
   h = mixF64(h, world.xpBanked);
 

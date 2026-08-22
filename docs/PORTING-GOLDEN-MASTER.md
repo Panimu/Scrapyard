@@ -47,7 +47,7 @@ Three things people get wrong here:
 ```jsonc
 {
   "formatVersion": 1,
-  "hashAlgo": "fnv1a32/world-v2+stats-v1",
+  "hashAlgo": "fnv1a32/world-v3+stats-v1",
   "tickRate": 60,
   "runs": [
     {
@@ -105,10 +105,24 @@ Pool data is hashed as **raw little-endian bytes** over the live dense prefix of
 the order the pool declares them. Both languages are little-endian on every platform this ships to;
 if that ever stops being true, this is the line that breaks.
 
-`hashWorld` covers the live range of **all five pools** (enemy, projectile, pickup, drone, sheep),
-the projectile hit ring, the player, weapon instances, the director, difficulty, level-up state and
-**all six RNG streams**. It deliberately excludes `prevX/prevY` (a copy of last tick's position),
-the event ring (whose read cursor belongs to the renderer) and `RunStats`.
+### What `hashWorld` covers, and the rule for deciding
+
+> **Hash the state whose divergence would not promptly show up in state already hashed.**
+
+That is the whole test, and it cuts both ways. A latch like `insuranceUsed` can differ for eight
+minutes before the mech comes near death, and `magnetSec` until a gem happens to be in range — both
+must be hashed. The spatial hash and the flow field are rebuilt from positions that *are* hashed, so
+a difference in them becomes a difference in enemy positions within a tick or two; the scenery grid
+is the same argument by another route, since a barrel that broke in one run and not the other spawns
+a pickup, and the pickup pool is hashed. Those three stay out, and hashing them would cost a large
+walk per checkpoint to learn the same thing one tick sooner.
+
+Covered: all five pools in dense order, the projectile hit ring, the player struct including its
+timers and latches, the weapon instances, the director, difficulty, level-up state and its counters,
+the chest, the run-scoped unlock tallies, and all six RNG streams.
+
+Excluded: `prevX/prevY`, the event ring (whose read cursor belongs to the renderer), the spatial
+hash, the flow field, the scenery grid, the per-tick buffers, and `RunStats`.
 
 Two of those pools and the hit ring do not go through the generic `mixPool` walker — the drone and
 sheep pools are plain arrays with no `denseViews`, and the hit ring is `capacity * HIT_RING_STRIDE`

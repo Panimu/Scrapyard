@@ -80,7 +80,7 @@ export const GOLDEN_FORMAT_VERSION = 1;
  * invalidates every recorded hash while leaving the file perfectly readable, which is exactly the
  * failure this string exists to make loud.
  */
-export const GOLDEN_HASH_ALGO = 'fnv1a32/world-v2+stats-v1';
+export const GOLDEN_HASH_ALGO = 'fnv1a32/world-v3+stats-v1';
 
 /** What to record. Everything here is an input to the simulation, not an observation of it. */
 export interface GoldenRunSpec {
