@@ -1,9 +1,9 @@
 # Scrapyard.Core — the C# port
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
-the director and targeting, every content catalog, `stats.ts`, and the trig the whole port depends
-on are done and proven. `weapons`, `projectiles` and `drones` are next — `stats` was the last thing
-blocking them.
+the director and targeting, every content catalog, both unbounded terrains, `stats.ts`, and the trig
+the whole port depends on are done and proven. `weapons`, `projectiles` and `drones` are next —
+`stats` was the last thing blocking them.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -50,7 +50,7 @@ dotnet test
 | `Stats` — `ResolvePlayerStats` / `ResolveWeaponStats` / `ResolveSplitStats` | done, 8 + 11 + 3 driven cases, incl. the four-pool scale identity |
 | `MossyLadder` / `CityLadder` — the other two levels' cycle ladders | done, incl. City's two elite-cascade seams |
 | `MossWalls` — Mossy Mayhem's terrain | done, incl. the property sweep for the "buried in a wall" bug |
-| `CityBlocks` terrain | not started — 987 lines |
+| `CityBlocks` — City Chaos's road grid | done, incl. both push-out "buried" topologies and the two reachability invariants |
 | The other 8 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
@@ -88,6 +88,39 @@ was caught by `goldens/walls-mossy-fixture.json` on the first C# run, not reason
 narrowed back to `int` internally the moment they touch its dense arrays), and the two call sites in
 `EnemyAI.cs` that store a scenery index (`ahead`, `beside`) are `long` too. Nothing that only ever
 compared an index to zero needed to change.
+
+**`CityBlocks` uses the identical `long`-widened packing from its first draft**, unlike `MossWalls`,
+which found the int32 overflow the hard way. `KEY_BIAS`/`KEY_SPAN` are numerically identical between
+the two TypeScript files, and the risk was already on record by the time this one was written.
+
+**`CityBlocks` keeps no cache at all**, unlike `MossWalls`'s `Dictionary`/FIFO-eviction pair: what is
+standing in a cell is a pure function of (seed, block coordinates) with no generated array behind
+it, so there is nothing to memoize and no order-independence test to write - every query recomputes
+from scratch, so there is no population order for an answer to depend on.
+
+**Two structural differences from `MossWalls`, both found by measuring rather than assumed from the
+TypeScript's own claim of "the same lattice":**
+
+- `PushOut`'s "buried, no open cardinal face" fallback IS reachable here, where Mossy's fixture
+  proves the equivalent branch unreachable. Mossy deals at most one shape per block, always one cell
+  thick; City's `BLOCK_FILLED` slab can be a solid 6x6 mass, so a cell at ring 2+ from every edge can
+  have all four neighbours also building. Both push-out topologies (`buriedAnyTrueCase`/
+  `buriedAnyFalseCase`) are pinned bit-exactly.
+- `PUSH_PASSES = 3` is not always enough to fully resolve City's thicker masses, though the
+  TypeScript's own comment reuses it unchanged on the strength of "the geometry here is the same
+  lattice." A 100,000-probe sweep scattered across the whole plane leaves roughly 4.3% of resolved
+  pushes still touching terrain afterward - a synthetic starting depth no legitimate spawn or
+  movement step can produce (spawns land only on reachable ground; nothing moves a body more than a
+  few units a tick), so this is not treated as a bug to fix in a file this port only transcribes.
+  `PushSweepStillOverlappingCountMatchesTypeScript` measures the count and checks it against the
+  TypeScript's own, rather than asserting zero the way Mossy's equivalent test can.
+
+**The two reachability tests ported from `tests/wallsCity.test.ts` do not, by themselves, pin the
+historical courtyard-with-no-door bug at the shipped `CityRingThickness` of 1** - reintroducing the
+old "flat" gateway range was tried by hand and caught by the bit-exact sweep/ray fixtures diverging,
+not by either flood fill, because the TypeScript's own comment says the old range was already
+correct for a one-cell wall and only wrong for a thicker one. See the remarks on `WallsCityTests` for
+what each of the two kinds of test in that file actually guards.
 
 ## Why the RNG came first
 
@@ -243,6 +276,22 @@ characteristic mistake:
   a body exactly on a cell boundary takes the "outside" branch's `1 / sqrt(distance)` with a
   distance of zero, and fails with a literal `NaN` in the result. The buried-body case exists
   specifically to reach `bestD2 == 0`, which is exactly the value this fault mishandles.
+- **`CityBlocks`'s historical gateway range reintroduced** (`inGatewayLane`'s `lo`/`span` stopped
+  accounting for `RingThickness`) — fails `EverySweptCellMatches`, `EveryRayProbeMatches` and
+  `PushSweepStillOverlappingCountMatchesTypeScript` by diverging from the fixture, but does **not**
+  fail either flood-fill reachability test at the shipped ring thickness of 1 - see the README
+  paragraph on why, and the remarks on `WallsCityTests` for what each test class actually catches.
+- **A city drum's smaller collider box dropped** (`CellHalf` always returning the full cell half
+  instead of the barrel's inset one) — fails the overlap probe placed deliberately between the two
+  box sizes (`just-outside-drum-box`, at an offset the drum's real 20u half should miss and the full
+  32u cell half should not), and the push-sweep's overlap count besides.
+- **A drum's damage falling through to the fence's accumulating-sections path** instead of breaking
+  in one hit regardless of amount — fails `BarrelDamageIgnoresAmountAndBreaksInOneHit` directly: a
+  single point of damage should down it, and the fence path needs 90+ to bring down even one section.
+- **The city cell key computed in `int` instead of `long`** — like Mossy's equivalent bug, wraps
+  silently rather than throwing: even `PackCityCell(0, 0)` round-trips to `(-1048576, 0)`, since
+  `2^20 * 2^21` alone is roughly a thousand times past `int32`'s range. Fails the round-trip test
+  immediately, plus every overlap, ray and damage probe that packs a cell index along the way.
 
 ### Known untested branch
 
@@ -327,9 +376,9 @@ In rough dependency order:
 - **`playerMovement`** needs `breakLootIn` from `pickups`.
 - **`weapons`, `projectiles`, `drones`** need `Stats.ResolveWeaponStats`, which is done - they are
   next.
-- **`pickups`** needs `progression`, `sheep` and both unported terrains (`MossWalls`/`CityBlocks`).
-- **`damage`** needs `pickups` and the per-level creature ladders (the rest of `enemyCatalog.ts`
-  and `cycles.ts`, not yet ported).
+- **`pickups`** needs `progression` and `sheep` - both terrains (`MossWalls`/`CityBlocks`) are done.
+- **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
+  are already done; `enemyCatalog.ts`/`cycles.ts` themselves needed no further porting (see above).
 - **`progression`** is the largest remaining system (1,400 lines) and needs `stats` and the full
   upgrade-gating logic (`isOfferable`), which reads more of `UpgradeDef` than the catalog port
   alone required.

@@ -17,9 +17,10 @@ namespace Scrapyard.Core;
 /// call <c>Overlap</c> and <c>RayHit</c> and never ask what they are standing on.
 /// </para>
 /// <para>
-/// ONLY <see cref="ScrapPiles"/> IS PORTED SO FAR. Mossy Mayhem's treelines and City Chaos's road
-/// grid are 883 and 987 lines of their own, and each answers the same six questions differently.
-/// The interface is here so adding them is a new implementation rather than an edit to this one.
+/// All three levels' terrain is now ported: <see cref="ScrapPiles"/> (the Scrapyard), Mossy
+/// Mayhem's <see cref="MossWalls"/> and City Chaos's <see cref="CityBlocks"/> - 883 and 987 lines of
+/// their own TypeScript, each answering the same six questions differently. The interface is here
+/// so each was a new implementation rather than an edit to this one.
 /// </para>
 /// </remarks>
 public interface IScenery
@@ -30,8 +31,9 @@ public interface IScenery
     /// <summary>
     /// The piece overlapping the circle, or -1. <c>long</c>, not <c>int</c>: it is a dense array
     /// index for the Scrapyard's piles but a PACKED CELL COORDINATE for a wall lattice
-    /// (<see cref="MossWalls"/>'s <c>KeyBias</c>/<c>KeySpan</c> packing routinely exceeds 2^31 for
-    /// any cell at all, the same way the TypeScript's plain `number` - exact up to 2^53 - does).
+    /// (<see cref="MossWalls"/>'s and <see cref="CityBlocks"/>'s identical <c>KeyBias</c>/
+    /// <c>KeySpan</c> packing routinely exceeds 2^31 for any cell at all, the same way the
+    /// TypeScript's plain `number` - exact up to 2^53 - does).
     /// </summary>
     long Overlap(double x, double y, double r);
 
