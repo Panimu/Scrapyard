@@ -1,0 +1,1049 @@
+{
+ "note": "The upgrade catalog: which weapon a card grants, its stacking ceiling, its ascension, its weapon-held gate, and its effects. Card text, icons and the unlock condition are excluded - no reader in stepWorld touches them. Every field compared as an exact 64-bit pattern.",
+ "weaponMaxTier": 7,
+ "weaponAscendedTier": 8,
+ "weaponCardCount": 11,
+ "passiveCardCount": 10,
+ "catalog": [
+  {
+   "index": 0,
+   "id": "w-cannon",
+   "kind": "weapon",
+   "grantsWeapon": "cannon",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": {
+    "requires": "p-damage",
+    "requiresTier": 1,
+    "consumes": null
+   }
+  },
+  {
+   "index": 1,
+   "id": "w-missile-short",
+   "kind": "weapon",
+   "grantsWeapon": "missile-short",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 2,
+   "id": "w-missile-long",
+   "kind": "weapon",
+   "grantsWeapon": "missile-long",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": {
+    "requires": "w-missile-short",
+    "requiresTier": 7,
+    "consumes": "w-missile-short"
+   }
+  },
+  {
+   "index": 3,
+   "id": "w-machine-gun",
+   "kind": "weapon",
+   "grantsWeapon": "machine-gun",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 4,
+   "id": "w-flak-cannon",
+   "kind": "weapon",
+   "grantsWeapon": "flak-cannon",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 5,
+   "id": "w-artillery",
+   "kind": "weapon",
+   "grantsWeapon": "artillery",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 6,
+   "id": "w-drone",
+   "kind": "weapon",
+   "grantsWeapon": "drone",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 7,
+   "id": "w-phase-cannon",
+   "kind": "weapon",
+   "grantsWeapon": "phase-cannon",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": null
+  },
+  {
+   "index": 8,
+   "id": "w-laser-short",
+   "kind": "weapon",
+   "grantsWeapon": "laser-short",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": {
+    "requires": "p-speed",
+    "requiresTier": 1,
+    "consumes": null
+   }
+  },
+  {
+   "index": 9,
+   "id": "w-laser-medium",
+   "kind": "weapon",
+   "grantsWeapon": "laser-medium",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": {
+    "requires": "p-range",
+    "requiresTier": 1,
+    "consumes": null
+   }
+  },
+  {
+   "index": 10,
+   "id": "w-laser-long",
+   "kind": "weapon",
+   "grantsWeapon": "laser-long",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
+   "ascension": {
+    "requires": "p-blast",
+    "requiresTier": 1,
+    "consumes": null
+   }
+  },
+  {
+   "index": 11,
+   "id": "p-range",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "range",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 12,
+   "id": "p-damage",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "damage",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "heatPerSec",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 13,
+   "id": "p-rate",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfa1111111111111"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfc3333333333333"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfa1111111111111"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfc999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfa47ae147ae147a"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfd3333333333333"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfa7e4b17e4b17e5"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfd999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfab4e81b4e81b4e"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfe199999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfaeb851eb851eb8"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bfe6666666666666"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "cooldown",
+      "mode": "mul",
+      "amount": "bfb1111111111111"
+     },
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     },
+     {
+      "target": "weapon",
+      "key": "reloadTime",
+      "mode": "add",
+      "amount": "bff3333333333333"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 14,
+   "id": "p-speed",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "moveMaxSpeed",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     },
+     {
+      "target": "player",
+      "key": "moveAccel",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 15,
+   "id": "p-armour",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4000000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4000000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4008000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4008000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4010000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4010000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "armour",
+      "mode": "add",
+      "amount": "4010000000000000"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 16,
+   "id": "p-repair",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "player",
+      "key": "repairAmount",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     },
+     {
+      "target": "player",
+      "key": "repairInterval",
+      "mode": "add",
+      "amount": "401c000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairAmount",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairAmount",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairInterval",
+      "mode": "add",
+      "amount": "bff0000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairAmount",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairAmount",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "repairInterval",
+      "mode": "add",
+      "amount": "bff0000000000000"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 17,
+   "id": "p-shield",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "player",
+      "key": "shieldLayers",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     },
+     {
+      "target": "player",
+      "key": "shieldRecharge",
+      "mode": "add",
+      "amount": "4034000000000000"
+     },
+     {
+      "target": "player",
+      "key": "shieldImmune",
+      "mode": "add",
+      "amount": "3fb999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldRecharge",
+      "mode": "add",
+      "amount": "c008000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldImmune",
+      "mode": "add",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldRecharge",
+      "mode": "add",
+      "amount": "c00c000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldImmune",
+      "mode": "add",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldRecharge",
+      "mode": "add",
+      "amount": "c012000000000000"
+     }
+    ],
+    [
+     {
+      "target": "player",
+      "key": "shieldLayers",
+      "mode": "add",
+      "amount": "3ff0000000000000"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 18,
+   "id": "p-radiator",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": [
+    "laser-short",
+    "laser-medium",
+    "laser-long"
+   ],
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatCapacity",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatCapacity",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatCapacity",
+      "mode": "mul",
+      "amount": "3fbeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "heatDispersion",
+      "mode": "mul",
+      "amount": "3fbeb851eb851eb8"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 19,
+   "id": "p-blast",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": [
+    "artillery",
+    "drone",
+    "phase-cannon",
+    "laser-long"
+   ],
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "splashRadius",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ]
+   ],
+   "ascension": null
+  },
+  {
+   "index": 20,
+   "id": "p-ammo",
+   "kind": "passive",
+   "grantsWeapon": null,
+   "maxStacks": 7,
+   "weight": "4022000000000000",
+   "requiresWeaponHeld": [
+    "machine-gun",
+    "flak-cannon"
+   ],
+   "effects": [],
+   "tierEffects": [
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fa999999999999a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3faeb851eb851eb8"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fb1eb851eb851ec"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fb47ae147ae147b"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fb70a3d70a3d70a"
+     }
+    ],
+    [
+     {
+      "target": "weapon",
+      "key": "ammoCapacity",
+      "mode": "mul",
+      "amount": "3fb999999999999a"
+     }
+    ]
+   ],
+   "ascension": null
+  }
+ ]
+}
