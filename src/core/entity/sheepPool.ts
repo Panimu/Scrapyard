@@ -35,8 +35,8 @@ export const SHEEP_WALK = 1;
 export const SHEEP_FLEE = 2;
 
 /**
- * Hard ceiling. A level asks for `LevelDef.sheep` of them alive at once (12 on Mossy), so this is
- * room for a level that wants half again as many without a resize, and small enough that the whole
+ * Hard ceiling. A level asks for `LevelDef.sheep` of them alive at once (4 on Mossy), so this is
+ * ample room for a level that wants far more without a resize, and small enough that the whole
  * pool is a couple of cache lines per field.
  */
 export const SHEEP_CAP = 24;

@@ -1,0 +1,168 @@
+{
+ "note": "Every EV_* id and EVENT_NAMES, indexed by kind. Dumped whole rather than per-system because a bare integer nothing reads is a value that can be anything - EV_PHASE_CHANGED was ported as 6 (EV_PROJECTILE_EXPIRED) and no existing fixture could see it. The ring is excluded from the world hash and systems-fixture.json records event COUNTS, not kinds.",
+ "count": 32,
+ "kinds": [
+  {
+   "name": "EnemySpawned",
+   "id": 0
+  },
+  {
+   "name": "EnemyDamaged",
+   "id": 1
+  },
+  {
+   "name": "EnemyKilled",
+   "id": 2
+  },
+  {
+   "name": "PlayerDamaged",
+   "id": 3
+  },
+  {
+   "name": "WeaponFired",
+   "id": 4
+  },
+  {
+   "name": "ProjectileHit",
+   "id": 5
+  },
+  {
+   "name": "ProjectileExpired",
+   "id": 6
+  },
+  {
+   "name": "GemSpawned",
+   "id": 7
+  },
+  {
+   "name": "GemCollected",
+   "id": 8
+  },
+  {
+   "name": "LevelUp",
+   "id": 9
+  },
+  {
+   "name": "UpgradeTaken",
+   "id": 10
+  },
+  {
+   "name": "PhaseChanged",
+   "id": 11
+  },
+  {
+   "name": "BossSpawned",
+   "id": 12
+  },
+  {
+   "name": "WeaponOverheated",
+   "id": 13
+  },
+  {
+   "name": "WeaponCooled",
+   "id": 14
+  },
+  {
+   "name": "WeaponReloading",
+   "id": 15
+  },
+  {
+   "name": "WeaponReloaded",
+   "id": 16
+  },
+  {
+   "name": "PlayerShieldBroken",
+   "id": 17
+  },
+  {
+   "name": "PlayerShieldRestored",
+   "id": 18
+  },
+  {
+   "name": "ProjectileDetonated",
+   "id": 19
+  },
+  {
+   "name": "BarrelBroken",
+   "id": 20
+  },
+  {
+   "name": "ConsumableTaken",
+   "id": 21
+  },
+  {
+   "name": "ChestOpened",
+   "id": 22
+  },
+  {
+   "name": "ChestClosed",
+   "id": 23
+  },
+  {
+   "name": "BarrelGrew",
+   "id": 24
+  },
+  {
+   "name": "UpgradeRerolled",
+   "id": 25
+  },
+  {
+   "name": "SpecialEvent",
+   "id": 26
+  },
+  {
+   "name": "PlayerRepaired",
+   "id": 27
+  },
+  {
+   "name": "PlayerSaved",
+   "id": 28
+  },
+  {
+   "name": "WallBroken",
+   "id": 29
+  },
+  {
+   "name": "DroneFired",
+   "id": 30
+  },
+  {
+   "name": "SheepTaken",
+   "id": 31
+  }
+ ],
+ "names": [
+  "ENEMY_SPAWNED",
+  "ENEMY_DAMAGED",
+  "ENEMY_KILLED",
+  "PLAYER_DAMAGED",
+  "WEAPON_FIRED",
+  "PROJECTILE_HIT",
+  "PROJECTILE_EXPIRED",
+  "GEM_SPAWNED",
+  "GEM_COLLECTED",
+  "LEVEL_UP",
+  "UPGRADE_TAKEN",
+  "PHASE_CHANGED",
+  "BOSS_SPAWNED",
+  "WEAPON_OVERHEATED",
+  "WEAPON_COOLED",
+  "WEAPON_RELOADING",
+  "WEAPON_RELOADED",
+  "SHIELD_BROKEN",
+  "SHIELD_RESTORED",
+  "PROJECTILE_DETONATED",
+  "BARREL_BROKEN",
+  "CONSUMABLE_TAKEN",
+  "CHEST_OPENED",
+  "CHEST_CLOSED",
+  "BARREL_GREW",
+  "UPGRADE_REROLLED",
+  "SPECIAL_EVENT",
+  "PLAYER_REPAIRED",
+  "PLAYER_SAVED",
+  "WALL_BROKEN",
+  "DRONE_FIRED",
+  "SHEEP_TAKEN"
+ ]
+}

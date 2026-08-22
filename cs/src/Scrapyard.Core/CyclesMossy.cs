@@ -119,5 +119,11 @@ public sealed class MossyMayhemLevel : ILevel
 {
     public int CycleCount => MossyLadder.All.Length;
 
+    /// <summary>
+    /// A FLOCK OF FOUR - the only level in the game with one, because it is the only one whose
+    /// terrain gives nothing back when it is broken. See <see cref="Sheep"/>.
+    /// </summary>
+    public int Sheep => 4;
+
     public void ResolveCycle(int index, ResolvedCycle outc) => MossyLadder.Resolve(index, outc);
 }

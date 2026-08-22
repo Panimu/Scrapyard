@@ -1,9 +1,9 @@
 # Scrapyard.Core — the C# port
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
-the director and targeting, every content catalog, both unbounded terrains, `stats.ts`, and the trig
-the whole port depends on are done and proven. `weapons`, `projectiles` and `drones` are next —
-`stats` was the last thing blocking them.
+the director and targeting, every content catalog, both unbounded terrains, `stats.ts`, `sheep`, and
+the trig the whole port depends on are done and proven. `weapons`, `projectiles` and `drones` are
+next — `stats` was the last thing blocking them.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -51,7 +51,9 @@ dotnet test
 | `MossyLadder` / `CityLadder` — the other two levels' cycle ladders | done, incl. City's two elite-cascade seams |
 | `MossWalls` — Mossy Mayhem's terrain | done, incl. the property sweep for the "buried in a wall" bug |
 | `CityBlocks` — City Chaos's road grid | done, incl. both push-out "buried" topologies and the two reachability invariants |
-| The other 8 systems | not started — **this is the remaining job** |
+| `EventKind` — the 32 event ids and their names | done, whole table compared both ways — **one was wrong** |
+| `Sheep` — the flock, `SheepRayHit`, `TakeSheepIn` | done, 13 driven cases over 2,924 ticks, stream compared every tick |
+| The other 7 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -121,6 +123,33 @@ old "flat" gateway range was tried by hand and caught by the bit-exact sweep/ray
 not by either flood fill, because the TypeScript's own comment says the old range was already
 correct for a one-cell wall and only wrong for a thicker one. See the remarks on `WallsCityTests` for
 what each of the two kinds of test in that file actually guards.
+
+**`EventKind` was ported piecemeal and one of the ids was wrong.** `PhaseChanged` was written as
+`6`, which is `ProjectileExpired`, so the end of every run's intro was announced to the renderer as
+an expiring shell. Nothing failed, and nothing could have: the event ring is deliberately excluded
+from the world hash (its read cursor belongs to whoever is draining), and
+`goldens/systems-fixture.json` records how MANY events a stage pushed rather than what they were. A
+bare integer with no reader in the test suite is a value that can be anything at all.
+
+The fix is not just the number. The "it arrives with the system that needs it" rule that `World`
+follows is right for STATE, which a fixture compares the moment it exists, and wrong for a bare
+format table — so the whole 32-entry table is now ported and `EventKindTests` compares it in both
+directions: every fixture row against the declared constant, and every declared constant against the
+fixture, so a future addition with no fixture row fails rather than going unchecked. `EVENT_NAMES` is
+indexed by kind, which makes it a genuine cross-check rather than decoration: a wrong id and a right
+name cannot both be true.
+
+**`Sheep` is the first system where the RNG STREAM is the primary thing compared, not the
+positions.** Every decision the flock makes is a draw — the graze/wander coin, both state durations,
+the random fallback heading, and two per spawn attempt — so a port that takes a different NUMBER of
+values still puts every animal somewhere entirely plausible while desynchronising every future roll
+in the run. Two branches exist only to keep that count fixed and are cased directly: the spawn
+ternary pair (a moving mech spends its angle draw on the jitter, a standing one on the base
+heading — exactly one either way, and a port that evaluated both sides of either ternary takes two),
+and the rejection loop (a refused placement has already paid for its angle and radius). The fixture
+also records how many draws each tick consumed, derived independently on both sides by replaying the
+stream, so a divergence reports *"advanced 9 draws where 8 were expected"* instead of four hex words
+that merely fail to match.
 
 ## Why the RNG came first
 
@@ -293,6 +322,36 @@ characteristic mistake:
   `2^20 * 2^21` alone is roughly a thousand times past `int32`'s range. Fails the round-trip test
   immediately, plus every overlap, ray and damage probe that packs a cell index along the way.
 
+- **`EventKind.PhaseChanged` as `6` instead of `11`** — the ACTUAL bug that had shipped in this
+  port, not an injected one. Fails `EveryFixtureKindMatchesTheDeclaredConstant` with *"expected 11,
+  got 6"* and `IdsAreDenseAndDistinct` with the duplicate, once a test existed that looked at the
+  whole table.
+- **The sheep timer decremented as a `float` compound assignment** (`Timer[d] -= (float)dt`, two
+  roundings where JavaScript has one) — fails at tick 56 of `graze-and-wander`, one ULP apart
+  (`3b06d4b4` vs `3b06d4b0`). Fifty-six subtractions is all it takes.
+- **Both sides of the sheep spawn's angle ternary evaluated** — the natural "clearer" rewrite that
+  hoists each branch into its own local. Takes two draws where one is due, and fails on tick 0 of
+  `topping-up-moving` with *"the sheep stream advanced 9 draws where 8 were expected"*. The stream is
+  checked BEFORE the columns for exactly this reason: the positions also diverge, but only this
+  message names the cause.
+- **`dirX * speed * dt` reassociated to `speed * dt * dirX`** — hoisting the constant out of the loop
+  is the obvious optimisation and is algebraically identical. It differs in the last bit of the
+  double about 45% of the time, and the float32 store absorbs nearly all of that: MEASURED at about
+  one surviving difference in 500,000 position updates, so every ordinary case passes and it took a
+  purpose-built one to catch. `integrate-association` poses three animals on searched values where
+  the difference does survive, and the fault then fails on tick 0. Worth the trouble because the
+  wrong form is what a later optimisation pass would naturally write.
+- **The sheep flee heading's divide-by-zero guard dropped** — an animal standing exactly on the mech
+  divides by a zero length, and `sheep-standing-on-the-mech` fails with a literal `NaN` in the
+  position column. Unreachable in play, one line to pose, and without the case a port would fill the
+  pool with NaN rather than failing anywhere legible.
+- **The sheep cull iterating upward** over a swap-remove pool — skips the animal moved into the
+  freed slot, and `culling-strays` fails with *"count expected 2, got 3"*.
+- **The `want <= 0` early return without its `&& count == 0` half** — a level that turned its flock
+  off mid-run would freeze whatever was still standing instead of letting it graze away and be
+  culled. Fails `flock-turned-off-with-animals-out` on tick 0, on the DRAW COUNT (0 where 6 were
+  expected) rather than on any position, since the frozen animals simply stop rolling.
+
 ### Known untested branch
 
 `RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
@@ -366,17 +425,17 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Eight systems remain: `playerMovement`, `weapons`, `projectiles`, `drones`, `sheep`, `damage`,
-`pickups`, `progression`.
+Seven systems remain: `playerMovement`, `weapons`, `projectiles`, `drones`, `damage`, `pickups`,
+`progression`. (`sheep` is done — it had no content dependency left and was the simplest of the
+eight.)
 
 In rough dependency order:
 
-- **`sheep`** has no content dependency left at all - it is the simplest of the eight and the
-  obvious place to start.
 - **`playerMovement`** needs `breakLootIn` from `pickups`.
 - **`weapons`, `projectiles`, `drones`** need `Stats.ResolveWeaponStats`, which is done - they are
   next.
-- **`pickups`** needs `progression` and `sheep` - both terrains (`MossWalls`/`CityBlocks`) are done.
+- **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
+  `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.
 - **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
   are already done; `enemyCatalog.ts`/`cycles.ts` themselves needed no further porting (see above).
 - **`progression`** is the largest remaining system (1,400 lines) and needs `stats` and the full

@@ -108,5 +108,12 @@ public sealed class CityChaosLevel : ILevel
 {
     public int CycleCount => CityLadder.All.Length;
 
+    /// <summary>
+    /// None. This map opened with Mossy's flock and swapped it for the fuel drums baked into
+    /// <see cref="CityBlocks"/> - already the game's loot prop, already drawn, and unlike an animal
+    /// it needs no pool, no upkeep tick and no cull radius.
+    /// </summary>
+    public int Sheep => 0;
+
     public void ResolveCycle(int index, ResolvedCycle outc) => CityLadder.Resolve(index, outc);
 }

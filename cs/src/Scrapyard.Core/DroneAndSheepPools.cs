@@ -172,7 +172,7 @@ public sealed class SheepPool
     /// <summary>Bolting from something. Faster, straight, and short.</summary>
     public const byte Flee = 2;
 
-    /// <summary>Hard ceiling. A level asks for its own count alive at once (12 on Mossy).</summary>
+    /// <summary>Hard ceiling. A level asks for its own count alive at once (4 on Mossy).</summary>
     public const int Cap = 24;
 
     public int Capacity { get; }

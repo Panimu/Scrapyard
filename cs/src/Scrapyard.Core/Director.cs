@@ -640,17 +640,38 @@ public static class Director
 }
 
 /// <summary>
-/// What the director needs from a level: its ladder and how long that ladder is.
+/// What the ported systems need from a level: its ladder, how long that ladder is, and how many
+/// grazing loot props it keeps alive.
 /// </summary>
 /// <remarks>
+/// <para>
 /// An interface rather than a delegate because <c>CycleCount</c> and <c>ResolveCycle</c> must
 /// always come from the SAME level - the boss cap reads one and the rollover reads the other, and
 /// a pair that disagreed would hand out bosses forever.
+/// </para>
+/// <para>
+/// PARTIAL, like <see cref="World"/>: the TypeScript's <c>LevelDef</c> also carries a name, a
+/// blurb, card art, an unlock condition, a floor texture, a scenery factory, its creature table and
+/// a bestiary body. None of those has a reader inside a ported system - <c>ArenaHalf</c> is copied
+/// onto the world, terrain arrives as an <see cref="IScenery"/> the caller supplies, and the rest
+/// is app- or render-layer. A field arrives here when a ported system reads it.
+/// </para>
 /// </remarks>
 public interface ILevel
 {
     /// <summary>How many rungs the level actually authors. Past it, the ladder extrapolates.</summary>
     int CycleCount { get; }
+
+    /// <summary>
+    /// How many grazing loot props this map keeps alive. 0 for a map with none.
+    /// </summary>
+    /// <remarks>
+    /// A COUNT RATHER THAN A BOOLEAN, and a universal fact rather than a feature switch: every map
+    /// answers "how much loot walks about on you" the way every map answers "how big is it". The
+    /// Scrapyard's answer is none, because its loot is drums baked into the terrain; Mossy Mayhem's
+    /// is a flock, because its terrain is trees and a felled tree gives nothing.
+    /// </remarks>
+    int Sheep { get; }
 
     void ResolveCycle(int index, ResolvedCycle outc);
 }
@@ -659,6 +680,9 @@ public interface ILevel
 public sealed class ScrapyardLevel : ILevel
 {
     public int CycleCount => ScrapyardLadder.All.Length;
+
+    /// <summary>None: this map's loot is the fuel drums baked into its terrain.</summary>
+    public int Sheep => 0;
 
     public void ResolveCycle(int index, ResolvedCycle outc) => ScrapyardLadder.Resolve(index, outc);
 }

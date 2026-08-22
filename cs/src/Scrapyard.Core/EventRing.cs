@@ -93,17 +93,174 @@ public sealed class EventRing
     }
 }
 
-/// <summary>Event kind ids. Only the ones a ported system emits so far.</summary>
+/// <summary>Event kind ids, and the names that go with them.</summary>
+/// <remarks>
+/// <para>
+/// <b>PORTED WHOLE, NOT PIECEMEAL - AND THAT IS A CORRECTION.</b> This table used to hold only the
+/// ids a ported system emitted, on the same "it arrives with the system that needs it" rule
+/// <see cref="World"/> follows. That rule is right for state, which a fixture compares the moment
+/// it exists, and WRONG here: an id is a bare integer nothing checks, so a mistyped one is invisible
+/// until a renderer draws the wrong picture. It happened - <see cref="PhaseChanged"/> was written
+/// as <c>6</c>, which is <see cref="ProjectileExpired"/>, so the end of every run's intro was
+/// announced as an expiring shell. The systems fixture records how MANY events a stage pushed and
+/// not what they were, so nothing failed.
+/// </para>
+/// <para>
+/// <b>THE NUMBERS ARE THE FORMAT.</b> The renderer switches on them and they are written into
+/// replays, so the list is append-only in exactly the way the upgrade catalog is: renumbering one
+/// would silently reinterpret every recording ever made. They are the TypeScript's values, and
+/// <c>EventKindTests</c> now compares every one of them plus <see cref="Names"/> against
+/// <c>goldens/event-kinds-fixture.json</c> - a whole-table check, because a partial one is what
+/// let the wrong number sit here.
+/// </para>
+/// <para>
+/// <b><see cref="Names"/> is indexed BY KIND</b>, which is the invariant that makes it a useful
+/// cross-check on the ids rather than decoration: a wrong id and a right name cannot both be true.
+/// Note the two places the name order is not the declaration order - <c>WEAPON_COOLED</c> (14)
+/// comes before <c>WEAPON_RELOADING</c> (15) in the array while the constants are declared the
+/// other way round, and the shield names drop their <c>PLAYER_</c> prefix. Both are the
+/// TypeScript's, transcribed rather than tidied.
+/// </para>
+/// </remarks>
 public static class EventKind
 {
-    public const int PhaseChanged = 6;
-
-    // Ported piecemeal, like the constants: an id arrives with the system that pushes it. The
-    // NUMBERS are the format - the renderer switches on them and the ring is hashed - so they are
-    // the TypeScript's values, not a fresh sequence.
     public const int EnemySpawned = 0;
+    public const int EnemyDamaged = 1;
+    public const int EnemyKilled = 2;
+    public const int PlayerDamaged = 3;
+    public const int WeaponFired = 4;
+    public const int ProjectileHit = 5;
+    public const int ProjectileExpired = 6;
+    public const int GemSpawned = 7;
+    public const int GemCollected = 8;
+    public const int LevelUp = 9;
+    public const int UpgradeTaken = 10;
+    public const int PhaseChanged = 11;
     public const int BossSpawned = 12;
+
+    /// <summary>A laser cut out at its own heat capacity. The UI flashes the heat bar on this.</summary>
+    public const int WeaponOverheated = 13;
+
+    /// <summary>A laser cooled to its own heat-resume point and is live again.</summary>
+    public const int WeaponCooled = 14;
+
+    /// <summary>A magazine ran dry and a reload started. Payload: (weaponIdx, reloadSeconds).</summary>
+    public const int WeaponReloading = 15;
+
+    /// <summary>A reload finished. Payload: (weaponIdx, rounds).</summary>
+    public const int WeaponReloaded = 16;
+
+    /// <summary>
+    /// An Energy Shield layer absorbed a hit. Payload: (x, y, damage PREVENTED, layers still up) -
+    /// the prevented amount fully resolved, armour and damage-taken multiplier already applied.
+    /// </summary>
+    public const int PlayerShieldBroken = 17;
+
+    /// <summary>A layer finished recharging. Payload: (x, y, layers now up, capacity).</summary>
+    public const int PlayerShieldRestored = 18;
+
+    /// <summary>
+    /// A fused shell reached the end of its flight and blew up in open air, hitting no body.
+    /// Payload: (x, y, splash RADIUS, visualId). Distinct from <see cref="ProjectileHit"/> because
+    /// the two want different pictures, and because the blast radius is a per-projectile number the
+    /// renderer could not otherwise know once the shell has been reaped.
+    /// </summary>
+    public const int ProjectileDetonated = 19;
+
+    /// <summary>
+    /// A fuel barrel was destroyed by a weapon. Payload: (x, y, the barrel's radius, 0) - the
+    /// radius because destruction IS a radius write, so this is the last place the number exists.
+    /// </summary>
+    public const int BarrelBroken = 20;
+
+    /// <summary>The player walked over a consumable. Payload: (x, y, value, PICKUP KIND).</summary>
+    public const int ConsumableTaken = 21;
+
+    /// <summary>A Cyber Chest's reels are spinning. Payload: (x, y, payout, chests opened this run).</summary>
+    public const int ChestOpened = 22;
+
+    /// <summary>The chest's upgrades have landed and the world is running again.</summary>
+    public const int ChestClosed = 23;
+
+    /// <summary>A destroyed fuel barrel stood back up. Payload: (x, y, the barrel's radius, 0).</summary>
+    public const int BarrelGrew = 24;
+
+    /// <summary>
+    /// A level-up card was rerolled. Payload: (rerolls LEFT after the spend, rerollsUsed, 0, 0).
+    /// </summary>
+    public const int UpgradeRerolled = 25;
+
+    /// <summary>
+    /// A wave rolled a special event. Payload: (event id, cycle index, 1 if the mid-point roll, 0).
+    /// Pushed for "nothing" too, so a quiet wave is distinguishable from a broken roller.
+    /// </summary>
     public const int SpecialEvent = 26;
+
+    /// <summary>Field Repair put hit points back. Payload: (x, y, hp restored, 0).</summary>
+    public const int PlayerRepaired = 27;
+
+    /// <summary>
+    /// Mech Insurance paid out. Payload: (x, y, seconds of immunity opened, 0) - the duration
+    /// carried so the picture lasts exactly as long as the protection does.
+    /// </summary>
+    public const int PlayerSaved = 28;
+
+    /// <summary>
+    /// A destructible wall segment was broken - a tree on Mossy Mayhem. Payload: (x, y, radius, 0).
+    /// Its own id rather than <see cref="BarrelBroken"/>: sharing it would explode every tree.
+    /// </summary>
+    public const int WallBroken = 29;
+
+    /// <summary>
+    /// A DRONE fired. Payload identical to <see cref="WeaponFired"/> because it wants the identical
+    /// muzzle flash - and a separate id because <see cref="WeaponFired"/> also kicks the turret and
+    /// shakes the camera, which four drones firing would hold jammed against the stop.
+    /// </summary>
+    public const int DroneFired = 30;
+
+    /// <summary>
+    /// A sheep was taken - Mossy Mayhem's fuel drum, caught. Payload: (x, y, radius, 0). Its own id
+    /// for the reason a felled tree has one: sharing <see cref="BarrelBroken"/> would have
+    /// detonated a farm animal.
+    /// </summary>
+    public const int SheepTaken = 31;
+
+    /// <summary>Human-readable names for the harness timeline and the debug HUD. Index IS the kind.</summary>
+    public static readonly string[] Names =
+    {
+        "ENEMY_SPAWNED",
+        "ENEMY_DAMAGED",
+        "ENEMY_KILLED",
+        "PLAYER_DAMAGED",
+        "WEAPON_FIRED",
+        "PROJECTILE_HIT",
+        "PROJECTILE_EXPIRED",
+        "GEM_SPAWNED",
+        "GEM_COLLECTED",
+        "LEVEL_UP",
+        "UPGRADE_TAKEN",
+        "PHASE_CHANGED",
+        "BOSS_SPAWNED",
+        "WEAPON_OVERHEATED",
+        "WEAPON_COOLED",
+        "WEAPON_RELOADING",
+        "WEAPON_RELOADED",
+        "SHIELD_BROKEN",
+        "SHIELD_RESTORED",
+        "PROJECTILE_DETONATED",
+        "BARREL_BROKEN",
+        "CONSUMABLE_TAKEN",
+        "CHEST_OPENED",
+        "CHEST_CLOSED",
+        "BARREL_GREW",
+        "UPGRADE_REROLLED",
+        "SPECIAL_EVENT",
+        "PLAYER_REPAIRED",
+        "PLAYER_SAVED",
+        "WALL_BROKEN",
+        "DRONE_FIRED",
+        "SHEEP_TAKEN",
+    };
 }
 
 /// <summary>
