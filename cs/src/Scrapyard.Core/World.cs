@@ -51,9 +51,27 @@ public sealed class World
     /// <summary>The sim-to-renderer seam. Deliberately not hashed - see <see cref="EventRing"/>.</summary>
     public readonly EventRing Events;
 
-    public readonly HitBuffer Hits = new();
-    public readonly ContactBuffer Contacts = new();
+    public readonly HitBuffer Hits;
+    public readonly ContactBuffer Contacts;
     public readonly KillFeed Kills = new();
+    public readonly WorldScratch Scratch;
+
+    /// <summary>Broad phase over the enemy pool. Rebuilt every tick; deliberately not hashed.</summary>
+    public readonly SpatialHash Spatial;
+
+    /// <summary>
+    /// The largest radius any creature in the level's ladder can have.
+    /// </summary>
+    /// <remarks>
+    /// A world field rather than a constant: the TypeScript derives it from the content catalog,
+    /// which this port does not have yet. Collision pads every broad-phase query by it, so a value
+    /// that is too SMALL silently misses hits against the biggest bodies - which is why the fixture
+    /// supplies the real one rather than letting a plausible number be guessed here.
+    /// </remarks>
+    public double MaxEnemyRadius;
+
+    /// <summary>The player's collision radius. Derived from hero and upgrades in the TypeScript.</summary>
+    public double PlayerRadius;
 
     public readonly EnemyPool Enemies;
     public readonly ProjectilePool Projectiles;
@@ -109,6 +127,13 @@ public sealed class World
         AscensionSeen = new byte[shape.UpgradeCount];
 
         Events = new EventRing(shape.EventRingCapacity > 0 ? shape.EventRingCapacity : 1024);
+        Hits = new HitBuffer(shape.HitCapacity > 0 ? shape.HitCapacity : 1024);
+        Contacts = new ContactBuffer(shape.ContactCapacity > 0 ? shape.ContactCapacity : 256);
+        Scratch = new WorldScratch(shape.MaxQueryCandidates > 0 ? shape.MaxQueryCandidates : 2048);
+        Spatial = new SpatialHash(
+            shape.CellSize > 0 ? shape.CellSize : 64,
+            shape.BucketCount > 0 ? shape.BucketCount : 256,
+            shape.EnemyCapacity);
         Input = InputFrame.Empty;
 
         Rng = new RngStreams(seed);
@@ -143,6 +168,14 @@ public readonly struct WorldShape
 
     /// <summary>Power of two. Defaults to 1024 when unset, which is what the ring's mask needs.</summary>
     public int EventRingCapacity { get; init; }
+
+    public int HitCapacity { get; init; }
+    public int ContactCapacity { get; init; }
+    public int MaxQueryCandidates { get; init; }
+    public double CellSize { get; init; }
+
+    /// <summary>Power of two.</summary>
+    public int BucketCount { get; init; }
 }
 
 public sealed class PlayerState

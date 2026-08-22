@@ -109,15 +109,80 @@ public static class EventKind
 /// </remarks>
 public sealed class HitBuffer
 {
+    public readonly int Capacity;
     public int Count;
+    public readonly ushort[] ProjectileDense;
+    public readonly ushort[] EnemyDense;
+
+    /// <summary>Impact point, for the FX layer and for the splash origin.</summary>
+    public readonly float[] X;
+
+    public readonly float[] Y;
+
+    public HitBuffer(int capacity)
+    {
+        Capacity = capacity;
+        ProjectileDense = new ushort[capacity];
+        EnemyDense = new ushort[capacity];
+        X = new float[capacity];
+        Y = new float[capacity];
+    }
+
+    /// <summary>
+    /// <see cref="EnemyDense"/> sentinel: this hit has no directly-struck body.
+    /// </summary>
+    /// <remarks>
+    /// A missile that detonates on its fuse explodes in open air - splash only. Routing that
+    /// through the hit buffer with a sentinel keeps ALL damage application in the damage stage
+    /// rather than letting the projectile stage reach into enemy hp, which is the property that
+    /// makes damage order testable.
+    /// </remarks>
+    public const ushort NoDirectHit = 0xffff;
+
+    /// <summary>Silently drops on overflow, exactly as the TypeScript does.</summary>
+    public void Push(int projectileDense, int enemyDense, double x, double y)
+    {
+        if (Count >= Capacity) return;
+        int i = Count++;
+        ProjectileDense[i] = (ushort)projectileDense;
+        EnemyDense[i] = (ushort)enemyDense;
+        X[i] = (float)x;
+        Y[i] = (float)y;
+    }
 }
 
 public sealed class ContactBuffer
 {
+    public readonly int Capacity;
     public int Count;
+    public readonly ushort[] EnemyDense;
+
+    public ContactBuffer(int capacity)
+    {
+        Capacity = capacity;
+        EnemyDense = new ushort[capacity];
+    }
+
+    public void Push(int enemyDense)
+    {
+        if (Count >= Capacity) return;
+        EnemyDense[Count++] = (ushort)enemyDense;
+    }
 }
 
 public sealed class KillFeed
 {
     public int Count;
+}
+
+/// <summary>
+/// Per-world scratch. World-scoped rather than static so two worlds can be stepped in the same
+/// process, which the determinism suite does.
+/// </summary>
+public sealed class WorldScratch
+{
+    /// <summary>Broad-phase query results. Sized well beyond the largest query the game issues.</summary>
+    public readonly ushort[] Candidates;
+
+    public WorldScratch(int maxQueryCandidates) => Candidates = new ushort[maxQueryCandidates];
 }

@@ -181,3 +181,181 @@ public struct InputFrame
 
     public static InputFrame Empty => new() { MoveX = 0, MoveY = 0, Buttons = 0, ChooseIndex = -1 };
 }
+
+/// <summary>
+/// S8 - collision. DETECTION ONLY: it writes hits and contacts and applies nothing.
+/// A port of <c>src/core/systems/collision.ts</c>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The split from the damage stage is what makes damage ORDER explicit and both halves
+/// independently testable. Nothing here touches an enemy's hp.
+/// </para>
+/// <para>
+/// OWNERSHIP OF <c>ContactTimer</c>, stated exactly, because two stages touch it. This stage runs
+/// the clock - one linear decrement per live enemy per tick - and emits a contact only for an
+/// enemy whose timer has reached 0, so the contact buffer means "damage-eligible touch", not
+/// "touch". The damage stage rearms the timer at the moment it actually applies the damage.
+/// Splitting it this way stops a contact arming a cooldown it never got billed for: an enemy that
+/// dies to a shell earlier in the damage stage has its contact dropped and its timer untouched.
+/// </para>
+/// </remarks>
+public static class Collision
+{
+    public static void Update(World w, double dt)
+    {
+        AdvanceContactTimers(w, dt);
+        CollideProjectilesWithEnemies(w);
+        CollidePlayerWithEnemies(w);
+    }
+
+    /// <summary>
+    /// One linear pass over the dense range, clamped at 0.
+    /// </summary>
+    /// <remarks>
+    /// A LINEAR SCAN ON PURPOSE: every live enemy's timer has to advance whether or not it is
+    /// anywhere near the player, and 300 contiguous subtractions is cheaper than any structure
+    /// that could say which to skip. Clamping at 0 rather than letting it run negative keeps the
+    /// column's byte pattern - and therefore the world hash - from drifting for enemies that never
+    /// touch anything.
+    /// <para>
+    /// THE FLOAT32 RULE: <c>ContactTimer</c> is a float32 column, so the subtraction is done in
+    /// <c>double</c> and rounded once on store. Writing <c>timer[d] -= (float)dt</c> would round
+    /// twice and drift away from the TypeScript within a few hundred ticks.
+    /// </para>
+    /// </remarks>
+    private static void AdvanceContactTimers(World w, double dt)
+    {
+        var p = w.Enemies;
+        float[] timer = p.ContactTimer;
+        int n = p.Count;
+        for (int d = 0; d < n; d++)
+        {
+            double left = timer[d];
+            if (left <= 0) continue;
+            double next = left - dt;
+            timer[d] = (float)(next > 0 ? next : 0);
+        }
+    }
+
+    private static void CollideProjectilesWithEnemies(World w)
+    {
+        var proj = w.Projectiles;
+        int n = proj.Count;
+        if (n == 0) return;
+
+        var enemies = w.Enemies;
+        var hash = w.Spatial;
+        ushort[] candidates = w.Scratch.Candidates;
+        var hits = w.Hits;
+
+        float[] ex = enemies.X;
+        float[] ey = enemies.Y;
+        float[] eRadius = enemies.Radius;
+        uint[] eSpawnId = enemies.SpawnId;
+
+        for (int pd = 0; pd < n; pd++)
+        {
+            // A shell that expired earlier this tick is still in the pool until the reap. It must
+            // not land.
+            if ((proj.Flags[pd] & (ProjectilePool.FlagDead | ProjectilePool.FlagNoContact)) != 0) continue;
+
+            // PierceLeft is "bodies AFTER this one", so a fresh pierce-0 shell has exactly one pass.
+            int passes = proj.PierceLeft[pd] + 1;
+            if (passes <= 0) continue;
+
+            double px = proj.X[pd];
+            double py = proj.Y[pd];
+            double pr = proj.Radius[pd];
+
+            int found = hash.QueryCircleLiveInto(enemies, px, py, pr + w.MaxEnemyRadius, candidates);
+            if (found == 0) continue;
+
+            // Compact the true overlaps this shell has not already damaged to the front of the
+            // candidate buffer. Everything below works on [0, m) and never re-reads the tail.
+            int m = 0;
+            for (int i = 0; i < found; i++)
+            {
+                int ed = candidates[i];
+                double dx = ex[ed] - px;
+                double dy = ey[ed] - py;
+                double reach = pr + eRadius[ed];
+                if (dx * dx + dy * dy > reach * reach) continue;
+                if (proj.HasHit(pd, eSpawnId[ed])) continue;
+                candidates[m++] = (ushort)ed;
+            }
+            if (m == 0) continue;
+
+            int take = m < passes ? m : passes;
+            for (int k = 0; k < take; k++)
+            {
+                // Partial selection sort: pull the nearest remaining candidate into slot k. STRICT
+                // TOTAL ORDER (distance, then spawn id), so the result cannot depend on the order
+                // the spatial hash happened to visit buckets in - which is the whole reason this is
+                // a sort rather than a scan.
+                int best = k;
+                double bestD2 = Dist2To(ex, ey, candidates[k], px, py);
+                for (int i = k + 1; i < m; i++)
+                {
+                    int cd = candidates[i];
+                    double d2 = Dist2To(ex, ey, cd, px, py);
+                    if (d2 < bestD2 || (d2 == bestD2 && eSpawnId[cd] < eSpawnId[candidates[best]]))
+                    {
+                        best = i;
+                        bestD2 = d2;
+                    }
+                }
+                if (best != k)
+                {
+                    (candidates[k], candidates[best]) = (candidates[best], candidates[k]);
+                }
+
+                int hitEd = candidates[k];
+                // Recorded HERE rather than in the damage stage, so a shell cannot be handed the
+                // same body twice within this tick's own selection, and cannot re-acquire it later.
+                proj.RecordHit(pd, eSpawnId[hitEd]);
+                // Impact point is the shell's centre: what the FX layer draws and what the damage
+                // stage uses as the splash origin.
+                hits.Push(pd, hitEd, px, py);
+            }
+        }
+    }
+
+    private static double Dist2To(float[] ex, float[] ey, int d, double x, double y)
+    {
+        double dx = ex[d] - x;
+        double dy = ey[d] - y;
+        return dx * dx + dy * dy;
+    }
+
+    private static void CollidePlayerWithEnemies(World w)
+    {
+        var enemies = w.Enemies;
+        if (enemies.Count == 0) return;
+
+        var player = w.Player;
+        double px = player.X;
+        double py = player.Y;
+        double pr = w.PlayerRadius;
+
+        ushort[] candidates = w.Scratch.Candidates;
+        int found = w.Spatial.QueryCircleLiveInto(enemies, px, py, pr + w.MaxEnemyRadius, candidates);
+        if (found == 0) return;
+
+        var contacts = w.Contacts;
+        float[] timer = enemies.ContactTimer;
+
+        for (int i = 0; i < found; i++)
+        {
+            int ed = candidates[i];
+            // Its OWN cooldown, not the player's: one runt must not be able to soak the player's
+            // invulnerability window on behalf of a bruiser.
+            if (timer[ed] > 0) continue;
+            double dx = enemies.X[ed] - px;
+            double dy = enemies.Y[ed] - py;
+            double reach = pr + enemies.Radius[ed];
+            if (dx * dx + dy * dy > reach * reach) continue;
+            contacts.Push(ed);
+        }
+    }
+}

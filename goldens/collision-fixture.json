@@ -1,0 +1,1066 @@
+{
+ "formatVersion": 1,
+ "note": "Cross-language proof for src/core/systems/collision.ts. Doubles are 16 hex digits, float32 columns are 8 - high word first.",
+ "dt": "3f91111111111111",
+ "maxEnemyRadius": "4052d99999999999",
+ "shape": {
+  "enemyCapacity": 512,
+  "projectileCapacity": 256,
+  "pickupCapacity": 768,
+  "droneCapacity": 8,
+  "sheepCapacity": 24,
+  "eventRingCapacity": 1024,
+  "hitCapacity": 512,
+  "contactCapacity": 128,
+  "maxQueryCandidates": 2048,
+  "cellSize": 64,
+  "bucketCount": 4096
+ },
+ "cases": [
+  {
+   "name": "single-hit",
+   "enemies": [
+    {
+     "x": "4024000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 1,
+     "dead": false
+    }
+   ],
+   "shells": [
+    {
+     "x": "0000000000000000",
+     "y": "0000000000000000",
+     "radius": "4020000000000000",
+     "pierceLeft": 0,
+     "dead": false,
+     "noContact": false,
+     "alreadyHit": []
+    }
+   ],
+   "player": {
+    "x": "40c3878000000000",
+    "y": "40c3878000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 1,
+   "perTick": [
+    {
+     "hits": [
+      {
+       "projectileDense": 0,
+       "enemyDense": 0,
+       "x": "00000000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       1,
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "pierce-ordering",
+   "enemies": [
+    {
+     "x": "4044000000000000",
+     "y": "0000000000000000",
+     "radius": "402e000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 1,
+     "dead": false
+    },
+    {
+     "x": "4024000000000000",
+     "y": "0000000000000000",
+     "radius": "402e000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 2,
+     "dead": false
+    },
+    {
+     "x": "403e000000000000",
+     "y": "0000000000000000",
+     "radius": "402e000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 3,
+     "dead": false
+    },
+    {
+     "x": "4034000000000000",
+     "y": "0000000000000000",
+     "radius": "402e000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 4,
+     "dead": false
+    }
+   ],
+   "shells": [
+    {
+     "x": "0000000000000000",
+     "y": "0000000000000000",
+     "radius": "404e000000000000",
+     "pierceLeft": 2,
+     "dead": false,
+     "noContact": false,
+     "alreadyHit": []
+    }
+   ],
+   "player": {
+    "x": "40c3878000000000",
+    "y": "40c3878000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 1,
+   "perTick": [
+    {
+     "hits": [
+      {
+       "projectileDense": 0,
+       "enemyDense": 1,
+       "x": "00000000",
+       "y": "00000000"
+      },
+      {
+       "projectileDense": 0,
+       "enemyDense": 3,
+       "x": "00000000",
+       "y": "00000000"
+      },
+      {
+       "projectileDense": 0,
+       "enemyDense": 2,
+       "x": "00000000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       2,
+       4,
+       3,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "tie-break-by-spawn-id",
+   "enemies": [
+    {
+     "x": "0000000000000000",
+     "y": "403e000000000000",
+     "radius": "4028000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 40,
+     "dead": false
+    },
+    {
+     "x": "403e000000000000",
+     "y": "0000000000000000",
+     "radius": "4028000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 10,
+     "dead": false
+    },
+    {
+     "x": "0000000000000000",
+     "y": "c03e000000000000",
+     "radius": "4028000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 30,
+     "dead": false
+    },
+    {
+     "x": "c03e000000000000",
+     "y": "0000000000000000",
+     "radius": "4028000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 20,
+     "dead": false
+    }
+   ],
+   "shells": [
+    {
+     "x": "0000000000000000",
+     "y": "0000000000000000",
+     "radius": "4044000000000000",
+     "pierceLeft": 1,
+     "dead": false,
+     "noContact": false,
+     "alreadyHit": []
+    }
+   ],
+   "player": {
+    "x": "40c3878000000000",
+    "y": "40c3878000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 1,
+   "perTick": [
+    {
+     "hits": [
+      {
+       "projectileDense": 0,
+       "enemyDense": 1,
+       "x": "00000000",
+       "y": "00000000"
+      },
+      {
+       "projectileDense": 0,
+       "enemyDense": 3,
+       "x": "00000000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       10,
+       20,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hit-ring-blocks-rehit",
+   "enemies": [
+    {
+     "x": "4024000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 7,
+     "dead": false
+    },
+    {
+     "x": "402c000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 8,
+     "dead": false
+    }
+   ],
+   "shells": [
+    {
+     "x": "0000000000000000",
+     "y": "0000000000000000",
+     "radius": "403e000000000000",
+     "pierceLeft": 3,
+     "alreadyHit": [
+      7
+     ],
+     "dead": false,
+     "noContact": false
+    }
+   ],
+   "player": {
+    "x": "40c3878000000000",
+    "y": "40c3878000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 3,
+   "perTick": [
+    {
+     "hits": [
+      {
+       "projectileDense": 0,
+       "enemyDense": 1,
+       "x": "00000000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       8,
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "hits": [
+      {
+       "projectileDense": 0,
+       "enemyDense": 0,
+       "x": "00000000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       8,
+       7,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "hits": [],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       8,
+       7,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dead-are-skipped",
+   "enemies": [
+    {
+     "x": "4024000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "dead": true,
+     "spawnId": 1
+    },
+    {
+     "x": "c024000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 2,
+     "dead": false
+    }
+   ],
+   "shells": [
+    {
+     "x": "4024000000000000",
+     "y": "0000000000000000",
+     "radius": "4020000000000000",
+     "pierceLeft": 0,
+     "dead": true,
+     "noContact": false,
+     "alreadyHit": []
+    },
+    {
+     "x": "c024000000000000",
+     "y": "0000000000000000",
+     "radius": "4020000000000000",
+     "pierceLeft": 0,
+     "dead": false,
+     "noContact": false,
+     "alreadyHit": []
+    },
+    {
+     "x": "c024000000000000",
+     "y": "0000000000000000",
+     "radius": "4020000000000000",
+     "pierceLeft": 0,
+     "noContact": true,
+     "dead": false,
+     "alreadyHit": []
+    }
+   ],
+   "player": {
+    "x": "40c3878000000000",
+    "y": "40c3878000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 1,
+   "perTick": [
+    {
+     "hits": [
+      {
+       "projectileDense": 1,
+       "enemyDense": 1,
+       "x": "c1200000",
+       "y": "00000000"
+      }
+     ],
+     "contacts": [],
+     "contactTimers": [
+      "00000000",
+      "00000000"
+     ],
+     "hitRings": [
+      [
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       2,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "contact-timers-run-down",
+   "enemies": [
+    {
+     "x": "4034000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "3fdc000000000000",
+     "spawnId": 1,
+     "dead": false
+    },
+    {
+     "x": "c034000000000000",
+     "y": "0000000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "3fb999999999999a",
+     "spawnId": 2,
+     "dead": false
+    },
+    {
+     "x": "0000000000000000",
+     "y": "4039000000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "0000000000000000",
+     "spawnId": 3,
+     "dead": false
+    },
+    {
+     "x": "408c200000000000",
+     "y": "408c200000000000",
+     "radius": "4034000000000000",
+     "contactTimer": "3feccccccccccccd",
+     "spawnId": 4,
+     "dead": false
+    }
+   ],
+   "shells": [],
+   "player": {
+    "x": "0000000000000000",
+    "y": "0000000000000000",
+    "radius": "403a000000000000"
+   },
+   "ticks": 40,
+   "perTick": [
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3ed77777",
+      "3daaaaab",
+      "00000000",
+      "3f622222"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3eceeeee",
+      "3d888889",
+      "00000000",
+      "3f5dddde"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3ec66665",
+      "3d4cccce",
+      "00000000",
+      "3f59999a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3ebddddc",
+      "3d08888a",
+      "00000000",
+      "3f555556"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3eb55553",
+      "3c88888b",
+      "00000000",
+      "3f511112"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      2
+     ],
+     "contactTimers": [
+      "3eacccca",
+      "319dddde",
+      "00000000",
+      "3f4cccce"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3ea44441",
+      "00000000",
+      "00000000",
+      "3f48888a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e9bbbb8",
+      "00000000",
+      "00000000",
+      "3f444446"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e93332f",
+      "00000000",
+      "00000000",
+      "3f400002"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e8aaaa6",
+      "00000000",
+      "00000000",
+      "3f3bbbbe"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e82221d",
+      "00000000",
+      "00000000",
+      "3f37777a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e733329",
+      "00000000",
+      "00000000",
+      "3f333336"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e622218",
+      "00000000",
+      "00000000",
+      "3f2eeef2"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e511107",
+      "00000000",
+      "00000000",
+      "3f2aaaae"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e3ffff6",
+      "00000000",
+      "00000000",
+      "3f26666a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e2eeee5",
+      "00000000",
+      "00000000",
+      "3f222226"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e1dddd4",
+      "00000000",
+      "00000000",
+      "3f1ddde2"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3e0cccc3",
+      "00000000",
+      "00000000",
+      "3f19999e"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3df77764",
+      "00000000",
+      "00000000",
+      "3f15555a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3dd55542",
+      "00000000",
+      "00000000",
+      "3f111116"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3db33320",
+      "00000000",
+      "00000000",
+      "3f0cccd2"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3d9110fe",
+      "00000000",
+      "00000000",
+      "3f08888e"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3d5dddb8",
+      "00000000",
+      "00000000",
+      "3f04444a"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3d199974",
+      "00000000",
+      "00000000",
+      "3f000006"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3caaaa5f",
+      "00000000",
+      "00000000",
+      "3ef77783"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      2
+     ],
+     "contactTimers": [
+      "3b88875a",
+      "00000000",
+      "00000000",
+      "3eeeeefa"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3ee66671"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3edddde8"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3ed5555f"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3eccccd6"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3ec4444d"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3ebbbbc4"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3eb3333b"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3eaaaab2"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3ea22229"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3e9999a0"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3e911117"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3e88888e"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3e800005"
+     ],
+     "hitRings": []
+    },
+    {
+     "hits": [],
+     "contacts": [
+      1,
+      0,
+      2
+     ],
+     "contactTimers": [
+      "00000000",
+      "00000000",
+      "00000000",
+      "3e6eeef9"
+     ],
+     "hitRings": []
+    }
+   ]
+  }
+ ]
+}

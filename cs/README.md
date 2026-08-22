@@ -29,7 +29,8 @@ dotnet test
 | `EventRing` — the sim/renderer seam | done |
 | `MathCore` — scalar, deterministic trig, vec2 | done, 82 trig samples bit-exact |
 | `SpatialHash` — counting-sort broad phase | done, build and queries compared |
-| The other 11 systems | not started — **this is the remaining job** |
+| `Collision` — S8, detection only | done, 6 cases tick-by-tick |
+| The other 10 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
@@ -109,6 +110,9 @@ characteristic mistake:
   the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
   **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
   deterministically correct, and a neat statement of the whole argument.
+- **The contact timer computed in float32** (`timer[d] -= (float)dt` for compute-in-double,
+  store-once) diverges at **tick 5** of a 40-tick case. Five subtractions is all it takes. This is
+  the float32 rule failing exactly as advertised.
 - **Truncation instead of floor** in the spatial hash (`(int)(v * inv)` for
   `(int)Math.Floor(v * inv)`) fails on the origin-straddling case. C# casts toward zero, so the
   whole strip between `-cellSize` and 0 folds into cell 0 and those enemies land in the wrong
@@ -146,13 +150,21 @@ This is narrower than the run corpus deliberately. The corpus proves the whole p
 cannot say *which* stage disagreed; these say which stage, which is what the port needs while the
 corpus is still a long way from running.
 
+## A blocker worth reading before going further
+
+`docs/DETERMINISM-GAP-TRIG.md`. Core still calls `Math.sin`, `Math.cos` and `Math.atan2` at 18
+sites despite `trig.ts` existing to replace them — including in `resolveWeaponStats`, the one
+caller `trig.ts`'s header names. .NET's `Math.Cos` is a third implementation, so each of those
+sites is a coin-flip on whether the port agrees. It needs a decision before `weapons`,
+`projectiles` or `stats` can be ported honestly.
+
 ## Next
 
 Eleven systems remain, in rough order of independence:
 
 - `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-- `collision`, `targeting`, `projectiles` need the spatial hash — **which now exists**, so these
-  are the next candidates.
+- `targeting` and `projectiles` need scenery (`sceneryRayHit`, `sceneryOverlap`), so scenery is
+  the next unlock.
 - `spawning`, `enemyAI` need the content catalogs and the flow field.
 - `weapons` and `progression` are the two largest (1,586 and 1,400 lines) and depend on most of
   the rest.
