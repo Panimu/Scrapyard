@@ -1,9 +1,9 @@
 # Scrapyard.Core — the C# port
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
-the director and targeting, every content catalog, both unbounded terrains, `stats.ts`, `sheep`, and
-the trig the whole port depends on are done and proven. `weapons`, `projectiles` and `drones` are
-next — `stats` was the last thing blocking them.
+the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
+`projectiles` and the loot-break path are done and proven. `weapons` and `drones` are next — both
+are unblocked.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -53,7 +53,9 @@ dotnet test
 | `CityBlocks` — City Chaos's road grid | done, incl. both push-out "buried" topologies and the two reachability invariants |
 | `EventKind` — the 32 event ids and their names | done, whole table compared both ways — **one was wrong** |
 | `Sheep` — the flock, `SheepRayHit`, `TakeSheepIn` | done, 13 driven cases over 2,924 ticks, stream compared every tick |
-| The other 7 systems | not started — **this is the remaining job** |
+| `Pickups.BreakLootIn` / `DropConsumable` | done, all three terrains + the flock, loot stream compared per break |
+| `Projectiles` — S7, all three behaviours | done, 8 driven cases over 320 ticks, hit buffer compared too |
+| The other 6 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -150,6 +152,31 @@ and the rejection loop (a refused placement has already paid for its angle and r
 also records how many draws each tick consumed, derived independently on both sides by replaying the
 stream, so a divergence reports *"advanced 9 draws where 8 were expected"* instead of four hex words
 that merely fail to match.
+
+**The loot-break path arrived ahead of the file it lives in.** `BreakLootIn` and
+`DropConsumable` are a slice of `pickups.ts`, and the boundary is a dependency rather than a mood:
+the rest of that file needs `progression`, this pair needs terrain, the flock, the pickup pool and
+the loot stream. Both `weapons.ts` and `projectiles.ts` import it, so it was on the critical path
+either way — a dependency the "how a system gets ported" ordering below had missed.
+
+All three terrains answer `DestructibleOverlap`, so every caller reaches it without knowing which
+map it is on, and then the outcomes genuinely differ: a Scrapyard drum pays out and counts, a Mossy
+clump spends a hit-point pool and pays nothing, a City fence does the same, and a City drum takes
+the drum path despite being a cell in the same lattice as the fences. A port that collapsed any two
+of those would still run, and the failure would read as a balance complaint rather than a bug.
+
+**`Projectiles` is S7 and nothing else: motion and lifetime.** It never detects or applies anything
+— collision writes the hit buffer, damage applies it — but it DOES push hits, and that is the part
+a positions-only fixture cannot see. The artillery's airburst and the phase bolt's arrival both go
+into the buffer for S9; a port that dropped either would leave the projectile pool byte-identical
+and the run silently unarmed. Every hit pushed is compared, with its projectile, its enemy (or the
+no-direct-hit sentinel) and its position.
+
+Two branches needed geometry the obvious cases could not reach, and both were found by injecting
+the fault and watching the suite pass: the phase bolt's **scenery exemption** is unreachable in any
+case that flies through an emptied yard, and the barrel's **second on-screen check** is
+indistinguishable from the first unless a blast's centre and its drum are different points. Each
+now has a case built for it alone.
 
 ## Why the RNG came first
 
@@ -352,6 +379,44 @@ characteristic mistake:
   culled. Fails `flock-turned-off-with-animals-out` on tick 0, on the DRAW COUNT (0 where 6 were
   expected) rather than on any position, since the frozen animals simply stop rolling.
 
+- **The City fence taking the barrel path**, which is the bug that actually shipped in the
+  TypeScript: fails on the first fence hit with *"result expected False, got True"* — the cell
+  bursts like a drum on contact instead of spending its two-section pool.
+- **A sub-lethal tree hit reporting success** (`felled < 0` for `felled <= 0`) — fails on the first
+  small hit. A port that got this wrong would look identical until someone noticed a treeline
+  vanishing on the first shell instead of thinning under fire.
+- **The coin-jitter draw short-circuited for an empty barrel**, which is the obvious optimisation
+  and desynchronises every later drop in the run: fails with *"the loot stream advanced 1 draws
+  where 2 were expected"*.
+- **Banker's rounding on the spanner's heal** — `maxHp x 0.25` lands on an exact half for very
+  ordinary hulls, and that is the one place in this function where JavaScript's `Math.round` and
+  C#'s disagree. The first draft of the fixture broke every drum at `maxHp` 200, where the question
+  never arises and the fault passed; walking it across 200/202/204/206 makes a spanner roll on 50.5,
+  and the fault then fails with *"drop value expected 51, got 50"*.
+- **`CreditTier` breaking on the first threshold met** rather than taking the last — fails with
+  *"drop tier expected 1, got 0"*. The loop deliberately does not break, so the thresholds read as
+  ascending bands rather than as a priority order.
+- **The barrel's on-screen check measured from the HIT rather than from the drum** — indistinguishable
+  in every case that hits a drum dead centre, which was all of them. Needed a blast laid out on a
+  line (drum, blast centre 30 u nearer the mech, mech 530 u out) so the centre is inside the 512 u
+  radius and the drum is outside it. The fault then breaks a drum the player cannot see.
+- **A `float` subtraction where JavaScript widens to `double`** — `enemies.X[ed] - p.X[d]`, both
+  `float` columns, which C# computes AS a float and rounds before widening. Not an injected fault:
+  the actual first draft of the phase steer, caught at tick 7 of `phase-arrives` one ULP out on
+  `vy`. The float32 rule again, in the one shape that does not look like a compound assignment.
+- **Fuse detonation moved inside the homing loop** — the historical bug, which left the artillery
+  (a STRAIGHT projectile with `detonateOnExpiry`) landing three shells a volley and dealing exactly
+  zero damage. Fails `artillery-airburst` with *"hits pushed expected 1, got 0"*.
+- **The homing seek's spawn-id tie-break dropped** — fails on tick 0 of `homing-crowd`, where two
+  enemies are posed exactly equidistant from the missile: the sign of `y` flips as it steers to the
+  mirror-image body. Without the tie-break two engines can legitimately disagree.
+- **A splitting warhead also detonating** — paying the volley twice for one warhead. Fails
+  `hornet-split` with *"hits pushed expected 0, got 1"*.
+- **The phase bolt's scenery exemption removed** — passing through cover is the weapon, and its
+  targeting rule does not even filter for line of sight. Every phase case in the fixture flies
+  through an emptied yard where this is unreachable, so it took a bolt fired at a real wreck: the
+  fault then fails with *"died at tick 5, expected -1"*.
+
 ### Known untested branch
 
 `RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
@@ -425,15 +490,18 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Seven systems remain: `playerMovement`, `weapons`, `projectiles`, `drones`, `damage`, `pickups`,
-`progression`. (`sheep` is done — it had no content dependency left and was the simplest of the
-eight.)
+Six systems remain: `playerMovement`, `weapons`, `drones`, `damage`, `pickups`, `progression`.
+(`sheep` and `projectiles` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
+that both of the next two need.)
 
 In rough dependency order:
 
-- **`playerMovement`** needs `breakLootIn` from `pickups`.
-- **`weapons`, `projectiles`, `drones`** need `Stats.ResolveWeaponStats`, which is done - they are
-  next.
+- **`drones`** is fully unblocked: targeting, the weapon catalog, `ResolveWeaponStats`, both pools
+  and the event ids are all done, and unlike `weapons` it needs no beam buffer and no hero traits.
+- **`weapons`** is the largest single file left (1,587 lines) and the last big one. Beyond what is
+  already ported it needs a beam buffer on `World`, the hero-trait hook, and `SheepRayHit` — which
+  is done.
+- **`playerMovement`** needs `breakLootIn`, which is done.
 - **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
   `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.
 - **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
