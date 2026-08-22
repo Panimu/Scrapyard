@@ -29,6 +29,22 @@ public static class Constants
     /// The tick the intro ends on. Integer comparison, so no float equality against 3.0.
     /// </summary>
     public const int IntroEndTick = (int)(IntroSec * TickRate);
+
+    /// <summary>
+    /// How many bodies one weapon may hold at once - the length of the top-K targeting output.
+    /// </summary>
+    public const int MaxTargets = 8;
+
+    /// <summary>The hard ceiling on live enemies. The director's own cap is derived from it.</summary>
+    public const int MaxLiveEnemies = 300;
+
+    /// <summary>
+    /// The radius the director counts pressure inside. NOT the spawn radius: at 560 it could not
+    /// see enemies trailing behind a kiting player.
+    /// </summary>
+    public const double ThreatRadius = 900;
+
+    public const int WeaponSlots = 12;
 }
 
 /// <summary>Run phases. The numeric values are hashed, so they are the format.</summary>

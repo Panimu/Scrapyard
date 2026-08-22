@@ -15,6 +15,7 @@
     "sim": "tsx tools/sim.ts",
     "golden": "tsx tools/golden.ts",
     "golden:trig": "tsx tools/trig_fixture.ts",
+    "golden:targeting": "tsx tools/targeting_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",
     "golden:pool": "tsx tools/pool_fixture.ts",
     "golden:pools": "tsx tools/pools_fixture.ts",

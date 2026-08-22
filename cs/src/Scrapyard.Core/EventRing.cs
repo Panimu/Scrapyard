@@ -184,5 +184,18 @@ public sealed class WorldScratch
     /// <summary>Broad-phase query results. Sized well beyond the largest query the game issues.</summary>
     public readonly ushort[] Candidates;
 
-    public WorldScratch(int maxQueryCandidates) => Candidates = new ushort[maxQueryCandidates];
+    /// <summary>
+    /// Per-candidate neighbour tallies for the <c>densest</c> targeting rule - same length as
+    /// <see cref="Candidates"/> and indexed in step with it. Only that rule writes or reads it.
+    /// </summary>
+    public readonly ushort[] NeighbourCounts;
+
+    /// <summary>Top-K targeting output; length <see cref="Constants.MaxTargets"/>.</summary>
+    public readonly int[] Targets = new int[Constants.MaxTargets];
+
+    public WorldScratch(int maxQueryCandidates)
+    {
+        Candidates = new ushort[maxQueryCandidates];
+        NeighbourCounts = new ushort[maxQueryCandidates];
+    }
 }
