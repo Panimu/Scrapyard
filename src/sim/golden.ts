@@ -80,7 +80,7 @@ export const GOLDEN_FORMAT_VERSION = 1;
  * invalidates every recorded hash while leaving the file perfectly readable, which is exactly the
  * failure this string exists to make loud.
  */
-export const GOLDEN_HASH_ALGO = 'fnv1a32/world-v1+stats-v1';
+export const GOLDEN_HASH_ALGO = 'fnv1a32/world-v2+stats-v1';
 
 /** What to record. Everything here is an input to the simulation, not an observation of it. */
 export interface GoldenRunSpec {
@@ -103,6 +103,15 @@ export interface GoldenSummary {
   readonly chests: number;
   readonly damageDealt: number;
   readonly endTick: number;
+  /**
+   * HOW MANY DRONES AND SHEEP THE RUN ACTUALLY HELD at the moment it ended.
+   *
+   * Recorded because both pools were absent from `hashWorld` until they were found missing, and a
+   * corpus that covers them only in principle is the same hole wearing a different hat. If these
+   * read 0 across every run, the fields added to the hash are being exercised by nothing.
+   */
+  readonly drones: number;
+  readonly sheep: number;
 }
 
 export interface GoldenRun {
@@ -395,6 +404,8 @@ function summarise(world: World): GoldenSummary {
     chests: world.stats.chests,
     damageDealt: world.stats.damageDealt,
     endTick: world.tick,
+    drones: world.drones.count,
+    sheep: world.sheep.count,
   };
 }
 

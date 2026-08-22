@@ -6,14 +6,41 @@
  * comparison is what actually validates the one unproven assumption in the design - that
  * Math.sqrt is correctly rounded everywhere (DESIGN.md §2).
  *
- * Covered: the live dense range of all three pools (in dense order), the player struct, the
- * weapon instances, the director, the difficulty scales, the level-up state, and all three RNG
- * states. NOT covered: prevX/prevY (a pure copy of last tick's x/y), the event ring (whose read
- * cursor belongs to the renderer, so hashing it would make the hash depend on how often the
- * renderer drained), and RunStats (derived, and useful to diff separately when a hash mismatch
- * needs explaining).
+ * Covered: the live dense range of ALL FIVE pools (in dense order), the player struct, the weapon
+ * instances, the director, the difficulty scales, the level-up state, and ALL SIX RNG streams.
+ *
+ * NOT covered, and each for a stated reason: prevX/prevY (a pure copy of last tick's x/y), the
+ * event ring (whose read cursor belongs to the renderer, so hashing it would make the hash depend
+ * on how often the renderer drained), and RunStats (which has its own hash below - see
+ * `hashRunStats` for why the two are separate rather than merged).
+ *
+ * ---------------------------------------------------------------------------------------------
+ * IT SAID "ALL THREE POOLS" AND "ALL THREE RNG STATES", AND MEANT IT WHEN IT WAS WRITTEN
+ * ---------------------------------------------------------------------------------------------
+ * Drones, sheep, the projectile hit ring, the `weapon` stream and the `event` stream all arrived
+ * after this function did, and none of them was added to it. The `weapon` stream was eventually
+ * wired in without this comment being updated; the drone pool, the sheep pool, the hit ring and
+ * the `event` and `sheep` streams were simply never covered at all.
+ *
+ * The hit ring had a second excuse, and it is worth naming because it is the shape of excuse that
+ * hides things: it is `capacity * HIT_RING_STRIDE` long, so it does not fit `mixPool`'s
+ * one-element-per-slot walk. That is a reason it is absent from `denseViews`. It was never a
+ * reason to leave it unhashed - it is live, swap-removed state that decides whether a piercing
+ * shell may damage a body it has already hit.
+ *
+ * That is drift rather than a decision, and it mattered: a drone or a sheep could diverge - or a
+ * special-event roll could come out differently - and the determinism suite would report a match.
+ * Indirectly most of it would surface eventually (a drone's shells are projectiles, a caught sheep
+ * is a stat, an event spawns enemies), but "eventually and by accident" is not what a determinism
+ * hash is for, and a divergence that only shows up three thousand ticks downstream is one nobody
+ * can debug.
+ *
+ * The lesson, since this will happen again: A NEW POOL OR A NEW RNG STREAM IS NOT FINISHED UNTIL
+ * IT IS IN THIS FUNCTION. There is no test that can catch its absence, because the hash is the
+ * thing that would have to notice.
  */
 
+import { HIT_RING_STRIDE } from './entity/projectilePool.js';
 import type { NumericArray } from './entity/layout.js';
 import { Rng, type RngState } from './rng.js';
 import type { World } from './types.js';
@@ -71,6 +98,46 @@ function mixRng(h: number, rng: Rng): number {
   return mixU32(mixU32(mixU32(mixU32(h, rngScratch.a), rngScratch.b), rngScratch.c), rngScratch.d);
 }
 
+/**
+ * Field-by-field walkers, for the state `mixPool` cannot reach: the drone and sheep pools (plain
+ * arrays rather than one carved ArrayBuffer, so no `denseViews`) and the projectile hit ring
+ * (whose length is a multiple of the slot count).
+ *
+ * A FLOAT32 IS HASHED AS ITS FOUR BYTES, not as the eight of the double it widens to when read.
+ * That keeps it identical to what `mixPool` does for the f32 columns of the other three pools, and
+ * it is the thing a port has to match: `BitConverter.SingleToInt32Bits((float)v)`, not
+ * `DoubleToInt64Bits(v)`.
+ */
+const scratchF32 = new Float32Array(1);
+const scratchF32Bits = new Uint32Array(scratchF32.buffer);
+function mixF32Array(h: number, a: Float32Array, count: number): number {
+  let acc = h;
+  for (let i = 0; i < count; i++) {
+    scratchF32[0] = a[i];
+    acc = mixU32(acc, scratchF32Bits[0]);
+  }
+  return acc;
+}
+
+function mixIntArrayN(h: number, a: Int32Array | Uint32Array, count: number): number {
+  let acc = h;
+  for (let i = 0; i < count; i++) acc = mixU32(acc, a[i]);
+  return acc;
+}
+
+function mixU8ArrayN(h: number, a: Uint8Array, count: number): number {
+  let acc = h;
+  for (let i = 0; i < count; i++) acc = Math.imul(acc ^ a[i], FNV_PRIME);
+  return acc;
+}
+
+/** One byte, masked - an Int8Array holds -128..127 and must not sign-extend into four. */
+function mixI8Array(h: number, a: Int8Array, count: number): number {
+  let acc = h;
+  for (let i = 0; i < count; i++) acc = Math.imul(acc ^ (a[i] & 0xff), FNV_PRIME);
+  return acc;
+}
+
 export function hashWorld(world: World): number {
   let h = FNV_OFFSET;
 
@@ -84,9 +151,41 @@ export function hashWorld(world: World): number {
   const p = world.projectiles;
   h = mixPool(h, p.bytes, p.denseViews, p.count);
   h = mixU32(h, p.freeCount);
+  // THE HIT RING, which `denseViews` cannot carry: it is `capacity * HIT_RING_STRIDE` long, and
+  // `mixPool` walks `count` elements of each view. Left out of the generic walker for that reason
+  // and then never hashed anywhere else - but it is live, swap-removed state (reapProjectiles
+  // moves it), and it decides whether a piercing shell may damage a body it has already hit. A
+  // divergence here is a difference in damage dealt.
+  h = mixIntArrayN(h, p.hitRing, p.count * HIT_RING_STRIDE);
+  h = mixU8ArrayN(h, p.hitRingPos, p.count);
+
   const g = world.pickups;
   h = mixPool(h, g.bytes, g.denseViews, g.count);
   h = mixU32(h, g.freeCount);
+
+  // DRONES AND SHEEP. No handles and no free list on either - both are plain dense arrays with
+  // swap-remove - so there is no `freeCount` to fold, and the field order below IS the format.
+  const dr = world.drones;
+  h = mixU32(h, dr.count);
+  h = mixF32Array(h, dr.x, dr.count);
+  h = mixF32Array(h, dr.y, dr.count);
+  h = mixF32Array(h, dr.angle, dr.count);
+  h = mixU8ArrayN(h, dr.state, dr.count);
+  h = mixIntArrayN(h, dr.targetDense, dr.count);
+  h = mixIntArrayN(h, dr.ammo, dr.count);
+  h = mixF32Array(h, dr.cooldownLeft, dr.count);
+  h = mixU8ArrayN(h, dr.weaponSlot, dr.count);
+  h = mixI8Array(h, dr.spin, dr.count);
+
+  const sh = world.sheep;
+  h = mixU32(h, sh.count);
+  h = mixF32Array(h, sh.x, sh.count);
+  h = mixF32Array(h, sh.y, sh.count);
+  h = mixF32Array(h, sh.dirX, sh.count);
+  h = mixF32Array(h, sh.dirY, sh.count);
+  h = mixU8ArrayN(h, sh.state, sh.count);
+  h = mixF32Array(h, sh.timer, sh.count);
+  h = mixIntArrayN(h, sh.spawnId, sh.count);
 
   const pl = world.player;
   h = mixF64(h, pl.x);
@@ -155,10 +254,14 @@ export function hashWorld(world: World): number {
 
   h = mixF64(h, world.xpBanked);
 
+  // ALL SIX STREAMS. `event` and `sheep` were missing, which meant a special-event roll or a
+  // sheep's next decision could come out differently and the hash would not say so.
   h = mixRng(h, world.rng.spawn);
   h = mixRng(h, world.rng.loot);
   h = mixRng(h, world.rng.upgrade);
   h = mixRng(h, world.rng.weapon);
+  h = mixRng(h, world.rng.event);
+  h = mixRng(h, world.rng.sheep);
 
   return h >>> 0;
 }

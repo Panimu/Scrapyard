@@ -180,6 +180,7 @@ function cmdRecord(): void {
         `${(RUN_PHASE_NAMES[run.endPhase] ?? String(run.endPhase)).padEnd(8)} ` +
         `lvl ${String(run.summary.level).padStart(2)}  ${String(run.summary.kills).padStart(5)} kills  ` +
         `${String(run.summary.chests)} chest  ` +
+        `${String(run.summary.drones)}dr ${String(run.summary.sheep)}sh  ` +
         `final ${run.world[run.world.length - 1]}  (${ms} ms)`,
     );
   }

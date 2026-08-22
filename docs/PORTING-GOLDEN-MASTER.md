@@ -47,7 +47,7 @@ Three things people get wrong here:
 ```jsonc
 {
   "formatVersion": 1,
-  "hashAlgo": "fnv1a32/world-v1+stats-v1",
+  "hashAlgo": "fnv1a32/world-v2+stats-v1",
   "tickRate": 60,
   "runs": [
     {
@@ -105,9 +105,20 @@ Pool data is hashed as **raw little-endian bytes** over the live dense prefix of
 the order the pool declares them. Both languages are little-endian on every platform this ships to;
 if that ever stops being true, this is the line that breaks.
 
-`hashWorld` covers the live range of all three pools, the player, weapon instances, the director,
-difficulty, level-up state and all four RNG streams. It deliberately excludes `prevX/prevY` (a copy
-of last tick's position), the event ring (whose read cursor belongs to the renderer) and `RunStats`.
+`hashWorld` covers the live range of **all five pools** (enemy, projectile, pickup, drone, sheep),
+the projectile hit ring, the player, weapon instances, the director, difficulty, level-up state and
+**all six RNG streams**. It deliberately excludes `prevX/prevY` (a copy of last tick's position),
+the event ring (whose read cursor belongs to the renderer) and `RunStats`.
+
+Two of those pools and the hit ring do not go through the generic `mixPool` walker — the drone and
+sheep pools are plain arrays with no `denseViews`, and the hit ring is `capacity * HIT_RING_STRIDE`
+long. They are hashed field by field, and **a float32 there is hashed as its four bytes**, not as
+the eight of the double it widens to when read: `BitConverter.SingleToInt32Bits((float)v)`, never
+`DoubleToInt64Bits(v)`.
+
+> **If you add a pool or an RNG stream, it is not finished until it is in `hashWorld`.** All five of
+> the things listed above were once missing, because nothing can test for their absence — the hash
+> is the thing that would have to notice.
 
 `hashRunStats` covers the tally, and exists because a mis-credited counter leaves the world identical
 and the achievements wrong — and `platformKey` is permanent once shipped. Two hashes localise a
