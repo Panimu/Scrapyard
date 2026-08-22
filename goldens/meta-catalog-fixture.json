@@ -1,0 +1,626 @@
+{
+ "note": "The workshop: every effect at every tier, and driven probes through accumulateMeta itself, because m-rate's per-tier ladder and every other upgrade's flat amount are two different floating-point operations, not two notations for the same one.",
+ "metaCount": 16,
+ "catalog": [
+  {
+   "index": 0,
+   "id": "m-passives",
+   "tiers": 2,
+   "effects": [
+    {
+     "target": "run",
+     "key": "passiveSlots",
+     "mode": "add",
+     "weapon": null,
+     "amount": "3ff0000000000000"
+    }
+   ]
+  },
+  {
+   "index": 1,
+   "id": "m-mounts",
+   "tiers": 2,
+   "effects": [
+    {
+     "target": "run",
+     "key": "weaponSlots",
+     "mode": "add",
+     "weapon": null,
+     "amount": "3ff0000000000000"
+    }
+   ]
+  },
+  {
+   "index": 2,
+   "id": "m-damage",
+   "tiers": 7,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "damage",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fa5f15f15f15f16"
+    },
+    {
+     "target": "weapon",
+     "key": "heatPerSec",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fa5f15f15f15f16"
+    }
+   ]
+  },
+  {
+   "index": 3,
+   "id": "m-blast",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "splashRadius",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fb9999999999999"
+    }
+   ]
+  },
+  {
+   "index": 4,
+   "id": "m-range",
+   "tiers": 5,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "range",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3f9eb851eb851eb8"
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "id": "m-speed",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "player",
+     "key": "moveMaxSpeed",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fa9999999999999"
+    },
+    {
+     "target": "player",
+     "key": "moveAccel",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fa9999999999999"
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "id": "m-rate",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "cooldown",
+     "mode": "mul",
+     "weapon": null,
+     "amount": [
+      "bfa0842108421090",
+      "bf9ef7bdef7bdee0",
+      "bf9d1745d1745d20"
+     ]
+    }
+   ]
+  },
+  {
+   "index": 7,
+   "id": "m-magnet",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "player",
+     "key": "pickupRadius",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fc3333333333333"
+    }
+   ]
+  },
+  {
+   "index": 8,
+   "id": "m-hp",
+   "tiers": 4,
+   "effects": [
+    {
+     "target": "player",
+     "key": "maxHp",
+     "mode": "add",
+     "weapon": null,
+     "amount": "4014000000000000"
+    }
+   ]
+  },
+  {
+   "index": 9,
+   "id": "m-armour",
+   "tiers": 2,
+   "effects": [
+    {
+     "target": "player",
+     "key": "armour",
+     "mode": "add",
+     "weapon": null,
+     "amount": "3ff0000000000000"
+    }
+   ]
+  },
+  {
+   "index": 10,
+   "id": "m-insurance",
+   "tiers": 1,
+   "effects": []
+  },
+  {
+   "index": 11,
+   "id": "m-drone",
+   "tiers": 2,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "cooldown",
+     "mode": "add",
+     "weapon": "drone",
+     "amount": "bff0000000000000"
+    }
+   ]
+  },
+  {
+   "index": 12,
+   "id": "m-laser",
+   "tiers": 1,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "heatDispersion",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fb999999999999a"
+    }
+   ]
+  },
+  {
+   "index": 13,
+   "id": "m-heatcap",
+   "tiers": 1,
+   "effects": [
+    {
+     "target": "weapon",
+     "key": "heatCapacity",
+     "mode": "mul",
+     "weapon": null,
+     "amount": "3fb47ae147ae147b"
+    }
+   ]
+  },
+  {
+   "index": 14,
+   "id": "m-rerolls",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "run",
+     "key": "rerolls",
+     "mode": "add",
+     "weapon": null,
+     "amount": "4000000000000000"
+    }
+   ]
+  },
+  {
+   "index": 15,
+   "id": "m-repair",
+   "tiers": 3,
+   "effects": [
+    {
+     "target": "player",
+     "key": "repairAmount",
+     "mode": "add",
+     "weapon": null,
+     "amount": "3ff0000000000000"
+    },
+    {
+     "target": "player",
+     "key": "repairInterval",
+     "mode": "add",
+     "weapon": null,
+     "amount": [
+      "402e000000000000",
+      "0000000000000000",
+      "0000000000000000"
+     ]
+    }
+   ]
+  }
+ ],
+ "probes": [
+  {
+   "name": "nothing-owned",
+   "tiers": [],
+   "target": "weapon",
+   "key": "damage",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "ordnance-1",
+   "tiers": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "damage",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff0af8af8af8af9"
+  },
+  {
+   "name": "ordnance-1-heat",
+   "tiers": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "heatPerSec",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff0af8af8af8af9"
+  },
+  {
+   "name": "ordnance-full",
+   "tiers": [
+    0,
+    0,
+    7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "damage",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff4cccccccccccd"
+  },
+  {
+   "name": "ordnance-overowned",
+   "tiers": [
+    0,
+    0,
+    40,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "damage",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff4cccccccccccd"
+  },
+  {
+   "name": "autoloaders-1",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "cooldown",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3feef7bdef7bdef7"
+  },
+  {
+   "name": "autoloaders-2",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "cooldown",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3fee000000000000"
+  },
+  {
+   "name": "autoloaders-3",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "cooldown",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3fed1745d1745d17"
+  },
+  {
+   "name": "repair-1-interval",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "target": "player",
+   "key": "repairInterval",
+   "weapon": null,
+   "add": "402e000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "repair-3-interval",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3
+   ],
+   "target": "player",
+   "key": "repairInterval",
+   "weapon": null,
+   "add": "402e000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "repair-3-amount",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3
+   ],
+   "target": "player",
+   "key": "repairAmount",
+   "weapon": null,
+   "add": "4008000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "nanite-drone",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "cooldown",
+   "weapon": "drone",
+   "add": "c000000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "nanite-other-weapon",
+   "tiers": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "weapon",
+   "key": "cooldown",
+   "weapon": "laser-short",
+   "add": "0000000000000000",
+   "mul": "3ff0000000000000"
+  },
+  {
+   "name": "unrelated-upgrade-does-not-leak",
+   "tiers": [
+    0,
+    0,
+    7,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "player",
+   "key": "moveMaxSpeed",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff199999999999a"
+  },
+  {
+   "name": "untouched-key",
+   "tiers": [
+    0,
+    0,
+    7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "target": "player",
+   "key": "xpGain",
+   "weapon": null,
+   "add": "0000000000000000",
+   "mul": "3ff0000000000000"
+  }
+ ]
+}

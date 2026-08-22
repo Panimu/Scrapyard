@@ -12,7 +12,12 @@ public enum PlayerStat
     ShieldLayers, ShieldRecharge, ShieldImmune, RepairAmount, RepairInterval,
 }
 
-public enum EffectTarget { Player, Weapon }
+/// <summary>
+/// <c>Run</c> is the workshop's alone (<c>data/meta.ts</c>'s <c>MetaEffect</c>): a one-off grant
+/// read once at run start (extra weapon/passive slots, extra rerolls) rather than something a
+/// resolver folds in every time stats are recomputed. No <see cref="UpgradeEffect"/> ever uses it.
+/// </summary>
+public enum EffectTarget { Player, Weapon, Run }
 
 public enum EffectMode { Add, Mul }
 

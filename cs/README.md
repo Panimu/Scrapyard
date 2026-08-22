@@ -1,7 +1,8 @@
 # Scrapyard.Core — the C# port
 
-A port of `src/core` from TypeScript. **In progress**: the RNG and the hash primitives are done and
-proven; the simulation is not started.
+A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
+the director and targeting, every content catalog, and the trig the whole port depends on are done
+and proven. `stats.ts` is the natural next step — every catalog it reads now exists.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -41,10 +42,26 @@ dotnet test
 | `Director` — the whole of S2 | done, 752 checkpoints over 12 cases, 805 bodies compared |
 | `Flavours` / `Archetypes` / `Ranks` tables | done, every field bit-compared |
 | `EnemyAI` — seek, separate, integrate, relocate | done, 7 crowds over 256 driven ticks |
+| `WeaponCatalog` — 11 `WeaponDef`, hardpoints, mounts | done, every field bit-compared |
+| `UpgradeCatalog` — 11 weapon cards, 10 passives, 5 ascensions | done, incl. the sparse-tier key-set check |
+| `HeroCatalog` / `HeroTraits` — 16 chassis | done, every multiplier map bit-compared |
+| `MetaCatalog` — 16 workshop upgrades, `AccumulateMeta` | done, table + driven probes + a function-level unit test |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
+| `stats.ts` — `resolveWeaponStats` / `resolvePlayerStats` | not started — the next natural step, now that every catalog it reads exists |
 | The other 8 systems | not started — **this is the remaining job** |
-| Content catalogs | not started — data, not logic |
 | Golden corpus replay | not started — needs all of `stepWorld` |
+
+**Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
+comparison per catalog rather than an adversarial fixture, because there is no order to lose and no
+branch to miss - only a number to transcribe correctly. `MetaCatalog.AccumulateMeta` is the one
+exception, since it is real logic (`resolveOne` will call it directly) rather than a lookup.
+
+**Every catalog excludes the same four kinds of field, on the same grounds**: display strings
+(name, description, card text, icon - no reader in `stepWorld` touches them), shop/purchasing
+metadata (cost, version - app-layer, resolved before a run exists), the unlock condition
+(`UnlockCond` - meta-layer, evaluated against a save; `stepWorld` is handed the result, never the
+condition), and animation-only fields (a hero's gait). See the remarks on `WeaponDef`, `UpgradeDef`,
+`HeroDef` and `MetaDef` for the full argument each time it applies.
 
 **All five pools are ported and proven.** Regenerate their fixtures with `npm run golden:pool`
 (enemy) and `npm run golden:pools` (the other four).
@@ -151,6 +168,33 @@ characteristic mistake:
   timer sits at -0.0166 instead of a full interval.
 - **The forward-bias redraw made unconditional** — fails on the draw count at tick 16 of
   `forward-bias-running`, and on nothing at all in the case where the player is standing still.
+- **The Long Laser's beam colour transcribed from memory** — `0xFF564D` instead of the source's
+  `0xFF4D4D` — fails the field comparison on the first run, before any injection was needed.
+- **A `with` expression on a `sealed class`** in the giga-tier laser factory — doesn't compile at
+  all, since `WeaponDef` isn't a record. Not a fixture catch; the build itself refused it.
+- **A dropped `TierEffects` on a passive card** — fails `WeaponAndPassiveCountsMatch`, which pins
+  the count of cards carrying seven real tiers rather than the count of cards with an empty flat
+  `Effects` (every card in this catalog has an empty flat `Effects`; ten of them do their whole job
+  through `TierEffects` instead, so a bug that always left it `null` would still show "empty" on
+  the field a naive test would check).
+- **A wrong hero weapon-bonus amount** (Amber's pierce written as +2 instead of +1) fails the field
+  comparison directly; **dropping Plum's shield-recharge multiplier entirely** fails the count of
+  player multipliers, since Plum is the only hero who has one.
+- **Two "obviously equal" decimal simplifications in the workshop catalog, both real** — `0.3 / 3`
+  written as the literal `0.1`, and `0.15 / 3` written as the literal `0.05`. The first happens to
+  be bit-identical (verified, not assumed); the second is not — `0.15 / 3` is `0.049999999999999996`
+  in both languages, a different double from `0.05`. Both were caught by
+  `EveryUpgradeMatchesFieldByField` on the first run, before any fault injection was needed, which
+  is the whole argument for writing the source's own expression rather than a value that looks
+  the same by eye.
+- **A flat workshop effect folded into a same-value summed loop** instead of one multiply — proven
+  real (`0.3/7` summed seven times is `0.30000000000000004`, not `0.3`) but invisible through the
+  full `AccumulateMeta` pipeline for every value this catalog actually uses: folding either result
+  into the `mul` accumulator's `1 + total` rounds both back to exactly `1.3`. Confirmed by injecting
+  the fault and finding every end-to-end probe still passed. Pinned instead with a unit test
+  directly on `EffectTotal`, which does fail on it — the lesson being that an integration probe is
+  not a substitute for a function-level test when a downstream rounding step can absorb the exact
+  bits a bug changes.
 
 ### Known untested branch
 
@@ -158,6 +202,9 @@ characteristic mistake:
 ladder uses a single-flavour archetype as its REGULAR, and elites and bosses never reach the
 function. An injected fault there passes, and it is recorded here rather than papered over — the
 branch gets covered when a level whose ladder rides a heavy or a boss body lands.
+
+### More proven failures, from the pre-catalog systems
+
 - **Banker's rounding in `QuantiseAxis`** — C#'s `Math.Round` default — fails on the first exact
   half. This is the layer boundary every byte of every recorded run passes through, so it would
   diverge a replay before the simulation ran a tick. `MidpointRounding.AwayFromZero` is not the fix
@@ -211,33 +258,36 @@ This is narrower than the run corpus deliberately. The corpus proves the whole p
 cannot say *which* stage disagreed; these say which stage, which is what the port needs while the
 corpus is still a long way from running.
 
-## A blocker worth reading before going further
+## The trig blocker is closed
 
-`docs/DETERMINISM-GAP-TRIG.md`. Core still calls `Math.sin`, `Math.cos` and `Math.atan2` at 18
-sites despite `trig.ts` existing to replace them — including in `resolveWeaponStats`, the one
-caller `trig.ts`'s header names. .NET's `Math.Cos` is a third implementation, so each of those
-sites is a coin-flip on whether the port agrees. It needs a decision before `weapons`,
-`projectiles` or `stats` can be ported honestly.
+`docs/DETERMINISM-GAP-TRIG.md` used to stop here: core called `Math.sin`/`Math.cos`/`Math.atan2` at
+18 sites despite `trig.ts` existing to replace them, and .NET's `Math.Cos` is a third implementation
+again, so each site was a coin-flip on whether the port would ever agree. The TypeScript side fixed
+all 18 (including writing `datan2`, which did not exist before) and added `tests/coreBans.test.ts`
+so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `weapons`, `projectiles`,
+`stats`, `drones` and `sheep` can now be ported honestly.
 
 ## Next
 
-Eleven systems remain, in rough order of independence:
+Eight systems remain: `stats`, `playerMovement`, `weapons`, `projectiles`, `drones`, `sheep`,
+`damage`, `pickups`, `progression` — nine, really, since `stats.ts` sits in `data/` but is a system
+in every way that matters here (it is called at run start and every upgrade, not read as a table).
 
-- `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-**The trig-free work is now essentially done.** What remains all reaches it:
+In rough dependency order:
 
-- `playerMovement` needs `breakLootIn` from `pickups`.
-- `pickups` needs `progression`, `sheep` and both unported terrains.
-- `damage` needs `pickups` and the per-level creature ladders.
-- `weapons`, `projectiles`, `stats`, `targeting`, `drones`, `sheep` all call `Math.sin`,
-  `Math.cos` or `Math.atan2` directly.
-
-So `docs/DETERMINISM-GAP-TRIG.md` is no longer something to work around — it is the next decision.
-- `targeting` and `projectiles` have their scenery dependency met, but both reach the open trig
-  question — see above.
-- `spawning`, `enemyAI` need the content catalogs and the flow field.
-- `weapons` and `progression` are the two largest (1,586 and 1,400 lines) and depend on most of
-  the rest.
+- **`stats`** is unblocked *now* — `WeaponCatalog`, `UpgradeCatalog`, `HeroCatalog` and
+  `MetaCatalog` are all it was waiting on. `resolveWeaponStats` and `resolvePlayerStats` are the
+  two functions everything else in this list calls to turn a catalog entry into a number a system
+  can use.
+- **`sheep`** has no content dependency left either — it was always the simplest of the eight.
+- **`playerMovement`** needs `breakLootIn` from `pickups`.
+- **`weapons`, `projectiles`, `drones`** need `stats` (above) and the catalogs it resolves.
+- **`pickups`** needs `progression`, `sheep` and both unported terrains (`MossWalls`/`CityBlocks`).
+- **`damage`** needs `pickups` and the per-level creature ladders (the rest of `enemyCatalog.ts`
+  and `cycles.ts`, not yet ported).
+- **`progression`** is the largest remaining system (1,400 lines) and needs `stats` and the full
+  upgrade-gating logic (`isOfferable`), which reads more of `UpgradeDef` than the catalog port
+  alone required.
 
 Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
 the corpus meaningful, and it is the last thing that can be built rather than the first.
