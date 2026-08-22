@@ -18,8 +18,11 @@ dotnet test
 | --- | --- |
 | `Rng.cs` — sfc32, splitmix32, six salted streams | done, bit-exact against TS across 8 seeds |
 | `Hash.cs` — FNV-1a mixers | done, bit-exact including −0.0, ±∞ and NaN |
+| `Handle.cs` — packed slot + generation | done |
+| `EnemyPool.cs` — swap-remove, free list, hashable layout | done, 272 recorded steps replay exactly |
+| Projectile / pickup / drone / sheep pools | not started — same shape as EnemyPool |
 | `hashWorld` / `hashRunStats` | not started — needs `World` |
-| `World`, pools, systems | not started |
+| `World`, systems, `stepWorld` | not started |
 | Golden corpus replay | not started — needs `stepWorld` |
 
 ## Why the RNG came first
@@ -36,6 +39,21 @@ overflow int32, and the 2^-24 literal.
 Regenerate it from the TypeScript side with `npm run golden:rng`. Nothing in the C# test project
 computes an expected value — every number is compared against what the TypeScript actually
 produced.
+
+## The float32 rule
+
+The single most important thing to know before writing a system. The pools store positions and
+stats as `float`, but **JavaScript has no float arithmetic** — it widens to `double`, computes, and
+rounds once on store. C# rounds after *every* float operation.
+
+```csharp
+p.X[d] += p.Vx[d] * dt;                                    // WRONG: two roundings
+p.X[d] = (float)((double)p.X[d] + (double)p.Vx[d] * dt);   // RIGHT: one, on the store
+```
+
+Compute in `double`, store once, and never let an expression have two `float` operands. A port that
+instead types those columns `double` agrees on every integer and diverges on the first fractional
+coordinate — which is why `goldens/pool-fixture.json` writes values float32 has to round.
 
 ## The rules this project keeps
 
@@ -55,20 +73,30 @@ summarising them, and rewrite rather than drop the ones that describe a TypeScri
 
 ## Proven to fail, not just to pass
 
-A test that has never failed is unproven. Replacing the logical shift in `NextU32` with an
-arithmetic one — `(int)((uint)b >> 9)` → `(b >> 9)`, the single most likely mistake in this
-translation — fails **7 of 19 tests on the first draw of the first seed**. Reverted; the committed
-tree is green.
+A test that has never failed is unproven. Both fixtures have been shown to catch their
+characteristic mistake:
 
-If you change anything in `Rng.cs` or `Hash.cs`, do that again. The failure mode these guard against
-is one where the numbers still look random and the game still runs.
+- **Arithmetic instead of logical shift** in `NextU32` — `(int)((uint)b >> 9)` → `(b >> 9)`, the
+  single most likely mistake in this translation — fails **7 of 19 tests on the first draw of the
+  first seed**.
+- **Reap iterating forwards** instead of backwards — which leaves a pool that is perfectly
+  self-consistent and simply wrong — fails at **step 54**, the first reap where more than one mark
+  had accumulated. (Not the first reap: a single dead entry swap-removes identically either way,
+  which is exactly why the fixture batches kills before reaping.)
+
+Both reverted; the committed tree is green. If you change `Rng.cs`, `Hash.cs` or `EnemyPool.cs`, do
+that again. The failure mode all of this guards against is one where the numbers still look random,
+the pool still looks sane, and the game still runs.
 
 ## Next
 
-1. `World`, the entity pools, and the swap-remove semantics — order is state.
-2. `hashWorld` / `hashRunStats` against the same fixture discipline.
-3. `stepWorld`, system by system, each landing with its ported tests.
-4. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
+1. The remaining four pools — projectile, pickup, drone, sheep. Same shape as `EnemyPool`, same
+   fixture discipline; `tools/pool_fixture.ts` generalises to them with little more than a new
+   field list.
+2. `World` and its non-pool state: player, weapons, director, difficulty, level-up.
+3. `hashWorld` / `hashRunStats` — mostly assembled from pieces that already exist and are proven.
+4. `stepWorld`, system by system, each landing with its ported tests.
+5. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
 
-Only step 4 makes the corpus meaningful, and it is the last thing that can be built rather than the
+Only step 5 makes the corpus meaningful, and it is the last thing that can be built rather than the
 first.

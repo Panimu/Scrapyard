@@ -136,6 +136,41 @@ The RNG is **sfc32 seeded by splitmix32**, with separated streams (`spawn`, `loo
 defect even when the result is perfectly deterministic — the streams are separated so that, for
 example, loot rolls cannot make the horde depend on how much scenery the player shot.
 
+### The float32 rule — the biggest trap here, and the least obvious
+
+The pools store positions, velocities and stats in `Float32Array`. **JavaScript has no float
+arithmetic.** Reading `p.x[d]` widens to `double`, every intermediate is computed in `double`, and
+the result is rounded to float32 exactly once — on store.
+
+C# does not do that:
+
+```csharp
+float a, b, c;
+a + b * c        // evaluates in SINGLE precision: rounds after the multiply AND after the add
+```
+
+Two roundings where JavaScript has one. For most inputs they agree; for some they differ in the last
+bit, and one bit in a position is a completely different world three thousand ticks later.
+
+**So: compute in `double`, store once.** Read columns into `double` locals, do the arithmetic there,
+and cast to `float` only in the assignment. Never let an expression have two `float` operands.
+
+```csharp
+// WRONG - two roundings
+p.X[d] += p.Vx[d] * dt;
+
+// RIGHT - one rounding, on the store, exactly like the original
+p.X[d] = (float)((double)p.X[d] + (double)p.Vx[d] * dt);
+```
+
+The corollary is that a port which types these columns `double` — the obvious move, since a
+JavaScript number *is* a double — agrees on every integer and diverges on the first fractional
+coordinate. `goldens/pool-fixture.json` writes values that float32 must round, specifically so that
+mistake fails immediately rather than in the corpus.
+
+Integer columns wrap rather than saturate. `Uint16Array` assignment of 70000 stores 4464; the C#
+equivalent is `unchecked((ushort)70000)`, and the fixture covers it.
+
 `src/core` contains no `Math.pow`, `Math.sin` or `Math.cos`; they are implementation-defined and a
 replay recorded on a phone has to reproduce in Node. `Math.sqrt` **is** used and is safe: IEEE-754
 requires it to be correctly rounded. Do not let a C# equivalent of the forbidden three back in.

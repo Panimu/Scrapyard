@@ -1,0 +1,3275 @@
+{
+ "formatVersion": 1,
+ "note": "Cross-language proof for src/core/entity/enemyPool.ts. Doubles are IEEE-754 bits as 16 hex digits, high word first. Replay `steps` in order and compare `hashes[i]` after step i-1; hashes[0] is the empty pool before any step.",
+ "capacity": 24,
+ "flags": {
+  "dead": 1,
+  "elite": 2,
+  "boss": 4
+ },
+ "steps": [
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 2,
+   "archetype": 2,
+   "x": "407c1249d7800000",
+   "y": "c082dbfe26400000",
+   "spawnId": 1
+  },
+  {
+   "op": "fill",
+   "d": 0,
+   "hp": "40709172584c0000",
+   "maxHp": "40709172584c0000",
+   "radius": "401846656c000000",
+   "speed": "405ab97870200000",
+   "mass": "40022032f0000000",
+   "xpValue": 20356,
+   "cycleIndex": 9,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "40867a3156f00000",
+   "y": "c07e7d6166f00000",
+   "spawnId": 2
+  },
+  {
+   "op": "fill",
+   "d": 1,
+   "hp": "4073bfa4bd100000",
+   "maxHp": "4073bfa4bd100000",
+   "radius": "4022f69751800000",
+   "speed": "405a0e5209500000",
+   "mass": "400aa75f2a000000",
+   "xpValue": 55383,
+   "cycleIndex": 10,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 0,
+   "archetype": 1,
+   "x": "c06092f558a00000",
+   "y": "c079474996100000",
+   "spawnId": 3
+  },
+  {
+   "op": "fill",
+   "d": 2,
+   "hp": "406bab72b3700000",
+   "maxHp": "406bab72b3700000",
+   "radius": "403ca1a7a6000000",
+   "speed": "4042bd9be2200000",
+   "mass": "4003c33440000000",
+   "xpValue": 64097,
+   "cycleIndex": 10,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "c0751b6b49400000",
+   "y": "c08a11ed4a180000",
+   "spawnId": 4
+  },
+  {
+   "op": "fill",
+   "d": 3,
+   "hp": "402c5430a3000000",
+   "maxHp": "402c5430a3000000",
+   "radius": "403c26c57c000000",
+   "speed": "4051109db8b00000",
+   "mass": "3fe59cd118000000",
+   "xpValue": 59962,
+   "cycleIndex": 0,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 4,
+   "archetype": 1,
+   "x": "c069162487400000",
+   "y": "c04397bc94000000",
+   "spawnId": 5
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "4070d14257880000",
+   "maxHp": "4070d14257880000",
+   "radius": "403e61cc8e400000",
+   "speed": "40515f7931100000",
+   "mass": "40229e3a06800000",
+   "xpValue": 22840,
+   "cycleIndex": 7,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 0,
+   "archetype": 4,
+   "x": "408aff6cde580000",
+   "y": "c07e091742500000",
+   "spawnId": 6
+  },
+  {
+   "op": "fill",
+   "d": 5,
+   "hp": "4042ca815d000000",
+   "maxHp": "4042ca815d000000",
+   "radius": "402502a1d7000000",
+   "speed": "404fe3082b800000",
+   "mass": "400d361112000000",
+   "xpValue": 64479,
+   "cycleIndex": 6,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 2,
+   "archetype": 2,
+   "x": "4087df07f6d00000",
+   "y": "4063ded487000000",
+   "spawnId": 7
+  },
+  {
+   "op": "fill",
+   "d": 6,
+   "hp": "4073facc612c0000",
+   "maxHp": "4073facc612c0000",
+   "radius": "401ec05c22000000",
+   "speed": "40664cbc6e200000",
+   "mass": "3fe3fd0830000000",
+   "xpValue": 3227,
+   "cycleIndex": 2,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "c05ed51a0f800000",
+   "y": "4088bc975f580000",
+   "spawnId": 8
+  },
+  {
+   "op": "fill",
+   "d": 7,
+   "hp": "4059b9123c300000",
+   "maxHp": "4059b9123c300000",
+   "radius": "40362bb182000000",
+   "speed": "4044076901a00000",
+   "mass": "401abd85ea000000",
+   "xpValue": 52405,
+   "cycleIndex": 6,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "40767007a6a00000",
+   "y": "408b834a68000000",
+   "spawnId": 9
+  },
+  {
+   "op": "fill",
+   "d": 8,
+   "hp": "4067db1aaf780000",
+   "maxHp": "4067db1aaf780000",
+   "radius": "403456a323800000",
+   "speed": "4054c14ce9a00000",
+   "mass": "3ffdacfa1c000000",
+   "xpValue": 12941,
+   "cycleIndex": 3,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 0,
+   "archetype": 2,
+   "x": "c0819b86fe700000",
+   "y": "40771b0312f00000",
+   "spawnId": 10
+  },
+  {
+   "op": "fill",
+   "d": 9,
+   "hp": "4055c110b2800000",
+   "maxHp": "4055c110b2800000",
+   "radius": "40350b3f3b800000",
+   "speed": "4061b25836400000",
+   "mass": "4022a4e54d000000",
+   "xpValue": 20958,
+   "cycleIndex": 3,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "c03df3156b000000",
+   "y": "407f033237500000",
+   "spawnId": 11
+  },
+  {
+   "op": "fill",
+   "d": 10,
+   "hp": "4077b6c199440000",
+   "maxHp": "4077b6c199440000",
+   "radius": "4031278ecfc00000",
+   "speed": "405a581f48300000",
+   "mass": "4020fa624d000000",
+   "xpValue": 9027,
+   "cycleIndex": 9,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "c082ba6340a80000",
+   "y": "c073a41670f00000",
+   "spawnId": 12
+  },
+  {
+   "op": "fill",
+   "d": 11,
+   "hp": "407278aca1440000",
+   "maxHp": "407278aca1440000",
+   "radius": "402593065a000000",
+   "speed": "4064fdbce3a00000",
+   "mass": "401e314598000000",
+   "xpValue": 15396,
+   "cycleIndex": 4,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 4,
+   "archetype": 2,
+   "x": "4086b9e7b0980000",
+   "y": "4065e05775000000",
+   "spawnId": 13
+  },
+  {
+   "op": "fill",
+   "d": 12,
+   "hp": "406bbf08dd880000",
+   "maxHp": "406bbf08dd880000",
+   "radius": "4033272202800000",
+   "speed": "4065942655580000",
+   "mass": "4002cae68a000000",
+   "xpValue": 15363,
+   "cycleIndex": 1,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 2,
+   "archetype": 1,
+   "x": "c080c4d627a00000",
+   "y": "c06370a6d3c00000",
+   "spawnId": 14
+  },
+  {
+   "op": "fill",
+   "d": 13,
+   "hp": "40611dd7da900000",
+   "maxHp": "40611dd7da900000",
+   "radius": "401dad0ae2000000",
+   "speed": "40534d60aa200000",
+   "mass": "4011efe1e0000000",
+   "xpValue": 54005,
+   "cycleIndex": 9,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 0,
+   "archetype": 2,
+   "x": "406435ef55a00000",
+   "y": "408ab72b76d00000",
+   "spawnId": 15
+  },
+  {
+   "op": "fill",
+   "d": 14,
+   "hp": "406efe6f21280000",
+   "maxHp": "406efe6f21280000",
+   "radius": "403414f9b4800000",
+   "speed": "404bc80ad9400000",
+   "mass": "4007706a9c000000",
+   "xpValue": 67784,
+   "cycleIndex": 0,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 1,
+   "archetype": 2,
+   "x": "c055c1adfb400000",
+   "y": "c082e997e4680000",
+   "spawnId": 16
+  },
+  {
+   "op": "fill",
+   "d": 15,
+   "hp": "405db0e69a200000",
+   "maxHp": "405db0e69a200000",
+   "radius": "40238f14c2800000",
+   "speed": "4064332f81700000",
+   "mass": "400abc4a56000000",
+   "xpValue": 555,
+   "cycleIndex": 9,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 3,
+   "archetype": 2,
+   "x": "c07a3baa97b00000",
+   "y": "c081dda63d480000",
+   "spawnId": 17
+  },
+  {
+   "op": "fill",
+   "d": 16,
+   "hp": "4072369cfefc0000",
+   "maxHp": "4072369cfefc0000",
+   "radius": "403acab4c8400000",
+   "speed": "403c1b2d69000000",
+   "mass": "400490e552000000",
+   "xpValue": 48566,
+   "cycleIndex": 11,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "4052066e31000000",
+   "y": "408a587575280000",
+   "spawnId": 18
+  },
+  {
+   "op": "fill",
+   "d": 17,
+   "hp": "4075830876b00000",
+   "maxHp": "4075830876b00000",
+   "radius": "401834ff20000000",
+   "speed": "405dc9b2a9900000",
+   "mass": "4013cdc3eb000000",
+   "xpValue": 33921,
+   "cycleIndex": 3,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "40242221a0000000",
+   "y": "407c98e409800000",
+   "spawnId": 19
+  },
+  {
+   "op": "fill",
+   "d": 18,
+   "hp": "4072c60a69f80000",
+   "maxHp": "4072c60a69f80000",
+   "radius": "402b7f009b000000",
+   "speed": "40434e3ea0400000",
+   "mass": "40161cc419000000",
+   "xpValue": 52703,
+   "cycleIndex": 10,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 2,
+   "x": "c031177479000000",
+   "y": "c070516e04200000",
+   "spawnId": 20
+  },
+  {
+   "op": "fill",
+   "d": 19,
+   "hp": "4075d93276f80000",
+   "maxHp": "4075d93276f80000",
+   "radius": "403cc16ca3000000",
+   "speed": "403c3b93ee000000",
+   "mass": "401f1b6748000000",
+   "xpValue": 5020,
+   "cycleIndex": 8,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "407209fe1fa00000",
+   "y": "c08618ea34a00000",
+   "spawnId": 21
+  },
+  {
+   "op": "fill",
+   "d": 20,
+   "hp": "406fad0e5a780000",
+   "maxHp": "406fad0e5a780000",
+   "radius": "403b15eaa5000000",
+   "speed": "40627b2e70600000",
+   "mass": "401bdc66de000000",
+   "xpValue": 5207,
+   "cycleIndex": 4,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 2,
+   "archetype": 1,
+   "x": "c074c96d75300000",
+   "y": "c067cff842400000",
+   "spawnId": 22
+  },
+  {
+   "op": "fill",
+   "d": 21,
+   "hp": "40298efcc7000000",
+   "maxHp": "40298efcc7000000",
+   "radius": "4016abd1f6000000",
+   "speed": "40620eee1aa80000",
+   "mass": "4015607c3a000000",
+   "xpValue": 28189,
+   "cycleIndex": 6,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 2,
+   "x": "40831f167bc00000",
+   "y": "c082e33be9c00000",
+   "spawnId": 23
+  },
+  {
+   "op": "fill",
+   "d": 22,
+   "hp": "406a04a1ef800000",
+   "maxHp": "406a04a1ef800000",
+   "radius": "4023a2fbed000000",
+   "speed": "404d302d01e00000",
+   "mass": "40124a235d000000",
+   "xpValue": 39250,
+   "cycleIndex": 7,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 2,
+   "archetype": 4,
+   "x": "4066e2798f200000",
+   "y": "4062413745200000",
+   "spawnId": 24
+  },
+  {
+   "op": "fill",
+   "d": 23,
+   "hp": "4060a02157480000",
+   "maxHp": "4060a02157480000",
+   "radius": "4025d07490000000",
+   "speed": "40605fd344e00000",
+   "mass": "3fe6ebe870000000",
+   "xpValue": 69902,
+   "cycleIndex": 8,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 0,
+   "archetype": 4,
+   "x": "c06cf814f0600000",
+   "y": "c074c94eadd00000",
+   "spawnId": 25
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 0,
+   "archetype": 0,
+   "x": "c057e52da4000000",
+   "y": "c070ebbb8a000000",
+   "spawnId": 26
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 0,
+   "archetype": 1,
+   "x": "c058868c14000000",
+   "y": "c0798c6852c00000",
+   "spawnId": 27
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 2,
+   "archetype": 1,
+   "x": "4055cefcc1800000",
+   "y": "c06cd27bf7400000",
+   "spawnId": 28
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "markDead",
+   "d": 16
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "c07c536d5c500000",
+   "y": "c07c6e91e5800000",
+   "spawnId": 29
+  },
+  {
+   "op": "fill",
+   "d": 22,
+   "hp": "407198ee2dac0000",
+   "maxHp": "407198ee2dac0000",
+   "radius": "402c937338800000",
+   "speed": "40633b980a800000",
+   "mass": "401b147701000000",
+   "xpValue": 44084,
+   "cycleIndex": 2,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 14
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 0,
+   "archetype": 1,
+   "x": "406f2bb63c200000",
+   "y": "406a690bd5800000",
+   "spawnId": 30
+  },
+  {
+   "op": "fill",
+   "d": 20,
+   "hp": "40786a1a1e1c0000",
+   "maxHp": "40786a1a1e1c0000",
+   "radius": "402fd4e1c9000000",
+   "speed": "405f3fad6e200000",
+   "mass": "4017f35cd2000000",
+   "xpValue": 65637,
+   "cycleIndex": 2,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 3,
+   "archetype": 2,
+   "x": "407b7859f9700000",
+   "y": "c078eba519500000",
+   "spawnId": 31
+  },
+  {
+   "op": "fill",
+   "d": 21,
+   "hp": "4070265dd70c0000",
+   "maxHp": "4070265dd70c0000",
+   "radius": "4018b2de3b000000",
+   "speed": "405ebad26fd00000",
+   "mass": "400d8ded9a000000",
+   "xpValue": 40286,
+   "cycleIndex": 3,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 0,
+   "archetype": 0,
+   "x": "406515f972200000",
+   "y": "c058e58c9d000000",
+   "spawnId": 32
+  },
+  {
+   "op": "fill",
+   "d": 22,
+   "hp": "40747185628c0000",
+   "maxHp": "40747185628c0000",
+   "radius": "40296f9c3e000000",
+   "speed": "4065ba9334700000",
+   "mass": "40234032f5000000",
+   "xpValue": 22361,
+   "cycleIndex": 9,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 1,
+   "x": "bfeb8d9fa0000000",
+   "y": "4085a3653d400000",
+   "spawnId": 33
+  },
+  {
+   "op": "fill",
+   "d": 23,
+   "hp": "405c589f8f300000",
+   "maxHp": "405c589f8f300000",
+   "radius": "40278a15e0800000",
+   "speed": "4044efb670a00000",
+   "mass": "3fe4536aa0000000",
+   "xpValue": 16618,
+   "cycleIndex": 5,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 0,
+   "archetype": 3,
+   "x": "c05dd1217b800000",
+   "y": "40775194b2200000",
+   "spawnId": 34
+  },
+  {
+   "op": "markDead",
+   "d": 18
+  },
+  {
+   "op": "markDead",
+   "d": 13
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 2,
+   "archetype": 4,
+   "x": "4081669f38080000",
+   "y": "4080cc7c58b80000",
+   "spawnId": 35
+  },
+  {
+   "op": "fill",
+   "d": 19,
+   "hp": "400ff2cb42000000",
+   "maxHp": "400ff2cb42000000",
+   "radius": "4030f9f054800000",
+   "speed": "4058750eaf700000",
+   "mass": "402344df3e000000",
+   "xpValue": 40658,
+   "cycleIndex": 1,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 4,
+   "archetype": 4,
+   "x": "3ff1b62880000000",
+   "y": "407cd21bac100000",
+   "spawnId": 36
+  },
+  {
+   "op": "fill",
+   "d": 20,
+   "hp": "4059333e0e400000",
+   "maxHp": "4059333e0e400000",
+   "radius": "403b6b1e58000000",
+   "speed": "40545ac2e6100000",
+   "mass": "4017ab2c30000000",
+   "xpValue": 52261,
+   "cycleIndex": 0,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 4
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 3,
+   "archetype": 2,
+   "x": "408aa09bd2180000",
+   "y": "4043f5aabe000000",
+   "spawnId": 37
+  },
+  {
+   "op": "fill",
+   "d": 21,
+   "hp": "406a6c8864080000",
+   "maxHp": "406a6c8864080000",
+   "radius": "4026be9751000000",
+   "speed": "40628a98af680000",
+   "mass": "401916343d000000",
+   "xpValue": 68616,
+   "cycleIndex": 3,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 1,
+   "archetype": 2,
+   "x": "c015d6a40c000000",
+   "y": "c0843409b0580000",
+   "spawnId": 38
+  },
+  {
+   "op": "fill",
+   "d": 22,
+   "hp": "40641ced21780000",
+   "maxHp": "40641ced21780000",
+   "radius": "402fbce521800000",
+   "speed": "4060f18f86380000",
+   "mass": "40218a8218000000",
+   "xpValue": 53734,
+   "cycleIndex": 6,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 2,
+   "archetype": 4,
+   "x": "c084cb62eeb80000",
+   "y": "4062ec11b7400000",
+   "spawnId": 39
+  },
+  {
+   "op": "fill",
+   "d": 20,
+   "hp": "40629ebf1b400000",
+   "maxHp": "40629ebf1b400000",
+   "radius": "4030a51418c00000",
+   "speed": "4062686871c80000",
+   "mass": "4003658222000000",
+   "xpValue": 47977,
+   "cycleIndex": 1,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 0
+  },
+  {
+   "op": "markDead",
+   "d": 13
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 0
+  },
+  {
+   "op": "markDead",
+   "d": 7
+  },
+  {
+   "op": "markDead",
+   "d": 15
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 0,
+   "archetype": 1,
+   "x": "4062bbf084e00000",
+   "y": "c089f27d4a600000",
+   "spawnId": 40
+  },
+  {
+   "op": "fill",
+   "d": 15,
+   "hp": "407526876ce80000",
+   "maxHp": "407526876ce80000",
+   "radius": "4024652e59800000",
+   "speed": "40578af917300000",
+   "mass": "401a2c8d9d000000",
+   "xpValue": 49177,
+   "cycleIndex": 1,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 14
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 2,
+   "archetype": 2,
+   "x": "c08116e327180000",
+   "y": "c069b2fe8fe00000",
+   "spawnId": 41
+  },
+  {
+   "op": "fill",
+   "d": 15,
+   "hp": "4052e9b931100000",
+   "maxHp": "4052e9b931100000",
+   "radius": "4039199286c00000",
+   "speed": "405180f4ef000000",
+   "mass": "40222d4d64000000",
+   "xpValue": 21070,
+   "cycleIndex": 7,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 1,
+   "archetype": 2,
+   "x": "40887c4e9a600000",
+   "y": "c0584c91a8400000",
+   "spawnId": 42
+  },
+  {
+   "op": "fill",
+   "d": 16,
+   "hp": "406789cd9c200000",
+   "maxHp": "406789cd9c200000",
+   "radius": "4038aa8529400000",
+   "speed": "406183e751400000",
+   "mass": "40212e358c000000",
+   "xpValue": 23333,
+   "cycleIndex": 1,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "c08b71ca54b00000",
+   "y": "40899361b6c80000",
+   "spawnId": 43
+  },
+  {
+   "op": "fill",
+   "d": 17,
+   "hp": "4071b19a1f140000",
+   "maxHp": "4071b19a1f140000",
+   "radius": "402159164c000000",
+   "speed": "40567c447ad00000",
+   "mass": "401367904b000000",
+   "xpValue": 27682,
+   "cycleIndex": 5,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 14
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "408c199888a80000",
+   "y": "c059d18077000000",
+   "spawnId": 44
+  },
+  {
+   "op": "fill",
+   "d": 16,
+   "hp": "405b6c955bb00000",
+   "maxHp": "405b6c955bb00000",
+   "radius": "4020342482000000",
+   "speed": "40616f726f480000",
+   "mass": "40143d73ab000000",
+   "xpValue": 3711,
+   "cycleIndex": 11,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 1,
+   "archetype": 0,
+   "x": "4079269c58800000",
+   "y": "c086f7ff67d00000",
+   "spawnId": 45
+  },
+  {
+   "op": "fill",
+   "d": 17,
+   "hp": "4045d2dca4c00000",
+   "maxHp": "4045d2dca4c00000",
+   "radius": "4038370134000000",
+   "speed": "40545f4b45300000",
+   "mass": "4020daa7ef000000",
+   "xpValue": 55852,
+   "cycleIndex": 10,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "4087a15609d00000",
+   "y": "407a8c0644d00000",
+   "spawnId": 46
+  },
+  {
+   "op": "fill",
+   "d": 15,
+   "hp": "405bab563b800000",
+   "maxHp": "405bab563b800000",
+   "radius": "403af986c7400000",
+   "speed": "406058b8a1780000",
+   "mass": "401c5e78fd000000",
+   "xpValue": 19612,
+   "cycleIndex": 11,
+   "flags": 0
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 12
+  },
+  {
+   "op": "markDead",
+   "d": 8
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 10
+  },
+  {
+   "op": "markDead",
+   "d": 0
+  },
+  {
+   "op": "markDead",
+   "d": 7
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "40432a86de000000",
+   "y": "c0683693c6000000",
+   "spawnId": 47
+  },
+  {
+   "op": "fill",
+   "d": 11,
+   "hp": "4065060bded00000",
+   "maxHp": "4065060bded00000",
+   "radius": "403b5a19f8c00000",
+   "speed": "404876d4a0a00000",
+   "mass": "4019096998000000",
+   "xpValue": 13593,
+   "cycleIndex": 9,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 1,
+   "archetype": 0,
+   "x": "c077826c5df00000",
+   "y": "4058452d33400000",
+   "spawnId": 48
+  },
+  {
+   "op": "fill",
+   "d": 12,
+   "hp": "407451e2a6d80000",
+   "maxHp": "407451e2a6d80000",
+   "radius": "40362eab45400000",
+   "speed": "4043747073000000",
+   "mass": "400db9a45e000000",
+   "xpValue": 39652,
+   "cycleIndex": 10,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 4,
+   "archetype": 4,
+   "x": "4089693df6200000",
+   "y": "c08150f5fa100000",
+   "spawnId": 49
+  },
+  {
+   "op": "fill",
+   "d": 10,
+   "hp": "40710be676300000",
+   "maxHp": "40710be676300000",
+   "radius": "402690eb32800000",
+   "speed": "4055901701400000",
+   "mass": "4013c786d9000000",
+   "xpValue": 31899,
+   "cycleIndex": 10,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "4084b1c7ecf80000",
+   "y": "c0801e05a8380000",
+   "spawnId": 50
+  },
+  {
+   "op": "fill",
+   "d": 10,
+   "hp": "40719b3aaa680000",
+   "maxHp": "40719b3aaa680000",
+   "radius": "403d74d830800000",
+   "speed": "404221c6b0600000",
+   "mass": "400e022028000000",
+   "xpValue": 67682,
+   "cycleIndex": 1,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "40723be90b900000",
+   "y": "40811f80ac980000",
+   "spawnId": 51
+  },
+  {
+   "op": "fill",
+   "d": 11,
+   "hp": "4062e8f688100000",
+   "maxHp": "4062e8f688100000",
+   "radius": "4033abcd34000000",
+   "speed": "4064c09f9b880000",
+   "mass": "4019d976f3000000",
+   "xpValue": 22477,
+   "cycleIndex": 11,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 11
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 9
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 1,
+   "archetype": 0,
+   "x": "c0880459ed180000",
+   "y": "4084df7e3fa00000",
+   "spawnId": 52
+  },
+  {
+   "op": "fill",
+   "d": 7,
+   "hp": "4052b2a222e00000",
+   "maxHp": "4052b2a222e00000",
+   "radius": "403c765dd7800000",
+   "speed": "4060a6d21b900000",
+   "mass": "4018ef1923000000",
+   "xpValue": 65284,
+   "cycleIndex": 3,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 1,
+   "x": "407899b719800000",
+   "y": "408765d411280000",
+   "spawnId": 53
+  },
+  {
+   "op": "fill",
+   "d": 8,
+   "hp": "4071d9af9b280000",
+   "maxHp": "4071d9af9b280000",
+   "radius": "403a47bd61400000",
+   "speed": "404b4d11cd600000",
+   "mass": "401938d104000000",
+   "xpValue": 18567,
+   "cycleIndex": 3,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 3,
+   "archetype": 4,
+   "x": "c0616a2d2c200000",
+   "y": "40829aaab4200000",
+   "spawnId": 54
+  },
+  {
+   "op": "fill",
+   "d": 9,
+   "hp": "4072ff03f0f80000",
+   "maxHp": "4072ff03f0f80000",
+   "radius": "403e2fb953c00000",
+   "speed": "405abc7bbb200000",
+   "mass": "3ffaeda48c000000",
+   "xpValue": 42988,
+   "cycleIndex": 5,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 8
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "407d82c59d200000",
+   "y": "c086f8144a880000",
+   "spawnId": 55
+  },
+  {
+   "op": "fill",
+   "d": 10,
+   "hp": "407317be4ad00000",
+   "maxHp": "407317be4ad00000",
+   "radius": "40398b9f65800000",
+   "speed": "40630c13a3e00000",
+   "mass": "3ff40d84c4000000",
+   "xpValue": 46695,
+   "cycleIndex": 0,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 10
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 4,
+   "archetype": 1,
+   "x": "c07c4a34a0400000",
+   "y": "c0849de208680000",
+   "spawnId": 56
+  },
+  {
+   "op": "fill",
+   "d": 6,
+   "hp": "4058aaf68bc00000",
+   "maxHp": "4058aaf68bc00000",
+   "radius": "4024919ccd800000",
+   "speed": "4060c16267300000",
+   "mass": "401829d1ba000000",
+   "xpValue": 27782,
+   "cycleIndex": 0,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "markDead",
+   "d": 4
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 0,
+   "archetype": 2,
+   "x": "c084df4862b80000",
+   "y": "c08937fe15000000",
+   "spawnId": 57
+  },
+  {
+   "op": "fill",
+   "d": 5,
+   "hp": "405109a3be700000",
+   "maxHp": "405109a3be700000",
+   "radius": "403c485dd8800000",
+   "speed": "405dc3cfa5500000",
+   "mass": "3fe2900388000000",
+   "xpValue": 43755,
+   "cycleIndex": 3,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 2,
+   "archetype": 3,
+   "x": "c07befbdc5600000",
+   "y": "405baccec4c00000",
+   "spawnId": 58
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "405f05280f500000",
+   "maxHp": "405f05280f500000",
+   "radius": "403369793f400000",
+   "speed": "40593a85e3500000",
+   "mass": "401048b3e6000000",
+   "xpValue": 50791,
+   "cycleIndex": 2,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 2,
+   "archetype": 3,
+   "x": "c08b67c085280000",
+   "y": "c0527544bc400000",
+   "spawnId": 59
+  },
+  {
+   "op": "fill",
+   "d": 5,
+   "hp": "4078dfa42a9c0000",
+   "maxHp": "4078dfa42a9c0000",
+   "radius": "4030c60609800000",
+   "speed": "4057195a44200000",
+   "mass": "4002b6471a000000",
+   "xpValue": 17954,
+   "cycleIndex": 0,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "c082c18a97780000",
+   "y": "4073a59094b00000",
+   "spawnId": 60
+  },
+  {
+   "op": "fill",
+   "d": 6,
+   "hp": "407795793cec0000",
+   "maxHp": "407795793cec0000",
+   "radius": "40280fd4b2000000",
+   "speed": "40536c1ed9200000",
+   "mass": "400aa59344000000",
+   "xpValue": 38895,
+   "cycleIndex": 1,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 1,
+   "archetype": 0,
+   "x": "406b896354e00000",
+   "y": "c069b02ad2000000",
+   "spawnId": 61
+  },
+  {
+   "op": "fill",
+   "d": 3,
+   "hp": "406a8bb4a5d00000",
+   "maxHp": "406a8bb4a5d00000",
+   "radius": "403d282b71c00000",
+   "speed": "40594f5de9900000",
+   "mass": "40045eb3a0000000",
+   "xpValue": 51619,
+   "cycleIndex": 8,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 1,
+   "archetype": 4,
+   "x": "c070feb15b700000",
+   "y": "407111032b100000",
+   "spawnId": 62
+  },
+  {
+   "op": "fill",
+   "d": 3,
+   "hp": "4071f074b2440000",
+   "maxHp": "4071f074b2440000",
+   "radius": "4024a424e0000000",
+   "speed": "4063293d11080000",
+   "mass": "4016251edf000000",
+   "xpValue": 34680,
+   "cycleIndex": 5,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "408a1f2a41900000",
+   "y": "408687d28ea80000",
+   "spawnId": 63
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "4074150ec3680000",
+   "maxHp": "4074150ec3680000",
+   "radius": "402eecff76000000",
+   "speed": "40619e7dc6680000",
+   "mass": "4022728536000000",
+   "xpValue": 27382,
+   "cycleIndex": 2,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 2,
+   "archetype": 0,
+   "x": "c084b66c6d680000",
+   "y": "c05beca732000000",
+   "spawnId": 64
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "4052f91c04200000",
+   "maxHp": "4052f91c04200000",
+   "radius": "403a0bd833800000",
+   "speed": "4040e34e56c00000",
+   "mass": "40223aa666000000",
+   "xpValue": 11680,
+   "cycleIndex": 7,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 4
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 0,
+   "flavourId": 4,
+   "archetype": 4,
+   "x": "40611d0274200000",
+   "y": "c0870697bba80000",
+   "spawnId": 65
+  },
+  {
+   "op": "fill",
+   "d": 2,
+   "hp": "4075e1352a440000",
+   "maxHp": "4075e1352a440000",
+   "radius": "402cbf97d8800000",
+   "speed": "4056c49fd5e00000",
+   "mass": "400a0b3822000000",
+   "xpValue": 27461,
+   "cycleIndex": 11,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 2,
+   "archetype": 2,
+   "x": "c07bf5548bc00000",
+   "y": "406ee689de000000",
+   "spawnId": 66
+  },
+  {
+   "op": "fill",
+   "d": 3,
+   "hp": "4070a69c39680000",
+   "maxHp": "4070a69c39680000",
+   "radius": "40252c7739800000",
+   "speed": "4054f67396700000",
+   "mass": "400748015a000000",
+   "xpValue": 7455,
+   "cycleIndex": 8,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 4,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "40809b9f66280000",
+   "y": "c0838fa52a100000",
+   "spawnId": 67
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "4065537e95b80000",
+   "maxHp": "4065537e95b80000",
+   "radius": "402089bfc5800000",
+   "speed": "404d020250c00000",
+   "mass": "4022e67bb6800000",
+   "xpValue": 16700,
+   "cycleIndex": 5,
+   "flags": 4
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 0,
+   "archetype": 0,
+   "x": "c0850680a7200000",
+   "y": "c06147a9e5400000",
+   "spawnId": 68
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "40676e215f480000",
+   "maxHp": "40676e215f480000",
+   "radius": "403c464ab1800000",
+   "speed": "4049163cf3c00000",
+   "mass": "40228859df800000",
+   "xpValue": 4554,
+   "cycleIndex": 1,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "408597fd35b00000",
+   "y": "c08ae07244d00000",
+   "spawnId": 69
+  },
+  {
+   "op": "fill",
+   "d": 5,
+   "hp": "40694c0260e00000",
+   "maxHp": "40694c0260e00000",
+   "radius": "40237071c0800000",
+   "speed": "40426820a1200000",
+   "mass": "40213841a0000000",
+   "xpValue": 35841,
+   "cycleIndex": 11,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "c06f045075800000",
+   "y": "c0678a1b22000000",
+   "spawnId": 70
+  },
+  {
+   "op": "fill",
+   "d": 6,
+   "hp": "4069980e0fe80000",
+   "maxHp": "4069980e0fe80000",
+   "radius": "402c2d829e800000",
+   "speed": "405f3e4cdb600000",
+   "mass": "4016663709000000",
+   "xpValue": 2889,
+   "cycleIndex": 1,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 2,
+   "archetype": 0,
+   "x": "406727a42b000000",
+   "y": "c0867d384e580000",
+   "spawnId": 71
+  },
+  {
+   "op": "fill",
+   "d": 7,
+   "hp": "403444c95f000000",
+   "maxHp": "403444c95f000000",
+   "radius": "4016d32f17000000",
+   "speed": "4064733ac9100000",
+   "mass": "400aa54332000000",
+   "xpValue": 16547,
+   "cycleIndex": 7,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 3,
+   "archetype": 0,
+   "x": "c077cd449d700000",
+   "y": "c085fe7c24e00000",
+   "spawnId": 72
+  },
+  {
+   "op": "fill",
+   "d": 8,
+   "hp": "40753469b6900000",
+   "maxHp": "40753469b6900000",
+   "radius": "4038c2556a800000",
+   "speed": "4053b7e76cc00000",
+   "mass": "3ffcbbe460000000",
+   "xpValue": 50039,
+   "cycleIndex": 5,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 1,
+   "archetype": 3,
+   "x": "4083fdf6b3280000",
+   "y": "c084131d92580000",
+   "spawnId": 73
+  },
+  {
+   "op": "fill",
+   "d": 9,
+   "hp": "40705f54d6140000",
+   "maxHp": "40705f54d6140000",
+   "radius": "403bea3617400000",
+   "speed": "40654519f4900000",
+   "mass": "3ff253df2c000000",
+   "xpValue": 983,
+   "cycleIndex": 11,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 0,
+   "archetype": 2,
+   "x": "4089c3e1aa600000",
+   "y": "c07cd4cfc1700000",
+   "spawnId": 74
+  },
+  {
+   "op": "fill",
+   "d": 10,
+   "hp": "4071e0f6b6000000",
+   "maxHp": "4071e0f6b6000000",
+   "radius": "402d4e12d6000000",
+   "speed": "4041167847600000",
+   "mass": "401feb8d35000000",
+   "xpValue": 68662,
+   "cycleIndex": 0,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 3,
+   "flavourId": 3,
+   "archetype": 3,
+   "x": "4058c7c98a000000",
+   "y": "c054d85131800000",
+   "spawnId": 75
+  },
+  {
+   "op": "fill",
+   "d": 8,
+   "hp": "4075a2ba305c0000",
+   "maxHp": "4075a2ba305c0000",
+   "radius": "403372c5cb400000",
+   "speed": "4055549082300000",
+   "mass": "40093f5ba2000000",
+   "xpValue": 42078,
+   "cycleIndex": 10,
+   "flags": 0
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 3,
+   "archetype": 4,
+   "x": "c086799d99f00000",
+   "y": "4088b7f073d00000",
+   "spawnId": 76
+  },
+  {
+   "op": "fill",
+   "d": 9,
+   "hp": "404692b517a00000",
+   "maxHp": "404692b517a00000",
+   "radius": "4017475c57000000",
+   "speed": "4048fd8be8200000",
+   "mass": "3ff139ab84000000",
+   "xpValue": 1353,
+   "cycleIndex": 4,
+   "flags": 2
+  },
+  {
+   "op": "markDead",
+   "d": 4
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "markDead",
+   "d": 7
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 3,
+   "archetype": 4,
+   "x": "4073a796fbe00000",
+   "y": "404fa812f4800000",
+   "spawnId": 77
+  },
+  {
+   "op": "fill",
+   "d": 7,
+   "hp": "406dc4debe600000",
+   "maxHp": "406dc4debe600000",
+   "radius": "401e475a43000000",
+   "speed": "4053bad93ec00000",
+   "mass": "400278c422000000",
+   "xpValue": 26064,
+   "cycleIndex": 7,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 1,
+   "x": "4087dc21f9980000",
+   "y": "c07dfee689000000",
+   "spawnId": 78
+  },
+  {
+   "op": "fill",
+   "d": 8,
+   "hp": "4071073683280000",
+   "maxHp": "4071073683280000",
+   "radius": "401e4406c7000000",
+   "speed": "404879f4f0000000",
+   "mass": "3ff722e4e4000000",
+   "xpValue": 46148,
+   "cycleIndex": 0,
+   "flags": 0
+  },
+  {
+   "op": "markDead",
+   "d": 8
+  },
+  {
+   "op": "markDead",
+   "d": 7
+  },
+  {
+   "op": "markDead",
+   "d": 6
+  },
+  {
+   "op": "markDead",
+   "d": 5
+  },
+  {
+   "op": "markDead",
+   "d": 4
+  },
+  {
+   "op": "markDead",
+   "d": 3
+  },
+  {
+   "op": "markDead",
+   "d": 2
+  },
+  {
+   "op": "markDead",
+   "d": 1
+  },
+  {
+   "op": "markDead",
+   "d": 0
+  },
+  {
+   "op": "reap"
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 3,
+   "archetype": 4,
+   "x": "40736a1dc7700000",
+   "y": "40850d2e32200000",
+   "spawnId": 79
+  },
+  {
+   "op": "fill",
+   "d": 0,
+   "hp": "4078b898d6f00000",
+   "maxHp": "4078b898d6f00000",
+   "radius": "401350f94b000000",
+   "speed": "4059b2a165100000",
+   "mass": "4015e7046f000000",
+   "xpValue": 2493,
+   "cycleIndex": 6,
+   "flags": 2
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 3,
+   "archetype": 3,
+   "x": "c05a9523be000000",
+   "y": "c08202b04f980000",
+   "spawnId": 80
+  },
+  {
+   "op": "fill",
+   "d": 1,
+   "hp": "4070a63b11600000",
+   "maxHp": "4070a63b11600000",
+   "radius": "40352e34a3000000",
+   "speed": "40571c412a800000",
+   "mass": "4011c507aa000000",
+   "xpValue": 4851,
+   "cycleIndex": 1,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 2,
+   "flavourId": 0,
+   "archetype": 0,
+   "x": "406bdfe7c3200000",
+   "y": "4089bd0e87480000",
+   "spawnId": 81
+  },
+  {
+   "op": "fill",
+   "d": 2,
+   "hp": "40714fb348340000",
+   "maxHp": "40714fb348340000",
+   "radius": "403eaadd38000000",
+   "speed": "40476e08a6400000",
+   "mass": "401db312ab000000",
+   "xpValue": 27219,
+   "cycleIndex": 1,
+   "flags": 4
+  },
+  {
+   "op": "alloc",
+   "typeId": 1,
+   "flavourId": 1,
+   "archetype": 1,
+   "x": "c04c2c886a800000",
+   "y": "c05ae99a4b800000",
+   "spawnId": 82
+  },
+  {
+   "op": "fill",
+   "d": 3,
+   "hp": "407426a8c1500000",
+   "maxHp": "407426a8c1500000",
+   "radius": "40236e810d800000",
+   "speed": "405b572e71400000",
+   "mass": "400f6cb2fe000000",
+   "xpValue": 8717,
+   "cycleIndex": 1,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 6,
+   "flavourId": 4,
+   "archetype": 3,
+   "x": "405a46dddbc00000",
+   "y": "407f71c971900000",
+   "spawnId": 83
+  },
+  {
+   "op": "fill",
+   "d": 4,
+   "hp": "4060d61967c80000",
+   "maxHp": "4060d61967c80000",
+   "radius": "403003ef18000000",
+   "speed": "4051de3d5fe00000",
+   "mass": "401257bc1c000000",
+   "xpValue": 15396,
+   "cycleIndex": 11,
+   "flags": 0
+  },
+  {
+   "op": "alloc",
+   "typeId": 5,
+   "flavourId": 4,
+   "archetype": 2,
+   "x": "c08770e0dc000000",
+   "y": "c0763cb2dbc00000",
+   "spawnId": 84
+  },
+  {
+   "op": "fill",
+   "d": 5,
+   "hp": "4067b2d217680000",
+   "maxHp": "4067b2d217680000",
+   "radius": "40389afe3c000000",
+   "speed": "4053132038700000",
+   "mass": "3fe256ff08000000",
+   "xpValue": 2547,
+   "cycleIndex": 5,
+   "flags": 4
+  }
+ ],
+ "hashes": [
+  "4b95f515",
+  "de7d3d6b",
+  "45688ea7",
+  "cb8ff70c",
+  "7a70411c",
+  "1c4074f9",
+  "1b84ff07",
+  "a853fdaa",
+  "3fa0ccee",
+  "004a3e01",
+  "ae251afa",
+  "11247862",
+  "04379fc7",
+  "e1363551",
+  "cf9d68fa",
+  "1465708b",
+  "2f6ce022",
+  "4f9da1ef",
+  "bcffd263",
+  "d8735e80",
+  "de55baf5",
+  "90920a3f",
+  "bcf09e5d",
+  "16d98236",
+  "2b90ec40",
+  "068c5009",
+  "74af17be",
+  "e730d1d1",
+  "f0c22e2e",
+  "d93842e4",
+  "af678aa4",
+  "9a3f1731",
+  "da566c95",
+  "1f1b431a",
+  "cfa882d5",
+  "d640976b",
+  "3b6af3c3",
+  "88598d92",
+  "74225bf8",
+  "d427a4bf",
+  "87e8e697",
+  "8892e95a",
+  "f199fbe3",
+  "b25961a3",
+  "5504d7c8",
+  "7d7e19b2",
+  "6c05ba1c",
+  "be60282d",
+  "2289eaec",
+  "2289eaec",
+  "2289eaec",
+  "2289eaec",
+  "2289eaec",
+  "60568413",
+  "de316fee",
+  "2d335dca",
+  "e8bf0eb7",
+  "5fe30578",
+  "86d7910f",
+  "20d0c929",
+  "733d0a14",
+  "b0bfe90d",
+  "e0c7b1cc",
+  "7a74bbb4",
+  "8c63a614",
+  "de3637fb",
+  "8a431148",
+  "3ba1394f",
+  "e0b5c2d0",
+  "8c85d3d7",
+  "9a2456ec",
+  "acbc94d5",
+  "53ae41c5",
+  "6a3e8507",
+  "6a3e8507",
+  "3b561ad6",
+  "3f6bea3d",
+  "5301d3e1",
+  "e14481e0",
+  "5312dff8",
+  "d3592079",
+  "8d7974c8",
+  "591aa751",
+  "59ebefa2",
+  "dfc6a61b",
+  "64d9c826",
+  "f791e5a0",
+  "b858d2a3",
+  "74492810",
+  "2c74f880",
+  "7317a2a4",
+  "ac04f84f",
+  "bcec8dda",
+  "3f61d1a3",
+  "0ac6dfe8",
+  "946a44a5",
+  "cb4ea10c",
+  "f7bb1113",
+  "b94210d8",
+  "03e341e2",
+  "a6077754",
+  "d3c6d114",
+  "ce35f809",
+  "973ab68f",
+  "38076281",
+  "cc2aa10a",
+  "ef0d2de3",
+  "76aace33",
+  "8c1a5708",
+  "16d5dcd0",
+  "ba21dce9",
+  "74739d42",
+  "abc77ffa",
+  "5a75aa3a",
+  "42501cce",
+  "e3a7917d",
+  "cd88fc90",
+  "257a6649",
+  "f5d186ae",
+  "e13c2bf5",
+  "0fb5a068",
+  "8d9d4f59",
+  "4643ea50",
+  "4643ea50",
+  "4643ea50",
+  "3dcf4f41",
+  "0ea13e9c",
+  "4f9c0b61",
+  "30c7051c",
+  "bfa170b5",
+  "f88d393e",
+  "435e04c1",
+  "57e9b608",
+  "333e0852",
+  "064d9228",
+  "dad822be",
+  "af1e19d7",
+  "e4ad01a8",
+  "da283c6b",
+  "7f622168",
+  "8d12502b",
+  "bb9ffcb1",
+  "51faf1a2",
+  "4aabc744",
+  "7c3045fd",
+  "33e86e42",
+  "45a05f5d",
+  "11b5ecbb",
+  "c619a521",
+  "4a4d614d",
+  "9ee0ae55",
+  "fa7e433a",
+  "fa7e433a",
+  "9895a6d3",
+  "9895a6d3",
+  "c6211681",
+  "82ea7c6c",
+  "3e975740",
+  "1dbe24bc",
+  "9d165240",
+  "4715c602",
+  "dd340be1",
+  "01f91db4",
+  "5b7daf1f",
+  "ff8646a2",
+  "af6f8819",
+  "27311d3f",
+  "0cbe768a",
+  "d4dd0d99",
+  "d4dd0d99",
+  "1b4e51a9",
+  "6eefe6c5",
+  "c9906702",
+  "9b5a13e5",
+  "3eea380c",
+  "5b899afd",
+  "620f29b7",
+  "47413db7",
+  "f7d98390",
+  "f7d98390",
+  "4c9e81cb",
+  "1c4de560",
+  "066c08bd",
+  "066c08bd",
+  "066c08bd",
+  "2a51b0df",
+  "4602c7f1",
+  "10c0f56a",
+  "22736647",
+  "7e96e6e8",
+  "51063833",
+  "0d89f25c",
+  "f7825caf",
+  "afcd6376",
+  "21915ca5",
+  "6b1890c9",
+  "ec08d0a5",
+  "63053b2c",
+  "03994a01",
+  "d1e8d5cf",
+  "58143013",
+  "cacf3fd4",
+  "2f4c402d",
+  "5505d920",
+  "e016c71f",
+  "5efce372",
+  "856e0f2d",
+  "1d4b2670",
+  "cd28a285",
+  "fe38b16a",
+  "0cab8153",
+  "956b618a",
+  "4403eebf",
+  "9d507e09",
+  "bcc7676e",
+  "61b4a145",
+  "1360ce47",
+  "fedf40c8",
+  "3e442342",
+  "93ec5780",
+  "579fb69c",
+  "22ad15ac",
+  "71da8d89",
+  "411b6ed5",
+  "cda8ee8f",
+  "e2898d4c",
+  "3ba42597",
+  "2a581633",
+  "1a87c2e5",
+  "33f3f17c",
+  "61194761",
+  "1dd8b313",
+  "b0efc191",
+  "4429abf9",
+  "a6ef68db",
+  "3bbefae3",
+  "3bbefae3",
+  "9d9b56f4",
+  "d664ad35",
+  "97792403",
+  "97792403",
+  "8e1a2ea5",
+  "8458ee83",
+  "cfe8e9b6",
+  "330b03b9",
+  "e9dfafc6",
+  "8155a12b",
+  "3dfe54df",
+  "bef8cb08",
+  "7edbc556",
+  "07dbac60",
+  "525cff75",
+  "d3a31aae",
+  "a22d68f7",
+  "f71caa4c",
+  "dfdf1631",
+  "f158d90a",
+  "7444afe7",
+  "0eca40ec",
+  "8ff5ebb1",
+  "4b95f515",
+  "5ceeaa90",
+  "6d8ffc50",
+  "69d240fa",
+  "26631916",
+  "9af6fe55",
+  "c9079bcf",
+  "0c7a48b9",
+  "2c145c36",
+  "8cb25070",
+  "6a53f5dc",
+  "fba1de2b",
+  "3f29b695"
+ ],
+ "counts": [
+  0,
+  1,
+  1,
+  2,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  11,
+  11,
+  12,
+  12,
+  13,
+  13,
+  14,
+  14,
+  15,
+  15,
+  16,
+  16,
+  17,
+  17,
+  18,
+  18,
+  19,
+  19,
+  20,
+  20,
+  21,
+  21,
+  22,
+  22,
+  23,
+  23,
+  24,
+  24,
+  24,
+  24,
+  24,
+  24,
+  24,
+  24,
+  22,
+  23,
+  23,
+  23,
+  22,
+  22,
+  22,
+  20,
+  21,
+  21,
+  22,
+  22,
+  22,
+  22,
+  22,
+  23,
+  23,
+  24,
+  24,
+  24,
+  24,
+  24,
+  19,
+  20,
+  20,
+  21,
+  21,
+  21,
+  21,
+  22,
+  22,
+  23,
+  23,
+  23,
+  20,
+  21,
+  21,
+  21,
+  21,
+  21,
+  18,
+  18,
+  18,
+  18,
+  15,
+  16,
+  16,
+  16,
+  15,
+  16,
+  16,
+  17,
+  17,
+  18,
+  18,
+  18,
+  18,
+  16,
+  17,
+  17,
+  18,
+  18,
+  18,
+  18,
+  18,
+  15,
+  16,
+  16,
+  16,
+  16,
+  16,
+  16,
+  14,
+  14,
+  14,
+  14,
+  11,
+  12,
+  12,
+  13,
+  13,
+  13,
+  13,
+  13,
+  10,
+  11,
+  11,
+  11,
+  10,
+  10,
+  10,
+  10,
+  11,
+  11,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  7,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  10,
+  10,
+  10,
+  11,
+  11,
+  11,
+  11,
+  11,
+  6,
+  7,
+  7,
+  7,
+  7,
+  5,
+  6,
+  6,
+  6,
+  6,
+  6,
+  4,
+  4,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  7,
+  7,
+  7,
+  3,
+  4,
+  4,
+  4,
+  3,
+  4,
+  4,
+  5,
+  5,
+  5,
+  4,
+  5,
+  5,
+  5,
+  5,
+  5,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  5,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  7,
+  7,
+  8,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  11,
+  11,
+  11,
+  8,
+  9,
+  9,
+  9,
+  10,
+  10,
+  10,
+  10,
+  10,
+  7,
+  8,
+  8,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  9,
+  0,
+  1,
+  1,
+  2,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6
+ ],
+ "freeCounts": [
+  24,
+  23,
+  23,
+  22,
+  22,
+  21,
+  21,
+  20,
+  20,
+  19,
+  19,
+  18,
+  18,
+  17,
+  17,
+  16,
+  16,
+  15,
+  15,
+  14,
+  14,
+  13,
+  13,
+  12,
+  12,
+  11,
+  11,
+  10,
+  10,
+  9,
+  9,
+  8,
+  8,
+  7,
+  7,
+  6,
+  6,
+  5,
+  5,
+  4,
+  4,
+  3,
+  3,
+  2,
+  2,
+  1,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  2,
+  1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  4,
+  3,
+  3,
+  2,
+  2,
+  2,
+  2,
+  2,
+  1,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  5,
+  4,
+  4,
+  3,
+  3,
+  3,
+  3,
+  2,
+  2,
+  1,
+  1,
+  1,
+  4,
+  3,
+  3,
+  3,
+  3,
+  3,
+  6,
+  6,
+  6,
+  6,
+  9,
+  8,
+  8,
+  8,
+  9,
+  8,
+  8,
+  7,
+  7,
+  6,
+  6,
+  6,
+  6,
+  8,
+  7,
+  7,
+  6,
+  6,
+  6,
+  6,
+  6,
+  9,
+  8,
+  8,
+  8,
+  8,
+  8,
+  8,
+  10,
+  10,
+  10,
+  10,
+  13,
+  12,
+  12,
+  11,
+  11,
+  11,
+  11,
+  11,
+  14,
+  13,
+  13,
+  13,
+  14,
+  14,
+  14,
+  14,
+  13,
+  13,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  17,
+  16,
+  16,
+  15,
+  15,
+  14,
+  14,
+  14,
+  14,
+  14,
+  13,
+  13,
+  13,
+  13,
+  13,
+  18,
+  17,
+  17,
+  17,
+  17,
+  19,
+  18,
+  18,
+  18,
+  18,
+  18,
+  20,
+  20,
+  20,
+  20,
+  19,
+  19,
+  18,
+  18,
+  17,
+  17,
+  17,
+  17,
+  17,
+  21,
+  20,
+  20,
+  20,
+  21,
+  20,
+  20,
+  19,
+  19,
+  19,
+  20,
+  19,
+  19,
+  19,
+  19,
+  19,
+  22,
+  21,
+  21,
+  20,
+  20,
+  19,
+  19,
+  19,
+  20,
+  19,
+  19,
+  18,
+  18,
+  17,
+  17,
+  17,
+  17,
+  16,
+  16,
+  16,
+  15,
+  15,
+  14,
+  14,
+  13,
+  13,
+  13,
+  16,
+  15,
+  15,
+  15,
+  14,
+  14,
+  14,
+  14,
+  14,
+  17,
+  16,
+  16,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  24,
+  23,
+  23,
+  22,
+  22,
+  21,
+  21,
+  20,
+  20,
+  19,
+  19,
+  18,
+  18
+ ],
+ "handleChecks": [
+  {
+   "handle": "00010000",
+   "index": -1
+  },
+  {
+   "handle": "00010001",
+   "index": -1
+  },
+  {
+   "handle": "00010002",
+   "index": -1
+  },
+  {
+   "handle": "00010003",
+   "index": -1
+  },
+  {
+   "handle": "00010004",
+   "index": -1
+  },
+  {
+   "handle": "00010005",
+   "index": -1
+  },
+  {
+   "handle": "00010006",
+   "index": -1
+  },
+  {
+   "handle": "00010007",
+   "index": -1
+  },
+  {
+   "handle": "00010008",
+   "index": -1
+  },
+  {
+   "handle": "00010009",
+   "index": -1
+  },
+  {
+   "handle": "0001000a",
+   "index": -1
+  },
+  {
+   "handle": "0001000b",
+   "index": -1
+  },
+  {
+   "handle": "0001000c",
+   "index": -1
+  },
+  {
+   "handle": "0001000d",
+   "index": -1
+  },
+  {
+   "handle": "0001000e",
+   "index": -1
+  },
+  {
+   "handle": "0001000f",
+   "index": -1
+  },
+  {
+   "handle": "00010010",
+   "index": -1
+  },
+  {
+   "handle": "00010011",
+   "index": -1
+  },
+  {
+   "handle": "00010012",
+   "index": -1
+  },
+  {
+   "handle": "00010013",
+   "index": -1
+  },
+  {
+   "handle": "00010014",
+   "index": -1
+  },
+  {
+   "handle": "00010015",
+   "index": -1
+  },
+  {
+   "handle": "00010016",
+   "index": -1
+  },
+  {
+   "handle": "00010017",
+   "index": -1
+  },
+  {
+   "handle": "00020009",
+   "index": -1
+  },
+  {
+   "handle": "00020002",
+   "index": -1
+  },
+  {
+   "handle": "0002000e",
+   "index": -1
+  },
+  {
+   "handle": "00020001",
+   "index": -1
+  },
+  {
+   "handle": "00020010",
+   "index": -1
+  },
+  {
+   "handle": "00020003",
+   "index": -1
+  },
+  {
+   "handle": "00020005",
+   "index": -1
+  },
+  {
+   "handle": "00020016",
+   "index": -1
+  },
+  {
+   "handle": "0002000d",
+   "index": -1
+  },
+  {
+   "handle": "00020013",
+   "index": -1
+  },
+  {
+   "handle": "00030010",
+   "index": -1
+  },
+  {
+   "handle": "00020015",
+   "index": -1
+  },
+  {
+   "handle": "00020007",
+   "index": -1
+  },
+  {
+   "handle": "0002000f",
+   "index": -1
+  },
+  {
+   "handle": "00030002",
+   "index": -1
+  },
+  {
+   "handle": "00040010",
+   "index": -1
+  },
+  {
+   "handle": "00030009",
+   "index": -1
+  },
+  {
+   "handle": "00020011",
+   "index": -1
+  },
+  {
+   "handle": "00020017",
+   "index": -1
+  },
+  {
+   "handle": "00030015",
+   "index": -1
+  },
+  {
+   "handle": "00030013",
+   "index": -1
+  },
+  {
+   "handle": "00030003",
+   "index": -1
+  },
+  {
+   "handle": "00030011",
+   "index": -1
+  },
+  {
+   "handle": "00030017",
+   "index": -1
+  },
+  {
+   "handle": "00040002",
+   "index": -1
+  },
+  {
+   "handle": "00050010",
+   "index": -1
+  },
+  {
+   "handle": "0003000f",
+   "index": -1
+  },
+  {
+   "handle": "00040015",
+   "index": -1
+  },
+  {
+   "handle": "00050002",
+   "index": -1
+  },
+  {
+   "handle": "00050015",
+   "index": -1
+  },
+  {
+   "handle": "00030016",
+   "index": -1
+  },
+  {
+   "handle": "00040011",
+   "index": -1
+  },
+  {
+   "handle": "00060002",
+   "index": -1
+  },
+  {
+   "handle": "00040009",
+   "index": -1
+  },
+  {
+   "handle": "00050011",
+   "index": -1
+  },
+  {
+   "handle": "00050009",
+   "index": -1
+  },
+  {
+   "handle": "00070002",
+   "index": -1
+  },
+  {
+   "handle": "00060011",
+   "index": -1
+  },
+  {
+   "handle": "0004000f",
+   "index": -1
+  },
+  {
+   "handle": "00060015",
+   "index": -1
+  },
+  {
+   "handle": "00040016",
+   "index": -1
+  },
+  {
+   "handle": "00030007",
+   "index": -1
+  },
+  {
+   "handle": "00040013",
+   "index": -1
+  },
+  {
+   "handle": "00040017",
+   "index": -1
+  },
+  {
+   "handle": "00060010",
+   "index": -1
+  },
+  {
+   "handle": "00070011",
+   "index": -1
+  },
+  {
+   "handle": "00080002",
+   "index": -1
+  },
+  {
+   "handle": "00050017",
+   "index": -1
+  },
+  {
+   "handle": "0005000f",
+   "index": -1
+  }
+ ],
+ "roundTrip": [
+  {
+   "d": 0,
+   "handle": "0002000b",
+   "index": 0
+  },
+  {
+   "d": 1,
+   "handle": "00050013",
+   "index": 1
+  },
+  {
+   "d": 2,
+   "handle": "00060009",
+   "index": 2
+  },
+  {
+   "d": 3,
+   "handle": "00090002",
+   "index": 3
+  },
+  {
+   "d": 4,
+   "handle": "00080011",
+   "index": 4
+  },
+  {
+   "d": 5,
+   "handle": "00070015",
+   "index": 5
+  }
+ ],
+ "finalHash": "3f29b695"
+}
