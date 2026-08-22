@@ -2,8 +2,8 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones`, `weapons` and the loot-break path are done and proven. Four systems remain,
-and none of them needs new infrastructure.
+`projectiles`, `drones`, `weapons`, `playerMovement` and the loot-break path are done and proven.
+Three systems remain, and none of them needs new infrastructure.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -58,7 +58,8 @@ dotnet test
 | `Drones` — S6b, the bay and its escort | done, 10 driven cases over 5,210 ticks |
 | `Weapons` — S6, seven patterns, beams, heat, three ascensions | done, 21 driven cases over 6,540 ticks |
 | `BeamBuffer` / `LaserHardpoint` / hero-trait hook | done, arrived with `Weapons` |
-| The other 4 systems | not started — **this is the remaining job** |
+| `PlayerMovement` — S3, the chassis and its three clocks | done, 14 driven cases over 8,100 ticks |
+| The other 3 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -226,6 +227,20 @@ pattern, its shell count is 1 at every tier, no passive card raises the stat, an
 bonuses that do are scoped to a rack and a flak gun. "Shell i goes to target min(i, n-1), and a
 surplus shell re-engages at a discount" is live code the shipped catalog cannot reach — so the
 fixture poses the count directly rather than leaving it untested.
+
+**`PlayerMovement` is an integrator, and the invariant it keeps is exact rather than approximate.**
+With `0 < drag*dt < 1` the update is a contraction toward terminal velocity, so the mech approaches
+its top speed monotonically from BELOW and can never cross it — "never faster than the number in the
+table" is a property, not a tolerance. The drag that makes that true is DERIVED (`accel / maxSpeed`)
+and must never be recomputed in this file; authoring it independently is the bug the tuning file
+documents, where a chassis' real top speed drifted 11 u/s above its own row.
+
+One thing the fixture had to be corrected about: **a diagonal run is NOT bit-identical to an axis
+run.** The corner input goes through the unit-length clamp's square root, so its components carry a
+different rounding and the two settle a few ULPs apart (194.99999999999977 against
+194.99999999999966). What holds is that neither exceeds the top speed and that the diagonal is not
+the 1.41x faster it would be without the clamp — asserting bit-equality would have been wrong, and
+would have surfaced as a mysterious failure rather than as a fact about the clamp.
 
 ## Why the RNG came first
 
@@ -500,6 +515,20 @@ characteristic mistake:
   twice a tick, once here and once in the drone stage, and reset on a shot that has no meaning.
   Fails `drone-bay-is-not-fired-here` on tick 0 with the bay's cooldown already spent.
 
+- **The chassis' drag authored rather than derived** from accel and top speed - the exact bug the
+  tuning file records, where a hero's real top speed sat 11 u/s above the number in its own row.
+  Fails on tick 1 of the ramp, and `NeitherAnAxisRunNorADiagonalExceedsTopSpeed` is what would
+  catch a subtler version that still converged somewhere plausible.
+- **The stick clamped PER AXIS rather than to unit length** - every player would learn to run
+  diagonally and the whole tuning table would be a lie by a factor of 1.41. Fails on tick 0 of the
+  diagonal case.
+- **The repair clock not starting full**, so the tick the card is taken pays out instantly - which
+  is precisely the moment a hurt player takes it. Fails on tick 0 with 55 hit points where 30 were
+  expected: a free repair, every time.
+- **The shield timer parked instead of restarted while a rim is still missing** - "stacking
+  recharge" would stall at one rim rather than returning the second after a second period. Fails at
+  tick 180 of the shield case with the timer at zero.
+
 ### Known untested branch
 
 `RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
@@ -573,12 +602,11 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Four systems remain: `playerMovement`, `damage`, `pickups`, `progression`. (`sheep`, `projectiles`,
-`drones` and `weapons` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups` that
-several of them need. Nothing left needs new infrastructure.)
+Three systems remain: `damage`, `pickups`, `progression`. (`sheep`, `projectiles`, `drones`,
+`weapons` and `playerMovement` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
+that several of them need. Nothing left needs new infrastructure.)
 
 In rough dependency order:
-- **`playerMovement`** needs `breakLootIn`, which is done.
 - **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
   `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.
 - **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
