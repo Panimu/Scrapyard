@@ -1,0 +1,802 @@
+{
+ "note": "Every field of every weapon, as an exact 64-bit pattern. No tolerance: a hand-transcribed table is the one place a typo can reach, and only a bit-for-bit comparison catches it.",
+ "vis": {
+  "shell": 0,
+  "missileShort": 1,
+  "slug": 2,
+  "strikeMarker": 3,
+  "missileLong": 4,
+  "plasma": 6
+ },
+ "behaviourId": {
+  "straight": 0,
+  "homing": 1,
+  "phase": 2
+ },
+ "catalog": [
+  {
+   "id": "cannon",
+   "name": "Cannon",
+   "kind": "projectile",
+   "targeting": "highest-hp",
+   "pattern": "battery",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4046000000000000",
+    "cooldown": "3ff4353f7ced9168",
+    "range": "406ee00000000000",
+    "projectileSpeed": "4080400000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "4067c00000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "3ff69e9565708efc",
+    "fireArc": "3fcacee9f37bebd6",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "range": "404f000000000000"
+    },
+    {
+     "cooldown": "bfc83fe5c91d14e3"
+    },
+    {
+     "damage": "4032000000000000"
+    },
+    {
+     "range": "404f000000000000"
+    },
+    {
+     "cooldown": "bfc83fe5c91d14e3"
+    },
+    {
+     "pierce": "3ff0000000000000"
+    },
+    {}
+   ],
+   "reengageMul": "3fe199999999999a",
+   "visualId": 0,
+   "muzzleOffset": "403e000000000000",
+   "shellRadius": "4022000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": 8,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "laser-short",
+   "name": "Short Laser",
+   "kind": "beam",
+   "targeting": "lowest-hp",
+   "pattern": "beam",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4047000000000000",
+    "cooldown": "0000000000000000",
+    "range": "4064a00000000000",
+    "projectileSpeed": "0000000000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "3fe0c152382d7365",
+    "heatPerSec": "401e000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "4021000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "4032666666666667",
+     "heatPerSec": "4008000000000000"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4011000000000000"
+    },
+    {
+     "damage": "4032666666666667",
+     "heatPerSec": "4008000000000000"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4011000000000000"
+    },
+    {}
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 0,
+   "muzzleOffset": "4036000000000000",
+   "shellRadius": "0000000000000000",
+   "beamColour": 3926123,
+   "beamWidth": "3ff999999999999a",
+   "chainsFrom": 0,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": 8,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "laser-medium",
+   "name": "Medium Laser",
+   "kind": "beam",
+   "targeting": "lowest-hp",
+   "pattern": "beam",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4050800000000000",
+    "cooldown": "0000000000000000",
+    "range": "4072e80000000000",
+    "projectileSpeed": "0000000000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "3fe0c152382d7365",
+    "heatPerSec": "4030800000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "4021333333333333",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "403a666666666667",
+     "heatPerSec": "401a666666666667"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4011333333333333"
+    },
+    {
+     "damage": "403a666666666667",
+     "heatPerSec": "401a666666666667"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4011333333333333"
+    },
+    {}
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 0,
+   "muzzleOffset": "4036000000000000",
+   "shellRadius": "0000000000000000",
+   "beamColour": 5220607,
+   "beamWidth": "4000cccccccccccd",
+   "chainsFrom": 8,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "laser-long",
+   "name": "Long Laser",
+   "kind": "beam",
+   "targeting": "lowest-hp",
+   "pattern": "beam",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4057000000000000",
+    "cooldown": "0000000000000000",
+    "range": "407d900000000000",
+    "projectileSpeed": "0000000000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "3fe0c152382d7365",
+    "heatPerSec": "4039800000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "4020000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "4042666666666667",
+     "heatPerSec": "4024666666666667"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4010000000000000"
+    },
+    {
+     "damage": "4042666666666667",
+     "heatPerSec": "4024666666666667"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4010000000000000"
+    },
+    {
+     "splashRadius": "4023333333333333",
+     "heatCapacity": "4066800000000000",
+     "heatDispersion": "bff999999999999a"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 0,
+   "muzzleOffset": "4036000000000000",
+   "shellRadius": "0000000000000000",
+   "beamColour": 16731469,
+   "beamWidth": "400599999999999a",
+   "chainsFrom": 0,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": 8,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "missile-short",
+   "name": "Short Missiles",
+   "kind": "projectile",
+   "targeting": "nearest",
+   "pattern": "spread",
+   "behaviour": "homing",
+   "requiresTarget": false,
+   "base": {
+    "damage": "4051000000000000",
+    "cooldown": "4008000000000000",
+    "range": "4071800000000000",
+    "projectileSpeed": "4072c00000000000",
+    "projectileCount": "4000000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "406a400000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "400921fb54442d18",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "4013333333333333",
+    "spreadAngle": "3fd0c152382d7365",
+    "flightTime": "3ff2666666666666",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "cooldown": "bfdccccccccccccd"
+    },
+    {
+     "turnRate": "3fe6666666666666"
+    },
+    {
+     "damage": "4036000000000000"
+    },
+    {
+     "cooldown": "bfdccccccccccccd"
+    },
+    {
+     "turnRate": "3fe6666666666666"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 1,
+   "muzzleOffset": "403a000000000000",
+   "shellRadius": "4020000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": 0,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": true,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "missile-long",
+   "name": "Long Missiles",
+   "kind": "projectile",
+   "targeting": "nearest",
+   "pattern": "spread",
+   "behaviour": "homing",
+   "requiresTarget": false,
+   "base": {
+    "damage": "4047000000000000",
+    "cooldown": "4010cccccccccccd",
+    "range": "407ae00000000000",
+    "projectileSpeed": "4074a00000000000",
+    "projectileCount": "4008000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "4064000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "400921fb54442d18",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "3fff333333333333",
+    "spreadAngle": "3fc657184ae74487",
+    "flightTime": "4000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "cooldown": "bfe3333333333333"
+    },
+    {
+     "turnRate": "3fdccccccccccccd"
+    },
+    {
+     "damage": "402e000000000000"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    },
+    {
+     "flightTime": "3fe3333333333333"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 4,
+   "muzzleOffset": "403a000000000000",
+   "shellRadius": "4020000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": 8,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": true,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "machine-gun",
+   "name": "Machine Gun",
+   "kind": "projectile",
+   "targeting": "lowest-hp",
+   "pattern": "spread",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4016000000000000",
+    "cooldown": "3fb70a3d70a3d70a",
+    "range": "4060400000000000",
+    "projectileSpeed": "408c200000000000",
+    "projectileCount": "4000000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "402c000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "402c463abeccb2bb",
+    "fireArc": "3fd657184ae74487",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "3fb657184ae74487",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "4069000000000000",
+    "reloadTime": "402e000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "3ff8000000000000"
+    },
+    {
+     "cooldown": "bf926e978d4fdf3b"
+    },
+    {
+     "ammoCapacity": "4054000000000000"
+    },
+    {
+     "range": "4039000000000000"
+    },
+    {
+     "damage": "4008000000000000"
+    },
+    {
+     "reloadTime": "c012000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 2,
+   "muzzleOffset": "403c000000000000",
+   "shellRadius": "4014000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "flak-cannon",
+   "name": "Flak Cannon",
+   "kind": "projectile",
+   "targeting": "nearest",
+   "pattern": "cone",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4010000000000000",
+    "cooldown": "3fc0a3d70a3d70a4",
+    "range": "4079000000000000",
+    "projectileSpeed": "4083600000000000",
+    "projectileCount": "4008000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "4032000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "40297268121ea0dc",
+    "fireArc": "3fe0c152382d7365",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "3ff0c152382d7365",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "4072c00000000000",
+    "reloadTime": "402a000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "3ff0000000000000"
+    },
+    {
+     "cooldown": "bf9a9fbe76c8b439"
+    },
+    {
+     "ammoCapacity": "405e000000000000"
+    },
+    {
+     "range": "4051800000000000"
+    },
+    {
+     "damage": "3ff8000000000000"
+    },
+    {
+     "reloadTime": "c010000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 2,
+   "muzzleOffset": "403c000000000000",
+   "shellRadius": "4014000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": [
+    "machine-gun"
+   ],
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "artillery",
+   "name": "Heavy Artillery",
+   "kind": "projectile",
+   "targeting": "nearest",
+   "pattern": "barrage",
+   "behaviour": "straight",
+   "requiresTarget": false,
+   "base": {
+    "damage": "404b8ccccccccccd",
+    "cooldown": "400e4fdf3b645a1d",
+    "range": "4074000000000000",
+    "projectileSpeed": "0000000000000000",
+    "projectileCount": "4000000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "405e000000000000",
+    "splashRadius": "4052c00000000000",
+    "splashFrac": "3ff0000000000000",
+    "turretTraverse": "402921fb54442d18",
+    "fireArc": "400921fb54442d18",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "3fe6666666666666",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "splashRadius": "4032000000000000"
+    },
+    {
+     "cooldown": "bfe4353f7ced9168"
+    },
+    {
+     "damage": "4036000000000000"
+    },
+    {
+     "splashRadius": "4032000000000000"
+    },
+    {
+     "cooldown": "bfe4353f7ced9168"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 3,
+   "muzzleOffset": "0000000000000000",
+   "shellRadius": "0000000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": true
+  },
+  {
+   "id": "drone",
+   "name": "Drones",
+   "kind": "projectile",
+   "targeting": "nearest",
+   "pattern": "factory",
+   "behaviour": "straight",
+   "requiresTarget": false,
+   "base": {
+    "damage": "4028000000000000",
+    "cooldown": "402e000000000000",
+    "range": "4060400000000000",
+    "projectileSpeed": "0000000000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "4051800000000000",
+    "splashFrac": "3ff0000000000000",
+    "turretTraverse": "0000000000000000",
+    "fireArc": "bff0000000000000",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "0000000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "cooldown": "bff8000000000000"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    },
+    {
+     "cooldown": "bff8000000000000"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    },
+    {
+     "cooldown": "bff8000000000000"
+    },
+    {
+     "cooldown": "bfe8000000000000",
+     "projectileCount": "3ff0000000000000"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 2,
+   "muzzleOffset": "0000000000000000",
+   "shellRadius": "4014000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": true
+  },
+  {
+   "id": "phase-cannon",
+   "name": "Phase Cannon",
+   "kind": "projectile",
+   "targeting": "densest",
+   "pattern": "phase",
+   "behaviour": "phase",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4042000000000000",
+    "cooldown": "3ff999999999999a",
+    "range": "4070400000000000",
+    "projectileSpeed": "407cc00000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "4056800000000000",
+    "splashRadius": "404b800000000000",
+    "splashFrac": "3fe0000000000000",
+    "turretTraverse": "3ff0c152382d7365",
+    "fireArc": "3fcf46bb9c109324",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "3ff3333333333333",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "4020000000000000"
+    },
+    {
+     "splashRadius": "4028000000000000"
+    },
+    {
+     "cooldown": "bfceb851eb851eb8"
+    },
+    {
+     "damage": "4020000000000000"
+    },
+    {
+     "splashRadius": "4028000000000000"
+    },
+    {
+     "cooldown": "bfceb851eb851eb8"
+    }
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 6,
+   "muzzleOffset": "403e000000000000",
+   "shellRadius": "401c000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": true
+  }
+ ],
+ "laserHardpoints": [
+  {
+   "x": "4035000000000000",
+   "y": "0000000000000000"
+  },
+  {
+   "x": "4014000000000000",
+   "y": "c02e000000000000"
+  },
+  {
+   "x": "4014000000000000",
+   "y": "402e000000000000"
+  },
+  {
+   "x": "c022000000000000",
+   "y": "c02e000000000000"
+  },
+  {
+   "x": "c022000000000000",
+   "y": "402e000000000000"
+  }
+ ],
+ "beamMounts": [
+  [],
+  [
+   0
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   0,
+   1,
+   2
+  ],
+  [
+   1,
+   2,
+   3,
+   4
+  ],
+  [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ ],
+ "hydraMounts": 3,
+ "gigaHalfWidth": "4023333333333333",
+ "twinHalfGap": "4020000000000000",
+ "splitSec": "3fd6666666666666",
+ "splitCos": "3fefb9ea92ec689b",
+ "splitSin": "3fc0b5150f6da2d0",
+ "splitTurnMul": "3ff3333333333333",
+ "flakCone": "3ff0c152382d7365",
+ "droneBuildSec": "402e000000000000",
+ "droneBuildTier": "bff8000000000000",
+ "droneBuildTierSmall": "bfe8000000000000",
+ "droneAcquireMul": "4000000000000000",
+ "phaseClusterRadius": "4054000000000000"
+}
