@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.core.json --noEmit",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
     "sim": "tsx tools/sim.ts",
+    "golden": "tsx tools/golden.ts",
     "assets": "node tools/prepare_assets.mjs",
     "mechs": "node tools/make-mechs.mjs",
     "fence": "node tools/make-fence.mjs",

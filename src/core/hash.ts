@@ -163,6 +163,88 @@ export function hashWorld(world: World): number {
   return h >>> 0;
 }
 
+/**
+ * hashRunStats - the SECOND hash, over the tally rather than the state.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THIS IS SEPARATE FROM hashWorld RATHER THAN FOLDED INTO IT
+ * ---------------------------------------------------------------------------------------------
+ * `hashWorld` deliberately excludes RunStats as derived, and for its original job - catching a
+ * simulation that has drifted - that is right. But "derived" is doing a lot of work in that
+ * sentence, because there is a whole class of defect that changes the tally WITHOUT changing the
+ * state: crediting `damageByWeapon` to the wrong catalog index, counting a kill twice, missing a
+ * `barrelsBroken`. The world evolves identically and the numbers are wrong.
+ *
+ * Those numbers are not cosmetic. `RunStats` is what `meetsUnlock` is evaluated against, so a
+ * mis-tallied stat is a chassis that does not unlock or an achievement that fires for the wrong
+ * thing - and `platformKey` is permanent once shipped, so that mistake is not one you take back.
+ *
+ * Kept SEPARATE rather than merged because two hashes localise a failure and one does not. "World
+ * matches, stats diverged at 04:00" points at the crediting site immediately; a single combined
+ * hash would say only that something, somewhere, is different.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * EVERY SCALAR GOES THROUGH mixF64, INCLUDING THE COUNTERS
+ * ---------------------------------------------------------------------------------------------
+ * `kills` holds an integer, and hashing it as a u32 would be a byte cheaper. It goes through the
+ * float path anyway, and the reason is a port rather than this language: a C# translation is free
+ * to declare `int kills` or `double kills`, and an integer's f64 bit pattern is identical either
+ * way. Hashing as u32 would silently make that declaration a determinism decision. Uniform f64 is
+ * one fewer thing for a translator to get wrong.
+ *
+ * THE ORDER OF THESE LINES IS THE FORMAT. Adding a field means appending it, never inserting.
+ */
+export function hashRunStats(world: World): number {
+  const s = world.stats;
+  let h = FNV_OFFSET;
+
+  h = mixF64(h, s.kills);
+  h = mixU32Array(h, s.killsByArchetype);
+  h = mixU32Array(h, s.killsByRank);
+  h = mixU32Array(h, s.killsByCycleRank);
+  h = mixF64(h, s.damageDealt);
+  h = mixF64(h, s.damageTaken);
+  h = mixF64(h, s.damagePrevented);
+  h = mixF64(h, s.credits);
+  h = mixF64(h, s.consumables);
+  h = mixF64(h, s.dice);
+  h = mixF64(h, s.barrelsBroken);
+  h = mixF64(h, s.sheepTaken);
+  h = mixF64(h, s.chests);
+  h = mixF64Array(h, s.damageByWeapon);
+  h = mixU32Array(h, s.bossKillsByWeapon);
+  h = mixU32Array(h, s.killsByFlavour);
+  h = mixU32Array(h, s.killsByWeapon);
+  h = mixU32Array(h, s.killsByWeaponRank);
+  h = mixF64(h, s.contactHits);
+  h = mixF64(h, s.fullRepairs);
+  h = mixF64(h, s.lasersOverheated);
+  h = mixF64(h, s.splashKills);
+  h = mixF64(h, s.reloads);
+  h = mixF64(h, s.killedByRank);
+  h = mixF64(h, s.damageByShield);
+  h = mixF64(h, s.gemsCollected);
+  h = mixF64(h, s.shotsFired);
+  h = mixF64(h, s.shotsHit);
+  h = mixF64(h, s.peakEnemies);
+  h = mixF64(h, s.endTick);
+
+  return h >>> 0;
+}
+
+/** Length first, so a resized array can never collide with a shorter one that shares a prefix. */
+function mixU32Array(h: number, a: Uint32Array): number {
+  let acc = mixU32(h, a.length);
+  for (let i = 0; i < a.length; i++) acc = mixU32(acc, a[i]);
+  return acc;
+}
+
+function mixF64Array(h: number, a: Float64Array): number {
+  let acc = mixU32(h, a.length);
+  for (let i = 0; i < a.length; i++) acc = mixF64(acc, a[i]);
+  return acc;
+}
+
 /** Convenience for logs and golden-hash constants: an 8-character lowercase hex string. */
 export function hashToHex(h: number): string {
   return (h >>> 0).toString(16).padStart(8, '0');
