@@ -27,8 +27,13 @@ public interface IScenery
     /// <summary>Bumped by every write that changes what is standing.</summary>
     int Version { get; }
 
-    /// <summary>The piece overlapping the circle, or -1.</summary>
-    int Overlap(double x, double y, double r);
+    /// <summary>
+    /// The piece overlapping the circle, or -1. <c>long</c>, not <c>int</c>: it is a dense array
+    /// index for the Scrapyard's piles but a PACKED CELL COORDINATE for a wall lattice
+    /// (<see cref="MossWalls"/>'s <c>KeyBias</c>/<c>KeySpan</c> packing routinely exceeds 2^31 for
+    /// any cell at all, the same way the TypeScript's plain `number` - exact up to 2^53 - does).
+    /// </summary>
+    long Overlap(double x, double y, double r);
 
     /// <summary>Distance along the ray to the first blocking piece, or -1.</summary>
     double RayHit(double ox, double oy, double dx, double dy, double maxT);
@@ -44,18 +49,21 @@ public interface IScenery
     SceneryPush PushOut(double x, double y, double r);
 
     /// <summary>The nearest DESTRUCTIBLE piece overlapping the circle, or -1.</summary>
-    int DestructibleOverlap(double x, double y, double r);
+    long DestructibleOverlap(double x, double y, double r);
 
-    bool IsDestructible(int i);
+    bool IsDestructible(long i);
 
-    /// <summary>Returns how many pieces were destroyed - 1 or 0 for the Scrapyard's piles.</summary>
-    int Damage(int i, double amount);
+    /// <summary>
+    /// Returns how many pieces were destroyed - 1 or 0 for the Scrapyard's piles, but possibly
+    /// several for a wall lattice's tree cell (one per stem the hit brought down).
+    /// </summary>
+    int Damage(long i, double amount);
 
-    void Destroy(int i);
+    void Destroy(long i);
 
-    double PieceX(int i);
-    double PieceY(int i);
-    double PieceRadius(int i);
+    double PieceX(long i);
+    double PieceY(long i);
+    double PieceRadius(long i);
 }
 
 /// <summary>The result of pushing a body out of terrain. Reused; callers copy what they need.</summary>
@@ -220,7 +228,7 @@ public sealed class ScrapPiles : IScenery
     /// this one for any radius the game uses. Returns on the first hit because piles cannot
     /// overlap, so there is never a second.
     /// </remarks>
-    public int Overlap(double x, double y, double r)
+    public long Overlap(double x, double y, double r)
     {
         int c0 = CellOf(x);
         int r0 = CellOf(y);
@@ -250,8 +258,12 @@ public sealed class ScrapPiles : IScenery
     {
         var push = new SceneryPush { X = x, Y = y, Nx = 0, Ny = 0, Hit = false };
 
-        int i = Overlap(x, y, r);
-        if (i < 0) return push;
+        // Overlap returns `long` on the shared IScenery interface (a wall lattice's packed cell
+        // coordinate overflows int32), but a pile's own index is always a small dense array
+        // position - safe to narrow immediately for the array reads below.
+        long overlap = Overlap(x, y, r);
+        if (overlap < 0) return push;
+        int i = (int)overlap;
 
         double dx = x - X[i];
         double dy = y - Y[i];
@@ -331,7 +343,7 @@ public sealed class ScrapPiles : IScenery
         return best;
     }
 
-    public bool IsDestructible(int i) => Radius[i] > 0 && Variant[i] == Barrel;
+    public bool IsDestructible(long i) => Radius[(int)i] > 0 && Variant[(int)i] == Barrel;
 
     /// <summary>The NEAREST destructible piece overlapping the circle, or -1.</summary>
     /// <remarks>
@@ -339,12 +351,12 @@ public sealed class ScrapPiles : IScenery
     /// the nearer one and leaves the other standing, which is the rule that stops a single
     /// artillery shell clearing a yard's worth.
     /// </remarks>
-    public int DestructibleOverlap(double x, double y, double r)
+    public long DestructibleOverlap(double x, double y, double r)
     {
         int c0 = CellOf(x);
         int r0 = CellOf(y);
 
-        int best = -1;
+        long best = -1;
         double bestD2 = 0;
         for (int dr = -1; dr <= 1; dr++)
         {
@@ -373,12 +385,13 @@ public sealed class ScrapPiles : IScenery
         return best;
     }
 
-    public int Damage(int i, double amount)
+    public int Damage(long i, double amount)
     {
         // A drum has no hit points: anything that reaches it breaks it. The parameter exists
         // because the treelines DO have hit points, and the interface answers one question.
         _ = amount;
-        if (Radius[i] == 0) return 0;
+        int d = (int)i;
+        if (Radius[d] == 0) return 0;
         Destroy(i);
         return 1;
     }
@@ -387,15 +400,16 @@ public sealed class ScrapPiles : IScenery
     /// Zeroes the radius and touches NOTHING ELSE, so a broken drum keeps its position and variant
     /// - which is what lets the renderer keep drawing a scorch mark where it stood.
     /// </summary>
-    public void Destroy(int i)
+    public void Destroy(long i)
     {
-        if (Radius[i] == 0) return;
-        Radius[i] = 0;
+        int d = (int)i;
+        if (Radius[d] == 0) return;
+        Radius[d] = 0;
         Count--;
         Version++;
     }
 
-    public double PieceX(int i) => X[i];
-    public double PieceY(int i) => Y[i];
-    public double PieceRadius(int i) => Radius[i];
+    public double PieceX(long i) => X[(int)i];
+    public double PieceY(long i) => Y[(int)i];
+    public double PieceRadius(long i) => Radius[(int)i];
 }

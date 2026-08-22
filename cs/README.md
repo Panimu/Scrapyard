@@ -49,7 +49,8 @@ dotnet test
 | `MetaCatalog` — 16 workshop upgrades, `AccumulateMeta` | done, table + driven probes + a function-level unit test |
 | `Stats` — `ResolvePlayerStats` / `ResolveWeaponStats` / `ResolveSplitStats` | done, 8 + 11 + 3 driven cases, incl. the four-pool scale identity |
 | `MossyLadder` / `CityLadder` — the other two levels' cycle ladders | done, incl. City's two elite-cascade seams |
-| `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
+| `MossWalls` — Mossy Mayhem's terrain | done, incl. the property sweep for the "buried in a wall" bug |
+| `CityBlocks` terrain | not started — 987 lines |
 | The other 8 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
@@ -76,6 +77,17 @@ call sites) - they exist to pick a SPRITE for a `typeId` the simulation already 
 integer, and a headless replay has no sprite to pick. Likewise `creaturesMossy.ts`/`creaturesCity.ts`:
 only their numeric creature ids are ported (as `MossCreatures`/`CityCreatures`), never the frame
 strings or draw sizes that go with them.
+
+**`MossWalls` widened `IScenery`'s index-typed members from `int` to `long`.** A wall lattice's
+packed cell coordinate (`(cx + 2^20) * 2^21 + (cy + 2^20)`) overflows `int32` for EVERY real cell,
+not just extreme ones - the `2^20 * 2^21` term alone is ~2.2e12, about a thousand times past
+`int32`'s ~2.1e9 range. JavaScript never notices, because a plain `number` is exact up to 2^53. This
+was caught by `goldens/walls-mossy-fixture.json` on the first C# run, not reasoned out in advance:
+`Overlap`, `DestructibleOverlap`, `Damage`, `Destroy`, `IsDestructible`, `PieceX`, `PieceY` and
+`PieceRadius` are now `long` on `IScenery` and on `ScrapPiles` (whose own indices stay small and are
+narrowed back to `int` internally the moment they touch its dense arrays), and the two call sites in
+`EnemyAI.cs` that store a scenery index (`ahead`, `beside`) are `long` too. Nothing that only ever
+compared an index to zero needed to change.
 
 ## Why the RNG came first
 
@@ -217,6 +229,20 @@ characteristic mistake:
   `split-not-held`'s `projectileCount` (2 instead of 3): the short rack's third missile is a tier-7
   rung, and the split children are specified to always be the FINISHED rack regardless of what the
   run actually holds.
+- **The wall lattice's packed cell index computed in `int` instead of `long`** — silently wraps for
+  every real cell rather than throwing, so nothing about the crash *looks* like an overflow: fails
+  every overlap and ray probe with a wildly wrong index (`-112197691` where `2198911057861` was
+  expected). Not a fault injected to prove a test works - the actual first-draft bug, caught by
+  `walls-mossy-fixture.json` before any deliberate injection. See "What `IScenery` widened" above.
+- **`BlockRng`'s xorshift using a signed `>>` instead of the unsigned `>>>`** — fails the sweep at
+  the first cell the two diverge on. `>>` sign-extends a negative state instead of filling with
+  zero, so the generator still produces *a* deterministic world, just a different and wrong one -
+  exactly the kind of bug that would pass every property test and only a bit-exact comparison
+  catches.
+- **The push-out's outside-vs-inside branch boundary moved from `bestD2 > 0` to `bestD2 >= 0`** —
+  a body exactly on a cell boundary takes the "outside" branch's `1 / sqrt(distance)` with a
+  distance of zero, and fails with a literal `NaN` in the result. The buried-body case exists
+  specifically to reach `bestD2 == 0`, which is exactly the value this fault mishandles.
 
 ### Known untested branch
 

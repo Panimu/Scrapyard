@@ -153,7 +153,7 @@ public static class EnemyAI
             double uy = dy * inv;
 
             double reach = rad + AvoidLookahead;
-            int ahead = scenery.Overlap(p.X[d] + ux * reach, p.Y[d] + uy * reach, rad);
+            long ahead = scenery.Overlap(p.X[d] + ux * reach, p.Y[d] + uy * reach, rad);
             bool detouring = !fixated && w.Flow.Detours(p.X[d], p.Y[d], ux, uy);
 
             if ((ahead >= 0 || detouring) && !fixated &&
@@ -172,7 +172,7 @@ public static class EnemyAI
 
                 WallTangent(scenery, ahead, p.X[d], p.Y[d], ux, uy, ccw, out double tx, out double ty);
 
-                int beside = scenery.Overlap(p.X[d] + tx * reach, p.Y[d] + ty * reach, rad);
+                long beside = scenery.Overlap(p.X[d] + tx * reach, p.Y[d] + ty * reach, rad);
                 if (beside >= 0)
                 {
                     // The slide runs into a SECOND obstacle. Try sliding along that one instead,
@@ -205,7 +205,7 @@ public static class EnemyAI
     /// would otherwise divide by zero.
     /// </summary>
     private static void WallNormal(
-        IScenery scenery, int i, double x, double y, double ux, double uy,
+        IScenery scenery, long i, double x, double y, double ux, double uy,
         out double nx, out double ny)
     {
         double dx = x - scenery.PieceX(i);
@@ -224,7 +224,7 @@ public static class EnemyAI
     }
 
     private static void WallTangent(
-        IScenery scenery, int i, double x, double y, double ux, double uy, bool ccw,
+        IScenery scenery, long i, double x, double y, double ux, double uy, bool ccw,
         out double tx, out double ty)
     {
         WallNormal(scenery, i, x, y, ux, uy, out double nx, out double ny);
