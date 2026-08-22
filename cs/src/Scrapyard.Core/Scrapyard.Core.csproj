@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Scrapyard.Core - the pure deterministic simulation.
+
+    THIS PROJECT REFERENCES NOTHING. Not MonoGame, not Godot, not a graphics or audio package, and
+    it never will. It is the C# side of the same line `tsconfig.core.json` draws in the TypeScript
+    repo by compiling src/core alone with `"types": []`, which makes a stray `window` a compile
+    error rather than a bug that only appears on a phone.
+
+    A dependency added here is a dependency the golden master cannot vouch for, and an engine
+    choice made on behalf of whoever picks the front-end later.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+
+    <!--
+      DETERMINISM DEPENDS ON WRAPPING, so this is stated rather than inherited.
+
+      `false` is already the default, but the default is a thing somebody can change in a
+      Directory.Build.props three years from now without knowing what it costs. Every site that
+      relies on 32-bit wrap-around is ALSO written `unchecked` explicitly, so flipping this would
+      not silently break the RNG - it would just make the redundancy real.
+    -->
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- The XML doc comments here are for people, not for a published API surface. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      So the test project can pin `Rng.TwoPowMinus24`. That constant is the one hand-copied decimal
+      literal in the port; it is internal because nothing outside core should be reading it, and it
+      is asserted because a literal transcribed between two languages is exactly the thing that is
+      right until it is silently one ULP out.
+    -->
+    <InternalsVisibleTo Include="Scrapyard.Core.Tests" />
+  </ItemGroup>
+
+</Project>

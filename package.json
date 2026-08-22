@@ -14,6 +14,7 @@
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
     "sim": "tsx tools/sim.ts",
     "golden": "tsx tools/golden.ts",
+    "golden:rng": "tsx tools/rng_fixture.ts",
     "assets": "node tools/prepare_assets.mjs",
     "mechs": "node tools/make-mechs.mjs",
     "fence": "node tools/make-fence.mjs",
