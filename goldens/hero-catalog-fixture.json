@@ -1,0 +1,229 @@
+{
+ "note": "The hero catalog: starting weapon/upgrade and every multiplier map, as exact 64-bit patterns. Display strings, gait and the unlock condition are excluded - no reader in stepWorld touches them.",
+ "heroCount": 16,
+ "catalog": [
+  {
+   "index": 0,
+   "id": "slate",
+   "startingWeapon": "laser-medium",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "laser-medium": {
+     "mul": {
+      "heatDispersion": "3ff8000000000000"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 1,
+   "id": "moss",
+   "startingWeapon": "laser-short",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "laser-short": {
+     "mul": {
+      "range": "4000000000000000"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 2,
+   "id": "ember",
+   "startingWeapon": "laser-long",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "laser-long": {
+     "mul": {
+      "damage": "3ff4cccccccccccd"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 3,
+   "id": "amber",
+   "startingWeapon": "cannon",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "cannon": {
+     "mul": null,
+     "add": {
+      "pierce": "3ff0000000000000"
+     }
+    }
+   }
+  },
+  {
+   "index": 4,
+   "id": "onyx",
+   "startingWeapon": "missile-long",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "missile-long": {
+     "mul": null,
+     "add": {
+      "projectileCount": "3ff0000000000000"
+     }
+    }
+   }
+  },
+  {
+   "index": 5,
+   "id": "ash",
+   "startingWeapon": "missile-short",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "missile-short": {
+     "mul": {
+      "cooldown": "3fe999999999999a"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 6,
+   "id": "bone",
+   "startingWeapon": "machine-gun",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "machine-gun": {
+     "mul": {
+      "damage": "3ff4cccccccccccd"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 7,
+   "id": "plum",
+   "startingWeapon": null,
+   "startingUpgrade": "p-shield",
+   "player": {
+    "shieldRecharge": "3fd999999999999a"
+   },
+   "weapon": {},
+   "weaponBonus": null
+  },
+  {
+   "index": 8,
+   "id": "fern",
+   "startingWeapon": "drone",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "drone": {
+     "mul": {
+      "cooldown": "3feccccccccccccd"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 9,
+   "id": "indigo",
+   "startingWeapon": "artillery",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "artillery": {
+     "mul": {
+      "splashRadius": "3ff2666666666666"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 10,
+   "id": "brass",
+   "startingWeapon": "phase-cannon",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "phase-cannon": {
+     "mul": {
+      "damage": "3ff199999999999a"
+     },
+     "add": null
+    }
+   }
+  },
+  {
+   "index": 11,
+   "id": "vermilion",
+   "startingWeapon": "flak-cannon",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": {
+    "flak-cannon": {
+     "mul": null,
+     "add": {
+      "projectileCount": "3ff0000000000000"
+     }
+    }
+   }
+  },
+  {
+   "index": 12,
+   "id": "jade",
+   "startingWeapon": "laser-short",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": null
+  },
+  {
+   "index": 13,
+   "id": "rust",
+   "startingWeapon": "laser-long",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": null
+  },
+  {
+   "index": 14,
+   "id": "cobalt",
+   "startingWeapon": "laser-medium",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": null
+  },
+  {
+   "index": 15,
+   "id": "copper",
+   "startingWeapon": "flak-cannon",
+   "startingUpgrade": null,
+   "player": {},
+   "weapon": {},
+   "weaponBonus": null
+  }
+ ]
+}
