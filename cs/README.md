@@ -20,10 +20,15 @@ dotnet test
 | `Hash.cs` — FNV-1a mixers | done, bit-exact including −0.0, ±∞ and NaN |
 | `Handle.cs` — packed slot + generation | done |
 | `EnemyPool.cs` — swap-remove, free list, hashable layout | done, 272 recorded steps replay exactly |
-| Projectile / pickup / drone / sheep pools | not started — same shape as EnemyPool |
+| `ProjectilePool.cs` — incl. the hit ring and `sbyte` pierce | done, 462 steps |
+| `PickupPool.cs` | done, 203 steps |
+| `DronePool` / `SheepPool` — no handles, immediate free | done, 60 + 80 steps |
 | `hashWorld` / `hashRunStats` | not started — needs `World` |
 | `World`, systems, `stepWorld` | not started |
 | Golden corpus replay | not started — needs `stepWorld` |
+
+**All five pools are ported and proven.** Regenerate their fixtures with `npm run golden:pool`
+(enemy) and `npm run golden:pools` (the other four).
 
 ## Why the RNG came first
 
@@ -83,6 +88,10 @@ characteristic mistake:
   self-consistent and simply wrong — fails at **step 54**, the first reap where more than one mark
   had accumulated. (Not the first reap: a single dead entry swap-removes identically either way,
   which is exactly why the fixture batches kills before reaping.)
+- **The projectile hit ring left behind by a swap** — which would hand a recycled shell the dead
+  one's victim list, silently unable to damage those bodies — fails at **step 27**, and fails the
+  *hit-ring* hash only, not the dense one. That separation is deliberate: it points at the ring
+  instead of leaving you to work out which half of the pool moved.
 
 Both reverted; the committed tree is green. If you change `Rng.cs`, `Hash.cs` or `EnemyPool.cs`, do
 that again. The failure mode all of this guards against is one where the numbers still look random,
@@ -90,13 +99,12 @@ the pool still looks sane, and the game still runs.
 
 ## Next
 
-1. The remaining four pools — projectile, pickup, drone, sheep. Same shape as `EnemyPool`, same
-   fixture discipline; `tools/pool_fixture.ts` generalises to them with little more than a new
-   field list.
-2. `World` and its non-pool state: player, weapons, director, difficulty, level-up.
-3. `hashWorld` / `hashRunStats` — mostly assembled from pieces that already exist and are proven.
-4. `stepWorld`, system by system, each landing with its ported tests.
-5. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
+1. `World` and its non-pool state: player, weapons, director, difficulty, level-up.
+2. `hashWorld` / `hashRunStats` — largely assembling pieces that already exist and are proven.
+   Every pool already exposes its own `MixInto`.
+3. `stepWorld`, system by system, each landing with its ported tests. **The float32 rule above is
+   the thing to be disciplined about here**; the pools only store, the systems compute.
+4. A `Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs.
 
-Only step 5 makes the corpus meaningful, and it is the last thing that can be built rather than the
+Only step 4 makes the corpus meaningful, and it is the last thing that can be built rather than the
 first.

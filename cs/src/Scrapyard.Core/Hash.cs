@@ -75,6 +75,44 @@ public static class Hash
         }
     }
 
+    /// <summary>
+    /// A float32 array's live prefix, hashed as FOUR bytes per element.
+    /// </summary>
+    /// <remarks>
+    /// For the pools that are plain arrays rather than one carved buffer - drones and sheep - which
+    /// <c>hashWorld</c> walks element by element instead of reinterpreting.
+    /// <para>
+    /// <c>SingleToInt32Bits</c>, NOT <c>DoubleToInt64Bits</c>. Reading a float32 in JavaScript
+    /// widens it to a double, and hashing the double would feed eight bytes where the original
+    /// feeds four. Same number, different hash.
+    /// </para>
+    /// </remarks>
+    public static uint MixF32Array(uint h, float[] a, int count)
+    {
+        uint acc = h;
+        for (int i = 0; i < count; i++) acc = MixU32(acc, unchecked((uint)BitConverter.SingleToInt32Bits(a[i])));
+        return acc;
+    }
+
+    /// <summary>An int32 array's live prefix, four bytes per element.</summary>
+    public static uint MixIntArray(uint h, int[] a, int count)
+    {
+        uint acc = h;
+        for (int i = 0; i < count; i++) acc = MixU32(acc, unchecked((uint)a[i]));
+        return acc;
+    }
+
+    /// <summary>
+    /// An int8 array's live prefix, ONE byte per element - masked, because an <c>sbyte</c> holds
+    /// -128..127 and must not sign-extend into four bytes.
+    /// </summary>
+    public static uint MixI8Array(uint h, sbyte[] a, int count)
+    {
+        uint acc = h;
+        for (int i = 0; i < count; i++) acc = MixByte(acc, unchecked((byte)a[i]));
+        return acc;
+    }
+
     /// <summary>Length first, so a resized array cannot collide with a shorter shared prefix.</summary>
     public static uint MixU32Array(uint h, ReadOnlySpan<uint> a)
     {

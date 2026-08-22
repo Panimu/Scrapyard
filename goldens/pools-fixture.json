@@ -1,0 +1,8237 @@
+{
+ "formatVersion": 1,
+ "note": "Cross-language proof for the projectile, pickup, drone and sheep pools. Doubles are IEEE-754 bits as 16 hex digits, high word first. Replay each pool's `steps` in order; `hashes[0]` is the empty pool before any step.",
+ "hitRingStride": 4,
+ "kinds": {
+  "gem": 0,
+  "chest": 4
+ },
+ "projectiles": {
+  "capacity": 20,
+  "steps": [
+   {
+    "op": "alloc",
+    "x": "c078c4dcc7800000",
+    "y": "4062effbc9600000",
+    "vx": "c073536472e00000",
+    "vy": "4077c06454d00000",
+    "lifeSec": "3fd5036a80000000",
+    "ownerWeapon": 7,
+    "behaviour": 0,
+    "spawnId": 1
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "pierceLeft": 1,
+    "damage": "40678cf7fb980000",
+    "knockback": "407d09a386400000",
+    "splashRadius": "40309ac4bd000000",
+    "splashFrac": "3feec98f80000000",
+    "travelled": "4072707e60000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 40
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c06b2849e3e00000",
+    "y": "406e369b6ba00000",
+    "vx": "406f27666f400000",
+    "vy": "404ee60707000000",
+    "lifeSec": "40048947dccccccd",
+    "ownerWeapon": 7,
+    "behaviour": 0,
+    "spawnId": 2
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "pierceLeft": 0,
+    "damage": "40429731cca00000",
+    "knockback": "408a9d05bb980000",
+    "splashRadius": "404b992351600000",
+    "splashFrac": "3fe75c9e20000000",
+    "travelled": "405213b640000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 209
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 211
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 216
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 357
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 372
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c066c6ad6b600000",
+    "y": "c075d07fa2300000",
+    "vx": "c0784f3925a00000",
+    "vy": "c050819e6cc00000",
+    "lifeSec": "3ff48ba5b0000000",
+    "ownerWeapon": 0,
+    "behaviour": 1,
+    "spawnId": 3
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "pierceLeft": -1,
+    "damage": "4043034354400000",
+    "knockback": "406f22b395400000",
+    "splashRadius": "405ca0367b300000",
+    "splashFrac": "3fed2e7a40000000",
+    "travelled": "404e8b3b40000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "4068659433200000",
+    "y": "c06853956a800000",
+    "vx": "c061e491d8c00000",
+    "vy": "4079094f67300000",
+    "lifeSec": "4000536220000000",
+    "ownerWeapon": 0,
+    "behaviour": 4,
+    "spawnId": 4
+   },
+   {
+    "op": "fill",
+    "d": 1,
+    "pierceLeft": 1,
+    "damage": "4069282fd0580000",
+    "knockback": "407bd26471a80000",
+    "splashRadius": "404ddaabde000000",
+    "splashFrac": "3fdf749800000000",
+    "travelled": "4070062b00000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 46
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 180
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 325
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 216
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 24
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 338
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 366
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 214
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "407ff28fa8a00000",
+    "y": "c08138d59d100000",
+    "vx": "c03532972a000000",
+    "vy": "c07777fca8900000",
+    "lifeSec": "4003946ee6666666",
+    "ownerWeapon": 7,
+    "behaviour": 5,
+    "spawnId": 5
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "pierceLeft": 1,
+    "damage": "406b432532980000",
+    "knockback": "4061552584e00000",
+    "splashRadius": "405b8ce52f500000",
+    "splashFrac": "3fa6b03400000000",
+    "travelled": "405fdddc60000000",
+    "flags": 8
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4088b52c03380000",
+    "y": "407de8658a200000",
+    "vx": "c06b34979ac00000",
+    "vy": "4079d75976100000",
+    "lifeSec": "3fddcc26e6666666",
+    "ownerWeapon": 5,
+    "behaviour": 3,
+    "spawnId": 6
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "pierceLeft": -2,
+    "damage": "4070426fbf000000",
+    "knockback": "40370f04ab000000",
+    "splashRadius": "405dc03976a00000",
+    "splashFrac": "3fce6c0700000000",
+    "travelled": "4062bb3f80000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "4085f20462400000",
+    "y": "407db3bda2b00000",
+    "vx": "4065e8bff5000000",
+    "vy": "c06fef6598400000",
+    "lifeSec": "3ffe1d861ccccccd",
+    "ownerWeapon": 1,
+    "behaviour": 1,
+    "spawnId": 7
+   },
+   {
+    "op": "fill",
+    "d": 1,
+    "pierceLeft": 0,
+    "damage": "4050f75ea0e00000",
+    "knockback": "408951971c380000",
+    "splashRadius": "4032083a0e800000",
+    "splashFrac": "3fd0ea8540000000",
+    "travelled": "4075c68300000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "40844bad4a000000",
+    "y": "c063ae5639600000",
+    "vx": "4073bd8863000000",
+    "vy": "c077741fd3900000",
+    "lifeSec": "4003a11354cccccd",
+    "ownerWeapon": 2,
+    "behaviour": 4,
+    "spawnId": 8
+   },
+   {
+    "op": "fill",
+    "d": 2,
+    "pierceLeft": 3,
+    "damage": "4005421068000000",
+    "knockback": "4071bef430900000",
+    "splashRadius": "405669c28cd00000",
+    "splashFrac": "3fe4ccfe80000000",
+    "travelled": "4074eb8260000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 275
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 268
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 244
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 294
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 167
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 381
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 393
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "40509478f1000000",
+    "y": "c088a94499f00000",
+    "vx": "4073dbb187d00000",
+    "vy": "40603dce6d600000",
+    "lifeSec": "3ff447175ccccccd",
+    "ownerWeapon": 5,
+    "behaviour": 5,
+    "spawnId": 9
+   },
+   {
+    "op": "fill",
+    "d": 1,
+    "pierceLeft": 0,
+    "damage": "406e101147b80000",
+    "knockback": "4076824a4ad80000",
+    "splashRadius": "404c4e69b8000000",
+    "splashFrac": "3fa2015000000000",
+    "travelled": "40771e4ac0000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 206
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c051737699000000",
+    "y": "c07ae11a65f00000",
+    "vx": "4060775423e00000",
+    "vy": "c04d734add000000",
+    "lifeSec": "3fe247f65999999a",
+    "ownerWeapon": 6,
+    "behaviour": 3,
+    "spawnId": 10
+   },
+   {
+    "op": "fill",
+    "d": 2,
+    "pierceLeft": -2,
+    "damage": "405e24468a200000",
+    "knockback": "403b459172000000",
+    "splashRadius": "4057622931500000",
+    "splashFrac": "3fd55dc0c0000000",
+    "travelled": "405031a960000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "4080571223900000",
+    "y": "406771af8b800000",
+    "vx": "40759f5d2cd00000",
+    "vy": "c03188341d000000",
+    "lifeSec": "3fe0998bf999999a",
+    "ownerWeapon": 5,
+    "behaviour": 5,
+    "spawnId": 11
+   },
+   {
+    "op": "fill",
+    "d": 3,
+    "pierceLeft": 0,
+    "damage": "40567f1536700000",
+    "knockback": "4078e51147380000",
+    "splashRadius": "4054bbb590a00000",
+    "splashFrac": "3f989a1000000000",
+    "travelled": "4058de5d00000000",
+    "flags": 8
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 59
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "406361f17a400000",
+    "y": "40849efd42580000",
+    "vx": "c06905cbe2e00000",
+    "vy": "c069b4fda9200000",
+    "lifeSec": "3fecaf9d33333334",
+    "ownerWeapon": 6,
+    "behaviour": 0,
+    "spawnId": 12
+   },
+   {
+    "op": "fill",
+    "d": 2,
+    "pierceLeft": 4,
+    "damage": "405fdf2275600000",
+    "knockback": "4077c5285d500000",
+    "splashRadius": "404abe39a6a00000",
+    "splashFrac": "3fe41e0740000000",
+    "travelled": "40426b1fc0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c0810d7249000000",
+    "y": "4082d5da41b80000",
+    "vx": "c0758177fe300000",
+    "vy": "401d247cb8000000",
+    "lifeSec": "3fe31a7113333333",
+    "ownerWeapon": 7,
+    "behaviour": 4,
+    "spawnId": 13
+   },
+   {
+    "op": "fill",
+    "d": 3,
+    "pierceLeft": 0,
+    "damage": "406407409e180000",
+    "knockback": "40750aa025680000",
+    "splashRadius": "4059fbd5a5000000",
+    "splashFrac": "3fee6ecac0000000",
+    "travelled": "406be5ab80000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 344
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 318
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c0805eb738800000",
+    "y": "407eb486ca100000",
+    "vx": "c071550a9b200000",
+    "vy": "40618ffe9d200000",
+    "lifeSec": "400197dea999999a",
+    "ownerWeapon": 4,
+    "behaviour": 4,
+    "spawnId": 14
+   },
+   {
+    "op": "fill",
+    "d": 4,
+    "pierceLeft": -4,
+    "damage": "405c322948a00000",
+    "knockback": "4056e7720b000000",
+    "splashRadius": "4045c93121800000",
+    "splashFrac": "3fdc2f4b40000000",
+    "travelled": "4054c7e140000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "4072cea26c400000",
+    "y": "407a8b0211b00000",
+    "vx": "c049e50597000000",
+    "vy": "404a3b3657800000",
+    "lifeSec": "3ff815d633333333",
+    "ownerWeapon": 5,
+    "behaviour": 1,
+    "spawnId": 15
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "pierceLeft": -4,
+    "damage": "406d86acd7800000",
+    "knockback": "4073b9b0bbc80000",
+    "splashRadius": "4032c4812b400000",
+    "splashFrac": "3fc83a0700000000",
+    "travelled": "400e175180000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c071a79937200000",
+    "y": "c0500efc08c00000",
+    "vx": "c06247b9d6a00000",
+    "vy": "404de77906800000",
+    "lifeSec": "3ffd0614bccccccd",
+    "ownerWeapon": 5,
+    "behaviour": 4,
+    "spawnId": 16
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "pierceLeft": 3,
+    "damage": "4062dab78dd00000",
+    "knockback": "402dfdc618000000",
+    "splashRadius": "403f045f1f800000",
+    "splashFrac": "3fc4141180000000",
+    "travelled": "4076cdde80000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 141
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4076d7c65f400000",
+    "y": "c023aa00f0000000",
+    "vx": "4070c8d251d00000",
+    "vy": "4072fd8cce800000",
+    "lifeSec": "3ffc8fa770000000",
+    "ownerWeapon": 5,
+    "behaviour": 1,
+    "spawnId": 17
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "pierceLeft": 0,
+    "damage": "40696abe46200000",
+    "knockback": "4087ddd216640000",
+    "splashRadius": "402124f4c9000000",
+    "splashFrac": "3fecf19780000000",
+    "travelled": "4046bbf860000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 314
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 116
+   },
+   {
+    "op": "hit",
+    "d": 3,
+    "enemySpawnId": 365
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 179
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 328
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c07e75d80c300000",
+    "y": "4079b63b53d00000",
+    "vx": "40455aa27e800000",
+    "vy": "4061364536400000",
+    "lifeSec": "400362ba6b333333",
+    "ownerWeapon": 4,
+    "behaviour": 3,
+    "spawnId": 18
+   },
+   {
+    "op": "fill",
+    "d": 4,
+    "pierceLeft": -4,
+    "damage": "405fc79bb2d00000",
+    "knockback": "407be04370680000",
+    "splashRadius": "40513428b4600000",
+    "splashFrac": "3fed355360000000",
+    "travelled": "4064653a20000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "406ef99310800000",
+    "y": "c083125369280000",
+    "vx": "40793e11e9900000",
+    "vy": "c065d950bc400000",
+    "lifeSec": "3ff48f1330000000",
+    "ownerWeapon": 6,
+    "behaviour": 2,
+    "spawnId": 19
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "pierceLeft": 0,
+    "damage": "406514c9b6680000",
+    "knockback": "408a0360f1940000",
+    "splashRadius": "4045caba4ac00000",
+    "splashFrac": "3f7cf33000000000",
+    "travelled": "406edff560000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 89
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 5
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 6
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 266
+   },
+   {
+    "op": "alloc",
+    "x": "406a7ce864800000",
+    "y": "c08138e08ed00000",
+    "vx": "4041ebff21800000",
+    "vy": "c06d5efa76000000",
+    "lifeSec": "3fd47aed1999999a",
+    "ownerWeapon": 5,
+    "behaviour": 2,
+    "spawnId": 20
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "pierceLeft": 0,
+    "damage": "406d95cd3f700000",
+    "knockback": "407264dac4b80000",
+    "splashRadius": "40507e3571c00000",
+    "splashFrac": "3fe0c77d20000000",
+    "travelled": "406b6449a0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "40641c9872c00000",
+    "y": "c0565cb1a1000000",
+    "vx": "c05ab70a75000000",
+    "vy": "c060afb8c2600000",
+    "lifeSec": "40020b3b6999999a",
+    "ownerWeapon": 1,
+    "behaviour": 5,
+    "spawnId": 21
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "pierceLeft": 0,
+    "damage": "40339b5bc2000000",
+    "knockback": "408ad476b8880000",
+    "splashRadius": "403b7e1316000000",
+    "splashFrac": "3fe8bd1020000000",
+    "travelled": "40556fe780000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 379
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 229
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 118
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 17
+   },
+   {
+    "op": "alloc",
+    "x": "c06962c08ea00000",
+    "y": "c086f8e935a80000",
+    "vx": "c077f9f44f700000",
+    "vy": "c033b35e8b000000",
+    "lifeSec": "3ff00f5433333333",
+    "ownerWeapon": 7,
+    "behaviour": 5,
+    "spawnId": 22
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "pierceLeft": -3,
+    "damage": "4021f2589e800000",
+    "knockback": "40826611f6d40000",
+    "splashRadius": "4022d63d13800000",
+    "splashFrac": "3fd589edc0000000",
+    "travelled": "4067b126e0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "407bcf4b28200000",
+    "y": "40802b616b200000",
+    "vx": "407989e196c00000",
+    "vy": "4074a8df7bb00000",
+    "lifeSec": "3ffab19343333333",
+    "ownerWeapon": 7,
+    "behaviour": 1,
+    "spawnId": 23
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "pierceLeft": 1,
+    "damage": "405c689924f00000",
+    "knockback": "407dc3f9d7500000",
+    "splashRadius": "403ab160dc400000",
+    "splashFrac": "3f59300000000000",
+    "travelled": "404d3483e0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 236
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 9
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 243
+   },
+   {
+    "op": "alloc",
+    "x": "4084966125e80000",
+    "y": "4076f4050f700000",
+    "vx": "4062f2be4b600000",
+    "vy": "4072fedd54700000",
+    "lifeSec": "3fe09b7af3333333",
+    "ownerWeapon": 4,
+    "behaviour": 3,
+    "spawnId": 24
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": 0,
+    "damage": "404b47490ba00000",
+    "knockback": "4079bb6243680000",
+    "splashRadius": "40196ecc95000000",
+    "splashFrac": "3fda0d0580000000",
+    "travelled": "406dde33c0000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c074b1fab1b00000",
+    "y": "40850985c3380000",
+    "vx": "c011212b98000000",
+    "vy": "c0753883e1300000",
+    "lifeSec": "3ff5b2f689999999",
+    "ownerWeapon": 0,
+    "behaviour": 4,
+    "spawnId": 25
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "pierceLeft": -1,
+    "damage": "40635b2e93f00000",
+    "knockback": "406144f1dad00000",
+    "splashRadius": "404a7690b7000000",
+    "splashFrac": "3fe03ec260000000",
+    "travelled": "40579eb200000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c087eac40dd80000",
+    "y": "c060b957a6400000",
+    "vx": "c068800006a00000",
+    "vy": "406347b207600000",
+    "lifeSec": "400346e84999999a",
+    "ownerWeapon": 3,
+    "behaviour": 2,
+    "spawnId": 26
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": 3,
+    "damage": "406f565944680000",
+    "knockback": "408c236b9a280000",
+    "splashRadius": "40443b492b000000",
+    "splashFrac": "3f56bc0000000000",
+    "travelled": "4030bff0a0000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 169
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 110
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 179
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c06abb6f44000000",
+    "y": "c06c906b69a00000",
+    "vx": "c0742acc0e100000",
+    "vy": "c05675919e800000",
+    "lifeSec": "40030be403333333",
+    "ownerWeapon": 7,
+    "behaviour": 0,
+    "spawnId": 27
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": -3,
+    "damage": "403fe883e6000000",
+    "knockback": "4077b10e5e180000",
+    "splashRadius": "40557d5f71300000",
+    "splashFrac": "3fd189b6c0000000",
+    "travelled": "407718f1e0000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 283
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 389
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 197
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 280
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 343
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "407c9c4bfbd00000",
+    "y": "c06ff390d9c00000",
+    "vx": "c07287c9bfc00000",
+    "vy": "405db74383c00000",
+    "lifeSec": "40014becd6666666",
+    "ownerWeapon": 0,
+    "behaviour": 5,
+    "spawnId": 28
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "pierceLeft": 2,
+    "damage": "406639397dc00000",
+    "knockback": "4083ea7974780000",
+    "splashRadius": "402c81e45e000000",
+    "splashFrac": "3fedd2da40000000",
+    "travelled": "40660eea00000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 40
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 41
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 312
+   },
+   {
+    "op": "hit",
+    "d": 3,
+    "enemySpawnId": 350
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 109
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c08257deaab00000",
+    "y": "c077ab45f4d00000",
+    "vx": "40663a26ef600000",
+    "vy": "4073f4edfee00000",
+    "lifeSec": "3fefacdef999999a",
+    "ownerWeapon": 2,
+    "behaviour": 1,
+    "spawnId": 29
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "pierceLeft": -3,
+    "damage": "404b92fd04200000",
+    "knockback": "40899219cf4c0000",
+    "splashRadius": "405be303eb200000",
+    "splashFrac": "3fe5ed00e0000000",
+    "travelled": "4045cb7820000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "4066dedc01400000",
+    "y": "407856e1b1800000",
+    "vx": "402c959bca000000",
+    "vy": "405826dc19400000",
+    "lifeSec": "4005bcce7b333333",
+    "ownerWeapon": 2,
+    "behaviour": 3,
+    "spawnId": 30
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "pierceLeft": -2,
+    "damage": "4051e9bcce700000",
+    "knockback": "406877fc53200000",
+    "splashRadius": "4050b31f4d300000",
+    "splashFrac": "3feb54ec40000000",
+    "travelled": "404092e440000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c080729856400000",
+    "y": "c087715478f00000",
+    "vx": "c073285aa6900000",
+    "vy": "406e343e79000000",
+    "lifeSec": "3fde0e5526666666",
+    "ownerWeapon": 2,
+    "behaviour": 3,
+    "spawnId": 31
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "pierceLeft": -1,
+    "damage": "4067c56cb6300000",
+    "knockback": "40613af817d00000",
+    "splashRadius": "405ad3f734c00000",
+    "splashFrac": "3fdbd9b600000000",
+    "travelled": "406bd72c20000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 171
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c07050854f700000",
+    "y": "c07b68f012400000",
+    "vx": "c0744ce1d7300000",
+    "vy": "c057297d27000000",
+    "lifeSec": "4005077588000000",
+    "ownerWeapon": 7,
+    "behaviour": 4,
+    "spawnId": 32
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "pierceLeft": 3,
+    "damage": "4062981bf4480000",
+    "knockback": "40825b8503880000",
+    "splashRadius": "403c6fa8b1c00000",
+    "splashFrac": "3fdb6d14c0000000",
+    "travelled": "406d1776e0000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "40848b4fbcd80000",
+    "y": "c07fb9a2e2700000",
+    "vx": "40641d3bd9a00000",
+    "vy": "c07582416a000000",
+    "lifeSec": "3ff6114b03333333",
+    "ownerWeapon": 6,
+    "behaviour": 3,
+    "spawnId": 33
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "pierceLeft": 1,
+    "damage": "400385b770000000",
+    "knockback": "4085e5f8acbc0000",
+    "splashRadius": "405508705b000000",
+    "splashFrac": "3fd93a72c0000000",
+    "travelled": "406548bd80000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c083109fc9800000",
+    "y": "c085ef0d1ed80000",
+    "vx": "c078e2d36cc00000",
+    "vy": "c05c922327800000",
+    "lifeSec": "3fdafbf8e6666666",
+    "ownerWeapon": 2,
+    "behaviour": 0,
+    "spawnId": 34
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": 4,
+    "damage": "404211f2c4400000",
+    "knockback": "407b3cae03100000",
+    "splashRadius": "4056e17728a00000",
+    "splashFrac": "3fe9b63340000000",
+    "travelled": "406cdcab80000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 249
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 351
+   },
+   {
+    "op": "markDead",
+    "d": 10
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c0808496ecd80000",
+    "y": "c07f03b92bf00000",
+    "vx": "4069355836200000",
+    "vy": "402f49a5b2000000",
+    "lifeSec": "4001386d3e666666",
+    "ownerWeapon": 3,
+    "behaviour": 2,
+    "spawnId": 35
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "pierceLeft": 4,
+    "damage": "402cafd75f000000",
+    "knockback": "408185a9c1f40000",
+    "splashRadius": "40556a2696300000",
+    "splashFrac": "3fe3551560000000",
+    "travelled": "40750831a0000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c049099e66000000",
+    "y": "c08691aa3f580000",
+    "vx": "c030aaeae1000000",
+    "vy": "c06f2d822b400000",
+    "lifeSec": "3ff9c5a830000000",
+    "ownerWeapon": 5,
+    "behaviour": 2,
+    "spawnId": 36
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": 4,
+    "damage": "405cf24c0aa00000",
+    "knockback": "40360efa1e000000",
+    "splashRadius": "404698d363800000",
+    "splashFrac": "3fdfe226c0000000",
+    "travelled": "40415215c0000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0875eb1ea200000",
+    "y": "c087b3a964300000",
+    "vx": "3fdce3b540000000",
+    "vy": "c042786fe1800000",
+    "lifeSec": "3ffe9d81b0000000",
+    "ownerWeapon": 5,
+    "behaviour": 2,
+    "spawnId": 37
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "pierceLeft": 0,
+    "damage": "4033436979c00000",
+    "knockback": "4077afe987780000",
+    "splashRadius": "405adfaa10b00000",
+    "splashFrac": "3fcf9b5580000000",
+    "travelled": "40532f59a0000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 145
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 376
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 269
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 46
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4083357c58680000",
+    "y": "c06dd3d939000000",
+    "vx": "c053c71a4ac00000",
+    "vy": "c06ec9584ae00000",
+    "lifeSec": "3fe2f54513333333",
+    "ownerWeapon": 1,
+    "behaviour": 4,
+    "spawnId": 38
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": -1,
+    "damage": "402409af27000000",
+    "knockback": "40658f388e200000",
+    "splashRadius": "405e050709000000",
+    "splashFrac": "3fe3819780000000",
+    "travelled": "4075d94840000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "405fb7f3c1800000",
+    "y": "c070764013e00000",
+    "vx": "c0614b32e4200000",
+    "vy": "40755b2ebab00000",
+    "lifeSec": "3ff62ae9accccccd",
+    "ownerWeapon": 3,
+    "behaviour": 0,
+    "spawnId": 39
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "pierceLeft": -3,
+    "damage": "406b6cad72880000",
+    "knockback": "408b00a59a6c0000",
+    "splashRadius": "403f285bdec00000",
+    "splashFrac": "3fec900800000000",
+    "travelled": "4065426ee0000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c081febc1e000000",
+    "y": "4087bfd692a00000",
+    "vx": "404da4222b000000",
+    "vy": "c07399a4a0400000",
+    "lifeSec": "3ff6b162f9999999",
+    "ownerWeapon": 1,
+    "behaviour": 5,
+    "spawnId": 40
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": 2,
+    "damage": "406d8fd88b100000",
+    "knockback": "406fcc6a82700000",
+    "splashRadius": "403572625e000000",
+    "splashFrac": "3fd5ef7240000000",
+    "travelled": "4045668040000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 221
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 118
+   },
+   {
+    "op": "hit",
+    "d": 11,
+    "enemySpawnId": 92
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 50
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "alloc",
+    "x": "4084b4a6e9180000",
+    "y": "c072a8a599400000",
+    "vx": "c05f8f71a9000000",
+    "vy": "404a20daa1800000",
+    "lifeSec": "3fe58b4453333334",
+    "ownerWeapon": 1,
+    "behaviour": 4,
+    "spawnId": 41
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -1,
+    "damage": "404ed58fb3200000",
+    "knockback": "407754f71e880000",
+    "splashRadius": "4031d54eacc00000",
+    "splashFrac": "3fe8597a60000000",
+    "travelled": "4042cddf00000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c0864191a4a80000",
+    "y": "c086e260f5500000",
+    "vx": "4068c6c053000000",
+    "vy": "c079d6e5dd600000",
+    "lifeSec": "3fd2cbc34ccccccd",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 42
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -2,
+    "damage": "406f222c2ed00000",
+    "knockback": "4088637f817c0000",
+    "splashRadius": "4038eb452c400000",
+    "splashFrac": "3fc3e97e80000000",
+    "travelled": "4070b5e6c0000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 203
+   },
+   {
+    "op": "alloc",
+    "x": "4086031afdc00000",
+    "y": "c0596e5290400000",
+    "vx": "c0670faa98c00000",
+    "vy": "c075148af8800000",
+    "lifeSec": "3ffe671bc3333333",
+    "ownerWeapon": 2,
+    "behaviour": 2,
+    "spawnId": 43
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": 3,
+    "damage": "406955b1e1880000",
+    "knockback": "40881401fc900000",
+    "splashRadius": "4052694f86200000",
+    "splashFrac": "3fd9ae1b40000000",
+    "travelled": "404ee65ba0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 110
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 9
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 104
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 95
+   },
+   {
+    "op": "hit",
+    "d": 15,
+    "enemySpawnId": 224
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c05209dcc5800000",
+    "y": "c0751eceac800000",
+    "vx": "c06ea1a889400000",
+    "vy": "c074ba36f6100000",
+    "lifeSec": "4000599a6199999a",
+    "ownerWeapon": 6,
+    "behaviour": 2,
+    "spawnId": 44
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": 1,
+    "damage": "405e130393200000",
+    "knockback": "4072e1d475e80000",
+    "splashRadius": "400d87a970000000",
+    "splashFrac": "3fef5c0560000000",
+    "travelled": "4046464b40000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 3,
+    "enemySpawnId": 103
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c074439162100000",
+    "y": "c0394e1819000000",
+    "vx": "c064c2f52de00000",
+    "vy": "c032f218ce000000",
+    "lifeSec": "3ff61ef526666666",
+    "ownerWeapon": 5,
+    "behaviour": 2,
+    "spawnId": 45
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -2,
+    "damage": "404081e44dc00000",
+    "knockback": "40442baad3000000",
+    "splashRadius": "405c772a1c600000",
+    "splashFrac": "3fe38f3b80000000",
+    "travelled": "4065be8000000000",
+    "flags": 8
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c069d01139600000",
+    "y": "c081eb124f180000",
+    "vx": "406424f168600000",
+    "vy": "c06d06871c600000",
+    "lifeSec": "4003a03aa3333333",
+    "ownerWeapon": 1,
+    "behaviour": 0,
+    "spawnId": 46
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -4,
+    "damage": "4048e2e9ebe00000",
+    "knockback": "4075685ed2a80000",
+    "splashRadius": "405da53cd7b00000",
+    "splashFrac": "3fe2d32580000000",
+    "travelled": "3fd1ed52c0000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 34
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 125
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 78
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 57
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 133
+   },
+   {
+    "op": "markDead",
+    "d": 11
+   },
+   {
+    "op": "alloc",
+    "x": "c073a68431400000",
+    "y": "c072eafae8900000",
+    "vx": "406bec7137800000",
+    "vy": "4062a5eb4bc00000",
+    "lifeSec": "4002f272ee666666",
+    "ownerWeapon": 0,
+    "behaviour": 0,
+    "spawnId": 47
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -2,
+    "damage": "403bf0e299800000",
+    "knockback": "40892a3647ec0000",
+    "splashRadius": "403e3d7f57000000",
+    "splashFrac": "3fe5cdf0e0000000",
+    "travelled": "4062c48860000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c0889bd3f9c80000",
+    "y": "c087fd151da00000",
+    "vx": "c06f2a21c3200000",
+    "vy": "407737b656600000",
+    "lifeSec": "4000282e36666667",
+    "ownerWeapon": 5,
+    "behaviour": 3,
+    "spawnId": 48
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": -3,
+    "damage": "4067ba82a4280000",
+    "knockback": "40810bc5fb4c0000",
+    "splashRadius": "404f44e858800000",
+    "splashFrac": "3fe996d3a0000000",
+    "travelled": "40533790a0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c07c6cef9d200000",
+    "y": "3ff2c55860000000",
+    "vx": "c053d08c2ac00000",
+    "vy": "4048707201800000",
+    "lifeSec": "3fdbadf15999999a",
+    "ownerWeapon": 3,
+    "behaviour": 4,
+    "spawnId": 49
+   },
+   {
+    "op": "fill",
+    "d": 16,
+    "pierceLeft": 4,
+    "damage": "4066b6c91d400000",
+    "knockback": "406bf93875d00000",
+    "splashRadius": "404974903a600000",
+    "splashFrac": "3fca8e3580000000",
+    "travelled": "406dee8f60000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 15,
+    "enemySpawnId": 391
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 196
+   },
+   {
+    "op": "markDead",
+    "d": 15
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c07638c736d00000",
+    "y": "c08516a9c7200000",
+    "vx": "407162bc12b00000",
+    "vy": "402619e2d2000000",
+    "lifeSec": "3ff17f6b06666666",
+    "ownerWeapon": 0,
+    "behaviour": 0,
+    "spawnId": 50
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": 4,
+    "damage": "405a4b99f7000000",
+    "knockback": "40818b0510400000",
+    "splashRadius": "405bf98feb200000",
+    "splashFrac": "3fc5b97580000000",
+    "travelled": "4076d7f840000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "40834b4670580000",
+    "y": "4057b29ffdc00000",
+    "vx": "c0746040c8b00000",
+    "vy": "40743fe615700000",
+    "lifeSec": "3fe799651999999a",
+    "ownerWeapon": 7,
+    "behaviour": 1,
+    "spawnId": 51
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": 3,
+    "damage": "405f4cd82fb00000",
+    "knockback": "4068f25385700000",
+    "splashRadius": "404d9d8e37000000",
+    "splashFrac": "3fcf40d180000000",
+    "travelled": "4070294a80000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 365
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 135
+   },
+   {
+    "op": "hit",
+    "d": 11,
+    "enemySpawnId": 365
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 198
+   },
+   {
+    "op": "markDead",
+    "d": 14
+   },
+   {
+    "op": "markDead",
+    "d": 10
+   },
+   {
+    "op": "markDead",
+    "d": 12
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c069b79607400000",
+    "y": "40860d5fc8180000",
+    "vx": "c07a1b56d5c00000",
+    "vy": "40667afbf4800000",
+    "lifeSec": "3ff0069db999999a",
+    "ownerWeapon": 1,
+    "behaviour": 2,
+    "spawnId": 52
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": 3,
+    "damage": "4064a53b71d80000",
+    "knockback": "4086330bfac80000",
+    "splashRadius": "404d323917000000",
+    "splashFrac": "3fc2264f80000000",
+    "travelled": "40633df560000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0745fb6aa300000",
+    "y": "4082c9f436a80000",
+    "vx": "40776b7903e00000",
+    "vy": "c051dffc39800000",
+    "lifeSec": "3fffa4fef3333333",
+    "ownerWeapon": 1,
+    "behaviour": 3,
+    "spawnId": 53
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -2,
+    "damage": "4052401d92400000",
+    "knockback": "406dca90f5a00000",
+    "splashRadius": "4052fb12f4500000",
+    "splashFrac": "3fe3a38f00000000",
+    "travelled": "4064a7dc80000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 362
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 254
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 204
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 23
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 195
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 134
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 319
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 304
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 37
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 323
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "markDead",
+    "d": 12
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4087d862f7800000",
+    "y": "c07196c251d00000",
+    "vx": "40764308e1100000",
+    "vy": "40711cbb8bb00000",
+    "lifeSec": "3fe88be8e0000000",
+    "ownerWeapon": 5,
+    "behaviour": 5,
+    "spawnId": 54
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "pierceLeft": 1,
+    "damage": "405cc8ac8b700000",
+    "knockback": "4065fbef31900000",
+    "splashRadius": "40426f6b02400000",
+    "splashFrac": "3fdc635a00000000",
+    "travelled": "403bda8220000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c04c64330f800000",
+    "y": "c07bd653e4100000",
+    "vx": "4068e4985da00000",
+    "vy": "40798a4bbd900000",
+    "lifeSec": "4001ba6e4ccccccd",
+    "ownerWeapon": 1,
+    "behaviour": 1,
+    "spawnId": 55
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "pierceLeft": 4,
+    "damage": "406b853715700000",
+    "knockback": "4082b8555fe80000",
+    "splashRadius": "4053491e89f00000",
+    "splashFrac": "3fe0478c00000000",
+    "travelled": "4076f237c0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c0719ca06e000000",
+    "y": "407c630e4cb00000",
+    "vx": "c061c032e4800000",
+    "vy": "c06bde1869800000",
+    "lifeSec": "40005bdd4999999a",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 56
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": -1,
+    "damage": "406c09ae7eb00000",
+    "knockback": "407664f757480000",
+    "splashRadius": "405987ece6700000",
+    "splashFrac": "3fc0e9eb80000000",
+    "travelled": "406b19e160000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 303
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 176
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 378
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 73
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 380
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 6
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 12
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 270
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 326
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 195
+   },
+   {
+    "op": "alloc",
+    "x": "406b827126400000",
+    "y": "c070355b5b800000",
+    "vx": "c0615d8058600000",
+    "vy": "407445ad39b00000",
+    "lifeSec": "3ff0087c73333333",
+    "ownerWeapon": 2,
+    "behaviour": 5,
+    "spawnId": 57
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "pierceLeft": 1,
+    "damage": "405a067495900000",
+    "knockback": "407ff885ef700000",
+    "splashRadius": "405269c5e5200000",
+    "splashFrac": "3fcab22a80000000",
+    "travelled": "4058ef6900000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c0818065d8780000",
+    "y": "4084901566300000",
+    "vx": "4046a9a811800000",
+    "vy": "40798a4c8fd00000",
+    "lifeSec": "3fc7b7a04ccccccd",
+    "ownerWeapon": 1,
+    "behaviour": 1,
+    "spawnId": 58
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": -1,
+    "damage": "4064a1dcc6b80000",
+    "knockback": "406fab82ca100000",
+    "splashRadius": "404c51856f800000",
+    "splashFrac": "3fb4ee4d00000000",
+    "travelled": "4073858be0000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "4082ee09d1c00000",
+    "y": "4081ca3475b80000",
+    "vx": "c06d61f2f9800000",
+    "vy": "c05db4bdfb400000",
+    "lifeSec": "3fea48159999999a",
+    "ownerWeapon": 7,
+    "behaviour": 3,
+    "spawnId": 59
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": 0,
+    "damage": "406d39f439d80000",
+    "knockback": "4084088584d80000",
+    "splashRadius": "405a3f0f04400000",
+    "splashFrac": "3fe5c91260000000",
+    "travelled": "4057f32d00000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 11,
+    "enemySpawnId": 238
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 126
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c0499eb2dc800000",
+    "y": "408626ba29e80000",
+    "vx": "c06eec7688800000",
+    "vy": "40715e26a8000000",
+    "lifeSec": "3ff0516820000000",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 60
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": 1,
+    "damage": "40355a49c0800000",
+    "knockback": "407762da12580000",
+    "splashRadius": "405d15a6a0100000",
+    "splashFrac": "3fd6f9ebc0000000",
+    "travelled": "40759c46c0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c073e5794a600000",
+    "y": "c066898bcd000000",
+    "vx": "4072574c2b900000",
+    "vy": "407468cec0500000",
+    "lifeSec": "3fda9fe69999999a",
+    "ownerWeapon": 1,
+    "behaviour": 1,
+    "spawnId": 61
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": 1,
+    "damage": "40679fd6d3380000",
+    "knockback": "40827229df640000",
+    "splashRadius": "40511fcbea000000",
+    "splashFrac": "3fe9cce920000000",
+    "travelled": "40599035c0000000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "markDead",
+    "d": 13
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "406b3ba3c4000000",
+    "y": "c086b313a3080000",
+    "vx": "c0758b30e8d00000",
+    "vy": "c067cfe221800000",
+    "lifeSec": "3ffe4d4f70000000",
+    "ownerWeapon": 0,
+    "behaviour": 1,
+    "spawnId": 62
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -1,
+    "damage": "406944763e780000",
+    "knockback": "4067d9600a800000",
+    "splashRadius": "405b9b1938800000",
+    "splashFrac": "3fe3d06200000000",
+    "travelled": "407382f240000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c072ad0444200000",
+    "y": "c05b604d50c00000",
+    "vx": "c079a95a06200000",
+    "vy": "c07782a9e8900000",
+    "lifeSec": "40027974f8000000",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 63
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": -4,
+    "damage": "4049424aed000000",
+    "knockback": "407b5a9838200000",
+    "splashRadius": "404af828cc200000",
+    "splashFrac": "3fe00b4800000000",
+    "travelled": "40338834c0000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "4072c3e959500000",
+    "y": "c08055017d080000",
+    "vx": "407a154c24700000",
+    "vy": "c0726dd100e00000",
+    "lifeSec": "3fd84926d999999a",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 64
+   },
+   {
+    "op": "fill",
+    "d": 16,
+    "pierceLeft": 2,
+    "damage": "4060c45d53c80000",
+    "knockback": "40570a7bde000000",
+    "splashRadius": "4050f63dc8200000",
+    "splashFrac": "3fc8bb4780000000",
+    "travelled": "4061958700000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 139
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 15
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "40845c8912180000",
+    "y": "c057941ffd400000",
+    "vx": "4078c70b0fc00000",
+    "vy": "c04f4aafcb000000",
+    "lifeSec": "3fff8beda9999999",
+    "ownerWeapon": 1,
+    "behaviour": 3,
+    "spawnId": 65
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -2,
+    "damage": "4031957fc7c00000",
+    "knockback": "4070551b30280000",
+    "splashRadius": "40522b2b2d500000",
+    "splashFrac": "3fde85f500000000",
+    "travelled": "40771059a0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 275
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 13
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4087749d9f700000",
+    "y": "c01605fe84000000",
+    "vx": "c05cdd219b800000",
+    "vy": "c05dbdb3d7800000",
+    "lifeSec": "3fe9b2dcc6666667",
+    "ownerWeapon": 4,
+    "behaviour": 0,
+    "spawnId": 66
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": -2,
+    "damage": "4049572ab8400000",
+    "knockback": "407313c3ffc00000",
+    "splashRadius": "405ca8fed3d00000",
+    "splashFrac": "3fe5b19dc0000000",
+    "travelled": "4065df2dc0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c072d05e73400000",
+    "y": "c065e4eaba000000",
+    "vx": "4038caf292000000",
+    "vy": "c03dd2aa25000000",
+    "lifeSec": "40045fd11e666666",
+    "ownerWeapon": 1,
+    "behaviour": 4,
+    "spawnId": 67
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -4,
+    "damage": "405bb8dfca000000",
+    "knockback": "407a74993ce00000",
+    "splashRadius": "40552906b3000000",
+    "splashFrac": "3fde4472c0000000",
+    "travelled": "40590661c0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "40697010efa00000",
+    "y": "404476f0f5000000",
+    "vx": "c06a21ace1800000",
+    "vy": "401a2767b4000000",
+    "lifeSec": "40046ada6ccccccd",
+    "ownerWeapon": 5,
+    "behaviour": 4,
+    "spawnId": 68
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -1,
+    "damage": "4067136e8f080000",
+    "knockback": "408145cbd5ac0000",
+    "splashRadius": "4059b61c9f500000",
+    "splashFrac": "3feca0fea0000000",
+    "travelled": "4071ddcd60000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 170
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 200
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 22
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 129
+   },
+   {
+    "op": "hit",
+    "d": 3,
+    "enemySpawnId": 350
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "markDead",
+    "d": 10
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "406c4b88f5e00000",
+    "y": "4070ca5f67600000",
+    "vx": "c07972f023e00000",
+    "vy": "c04354cc95800000",
+    "lifeSec": "3ffe9c74e9999999",
+    "ownerWeapon": 5,
+    "behaviour": 3,
+    "spawnId": 69
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -4,
+    "damage": "4063e68e48500000",
+    "knockback": "40884b78241c0000",
+    "splashRadius": "40560d1d1dd00000",
+    "splashFrac": "3fd88e4d00000000",
+    "travelled": "4042581f20000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c086581408100000",
+    "y": "407ea71593d00000",
+    "vx": "c05d9899a2400000",
+    "vy": "4048c9b8d6800000",
+    "lifeSec": "3fe6153a13333334",
+    "ownerWeapon": 0,
+    "behaviour": 2,
+    "spawnId": 70
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -1,
+    "damage": "403a9e08a9800000",
+    "knockback": "40603e0ab6a00000",
+    "splashRadius": "4057ef7c78d00000",
+    "splashFrac": "3fec4cd960000000",
+    "travelled": "4044d00d00000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0836ccc5c980000",
+    "y": "4071886cd7100000",
+    "vx": "40646e0a11800000",
+    "vy": "c05cb1ac6d000000",
+    "lifeSec": "3fff7b6ca9999999",
+    "ownerWeapon": 7,
+    "behaviour": 4,
+    "spawnId": 71
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": -1,
+    "damage": "4063dcbfb9a80000",
+    "knockback": "40811e5343000000",
+    "splashRadius": "404476ba6e000000",
+    "splashFrac": "3fe60eb640000000",
+    "travelled": "4074667b00000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 163
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 240
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 386
+   },
+   {
+    "op": "markDead",
+    "d": 6
+   },
+   {
+    "op": "markDead",
+    "d": 11
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c080fa611c800000",
+    "y": "4080c10071c80000",
+    "vx": "c071031730000000",
+    "vy": "404a4cdd13000000",
+    "lifeSec": "3fd18a820ccccccd",
+    "ownerWeapon": 5,
+    "behaviour": 5,
+    "spawnId": 72
+   },
+   {
+    "op": "fill",
+    "d": 16,
+    "pierceLeft": -2,
+    "damage": "404f3aab4a800000",
+    "knockback": "4083dc8013f80000",
+    "splashRadius": "405a17d931e00000",
+    "splashFrac": "3fe5648560000000",
+    "travelled": "4069b52b20000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c068fd764c600000",
+    "y": "407ab335a7500000",
+    "vx": "c077e94604900000",
+    "vy": "40777cc813300000",
+    "lifeSec": "4005d7319b333333",
+    "ownerWeapon": 1,
+    "behaviour": 3,
+    "spawnId": 73
+   },
+   {
+    "op": "fill",
+    "d": 17,
+    "pierceLeft": -4,
+    "damage": "4060b64863900000",
+    "knockback": "404e5ced52800000",
+    "splashRadius": "4031820116c00000",
+    "splashFrac": "3f74708000000000",
+    "travelled": "406081a840000000",
+    "flags": 2
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 335
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 233
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "40807e5df0200000",
+    "y": "40647216c6600000",
+    "vx": "402280ae98000000",
+    "vy": "c06af5f24b000000",
+    "lifeSec": "3fff99ebf9999999",
+    "ownerWeapon": 1,
+    "behaviour": 0,
+    "spawnId": 74
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": -3,
+    "damage": "405d7333c3600000",
+    "knockback": "4080d80db5280000",
+    "splashRadius": "4049653ba9a00000",
+    "splashFrac": "3fd2b30100000000",
+    "travelled": "406780dec0000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "408491dd8b200000",
+    "y": "406f2a4251600000",
+    "vx": "c06fa1eebfc00000",
+    "vy": "c06ba8e7d9a00000",
+    "lifeSec": "40005fc974cccccd",
+    "ownerWeapon": 3,
+    "behaviour": 4,
+    "spawnId": 75
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": 3,
+    "damage": "40641f46db800000",
+    "knockback": "407420fe1b100000",
+    "splashRadius": "405841b328600000",
+    "splashFrac": "3fe8e07e20000000",
+    "travelled": "40480f5340000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0809bf753c00000",
+    "y": "4068b36d0dc00000",
+    "vx": "405cbbb986400000",
+    "vy": "c072687645a00000",
+    "lifeSec": "3fc791c380000000",
+    "ownerWeapon": 4,
+    "behaviour": 4,
+    "spawnId": 76
+   },
+   {
+    "op": "fill",
+    "d": 16,
+    "pierceLeft": 1,
+    "damage": "404693d5bae00000",
+    "knockback": "405d4cf96a800000",
+    "splashRadius": "4055bac804100000",
+    "splashFrac": "3fe809e720000000",
+    "travelled": "4074e95de0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 330
+   },
+   {
+    "op": "hit",
+    "d": 16,
+    "enemySpawnId": 226
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 315
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 320
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c083d5b627280000",
+    "y": "40749ee600a00000",
+    "vx": "40741c875f300000",
+    "vy": "406653a5b8200000",
+    "lifeSec": "3fd58c9bf3333333",
+    "ownerWeapon": 7,
+    "behaviour": 3,
+    "spawnId": 77
+   },
+   {
+    "op": "fill",
+    "d": 17,
+    "pierceLeft": 1,
+    "damage": "406770252f900000",
+    "knockback": "40842573e3bc0000",
+    "splashRadius": "4022287cca000000",
+    "splashFrac": "3fe8a6cb00000000",
+    "travelled": "406fd3fe00000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c058b0dc64c00000",
+    "y": "4080bcb5e8200000",
+    "vx": "4074cb8ea5000000",
+    "vy": "4074e8baa0400000",
+    "lifeSec": "3fd70630cccccccd",
+    "ownerWeapon": 4,
+    "behaviour": 0,
+    "spawnId": 78
+   },
+   {
+    "op": "fill",
+    "d": 18,
+    "pierceLeft": 1,
+    "damage": "4065170384b80000",
+    "knockback": "4080838423540000",
+    "splashRadius": "405657b163300000",
+    "splashFrac": "3fe45d1040000000",
+    "travelled": "40778b9b00000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "40761fe72c900000",
+    "y": "4087c77083c80000",
+    "vx": "4070821900900000",
+    "vy": "404e53c475800000",
+    "lifeSec": "3ff998068ccccccd",
+    "ownerWeapon": 6,
+    "behaviour": 3,
+    "spawnId": 79
+   },
+   {
+    "op": "fill",
+    "d": 19,
+    "pierceLeft": 3,
+    "damage": "4068fb80fde80000",
+    "knockback": "4077402473100000",
+    "splashRadius": "4038b262b5c00000",
+    "splashFrac": "3fe6e0aec0000000",
+    "travelled": "407168b780000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 5,
+    "enemySpawnId": 296
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 112
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 225
+   },
+   {
+    "op": "hit",
+    "d": 17,
+    "enemySpawnId": 170
+   },
+   {
+    "op": "hit",
+    "d": 4,
+    "enemySpawnId": 13
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c08380f501c80000",
+    "y": "407ddc12d5b00000",
+    "vx": "c077eb81a2900000",
+    "vy": "4064ee528b200000",
+    "lifeSec": "3fe2710580000000",
+    "ownerWeapon": 3,
+    "behaviour": 3,
+    "spawnId": 80
+   },
+   {
+    "op": "alloc",
+    "x": "c0850fefcdc80000",
+    "y": "c07155928d700000",
+    "vx": "c077d4726a200000",
+    "vy": "c056233233800000",
+    "lifeSec": "3ff3d2e82ccccccd",
+    "ownerWeapon": 3,
+    "behaviour": 4,
+    "spawnId": 81
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 314
+   },
+   {
+    "op": "hit",
+    "d": 3,
+    "enemySpawnId": 350
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 17
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 18
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "alloc",
+    "x": "c075f3b1f2f00000",
+    "y": "407c02ad77800000",
+    "vx": "c03eb89993000000",
+    "vy": "404b848e3c000000",
+    "lifeSec": "3fdc8982c0000000",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 82
+   },
+   {
+    "op": "hit",
+    "d": 14,
+    "enemySpawnId": 291
+   },
+   {
+    "op": "hit",
+    "d": 9,
+    "enemySpawnId": 253
+   },
+   {
+    "op": "markDead",
+    "d": 10
+   },
+   {
+    "op": "markDead",
+    "d": 13
+   },
+   {
+    "op": "alloc",
+    "x": "c07bec476aa00000",
+    "y": "401896a784000000",
+    "vx": "c0788a4a1af00000",
+    "vy": "4073f72f5ca00000",
+    "lifeSec": "40038aba1ccccccd",
+    "ownerWeapon": 1,
+    "behaviour": 0,
+    "spawnId": 83
+   },
+   {
+    "op": "alloc",
+    "x": "c06786816fc00000",
+    "y": "4053e20394c00000",
+    "vx": "406155897ec00000",
+    "vy": "407664c6fe000000",
+    "lifeSec": "3ff9e432b6666666",
+    "ownerWeapon": 5,
+    "behaviour": 0,
+    "spawnId": 84
+   },
+   {
+    "op": "hit",
+    "d": 16,
+    "enemySpawnId": 215
+   },
+   {
+    "op": "hit",
+    "d": 17,
+    "enemySpawnId": 155
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 168
+   },
+   {
+    "op": "hit",
+    "d": 8,
+    "enemySpawnId": 289
+   },
+   {
+    "op": "markDead",
+    "d": 6
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "markDead",
+    "d": 15
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "4088d98bb0280000",
+    "y": "40783adf32f00000",
+    "vx": "c045e77e03000000",
+    "vy": "c0359faafe000000",
+    "lifeSec": "40028d4ad999999a",
+    "ownerWeapon": 4,
+    "behaviour": 0,
+    "spawnId": 85
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "pierceLeft": 2,
+    "damage": "404c91227da00000",
+    "knockback": "407abaa0cb680000",
+    "splashRadius": "404d972aa0800000",
+    "splashFrac": "3f8c127800000000",
+    "travelled": "4062cc6120000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c0604a2636a00000",
+    "y": "40695de7f0400000",
+    "vx": "c03f80bcdf000000",
+    "vy": "c06dec32c8c00000",
+    "lifeSec": "4005d63374cccccd",
+    "ownerWeapon": 4,
+    "behaviour": 0,
+    "spawnId": 86
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "pierceLeft": -4,
+    "damage": "404e765396600000",
+    "knockback": "4078dfabbfd80000",
+    "splashRadius": "404955b114200000",
+    "splashFrac": "3fe1ed6a80000000",
+    "travelled": "40740184a0000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c084391931800000",
+    "y": "c07ec95b06b00000",
+    "vx": "c073d9b27bc00000",
+    "vy": "c074ec6cc0400000",
+    "lifeSec": "3ff7718983333333",
+    "ownerWeapon": 3,
+    "behaviour": 5,
+    "spawnId": 87
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "pierceLeft": 0,
+    "damage": "4030c2f3ee800000",
+    "knockback": "40896f95df940000",
+    "splashRadius": "405cb9fe41c00000",
+    "splashFrac": "3fd3228f40000000",
+    "travelled": "40711bb7e0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 88
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 313
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 150
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 395
+   },
+   {
+    "op": "hit",
+    "d": 6,
+    "enemySpawnId": 131
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c0707d87bde00000",
+    "y": "408506d9efe00000",
+    "vx": "c052ce6b3fc00000",
+    "vy": "c06e94e157800000",
+    "lifeSec": "400072eb20000000",
+    "ownerWeapon": 4,
+    "behaviour": 5,
+    "spawnId": 88
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": -3,
+    "damage": "406198bd46a00000",
+    "knockback": "4079036573d80000",
+    "splashRadius": "4054590d4ea00000",
+    "splashFrac": "3fe5bc8840000000",
+    "travelled": "406d2b5660000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 11
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 281
+   },
+   {
+    "op": "hit",
+    "d": 10,
+    "enemySpawnId": 93
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 304
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 31
+   },
+   {
+    "op": "hit",
+    "d": 14,
+    "enemySpawnId": 121
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 332
+   },
+   {
+    "op": "hit",
+    "d": 1,
+    "enemySpawnId": 183
+   },
+   {
+    "op": "markDead",
+    "d": 11
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c077d8dedf500000",
+    "y": "4051720bdf000000",
+    "vx": "40792dc038600000",
+    "vy": "c07908544b400000",
+    "lifeSec": "400492bd5b333333",
+    "ownerWeapon": 6,
+    "behaviour": 2,
+    "spawnId": 89
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "pierceLeft": 4,
+    "damage": "405b201006000000",
+    "knockback": "4063c01c1a200000",
+    "splashRadius": "4043778af9200000",
+    "splashFrac": "3feea1cc60000000",
+    "travelled": "40785f5120000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0553e9a22000000",
+    "y": "407ed62d27800000",
+    "vx": "c077d4916b100000",
+    "vy": "c07924feec200000",
+    "lifeSec": "3ff6fd78b6666666",
+    "ownerWeapon": 6,
+    "behaviour": 1,
+    "spawnId": 90
+   },
+   {
+    "op": "fill",
+    "d": 16,
+    "pierceLeft": 0,
+    "damage": "405a9433ff600000",
+    "knockback": "40898b4f3f2c0000",
+    "splashRadius": "40564528ea100000",
+    "splashFrac": "3fd23d76c0000000",
+    "travelled": "4078348960000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "x": "408195d92a880000",
+    "y": "40591dc5df000000",
+    "vx": "c054504553c00000",
+    "vy": "405dbc48d5000000",
+    "lifeSec": "40057725a6666666",
+    "ownerWeapon": 2,
+    "behaviour": 5,
+    "spawnId": 91
+   },
+   {
+    "op": "fill",
+    "d": 17,
+    "pierceLeft": -4,
+    "damage": "406743d195500000",
+    "knockback": "4069e2146c400000",
+    "splashRadius": "4059cd957b600000",
+    "splashFrac": "3fb6176a00000000",
+    "travelled": "404ed72740000000",
+    "flags": 8
+   },
+   {
+    "op": "hit",
+    "d": 12,
+    "enemySpawnId": 4
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c08498fcc0a80000",
+    "y": "4088d547fd980000",
+    "vx": "c0572a4170c00000",
+    "vy": "c04828b7a0000000",
+    "lifeSec": "3fe77c73c0000000",
+    "ownerWeapon": 1,
+    "behaviour": 0,
+    "spawnId": 92
+   },
+   {
+    "op": "fill",
+    "d": 18,
+    "pierceLeft": 1,
+    "damage": "40655c5600e00000",
+    "knockback": "4088be2da7180000",
+    "splashRadius": "4055f518a1700000",
+    "splashFrac": "3fd4b803c0000000",
+    "travelled": "4063ea5fe0000000",
+    "flags": 8
+   },
+   {
+    "op": "alloc",
+    "x": "c062e2ed12e00000",
+    "y": "40874ed55ed80000",
+    "vx": "c071b84b3c800000",
+    "vy": "c0743ff5e4c00000",
+    "lifeSec": "3fce8d40e6666666",
+    "ownerWeapon": 4,
+    "behaviour": 5,
+    "spawnId": 93
+   },
+   {
+    "op": "fill",
+    "d": 19,
+    "pierceLeft": 0,
+    "damage": "401b0bc2e0000000",
+    "knockback": "4067aac004e00000",
+    "splashRadius": "40524dc8afa00000",
+    "splashFrac": "3fced00b00000000",
+    "travelled": "405645d6c0000000",
+    "flags": 0
+   },
+   {
+    "op": "hit",
+    "d": 0,
+    "enemySpawnId": 176
+   },
+   {
+    "op": "hit",
+    "d": 14,
+    "enemySpawnId": 385
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c07d8c5741e00000",
+    "y": "c0728174c5000000",
+    "vx": "c06e01b099800000",
+    "vy": "c05509469a800000",
+    "lifeSec": "3fd0586c8ccccccd",
+    "ownerWeapon": 3,
+    "behaviour": 1,
+    "spawnId": 94
+   },
+   {
+    "op": "fill",
+    "d": 19,
+    "pierceLeft": 4,
+    "damage": "4051bd0f3f700000",
+    "knockback": "40676e89fde00000",
+    "splashRadius": "4051d2515f700000",
+    "splashFrac": "3fd290dc40000000",
+    "travelled": "40660d80e0000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "x": "40817e2ee3d00000",
+    "y": "407211f1a4500000",
+    "vx": "c06cc654b4c00000",
+    "vy": "407438909df00000",
+    "lifeSec": "40050a3ba8000000",
+    "ownerWeapon": 3,
+    "behaviour": 3,
+    "spawnId": 95
+   },
+   {
+    "op": "hit",
+    "d": 2,
+    "enemySpawnId": 188
+   },
+   {
+    "op": "hit",
+    "d": 13,
+    "enemySpawnId": 243
+   },
+   {
+    "op": "alloc",
+    "x": "40800aa114780000",
+    "y": "4046007922000000",
+    "vx": "4064eefc8ce00000",
+    "vy": "4071ba2587e00000",
+    "lifeSec": "3ffe3e2cf3333333",
+    "ownerWeapon": 2,
+    "behaviour": 1,
+    "spawnId": 96
+   },
+   {
+    "op": "hit",
+    "d": 16,
+    "enemySpawnId": 135
+   },
+   {
+    "op": "hit",
+    "d": 7,
+    "enemySpawnId": 315
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "x": "c03e8e12c0000000",
+    "y": "4083f2ee37380000",
+    "vx": "4042509e0a800000",
+    "vy": "406ac6a2be400000",
+    "lifeSec": "40020032eb333333",
+    "ownerWeapon": 1,
+    "behaviour": 4,
+    "spawnId": 97
+   },
+   {
+    "op": "alloc",
+    "x": "407c0be971800000",
+    "y": "c06be70c4c800000",
+    "vx": "4074d3b7cc700000",
+    "vy": "c0676fbc82200000",
+    "lifeSec": "4000ac56a199999a",
+    "ownerWeapon": 4,
+    "behaviour": 5,
+    "spawnId": 98
+   },
+   {
+    "op": "markDead",
+    "d": 13
+   }
+  ],
+  "dense": [
+   "4b95f515",
+   "595ac5e9",
+   "896a24fc",
+   "896a24fc",
+   "22e4224b",
+   "22e4224b",
+   "22e4224b",
+   "4b95f515",
+   "4d4af390",
+   "89a275e4",
+   "89a275e4",
+   "89a275e4",
+   "89a275e4",
+   "89a275e4",
+   "89a275e4",
+   "2070b35b",
+   "4b95f515",
+   "4b95f515",
+   "cd3e72e9",
+   "aed12795",
+   "1204b613",
+   "61ea3739",
+   "61ea3739",
+   "61ea3739",
+   "61ea3739",
+   "61ea3739",
+   "61ea3739",
+   "6a2b56f0",
+   "8d2f029b",
+   "8d2f029b",
+   "8d2f029b",
+   "8d2f029b",
+   "f92a3e74",
+   "4b95f515",
+   "1da3794d",
+   "fb643316",
+   "1737bae1",
+   "4b95f515",
+   "4b95f515",
+   "2cb8914b",
+   "ca569c14",
+   "c40d2e9d",
+   "1c28a05e",
+   "a08f6073",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "d655b9f8",
+   "2f609f73",
+   "3aaf3afa",
+   "3eb4c59d",
+   "5c815791",
+   "b9fd4084",
+   "b9fd4084",
+   "c8df461b",
+   "35a0f65e",
+   "35a0f65e",
+   "75835f1f",
+   "c1dba1d0",
+   "9249197a",
+   "9cab831a",
+   "1eac9d4d",
+   "1eac9d4d",
+   "1eac9d4d",
+   "0ef6d2e1",
+   "5003041a",
+   "69418bcb",
+   "deda25e7",
+   "deda25e7",
+   "deda25e7",
+   "deda25e7",
+   "deda25e7",
+   "feb85a38",
+   "5508cb24",
+   "835a533d",
+   "93b7ec5c",
+   "920de68c",
+   "9a6c0c5d",
+   "9a6c0c5d",
+   "b7e8e94e",
+   "407f3e95",
+   "f76e668e",
+   "ec1bf10d",
+   "98e99af9",
+   "98e99af9",
+   "98e99af9",
+   "98e99af9",
+   "98e99af9",
+   "98e99af9",
+   "4314ff18",
+   "57302693",
+   "3d17bb19",
+   "7f8dd89c",
+   "9440dc19",
+   "dd63b03c",
+   "33b8968b",
+   "33b8968b",
+   "33b8968b",
+   "33b8968b",
+   "33b8968b",
+   "7ca0e702",
+   "5c632dff",
+   "1c652e9a",
+   "91a34c7c",
+   "91a34c7c",
+   "91a34c7c",
+   "91a34c7c",
+   "91a34c7c",
+   "bdb0f22e",
+   "e95fc69b",
+   "bf71b30b",
+   "68681a26",
+   "68681a26",
+   "68681a26",
+   "68681a26",
+   "d8c87721",
+   "732b2e80",
+   "537995d6",
+   "7567e4b6",
+   "aba952e3",
+   "060881f1",
+   "060881f1",
+   "060881f1",
+   "060881f1",
+   "45c067b6",
+   "2ee6bedf",
+   "1321bcb2",
+   "c867de13",
+   "0672ba12",
+   "2c66373e",
+   "2c66373e",
+   "2c66373e",
+   "2c66373e",
+   "2c66373e",
+   "2c66373e",
+   "9e8392e7",
+   "ba8993ea",
+   "47020d35",
+   "5c72f857",
+   "c6be1d02",
+   "c6be1d02",
+   "c6be1d02",
+   "c6be1d02",
+   "c6be1d02",
+   "c6be1d02",
+   "4ad9ccd7",
+   "7f34985e",
+   "81290a0d",
+   "d6d0debb",
+   "5cc277c6",
+   "11beb00f",
+   "a56b8f61",
+   "2d72e1d9",
+   "8a33d433",
+   "c05b7533",
+   "c05b7533",
+   "a2513958",
+   "55fff8b9",
+   "7d718e4e",
+   "83603cfa",
+   "10754991",
+   "6c59c304",
+   "f030a12f",
+   "b97d816a",
+   "036e5dce",
+   "036e5dce",
+   "036e5dce",
+   "3808bef1",
+   "13b35840",
+   "c3cfbb9d",
+   "3685d309",
+   "e3522c97",
+   "a3529668",
+   "7525554b",
+   "4a878887",
+   "2e9f4f1a",
+   "2e9f4f1a",
+   "2e9f4f1a",
+   "2e9f4f1a",
+   "2e9f4f1a",
+   "720eb499",
+   "b22cca66",
+   "b22cca66",
+   "932b1820",
+   "81828534",
+   "32aadd94",
+   "635b07d9",
+   "3c2bc234",
+   "e1d4e01a",
+   "31b33c06",
+   "31b33c06",
+   "31b33c06",
+   "31b33c06",
+   "31b33c06",
+   "61dc0ed7",
+   "cc57d0bf",
+   "aa89f238",
+   "20addb93",
+   "6f9f17a7",
+   "6f9f17a7",
+   "d846b3d3",
+   "33dd40b1",
+   "33dd40b1",
+   "33dd40b1",
+   "33dd40b1",
+   "33dd40b1",
+   "33dd40b1",
+   "743b8064",
+   "3d368659",
+   "5af2a32b",
+   "615612a8",
+   "615612a8",
+   "7e34ffc9",
+   "5691998e",
+   "4535fe8f",
+   "5cd90f22",
+   "08df1f4f",
+   "45ec72de",
+   "5735f1b5",
+   "26a15479",
+   "623e7095",
+   "623e7095",
+   "623e7095",
+   "623e7095",
+   "623e7095",
+   "623e7095",
+   "76db40ee",
+   "88ca2ee4",
+   "2255151d",
+   "3508ca9a",
+   "72965b38",
+   "fbfeb6a2",
+   "4fce603f",
+   "4fce603f",
+   "4fce603f",
+   "d9151222",
+   "92bdb587",
+   "de00c20e",
+   "9f87ddd2",
+   "56194d86",
+   "1457789b",
+   "f5b21340",
+   "c17dd58c",
+   "c17dd58c",
+   "c17dd58c",
+   "c17dd58c",
+   "c17dd58c",
+   "52a1b1b3",
+   "9e708338",
+   "308da4b7",
+   "c333ce9d",
+   "85abc39d",
+   "785f2d20",
+   "df04df66",
+   "08e2513d",
+   "08e2513d",
+   "08e2513d",
+   "08e2513d",
+   "08e2513d",
+   "08e2513d",
+   "ce1aad1e",
+   "278235ae",
+   "278235ae",
+   "278235ae",
+   "278235ae",
+   "278235ae",
+   "278235ae",
+   "a6669fc3",
+   "1074c208",
+   "8285109f",
+   "2f81ce87",
+   "394a6134",
+   "296778c0",
+   "f3c67078",
+   "ab7b7f1f",
+   "cd163db7",
+   "6883149b",
+   "6883149b",
+   "6883149b",
+   "6883149b",
+   "6883149b",
+   "6883149b",
+   "7f2b0c18",
+   "e552791f",
+   "544d9800",
+   "544d9800",
+   "544d9800",
+   "544d9800",
+   "544d9800",
+   "56bc06fe",
+   "49040f14",
+   "f94bf865",
+   "0d24becd",
+   "4b6081d8",
+   "73bf4216",
+   "73bf4216",
+   "73bf4216",
+   "73bf4216",
+   "10c243d4",
+   "3ec35ce2",
+   "1f25b23c",
+   "06b5c2fb",
+   "388245c4",
+   "3982c6ab",
+   "3ff28cbe",
+   "77d0da0f",
+   "3d47eb74",
+   "0b5f40b3",
+   "d1a85e5a",
+   "7a6ae8aa",
+   "037158f4",
+   "037158f4",
+   "75d51ef3",
+   "8ff48a32",
+   "79b2cf97",
+   "e3a99e07",
+   "e4126d3b",
+   "1d1b2ce2",
+   "1d1b2ce2",
+   "781aa2b3",
+   "2b2f5eba",
+   "4a50bcd7",
+   "7ef3607c",
+   "8042c7f6",
+   "6e6b050d",
+   "9042128e",
+   "3b349416",
+   "452301b5",
+   "091e04df",
+   "091e04df",
+   "091e04df",
+   "091e04df",
+   "091e04df",
+   "091e04df",
+   "cbd9d9f6",
+   "a646486d",
+   "ad915f36",
+   "0fea80df",
+   "97b48027",
+   "4fc65cf5",
+   "c71b7376",
+   "bd31792a",
+   "887686e3",
+   "887686e3",
+   "887686e3",
+   "887686e3",
+   "1a6aeaea",
+   "8fa9aea9",
+   "af7a1b40",
+   "3f785327",
+   "e0e487a1",
+   "0e241d93",
+   "0e8fe07a",
+   "0e8fe07a",
+   "0e8fe07a",
+   "0e8fe07a",
+   "0e8fe07a",
+   "cdeb44cd",
+   "414c13c1",
+   "57f9c53e",
+   "11664ed4",
+   "a3e7adb1",
+   "a6088276",
+   "9a0b72b6",
+   "16878d90",
+   "16878d90",
+   "16878d90",
+   "16878d90",
+   "16878d90",
+   "16878d90",
+   "791a191d",
+   "6bca77c6",
+   "a6a32c2a",
+   "38f70b3b",
+   "fc723df6",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "f2dcac46",
+   "798a227f",
+   "e9d23c46",
+   "546b0325",
+   "546b0325",
+   "546b0325",
+   "546b0325",
+   "6547c344",
+   "90bc4a17",
+   "90bc4a17",
+   "90bc4a17",
+   "90bc4a17",
+   "90bc4a17",
+   "90bc4a17",
+   "90bc4a17",
+   "3580e95a",
+   "8c7bf089",
+   "6c37941a",
+   "83a04ec2",
+   "564e57bb",
+   "40f1c5c5",
+   "cebbfc68",
+   "d3d2ac71",
+   "b0fb60ef",
+   "6450af16",
+   "6450af16",
+   "6450af16",
+   "6450af16",
+   "6450af16",
+   "6450af16",
+   "6450af16",
+   "0cda2b10",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "8d2c121a",
+   "29346365",
+   "3aee676b",
+   "0688555a",
+   "114f4917",
+   "55e3ef61",
+   "bbe5c38f",
+   "b51faea4",
+   "bd02d332",
+   "bd02d332",
+   "bd02d332",
+   "a4d251a4",
+   "c68ad8ff",
+   "5d56552b",
+   "1a63791f",
+   "1a63791f",
+   "1a63791f",
+   "9d749e16",
+   "a379e930",
+   "16a1d906",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "7d77e6f2",
+   "eee79f0d"
+  ],
+  "hitRing": [
+   "811c9dc5",
+   "f57262df",
+   "f57262df",
+   "fea44e44",
+   "fea44e44",
+   "fea44e44",
+   "fea44e44",
+   "811c9dc5",
+   "f57262df",
+   "f57262df",
+   "4fbbdf0f",
+   "45d7284f",
+   "440068e4",
+   "b4a32eff",
+   "c71cf346",
+   "c71cf346",
+   "811c9dc5",
+   "811c9dc5",
+   "f57262df",
+   "f57262df",
+   "0bea824d",
+   "0bea824d",
+   "096bb67a",
+   "4f61ce85",
+   "3c9f95c6",
+   "b5c8eef5",
+   "b5b422aa",
+   "b5b422aa",
+   "2dc38914",
+   "01d172d2",
+   "4eff7472",
+   "ac6a7669",
+   "ac6a7669",
+   "811c9dc5",
+   "f57262df",
+   "f57262df",
+   "f57262df",
+   "811c9dc5",
+   "811c9dc5",
+   "f57262df",
+   "f57262df",
+   "0bea824d",
+   "0bea824d",
+   "0459daf7",
+   "0459daf7",
+   "f8f86d10",
+   "cd0fbbee",
+   "bcb22a17",
+   "829cc0b5",
+   "829cc0b5",
+   "366a9903",
+   "2abb0638",
+   "2d9ef2e9",
+   "2d9ef2e9",
+   "2d9ef2e9",
+   "3a4feb08",
+   "1d936c18",
+   "1d936c18",
+   "1fdff099",
+   "1fdff099",
+   "1fdff099",
+   "1fdff099",
+   "17616fdb",
+   "17616fdb",
+   "a62ad2c1",
+   "a62ad2c1",
+   "0bea824d",
+   "d3765f81",
+   "d3765f81",
+   "e7ce1693",
+   "e7ce1693",
+   "8b884ce9",
+   "8b884ce9",
+   "7a9fe42f",
+   "71efe657",
+   "71efe657",
+   "71efe657",
+   "628148f5",
+   "628148f5",
+   "6f4143af",
+   "6f4143af",
+   "5c78ea7d",
+   "5c78ea7d",
+   "57971c7d",
+   "57971c7d",
+   "57971c7d",
+   "efc4b38b",
+   "40a2cc91",
+   "40a2cc91",
+   "36ec8c6b",
+   "e7fabb3e",
+   "9f687a3f",
+   "fa57bb57",
+   "a7bc5759",
+   "a7bc5759",
+   "a7bc5759",
+   "a4f6b446",
+   "5efa66f2",
+   "5efa66f2",
+   "0acfe136",
+   "0acfe136",
+   "ab8c1752",
+   "220ca746",
+   "b9fc1235",
+   "e5c5be2b",
+   "ef6f5d31",
+   "ef6f5d31",
+   "e8488aa3",
+   "e8488aa3",
+   "0bd4e110",
+   "30a15aec",
+   "feeaf5aa",
+   "4f912166",
+   "f9205ad2",
+   "f9205ad2",
+   "887e9256",
+   "887e9256",
+   "5417c103",
+   "08d958de",
+   "58518e6e",
+   "af4ee2aa",
+   "af4ee2aa",
+   "04a16c1e",
+   "04a16c1e",
+   "52834aba",
+   "52834aba",
+   "8edc9f9c",
+   "d298a505",
+   "7e50ad8f",
+   "7e50ad8f",
+   "7e50ad8f",
+   "7e50ad8f",
+   "cb5477e0",
+   "3a1953e0",
+   "3a1953e0",
+   "5ed0168c",
+   "09377111",
+   "fcad3cab",
+   "7c602263",
+   "b0ffb1e5",
+   "b0ffb1e5",
+   "b0ffb1e5",
+   "6f0e6e5d",
+   "62b6a6a7",
+   "62b6a6a7",
+   "4a19894a",
+   "97b38ddc",
+   "6eb1a6fa",
+   "3aed9bbe",
+   "2531e026",
+   "2531e026",
+   "2531e026",
+   "2531e026",
+   "e65a5f26",
+   "d6350cd2",
+   "d6350cd2",
+   "39ec3a96",
+   "39ec3a96",
+   "b17f1e22",
+   "b17f1e22",
+   "1e2170ae",
+   "1e2170ae",
+   "1e2170ae",
+   "4ff15e5a",
+   "e25db62e",
+   "e25db62e",
+   "3ad4ddea",
+   "3ad4ddea",
+   "efa6a9de",
+   "efa6a9de",
+   "0b4cc2bc",
+   "1293bc7c",
+   "1293bc7c",
+   "1293bc7c",
+   "123d4756",
+   "fcc22b22",
+   "fcc22b22",
+   "60e11ec6",
+   "60e11ec6",
+   "1f6dae72",
+   "1f6dae72",
+   "5180bcf6",
+   "5c5b6f90",
+   "7f602849",
+   "90ab91dc",
+   "90ab91dc",
+   "90ab91dc",
+   "90ab91dc",
+   "ee6758f5",
+   "9968d0af",
+   "9968d0af",
+   "1eea087d",
+   "1eea087d",
+   "285d7bc7",
+   "285d7bc7",
+   "ba20e50b",
+   "920e1f9d",
+   "e28302ac",
+   "576f1a93",
+   "576f1a93",
+   "634ec569",
+   "634ec569",
+   "22f3944b",
+   "22f3944b",
+   "812ff976",
+   "a4a03ac2",
+   "a4a03ac2",
+   "143052c7",
+   "87cec793",
+   "059ddb78",
+   "5ff015a4",
+   "b26866d7",
+   "b26866d7",
+   "1655961b",
+   "ae0bee81",
+   "ae0bee81",
+   "a0c54ef5",
+   "a0c54ef5",
+   "a0c54ef5",
+   "bc363bdd",
+   "1eb62627",
+   "1eb62627",
+   "1eb62627",
+   "bc363bdd",
+   "1eb62627",
+   "1eb62627",
+   "47db4098",
+   "9caeb30c",
+   "a9c686d5",
+   "22c1e0db",
+   "bc7f49ad",
+   "bc7f49ad",
+   "e5460e57",
+   "e5460e57",
+   "3671bbf5",
+   "3671bbf5",
+   "594f2daf",
+   "594f2daf",
+   "5eef6132",
+   "b6e96c55",
+   "b6e96c55",
+   "b6e96c55",
+   "b6e96c55",
+   "97098000",
+   "98caf580",
+   "98caf580",
+   "038a9100",
+   "038a9100",
+   "7ad99da3",
+   "73341224",
+   "94d7f01b",
+   "51981f60",
+   "51981f60",
+   "51981f60",
+   "51981f60",
+   "e4151d90",
+   "b62a5330",
+   "b62a5330",
+   "a7d84910",
+   "a7d84910",
+   "67b99868",
+   "c2663b95",
+   "d8558fac",
+   "8500f186",
+   "aa4b90c8",
+   "aa4b90c8",
+   "b96279d8",
+   "ac44bbf3",
+   "e903f207",
+   "05291834",
+   "dcda4ebe",
+   "662cd8c9",
+   "662cd8c9",
+   "662cd8c9",
+   "662cd8c9",
+   "d1c21cbe",
+   "11ee6e1a",
+   "11ee6e1a",
+   "571b8fee",
+   "571b8fee",
+   "7cdf5aaa",
+   "7cdf5aaa",
+   "ef2d8d81",
+   "2daed5f4",
+   "fb82774c",
+   "06299d70",
+   "27508e8b",
+   "27508e8b",
+   "27508e8b",
+   "7913bf6e",
+   "eafbf871",
+   "45f798a5",
+   "1eeb0223",
+   "c2b0c0bd",
+   "3184c647",
+   "3184c647",
+   "cc5a3405",
+   "cc5a3405",
+   "1e42ce9f",
+   "1e42ce9f",
+   "a3b91bae",
+   "fb2861e5",
+   "fb2861e5",
+   "d0d73bbf",
+   "d0d73bbf",
+   "ea3f826d",
+   "ea3f826d",
+   "ea3f826d",
+   "ea3f826d",
+   "8b98791c",
+   "42b8fe54",
+   "42b8fe54",
+   "b7a1a7fc",
+   "b7a1a7fc",
+   "17935af4",
+   "17935af4",
+   "ce14e688",
+   "ce14e688",
+   "ce14e688",
+   "ce14e688",
+   "3aaa680c",
+   "f38759a4",
+   "f38759a4",
+   "017eaba7",
+   "017eaba7",
+   "017eaba7",
+   "017eaba7",
+   "cda07b5d",
+   "34eee967",
+   "34eee967",
+   "0c806f25",
+   "0c806f25",
+   "27ac9d3f",
+   "27ac9d3f",
+   "e308afa9",
+   "c7ed9fdc",
+   "d16ae339",
+   "c66fbcab",
+   "a312be65",
+   "a312be65",
+   "a312be65",
+   "96fd735b",
+   "f8540901",
+   "f8540901",
+   "916cbad3",
+   "916cbad3",
+   "9e8938e9",
+   "9e8938e9",
+   "e8ee2e01",
+   "319dbfc0",
+   "f2aca384",
+   "f2aca384",
+   "f2aca384",
+   "f2aca384",
+   "c444388c",
+   "c444388c",
+   "88bf5fa4",
+   "88bf5fa4",
+   "9c3986e1",
+   "c026d548",
+   "c026d548",
+   "c026d548",
+   "c026d548",
+   "b4eac633",
+   "287df649",
+   "287df649",
+   "2eeed0eb",
+   "2eeed0eb",
+   "e077f5f1",
+   "e077f5f1",
+   "841d6a47",
+   "85f0a9c2",
+   "200e0427",
+   "3c965bb9",
+   "3c965bb9",
+   "9e58e03b",
+   "9e58e03b",
+   "18b330e1",
+   "18b330e1",
+   "4c14ce33",
+   "4c14ce33",
+   "a89a13af",
+   "d841a85e",
+   "bc730ff8",
+   "384ec591",
+   "ee8925a7",
+   "ee8925a7",
+   "ee8925a7",
+   "ee8925a7",
+   "034425e7",
+   "a6da7509",
+   "293f0235",
+   "293f0235",
+   "293f0235",
+   "293f0235",
+   "293f0235",
+   "a5749d00",
+   "f270683a",
+   "f270683a",
+   "f270683a",
+   "f270683a",
+   "f270683a",
+   "c02bad12",
+   "3b15167c",
+   "1dd52157",
+   "ad21d39a",
+   "ad21d39a",
+   "ad21d39a",
+   "ad21d39a",
+   "eb2a0e8e",
+   "01ad5bca",
+   "01ad5bca",
+   "79cf89be",
+   "79cf89be",
+   "92f2525a",
+   "92f2525a",
+   "af16da5b",
+   "c35d1384",
+   "d3bcc19d",
+   "4355ca56",
+   "da8db5e6",
+   "da8db5e6",
+   "450f6012",
+   "450f6012",
+   "1c1e40a8",
+   "723cb16d",
+   "6c9cbdf9",
+   "bb02b7cd",
+   "bb02b7cd",
+   "9e695ec1",
+   "e7a281c1",
+   "8463b13f",
+   "711ab5d2",
+   "711ab5d2",
+   "e4a14c26",
+   "711ab5d2",
+   "711ab5d2",
+   "53969b96",
+   "53969b96",
+   "cd8cb322",
+   "cd8cb322",
+   "3a9b36e7",
+   "3a9b36e7",
+   "edd2a2a5",
+   "edd2a2a5",
+   "680438bf",
+   "680438bf",
+   "11d0cd22",
+   "1284c433",
+   "1284c433",
+   "580f6fb2",
+   "6a86f136",
+   "6a86f136",
+   "6a86f136",
+   "8873ccbb",
+   "8958c6fd",
+   "8958c6fd",
+   "133126a7",
+   "2180dab6",
+   "2180dab6",
+   "2180dab6",
+   "2180dab6",
+   "2180dab6"
+  ],
+  "counts": [
+   0,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   0,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   0,
+   0,
+   1,
+   1,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   0,
+   1,
+   1,
+   1,
+   0,
+   0,
+   1,
+   1,
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   1,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   3,
+   3,
+   4,
+   4,
+   2,
+   2,
+   2,
+   3,
+   3,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   5,
+   6,
+   6,
+   7,
+   7,
+   7,
+   7,
+   7,
+   5,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   4,
+   5,
+   5,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   10,
+   10,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   10,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   9,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   7,
+   8,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   10,
+   10,
+   8,
+   9,
+   9,
+   10,
+   10,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   9,
+   10,
+   10,
+   11,
+   11,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   10,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   14,
+   14,
+   15,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   13,
+   14,
+   14,
+   14,
+   13,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   15,
+   15,
+   16,
+   16,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   13,
+   14,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   12,
+   13,
+   13,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   10,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   13,
+   11,
+   11,
+   11,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   14,
+   14,
+   14,
+   14,
+   14,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   14,
+   15,
+   15,
+   16,
+   16,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   12,
+   13,
+   13,
+   14,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   13,
+   14,
+   14,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   17,
+   17,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   14,
+   15,
+   15,
+   16,
+   16,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   18,
+   18,
+   19,
+   19,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   12,
+   13,
+   13,
+   14,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   15,
+   16,
+   16,
+   17,
+   17,
+   18,
+   18,
+   18,
+   18,
+   19,
+   19,
+   20,
+   20,
+   20,
+   20,
+   20,
+   19,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "freeCounts": [
+   20,
+   19,
+   19,
+   19,
+   19,
+   19,
+   19,
+   20,
+   19,
+   19,
+   19,
+   19,
+   19,
+   19,
+   19,
+   19,
+   20,
+   20,
+   19,
+   19,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   19,
+   19,
+   19,
+   19,
+   19,
+   20,
+   19,
+   19,
+   19,
+   20,
+   20,
+   19,
+   19,
+   18,
+   18,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   17,
+   19,
+   18,
+   18,
+   18,
+   18,
+   18,
+   18,
+   17,
+   17,
+   16,
+   16,
+   18,
+   18,
+   18,
+   17,
+   17,
+   16,
+   16,
+   16,
+   16,
+   16,
+   16,
+   15,
+   15,
+   14,
+   14,
+   13,
+   13,
+   13,
+   13,
+   13,
+   15,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   16,
+   15,
+   15,
+   14,
+   14,
+   14,
+   14,
+   14,
+   14,
+   13,
+   13,
+   12,
+   12,
+   12,
+   12,
+   12,
+   12,
+   11,
+   11,
+   10,
+   10,
+   10,
+   10,
+   10,
+   9,
+   9,
+   8,
+   8,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   10,
+   9,
+   9,
+   9,
+   9,
+   9,
+   9,
+   9,
+   9,
+   9,
+   11,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   10,
+   13,
+   12,
+   12,
+   11,
+   11,
+   10,
+   10,
+   10,
+   10,
+   10,
+   12,
+   11,
+   11,
+   10,
+   10,
+   9,
+   9,
+   9,
+   9,
+   9,
+   9,
+   11,
+   10,
+   10,
+   9,
+   9,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   10,
+   9,
+   9,
+   8,
+   8,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   6,
+   6,
+   5,
+   5,
+   5,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   7,
+   6,
+   6,
+   6,
+   7,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   5,
+   5,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   7,
+   6,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   10,
+   9,
+   9,
+   8,
+   8,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   7,
+   9,
+   9,
+   9,
+   9,
+   9,
+   8,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   6,
+   6,
+   5,
+   5,
+   4,
+   4,
+   4,
+   4,
+   6,
+   5,
+   5,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   8,
+   7,
+   7,
+   6,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   7,
+   6,
+   6,
+   5,
+   5,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   3,
+   3,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   6,
+   5,
+   5,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   2,
+   2,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   8,
+   7,
+   7,
+   6,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   4,
+   4,
+   3,
+   3,
+   2,
+   2,
+   2,
+   2,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ "pickups": {
+  "capacity": 16,
+  "steps": [
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 28161,
+    "tier": 6,
+    "x": "c083c0527af80000",
+    "y": "c061d7fd65800000",
+    "spawnId": 1
+   },
+   {
+    "op": "fill",
+    "d": 0,
+    "vx": "4067ce817dc00000",
+    "vy": "c037e58845000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 69725,
+    "tier": 2,
+    "x": "40734d499aa00000",
+    "y": "c062f90306600000",
+    "spawnId": 2
+   },
+   {
+    "op": "fill",
+    "d": 1,
+    "vx": "403c89be44000000",
+    "vy": "4043de29f7000000",
+    "flags": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 4716,
+    "tier": 3,
+    "x": "c0825a825b700000",
+    "y": "c082b3bff5f00000",
+    "spawnId": 3
+   },
+   {
+    "op": "fill",
+    "d": 2,
+    "vx": "c04e5fe9b4800000",
+    "vy": "40633bc2ff600000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 24270,
+    "tier": 4,
+    "x": "408481b23f600000",
+    "y": "c07196c973f00000",
+    "spawnId": 4
+   },
+   {
+    "op": "fill",
+    "d": 3,
+    "vx": "c03dbbf1ef000000",
+    "vy": "c014791f34000000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 39118,
+    "tier": 3,
+    "x": "c06a3337f3600000",
+    "y": "c08507892e200000",
+    "spawnId": 5
+   },
+   {
+    "op": "fill",
+    "d": 4,
+    "vx": "4062f00bb3000000",
+    "vy": "c04fbfe9ec800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 256,
+    "tier": 1,
+    "x": "4075c3fdb9300000",
+    "y": "4084063207400000",
+    "spawnId": 6
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "vx": "405e01480ec00000",
+    "vy": "c0658c7681600000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 40260,
+    "tier": 4,
+    "x": "c068decebda00000",
+    "y": "4052314b6b000000",
+    "spawnId": 7
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "vx": "4065e80e0a600000",
+    "vy": "4038106361000000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 7986,
+    "tier": 2,
+    "x": "c0812ef46b600000",
+    "y": "c080ea026b400000",
+    "spawnId": 8
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "vx": "c0387c3375000000",
+    "vy": "40419970b2800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 3558,
+    "tier": 1,
+    "x": "4056133bd5800000",
+    "y": "c07dd25cb5d00000",
+    "spawnId": 9
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "vx": "404c8c276e000000",
+    "vy": "405705ae14800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 11515,
+    "tier": 0,
+    "x": "407d4b817c000000",
+    "y": "c06d116c47000000",
+    "spawnId": 10
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "406218d02f400000",
+    "vy": "404d5ee7f1800000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 21385,
+    "tier": 5,
+    "x": "c060afc9a3c00000",
+    "y": "407368542c100000",
+    "spawnId": 11
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "vx": "405e76197e800000",
+    "vy": "c029847d3e000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 37347,
+    "tier": 2,
+    "x": "407f4a1610700000",
+    "y": "c07e2a843c000000",
+    "spawnId": 12
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "vx": "c0508372f2000000",
+    "vy": "c060c69ef4000000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 60082,
+    "tier": 4,
+    "x": "40791ddf13a00000",
+    "y": "c081160779280000",
+    "spawnId": 13
+   },
+   {
+    "op": "fill",
+    "d": 3,
+    "vx": "c0424383be000000",
+    "vy": "405d6000b8c00000",
+    "flags": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 10197,
+    "tier": 5,
+    "x": "c06c95e1cc000000",
+    "y": "c059eadd0fc00000",
+    "spawnId": 14
+   },
+   {
+    "op": "fill",
+    "d": 4,
+    "vx": "40681d128a000000",
+    "vy": "c05a7a07f3400000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 18113,
+    "tier": 4,
+    "x": "4085cc1b73980000",
+    "y": "407e132c18000000",
+    "spawnId": 15
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "vx": "4064e287e1200000",
+    "vy": "40637fd286a00000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 28499,
+    "tier": 4,
+    "x": "c053327200000000",
+    "y": "406a835619200000",
+    "spawnId": 16
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "vx": "c060d2ba16800000",
+    "vy": "c046c4fe08800000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 64354,
+    "tier": 7,
+    "x": "c077c42a04200000",
+    "y": "c07f4929b6c00000",
+    "spawnId": 17
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "vx": "c066360a15800000",
+    "vy": "c062f3fffd400000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 65017,
+    "tier": 5,
+    "x": "c04780a136000000",
+    "y": "4074240a32d00000",
+    "spawnId": 18
+   },
+   {
+    "op": "fill",
+    "d": 5,
+    "vx": "c06708c8d5e00000",
+    "vy": "405cad3b6c000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 51931,
+    "tier": 2,
+    "x": "c06b6175bba00000",
+    "y": "4063560aa8200000",
+    "spawnId": 19
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "vx": "c067c6e2ba600000",
+    "vy": "4032463043000000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 11149,
+    "tier": 0,
+    "x": "40821ad9d0200000",
+    "y": "c049ef9a9f800000",
+    "spawnId": 20
+   },
+   {
+    "op": "fill",
+    "d": 6,
+    "vx": "4060a6b045400000",
+    "vy": "c05cecedb6000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 10512,
+    "tier": 6,
+    "x": "c080749d27f80000",
+    "y": "407c599997200000",
+    "spawnId": 21
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "vx": "c048d830cf000000",
+    "vy": "406831c70fe00000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 35391,
+    "tier": 4,
+    "x": "c06e47dc23a00000",
+    "y": "c06cc19753a00000",
+    "spawnId": 22
+   },
+   {
+    "op": "fill",
+    "d": 7,
+    "vx": "40637a6779200000",
+    "vy": "404aa2b829000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 43664,
+    "tier": 2,
+    "x": "4072c98aa6500000",
+    "y": "c07a0442eb500000",
+    "spawnId": 23
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "vx": "c0687ced45a00000",
+    "vy": "405c360d5a400000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 69014,
+    "tier": 5,
+    "x": "c06ab26577800000",
+    "y": "408042ac84a00000",
+    "spawnId": 24
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "c04ab28952000000",
+    "vy": "c04f3c55ec800000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "markDead",
+    "d": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 54184,
+    "tier": 3,
+    "x": "c06e8ade2e200000",
+    "y": "c0680c3172800000",
+    "spawnId": 25
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "vx": "c062f19415800000",
+    "vy": "c04152001f000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 39565,
+    "tier": 1,
+    "x": "c0838d2416100000",
+    "y": "4080694b62780000",
+    "spawnId": 26
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "c0592a9c4d000000",
+    "vy": "4064675e14600000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 47909,
+    "tier": 7,
+    "x": "c03b8bcba5000000",
+    "y": "c077224332300000",
+    "spawnId": 27
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "vx": "c059d0787bc00000",
+    "vy": "4055b3b8c3800000",
+    "flags": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 69163,
+    "tier": 5,
+    "x": "4085425c64180000",
+    "y": "40792fbc81d00000",
+    "spawnId": 28
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "vx": "4055a17379800000",
+    "vy": "405679dcea000000",
+    "flags": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 69894,
+    "tier": 3,
+    "x": "4081bcfc10400000",
+    "y": "c060efba5ac00000",
+    "spawnId": 29
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "vx": "c0648f93ea000000",
+    "vy": "405f64b512800000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 3106,
+    "tier": 7,
+    "x": "4077603ab7600000",
+    "y": "4061745cc4200000",
+    "spawnId": 30
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "vx": "c05c6f47f3400000",
+    "vy": "c05ed28547000000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 54694,
+    "tier": 3,
+    "x": "c081d1cce4380000",
+    "y": "407f548616b00000",
+    "spawnId": 31
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "vx": "c0688991dbe00000",
+    "vy": "c0638b59a2a00000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 7731,
+    "tier": 7,
+    "x": "407a298778200000",
+    "y": "4083647a94b80000",
+    "spawnId": 32
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "vx": "404c783107800000",
+    "vy": "4053b94873800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 29549,
+    "tier": 2,
+    "x": "4039616940000000",
+    "y": "c073789d4f600000",
+    "spawnId": 33
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "c0417b988d000000",
+    "vy": "40617c397fc00000",
+    "flags": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 12109,
+    "tier": 4,
+    "x": "c063a785afa00000",
+    "y": "c07ae4f089500000",
+    "spawnId": 34
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "40503b6429800000",
+    "vy": "c0597030b0800000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 68839,
+    "tier": 7,
+    "x": "c08197f5ef980000",
+    "y": "4080616a8a300000",
+    "spawnId": 35
+   },
+   {
+    "op": "markDead",
+    "d": 11
+   },
+   {
+    "op": "markDead",
+    "d": 7
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 36094,
+    "tier": 1,
+    "x": "c07b185683200000",
+    "y": "4047986411800000",
+    "spawnId": 36
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "vx": "40558bf641800000",
+    "vy": "405d46f4a3400000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 59901,
+    "tier": 6,
+    "x": "c0848c6682580000",
+    "y": "4080501437300000",
+    "spawnId": 37
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "4051f6033fc00000",
+    "vy": "4067c3d73ec00000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 69117,
+    "tier": 5,
+    "x": "c07630189aa00000",
+    "y": "c05e942342c00000",
+    "spawnId": 38
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 66934,
+    "tier": 3,
+    "x": "c0819a994bc00000",
+    "y": "c06a7c9da1c00000",
+    "spawnId": 39
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "4037086b0c000000",
+    "vy": "c068d794f3800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 63992,
+    "tier": 0,
+    "x": "4071afa577d00000",
+    "y": "403ff648a7000000",
+    "spawnId": 40
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 55686,
+    "tier": 4,
+    "x": "c03868cfbb000000",
+    "y": "406bdab07b800000",
+    "spawnId": 41
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "vx": "c025c00c4a000000",
+    "vy": "c067f381bee00000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 14
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 27310,
+    "tier": 1,
+    "x": "40734ddaa1200000",
+    "y": "407939c48d100000",
+    "spawnId": 42
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "vx": "403c8aa165000000",
+    "vy": "c02e4b7c42000000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 31072,
+    "tier": 0,
+    "x": "c00edb1860000000",
+    "y": "c0592f73a7000000",
+    "spawnId": 43
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "vx": "c068f6229ae00000",
+    "vy": "405f2033fac00000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 8
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 55311,
+    "tier": 4,
+    "x": "c0697448ebe00000",
+    "y": "4079076e27e00000",
+    "spawnId": 44
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "c0677d44e7200000",
+    "vy": "4063c48ef2400000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 39163,
+    "tier": 0,
+    "x": "c0857654ee700000",
+    "y": "c0857293a0080000",
+    "spawnId": 45
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "c001d2d7f0000000",
+    "vy": "40570ecdfbc00000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 3,
+    "value": 66970,
+    "tier": 5,
+    "x": "4081cd18bc700000",
+    "y": "c083207620c00000",
+    "spawnId": 46
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "vx": "c06544f227400000",
+    "vy": "4060423392800000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 37120,
+    "tier": 1,
+    "x": "c07899edd7a00000",
+    "y": "408579c244400000",
+    "spawnId": 47
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "bff3006070000000",
+    "vy": "c0688185d6c00000",
+    "flags": 2
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "markDead",
+    "d": 6
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 65669,
+    "tier": 4,
+    "x": "407bec2332300000",
+    "y": "c03c7eaff7000000",
+    "spawnId": 48
+   },
+   {
+    "op": "fill",
+    "d": 8,
+    "vx": "c0423d2b61000000",
+    "vy": "c03c89bb22000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 45060,
+    "tier": 7,
+    "x": "c06bf94889a00000",
+    "y": "c075a517aed00000",
+    "spawnId": 49
+   },
+   {
+    "op": "fill",
+    "d": 9,
+    "vx": "c04f5da4a8000000",
+    "vy": "c043f38c8e000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 50357,
+    "tier": 6,
+    "x": "407961125f200000",
+    "y": "4084b3fdde580000",
+    "spawnId": 50
+   },
+   {
+    "op": "fill",
+    "d": 10,
+    "vx": "4066a11d9b200000",
+    "vy": "40549d8a74000000",
+    "flags": 2
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 60786,
+    "tier": 2,
+    "x": "c079bf8491200000",
+    "y": "406c57ed5ae00000",
+    "spawnId": 51
+   },
+   {
+    "op": "fill",
+    "d": 11,
+    "vx": "4061561131a00000",
+    "vy": "c061f38d29800000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 47756,
+    "tier": 3,
+    "x": "c03ab3bb82000000",
+    "y": "406e8b85c7c00000",
+    "spawnId": 52
+   },
+   {
+    "op": "fill",
+    "d": 12,
+    "vx": "406401765de00000",
+    "vy": "403e792e2e000000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 12
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 21689,
+    "tier": 7,
+    "x": "406653c934200000",
+    "y": "407da89b96200000",
+    "spawnId": 53
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "vx": "4056aebfc1400000",
+    "vy": "4061e2d686000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 23781,
+    "tier": 6,
+    "x": "407fd1c6b9400000",
+    "y": "c062e9eb54600000",
+    "spawnId": 54
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "vx": "400f109878000000",
+    "vy": "c062c2d970800000",
+    "flags": 0
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 4,
+    "value": 31482,
+    "tier": 6,
+    "x": "c084228a99780000",
+    "y": "c0756fe96ca00000",
+    "spawnId": 55
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "vx": "4062d4e529c00000",
+    "vy": "c06758a2a2000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 18297,
+    "tier": 7,
+    "x": "c07f9f0f30500000",
+    "y": "405a54c5f8000000",
+    "spawnId": 56
+   },
+   {
+    "op": "fill",
+    "d": 14,
+    "vx": "c068b35915c00000",
+    "vy": "40443b0750000000",
+    "flags": 0
+   },
+   {
+    "op": "alloc",
+    "kind": 0,
+    "value": 40230,
+    "tier": 7,
+    "x": "40833f1bb1980000",
+    "y": "403f74338a000000",
+    "spawnId": 57
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "c04d34a013800000",
+    "vy": "405f0d9119000000",
+    "flags": 2
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 42300,
+    "tier": 4,
+    "x": "c07426c8c0300000",
+    "y": "40836a3f83980000",
+    "spawnId": 58
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 59778,
+    "tier": 0,
+    "x": "c058d1d842400000",
+    "y": "c07b903c3f300000",
+    "spawnId": 59
+   },
+   {
+    "op": "markDead",
+    "d": 11
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 2,
+    "value": 46339,
+    "tier": 7,
+    "x": "40796c00f3800000",
+    "y": "c05c9f8a11c00000",
+    "spawnId": 60
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "c02decae5c000000",
+    "vy": "40578a61e8400000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 3
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 12782,
+    "tier": 3,
+    "x": "c05cdb66e0000000",
+    "y": "c0220a1118000000",
+    "spawnId": 61
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 1,
+    "value": 2313,
+    "tier": 5,
+    "x": "4074297b54e00000",
+    "y": "c06586898c000000",
+    "spawnId": 62
+   },
+   {
+    "op": "fill",
+    "d": 15,
+    "vx": "c06063ed04200000",
+    "vy": "c066945113600000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 15
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "markDead",
+    "d": 10
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "alloc",
+    "kind": 5,
+    "value": 69889,
+    "tier": 1,
+    "x": "c045e086b1800000",
+    "y": "4076271f1d500000",
+    "spawnId": 63
+   },
+   {
+    "op": "fill",
+    "d": 13,
+    "vx": "c04452907e800000",
+    "vy": "405eedfa22400000",
+    "flags": 0
+   },
+   {
+    "op": "markDead",
+    "d": 4
+   },
+   {
+    "op": "reap"
+   },
+   {
+    "op": "markDead",
+    "d": 9
+   },
+   {
+    "op": "markDead",
+    "d": 1
+   },
+   {
+    "op": "markDead",
+    "d": 5
+   },
+   {
+    "op": "reap"
+   }
+  ],
+  "hashes": [
+   "4b95f515",
+   "f165b129",
+   "a8cb1760",
+   "df4e02b3",
+   "6355ec88",
+   "6355ec88",
+   "6355ec88",
+   "984ef465",
+   "2333d942",
+   "c606413f",
+   "775c2e3e",
+   "214cd481",
+   "576f6bd0",
+   "3f859ab8",
+   "72617a5b",
+   "b83cead4",
+   "c6713ca2",
+   "53832a67",
+   "8f05ef4a",
+   "4c7a6479",
+   "85401d85",
+   "b701845e",
+   "b701845e",
+   "6654d133",
+   "37d195f9",
+   "07484f09",
+   "38ab61ab",
+   "62b501f4",
+   "aed35e81",
+   "aed35e81",
+   "6dfe21ed",
+   "2780cf4a",
+   "057dae1f",
+   "5e3e51e4",
+   "2f566376",
+   "4baa5fc3",
+   "6b44e769",
+   "200c1db6",
+   "d0ae45a1",
+   "f9ab27b4",
+   "f9ab27b4",
+   "376c3689",
+   "03f86b11",
+   "819a885e",
+   "819a885e",
+   "c9559c9e",
+   "5e0a7f18",
+   "14546d8d",
+   "6c917ada",
+   "4a2c744a",
+   "585297be",
+   "e23084e1",
+   "3ba1551a",
+   "03bfd0b5",
+   "80bd9b00",
+   "bcfa3dfd",
+   "a9299cfb",
+   "eaf1ae34",
+   "a977d835",
+   "be977309",
+   "6b4a5b73",
+   "4bd67e2c",
+   "bc841605",
+   "ffd05fa8",
+   "dc61a945",
+   "1758ce1d",
+   "67bb2c36",
+   "ec1fc66f",
+   "ec1fc66f",
+   "1b44abcc",
+   "eedbe7a6",
+   "61a594f0",
+   "0237dcf4",
+   "0a717e41",
+   "c94fc53b",
+   "7092ec77",
+   "174f91d6",
+   "37f070db",
+   "0b73335c",
+   "51052516",
+   "a2054704",
+   "d8a1dee6",
+   "e2f57b94",
+   "68701337",
+   "b5c8c195",
+   "71691e7c",
+   "6e4caf5b",
+   "6e4caf5b",
+   "ff274d90",
+   "13eb8ca8",
+   "13eb8ca8",
+   "88000aba",
+   "a85d08c1",
+   "5f47e77e",
+   "f927222b",
+   "6cd732ea",
+   "6cd732ea",
+   "ad557e82",
+   "ebc6eca8",
+   "819543e3",
+   "c8b34dce",
+   "733be7ae",
+   "7ff80944",
+   "a72d2813",
+   "33b744ef",
+   "5270df6e",
+   "5270df6e",
+   "eee0b4c9",
+   "b83b8aba",
+   "fb956627",
+   "794f3689",
+   "317a633a",
+   "0050ce2c",
+   "7b0cc4dc",
+   "7b0cc4dc",
+   "bed20f97",
+   "b71f3f63",
+   "55ae0324",
+   "fa1a7f3d",
+   "fa1a7f3d",
+   "5f4a55ea",
+   "e4830d4b",
+   "2d1fc05c",
+   "3abf4583",
+   "d5276790",
+   "ebf252bf",
+   "10739e20",
+   "02740393",
+   "1bbe45e5",
+   "8445b71b",
+   "ad405bb8",
+   "0d462501",
+   "dd31a2ac",
+   "cf411311",
+   "29422bc8",
+   "6b996316",
+   "964ec9fe",
+   "fa7a581b",
+   "9ec6dd06",
+   "4c0fb153",
+   "791707d8",
+   "9c55135a",
+   "f5dfcb07",
+   "a40814c6",
+   "4eb9289c",
+   "8472c24a",
+   "26bc0c9d",
+   "587176ba",
+   "7aa3cfa3",
+   "3da4ae11",
+   "730789a1",
+   "58b819e7",
+   "afa34baf",
+   "d4b77760",
+   "8c809d19",
+   "1aec0c3d",
+   "6397f2bb",
+   "a4ae6ac9",
+   "13bca07d",
+   "dd75c128",
+   "2fab00a5",
+   "f07c89f2",
+   "f07c89f2",
+   "e9ec04f8",
+   "5946c4ee",
+   "2d3d60c8",
+   "fe5d7c8b",
+   "2b93e8fc",
+   "6dbea365",
+   "4e338447",
+   "2475ccaf",
+   "412b72f5",
+   "6a29bd2e",
+   "3e782802",
+   "0600a7fe",
+   "c034d2c8",
+   "35f9a578",
+   "d34b7ace",
+   "89cae2a0",
+   "325d22ec",
+   "325d22ec",
+   "325d22ec",
+   "95d562a3",
+   "77fc577a",
+   "1aae84d4",
+   "3a8498d0",
+   "9d9d3dab",
+   "9d9d3dab",
+   "a73ba30d",
+   "b84ed6c8",
+   "e3d5093d",
+   "3d5e10ce",
+   "a73ba30d",
+   "99b92720",
+   "38e82727",
+   "5a2c7a43",
+   "aafcf24e",
+   "88c090bb",
+   "474cccee",
+   "ed9f72bd",
+   "d3cf55ec",
+   "c2bd9f5d",
+   "ee2bf1a8",
+   "61f099f8"
+  ],
+  "counts": [
+   0,
+   1,
+   1,
+   2,
+   2,
+   2,
+   2,
+   3,
+   3,
+   4,
+   4,
+   4,
+   4,
+   5,
+   5,
+   6,
+   6,
+   6,
+   6,
+   6,
+   7,
+   7,
+   7,
+   8,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   5,
+   6,
+   6,
+   7,
+   7,
+   7,
+   6,
+   6,
+   6,
+   6,
+   6,
+   3,
+   4,
+   4,
+   4,
+   5,
+   5,
+   6,
+   6,
+   7,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   5,
+   6,
+   6,
+   7,
+   7,
+   7,
+   6,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   7,
+   8,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   10,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   11,
+   11,
+   10,
+   10,
+   11,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   14,
+   14,
+   15,
+   15,
+   16,
+   16,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   14,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   14,
+   15,
+   15,
+   15,
+   15,
+   15,
+   12,
+   13,
+   13,
+   13,
+   13,
+   11,
+   11,
+   12,
+   12,
+   12,
+   12,
+   9,
+   10,
+   10,
+   10,
+   9,
+   10,
+   10,
+   10,
+   10,
+   8,
+   9,
+   9,
+   10,
+   10,
+   10,
+   10,
+   8,
+   9,
+   9,
+   10,
+   10,
+   11,
+   11,
+   11,
+   12,
+   12,
+   13,
+   13,
+   13,
+   13,
+   14,
+   14,
+   15,
+   15,
+   13,
+   14,
+   14,
+   15,
+   15,
+   16,
+   16,
+   16,
+   16,
+   16,
+   15,
+   16,
+   16,
+   16,
+   16,
+   15,
+   16,
+   16,
+   16,
+   15,
+   15,
+   15,
+   13,
+   14,
+   14,
+   14,
+   13,
+   13,
+   13,
+   13,
+   10
+  ],
+  "freeCounts": [
+   16,
+   15,
+   15,
+   14,
+   14,
+   14,
+   14,
+   13,
+   13,
+   12,
+   12,
+   12,
+   12,
+   11,
+   11,
+   10,
+   10,
+   10,
+   10,
+   10,
+   9,
+   9,
+   9,
+   8,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   11,
+   10,
+   10,
+   9,
+   9,
+   9,
+   10,
+   10,
+   10,
+   10,
+   10,
+   13,
+   12,
+   12,
+   12,
+   11,
+   11,
+   10,
+   10,
+   9,
+   9,
+   9,
+   8,
+   8,
+   8,
+   8,
+   11,
+   10,
+   10,
+   9,
+   9,
+   9,
+   10,
+   9,
+   9,
+   8,
+   8,
+   8,
+   8,
+   9,
+   8,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   6,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   5,
+   5,
+   6,
+   6,
+   5,
+   5,
+   5,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   2,
+   2,
+   1,
+   1,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   2,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   4,
+   3,
+   3,
+   3,
+   3,
+   5,
+   5,
+   4,
+   4,
+   4,
+   4,
+   7,
+   6,
+   6,
+   6,
+   7,
+   6,
+   6,
+   6,
+   6,
+   8,
+   7,
+   7,
+   6,
+   6,
+   6,
+   6,
+   8,
+   7,
+   7,
+   6,
+   6,
+   5,
+   5,
+   5,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   2,
+   2,
+   1,
+   1,
+   3,
+   2,
+   2,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   1,
+   1,
+   1,
+   3,
+   2,
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   6
+  ]
+ },
+ "drones": {
+  "capacity": 8,
+  "steps": [
+   {
+    "op": "alloc",
+    "x": "c0065cc280000000",
+    "y": "c051bdae4d400000",
+    "angle": "3ffa7eca28000000",
+    "ammo": 7,
+    "weaponSlot": 4,
+    "spin": -1
+   },
+   {
+    "op": "free",
+    "d": 0
+   },
+   {
+    "op": "alloc",
+    "x": "c0637785d8e00000",
+    "y": "406736b1aba00000",
+    "angle": "c009d72788000000",
+    "ammo": 36,
+    "weaponSlot": 1,
+    "spin": 1
+   },
+   {
+    "op": "engage",
+    "d": 0,
+    "targetDense": 17,
+    "cooldownLeft": "3fc3751060000000"
+   },
+   {
+    "op": "alloc",
+    "x": "4068d5ffaf800000",
+    "y": "c06ecfd6a2c00000",
+    "angle": "bfc1a04b80000000",
+    "ammo": 32,
+    "weaponSlot": 1,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 1,
+    "targetDense": 135,
+    "cooldownLeft": "3ff02e66f0000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c067b20204600000",
+    "y": "40315d07c4000000",
+    "angle": "bfe4becac0000000",
+    "ammo": 4,
+    "weaponSlot": 5,
+    "spin": -1
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "engage",
+    "d": 0,
+    "targetDense": 160,
+    "cooldownLeft": "3ff837a114000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c0670f876ae00000",
+    "y": "c037a84646000000",
+    "angle": "3fcd888dc0000000",
+    "ammo": 3,
+    "weaponSlot": 4,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 1,
+    "targetDense": 81,
+    "cooldownLeft": "3ff5fa4f88000000"
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "engage",
+    "d": 0,
+    "targetDense": 63,
+    "cooldownLeft": "3ff7717a44000000"
+   },
+   {
+    "op": "alloc",
+    "x": "40521a5416000000",
+    "y": "4072adad33100000",
+    "angle": "3fd6c194a0000000",
+    "ammo": 31,
+    "weaponSlot": 3,
+    "spin": 1
+   },
+   {
+    "op": "free",
+    "d": 0
+   },
+   {
+    "op": "engage",
+    "d": 1,
+    "targetDense": 101,
+    "cooldownLeft": "3fdd4f2690000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c0529995ecc00000",
+    "y": "404afd7a57800000",
+    "angle": "3ffedfab18000000",
+    "ammo": 1,
+    "weaponSlot": 4,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c06e7f8f40c00000",
+    "y": "c0606bf819800000",
+    "angle": "400442c1d8000000",
+    "ammo": 35,
+    "weaponSlot": 1,
+    "spin": -1
+   },
+   {
+    "op": "free",
+    "d": 0
+   },
+   {
+    "op": "alloc",
+    "x": "406f2e450a000000",
+    "y": "c0623d5d99a00000",
+    "angle": "bffefbc150000000",
+    "ammo": 17,
+    "weaponSlot": 3,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c0620ef7a2200000",
+    "y": "4027ca7b08000000",
+    "angle": "bffa783ec8000000",
+    "ammo": 24,
+    "weaponSlot": 4,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "405aaf3482400000",
+    "y": "402cff906e000000",
+    "angle": "4003705448000000",
+    "ammo": 38,
+    "weaponSlot": 1,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "406c6a39ba600000",
+    "y": "4040ab0695800000",
+    "angle": "3ffa0608f8000000",
+    "ammo": 22,
+    "weaponSlot": 5,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "405759b2f7c00000",
+    "y": "c066f83c13c00000",
+    "angle": "bfb9c22c80000000",
+    "ammo": 11,
+    "weaponSlot": 1,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c0089bef80000000",
+    "y": "c0602a5e24000000",
+    "angle": "c001009c30000000",
+    "ammo": 7,
+    "weaponSlot": 6,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "405a9a2776c00000",
+    "y": "c06944f7cb200000",
+    "angle": "bfd2c34f40000000",
+    "ammo": 6,
+    "weaponSlot": 1,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 2,
+    "targetDense": 149,
+    "cooldownLeft": "3ff76b3d2c000000"
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "free",
+    "d": 5
+   },
+   {
+    "op": "alloc",
+    "x": "40635953e5400000",
+    "y": "4070885170500000",
+    "angle": "40049dce08000000",
+    "ammo": 3,
+    "weaponSlot": 5,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c06b21fa03800000",
+    "y": "406f31a915c00000",
+    "angle": "3fecfb0d40000000",
+    "ammo": 17,
+    "weaponSlot": 3,
+    "spin": 1
+   },
+   {
+    "op": "engage",
+    "d": 0,
+    "targetDense": 57,
+    "cooldownLeft": "3ffb9206c4000000"
+   },
+   {
+    "op": "alloc",
+    "x": "4068abd6ec400000",
+    "y": "c07147b1a6600000",
+    "angle": "40054c41b4000000",
+    "ammo": 13,
+    "weaponSlot": 6,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c070f4c1e3100000",
+    "y": "404aa10d7d000000",
+    "angle": "3ffae431f0000000",
+    "ammo": 10,
+    "weaponSlot": 0,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "406fc5495ca00000",
+    "y": "40521bc704000000",
+    "angle": "c000dfd95c000000",
+    "ammo": 17,
+    "weaponSlot": 5,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c055b0dd71c00000",
+    "y": "4061e74ee6800000",
+    "angle": "bfea2bb5c0000000",
+    "ammo": 15,
+    "weaponSlot": 5,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 3,
+    "targetDense": 3,
+    "cooldownLeft": "3ff7e91ea8000000"
+   },
+   {
+    "op": "engage",
+    "d": 2,
+    "targetDense": 149,
+    "cooldownLeft": "3ff8ce85b4000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c06b454172800000",
+    "y": "c0681549be600000",
+    "angle": "bff3893ac0000000",
+    "ammo": 12,
+    "weaponSlot": 0,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 1,
+    "targetDense": 55,
+    "cooldownLeft": "3ff6d60d9c000000"
+   },
+   {
+    "op": "engage",
+    "d": 0,
+    "targetDense": 2,
+    "cooldownLeft": "3fcbafc0c0000000"
+   },
+   {
+    "op": "alloc",
+    "x": "4050f6db5a800000",
+    "y": "406b5d5dbaa00000",
+    "angle": "4007eb0ccc000000",
+    "ammo": 27,
+    "weaponSlot": 4,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c071212150b00000",
+    "y": "406a8cbac9e00000",
+    "angle": "c00001fabc000000",
+    "ammo": 36,
+    "weaponSlot": 4,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c05e68d23d400000",
+    "y": "c06338ca1e200000",
+    "angle": "3fcdcbb980000000",
+    "ammo": 8,
+    "weaponSlot": 1,
+    "spin": 1
+   },
+   {
+    "op": "free",
+    "d": 6
+   },
+   {
+    "op": "engage",
+    "d": 4,
+    "targetDense": 115,
+    "cooldownLeft": "3fe0b4bf08000000"
+   },
+   {
+    "op": "alloc",
+    "x": "40422b7a34000000",
+    "y": "405a76fa71000000",
+    "angle": "3ff671b060000000",
+    "ammo": 8,
+    "weaponSlot": 5,
+    "spin": 1
+   },
+   {
+    "op": "engage",
+    "d": 3,
+    "targetDense": 111,
+    "cooldownLeft": "3fed5e8880000000"
+   },
+   {
+    "op": "free",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "x": "4072136d2e600000",
+    "y": "c05def7bd0000000",
+    "angle": "c00967da60000000",
+    "ammo": 10,
+    "weaponSlot": 7,
+    "spin": -1
+   },
+   {
+    "op": "engage",
+    "d": 2,
+    "targetDense": 161,
+    "cooldownLeft": "3ff35f0d44000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c06354c938000000",
+    "y": "c06996a2d8a00000",
+    "angle": "3fbfd44200000000",
+    "ammo": 23,
+    "weaponSlot": 1,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "40247818de000000",
+    "y": "c06fac6acfc00000",
+    "angle": "bfdce740e0000000",
+    "ammo": 31,
+    "weaponSlot": 0,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c064456c4e400000",
+    "y": "c006789098000000",
+    "angle": "bff22dd9d0000000",
+    "ammo": 18,
+    "weaponSlot": 3,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "4052e236c6800000",
+    "y": "c0728b6dbb000000",
+    "angle": "c0022d615c000000",
+    "ammo": 1,
+    "weaponSlot": 6,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c068156391600000",
+    "y": "3ff46499c0000000",
+    "angle": "3ffd08c680000000",
+    "ammo": 21,
+    "weaponSlot": 1,
+    "spin": 1
+   },
+   {
+    "op": "free",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "x": "4062bd5af5400000",
+    "y": "4050875328800000",
+    "angle": "3ff9dea570000000",
+    "ammo": 24,
+    "weaponSlot": 0,
+    "spin": -1
+   },
+   {
+    "op": "alloc",
+    "x": "c04a3339f5000000",
+    "y": "c066fb6f68c00000",
+    "angle": "3fdbd27d40000000",
+    "ammo": 18,
+    "weaponSlot": 5,
+    "spin": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c03dffe877000000",
+    "y": "406e4f2de6200000",
+    "angle": "bff2405f28000000",
+    "ammo": 34,
+    "weaponSlot": 4,
+    "spin": -1
+   }
+  ],
+  "hashes": [
+   "4b95f515",
+   "d3aca2e3",
+   "4b95f515",
+   "c68e4954",
+   "686c4a77",
+   "7ec78f48",
+   "bf83e7ca",
+   "6e69af26",
+   "bf83e7ca",
+   "b2937af2",
+   "d88ca921",
+   "dee456b3",
+   "4a833e38",
+   "21cd263b",
+   "1c30a582",
+   "f97983af",
+   "df2be6b3",
+   "a59b0c51",
+   "ba8c6416",
+   "2c5f9055",
+   "158b6c32",
+   "6186d656",
+   "bfb868df",
+   "6cb11368",
+   "3b7b92ab",
+   "3b7b92ab",
+   "3b7b92ab",
+   "96c97276",
+   "6160a385",
+   "3dbca9ee",
+   "028ff52d",
+   "85aa838e",
+   "c6ffdf28",
+   "c6ffdf28",
+   "c6ffdf28",
+   "c6ffdf28",
+   "c6ffdf28",
+   "f3f795fe",
+   "9858e88a",
+   "9858e88a",
+   "38b85ad0",
+   "7b80c6e0",
+   "7b80c6e0",
+   "7b80c6e0",
+   "7b80c6e0",
+   "b22c2693",
+   "d0de6d7f",
+   "04afc80e",
+   "6f523b29",
+   "c857f6de",
+   "11f1bf8c",
+   "0dc76e53",
+   "0dc76e53",
+   "0dc76e53",
+   "0dc76e53",
+   "0dc76e53",
+   "0dc76e53",
+   "50306f3e",
+   "3139fdcb",
+   "3139fdcb",
+   "3139fdcb"
+  ],
+  "counts": [
+   0,
+   1,
+   0,
+   1,
+   1,
+   2,
+   2,
+   3,
+   2,
+   2,
+   3,
+   3,
+   2,
+   2,
+   3,
+   2,
+   2,
+   3,
+   4,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   8,
+   8,
+   8,
+   7,
+   6,
+   7,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   7,
+   7,
+   8,
+   8,
+   7,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   7,
+   8,
+   8,
+   8
+  ]
+ },
+ "sheep": {
+  "capacity": 24,
+  "steps": [
+   {
+    "op": "alloc",
+    "x": "40834e3513000000",
+    "y": "c05b1ef486000000",
+    "spawnId": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c07639c511f00000",
+    "y": "c087b33a2ec00000",
+    "spawnId": 2
+   },
+   {
+    "op": "alloc",
+    "x": "4061e3f146e00000",
+    "y": "c061360ea4a00000",
+    "spawnId": 3
+   },
+   {
+    "op": "alloc",
+    "x": "c072af14f7a00000",
+    "y": "c08e6f6fe3900000",
+    "spawnId": 4
+   },
+   {
+    "op": "alloc",
+    "x": "408c9f39d1c80000",
+    "y": "c077bef94b600000",
+    "spawnId": 5
+   },
+   {
+    "op": "free",
+    "d": 3
+   },
+   {
+    "op": "free",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c0841705ca500000",
+    "y": "c071a07f4bf00000",
+    "spawnId": 6
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c0502ea7d3000000",
+    "y": "c0793d5313c00000",
+    "spawnId": 7
+   },
+   {
+    "op": "alloc",
+    "x": "c0657676b5000000",
+    "y": "40927db259240000",
+    "spawnId": 8
+   },
+   {
+    "op": "free",
+    "d": 3
+   },
+   {
+    "op": "alloc",
+    "x": "4064ac24dea00000",
+    "y": "408baa70f3500000",
+    "spawnId": 9
+   },
+   {
+    "op": "alloc",
+    "x": "c08cfc6127700000",
+    "y": "c0801fbbf8b80000",
+    "spawnId": 10
+   },
+   {
+    "op": "move",
+    "d": 4,
+    "dirX": "bfeac16e40000000",
+    "dirY": "bfe7c11440000000",
+    "state": 2,
+    "timer": "3fea1b3e38000000"
+   },
+   {
+    "op": "alloc",
+    "x": "40894c4f0cc00000",
+    "y": "40585ec491000000",
+    "spawnId": 11
+   },
+   {
+    "op": "free",
+    "d": 0
+   },
+   {
+    "op": "free",
+    "d": 1
+   },
+   {
+    "op": "alloc",
+    "x": "c06d5cb40ea00000",
+    "y": "c0890f14d8880000",
+    "spawnId": 12
+   },
+   {
+    "op": "free",
+    "d": 5
+   },
+   {
+    "op": "alloc",
+    "x": "4078cba1fc800000",
+    "y": "c09092513bcc0000",
+    "spawnId": 13
+   },
+   {
+    "op": "alloc",
+    "x": "c0847f7c91b00000",
+    "y": "c087ba5196500000",
+    "spawnId": 14
+   },
+   {
+    "op": "alloc",
+    "x": "4088a14e6b300000",
+    "y": "c066113861200000",
+    "spawnId": 15
+   },
+   {
+    "op": "alloc",
+    "x": "408e4d3aebe00000",
+    "y": "c062d042bd400000",
+    "spawnId": 16
+   },
+   {
+    "op": "free",
+    "d": 7
+   },
+   {
+    "op": "alloc",
+    "x": "c082eb8fc8700000",
+    "y": "c082914a28700000",
+    "spawnId": 17
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "free",
+    "d": 7
+   },
+   {
+    "op": "alloc",
+    "x": "c08f9854c9600000",
+    "y": "c08b1b39a2300000",
+    "spawnId": 18
+   },
+   {
+    "op": "alloc",
+    "x": "408602f42cb80000",
+    "y": "c070dacc5fb00000",
+    "spawnId": 19
+   },
+   {
+    "op": "move",
+    "d": 8,
+    "dirX": "bfa1f01c00000000",
+    "dirY": "3f8c2c6000000000",
+    "state": 1,
+    "timer": "400c68de16000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c092666e98a00000",
+    "y": "408c22fa23600000",
+    "spawnId": 20
+   },
+   {
+    "op": "alloc",
+    "x": "c07ea5fbe8700000",
+    "y": "4075a37b9fd00000",
+    "spawnId": 21
+   },
+   {
+    "op": "free",
+    "d": 7
+   },
+   {
+    "op": "move",
+    "d": 2,
+    "dirX": "3fcca90700000000",
+    "dirY": "3fe27920c0000000",
+    "state": 1,
+    "timer": "4012c51f10000000"
+   },
+   {
+    "op": "alloc",
+    "x": "40924064ccdc0000",
+    "y": "c04ee6e7ea800000",
+    "spawnId": 22
+   },
+   {
+    "op": "alloc",
+    "x": "c079bb9f19100000",
+    "y": "c081067807b00000",
+    "spawnId": 23
+   },
+   {
+    "op": "free",
+    "d": 3
+   },
+   {
+    "op": "move",
+    "d": 8,
+    "dirX": "3fe7772140000000",
+    "dirY": "3fcb296900000000",
+    "state": 2,
+    "timer": "400de87ab4000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c074ee5058c00000",
+    "y": "40847364a6980000",
+    "spawnId": 24
+   },
+   {
+    "op": "alloc",
+    "x": "c06996b093000000",
+    "y": "c0699c09e5000000",
+    "spawnId": 25
+   },
+   {
+    "op": "alloc",
+    "x": "4074a0e7e3e00000",
+    "y": "c07d12b9b3600000",
+    "spawnId": 26
+   },
+   {
+    "op": "alloc",
+    "x": "c0913b1d84b00000",
+    "y": "c08a13b99be00000",
+    "spawnId": 27
+   },
+   {
+    "op": "alloc",
+    "x": "c0916e4485e80000",
+    "y": "401e70b2e0000000",
+    "spawnId": 28
+   },
+   {
+    "op": "move",
+    "d": 15,
+    "dirX": "bfeed5dd40000000",
+    "dirY": "3fda805380000000",
+    "state": 2,
+    "timer": "4006a3c43c000000"
+   },
+   {
+    "op": "free",
+    "d": 9
+   },
+   {
+    "op": "alloc",
+    "x": "407c44397ee00000",
+    "y": "408c9a20faa80000",
+    "spawnId": 29
+   },
+   {
+    "op": "free",
+    "d": 2
+   },
+   {
+    "op": "alloc",
+    "x": "c056a43811800000",
+    "y": "40902dcd53340000",
+    "spawnId": 30
+   },
+   {
+    "op": "alloc",
+    "x": "c084ad94fde00000",
+    "y": "c06ea590a3000000",
+    "spawnId": 31
+   },
+   {
+    "op": "alloc",
+    "x": "408b3883c6a80000",
+    "y": "40832dd0a7d80000",
+    "spawnId": 32
+   },
+   {
+    "op": "alloc",
+    "x": "40839c92d9080000",
+    "y": "c0553fa0d4400000",
+    "spawnId": 33
+   },
+   {
+    "op": "move",
+    "d": 2,
+    "dirX": "bfed55de40000000",
+    "dirY": "bfb8a46c00000000",
+    "state": 2,
+    "timer": "40030a9d72000000"
+   },
+   {
+    "op": "free",
+    "d": 6
+   },
+   {
+    "op": "move",
+    "d": 11,
+    "dirX": "3fb76f5c00000000",
+    "dirY": "3fe2e70640000000",
+    "state": 1,
+    "timer": "3ff04df5e0000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c073638540c00000",
+    "y": "4066865089400000",
+    "spawnId": 34
+   },
+   {
+    "op": "alloc",
+    "x": "407bf0998e500000",
+    "y": "c06d68d92a200000",
+    "spawnId": 35
+   },
+   {
+    "op": "alloc",
+    "x": "c05d0ef028000000",
+    "y": "408af3bc0d480000",
+    "spawnId": 36
+   },
+   {
+    "op": "free",
+    "d": 15
+   },
+   {
+    "op": "free",
+    "d": 19
+   },
+   {
+    "op": "move",
+    "d": 6,
+    "dirX": "3fdadc8f80000000",
+    "dirY": "3fa730a400000000",
+    "state": 1,
+    "timer": "3ffce8bbac000000"
+   },
+   {
+    "op": "free",
+    "d": 11
+   },
+   {
+    "op": "free",
+    "d": 11
+   },
+   {
+    "op": "alloc",
+    "x": "40822ba254b80000",
+    "y": "4075836be8b00000",
+    "spawnId": 37
+   },
+   {
+    "op": "alloc",
+    "x": "c071652beaa00000",
+    "y": "405e4ba41c800000",
+    "spawnId": 38
+   },
+   {
+    "op": "move",
+    "d": 10,
+    "dirX": "3fa9afac00000000",
+    "dirY": "bfe2828280000000",
+    "state": 1,
+    "timer": "40124ae353000000"
+   },
+   {
+    "op": "free",
+    "d": 16
+   },
+   {
+    "op": "alloc",
+    "x": "406f52702da00000",
+    "y": "c083ad99fcd00000",
+    "spawnId": 39
+   },
+   {
+    "op": "move",
+    "d": 0,
+    "dirX": "bfe80a5940000000",
+    "dirY": "bfb1999400000000",
+    "state": 2,
+    "timer": "3fffc5aa9c000000"
+   },
+   {
+    "op": "alloc",
+    "x": "c07907599a800000",
+    "y": "408695e328500000",
+    "spawnId": 40
+   },
+   {
+    "op": "alloc",
+    "x": "40866b9943080000",
+    "y": "4081ceaba6400000",
+    "spawnId": 41
+   },
+   {
+    "op": "alloc",
+    "x": "c071ff7a1c700000",
+    "y": "408a319c73a00000",
+    "spawnId": 42
+   },
+   {
+    "op": "free",
+    "d": 3
+   },
+   {
+    "op": "alloc",
+    "x": "c092b47714900000",
+    "y": "40907f9fa58c0000",
+    "spawnId": 43
+   },
+   {
+    "op": "move",
+    "d": 16,
+    "dirX": "bfe748f2c0000000",
+    "dirY": "bfe7b8e740000000",
+    "state": 2,
+    "timer": "4000049e76000000"
+   },
+   {
+    "op": "free",
+    "d": 12
+   },
+   {
+    "op": "alloc",
+    "x": "c0902624d72c0000",
+    "y": "407313662bd00000",
+    "spawnId": 44
+   },
+   {
+    "op": "alloc",
+    "x": "c08c9b656e400000",
+    "y": "408d25a0a1500000",
+    "spawnId": 45
+   },
+   {
+    "op": "free",
+    "d": 17
+   },
+   {
+    "op": "move",
+    "d": 13,
+    "dirX": "bfecc31c00000000",
+    "dirY": "bfe91bef40000000",
+    "state": 2,
+    "timer": "3f9f9ed100000000"
+   }
+  ],
+  "hashes": [
+   "4b95f515",
+   "79e539bc",
+   "7d82d44b",
+   "42f27303",
+   "2351c9c7",
+   "b69c1a2a",
+   "5199d658",
+   "f158a70d",
+   "6c3cf829",
+   "2a6dd307",
+   "84551fb5",
+   "f954bb8c",
+   "19872ab8",
+   "cf28cd9a",
+   "f09b7c9d",
+   "e4887fee",
+   "bedb93c9",
+   "a4773148",
+   "6ba5f51b",
+   "27b10805",
+   "6ba5f51b",
+   "bef7fbbb",
+   "0078bef1",
+   "f147ea44",
+   "6d38132c",
+   "90105f2f",
+   "3068aeab",
+   "61521733",
+   "90a1cb7b",
+   "4fb2bfce",
+   "784c2c18",
+   "3faedbff",
+   "015e5642",
+   "4ce6e558",
+   "ff305ee9",
+   "e21164da",
+   "719aa0e1",
+   "da36d7e3",
+   "3bb13aa0",
+   "09d3c28e",
+   "adf09263",
+   "833610e6",
+   "de5b2b29",
+   "dff2331e",
+   "0cd7ad0d",
+   "92031511",
+   "675cfbb0",
+   "6d9924bd",
+   "1a044a7e",
+   "2a03daf2",
+   "7dd10dee",
+   "75415d8a",
+   "cea6efbe",
+   "f91c8700",
+   "4a926932",
+   "9d9a1946",
+   "0c3eee14",
+   "00977c91",
+   "ce8409f2",
+   "698dd2c0",
+   "7f9405db",
+   "027a89df",
+   "b58fcb86",
+   "d6b0ace0",
+   "37937b1c",
+   "7b7b8297",
+   "e8a667a0",
+   "c5ccff28",
+   "0dcf171e",
+   "91fc9b43",
+   "b6d5ff40",
+   "893cca81",
+   "98fae69b",
+   "7bcfb04d",
+   "4d22360c",
+   "cd4492cd",
+   "0df8eae2",
+   "4e95c421",
+   "b139434e",
+   "9eb1009e",
+   "29ea7acb"
+  ],
+  "counts": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   3,
+   4,
+   5,
+   4,
+   5,
+   6,
+   6,
+   7,
+   6,
+   5,
+   6,
+   5,
+   6,
+   7,
+   8,
+   9,
+   8,
+   9,
+   8,
+   7,
+   8,
+   9,
+   9,
+   10,
+   11,
+   10,
+   10,
+   11,
+   12,
+   11,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   16,
+   15,
+   16,
+   15,
+   16,
+   17,
+   18,
+   19,
+   19,
+   18,
+   18,
+   19,
+   20,
+   21,
+   20,
+   19,
+   19,
+   18,
+   17,
+   18,
+   19,
+   19,
+   18,
+   19,
+   19,
+   20,
+   21,
+   22,
+   21,
+   22,
+   22,
+   21,
+   22,
+   23,
+   22,
+   22
+  ]
+ }
+}
