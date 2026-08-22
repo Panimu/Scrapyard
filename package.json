@@ -25,6 +25,7 @@
     "golden:stats": "tsx tools/stats_fixture.ts",
     "golden:cycles": "tsx tools/cycles_fixture.ts",
     "golden:sheep": "tsx tools/sheep_fixture.ts",
+    "golden:loot": "tsx tools/loot_fixture.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",

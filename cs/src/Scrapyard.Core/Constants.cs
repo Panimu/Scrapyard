@@ -26,6 +26,24 @@ public static class Constants
     /// <summary>Fraction of heat capacity a cut-out weapon must cool to before it may fire again.</summary>
     public const double HeatResumeFrac = 0.5;
 
+    /// <summary>
+    /// How far from the MECH a fuel drum may be and still be worth breaking.
+    /// </summary>
+    /// <remarks>
+    /// A drum the player cannot see is a drum whose contents they will never collect, so breaking it
+    /// off screen only costs them the barrel. Measured from the mech rather than from the hit,
+    /// because the mech is what the camera is centred on - an artillery shell landing 800 u away is
+    /// exactly the case this exists for. It guards the flock too, and there it was not optional:
+    /// the lasers sweep 400 u of grass while aiming at the horde, so with no guard every sheep was
+    /// being shot the moment it was placed and the player never once saw one.
+    /// </remarks>
+    public const double BarrelBreakRadius = 512;
+
+    /// <summary>
+    /// Spawn ids for consumables start here, so they cannot collide with a gem's.
+    /// </summary>
+    public const int ConsumableSpawnIdBase = 0x40000000;
+
     public const double IntroSec = 3;
 
     /// <summary>
@@ -210,12 +228,46 @@ public sealed class CombatTuning
     public double ShieldBreakDamage = 30;
 }
 
+/// <summary>
+/// Gems and consumables. PARTIAL, like everything else here - only the fields a ported system
+/// reads. The gem magnet, the collection radii and the consolation pair arrive with the rest of
+/// <c>pickups.ts</c>; what is here is what <c>BreakLootIn</c> and <c>DropConsumable</c> need.
+/// </summary>
+public sealed class PickupTuning
+{
+    /// <summary>Spanner heal, as a fraction of MAX HP - so it stays worth picking up at every level.</summary>
+    public double RepairFrac = 0.25;
+
+    /// <summary>Credit coin value at t=0 and at the end of the run. Interpolated by run time.</summary>
+    public double CreditMin = 1;
+
+    public double CreditMax = 50;
+
+    /// <summary>+/- this fraction of jitter on a coin, so two barrels a minute apart are not the same coin.</summary>
+    public double CreditJitter = 0.25;
+
+    /// <summary>Coin <c>value</c> at or above which each of the four coin sprites is used.</summary>
+    public readonly double[] CreditTierValues = { 1, 8, 20, 36 };
+
+    /// <summary>
+    /// Chance a broken barrel held nothing at all.
+    /// </summary>
+    /// <remarks>
+    /// A QUARTER OF THEM ARE EMPTY, and that number went in the moment barrels became common. A drum
+    /// you clip on the way past should be a small hope, not a small tax on the designer's economy:
+    /// if every one paid out, the player would stop noticing them. The empty is what keeps the full
+    /// one a result.
+    /// </remarks>
+    public double BarrelEmptyChance = 0.25;
+}
+
 public sealed class Tuning
 {
     public readonly PlayerBaseTuning Player = new();
     public readonly CombatTuning Combat = new();
     public readonly DirectorTuning Director = new();
     public readonly SteeringTuning Steering = new();
+    public readonly PickupTuning Pickups = new();
 }
 
 /// <summary>

@@ -77,6 +77,46 @@ public sealed class World
     public double PlayerRadius;
 
     /// <summary>
+    /// How long a full run is, seconds. From <c>WorldConfig</c>, which this port does not have as a
+    /// type of its own yet - the one field a ported system reads sits here instead.
+    /// </summary>
+    /// <remarks>
+    /// A COIN'S VALUE RIDES THIS CLOCK: one found in the first minute is worth about 1 and one found
+    /// at the end about 50, which is what stops the yard being farmed dry in the opening two minutes
+    /// while the player is safe and everything is slow. Zero means "no run length", and the ramp
+    /// then reads as t=0 forever rather than dividing by zero.
+    /// </remarks>
+    public double RunLengthSec = 900;
+
+    /// <summary>
+    /// SHORT MISSILES AT TIER 7, resolved whether or not the run holds them.
+    /// </summary>
+    /// <remarks>
+    /// The GTM Hornet's warheads split into short-rack missiles, and by the time they do the short
+    /// rack has been eaten - so there is no instance to read the numbers off. This is that
+    /// instance's ghost: <c>MissileShort</c> at the max tier, rebuilt in the same place every other
+    /// weapon's stats are, so the children still scale with the player's passives the way any
+    /// missile does. DERIVED, so it stays out of the world hash for the same reason
+    /// <see cref="WeaponInstance.Stats"/> does.
+    /// </remarks>
+    public readonly WeaponStats SplitStats = new();
+
+    /// <summary>
+    /// The weapon catalog this world was built with.
+    /// </summary>
+    /// <remarks>
+    /// Held rather than reached for statically, exactly as the TypeScript holds it: the harness
+    /// builds worlds against fixture catalogs, and a system that read <c>WeaponCatalog.All</c>
+    /// directly could not be handed one. Defaults to the shipping catalog.
+    /// <para>
+    /// NO ENEMY CATALOG BESIDE IT, and that is deliberate in the source: <c>typeId</c> indexes the
+    /// LEVEL's creature table, so a single injected enemy catalog could only ever be right for one
+    /// map.
+    /// </para>
+    /// </remarks>
+    public WeaponDef[] WeaponDefs = WeaponCatalog.All;
+
+    /// <summary>
     /// Half the arena's width, or infinity on an unbounded level. From the level definition.
     /// </summary>
     public double ArenaHalf = double.PositiveInfinity;
@@ -219,6 +259,17 @@ public sealed class PlayerState
     /// <summary>LATCH for Mech Insurance: 1 once it has paid out this run.</summary>
     public int InsuranceUsed;
 
+    /// <summary>
+    /// The player's RESOLVED stats - hero, cards and workshop already folded in.
+    /// </summary>
+    /// <remarks>
+    /// DERIVED, and deliberately outside the world hash: it is a pure function of the hero, the
+    /// upgrade stacks and the meta tiers, all three of which ARE hashed. Hashing it as well would
+    /// make the hash sensitive to when it was last recomputed rather than to what the run holds.
+    /// Rebuilt on every level-up rather than every tick.
+    /// </remarks>
+    public readonly PlayerStats Stats = new();
+
     public readonly double[] TraitScratch;
 
     public PlayerState(int traitScratch) => TraitScratch = new double[traitScratch];
@@ -236,6 +287,18 @@ public sealed class WeaponInstance
     public int Ammo;
     public double ReloadLeft;
     public bool DroneBanked;
+
+    /// <summary>
+    /// This weapon's RESOLVED stats at its current tier. Derived, and outside the world hash for the
+    /// same reason <see cref="PlayerState.Stats"/> is.
+    /// </summary>
+    /// <remarks>
+    /// READ THROUGH <c>OwnerWeapon</c> BY EVERY AIRBORNE SHELL rather than copied onto each one, so
+    /// a rack upgraded mid-flight steers its missiles better immediately and the projectile pool
+    /// stays a byte lighter per shell.
+    /// </remarks>
+    public readonly WeaponStats Stats = new();
+
     public readonly double[] Scratch;
 
     public WeaponInstance(int scratch) => Scratch = new double[scratch];
