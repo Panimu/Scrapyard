@@ -17,3 +17,6 @@ playwright-report/
 
 # dev output (screenshots, sim dumps)
 artifacts/
+
+# scratch dump scripts used while cross-checking a port against the TS oracle
+.tmpdump/
