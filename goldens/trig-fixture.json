@@ -1,0 +1,5777 @@
+{
+ "note": "Deterministic trig, compared as exact 64-bit patterns. No tolerance: these functions exist because \"close enough\" is what a replay cannot survive.",
+ "constants": {
+  "PI": "400921fb54442d18",
+  "TWO_PI": "401921fb54442d18",
+  "HALF_PI": "3ff921fb54442d18",
+  "INV_TWO_PI": "3fc45f306dc9c883",
+  "DEG_TO_RAD": "3f91df46a2529d39",
+  "SQRT3": "3ffbb67ae8584caa",
+  "TAN_PI_12": "3fd126145e9ecd56",
+  "PI_6": "3fe0c152382d7365"
+ },
+ "sin": [
+  {
+   "x": "0000000000000000",
+   "sin": "0000000000000000",
+   "cos": "3fefffffffff2c12"
+  },
+  {
+   "x": "8000000000000000",
+   "sin": "8000000000000000",
+   "cos": "3fefffffffff2c12"
+  },
+  {
+   "x": "400921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "bfefffffffff2c12"
+  },
+  {
+   "x": "c00921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "bfefffffffff2c12"
+  },
+  {
+   "x": "3ff921fb54442d18",
+   "sin": "3fefffffffff2c12",
+   "cos": "0000000000000000"
+  },
+  {
+   "x": "bff921fb54442d18",
+   "sin": "bfefffffffff2c12",
+   "cos": "0000000000000000"
+  },
+  {
+   "x": "401921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "3fefffffffff2c12"
+  },
+  {
+   "x": "c01921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "3fefffffffff2c12"
+  },
+  {
+   "x": "3ff921fb54442d13",
+   "sin": "3fefffffffff2c12",
+   "cos": "3cd0000000000000"
+  },
+  {
+   "x": "3ff921fb54442d1d",
+   "sin": "3fefffffffff2c12",
+   "cos": "bcd0000000000000"
+  },
+  {
+   "x": "bff921fb54442d1d",
+   "sin": "bfefffffffff2c12",
+   "cos": "bcd4000000000000"
+  },
+  {
+   "x": "bff921fb54442d13",
+   "sin": "bfefffffffff2c12",
+   "cos": "3cd4000000000000"
+  },
+  {
+   "x": "400921fb54442d16",
+   "sin": "3cd0000000000000",
+   "cos": "bfefffffffff2c11"
+  },
+  {
+   "x": "400921fb54442d1a",
+   "sin": "bcd0000000000000",
+   "cos": "bfefffffffff2c11"
+  },
+  {
+   "x": "c00921fb54442d1a",
+   "sin": "3cd0000000000000",
+   "cos": "bfefffffffff2c11"
+  },
+  {
+   "x": "c00921fb54442d16",
+   "sin": "bcd0000000000000",
+   "cos": "bfefffffffff2c11"
+  },
+  {
+   "x": "401d000000000000",
+   "sin": "3fea56adb62a27ab",
+   "cos": "3fe22c6f50dc3fbc"
+  },
+  {
+   "x": "c01d000000000000",
+   "sin": "bfea56adb62a27ab",
+   "cos": "3fe22c6f50dc3fbc"
+  },
+  {
+   "x": "4029000000000000",
+   "sin": "bfb0fa78cc21cf98",
+   "cos": "3fefedf6a82211aa"
+  },
+  {
+   "x": "c029000000000000",
+   "sin": "3fb0fa78cc21cf98",
+   "cos": "3fefedf6a82211aa"
+  },
+  {
+   "x": "4044400000000000",
+   "sin": "3fd562bb9e1ef7c3",
+   "cos": "bfee291ea2bcfb8a"
+  },
+  {
+   "x": "c044400000000000",
+   "sin": "bfd562bb9e1ef7c3",
+   "cos": "bfee291ea2bcfb80"
+  },
+  {
+   "x": "408f420000000000",
+   "sin": "3fee1702343c025d",
+   "cos": "3fd5c7d948a3185d"
+  },
+  {
+   "x": "c08f420000000000",
+   "sin": "bfee1702343c025d",
+   "cos": "3fd5c7d948a31f2f"
+  },
+  {
+   "x": "401a000000000000",
+   "sin": "3fcb890d40c6cb45",
+   "cos": "3fef4034b145b2c9"
+  },
+  {
+   "x": "c01a000000000000",
+   "sin": "bfcb890d40c6cb45",
+   "cos": "3fef4034b145b2c9"
+  },
+  {
+   "x": "3fa1df46a2529d3a",
+   "sin": "3fa1de58c9f7dc29",
+   "cos": "3feffb0278be74b9"
+  },
+  {
+   "x": "3fb657184ae74489",
+   "sin": "3fb64fd6b8c28104",
+   "cos": "3fefe0d3b417c55e"
+  },
+  {
+   "x": "3fc657184ae74485",
+   "sin": "3fc63a1a7e0b7388",
+   "cos": "3fef838b8c80ff70"
+  },
+  {
+   "x": "3fd0c152382d7365",
+   "sin": "3fd0907dc1930690",
+   "cos": "3feee8dd4748b582"
+  },
+  {
+   "x": "3fe0c152382d7365",
+   "sin": "3fdfffffffffffff",
+   "cos": "3febb67ae8584c73"
+  },
+  {
+   "x": "3fe921fb54442d18",
+   "sin": "3fe6a09e667f3bcc",
+   "cos": "3fe6a09e667f3bcc"
+  },
+  {
+   "x": "3ff0c152382d7365",
+   "sin": "3febb67ae8584c73",
+   "cos": "3fe0000000000002"
+  },
+  {
+   "x": "3ff38c35418a5bf6",
+   "sin": "3fee11f642522a25",
+   "cos": "3fd5e3a8748a0bf6"
+  },
+  {
+   "x": "c00921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "bfefffffffff2c12"
+  },
+  {
+   "x": "c00901cfd51ffeca",
+   "sin": "bf90159438a60e55",
+   "cos": "bfeffefd4790b066"
+  },
+  {
+   "x": "c008e1a455fbd07c",
+   "sin": "bfa015122df75846",
+   "cos": "bfeffbf52e9c7a28"
+  },
+  {
+   "x": "c008c178d6d7a22d",
+   "sin": "bfa81e56327504c4",
+   "cos": "bfeff6e7e6280e7e"
+  },
+  {
+   "x": "c008a14d57b373df",
+   "sin": "bfb0130a1be09380",
+   "cos": "bfefefd5bfe3da0f"
+  },
+  {
+   "x": "c0088121d88f4591",
+   "sin": "bfb415e532398e49",
+   "cos": "bfefe6bf2e260803"
+  },
+  {
+   "x": "c00860f6596b1743",
+   "sin": "bfb8177b7ffc17e9",
+   "cos": "bfefdba4c3e34947"
+  },
+  {
+   "x": "c00840cada46e8f5",
+   "sin": "bfbc178c3d6297cb",
+   "cos": "bfefce8734a58c3c"
+  },
+  {
+   "x": "c008209f5b22baa6",
+   "sin": "bfc00aeb5da15be6",
+   "cos": "bfefbf675480a599"
+  },
+  {
+   "x": "c0080073dbfe8c58",
+   "sin": "bfc2090d3391aaec",
+   "cos": "bfefae461804eb1e"
+  },
+  {
+   "x": "c007e0485cda5e0a",
+   "sin": "bfc4060b67a85375",
+   "cos": "bfef9b24942fc0f7"
+  },
+  {
+   "x": "c007c01cddb62fbc",
+   "sin": "bfc601c5d3772368",
+   "cos": "bfef8603fe5a1ada"
+  },
+  {
+   "x": "c0079ff15e92016e",
+   "sin": "bfc7fc1c65037a73",
+   "cos": "bfef6ee5ac24f1d6"
+  },
+  {
+   "x": "c0077fc5df6dd31f",
+   "sin": "bfc9f4ef20ccdda9",
+   "cos": "bfef55cb1363b02e"
+  },
+  {
+   "x": "c0075f9a6049a4d1",
+   "sin": "bfcbec1e23d21f6c",
+   "cos": "bfef3ab5ca04949e"
+  },
+  {
+   "x": "c0073f6ee1257683",
+   "sin": "bfcde189a594fbcb",
+   "cos": "bfef1da785f70e68"
+  },
+  {
+   "x": "c0071f4362014835",
+   "sin": "bfcfd511fa1c0793",
+   "cos": "bfeefea21d1013eb"
+  },
+  {
+   "x": "c006ff17e2dd19e6",
+   "sin": "bfd0e34bc9f9694b",
+   "cos": "bfeedda784ec7574"
+  },
+  {
+   "x": "c006deec63b8eb98",
+   "sin": "bfd1dafd83140e10",
+   "cos": "bfeebab9d2d12e2b"
+  },
+  {
+   "x": "c006bec0e494bd4a",
+   "sin": "bfd2d18e8324fd20",
+   "cos": "bfee95db3b89b50d"
+  },
+  {
+   "x": "c0069e9565708efc",
+   "sin": "bfd3c6ef372fe94f",
+   "cos": "bfee6f0e13445036"
+  },
+  {
+   "x": "c0067e69e64c60ae",
+   "sin": "bfd4bb101f7102fa",
+   "cos": "bfee4654cd6c6ca1"
+  },
+  {
+   "x": "c0065e3e67283260",
+   "sin": "bfd5ade1d05796d9",
+   "cos": "bfee1bb1fc82fcbb"
+  },
+  {
+   "x": "c0063e12e8040412",
+   "sin": "bfd69f54f37f6646",
+   "cos": "bfedef2851f4e063"
+  },
+  {
+   "x": "c0061de768dfd5c3",
+   "sin": "bfd78f5a48a8a91a",
+   "cos": "bfedc0ba9def58e3"
+  },
+  {
+   "x": "c005fdbbe9bba775",
+   "sin": "bfd87de2a6aea963",
+   "cos": "bfed906bcf328bae"
+  },
+  {
+   "x": "c005dd906a977927",
+   "sin": "bfd96adefc7ce9c0",
+   "cos": "bfed5e3ef2e216a7"
+  },
+  {
+   "x": "c005bd64eb734ad9",
+   "sin": "bfda56405202c65f",
+   "cos": "bfed2a373453b92f"
+  },
+  {
+   "x": "c0059d396c4f1c8a",
+   "sin": "bfdb3ff7c925819f",
+   "cos": "bfecf457dcdc14bf"
+  },
+  {
+   "x": "c0057d0ded2aee3c",
+   "sin": "bfdc27f69eb0acc5",
+   "cos": "bfecbca4539988a3"
+  },
+  {
+   "x": "c0055ce26e06bfee",
+   "sin": "bfdd0e2e2b44de00",
+   "cos": "bfec83201d3d2bef"
+  },
+  {
+   "x": "c0053cb6eee291a0",
+   "sin": "bfddf28fe444a41d",
+   "cos": "bfec47cedbd1e944"
+  },
+  {
+   "x": "c0051c8b6fbe6352",
+   "sin": "bfded50d5cbfa94e",
+   "cos": "bfec0ab44e81c00c"
+  },
+  {
+   "x": "c004fc5ff09a3503",
+   "sin": "bfdfb598465bf625",
+   "cos": "bfebcbd451592eba"
+  },
+  {
+   "x": "c004dc34717606b5",
+   "sin": "bfe04a11391ea2e4",
+   "cos": "bfeb8b32dd08ca0d"
+  },
+  {
+   "x": "c004bc08f251d867",
+   "sin": "bfe0b84ee8f52e9d",
+   "cos": "bfeb48d406a5051d"
+  },
+  {
+   "x": "c0049bdd732daa19",
+   "sin": "bfe1257e3c182b50",
+   "cos": "bfeb04bbff642e6a"
+  },
+  {
+   "x": "c0047bb1f4097bca",
+   "sin": "bfe191984d01e95e",
+   "cos": "bfeabeef145aa600"
+  },
+  {
+   "x": "c0045b8674e54d7c",
+   "sin": "bfe1fc9647b000eb",
+   "cos": "bfea7771ae3550f8"
+  },
+  {
+   "x": "c0043b5af5c11f2e",
+   "sin": "bfe266716a11bb58",
+   "cos": "bfea2e4850f24ebc"
+  },
+  {
+   "x": "c0041b2f769cf0e0",
+   "sin": "bfe2cf2304755a5e",
+   "cos": "bfe9e3779b97f49e"
+  },
+  {
+   "x": "c003fb03f778c292",
+   "sin": "bfe336a479f43641",
+   "cos": "bfe9970447ea1450"
+  },
+  {
+   "x": "c003dad878549444",
+   "sin": "bfe39cef40ddac09",
+   "cos": "bfe948f32a1d91ed"
+  },
+  {
+   "x": "c003baacf93065f6",
+   "sin": "bfe401fce320d528",
+   "cos": "bfe8f949308a4e82"
+  },
+  {
+   "x": "c0039a817a0c37a7",
+   "sin": "bfe465c6feb501bc",
+   "cos": "bfe8a80b635b6be6"
+  },
+  {
+   "x": "c0037a55fae80959",
+   "sin": "bfe4c8474600eeee",
+   "cos": "bfe8553ee43def10"
+  },
+  {
+   "x": "c0035a2a7bc3db0b",
+   "sin": "bfe529778040b2eb",
+   "cos": "bfe800e8ee0dc5da"
+  },
+  {
+   "x": "c00339fefc9facbc",
+   "sin": "bfe5895189ea57f1",
+   "cos": "bfe7ab0ed48135a2"
+  },
+  {
+   "x": "c00319d37d7b7e6e",
+   "sin": "bfe5e7cf55112014",
+   "cos": "bfe753b603d2b814"
+  },
+  {
+   "x": "c002f9a7fe575020",
+   "sin": "bfe644eae9c76ba5",
+   "cos": "bfe6fae400694b65"
+  },
+  {
+   "x": "c002d97c7f3321d2",
+   "sin": "bfe6a09e667f3bcc",
+   "cos": "bfe6a09e667f3bcc"
+  },
+  {
+   "x": "c002b951000ef384",
+   "sin": "bfe6fae400694b65",
+   "cos": "bfe644eae9c76ba5"
+  },
+  {
+   "x": "c002992580eac536",
+   "sin": "bfe753b603d2b814",
+   "cos": "bfe5e7cf55112014"
+  },
+  {
+   "x": "c00278fa01c696e7",
+   "sin": "bfe7ab0ed48135a5",
+   "cos": "bfe5895189ea57ef"
+  },
+  {
+   "x": "c00258ce82a26899",
+   "sin": "bfe800e8ee0dc5da",
+   "cos": "bfe529778040b2eb"
+  },
+  {
+   "x": "c00238a3037e3a4b",
+   "sin": "bfe8553ee43def10",
+   "cos": "bfe4c8474600eeee"
+  },
+  {
+   "x": "c0021877845a0bfd",
+   "sin": "bfe8a80b635b6be6",
+   "cos": "bfe465c6feb501bc"
+  },
+  {
+   "x": "c001f84c0535ddaf",
+   "sin": "bfe8f949308a4e80",
+   "cos": "bfe401fce320d52b"
+  },
+  {
+   "x": "c001d8208611af60",
+   "sin": "bfe948f32a1d91ed",
+   "cos": "bfe39cef40ddac09"
+  },
+  {
+   "x": "c001b7f506ed8112",
+   "sin": "bfe9970447ea1450",
+   "cos": "bfe336a479f43641"
+  },
+  {
+   "x": "c00197c987c952c4",
+   "sin": "bfe9e3779b97f49e",
+   "cos": "bfe2cf2304755a5e"
+  },
+  {
+   "x": "c001779e08a52476",
+   "sin": "bfea2e4850f24ebc",
+   "cos": "bfe266716a11bb58"
+  },
+  {
+   "x": "c00157728980f628",
+   "sin": "bfea7771ae3550f8",
+   "cos": "bfe1fc9647b000eb"
+  },
+  {
+   "x": "c00137470a5cc7d9",
+   "sin": "bfeabeef145aa602",
+   "cos": "bfe191984d01e95a"
+  },
+  {
+   "x": "c001171b8b38998b",
+   "sin": "bfeb04bbff642e6a",
+   "cos": "bfe1257e3c182b50"
+  },
+  {
+   "x": "c000f6f00c146b3d",
+   "sin": "bfeb48d406a5051d",
+   "cos": "bfe0b84ee8f52e9d"
+  },
+  {
+   "x": "c000d6c48cf03cee",
+   "sin": "bfeb8b32dd08ca10",
+   "cos": "bfe04a11391ea2e1"
+  },
+  {
+   "x": "c000b6990dcc0ea0",
+   "sin": "bfebcbd451592ebd",
+   "cos": "bfdfb598465bf61f"
+  },
+  {
+   "x": "c000966d8ea7e052",
+   "sin": "bfec0ab44e81c00c",
+   "cos": "bfded50d5cbfa94e"
+  },
+  {
+   "x": "c00076420f83b204",
+   "sin": "bfec47cedbd1e944",
+   "cos": "bfddf28fe444a41d"
+  },
+  {
+   "x": "c0005616905f83b6",
+   "sin": "bfec83201d3d2bef",
+   "cos": "bfdd0e2e2b44de00"
+  },
+  {
+   "x": "c00035eb113b5568",
+   "sin": "bfecbca4539988a3",
+   "cos": "bfdc27f69eb0acc5"
+  },
+  {
+   "x": "c00015bf9217271a",
+   "sin": "bfecf457dcdc14bf",
+   "cos": "bfdb3ff7c925819f"
+  },
+  {
+   "x": "bfffeb2825e5f197",
+   "sin": "bfed2a373453b92e",
+   "cos": "bfda56405202c662"
+  },
+  {
+   "x": "bfffaad1279d94fa",
+   "sin": "bfed5e3ef2e216a7",
+   "cos": "bfd96adefc7ce9c0"
+  },
+  {
+   "x": "bfff6a7a2955385e",
+   "sin": "bfed906bcf328bae",
+   "cos": "bfd87de2a6aea963"
+  },
+  {
+   "x": "bfff2a232b0cdbc2",
+   "sin": "bfedc0ba9def58e3",
+   "cos": "bfd78f5a48a8a91a"
+  },
+  {
+   "x": "bffee9cc2cc47f25",
+   "sin": "bfedef2851f4e063",
+   "cos": "bfd69f54f37f664a"
+  },
+  {
+   "x": "bffea9752e7c2289",
+   "sin": "bfee1bb1fc82fcbb",
+   "cos": "bfd5ade1d05796dd"
+  },
+  {
+   "x": "bffe691e3033c5ec",
+   "sin": "bfee4654cd6c6ca1",
+   "cos": "bfd4bb101f7102fa"
+  },
+  {
+   "x": "bffe28c731eb6950",
+   "sin": "bfee6f0e13445036",
+   "cos": "bfd3c6ef372fe94f"
+  },
+  {
+   "x": "bffde87033a30cb4",
+   "sin": "bfee95db3b89b50d",
+   "cos": "bfd2d18e8324fd20"
+  },
+  {
+   "x": "bffda819355ab018",
+   "sin": "bfeebab9d2d12e2b",
+   "cos": "bfd1dafd83140e10"
+  },
+  {
+   "x": "bffd67c23712537a",
+   "sin": "bfeedda784ec7576",
+   "cos": "bfd0e34bc9f96943"
+  },
+  {
+   "x": "bffd276b38c9f6de",
+   "sin": "bfeefea21d1013eb",
+   "cos": "bfcfd511fa1c0793"
+  },
+  {
+   "x": "bffce7143a819a42",
+   "sin": "bfef1da785f70e68",
+   "cos": "bfcde189a594fbcb"
+  },
+  {
+   "x": "bffca6bd3c393da6",
+   "sin": "bfef3ab5ca04949e",
+   "cos": "bfcbec1e23d21f6c"
+  },
+  {
+   "x": "bffc66663df0e10a",
+   "sin": "bfef55cb1363b02e",
+   "cos": "bfc9f4ef20ccdda9"
+  },
+  {
+   "x": "bffc260f3fa8846d",
+   "sin": "bfef6ee5ac24f1d5",
+   "cos": "bfc7fc1c65037a7b"
+  },
+  {
+   "x": "bffbe5b8416027d0",
+   "sin": "bfef8603fe5a1ada",
+   "cos": "bfc601c5d3772368"
+  },
+  {
+   "x": "bffba5614317cb34",
+   "sin": "bfef9b24942fc0f7",
+   "cos": "bfc4060b67a85375"
+  },
+  {
+   "x": "bffb650a44cf6e98",
+   "sin": "bfefae461804eb1e",
+   "cos": "bfc2090d3391aaec"
+  },
+  {
+   "x": "bffb24b3468711fc",
+   "sin": "bfefbf675480a599",
+   "cos": "bfc00aeb5da15be6"
+  },
+  {
+   "x": "bffae45c483eb55f",
+   "sin": "bfefce8734a58c3b",
+   "cos": "bfbc178c3d6297db"
+  },
+  {
+   "x": "bffaa40549f658c2",
+   "sin": "bfefdba4c3e34947",
+   "cos": "bfb8177b7ffc17e9"
+  },
+  {
+   "x": "bffa63ae4badfc26",
+   "sin": "bfefe6bf2e260803",
+   "cos": "bfb415e532398e49"
+  },
+  {
+   "x": "bffa23574d659f8a",
+   "sin": "bfefefd5bfe3da0f",
+   "cos": "bfb0130a1be09380"
+  },
+  {
+   "x": "bff9e3004f1d42ed",
+   "sin": "bfeff6e7e6280e7f",
+   "cos": "bfa81e56327504a4"
+  },
+  {
+   "x": "bff9a2a950d4e651",
+   "sin": "bfeffbf52e9c7a27",
+   "cos": "bfa015122df75866"
+  },
+  {
+   "x": "bff96252528c89b4",
+   "sin": "bfeffefd4790b066",
+   "cos": "bf90159438a60e55"
+  },
+  {
+   "x": "bff921fb54442d18",
+   "sin": "bfefffffffff2c12",
+   "cos": "0000000000000000"
+  },
+  {
+   "x": "bff8e1a455fbd07c",
+   "sin": "bfeffefd4790b066",
+   "cos": "3f90159438a60e55"
+  },
+  {
+   "x": "bff8a14d57b373df",
+   "sin": "bfeffbf52e9c7a27",
+   "cos": "3fa015122df75866"
+  },
+  {
+   "x": "bff860f6596b1743",
+   "sin": "bfeff6e7e6280e7f",
+   "cos": "3fa81e56327504a4"
+  },
+  {
+   "x": "bff8209f5b22baa6",
+   "sin": "bfefefd5bfe3da0f",
+   "cos": "3fb0130a1be09380"
+  },
+  {
+   "x": "bff7e0485cda5e0a",
+   "sin": "bfefe6bf2e260803",
+   "cos": "3fb415e532398e49"
+  },
+  {
+   "x": "bff79ff15e92016d",
+   "sin": "bfefdba4c3e34947",
+   "cos": "3fb8177b7ffc17f9"
+  },
+  {
+   "x": "bff75f9a6049a4d1",
+   "sin": "bfefce8734a58c3b",
+   "cos": "3fbc178c3d6297db"
+  },
+  {
+   "x": "bff71f4362014835",
+   "sin": "bfefbf675480a599",
+   "cos": "3fc00aeb5da15bde"
+  },
+  {
+   "x": "bff6deec63b8eb99",
+   "sin": "bfefae461804eb1c",
+   "cos": "3fc2090d3391aae4"
+  },
+  {
+   "x": "bff69e9565708efc",
+   "sin": "bfef9b24942fc0f7",
+   "cos": "3fc4060b67a85375"
+  },
+  {
+   "x": "bff65e3e6728325f",
+   "sin": "bfef8603fe5a1adc",
+   "cos": "3fc601c5d3772370"
+  },
+  {
+   "x": "bff61de768dfd5c3",
+   "sin": "bfef6ee5ac24f1d5",
+   "cos": "3fc7fc1c65037a7b"
+  },
+  {
+   "x": "bff5dd906a977927",
+   "sin": "bfef55cb1363b02f",
+   "cos": "3fc9f4ef20ccdda1"
+  },
+  {
+   "x": "bff59d396c4f1c8b",
+   "sin": "bfef3ab5ca04949f",
+   "cos": "3fcbec1e23d21f64"
+  },
+  {
+   "x": "bff55ce26e06bfed",
+   "sin": "bfef1da785f70e66",
+   "cos": "3fcde189a594fbd3"
+  },
+  {
+   "x": "bff51c8b6fbe6351",
+   "sin": "bfeefea21d1013ea",
+   "cos": "3fcfd511fa1c079a"
+  },
+  {
+   "x": "bff4dc34717606b5",
+   "sin": "bfeedda784ec7575",
+   "cos": "3fd0e34bc9f96947"
+  },
+  {
+   "x": "bff49bdd732daa19",
+   "sin": "bfeebab9d2d12e2a",
+   "cos": "3fd1dafd83140e0d"
+  },
+  {
+   "x": "bff45b8674e54d7d",
+   "sin": "bfee95db3b89b50c",
+   "cos": "3fd2d18e8324fd1c"
+  },
+  {
+   "x": "bff41b2f769cf0e1",
+   "sin": "bfee6f0e13445038",
+   "cos": "3fd3c6ef372fe94b"
+  },
+  {
+   "x": "bff3dad878549443",
+   "sin": "bfee4654cd6c6ca1",
+   "cos": "3fd4bb101f7102fd"
+  },
+  {
+   "x": "bff39a817a0c37a7",
+   "sin": "bfee1bb1fc82fcbb",
+   "cos": "3fd5ade1d05796dd"
+  },
+  {
+   "x": "bff35a2a7bc3db0b",
+   "sin": "bfedef2851f4e063",
+   "cos": "3fd69f54f37f664a"
+  },
+  {
+   "x": "bff319d37d7b7e6f",
+   "sin": "bfedc0ba9def58e4",
+   "cos": "3fd78f5a48a8a917"
+  },
+  {
+   "x": "bff2d97c7f3321d3",
+   "sin": "bfed906bcf328bae",
+   "cos": "3fd87de2a6aea95f"
+  },
+  {
+   "x": "bff2992580eac535",
+   "sin": "bfed5e3ef2e216a7",
+   "cos": "3fd96adefc7ce9c4"
+  },
+  {
+   "x": "bff258ce82a26899",
+   "sin": "bfed2a373453b92e",
+   "cos": "3fda56405202c662"
+  },
+  {
+   "x": "bff21877845a0bfc",
+   "sin": "bfecf457dcdc14bf",
+   "cos": "3fdb3ff7c925819f"
+  },
+  {
+   "x": "bff1d8208611af60",
+   "sin": "bfecbca4539988a3",
+   "cos": "3fdc27f69eb0acc5"
+  },
+  {
+   "x": "bff197c987c952c4",
+   "sin": "bfec83201d3d2bef",
+   "cos": "3fdd0e2e2b44de00"
+  },
+  {
+   "x": "bff157728980f628",
+   "sin": "bfec47cedbd1e944",
+   "cos": "3fddf28fe444a41d"
+  },
+  {
+   "x": "bff1171b8b38998a",
+   "sin": "bfec0ab44e81c00a",
+   "cos": "3fded50d5cbfa955"
+  },
+  {
+   "x": "bff0d6c48cf03cee",
+   "sin": "bfebcbd451592eba",
+   "cos": "3fdfb598465bf625"
+  },
+  {
+   "x": "bff0966d8ea7e052",
+   "sin": "bfeb8b32dd08ca0d",
+   "cos": "3fe04a11391ea2e4"
+  },
+  {
+   "x": "bff05616905f83b6",
+   "sin": "bfeb48d406a5051d",
+   "cos": "3fe0b84ee8f52e9d"
+  },
+  {
+   "x": "bff015bf92172718",
+   "sin": "bfeb04bbff642e69",
+   "cos": "3fe1257e3c182b53"
+  },
+  {
+   "x": "bfefaad1279d94f8",
+   "sin": "bfeabeef145aa600",
+   "cos": "3fe191984d01e95e"
+  },
+  {
+   "x": "bfef2a232b0cdbc0",
+   "sin": "bfea7771ae3550f8",
+   "cos": "3fe1fc9647b000eb"
+  },
+  {
+   "x": "bfeea9752e7c2288",
+   "sin": "bfea2e4850f24ebc",
+   "cos": "3fe266716a11bb58"
+  },
+  {
+   "x": "bfee28c731eb6950",
+   "sin": "bfe9e3779b97f49e",
+   "cos": "3fe2cf2304755a5e"
+  },
+  {
+   "x": "bfeda819355ab018",
+   "sin": "bfe9970447ea1450",
+   "cos": "3fe336a479f43641"
+  },
+  {
+   "x": "bfed276b38c9f6dc",
+   "sin": "bfe948f32a1d91eb",
+   "cos": "3fe39cef40ddac0d"
+  },
+  {
+   "x": "bfeca6bd3c393da4",
+   "sin": "bfe8f949308a4e80",
+   "cos": "3fe401fce320d52b"
+  },
+  {
+   "x": "bfec260f3fa8846c",
+   "sin": "bfe8a80b635b6be6",
+   "cos": "3fe465c6feb501bc"
+  },
+  {
+   "x": "bfeba5614317cb34",
+   "sin": "bfe8553ee43def10",
+   "cos": "3fe4c8474600eeee"
+  },
+  {
+   "x": "bfeb24b3468711fc",
+   "sin": "bfe800e8ee0dc5da",
+   "cos": "3fe529778040b2eb"
+  },
+  {
+   "x": "bfeaa40549f658c0",
+   "sin": "bfe7ab0ed48135a2",
+   "cos": "3fe5895189ea57f1"
+  },
+  {
+   "x": "bfea23574d659f88",
+   "sin": "bfe753b603d2b814",
+   "cos": "3fe5e7cf55112014"
+  },
+  {
+   "x": "bfe9a2a950d4e650",
+   "sin": "bfe6fae400694b65",
+   "cos": "3fe644eae9c76ba5"
+  },
+  {
+   "x": "bfe921fb54442d18",
+   "sin": "bfe6a09e667f3bcc",
+   "cos": "3fe6a09e667f3bcc"
+  },
+  {
+   "x": "bfe8a14d57b373e0",
+   "sin": "bfe644eae9c76ba5",
+   "cos": "3fe6fae400694b65"
+  },
+  {
+   "x": "bfe8209f5b22baa8",
+   "sin": "bfe5e7cf55112014",
+   "cos": "3fe753b603d2b814"
+  },
+  {
+   "x": "bfe79ff15e92016c",
+   "sin": "bfe5895189ea57ef",
+   "cos": "3fe7ab0ed48135a5"
+  },
+  {
+   "x": "bfe71f4362014834",
+   "sin": "bfe529778040b2eb",
+   "cos": "3fe800e8ee0dc5da"
+  },
+  {
+   "x": "bfe69e9565708efc",
+   "sin": "bfe4c8474600eeee",
+   "cos": "3fe8553ee43def10"
+  },
+  {
+   "x": "bfe61de768dfd5c4",
+   "sin": "bfe465c6feb501bc",
+   "cos": "3fe8a80b635b6be6"
+  },
+  {
+   "x": "bfe59d396c4f1c8c",
+   "sin": "bfe401fce320d52b",
+   "cos": "3fe8f949308a4e80"
+  },
+  {
+   "x": "bfe51c8b6fbe6350",
+   "sin": "bfe39cef40ddac09",
+   "cos": "3fe948f32a1d91ed"
+  },
+  {
+   "x": "bfe49bdd732daa18",
+   "sin": "bfe336a479f43641",
+   "cos": "3fe9970447ea1450"
+  },
+  {
+   "x": "bfe41b2f769cf0e0",
+   "sin": "bfe2cf2304755a5e",
+   "cos": "3fe9e3779b97f49e"
+  },
+  {
+   "x": "bfe39a817a0c37a8",
+   "sin": "bfe266716a11bb58",
+   "cos": "3fea2e4850f24ebc"
+  },
+  {
+   "x": "bfe319d37d7b7e70",
+   "sin": "bfe1fc9647b000eb",
+   "cos": "3fea7771ae3550f8"
+  },
+  {
+   "x": "bfe2992580eac538",
+   "sin": "bfe191984d01e95e",
+   "cos": "3feabeef145aa600"
+  },
+  {
+   "x": "bfe21877845a0c00",
+   "sin": "bfe1257e3c182b53",
+   "cos": "3feb04bbff642e69"
+  },
+  {
+   "x": "bfe197c987c952c8",
+   "sin": "bfe0b84ee8f52ea0",
+   "cos": "3feb48d406a5051a"
+  },
+  {
+   "x": "bfe1171b8b389988",
+   "sin": "bfe04a11391ea2e1",
+   "cos": "3feb8b32dd08ca10"
+  },
+  {
+   "x": "bfe0966d8ea7e050",
+   "sin": "bfdfb598465bf61f",
+   "cos": "3febcbd451592ebd"
+  },
+  {
+   "x": "bfe015bf92172718",
+   "sin": "bfded50d5cbfa94e",
+   "cos": "3fec0ab44e81c00c"
+  },
+  {
+   "x": "bfdf2a232b0cdbc0",
+   "sin": "bfddf28fe444a41d",
+   "cos": "3fec47cedbd1e944"
+  },
+  {
+   "x": "bfde28c731eb6950",
+   "sin": "bfdd0e2e2b44de00",
+   "cos": "3fec83201d3d2bef"
+  },
+  {
+   "x": "bfdd276b38c9f6e0",
+   "sin": "bfdc27f69eb0acc5",
+   "cos": "3fecbca4539988a3"
+  },
+  {
+   "x": "bfdc260f3fa88470",
+   "sin": "bfdb3ff7c925819f",
+   "cos": "3fecf457dcdc14bf"
+  },
+  {
+   "x": "bfdb24b346871200",
+   "sin": "bfda56405202c666",
+   "cos": "3fed2a373453b92d"
+  },
+  {
+   "x": "bfda23574d659f90",
+   "sin": "bfd96adefc7ce9c8",
+   "cos": "3fed5e3ef2e216a6"
+  },
+  {
+   "x": "bfd921fb54442d20",
+   "sin": "bfd87de2a6aea96a",
+   "cos": "3fed906bcf328bac"
+  },
+  {
+   "x": "bfd8209f5b22baa8",
+   "sin": "bfd78f5a48a8a91a",
+   "cos": "3fedc0ba9def58e3"
+  },
+  {
+   "x": "bfd71f4362014830",
+   "sin": "bfd69f54f37f6646",
+   "cos": "3fedef2851f4e063"
+  },
+  {
+   "x": "bfd61de768dfd5c0",
+   "sin": "bfd5ade1d05796d9",
+   "cos": "3fee1bb1fc82fcbb"
+  },
+  {
+   "x": "bfd51c8b6fbe6350",
+   "sin": "bfd4bb101f7102fa",
+   "cos": "3fee4654cd6c6ca1"
+  },
+  {
+   "x": "bfd41b2f769cf0e0",
+   "sin": "bfd3c6ef372fe94f",
+   "cos": "3fee6f0e13445036"
+  },
+  {
+   "x": "bfd319d37d7b7e70",
+   "sin": "bfd2d18e8324fd20",
+   "cos": "3fee95db3b89b50d"
+  },
+  {
+   "x": "bfd21877845a0c00",
+   "sin": "bfd1dafd83140e10",
+   "cos": "3feebab9d2d12e2b"
+  },
+  {
+   "x": "bfd1171b8b389990",
+   "sin": "bfd0e34bc9f9694b",
+   "cos": "3feedda784ec7574"
+  },
+  {
+   "x": "bfd015bf92172720",
+   "sin": "bfcfd511fa1c07a2",
+   "cos": "3feefea21d1013e9"
+  },
+  {
+   "x": "bfce28c731eb6950",
+   "sin": "bfcde189a594fbcb",
+   "cos": "3fef1da785f70e68"
+  },
+  {
+   "x": "bfcc260f3fa88470",
+   "sin": "bfcbec1e23d21f6c",
+   "cos": "3fef3ab5ca04949e"
+  },
+  {
+   "x": "bfca23574d659f80",
+   "sin": "bfc9f4ef20ccdd99",
+   "cos": "3fef55cb1363b031"
+  },
+  {
+   "x": "bfc8209f5b22baa0",
+   "sin": "bfc7fc1c65037a73",
+   "cos": "3fef6ee5ac24f1d6"
+  },
+  {
+   "x": "bfc61de768dfd5c0",
+   "sin": "bfc601c5d3772368",
+   "cos": "3fef8603fe5a1ada"
+  },
+  {
+   "x": "bfc41b2f769cf0e0",
+   "sin": "bfc4060b67a85375",
+   "cos": "3fef9b24942fc0f7"
+  },
+  {
+   "x": "bfc21877845a0c00",
+   "sin": "bfc2090d3391aaec",
+   "cos": "3fefae461804eb1e"
+  },
+  {
+   "x": "bfc015bf92172720",
+   "sin": "bfc00aeb5da15be6",
+   "cos": "3fefbf675480a599"
+  },
+  {
+   "x": "bfbc260f3fa88480",
+   "sin": "bfbc178c3d6297eb",
+   "cos": "3fefce8734a58c3c"
+  },
+  {
+   "x": "bfb8209f5b22baa0",
+   "sin": "bfb8177b7ffc17e9",
+   "cos": "3fefdba4c3e34947"
+  },
+  {
+   "x": "bfb41b2f769cf0e0",
+   "sin": "bfb415e532398e49",
+   "cos": "3fefe6bf2e260803"
+  },
+  {
+   "x": "bfb015bf92172720",
+   "sin": "bfb0130a1be09380",
+   "cos": "3fefefd5bfe3da0f"
+  },
+  {
+   "x": "bfa8209f5b22bac0",
+   "sin": "bfa81e56327504c4",
+   "cos": "3feff6e7e6280e7e"
+  },
+  {
+   "x": "bfa015bf92172700",
+   "sin": "bfa015122df75846",
+   "cos": "3feffbf52e9c7a28"
+  },
+  {
+   "x": "bf9015bf92172700",
+   "sin": "bf90159438a60e55",
+   "cos": "3feffefd4790b066"
+  },
+  {
+   "x": "0000000000000000",
+   "sin": "0000000000000000",
+   "cos": "3fefffffffff2c12"
+  },
+  {
+   "x": "3f9015bf92172700",
+   "sin": "3f90159438a60e55",
+   "cos": "3feffefd4790b066"
+  },
+  {
+   "x": "3fa015bf92172700",
+   "sin": "3fa015122df75846",
+   "cos": "3feffbf52e9c7a28"
+  },
+  {
+   "x": "3fa8209f5b22bac0",
+   "sin": "3fa81e56327504c4",
+   "cos": "3feff6e7e6280e7e"
+  },
+  {
+   "x": "3fb015bf92172720",
+   "sin": "3fb0130a1be09380",
+   "cos": "3fefefd5bfe3da0f"
+  },
+  {
+   "x": "3fb41b2f769cf0e0",
+   "sin": "3fb415e532398e49",
+   "cos": "3fefe6bf2e260803"
+  },
+  {
+   "x": "3fb8209f5b22baa0",
+   "sin": "3fb8177b7ffc17e9",
+   "cos": "3fefdba4c3e34947"
+  },
+  {
+   "x": "3fbc260f3fa88460",
+   "sin": "3fbc178c3d6297cb",
+   "cos": "3fefce8734a58c3c"
+  },
+  {
+   "x": "3fc015bf92172720",
+   "sin": "3fc00aeb5da15be6",
+   "cos": "3fefbf675480a599"
+  },
+  {
+   "x": "3fc21877845a0c00",
+   "sin": "3fc2090d3391aaec",
+   "cos": "3fefae461804eb1e"
+  },
+  {
+   "x": "3fc41b2f769cf0e0",
+   "sin": "3fc4060b67a85375",
+   "cos": "3fef9b24942fc0f7"
+  },
+  {
+   "x": "3fc61de768dfd5c0",
+   "sin": "3fc601c5d3772368",
+   "cos": "3fef8603fe5a1ada"
+  },
+  {
+   "x": "3fc8209f5b22bab0",
+   "sin": "3fc7fc1c65037a83",
+   "cos": "3fef6ee5ac24f1d6"
+  },
+  {
+   "x": "3fca23574d659f90",
+   "sin": "3fc9f4ef20ccdda9",
+   "cos": "3fef55cb1363b02e"
+  },
+  {
+   "x": "3fcc260f3fa88470",
+   "sin": "3fcbec1e23d21f6c",
+   "cos": "3fef3ab5ca04949e"
+  },
+  {
+   "x": "3fce28c731eb6950",
+   "sin": "3fcde189a594fbcb",
+   "cos": "3fef1da785f70e68"
+  },
+  {
+   "x": "3fd015bf92172718",
+   "sin": "3fcfd511fa1c0793",
+   "cos": "3feefea21d1013eb"
+  },
+  {
+   "x": "3fd1171b8b389988",
+   "sin": "3fd0e34bc9f96943",
+   "cos": "3feedda784ec7576"
+  },
+  {
+   "x": "3fd21877845a0bf8",
+   "sin": "3fd1dafd83140e09",
+   "cos": "3feebab9d2d12e2b"
+  },
+  {
+   "x": "3fd319d37d7b7e70",
+   "sin": "3fd2d18e8324fd20",
+   "cos": "3fee95db3b89b50d"
+  },
+  {
+   "x": "3fd41b2f769cf0e0",
+   "sin": "3fd3c6ef372fe94f",
+   "cos": "3fee6f0e13445036"
+  },
+  {
+   "x": "3fd51c8b6fbe6358",
+   "sin": "3fd4bb101f710301",
+   "cos": "3fee4654cd6c6ca1"
+  },
+  {
+   "x": "3fd61de768dfd5c8",
+   "sin": "3fd5ade1d05796e1",
+   "cos": "3fee1bb1fc82fcb9"
+  },
+  {
+   "x": "3fd71f4362014838",
+   "sin": "3fd69f54f37f664e",
+   "cos": "3fedef2851f4e061"
+  },
+  {
+   "x": "3fd8209f5b22baa8",
+   "sin": "3fd78f5a48a8a91a",
+   "cos": "3fedc0ba9def58e3"
+  },
+  {
+   "x": "3fd921fb54442d18",
+   "sin": "3fd87de2a6aea963",
+   "cos": "3fed906bcf328bae"
+  },
+  {
+   "x": "3fda23574d659f88",
+   "sin": "3fd96adefc7ce9c0",
+   "cos": "3fed5e3ef2e216a7"
+  },
+  {
+   "x": "3fdb24b3468711f8",
+   "sin": "3fda56405202c65f",
+   "cos": "3fed2a373453b92f"
+  },
+  {
+   "x": "3fdc260f3fa88468",
+   "sin": "3fdb3ff7c9258197",
+   "cos": "3fecf457dcdc14c0"
+  },
+  {
+   "x": "3fdd276b38c9f6d8",
+   "sin": "3fdc27f69eb0acbd",
+   "cos": "3fecbca4539988a5"
+  },
+  {
+   "x": "3fde28c731eb6958",
+   "sin": "3fdd0e2e2b44de08",
+   "cos": "3fec83201d3d2bec"
+  },
+  {
+   "x": "3fdf2a232b0cdbc8",
+   "sin": "3fddf28fe444a424",
+   "cos": "3fec47cedbd1e942"
+  },
+  {
+   "x": "3fe015bf9217271c",
+   "sin": "3fded50d5cbfa955",
+   "cos": "3fec0ab44e81c00a"
+  },
+  {
+   "x": "3fe0966d8ea7e054",
+   "sin": "3fdfb598465bf625",
+   "cos": "3febcbd451592eba"
+  },
+  {
+   "x": "3fe1171b8b38998c",
+   "sin": "3fe04a11391ea2e4",
+   "cos": "3feb8b32dd08ca0d"
+  },
+  {
+   "x": "3fe197c987c952c4",
+   "sin": "3fe0b84ee8f52e9d",
+   "cos": "3feb48d406a5051d"
+  },
+  {
+   "x": "3fe21877845a0bfc",
+   "sin": "3fe1257e3c182b50",
+   "cos": "3feb04bbff642e6a"
+  },
+  {
+   "x": "3fe2992580eac534",
+   "sin": "3fe191984d01e95a",
+   "cos": "3feabeef145aa602"
+  },
+  {
+   "x": "3fe319d37d7b7e6c",
+   "sin": "3fe1fc9647b000e8",
+   "cos": "3fea7771ae3550fa"
+  },
+  {
+   "x": "3fe39a817a0c37a4",
+   "sin": "3fe266716a11bb54",
+   "cos": "3fea2e4850f24ebe"
+  },
+  {
+   "x": "3fe41b2f769cf0dc",
+   "sin": "3fe2cf2304755a5b",
+   "cos": "3fe9e3779b97f4a1"
+  },
+  {
+   "x": "3fe49bdd732daa1c",
+   "sin": "3fe336a479f43644",
+   "cos": "3fe9970447ea144d"
+  },
+  {
+   "x": "3fe51c8b6fbe6354",
+   "sin": "3fe39cef40ddac0d",
+   "cos": "3fe948f32a1d91eb"
+  },
+  {
+   "x": "3fe59d396c4f1c8c",
+   "sin": "3fe401fce320d52b",
+   "cos": "3fe8f949308a4e80"
+  },
+  {
+   "x": "3fe61de768dfd5c4",
+   "sin": "3fe465c6feb501bc",
+   "cos": "3fe8a80b635b6be6"
+  },
+  {
+   "x": "3fe69e9565708efc",
+   "sin": "3fe4c8474600eeee",
+   "cos": "3fe8553ee43def10"
+  },
+  {
+   "x": "3fe71f4362014834",
+   "sin": "3fe529778040b2eb",
+   "cos": "3fe800e8ee0dc5da"
+  },
+  {
+   "x": "3fe79ff15e92016c",
+   "sin": "3fe5895189ea57ef",
+   "cos": "3fe7ab0ed48135a5"
+  },
+  {
+   "x": "3fe8209f5b22baa4",
+   "sin": "3fe5e7cf55112012",
+   "cos": "3fe753b603d2b817"
+  },
+  {
+   "x": "3fe8a14d57b373dc",
+   "sin": "3fe644eae9c76ba3",
+   "cos": "3fe6fae400694b68"
+  },
+  {
+   "x": "3fe921fb54442d14",
+   "sin": "3fe6a09e667f3bc9",
+   "cos": "3fe6a09e667f3bcf"
+  },
+  {
+   "x": "3fe9a2a950d4e654",
+   "sin": "3fe6fae400694b68",
+   "cos": "3fe644eae9c76ba3"
+  },
+  {
+   "x": "3fea23574d659f8c",
+   "sin": "3fe753b603d2b817",
+   "cos": "3fe5e7cf55112012"
+  },
+  {
+   "x": "3feaa40549f658c4",
+   "sin": "3fe7ab0ed48135a5",
+   "cos": "3fe5895189ea57ef"
+  },
+  {
+   "x": "3feb24b3468711fc",
+   "sin": "3fe800e8ee0dc5da",
+   "cos": "3fe529778040b2eb"
+  },
+  {
+   "x": "3feba5614317cb38",
+   "sin": "3fe8553ee43def14",
+   "cos": "3fe4c8474600eeeb"
+  },
+  {
+   "x": "3fec260f3fa88470",
+   "sin": "3fe8a80b635b6be9",
+   "cos": "3fe465c6feb501b9"
+  },
+  {
+   "x": "3feca6bd3c393da8",
+   "sin": "3fe8f949308a4e82",
+   "cos": "3fe401fce320d528"
+  },
+  {
+   "x": "3fed276b38c9f6e0",
+   "sin": "3fe948f32a1d91ed",
+   "cos": "3fe39cef40ddac09"
+  },
+  {
+   "x": "3feda819355ab018",
+   "sin": "3fe9970447ea1450",
+   "cos": "3fe336a479f43641"
+  },
+  {
+   "x": "3fee28c731eb6950",
+   "sin": "3fe9e3779b97f49e",
+   "cos": "3fe2cf2304755a5e"
+  },
+  {
+   "x": "3feea9752e7c2288",
+   "sin": "3fea2e4850f24ebc",
+   "cos": "3fe266716a11bb58"
+  },
+  {
+   "x": "3fef2a232b0cdbc0",
+   "sin": "3fea7771ae3550f8",
+   "cos": "3fe1fc9647b000eb"
+  },
+  {
+   "x": "3fefaad1279d9500",
+   "sin": "3feabeef145aa605",
+   "cos": "3fe191984d01e957"
+  },
+  {
+   "x": "3ff015bf9217271c",
+   "sin": "3feb04bbff642e6d",
+   "cos": "3fe1257e3c182b4c"
+  },
+  {
+   "x": "3ff05616905f83b8",
+   "sin": "3feb48d406a5051e",
+   "cos": "3fe0b84ee8f52e99"
+  },
+  {
+   "x": "3ff0966d8ea7e054",
+   "sin": "3feb8b32dd08ca10",
+   "cos": "3fe04a11391ea2e1"
+  },
+  {
+   "x": "3ff0d6c48cf03cf0",
+   "sin": "3febcbd451592ebd",
+   "cos": "3fdfb598465bf61f"
+  },
+  {
+   "x": "3ff1171b8b38998c",
+   "sin": "3fec0ab44e81c00c",
+   "cos": "3fded50d5cbfa94e"
+  },
+  {
+   "x": "3ff157728980f628",
+   "sin": "3fec47cedbd1e944",
+   "cos": "3fddf28fe444a41d"
+  },
+  {
+   "x": "3ff197c987c952c4",
+   "sin": "3fec83201d3d2bef",
+   "cos": "3fdd0e2e2b44de00"
+  },
+  {
+   "x": "3ff1d8208611af60",
+   "sin": "3fecbca4539988a3",
+   "cos": "3fdc27f69eb0acc5"
+  },
+  {
+   "x": "3ff21877845a0c00",
+   "sin": "3fecf457dcdc14c2",
+   "cos": "3fdb3ff7c9258190"
+  },
+  {
+   "x": "3ff258ce82a2689c",
+   "sin": "3fed2a373453b931",
+   "cos": "3fda56405202c658"
+  },
+  {
+   "x": "3ff2992580eac538",
+   "sin": "3fed5e3ef2e216a9",
+   "cos": "3fd96adefc7ce9b9"
+  },
+  {
+   "x": "3ff2d97c7f3321d4",
+   "sin": "3fed906bcf328bae",
+   "cos": "3fd87de2a6aea95b"
+  },
+  {
+   "x": "3ff319d37d7b7e70",
+   "sin": "3fedc0ba9def58e6",
+   "cos": "3fd78f5a48a8a913"
+  },
+  {
+   "x": "3ff35a2a7bc3db0c",
+   "sin": "3fedef2851f4e063",
+   "cos": "3fd69f54f37f6646"
+  },
+  {
+   "x": "3ff39a817a0c37a8",
+   "sin": "3fee1bb1fc82fcbb",
+   "cos": "3fd5ade1d05796d9"
+  },
+  {
+   "x": "3ff3dad878549444",
+   "sin": "3fee4654cd6c6ca1",
+   "cos": "3fd4bb101f7102fa"
+  },
+  {
+   "x": "3ff41b2f769cf0e0",
+   "sin": "3fee6f0e13445036",
+   "cos": "3fd3c6ef372fe94f"
+  },
+  {
+   "x": "3ff45b8674e54d7c",
+   "sin": "3fee95db3b89b50d",
+   "cos": "3fd2d18e8324fd20"
+  },
+  {
+   "x": "3ff49bdd732daa18",
+   "sin": "3feebab9d2d12e2b",
+   "cos": "3fd1dafd83140e10"
+  },
+  {
+   "x": "3ff4dc34717606b8",
+   "sin": "3feedda784ec7576",
+   "cos": "3fd0e34bc9f9693b"
+  },
+  {
+   "x": "3ff51c8b6fbe6354",
+   "sin": "3feefea21d1013ec",
+   "cos": "3fcfd511fa1c0783"
+  },
+  {
+   "x": "3ff55ce26e06bff0",
+   "sin": "3fef1da785f70e68",
+   "cos": "3fcde189a594fbbc"
+  },
+  {
+   "x": "3ff59d396c4f1c8c",
+   "sin": "3fef3ab5ca04949f",
+   "cos": "3fcbec1e23d21f5d"
+  },
+  {
+   "x": "3ff5dd906a977928",
+   "sin": "3fef55cb1363b031",
+   "cos": "3fc9f4ef20ccdd99"
+  },
+  {
+   "x": "3ff61de768dfd5c4",
+   "sin": "3fef6ee5ac24f1d6",
+   "cos": "3fc7fc1c65037a73"
+  },
+  {
+   "x": "3ff65e3e67283260",
+   "sin": "3fef8603fe5a1ada",
+   "cos": "3fc601c5d3772368"
+  },
+  {
+   "x": "3ff69e9565708efc",
+   "sin": "3fef9b24942fc0f7",
+   "cos": "3fc4060b67a85375"
+  },
+  {
+   "x": "3ff6deec63b8eb98",
+   "sin": "3fefae461804eb1e",
+   "cos": "3fc2090d3391aaec"
+  },
+  {
+   "x": "3ff71f4362014834",
+   "sin": "3fefbf675480a599",
+   "cos": "3fc00aeb5da15be6"
+  },
+  {
+   "x": "3ff75f9a6049a4d0",
+   "sin": "3fefce8734a58c3c",
+   "cos": "3fbc178c3d6297eb"
+  },
+  {
+   "x": "3ff79ff15e920170",
+   "sin": "3fefdba4c3e34948",
+   "cos": "3fb8177b7ffc17c9"
+  },
+  {
+   "x": "3ff7e0485cda5e0c",
+   "sin": "3fefe6bf2e260803",
+   "cos": "3fb415e532398e29"
+  },
+  {
+   "x": "3ff8209f5b22baa8",
+   "sin": "3fefefd5bfe3da0f",
+   "cos": "3fb0130a1be09360"
+  },
+  {
+   "x": "3ff860f6596b1744",
+   "sin": "3feff6e7e6280e7f",
+   "cos": "3fa81e5632750484"
+  },
+  {
+   "x": "3ff8a14d57b373e0",
+   "sin": "3feffbf52e9c7a28",
+   "cos": "3fa015122df75846"
+  },
+  {
+   "x": "3ff8e1a455fbd07c",
+   "sin": "3feffefd4790b066",
+   "cos": "3f90159438a60e55"
+  },
+  {
+   "x": "3ff921fb54442d18",
+   "sin": "3fefffffffff2c12",
+   "cos": "0000000000000000"
+  },
+  {
+   "x": "3ff96252528c89b4",
+   "sin": "3feffefd4790b066",
+   "cos": "bf90159438a60e55"
+  },
+  {
+   "x": "3ff9a2a950d4e650",
+   "sin": "3feffbf52e9c7a28",
+   "cos": "bfa015122df75846"
+  },
+  {
+   "x": "3ff9e3004f1d42ec",
+   "sin": "3feff6e7e6280e7f",
+   "cos": "bfa81e5632750484"
+  },
+  {
+   "x": "3ffa23574d659f88",
+   "sin": "3fefefd5bfe3da0f",
+   "cos": "bfb0130a1be09360"
+  },
+  {
+   "x": "3ffa63ae4badfc28",
+   "sin": "3fefe6bf2e260803",
+   "cos": "bfb415e532398e69"
+  },
+  {
+   "x": "3ffaa40549f658c4",
+   "sin": "3fefdba4c3e34945",
+   "cos": "bfb8177b7ffc1809"
+  },
+  {
+   "x": "3ffae45c483eb560",
+   "sin": "3fefce8734a58c3c",
+   "cos": "bfbc178c3d6297eb"
+  },
+  {
+   "x": "3ffb24b3468711fc",
+   "sin": "3fefbf675480a599",
+   "cos": "bfc00aeb5da15be6"
+  },
+  {
+   "x": "3ffb650a44cf6e98",
+   "sin": "3fefae461804eb1e",
+   "cos": "bfc2090d3391aaec"
+  },
+  {
+   "x": "3ffba5614317cb34",
+   "sin": "3fef9b24942fc0f7",
+   "cos": "bfc4060b67a85375"
+  },
+  {
+   "x": "3ffbe5b8416027d0",
+   "sin": "3fef8603fe5a1ada",
+   "cos": "bfc601c5d3772368"
+  },
+  {
+   "x": "3ffc260f3fa8846c",
+   "sin": "3fef6ee5ac24f1d6",
+   "cos": "bfc7fc1c65037a73"
+  },
+  {
+   "x": "3ffc66663df0e108",
+   "sin": "3fef55cb1363b031",
+   "cos": "bfc9f4ef20ccdd99"
+  },
+  {
+   "x": "3ffca6bd3c393da4",
+   "sin": "3fef3ab5ca04949f",
+   "cos": "bfcbec1e23d21f5d"
+  },
+  {
+   "x": "3ffce7143a819a44",
+   "sin": "3fef1da785f70e67",
+   "cos": "bfcde189a594fbdb"
+  },
+  {
+   "x": "3ffd276b38c9f6e0",
+   "sin": "3feefea21d1013e9",
+   "cos": "bfcfd511fa1c07a2"
+  },
+  {
+   "x": "3ffd67c23712537c",
+   "sin": "3feedda784ec7574",
+   "cos": "bfd0e34bc9f9694b"
+  },
+  {
+   "x": "3ffda819355ab018",
+   "sin": "3feebab9d2d12e2b",
+   "cos": "bfd1dafd83140e10"
+  },
+  {
+   "x": "3ffde87033a30cb4",
+   "sin": "3fee95db3b89b50d",
+   "cos": "bfd2d18e8324fd20"
+  },
+  {
+   "x": "3ffe28c731eb6950",
+   "sin": "3fee6f0e13445036",
+   "cos": "bfd3c6ef372fe94f"
+  },
+  {
+   "x": "3ffe691e3033c5ec",
+   "sin": "3fee4654cd6c6ca1",
+   "cos": "bfd4bb101f7102fa"
+  },
+  {
+   "x": "3ffea9752e7c2288",
+   "sin": "3fee1bb1fc82fcbb",
+   "cos": "bfd5ade1d05796d9"
+  },
+  {
+   "x": "3ffee9cc2cc47f24",
+   "sin": "3fedef2851f4e063",
+   "cos": "bfd69f54f37f6646"
+  },
+  {
+   "x": "3fff2a232b0cdbc0",
+   "sin": "3fedc0ba9def58e6",
+   "cos": "bfd78f5a48a8a913"
+  },
+  {
+   "x": "3fff6a7a2955385c",
+   "sin": "3fed906bcf328bae",
+   "cos": "bfd87de2a6aea95b"
+  },
+  {
+   "x": "3fffaad1279d94f8",
+   "sin": "3fed5e3ef2e216a9",
+   "cos": "bfd96adefc7ce9b9"
+  },
+  {
+   "x": "3fffeb2825e5f198",
+   "sin": "3fed2a373453b92d",
+   "cos": "bfda56405202c666"
+  },
+  {
+   "x": "400015bf92172718",
+   "sin": "3fecf457dcdc14c2",
+   "cos": "bfdb3ff7c9258190"
+  },
+  {
+   "x": "400035eb113b5568",
+   "sin": "3fecbca4539988a3",
+   "cos": "bfdc27f69eb0acc5"
+  },
+  {
+   "x": "40005616905f83b4",
+   "sin": "3fec83201d3d2bf2",
+   "cos": "bfdd0e2e2b44ddf2"
+  },
+  {
+   "x": "400076420f83b204",
+   "sin": "3fec47cedbd1e944",
+   "cos": "bfddf28fe444a41d"
+  },
+  {
+   "x": "4000966d8ea7e054",
+   "sin": "3fec0ab44e81c008",
+   "cos": "bfded50d5cbfa95c"
+  },
+  {
+   "x": "4000b6990dcc0ea0",
+   "sin": "3febcbd451592ebd",
+   "cos": "bfdfb598465bf61f"
+  },
+  {
+   "x": "4000d6c48cf03cf0",
+   "sin": "3feb8b32dd08ca0b",
+   "cos": "bfe04a11391ea2e8"
+  },
+  {
+   "x": "4000f6f00c146b3c",
+   "sin": "3feb48d406a5051e",
+   "cos": "bfe0b84ee8f52e99"
+  },
+  {
+   "x": "4001171b8b38998c",
+   "sin": "3feb04bbff642e69",
+   "cos": "bfe1257e3c182b53"
+  },
+  {
+   "x": "400137470a5cc7d8",
+   "sin": "3feabeef145aa605",
+   "cos": "bfe191984d01e957"
+  },
+  {
+   "x": "400157728980f628",
+   "sin": "3fea7771ae3550f8",
+   "cos": "bfe1fc9647b000eb"
+  },
+  {
+   "x": "4001779e08a52474",
+   "sin": "3fea2e4850f24ec1",
+   "cos": "bfe266716a11bb51"
+  },
+  {
+   "x": "400197c987c952c4",
+   "sin": "3fe9e3779b97f49e",
+   "cos": "bfe2cf2304755a5e"
+  },
+  {
+   "x": "4001b7f506ed8110",
+   "sin": "3fe9970447ea1455",
+   "cos": "bfe336a479f4363a"
+  },
+  {
+   "x": "4001d8208611af60",
+   "sin": "3fe948f32a1d91ed",
+   "cos": "bfe39cef40ddac09"
+  },
+  {
+   "x": "4001f84c0535ddb0",
+   "sin": "3fe8f949308a4e7d",
+   "cos": "bfe401fce320d52e"
+  },
+  {
+   "x": "40021877845a0bfc",
+   "sin": "3fe8a80b635b6be9",
+   "cos": "bfe465c6feb501b9"
+  },
+  {
+   "x": "400238a3037e3a4c",
+   "sin": "3fe8553ee43def0f",
+   "cos": "bfe4c8474600eef1"
+  },
+  {
+   "x": "400258ce82a26898",
+   "sin": "3fe800e8ee0dc5dd",
+   "cos": "bfe529778040b2e8"
+  },
+  {
+   "x": "400278fa01c696e8",
+   "sin": "3fe7ab0ed48135a2",
+   "cos": "bfe5895189ea57f1"
+  },
+  {
+   "x": "4002992580eac534",
+   "sin": "3fe753b603d2b819",
+   "cos": "bfe5e7cf5511200f"
+  },
+  {
+   "x": "4002b951000ef384",
+   "sin": "3fe6fae400694b65",
+   "cos": "bfe644eae9c76ba5"
+  },
+  {
+   "x": "4002d97c7f3321d0",
+   "sin": "3fe6a09e667f3bd2",
+   "cos": "bfe6a09e667f3bc7"
+  },
+  {
+   "x": "4002f9a7fe575020",
+   "sin": "3fe644eae9c76ba5",
+   "cos": "bfe6fae400694b65"
+  },
+  {
+   "x": "400319d37d7b7e6e",
+   "sin": "3fe5e7cf55112014",
+   "cos": "bfe753b603d2b814"
+  },
+  {
+   "x": "400339fefc9facbc",
+   "sin": "3fe5895189ea57f1",
+   "cos": "bfe7ab0ed48135a2"
+  },
+  {
+   "x": "40035a2a7bc3db0c",
+   "sin": "3fe529778040b2e8",
+   "cos": "bfe800e8ee0dc5dd"
+  },
+  {
+   "x": "40037a55fae80958",
+   "sin": "3fe4c8474600eef1",
+   "cos": "bfe8553ee43def0f"
+  },
+  {
+   "x": "40039a817a0c37a8",
+   "sin": "3fe465c6feb501b9",
+   "cos": "bfe8a80b635b6be9"
+  },
+  {
+   "x": "4003baacf93065f4",
+   "sin": "3fe401fce320d52e",
+   "cos": "bfe8f949308a4e7d"
+  },
+  {
+   "x": "4003dad878549444",
+   "sin": "3fe39cef40ddac09",
+   "cos": "bfe948f32a1d91ed"
+  },
+  {
+   "x": "4003fb03f778c290",
+   "sin": "3fe336a479f43647",
+   "cos": "bfe9970447ea144b"
+  },
+  {
+   "x": "40041b2f769cf0e0",
+   "sin": "3fe2cf2304755a5e",
+   "cos": "bfe9e3779b97f49e"
+  },
+  {
+   "x": "40043b5af5c11f2e",
+   "sin": "3fe266716a11bb58",
+   "cos": "bfea2e4850f24ebc"
+  },
+  {
+   "x": "40045b8674e54d7c",
+   "sin": "3fe1fc9647b000eb",
+   "cos": "bfea7771ae3550f8"
+  },
+  {
+   "x": "40047bb1f4097bcc",
+   "sin": "3fe191984d01e957",
+   "cos": "bfeabeef145aa605"
+  },
+  {
+   "x": "40049bdd732daa18",
+   "sin": "3fe1257e3c182b53",
+   "cos": "bfeb04bbff642e69"
+  },
+  {
+   "x": "4004bc08f251d868",
+   "sin": "3fe0b84ee8f52e99",
+   "cos": "bfeb48d406a5051e"
+  },
+  {
+   "x": "4004dc34717606b4",
+   "sin": "3fe04a11391ea2e8",
+   "cos": "bfeb8b32dd08ca0b"
+  },
+  {
+   "x": "4004fc5ff09a3504",
+   "sin": "3fdfb598465bf61f",
+   "cos": "bfebcbd451592ebd"
+  },
+  {
+   "x": "40051c8b6fbe6350",
+   "sin": "3fded50d5cbfa95c",
+   "cos": "bfec0ab44e81c008"
+  },
+  {
+   "x": "40053cb6eee291a0",
+   "sin": "3fddf28fe444a41d",
+   "cos": "bfec47cedbd1e944"
+  },
+  {
+   "x": "40055ce26e06bfee",
+   "sin": "3fdd0e2e2b44de00",
+   "cos": "bfec83201d3d2bef"
+  },
+  {
+   "x": "40057d0ded2aee3c",
+   "sin": "3fdc27f69eb0acc5",
+   "cos": "bfecbca4539988a3"
+  },
+  {
+   "x": "40059d396c4f1c8a",
+   "sin": "3fdb3ff7c925819f",
+   "cos": "bfecf457dcdc14bf"
+  },
+  {
+   "x": "4005bd64eb734ad8",
+   "sin": "3fda56405202c666",
+   "cos": "bfed2a373453b92d"
+  },
+  {
+   "x": "4005dd906a977928",
+   "sin": "3fd96adefc7ce9b9",
+   "cos": "bfed5e3ef2e216a9"
+  },
+  {
+   "x": "4005fdbbe9bba774",
+   "sin": "3fd87de2a6aea96a",
+   "cos": "bfed906bcf328bac"
+  },
+  {
+   "x": "40061de768dfd5c4",
+   "sin": "3fd78f5a48a8a913",
+   "cos": "bfedc0ba9def58e6"
+  },
+  {
+   "x": "40063e12e8040410",
+   "sin": "3fd69f54f37f6655",
+   "cos": "bfedef2851f4e061"
+  },
+  {
+   "x": "40065e3e67283260",
+   "sin": "3fd5ade1d05796d9",
+   "cos": "bfee1bb1fc82fcbb"
+  },
+  {
+   "x": "40067e69e64c60ae",
+   "sin": "3fd4bb101f7102fa",
+   "cos": "bfee4654cd6c6ca1"
+  },
+  {
+   "x": "40069e9565708efc",
+   "sin": "3fd3c6ef372fe94f",
+   "cos": "bfee6f0e13445036"
+  },
+  {
+   "x": "4006bec0e494bd4a",
+   "sin": "3fd2d18e8324fd20",
+   "cos": "bfee95db3b89b50d"
+  },
+  {
+   "x": "4006deec63b8eb98",
+   "sin": "3fd1dafd83140e10",
+   "cos": "bfeebab9d2d12e2b"
+  },
+  {
+   "x": "4006ff17e2dd19e6",
+   "sin": "3fd0e34bc9f9694b",
+   "cos": "bfeedda784ec7574"
+  },
+  {
+   "x": "40071f4362014834",
+   "sin": "3fcfd511fa1c07a2",
+   "cos": "bfeefea21d1013e9"
+  },
+  {
+   "x": "40073f6ee1257684",
+   "sin": "3fcde189a594fbbc",
+   "cos": "bfef1da785f70e68"
+  },
+  {
+   "x": "40075f9a6049a4d0",
+   "sin": "3fcbec1e23d21f7c",
+   "cos": "bfef3ab5ca04949d"
+  },
+  {
+   "x": "40077fc5df6dd320",
+   "sin": "3fc9f4ef20ccdd99",
+   "cos": "bfef55cb1363b031"
+  },
+  {
+   "x": "40079ff15e92016e",
+   "sin": "3fc7fc1c65037a73",
+   "cos": "bfef6ee5ac24f1d6"
+  },
+  {
+   "x": "4007c01cddb62fbc",
+   "sin": "3fc601c5d3772368",
+   "cos": "bfef8603fe5a1ada"
+  },
+  {
+   "x": "4007e0485cda5e0a",
+   "sin": "3fc4060b67a85375",
+   "cos": "bfef9b24942fc0f7"
+  },
+  {
+   "x": "40080073dbfe8c58",
+   "sin": "3fc2090d3391aaec",
+   "cos": "bfefae461804eb1e"
+  },
+  {
+   "x": "4008209f5b22baa6",
+   "sin": "3fc00aeb5da15be6",
+   "cos": "bfefbf675480a599"
+  },
+  {
+   "x": "400840cada46e8f4",
+   "sin": "3fbc178c3d6297eb",
+   "cos": "bfefce8734a58c3c"
+  },
+  {
+   "x": "400860f6596b1742",
+   "sin": "3fb8177b7ffc1809",
+   "cos": "bfefdba4c3e34945"
+  },
+  {
+   "x": "40088121d88f4590",
+   "sin": "3fb415e532398e69",
+   "cos": "bfefe6bf2e260803"
+  },
+  {
+   "x": "4008a14d57b373e0",
+   "sin": "3fb0130a1be09360",
+   "cos": "bfefefd5bfe3da0f"
+  },
+  {
+   "x": "4008c178d6d7a22e",
+   "sin": "3fa81e5632750484",
+   "cos": "bfeff6e7e6280e7f"
+  },
+  {
+   "x": "4008e1a455fbd07c",
+   "sin": "3fa015122df75846",
+   "cos": "bfeffbf52e9c7a28"
+  },
+  {
+   "x": "400901cfd51ffeca",
+   "sin": "3f90159438a60e55",
+   "cos": "bfeffefd4790b066"
+  },
+  {
+   "x": "400921fb54442d18",
+   "sin": "0000000000000000",
+   "cos": "bfefffffffff2c12"
+  }
+ ],
+ "atan2": [
+  {
+   "y": "0000000000000000",
+   "x": "0000000000000000",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "8000000000000000",
+   "x": "0000000000000000",
+   "a": "8000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "8000000000000000",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "8000000000000000",
+   "x": "8000000000000000",
+   "a": "c00921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3ff0000000000000",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "8000000000000000",
+   "x": "3ff0000000000000",
+   "a": "8000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bff0000000000000",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "8000000000000000",
+   "x": "bff0000000000000",
+   "a": "c00921fb54442d18"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "bff0000000000000",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "8000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "bff0000000000000",
+   "x": "8000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "3ff0000000000000",
+   "a": "3fe921fb5442bd28"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "bff0000000000000",
+   "a": "4002d97c7f337dce"
+  },
+  {
+   "y": "bff0000000000000",
+   "x": "3ff0000000000000",
+   "a": "bfe921fb5442bd28"
+  },
+  {
+   "y": "bff0000000000000",
+   "x": "bff0000000000000",
+   "a": "c002d97c7f337dce"
+  },
+  {
+   "y": "3fd126145e9ecd56",
+   "x": "3ff0000000000000",
+   "a": "3fd0c152382a9387"
+  },
+  {
+   "y": "3fd126145e9ecd58",
+   "x": "3ff0000000000000",
+   "a": "3fd0c15238305344"
+  },
+  {
+   "y": "3fd126145e9ecd54",
+   "x": "3ff0000000000000",
+   "a": "3fd0c152382a9385"
+  },
+  {
+   "y": "3fefffffffffffff",
+   "x": "3ff0000000000000",
+   "a": "3fe921fb5442bd28"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "3fefffffffffffff",
+   "a": "3fe921fb54459d08"
+  },
+  {
+   "y": "3e45798ee2308c3a",
+   "x": "3ff0000000000000",
+   "a": "3e45798ee2308c3a"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "3e45798ee2308c3a",
+   "a": "3ff921fb5194fb3c"
+  },
+  {
+   "y": "4197d78400000000",
+   "x": "3ff0000000000000",
+   "a": "3ff921fb5194fb3c"
+  },
+  {
+   "y": "3ff0000000000000",
+   "x": "4197d78400000000",
+   "a": "3e45798ee2308c3a"
+  },
+  {
+   "y": "01a56e1fc2f8f359",
+   "x": "01a56e1fc2f8f359",
+   "a": "3fe921fb5442bd28"
+  },
+  {
+   "y": "7e37e43c8800759c",
+   "x": "7e37e43c8800759c",
+   "a": "3fe921fb5442bd28"
+  },
+  {
+   "y": "01a56e1fc2f8f359",
+   "x": "7e37e43c8800759c",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "7e37e43c8800759c",
+   "x": "01a56e1fc2f8f359",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "c002e980fd63c476"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "c00287fe38d78fb1"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "c0021d16f374052e"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c001a80a73b648eb"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0012835ea5a4e29"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "c00006dabfd2f64c"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "bffecb3fd998d38e"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "bffd74ecb9622fa4"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffc0e057aee0d3c"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffa9b2578cc81aa"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff7a8d12fbbd886"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff635f12d9a4cf4"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff4cf09ef262a8c"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff378b6ceef86a2"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "bff2364128e26d97"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfefe715a7a77bbc"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfede7c3823790b4"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "bfec139183409fa6"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "bfea67f46db2759b"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe8e1e95b81a289"
+  },
+  {
+   "y": "c011c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "bfe77e3f3379595e"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c013ae147ae147ae",
+   "a": "c0039a8cbc8ce884"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c0120a3d70a3d70a",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c010666666666666",
+   "a": "c002e101a88a4dd6"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c00d851eb851eb85",
+   "a": "c0027547179cc509"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c001fe33f72e700d"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0017ad51ce336ae"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c003ae147ae147ae",
+   "a": "c000ea6abccaf604"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "c000666666666666",
+   "a": "c0004c921315d270"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "bffa3d70a3d70a3d",
+   "a": "bfff42efaa3d6e41"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "bff3ae147ae147ae",
+   "a": "bffdd417e58dbb58"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffc505182eda321"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffabd36af09fc7d"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff786bff97e5db3"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff5f3a5259ab70f"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff46fdec2fa9ed8"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff30106fe4aebef"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "4000666666666666",
+   "a": "bff1aad2825cb551"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "4003ae147ae147ae",
+   "a": "bff06f212ef26e28"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfee9c98dd83d9a7"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfec8f1d7456f42d"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "400d851eb851eb85",
+   "a": "bfeab2d0f29da03d"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "4010666666666666",
+   "a": "bfe903e6aee77d08"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe77e3f33795960"
+  },
+  {
+   "y": "c01047ae147ae148",
+   "x": "4013ae147ae147ae",
+   "a": "bfe61dba5edd1250"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c013ae147ae147ae",
+   "a": "c003f96e1593fd72"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c0120a3d70a3d70a",
+   "a": "c003a2e3fb633cfa"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c010666666666666",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c00d851eb851eb85",
+   "a": "c002d6b70a915922"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c0025e6712b3d739"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c006f5c28f5c28f5",
+   "a": "c001d81f44abd43a"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c003ae147ae147ae",
+   "a": "c00142a9d50513ce"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "c000666666666666",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "bffa3d70a3d70a3d",
+   "a": "bfffceeb10b29958"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "bff3ae147ae147ae",
+   "a": "bffe448ccfe448e8"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffc9f4e1f624163"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffae604c715e2f5"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff75df1e172773b"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff5a4a8892618cd"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff3ff69d8a41148"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff2750b97d5c0d8"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "4000666666666666",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "4003ae147ae147ae",
+   "a": "bfef7d45fcfc6528"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfed27703e616376"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfeb0e510641577d"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "400d851eb851eb85",
+   "a": "bfe92d1126cb4fd7"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "4010666666666666",
+   "a": "bfe77e3f33795960"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe5fc5d6383c07a"
+  },
+  {
+   "y": "c00d99999999999a",
+   "x": "4013ae147ae147ae",
+   "a": "bfe4a234fac0be96"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c013ae147ae147ae",
+   "a": "c0045f6932114d84"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c0120a3d70a3d70a",
+   "a": "c0040b6f4c3e928a"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c010666666666666",
+   "a": "c003acf93e7a68fa"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c00d851eb851eb85",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c002c9feb3de8af6"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c006f5c28f5c28f5",
+   "a": "c00241d0d9a18268"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c003ae147ae147ae",
+   "a": "c001a80a73b648eb"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "c000666666666666",
+   "a": "c000fb1f9653653d"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c0003a34380e5dc2"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "bff3ae147ae147ae",
+   "a": "bffecb3fd998d38e"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffcfeee415f134a"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffb17c4c6a93eb4"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff72c31e1df1b7c"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff54508672946e6"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff378b6ceef86a2"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff1cf8e386b9ead"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "4000666666666666",
+   "a": "bff04db77be18fb6"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "4003ae147ae147ae",
+   "a": "bfede7c3823790b4"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfeb80a9ea8aaac0"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfe95ff281968887"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "400d851eb851eb85",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "4010666666666666",
+   "a": "bfe5d40857271078"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe45a3020166a37"
+  },
+  {
+   "y": "c00aa3d70a3d70a4",
+   "x": "4013ae147ae147ae",
+   "a": "bfe30a4888cb7e52"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "c004ccc17b241301"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "c0047c7e59b1056a"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "c004215a6af30aeb"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "c003b968647ff341"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "c002b9df7ffb2887"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "c0021d16f374052e"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "c00169818f01d87c"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "bfff6f1d4529caac"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffd74ecb9622fa4"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffb55bef402c73f"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff6ee37b48592f1"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff4cf09ef262a8c"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff2d4d9635e8f84"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "bfeee1e715095272"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "bfec139183409fa6"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfe9a06f51241245"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "bfe5a24bbf10e75c"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "bfe40283a54488b4"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe295f3ea4c9eb6"
+  },
+  {
+   "y": "c007ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "bfe154e76480685b"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c013ae147ae147ae",
+   "a": "c00541997277430d"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c0120a3d70a3d70a",
+   "a": "c004f65fe73028c1"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c010666666666666",
+   "a": "c004a01f43b0cd44"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c00d851eb851eb85",
+   "a": "c0043c9c1f8cb99e"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c003c91f62453630"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c006f5c28f5c28f5",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c003ae147ae147ae",
+   "a": "c002a4c6f4470176"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "c000666666666666",
+   "a": "c001ec3579935885"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c001150a760f8b6e"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "bff3ae147ae147ae",
+   "a": "c0001d030382bf4a"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffe09e36e17e30d"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffba50c120d0cb6"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff69eea967b4d7a"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff43a133a707723"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff209f0a182db9c"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bff019e1bc694355"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "4000666666666666",
+   "a": "bfecd7176ac3524d"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "4003ae147ae147ae",
+   "a": "bfe9f4d17ff4ae8a"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfe5636fc7fbdba0"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "400d851eb851eb85",
+   "a": "bfe3957cd2ddcde8"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "4010666666666666",
+   "a": "bfe20770424d7f50"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "40120a3d70a3d70a",
+   "a": "bfe0ae6db450115c"
+  },
+  {
+   "y": "c004b851eb851eb8",
+   "x": "4013ae147ae147ae",
+   "a": "bfdf030f0e675059"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "c005792f8c514fd0"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "c00529a13ba4ab18"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "c004ccc17b241302"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c0045f6932114d84"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "c003dd9c5ef3152c"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "c00287fe38d78fb1"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c001a80a73b648eb"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bffecb3fd998d38e"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffc0e057aee0d3c"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff635f12d9a4cf4"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff378b6ceef86a2"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfede7c3823790b4"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "bfea67f46db2759b"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "bfe77e3f3379595e"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfe5117bd5445faf"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfe30a4888cb7e51"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "bfe154e76480685a"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "bfdfc2d0c4fc0ffc"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "bfdd465e3f96ea44"
+  },
+  {
+   "y": "c001c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "bfdb20a59d43c7c0"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c013ae147ae147ae",
+   "a": "c006416534539b69"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c0120a3d70a3d70a",
+   "a": "c00604c2c1fbccfc"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c010666666666666",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c00d851eb851eb85",
+   "a": "c0056a366cfe7276"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c005063cf5001890"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0048d5c28080d7c"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c003ae147ae147ae",
+   "a": "c003f96e1593fd72"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "c000666666666666",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c0025e6712b3d739"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "bff3ae147ae147ae",
+   "a": "c00142a9d50513ce"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "bfea3d70a3d70a3d",
+   "a": "bfffceeb10b29958"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffc9f4e1f624163"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff5a4a8892618cd"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff2750b97d5c0d8"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "3ff3ae147ae147ae",
+   "a": "bfef7d45fcfc6528"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfeb0e510641577d"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "4000666666666666",
+   "a": "bfe77e3f33795960"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "4003ae147ae147ae",
+   "a": "bfe4a234fac0be96"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfe2527cb0f07e6e"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfe06ef97d105222"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "400d851eb851eb85",
+   "a": "bfddbe273a2dd513"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "4010666666666666",
+   "a": "bfdb20a59d43c7c2"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "40120a3d70a3d70a",
+   "a": "bfd8e9c4924300dc"
+  },
+  {
+   "y": "bffd99999999999a",
+   "x": "4013ae147ae147ae",
+   "a": "bfd704b0ff848d76"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "c006cb8d0fba8079"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "c00698966771aa1e"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "c0065c84029cd365"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "c00614caa4561d0e"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "c00552e7581229e0"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "c004ccc17b241301"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "c004215a6af30aeb"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "c0021d16f374052e"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffd74ecb9622fa4"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff4cf09ef262a8c"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "bfec139183409fa6"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "bfe40283a54488b4"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "bfe154e76480685b"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfde789fe19019c2"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfdb20a59d43c7c1"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "bfd869857f70804c"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "bfd62bba8d3acd96"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "bfd44b27669417cf"
+  },
+  {
+   "y": "bff7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "bfd2b372244d64fa"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "c0075b8a94418227"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "c00733c0679cf668"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "c0070480e2af159a"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "c006cb8d0fba8079"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c00685af61cb4199"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0062e2fe3be64b8"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "c00529a13ba4ab18"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c0045f6932114d84"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "c001a80a73b648eb"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "bffecb3fd998d38e"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff378b6ceef86a2"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bfede7c3823790b4"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "bfe77e3f3379595e"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfe30a4888cb7e51"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "bfdfc2d0c4fc0ffc"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "bfdb20a59d43c7c0"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfd79e5b842e4304"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfd4e25f93c75bf6"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "bfd2b372244d64fa"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "bfd0ebd38ca8bbf1"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "bfcee3aeca736b01"
+  },
+  {
+   "y": "bff1c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "bfcc670c002aaf17"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "c007f03db17f26f3"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "c007d4ea01985e29"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "c007b447a2c80588"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "c0078ca5ff37c0e3"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c0075b8a94418226"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0071d2ea84b6c69"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "c006cb8d0fba8079"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "c0065c84029cd365"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "c004ccc17b241301"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "c0009d2d63343a36"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bff1099be21fe5c4"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "bfe154e76480685b"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfdb20a59d43c7c1"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "bfd62bba8d3acd96"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "bfd2b372244d64fa"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfd026655fc60576"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfcc670c002aaf18"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "bfc9555550c6c34a"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "bfc6db3b17c27900"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "bfc4d1152abceeeb"
+  },
+  {
+   "y": "bfe7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "bfc31bda2c506252"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "c00888413e90c662"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "c0087a56e64db987"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "c00869a959c3d0a1"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "c008554f93e858e5"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "c0083bee0c362f45"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "c0081b66f71545b9"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "c007f03db17f26f3"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "c007b447a2c80588"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "c0075b8a94418226"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "c006cb8d0fba8079"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "c005bde6a09bb420"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "c003426b8765d6c0"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "bfe77e3f3379595f"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "bfdb20a59d43c7c1"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "bfd2b372244d64fa"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "bfcc670c002aaf18"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "bfc6db3b17c27900"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "bfc31bda2c506252"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "bfc06945d2ee75eb"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "bfbcc1a901bfba64"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "bfb995780b7a866f"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "bfb70a3f500b8ede"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "bfb4f48dbece7217"
+  },
+  {
+   "y": "bfd7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "bfb33742b66cd6c6"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c013ae147ae147ae",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c0120a3d70a3d70a",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c010666666666666",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c00d851eb851eb85",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c00a3d70a3d70a3d",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c006f5c28f5c28f5",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c003ae147ae147ae",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "c000666666666666",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bffa3d70a3d70a3d",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bff3ae147ae147ae",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bfea3d70a3d70a3d",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bfda3d70a3d70a3d",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3fda3d70a3d70a3d",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3fea3d70a3d70a3d",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3ff3ae147ae147ae",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "4000666666666666",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "4003ae147ae147ae",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "4006f5c28f5c28f5",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "400a3d70a3d70a3d",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "400d851eb851eb85",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "4010666666666666",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "40120a3d70a3d70a",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "4013ae147ae147ae",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "400888413e90c662"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "40087a56e64db987"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "400869a959c3d0a1"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "4008554f93e858e5"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "40083bee0c362f45"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "40081b66f71545b9"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "4007f03db17f26f3"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "4007b447a2c80588"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "40075b8a94418226"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "4006cb8d0fba8079"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3fdb20a59d43c7c1"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "3fd2b372244d64fa"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3fcc670c002aaf18"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "3fc6db3b17c27900"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "3fc31bda2c506252"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fc06945d2ee75eb"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fbcc1a901bfba64"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "3fb995780b7a866f"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "3fb70a3f500b8ede"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "3fb4f48dbece7217"
+  },
+  {
+   "y": "3fd7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "3fb33742b66cd6c6"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "4007f03db17f26f3"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "4007d4ea01985e29"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "4007b447a2c80588"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "40078ca5ff37c0e3"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "40075b8a94418226"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "40071d2ea84b6c69"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "4006cb8d0fba8079"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "40065c84029cd365"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "4004ccc17b241301"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "3fe154e76480685b"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3fdb20a59d43c7c1"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "3fd62bba8d3acd96"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "3fd2b372244d64fa"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fd026655fc60576"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fcc670c002aaf18"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "3fc9555550c6c34a"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "3fc6db3b17c27900"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "3fc4d1152abceeeb"
+  },
+  {
+   "y": "3fe7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "3fc31bda2c506252"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "40075b8a94418227"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "400733c0679cf668"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "40070480e2af159a"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "4006cb8d0fba8079"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "400685af61cb4199"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "40062e2fe3be64b8"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "400529a13ba4ab18"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "40045f6932114d84"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "4001a80a73b648eb"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffecb3fd998d38e"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff378b6ceef86a2"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3fede7c3823790b4"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "3fe77e3f3379595e"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3fe30a4888cb7e51"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "3fdfc2d0c4fc0ffc"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "3fdb20a59d43c7c0"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fd79e5b842e4304"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fd4e25f93c75bf6"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "3fd2b372244d64fa"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "3fd0ebd38ca8bbf1"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "3fcee3aeca736b01"
+  },
+  {
+   "y": "3ff1c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "3fcc670c002aaf17"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "4006cb8d0fba8079"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "400698966771aa1e"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "40065c84029cd365"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "400614caa4561d0e"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "400552e7581229e0"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "4004ccc17b241301"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "4004215a6af30aeb"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "40021d16f374052e"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffd74ecb9622fa4"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff4cf09ef262a8c"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "3fec139183409fa6"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "3fe40283a54488b4"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "3fe154e76480685b"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fde789fe19019c2"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fdb20a59d43c7c1"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "3fd869857f70804c"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "3fd62bba8d3acd96"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "3fd44b27669417cf"
+  },
+  {
+   "y": "3ff7ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "3fd2b372244d64fa"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c013ae147ae147ae",
+   "a": "4006416534539b69"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c0120a3d70a3d70a",
+   "a": "400604c2c1fbccfc"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c010666666666666",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c00d851eb851eb85",
+   "a": "40056a366cfe7276"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4005063cf5001890"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c006f5c28f5c28f5",
+   "a": "40048d5c28080d7c"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c003ae147ae147ae",
+   "a": "4003f96e1593fd72"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "c000666666666666",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "bffa3d70a3d70a3d",
+   "a": "40025e6712b3d739"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "bff3ae147ae147ae",
+   "a": "400142a9d50513ce"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3fffceeb10b29958"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffc9f4e1f624163"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff5a4a8892618cd"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff2750b97d5c0d8"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "3ff3ae147ae147ae",
+   "a": "3fef7d45fcfc6528"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3feb0e510641577d"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "4000666666666666",
+   "a": "3fe77e3f33795960"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "4003ae147ae147ae",
+   "a": "3fe4a234fac0be96"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fe2527cb0f07e6e"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fe06ef97d105222"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "400d851eb851eb85",
+   "a": "3fddbe273a2dd513"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "4010666666666666",
+   "a": "3fdb20a59d43c7c2"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "40120a3d70a3d70a",
+   "a": "3fd8e9c4924300dc"
+  },
+  {
+   "y": "3ffd99999999999a",
+   "x": "4013ae147ae147ae",
+   "a": "3fd704b0ff848d76"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "4005bde6a09bb420"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "4005792f8c514fd0"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "400529a13ba4ab18"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "4004ccc17b241302"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "40045f6932114d84"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "4003dd9c5ef3152c"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "400287fe38d78fb1"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "4001a80a73b648eb"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffecb3fd998d38e"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffc0e057aee0d3c"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff635f12d9a4cf4"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff378b6ceef86a2"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3fede7c3823790b4"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "3fea67f46db2759b"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "3fe77e3f3379595e"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fe5117bd5445faf"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fe30a4888cb7e51"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "3fe154e76480685a"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "3fdfc2d0c4fc0ffc"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "3fdd465e3f96ea44"
+  },
+  {
+   "y": "4001c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "3fdb20a59d43c7c0"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c013ae147ae147ae",
+   "a": "400541997277430d"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c0120a3d70a3d70a",
+   "a": "4004f65fe73028c1"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c010666666666666",
+   "a": "4004a01f43b0cd44"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c00d851eb851eb85",
+   "a": "40043c9c1f8cb99e"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4003c91f62453630"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c006f5c28f5c28f5",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c003ae147ae147ae",
+   "a": "4002a4c6f4470176"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "c000666666666666",
+   "a": "4001ec3579935885"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "bffa3d70a3d70a3d",
+   "a": "4001150a760f8b6e"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "bff3ae147ae147ae",
+   "a": "40001d030382bf4a"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffe09e36e17e30d"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffba50c120d0cb6"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff69eea967b4d7a"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff43a133a707723"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff209f0a182db9c"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff019e1bc694355"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "4000666666666666",
+   "a": "3fecd7176ac3524d"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "4003ae147ae147ae",
+   "a": "3fe9f4d17ff4ae8a"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fe5636fc7fbdba0"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "400d851eb851eb85",
+   "a": "3fe3957cd2ddcde8"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "4010666666666666",
+   "a": "3fe20770424d7f50"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe0ae6db450115c"
+  },
+  {
+   "y": "4004b851eb851eb8",
+   "x": "4013ae147ae147ae",
+   "a": "3fdf030f0e675059"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c013ae147ae147ae",
+   "a": "4004ccc17b241301"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c0120a3d70a3d70a",
+   "a": "40047c7e59b1056a"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c010666666666666",
+   "a": "4004215a6af30aeb"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c00d851eb851eb85",
+   "a": "4003b968647ff341"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c006f5c28f5c28f5",
+   "a": "4002b9df7ffb2887"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c003ae147ae147ae",
+   "a": "40021d16f374052e"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "c000666666666666",
+   "a": "400169818f01d87c"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "bffa3d70a3d70a3d",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "bff3ae147ae147ae",
+   "a": "3fff6f1d4529caac"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffd74ecb9622fa4"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffb55bef402c73f"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff6ee37b48592f1"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff4cf09ef262a8c"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff2d4d9635e8f84"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "4000666666666666",
+   "a": "3feee1e715095272"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "4003ae147ae147ae",
+   "a": "3fec139183409fa6"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fe9a06f51241245"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "400d851eb851eb85",
+   "a": "3fe5a24bbf10e75c"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "4010666666666666",
+   "a": "3fe40283a54488b4"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe295f3ea4c9eb6"
+  },
+  {
+   "y": "4007ae147ae147ae",
+   "x": "4013ae147ae147ae",
+   "a": "3fe154e76480685b"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c013ae147ae147ae",
+   "a": "40045f6932114d84"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c0120a3d70a3d70a",
+   "a": "40040b6f4c3e928a"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c010666666666666",
+   "a": "4003acf93e7a68fa"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c00d851eb851eb85",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4002c9feb3de8af6"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c006f5c28f5c28f5",
+   "a": "400241d0d9a18268"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c003ae147ae147ae",
+   "a": "4001a80a73b648eb"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "c000666666666666",
+   "a": "4000fb1f9653653d"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "bffa3d70a3d70a3d",
+   "a": "40003a34380e5dc2"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "bff3ae147ae147ae",
+   "a": "3ffecb3fd998d38e"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffcfeee415f134a"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffb17c4c6a93eb4"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff72c31e1df1b7c"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff54508672946e6"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff378b6ceef86a2"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff1cf8e386b9ead"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "4000666666666666",
+   "a": "3ff04db77be18fb6"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "4003ae147ae147ae",
+   "a": "3fede7c3823790b4"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "4006f5c28f5c28f5",
+   "a": "3feb80a9ea8aaac0"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fe95ff281968887"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "400d851eb851eb85",
+   "a": "3fe77e3f3379595f"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "4010666666666666",
+   "a": "3fe5d40857271078"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe45a3020166a37"
+  },
+  {
+   "y": "400aa3d70a3d70a4",
+   "x": "4013ae147ae147ae",
+   "a": "3fe30a4888cb7e52"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c013ae147ae147ae",
+   "a": "4003f96e1593fd72"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c0120a3d70a3d70a",
+   "a": "4003a2e3fb633cfa"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c010666666666666",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c00d851eb851eb85",
+   "a": "4002d6b70a915922"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c00a3d70a3d70a3d",
+   "a": "40025e6712b3d739"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c006f5c28f5c28f5",
+   "a": "4001d81f44abd43a"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c003ae147ae147ae",
+   "a": "400142a9d50513ce"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "c000666666666666",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "bffa3d70a3d70a3d",
+   "a": "3fffceeb10b29958"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "bff3ae147ae147ae",
+   "a": "3ffe448ccfe448e8"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffc9f4e1f624163"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffae604c715e2f5"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff75df1e172773b"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff5a4a8892618cd"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff3ff69d8a41148"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff2750b97d5c0d8"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "4000666666666666",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "4003ae147ae147ae",
+   "a": "3fef7d45fcfc6528"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fed27703e616376"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "400a3d70a3d70a3d",
+   "a": "3feb0e510641577d"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "400d851eb851eb85",
+   "a": "3fe92d1126cb4fd7"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "4010666666666666",
+   "a": "3fe77e3f33795960"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe5fc5d6383c07a"
+  },
+  {
+   "y": "400d99999999999a",
+   "x": "4013ae147ae147ae",
+   "a": "3fe4a234fac0be96"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c013ae147ae147ae",
+   "a": "40039a8cbc8ce884"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c0120a3d70a3d70a",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c010666666666666",
+   "a": "4002e101a88a4dd6"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c00d851eb851eb85",
+   "a": "40027547179cc509"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4001fe33f72e700d"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c006f5c28f5c28f5",
+   "a": "40017ad51ce336ae"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c003ae147ae147ae",
+   "a": "4000ea6abccaf604"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "c000666666666666",
+   "a": "40004c921315d270"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "bffa3d70a3d70a3d",
+   "a": "3fff42efaa3d6e41"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "bff3ae147ae147ae",
+   "a": "3ffdd417e58dbb58"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffc505182eda321"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffabd36af09fc7d"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff786bff97e5db3"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff5f3a5259ab70f"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff46fdec2fa9ed8"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff30106fe4aebef"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "4000666666666666",
+   "a": "3ff1aad2825cb551"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "4003ae147ae147ae",
+   "a": "3ff06f212ef26e28"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fee9c98dd83d9a7"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fec8f1d7456f42d"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "400d851eb851eb85",
+   "a": "3feab2d0f29da03d"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "4010666666666666",
+   "a": "3fe903e6aee77d08"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe77e3f33795960"
+  },
+  {
+   "y": "401047ae147ae148",
+   "x": "4013ae147ae147ae",
+   "a": "3fe61dba5edd1250"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c013ae147ae147ae",
+   "a": "4003426b8765d6c0"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c0120a3d70a3d70a",
+   "a": "4002e980fd63c476"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c010666666666666",
+   "a": "400287fe38d78fb1"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c00d851eb851eb85",
+   "a": "40021d16f374052e"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c00a3d70a3d70a3d",
+   "a": "4001a80a73b648eb"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c006f5c28f5c28f5",
+   "a": "40012835ea5a4e29"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c003ae147ae147ae",
+   "a": "40009d2d63343a36"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "c000666666666666",
+   "a": "400006dabfd2f64c"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "bffa3d70a3d70a3d",
+   "a": "3ffecb3fd998d38e"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "bff3ae147ae147ae",
+   "a": "3ffd74ecb9622fa4"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "bfea3d70a3d70a3d",
+   "a": "3ffc0e057aee0d3c"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "bfda3d70a3d70a3d",
+   "a": "3ffa9b2578cc81aa"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "3fda3d70a3d70a3d",
+   "a": "3ff7a8d12fbbd886"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "3fea3d70a3d70a3d",
+   "a": "3ff635f12d9a4cf4"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "3ff3ae147ae147ae",
+   "a": "3ff4cf09ef262a8c"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "3ffa3d70a3d70a3d",
+   "a": "3ff378b6ceef86a2"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "4000666666666666",
+   "a": "3ff2364128e26d97"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "4003ae147ae147ae",
+   "a": "3ff1099be21fe5c4"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "4006f5c28f5c28f5",
+   "a": "3fefe715a7a77bbc"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "400a3d70a3d70a3d",
+   "a": "3fede7c3823790b4"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "400d851eb851eb85",
+   "a": "3fec139183409fa6"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "4010666666666666",
+   "a": "3fea67f46db2759b"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "40120a3d70a3d70a",
+   "a": "3fe8e1e95b81a289"
+  },
+  {
+   "y": "4011c28f5c28f5c2",
+   "x": "4013ae147ae147ae",
+   "a": "3fe77e3f3379595e"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "bfefffffffff2c12",
+   "a": "400921fb54442d18"
+  },
+  {
+   "y": "bfb917a6bc29b434",
+   "x": "bfefd88da3d0de57",
+   "a": "c00858eb79a209f3"
+  },
+  {
+   "y": "bfc8f8b83c69a612",
+   "x": "bfef6297cff746c1",
+   "a": "c0078fdb9effe9cd"
+  },
+  {
+   "y": "bfd294062ed59f03",
+   "x": "bfee9f4156c627a0",
+   "a": "c006c6cbc45dbfa2"
+  },
+  {
+   "y": "bfd87de2a6aea963",
+   "x": "bfed906bcf328bae",
+   "a": "c005fdbbe9bba74e"
+  },
+  {
+   "y": "bfde2b5d3806f63d",
+   "x": "bfec38b2f180bd53",
+   "a": "c00534ac0f198601"
+  },
+  {
+   "y": "bfe1c73b39ae68c7",
+   "x": "bfea9b66290ea192",
+   "a": "c0046b9c347764a2"
+  },
+  {
+   "y": "bfe44cf325091dd5",
+   "x": "bfe8bc806b15173e",
+   "a": "c003a28c59d54341"
+  },
+  {
+   "y": "bfe6a09e667f3bcc",
+   "x": "bfe6a09e667f3bcc",
+   "a": "c002d97c7f337dce"
+  },
+  {
+   "y": "bfe8bc806b15173e",
+   "x": "bfe44cf325091dd5",
+   "a": "c002106ca4910063"
+  },
+  {
+   "y": "bfea9b66290ea192",
+   "x": "bfe1c73b39ae68c7",
+   "a": "c001475cc9eedf02"
+  },
+  {
+   "y": "bfec38b2f180bd53",
+   "x": "bfde2b5d3806f63d",
+   "a": "c0007e4cef4cbda3"
+  },
+  {
+   "y": "bfed906bcf328bae",
+   "x": "bfd87de2a6aea963",
+   "a": "bfff6a7a295538ac"
+  },
+  {
+   "y": "bfee9f4156c627a0",
+   "x": "bfd294062ed59f03",
+   "a": "bffdd85a74110803"
+  },
+  {
+   "y": "bfef6297cff746c1",
+   "x": "bfc8f8b83c69a60a",
+   "a": "bffc463abeccb3ad"
+  },
+  {
+   "y": "bfefd88da3d0de57",
+   "x": "bfb917a6bc29b434",
+   "a": "bffab41b09887362"
+  },
+  {
+   "y": "bfefffffffff2c12",
+   "x": "0000000000000000",
+   "a": "bff921fb54442d18"
+  },
+  {
+   "y": "bfefd88da3d0de57",
+   "x": "3fb917a6bc29b434",
+   "a": "bff78fdb9effe6ce"
+  },
+  {
+   "y": "bfef6297cff746c1",
+   "x": "3fc8f8b83c69a60a",
+   "a": "bff5fdbbe9bba683"
+  },
+  {
+   "y": "bfee9f4156c627a0",
+   "x": "3fd294062ed59f03",
+   "a": "bff46b9c3477522d"
+  },
+  {
+   "y": "bfed906bcf328bae",
+   "x": "3fd87de2a6aea963",
+   "a": "bff2d97c7f332184"
+  },
+  {
+   "y": "bfec38b2f180bd53",
+   "x": "3fde2b5d3806f63d",
+   "a": "bff1475cc9eedeea"
+  },
+  {
+   "y": "bfea9b66290ea192",
+   "x": "3fe1c73b39ae68c7",
+   "a": "bfef6a7a29553856"
+  },
+  {
+   "y": "bfe8bc806b15173e",
+   "x": "3fe44cf325091dd5",
+   "a": "bfec463abeccb2d4"
+  },
+  {
+   "y": "bfe6a09e667f3bcc",
+   "x": "3fe6a09e667f3bcc",
+   "a": "bfe921fb5442bd28"
+  },
+  {
+   "y": "bfe44cf325091dd5",
+   "x": "3fe8bc806b15173e",
+   "a": "bfe5fdbbe9bba75c"
+  },
+  {
+   "y": "bfe1c73b39ae68c7",
+   "x": "3fea9b66290ea192",
+   "a": "bfe2d97c7f3321da"
+  },
+  {
+   "y": "bfde2b5d3806f63d",
+   "x": "3fec38b2f180bd53",
+   "a": "bfdf6a7a295538b6"
+  },
+  {
+   "y": "bfd87de2a6aea963",
+   "x": "3fed906bcf328bae",
+   "a": "bfd921fb54442e50"
+  },
+  {
+   "y": "bfd294062ed59f03",
+   "x": "3fee9f4156c627a0",
+   "a": "bfd2d97c7f336bac"
+  },
+  {
+   "y": "bfc8f8b83c69a612",
+   "x": "3fef6297cff746c1",
+   "a": "bfc921fb544434b0"
+  },
+  {
+   "y": "bfb917a6bc29b434",
+   "x": "3fefd88da3d0de57",
+   "a": "bfb921fb544464a6"
+  },
+  {
+   "y": "0000000000000000",
+   "x": "3fefffffffff2c12",
+   "a": "0000000000000000"
+  },
+  {
+   "y": "3fb917a6bc29b434",
+   "x": "3fefd88da3d0de57",
+   "a": "3fb921fb544464a6"
+  },
+  {
+   "y": "3fc8f8b83c69a612",
+   "x": "3fef6297cff746c1",
+   "a": "3fc921fb544434b0"
+  },
+  {
+   "y": "3fd294062ed59f03",
+   "x": "3fee9f4156c627a0",
+   "a": "3fd2d97c7f336bac"
+  },
+  {
+   "y": "3fd87de2a6aea963",
+   "x": "3fed906bcf328bae",
+   "a": "3fd921fb54442e50"
+  },
+  {
+   "y": "3fde2b5d3806f63d",
+   "x": "3fec38b2f180bd53",
+   "a": "3fdf6a7a295538b6"
+  },
+  {
+   "y": "3fe1c73b39ae68c7",
+   "x": "3fea9b66290ea192",
+   "a": "3fe2d97c7f3321da"
+  },
+  {
+   "y": "3fe44cf325091dd5",
+   "x": "3fe8bc806b15173e",
+   "a": "3fe5fdbbe9bba75c"
+  },
+  {
+   "y": "3fe6a09e667f3bcc",
+   "x": "3fe6a09e667f3bcc",
+   "a": "3fe921fb5442bd28"
+  },
+  {
+   "y": "3fe8bc806b15173c",
+   "x": "3fe44cf325091dd8",
+   "a": "3fec463abeccb2d1"
+  },
+  {
+   "y": "3fea9b66290ea192",
+   "x": "3fe1c73b39ae68c7",
+   "a": "3fef6a7a29553856"
+  },
+  {
+   "y": "3fec38b2f180bd53",
+   "x": "3fde2b5d3806f63d",
+   "a": "3ff1475cc9eedeea"
+  },
+  {
+   "y": "3fed906bcf328bac",
+   "x": "3fd87de2a6aea96a",
+   "a": "3ff2d97c7f332182"
+  },
+  {
+   "y": "3fee9f4156c627a0",
+   "x": "3fd294062ed59f03",
+   "a": "3ff46b9c3477522d"
+  },
+  {
+   "y": "3fef6297cff746c1",
+   "x": "3fc8f8b83c69a612",
+   "a": "3ff5fdbbe9bba682"
+  },
+  {
+   "y": "3fefd88da3d0de57",
+   "x": "3fb917a6bc29b414",
+   "a": "3ff78fdb9effe6d0"
+  },
+  {
+   "y": "3fefffffffff2c12",
+   "x": "0000000000000000",
+   "a": "3ff921fb54442d18"
+  },
+  {
+   "y": "3fefd88da3d0de57",
+   "x": "bfb917a6bc29b414",
+   "a": "3ffab41b09887360"
+  },
+  {
+   "y": "3fef6297cff746c1",
+   "x": "bfc8f8b83c69a612",
+   "a": "3ffc463abeccb3ae"
+  },
+  {
+   "y": "3fee9f4156c627a0",
+   "x": "bfd294062ed59f03",
+   "a": "3ffdd85a74110803"
+  },
+  {
+   "y": "3fed906bcf328bac",
+   "x": "bfd87de2a6aea96a",
+   "a": "3fff6a7a295538ae"
+  },
+  {
+   "y": "3fec38b2f180bd53",
+   "x": "bfde2b5d3806f63d",
+   "a": "40007e4cef4cbda3"
+  },
+  {
+   "y": "3fea9b66290ea192",
+   "x": "bfe1c73b39ae68c7",
+   "a": "4001475cc9eedf02"
+  },
+  {
+   "y": "3fe8bc806b15173c",
+   "x": "bfe44cf325091dd8",
+   "a": "4002106ca4910064"
+  },
+  {
+   "y": "3fe6a09e667f3bcc",
+   "x": "bfe6a09e667f3bcc",
+   "a": "4002d97c7f337dce"
+  },
+  {
+   "y": "3fe44cf325091dd8",
+   "x": "bfe8bc806b15173c",
+   "a": "4003a28c59d54340"
+  },
+  {
+   "y": "3fe1c73b39ae68c7",
+   "x": "bfea9b66290ea192",
+   "a": "40046b9c347764a2"
+  },
+  {
+   "y": "3fde2b5d3806f63d",
+   "x": "bfec38b2f180bd53",
+   "a": "400534ac0f198601"
+  },
+  {
+   "y": "3fd87de2a6aea96a",
+   "x": "bfed906bcf328bac",
+   "a": "4005fdbbe9bba74d"
+  },
+  {
+   "y": "3fd294062ed59f03",
+   "x": "bfee9f4156c627a0",
+   "a": "4006c6cbc45dbfa2"
+  },
+  {
+   "y": "3fc8f8b83c69a612",
+   "x": "bfef6297cff746c1",
+   "a": "40078fdb9effe9cd"
+  },
+  {
+   "y": "3fb917a6bc29b414",
+   "x": "bfefd88da3d0de57",
+   "a": "400858eb79a209f4"
+  }
+ ]
+}

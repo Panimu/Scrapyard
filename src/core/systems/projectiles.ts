@@ -44,6 +44,7 @@ import {
   type WeaponDef,
 } from '../content/weaponCatalog.js';
 import { breakLootIn } from './pickups.js';
+import { datan2, dcos, dsin } from '../math/trig.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { World } from '../types.js';
 
@@ -271,12 +272,12 @@ export const behaviourHoming: ProjectileBehaviour = (world, behaviourId, dt): vo
             // Signed angle from current heading to the desired one, clamped to this tick's budget.
             const cross = cx * dy - cy * dx;
             const dot = cx * dx + cy * dy;
-            let ang = Math.atan2(cross, dot);
+            let ang = datan2(cross, dot);
             const maxStep = turnRate * dt;
             if (ang > maxStep) ang = maxStep;
             else if (ang < -maxStep) ang = -maxStep;
-            const c = Math.cos(ang);
-            const sn = Math.sin(ang);
+            const c = dcos(ang);
+            const sn = dsin(ang);
             p.vx[d] = (cx * c - cy * sn) * speed;
             p.vy[d] = (cx * sn + cy * c) * speed;
           }

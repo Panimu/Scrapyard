@@ -57,6 +57,13 @@ public static class Scalar
 /// (~1e-12); the slack is headroom for the pinning test. But note the contract that actually
 /// matters here is not accuracy - it is agreeing with the TypeScript bit for bit.
 /// </para>
+/// <para>
+/// The other C# trap, and the easier of the two to fall into: <b><c>Math.Floor</c>, never a
+/// cast</b>. <c>(int)x</c> truncates toward zero while <c>Math.Floor</c> goes toward negative
+/// infinity. They agree on every POSITIVE argument, so a port that used the cast passes a sweep of
+/// positive angles cleanly and is wrong for half the circle. If <c>TrigTests</c> ever fails only
+/// at negative arguments, this is why.
+/// </para>
 /// </remarks>
 public static class Trig
 {
@@ -101,6 +108,79 @@ public static class Trig
     public static double DegToRad(double deg) => deg * DegToRadK;
 
     public static double RadToDeg(double rad) => rad / DegToRadK;
+
+    // -----------------------------------------------------------------------------------------
+    // DETERMINISTIC ARC TANGENT
+    // -----------------------------------------------------------------------------------------
+    // Same hazard as the sine, same reason, and one extra: the sign of zero. Math.Atan2(-0, -1) is
+    // -PI while Math.Atan2(0, -1) is +PI - a full turn apart, from two arguments that compare
+    // equal. A velocity multiplied by a negative and landing on -0.0 is entirely reachable, so the
+    // detection below is `1.0 / v < 0` rather than `v < 0`, which is FALSE for -0.0 in C# exactly
+    // as it is in JavaScript.
+
+    /// <summary>sqrt(3), tan(PI/12) = 2 - sqrt(3), and PI/6. All exact-as-written doubles.</summary>
+    private const double Sqrt3 = 1.7320508075688772;
+    private const double TanPi12 = 0.2679491924311227;
+    private const double Pi6 = 0.5235987755982988;
+
+    // Taylor for atan about 0, through z^15, as exact-integer divisions for the same reason the
+    // sine coefficients are.
+    private const double A3 = -1.0 / 3.0;
+    private const double A5 = 1.0 / 5.0;
+    private const double A7 = -1.0 / 7.0;
+    private const double A9 = 1.0 / 9.0;
+    private const double A11 = -1.0 / 11.0;
+    private const double A13 = 1.0 / 13.0;
+    private const double A15 = -1.0 / 15.0;
+
+    /// <summary>
+    /// atan for |z| &lt;= 1.
+    /// </summary>
+    /// <remarks>
+    /// THE RANGE REDUCTION IS WHAT MAKES THE SERIES USABLE. Taylor for atan converges painfully
+    /// slowly near z = 1 - the omitted z^17 term alone is about 0.06 there - so the interval is
+    /// halved first using atan(z) = PI/6 + atan((z*sqrt(3) - 1) / (z + sqrt(3))). The polynomial is
+    /// then only ever evaluated on |z| &lt;= 0.268, where the first omitted term is around 1e-11.
+    /// </remarks>
+    private static double AtanUnit(double z)
+    {
+        double r = z;
+        double offset = 0;
+        if (r > TanPi12)
+        {
+            r = (r * Sqrt3 - 1) / (r + Sqrt3);
+            offset = Pi6;
+        }
+
+        double w = r * r;
+        return offset +
+               r * (1 + w * (A3 + w * (A5 + w * (A7 + w * (A9 + w * (A11 + w * (A13 + w * A15)))))));
+    }
+
+    /// <summary>
+    /// The angle of (x, y), in [-PI, PI]. Matches <c>datan2</c> bit for bit, signed zeros included.
+    /// </summary>
+    public static double Atan2(double y, double x)
+    {
+        double ay = y < 0 ? -y : y;
+        double ax = x < 0 ? -x : x;
+
+        bool negY = y < 0 || 1.0 / y < 0;
+        bool negX = x < 0 || 1.0 / x < 0;
+
+        if (ax == 0 && ay == 0)
+        {
+            // At the origin the answer is entirely about the sign of x.
+            return negX ? (negY ? -Pi : Pi) : negY ? -0.0 : 0.0;
+        }
+
+        // Always divide the SMALLER by the LARGER, so the quotient is in [0, 1] and the reduction
+        // applies. The complement swaps the roles back.
+        double a = ay <= ax ? AtanUnit(ay / ax) : HalfPi - AtanUnit(ax / ay);
+
+        double q = negX ? Pi - a : a;
+        return negY ? -q : q;
+    }
 }
 
 /// <summary>A 2D vector result. Callers own the storage; nothing here allocates.</summary>

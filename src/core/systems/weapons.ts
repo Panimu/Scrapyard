@@ -108,6 +108,7 @@ import {
   pushEvent,
 } from '../events/ring.js';
 import type { WeaponStats } from '../data/stats.js';
+import { dcos, dsin } from '../math/trig.js';
 import { dot, normalizeInto, rotateTowardsInto } from '../math/vec2.js';
 import type { Vec2 } from '../math/vec2.js';
 import { HERO_TRAITS } from '../data/traits.js';
@@ -1291,8 +1292,8 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
 
   for (let i = 0; i < count; i++) {
     const a = (i - half) * stats.spreadAngle;
-    const c = Math.cos(a);
-    const sn = Math.sin(a);
+    const c = dcos(a);
+    const sn = dsin(a);
     // Rotate the facing by the fan offset. Unit in, unit out - no renormalisation needed.
     const dirX = baseX * c - baseY * sn;
     const dirY = baseX * sn + baseY * c;
@@ -1396,8 +1397,8 @@ export const fireCone: FirePattern = (world, weaponIdx, inst, _targets, _targetC
     // cone as down the middle, which is what makes the spray read as a spray rather than as a
     // fan with jitter.
     const a = (rng.nextFloat() * 2 - 1) * half;
-    const c = Math.cos(a);
-    const sn = Math.sin(a);
+    const c = dcos(a);
+    const sn = dsin(a);
     const dirX = baseX * c - baseY * sn;
     const dirY = baseX * sn + baseY * c;
 
@@ -1474,8 +1475,8 @@ export const fireBarrage: FirePattern = (world, weaponIdx, inst, _targets, _targ
   for (let i = 0; i < shells; i++) {
     const ang = rng.nextFloat() * Math.PI * 2;
     const r = rMin + Math.sqrt(rng.nextFloat()) * rSpan;
-    const sx = player.x + Math.cos(ang) * r;
-    const sy = player.y + Math.sin(ang) * r;
+    const sx = player.x + dcos(ang) * r;
+    const sy = player.y + dsin(ang) * r;
 
     const spawnId = ++world.stats.shotsFired;
     const handle = allocProjectile(

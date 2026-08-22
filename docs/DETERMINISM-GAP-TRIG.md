@@ -1,6 +1,39 @@
-# `Math.sin`, `Math.cos` and `Math.atan2` are still called in core
+# `Math.sin`, `Math.cos` and `Math.atan2` were called in core
 
-**Status: found, not fixed. Needs a decision, because fixing it changes every seed's outcome.**
+**Status: FIXED. Option 2 was chosen — all 18 sites replaced, and a `datan2` written to make the
+last three possible. The record below is kept because the reasoning is the useful part: it is why
+the ban is now a test rather than a paragraph, and it is the evidence for the one judgement call
+the fix required.**
+
+## What was done
+
+- All 15 `Math.sin`/`Math.cos` sites now call `dsin`/`dcos`.
+- `datan2` was written (`src/core/math/trig.ts`) and the 3 `Math.atan2` sites now call it. It uses
+  a PI/6 range reduction so the Taylor series is only ever evaluated on `|z| <= 0.268`, where the
+  first omitted term is around 1e-11 — two orders inside the 1e-9 contract that `dsin` already
+  promised.
+- `tests/trig.test.ts` pins all three against the built-ins, including the signed-zero cases where
+  `atan2` answers differ by a full turn.
+- **`tests/coreBans.test.ts` now enforces the ban**, scanning `src/core` for every
+  implementation-approximated `Math` function and for the `**` operator, with comments stripped so
+  prose about the ban does not trip it. This is the part that actually matters: 18 sites
+  accumulated under a written rule, and a written rule was the only thing stopping them.
+- CLAUDE.md's ban was rewritten to name the whole half of the `Math` object rather than three
+  functions, and to point at the test.
+- The C# port gained `Trig.Atan2` in `MathCore.cs`, with `goldens/trig-fixture.json` (435 sin/cos
+  arguments, 717 atan2 pairs) comparing both languages as exact 64-bit patterns.
+
+**The judgement call, stated deliberately rather than by omission: no changelog entry.** The fix
+changes which outcome a given seed produces — 8 of the 9 corpus runs diverged, and the corpus was
+re-recorded — but it does not change the distribution those outcomes are drawn from. The trig is
+accurate to ~1e-11, so no weapon, number or behaviour a player can perceive is different. A player
+does not replay seeds; they see the same game.
+
+---
+
+## The original finding
+
+*Everything below is as it was written when the gap was found.*
 
 ## What CLAUDE.md says
 
@@ -55,7 +88,9 @@ inter-engine difference is invisible to it by construction.
 whether the port agrees, and the disagreement would surface as an unexplained divergence deep in
 a run rather than as anything pointing at trig.
 
-## The decision needed
+## The decision that was needed
+
+*(Option 2 was chosen.)*
 
 Fixing it is mechanical for sin/cos — swap to `dcos`/`dsin` — but **it changes the game**:
 
@@ -82,8 +117,14 @@ document a rule that three other files quietly break.
 ## How to verify the claim
 
 ```
-grep -rnE "Math\.(atan2|pow|sin|cos|hypot|random|sign)\(" src/core --include=*.ts
+npm test -- coreBans
 ```
 
-Note the trailing `(` — grepping without it matches the comments that *describe* the ban and gives
-a much scarier and entirely wrong answer.
+That is the answer now, and it is better than the grep this section used to recommend, because it
+strips comments first. If you do grep by hand, note the trailing `(`: grepping without it matches
+the comments that *describe* the ban and gives a much scarier and entirely wrong answer, which is
+a mistake this document's first draft made.
+
+```
+grep -rnE "Math\.(atan2|pow|sin|cos|hypot|random|sign)\(" src/core --include=*.ts
+```

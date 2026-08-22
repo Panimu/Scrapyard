@@ -33,8 +33,15 @@ configs; it is not optional.
 
 - `stepWorld(world, input)` takes no delta. One call is exactly 1/60 s.
 - The render layer never writes to `World`. Not a position, not a timer, not a flag.
-- No `Math.pow`, `Math.sin` or `Math.cos` in core — they are implementation-defined, and a replay
-  recorded on a phone has to reproduce in Node.
+- No implementation-approximated `Math` in core — `sin`, `cos`, `tan`, `atan2`, `pow`, `exp`,
+  `log`, `hypot`, the `**` operator and the rest of that half of the object. ECMA-262 lets engines
+  differ in the last bit, and a replay recorded on a phone has to reproduce in Node. Use
+  `src/core/math/trig.ts` (`dsin`, `dcos`, `datan2`), which is built from exactly-rounded
+  operations only. `floor`, `abs`, `min`, `max`, `sqrt`, `round`, `sign`, `trunc`, `imul` and
+  `fround` are exactly specified and fine.
+  **`tests/coreBans.test.ts` enforces this.** It exists because the rule spent a long time being
+  only a rule: eighteen call sites accumulated across five files while this paragraph sat here,
+  because the failure is invisible on the machine you test on.
 - Interpolate from the pools' own `prevX/prevY`. The pools swap-remove on death, so a
   renderer-side cache keyed by dense index draws one entity from another's last position.
 - Anything that teleports an entity must move its `prev` too, or it is drawn streaking across the

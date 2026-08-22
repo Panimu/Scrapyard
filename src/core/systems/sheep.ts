@@ -54,7 +54,7 @@ import {
   allocSheep,
   freeSheep,
 } from '../entity/sheepPool.js';
-import { dcos, dsin, TWO_PI } from '../math/trig.js';
+import { datan2, dcos, dsin, TWO_PI } from '../math/trig.js';
 import { RUN_PHASE_RUNNING, type World } from '../types.js';
 
 /** Walking pace, world units per second. Half the slowest thing in the horde: it ambles. */
@@ -200,7 +200,7 @@ export function updateSheep(world: World, dt: number): void {
       // attempt used to draw - one angle, one radius - so an attempt that is thrown away costs the
       // stream the same as one that lands, and the whole loop stays deterministic.
       for (let attempt = 0; attempt < SPAWN_TRIES; attempt++) {
-        const base = moving ? Math.atan2(vy, vx) : rng.nextFloat() * TWO_PI;
+        const base = moving ? datan2(vy, vx) : rng.nextFloat() * TWO_PI;
         const a = moving ? base + (rng.nextFloat() * 2 - 1) * SPAWN_ARC : base;
         const r = SPAWN_MIN + rng.nextFloat() * SPAWN_SPAN;
         const sx = player.x + dcos(a) * r;

@@ -55,7 +55,7 @@ import {
 } from '../entity/projectilePool.js';
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { EV_DRONE_FIRED, pushEvent } from '../events/ring.js';
-import { TWO_PI, dcos, dsin } from '../math/trig.js';
+import { TWO_PI, datan2, dcos, dsin } from '../math/trig.js';
 import type { World } from '../types.js';
 
 /** How far from the player a drone flies its holding pattern. Outside the mech, inside the crowd. */
@@ -432,7 +432,7 @@ export function updateDrones(world: World, dt: number): void {
     } else if (toCentre > 0) {
       // atan2 rather than the deterministic table: core already uses it in projectiles.ts for
       // missile steering, and nothing outside this file reads `angle` - it is internal phase.
-      let a = Math.atan2(drones.y[d] - centreY, drones.x[d] - centreX);
+      let a = datan2(drones.y[d] - centreY, drones.x[d] - centreX);
       if (a < 0) a += TWO_PI;
       drones.angle[d] = a;
     }

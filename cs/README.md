@@ -27,7 +27,8 @@ dotnet test
 | `HashWorld` / `HashRunStats` | done, bit-exact including section order |
 | `Systems.BeginTick` / `EndTick` / `ReapDead` / `UpdateDifficulty` | done, 14 cases |
 | `EventRing` — the sim/renderer seam | done |
-| `MathCore` — scalar, deterministic trig, vec2 | done, 82 trig samples bit-exact |
+| `MathCore` — scalar, vec2 | done, 82 samples bit-exact |
+| `Trig` — `Sin` / `Cos` / `Atan2` | done, 435 + 717 samples bit-exact; the `(int)`-for-`Floor` fault is proven to fail |
 | `SpatialHash` — counting-sort broad phase | done, build and queries compared |
 | `Collision` — S8, detection only | done, 6 cases tick-by-tick |
 | `ScrapPiles` — the Scrapyard's terrain | done, 6 seeded grids cell-for-cell |

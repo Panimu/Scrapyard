@@ -30,6 +30,7 @@
  */
 
 import { DT, HEAT_RESUME_FRAC } from '../constants.js';
+import { dcos, dsin } from '../math/trig.js';
 import type { Tuning } from '../config/tuning.js';
 import { DEFAULT_TUNING } from '../config/tuning.js';
 import type { WeaponDef } from '../content/weaponCatalog.js';
@@ -520,14 +521,14 @@ export function resolveWeaponStats(
   if (out.ammoCapacity > 0 && out.reloadTime < 0.5) out.reloadTime = 0.5;
 
   const turnStep = out.turnRate * DT;
-  out.cosTurnStep = Math.cos(turnStep);
-  out.sinTurnStep = Math.sin(turnStep);
+  out.cosTurnStep = dcos(turnStep);
+  out.sinTurnStep = dsin(turnStep);
   out.rangeSq = out.range * out.range;
 
   const step = out.turretTraverse * DT;
-  out.cosTraverseStep = Math.cos(step);
-  out.sinTraverseStep = Math.sin(step);
-  out.cosFireArc = Math.cos(out.fireArc);
+  out.cosTraverseStep = dcos(step);
+  out.sinTraverseStep = dsin(step);
+  out.cosFireArc = dcos(out.fireArc);
 }
 
 /**
@@ -555,6 +556,6 @@ export function resolveSplitStats(world: World, hero: HeroDef): void {
   const st = world.splitStats;
   st.turnRate *= SPLIT_TURN_MUL;
   const turnStep = st.turnRate * DT;
-  st.cosTurnStep = Math.cos(turnStep);
-  st.sinTurnStep = Math.sin(turnStep);
+  st.cosTurnStep = dcos(turnStep);
+  st.sinTurnStep = dsin(turnStep);
 }
