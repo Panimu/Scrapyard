@@ -98,6 +98,45 @@ public static class Constants
     public const double ThreatRadius = 900;
 
     public const int WeaponSlots = 12;
+
+    /// <summary>
+    /// GUN slots and PASSIVE slots the deck may fill, before the workshop widens either.
+    /// </summary>
+    /// <remarks>
+    /// Counted in DISTINCT GUNS rather than occupied slots, which only matters because of the
+    /// Hydra: it puts two more Short Lasers on the chassis without the player ever choosing a
+    /// second weapon, and counting those against the deck's cap ended a four-slot mech's weapon
+    /// choices outright.
+    /// </remarks>
+    public const int MaxWeapons = 3;
+
+    public const int MaxPassives = 5;
+
+    /// <summary>How many cards a level-up deals. Fewer are shown as the pool empties.</summary>
+    public const int UpgradeOfferCount = 3;
+
+    /// <summary>
+    /// THE CONSOLATION PAIR, as negative sentinels rather than catalog indices.
+    /// </summary>
+    /// <remarks>
+    /// Reached only when the pool is completely empty. They take no stack and cost one pick, so the
+    /// pool stays empty and every later level-up offers the same two. A card with nothing on it
+    /// would SOFT-LOCK the run forever - the only exit from the level-up phase is a valid choice
+    /// index - which is what this pair exists to make impossible.
+    /// </remarks>
+    public const int OfferHeal = -2;
+
+    public const int OfferCredits = -3;
+
+    /// <summary>
+    /// A choice index like any other, which is what keeps a replay a flat input stream with no
+    /// out-of-band events: it deals a fresh card from the same pool, spends one of the run's
+    /// rerolls, and leaves the level-up still owed.
+    /// </summary>
+    public const int ChooseReroll = -4;
+
+    /// <summary>How many reels a Cyber Chest spins.</summary>
+    public const int ChestReels = 3;
 }
 
 /// <summary>Run phases. The numeric values are hashed, so they are the format.</summary>
@@ -291,6 +330,52 @@ public sealed class PickupTuning
     /// one a result.
     /// </remarks>
     public double BarrelEmptyChance = 0.25;
+
+    /// <summary>
+    /// THE CONSOLATION PAIR'S numbers, offered only once every upgrade in the game has been taken.
+    /// </summary>
+    /// <remarks>
+    /// Both deliberately small. They exist so an emptied pool does not read as the game failing to
+    /// hand out a level-up, and a run that has taken all 98 tiers does not need help - anything
+    /// generous here would make emptying the pool a goal rather than an ending.
+    /// </remarks>
+    public double ConsolationHealFrac = 0.1;
+
+    public double ConsolationCredits = 15;
+}
+
+/// <summary>
+/// The level curve. Three linear segments rather than a geometric one.
+/// </summary>
+/// <remarks>
+/// The early game must hand out five picks by 1:30 - that is the hook - and the late game must
+/// decelerate without ever stopping.
+/// </remarks>
+public sealed class XpTuning
+{
+    public double Tier1Base = 12;
+    public double Tier1Step = 10;
+    public double Tier1Cap = 10;
+    public double Tier2Base = 160;
+    public double Tier2Step = 42;
+    public double Tier2Cap = 25;
+    public double Tier3Base = 748;
+    public double Tier3Step = 60;
+
+    /// <summary>
+    /// Rerolls the run starts with, spent one per re-dealt card. ONE, on purpose: a reroll you can
+    /// only use once is a decision about WHEN, and a decision about when is the whole point of the
+    /// mechanic. Make it three and it becomes a way to never see a card you dislike.
+    /// </summary>
+    public int RerollsPerRun = 1;
+
+    /// <summary>XP required to go from <paramref name="level"/> to the next one.</summary>
+    public double ToNextLevel(int level)
+    {
+        if (level <= Tier1Cap) return Tier1Base + Tier1Step * (level - 1);
+        if (level <= Tier2Cap) return Tier2Base + Tier2Step * (level - Tier1Cap - 1);
+        return Tier3Base + Tier3Step * (level - Tier2Cap);
+    }
 }
 
 public sealed class Tuning
@@ -300,6 +385,7 @@ public sealed class Tuning
     public readonly DirectorTuning Director = new();
     public readonly SteeringTuning Steering = new();
     public readonly PickupTuning Pickups = new();
+    public readonly XpTuning Xp = new();
 }
 
 /// <summary>

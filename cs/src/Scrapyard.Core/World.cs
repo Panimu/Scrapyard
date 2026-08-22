@@ -176,16 +176,76 @@ public sealed class World
     public readonly ChestState Chest;
 
     public readonly byte[] DroneStacks;
+    /// <summary>
+    /// WHICH CARDS THE LEVEL-UP DECK MAY OFFER, by upgrade catalog index. 1 = offerable.
+    ///
+    /// Set by the APP at run start from the save file, never by core: a card unlocked by beating
+    /// the game is persistent state, and core does not know what a save is. Defaulting to all-1
+    /// is what keeps every test, fixture and headless run offering the whole deck without having
+    /// to say so.
+    /// </summary>
     public readonly byte[] CardUnlocked;
     public readonly byte[] AscensionSeen;
 
     public int AutoLevel;
-    public int MaxWeapons;
-    public int MaxPassives;
+
+    /// <summary>
+    /// The harness' reroll override. Rerolls are otherwise spent from the run's own pocket.
+    /// </summary>
+    public bool InfiniteRerolls;
+
+    /// <summary>
+    /// The measurement rig's veto on tier 8. ONE BRANCH, at the single gate every route to an
+    /// ascension already passes through, so no chest and no cap check can route around it.
+    /// </summary>
+    public bool NoAscension;
+    /// <summary>
+    /// THE DECK'S CAP FOR THIS RUN - <see cref="Constants.MaxWeapons"/> plus whatever Reinforced
+    /// Mounts was bought at (see <c>MetaCatalog</c>). Seeded by <see cref="SeedRunGrants"/> and
+    /// never recomputed.
+    /// </summary>
+    /// <remarks>
+    /// NOT RECOMPUTED MID-RUN on purpose. A slot count that could move while a card was open is a
+    /// card that could be offered and then refused, which is the one failure
+    /// <see cref="Progression.UpdateProgression"/> is built to avoid.
+    ///
+    /// IT IS NOT THE ARRAY LENGTH. <see cref="Weapons"/> is <c>WeaponSlots</c> long and the Hydra
+    /// deliberately installs past this cap - see <c>FillLaserMounts</c> - so this bounds what the
+    /// DECK hands out, not what the loadout can physically hold.
+    ///
+    /// Defaults to the base constant so a world built without a workshop is already correct;
+    /// leaving it at C#'s zero would report every slot full and empty the deck down to whatever
+    /// the loadout already held.
+    /// </remarks>
+    public int MaxWeapons = Constants.MaxWeapons;
+
+    /// <summary>
+    /// The passive-side twin of <see cref="MaxWeapons"/>: <see cref="Constants.MaxPassives"/> plus
+    /// whatever Auxiliary Bay was bought at. Same rules apply.
+    /// </summary>
+    public int MaxPassives = Constants.MaxPassives;
     public double XpBanked;
 
     public readonly RngStreams Rng;
     public readonly RunStats Stats;
+
+    /// <summary>
+    /// Applies the workshop's whole-run allowances - reroll count and the two slot caps. Port of
+    /// the three <c>createWorld</c> lines that read <c>metaRunGrant</c>.
+    /// </summary>
+    /// <remarks>
+    /// A separate step rather than constructor work because <see cref="Meta"/> is assigned after
+    /// construction, and because TypeScript's <c>createWorld</c> reads these ONCE and never again:
+    /// making it an explicit call keeps that single moment visible rather than hiding it in a
+    /// property that could be re-read mid-run.
+    /// </remarks>
+    public void SeedRunGrants()
+    {
+        var tiers = Meta is null ? System.ReadOnlySpan<int>.Empty : Meta.Value.Tiers;
+        MaxWeapons = Constants.MaxWeapons + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.WeaponSlots);
+        MaxPassives = Constants.MaxPassives + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.PassiveSlots);
+        LevelUp.Rerolls = Tuning.Xp.RerollsPerRun + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.Rerolls);
+    }
 
     public World(int seed, in WorldShape shape)
     {
@@ -204,7 +264,11 @@ public sealed class World
         Chest = new ChestState(shape.ChestReels, shape.ChestGrants);
 
         DroneStacks = new byte[shape.UpgradeCount];
+        // ALL OFFERABLE unless the app says otherwise. See CardUnlocked. Leaving this at the
+        // zero-fill C# hands out means every card is locked at stacks 0, which empties the deck
+        // down to whatever the loadout already holds - the run levels up and is dealt nothing.
         CardUnlocked = new byte[shape.UpgradeCount];
+        System.Array.Fill(CardUnlocked, (byte)1);
         AscensionSeen = new byte[shape.UpgradeCount];
 
         Events = new EventRing(shape.EventRingCapacity > 0 ? shape.EventRingCapacity : 1024);
@@ -432,8 +496,13 @@ public sealed class ChestState
 
     public ChestState(int reels, int grants)
     {
+        // -1 IS "NOTHING HERE", not zero: zero is a real catalog index (the first card), so a
+        // zero-filled chest reads as three reels all showing that card and five grants of it.
         Reels = new int[reels];
+        System.Array.Fill(Reels, -1);
         Grants = new int[grants];
+        System.Array.Fill(Grants, -1);
+        Ascension = -1;
     }
 }
 

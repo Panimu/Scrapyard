@@ -289,6 +289,35 @@ public static class MetaCatalog
     /// reason about. This is a deliberate, harmless deviation - the RESULT is bit-identical either
     /// way, and nothing about determinism depends on which side of the call owns the storage.
     /// </remarks>
+    /// <summary>
+    /// The workshop's contribution to a WHOLE-RUN allowance - reroll count, weapon slots, passive
+    /// slots. Port of <c>metaRunGrant</c>.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="AccumulateMeta"/> because a run grant has no multiplicative half
+    /// and no weapon scope: it is a flat count added to a base, read ONCE when the run is built
+    /// and never recomputed. See <c>World.MaxWeapons</c> for why the never-recomputed part
+    /// matters.
+    /// </remarks>
+    public static double MetaRunGrant(System.ReadOnlySpan<int> tiers, RunGrant key)
+    {
+        double total = 0;
+        for (int i = 0; i < All.Length; i++)
+        {
+            int owned = i < tiers.Length ? tiers[i] : 0;
+            if (owned <= 0) continue;
+            var def = All[i];
+            int held = owned > def.Tiers ? def.Tiers : owned;
+            foreach (var fx in def.Effects)
+            {
+                if (fx.Target != EffectTarget.Run || fx.Key != (int)key) continue;
+                total += EffectTotal(in fx, held);
+            }
+        }
+
+        return total;
+    }
+
     public static (double Add, double Mul) AccumulateMeta(System.ReadOnlySpan<int> tiers,
                                                            EffectTarget target, int key, int? weapon)
     {

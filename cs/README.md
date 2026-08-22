@@ -2,8 +2,8 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones`, `weapons`, `playerMovement` and the loot-break path are done and proven.
-Three systems remain, and none of them needs new infrastructure.
+`projectiles`, `drones`, `weapons`, `playerMovement`, `progression` and the loot-break path are
+done and proven. Two systems remain, and neither needs new infrastructure.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -59,7 +59,9 @@ dotnet test
 | `Weapons` — S6, seven patterns, beams, heat, three ascensions | done, 21 driven cases over 6,540 ticks |
 | `BeamBuffer` / `LaserHardpoint` / hero-trait hook | done, arrived with `Weapons` |
 | `PlayerMovement` — S3, the chassis and its three clocks | done, 14 driven cases over 8,100 ticks |
-| The other 3 systems | not started — **this is the remaining job** |
+| `Progression` — the deck, the picker, the chest, the ascensions | done, 21 posed cases, both streams compared with draw counts |
+| `MetaCatalog.MetaRunGrant` / `World.SeedRunGrants` | done, arrived with `Progression` |
+| The other 2 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -241,6 +243,37 @@ different rounding and the two settle a few ULPs apart (194.99999999999977 again
 194.99999999999966). What holds is that neither exceeds the top speed and that the diagonal is not
 the 1.41x faster it would be without the clamp — asserting bit-equality would have been wrong, and
 would have surfaced as a mysterious failure rather than as a fact about the clamp.
+
+**`Progression` found three real bugs in code that had already been committed — and all three were
+in `World`'s constructor rather than in any system.** C# zero-fills what TypeScript's `createWorld`
+fills deliberately, and every one of these had been sitting in the repository passing every test:
+
+- `CardUnlocked` is `.fill(1)` in TypeScript. Zeroed, every card in the deck is locked at zero
+  tiers, so the pool collapses to whatever the loadout already holds and a level-up deals a card
+  with one offer on it.
+- `MaxWeapons` / `MaxPassives` were declared and never assigned. At zero, every slot reads full, so
+  no new gun and no new passive is ever offered again.
+- `ChestState.Reels` / `Grants` / `Ascension` are `-1` in TypeScript, and `-1` means "nothing here".
+  Zeroed, a chest that has never been opened reads as three reels showing catalog index 0 and five
+  grants of it.
+
+None of them is a translation error in a system; all three are the same mistake, which is trusting a
+default. The lesson is that **an initialiser is part of the port**, and the reason none surfaced
+earlier is that no fixture had yet read those fields — a field nothing reads can hold anything. The
+same argument applied to the `EventKind` table earlier and produced the same class of bug.
+
+**The beam mount cap is dormant, and the test says so rather than pretending otherwise.** The rule
+withholds a beam card once every laser hardpoint is taken; there are three beam cards against five
+mounts and the Hydra takes three, so having five beams up means holding all three cards, and the
+rule's own `stacks == 0` guard then excludes every one of them. No fixture case can reach it without
+posing a gun in the loadout whose card sits at zero tiers, which is not a position the game can
+produce. `TheBeamMountCapIsUnreachableByArithmetic` pins the three numbers instead, and fails the
+day a fourth beam card or a shorter hardpoint list makes the branch live.
+
+Two injected faults turned out **not to be faults**, which is worth writing down so nobody re-files
+them: flipping `target < w` to `target <= w` in either weighted pick differs only when a float draw
+lands exactly on a bucket edge, and iterating the chest's `grants` past its `payout` reads the `-1`
+fill and grants nothing. A test that failed on either of those would be over-fitted, not stricter.
 
 ## Why the RNG came first
 
@@ -602,18 +635,16 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Three systems remain: `damage`, `pickups`, `progression`. (`sheep`, `projectiles`, `drones`,
-`weapons` and `playerMovement` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
-that several of them need. Nothing left needs new infrastructure.)
+Two systems remain: `damage` and the rest of `pickups`. (`sheep`, `projectiles`, `drones`,
+`weapons`, `playerMovement` and `progression` are done, as is the `breakLootIn`/`DropConsumable`
+slice of `pickups` that several of them need. Nothing left needs new infrastructure.)
 
 In rough dependency order:
-- **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
-  `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.
+- **`pickups`** needs `progression`, which is now done. Both terrains (`MossWalls`/`CityBlocks`) and
+  `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done too — so this
+  is unblocked.
 - **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
   are already done; `enemyCatalog.ts`/`cycles.ts` themselves needed no further porting (see above).
-- **`progression`** is the largest remaining system (1,400 lines) and needs `stats` and the full
-  upgrade-gating logic (`isOfferable`), which reads more of `UpgradeDef` than the catalog port
-  alone required.
 
 Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
 the corpus meaningful, and it is the last thing that can be built rather than the first.
