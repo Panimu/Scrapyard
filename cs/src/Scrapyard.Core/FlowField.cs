@@ -37,6 +37,28 @@ public sealed class FlowField
     private static readonly int[] OffX = { 1, 1, 0, -1, -1, -1, 0, 1 };
     private static readonly int[] OffY = { 0, 1, 1, 1, 0, -1, -1, -1 };
 
+    /// <summary>
+    /// A fixed per-body LEAN, four of them, indexed by the low two bits of the spawn id.
+    /// </summary>
+    /// <remarks>
+    /// Precomputed cos/sin pairs rather than an angle, so nothing in the per-body path ever calls a
+    /// trig function - the same reason <c>rotateTowardsInto</c> takes a pair. Four values means a
+    /// crowd converging on the player arrives as a swirl rather than as a single column, and a
+    /// body's lean never changes, so it does not oscillate between two routes.
+    /// </remarks>
+    private static readonly double[] SwirlCos =
+    {
+        0.766044443118978, 0.9702957262759965, 0.9702957262759965, 0.766044443118978,
+    };
+
+    private static readonly double[] SwirlSin =
+    {
+        -0.6427876096865393, -0.24192189559966773, 0.24192189559966773, 0.6427876096865393,
+    };
+
+    /// <summary>tan(22.5 degrees). The half-width of an octant, for snapping a bearing to one of eight.</summary>
+    private const double Octant = 0.41421356237309503;
+
     public int OriginCx;
     public int OriginCy;
     public readonly byte[] Blocked;
@@ -194,6 +216,126 @@ public sealed class FlowField
             Dist[j] = d;
             _queue[tail++] = j;
         }
+    }
+
+    /// <summary>
+    /// WOULD WALKING STRAIGHT AT THE PLAYER ACTUALLY GET ANY CLOSER? False in open ground, true
+    /// when the straight line runs into something.
+    /// </summary>
+    /// <remarks>
+    /// The cheap test that keeps the field off the hot path: a body only consults the flow when the
+    /// direct bearing is not a route, which in open ground is never.
+    /// </remarks>
+    public bool Detours(double x, double y, double ux, double uy)
+    {
+        if (BuiltTick < 0) return false;
+        int rx = CellOf(x) - OriginCx;
+        int ry = CellOf(y) - OriginCy;
+        if (rx < 0 || ry < 0 || rx >= Cells || ry >= Cells) return false;
+        int here = Dist[ry * Cells + rx];
+
+        // -1 is unreachable (the field has no route to offer from here) and 0 is the player's own
+        // cell. Neither is a detour.
+        if (here <= 0) return false;
+
+        // The neighbour the straight bearing steps into - the bearing snapped to one of the eight.
+        double ax = ux < 0 ? -ux : ux;
+        double ay = uy < 0 ? -uy : uy;
+        int ox = 0;
+        int oy = 0;
+        if (ay <= ax * Octant) ox = ux < 0 ? -1 : 1;
+        else if (ax <= ay * Octant) oy = uy < 0 ? -1 : 1;
+        else
+        {
+            ox = ux < 0 ? -1 : 1;
+            oy = uy < 0 ? -1 : 1;
+        }
+
+        int nx = rx + ox;
+        int ny = ry + oy;
+        if (nx < 0 || ny < 0 || nx >= Cells || ny >= Cells) return false;
+        int there = Dist[ny * Cells + nx];
+
+        // Walled off, or no closer than standing still: either way the straight line is not a route.
+        return there < 0 || there >= here;
+    }
+
+    /// <summary>
+    /// The step a specific body should take: the flow, leaned by that body's own swirl.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AIMED AT THE CENTRE OF THE CELL BEING STEPPED INTO, not along a bare axis, and this is the
+    /// half of the field that is easy to leave out.
+    /// </para>
+    /// <para>
+    /// <c>Blocked</c> is sampled at CELL CENTRES: a cell is open when a body could stand in the
+    /// middle of it. A body is almost never in the middle of anything. One hugging the top edge of
+    /// its cell, handed a bare "west", walks west along that edge - and its radius-18 circle clips
+    /// the corner of the building diagonally north-west, a cell the four-way flood never had to
+    /// consider because the step it approved was orthogonal. The push-out then removes exactly the
+    /// westward component, the velocity comes out as precisely zero, and the next tick sets up the
+    /// identical frame. Measured in the original: a body parked against a courtyard wall for 20 s
+    /// with a clear gateway two cells away, the field pointing at it the whole time, velocity
+    /// (0, 0) every tick.
+    /// </para>
+    /// <para>
+    /// Aiming at the target cell's centre folds re-centring into the steering for free. A body
+    /// already centred gets the bare axis back, so nothing changes in open ground.
+    /// </para>
+    /// </remarks>
+    public bool DirFor(double x, double y, double ux, double uy, int id, out Vec2 dir)
+    {
+        dir = default;
+        if (BuiltTick < 0) return false;
+        int rx = CellOf(x) - OriginCx;
+        int ry = CellOf(y) - OriginCy;
+        if (rx < 0 || rx >= Cells || ry < 0 || ry >= Cells) return false;
+        int mask = Options[ry * Cells + rx];
+        if (mask == 0) return false;
+
+        // The bearing this body would like to travel on: straight at the player, turned by its own
+        // fixed lean.
+        int sIdx = id & 3;
+        double c = SwirlCos[sIdx];
+        double sn = SwirlSin[sIdx];
+        double wx = ux * c - uy * sn;
+        double wy = ux * sn + uy * c;
+
+        int best = -1;
+        double bestDot = double.NegativeInfinity;
+        for (int k = 0; k < 8; k++)
+        {
+            if ((mask & (1 << k)) == 0) continue;
+            double dot = DirX[k] * wx + DirY[k] * wy;
+            // STRICTLY greater, so ties fall to the lowest k and the result cannot depend on
+            // iteration order changing under us.
+            if (dot > bestDot)
+            {
+                bestDot = dot;
+                best = k;
+            }
+        }
+        if (best < 0) return false;
+
+        double tx = (OriginCx + rx + OffX[best] + 0.5) * Cell;
+        double ty = (OriginCy + ry + OffY[best] + 0.5) * Cell;
+        double vx = tx - x;
+        double vy = ty - y;
+        double l2 = vx * vx + vy * vy;
+
+        // Dead centre of the target cell: no vector exists, and the axis is the same answer anyway.
+        if (l2 == 0)
+        {
+            dir.X = DirX[best];
+            dir.Y = DirY[best];
+            return true;
+        }
+
+        double inv = 1 / Math.Sqrt(l2);
+        dir.X = vx * inv;
+        dir.Y = vy * inv;
+        return true;
     }
 
     /// <summary>

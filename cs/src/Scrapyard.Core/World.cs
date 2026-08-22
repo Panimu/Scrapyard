@@ -73,6 +73,11 @@ public sealed class World
     /// <summary>The player's collision radius. Derived from hero and upgrades in the TypeScript.</summary>
     public double PlayerRadius;
 
+    /// <summary>
+    /// Half the arena's width, or infinity on an unbounded level. From the level definition.
+    /// </summary>
+    public double ArenaHalf = double.PositiveInfinity;
+
     public readonly EnemyPool Enemies;
     public readonly ProjectilePool Projectiles;
     public readonly PickupPool Pickups;

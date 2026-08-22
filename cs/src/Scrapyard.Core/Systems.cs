@@ -416,3 +416,109 @@ public static class Input
     /// </summary>
     public static double DequantiseAxis(int q) => q * (1.0 / 127.0);
 }
+
+/// <summary>
+/// Where a new body is put. A port of the ring-placement half of
+/// <c>src/core/systems/spawning.ts</c>.
+/// </summary>
+public static class Spawning
+{
+    /// <summary>How far from the player a body appears. Just outside the camera's reach.</summary>
+    public const double SpawnRadius = 560;
+
+    /// <summary>Attempts before the rejection sampler gives up and returns due east.</summary>
+    private const int MaxDiscAttempts = 8;
+
+    /// <summary>
+    /// A uniform unit direction, by REJECTION SAMPLING on the disc - no trig anywhere.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two draws per attempt, and an attempt that is rejected costs the stream exactly what one
+    /// that lands costs. That is what keeps it deterministic: the number of draws depends only on
+    /// the values drawn, never on anything outside the RNG.
+    /// </para>
+    /// <para>
+    /// The lower bound rejects near-zero vectors as well as the corners - normalising one would
+    /// amplify its rounding error into a direction that is not uniform.
+    /// </para>
+    /// <para>
+    /// The fallback after eight failures is due east rather than another draw, so the loop is
+    /// BOUNDED. An unbounded search inside a tick for a condition that is merely unlikely is how a
+    /// frame occasionally takes a hundred times as long as its neighbours.
+    /// </para>
+    /// </remarks>
+    public static void DrawUnitDirection(Rng rng, ref Vec2 outv)
+    {
+        for (int attempt = 0; attempt < MaxDiscAttempts; attempt++)
+        {
+            double x = rng.NextRange(-1, 1);
+            double y = rng.NextRange(-1, 1);
+            double l2 = x * x + y * y;
+            if (l2 > 1 || l2 < 1e-4) continue;
+            double inv = 1 / Math.Sqrt(l2);
+            outv.X = x * inv;
+            outv.Y = y * inv;
+            return;
+        }
+
+        outv.X = 1;
+        outv.Y = 0;
+    }
+
+    /// <summary>
+    /// Rolls a point on the spawn ring about the player, biased ahead of a moving one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE FORWARD BIAS IS ONE RE-DRAW, NOT A LOOP. If the first direction points behind a moving
+    /// player, draw once more and take whatever comes - so the bias is a tendency rather than a
+    /// guarantee, and the stream cost is bounded at two draws.
+    /// </para>
+    /// <para>
+    /// A point outside the arena is REFLECTED to the other side of the player rather than clamped
+    /// onto the wall, so a player hugging a corner is not fed a stream of bodies from the two
+    /// directions there is no room in.
+    /// </para>
+    /// <para>
+    /// NOTHING IS EVER PLACED INSIDE A SCRAP PILE, and that is a visual fix rather than a
+    /// correctness one: movement would push it out on the first tick anyway, but an enemy that
+    /// materialises inside a wreck and squirts out of the side is the sort of thing a player sees
+    /// once and never unsees. Pushed out along the shortest path rather than redrawn, which costs
+    /// no RNG and therefore cannot change the spawn stream.
+    /// </para>
+    /// </remarks>
+    public static void RollRingPosition(
+        World w, IScenery scenery, double forwardBiasMinSpeed, ref Vec2 outv, bool biasForward = true)
+    {
+        var rng = w.Rng.Spawn;
+        DrawUnitDirection(rng, ref outv);
+
+        var p = w.Player;
+        double minSpeed = forwardBiasMinSpeed;
+        if (biasForward && p.Vx * p.Vx + p.Vy * p.Vy > minSpeed * minSpeed)
+        {
+            // dot(u, vHat) < 0 is the same test as dot(u, v) < 0 for a non-zero v - one normalise
+            // saved, and one fewer square root in the spawn path.
+            if (outv.X * p.Vx + outv.Y * p.Vy < 0) DrawUnitDirection(rng, ref outv);
+        }
+
+        double x = p.X + outv.X * SpawnRadius;
+        double y = p.Y + outv.Y * SpawnRadius;
+
+        // On an unbounded level `edge` is infinite and none of this fires: the ring is always free.
+        double edge = w.ArenaHalf;
+        if (x < -edge || x > edge) x = p.X - outv.X * SpawnRadius;
+        if (y < -edge || y > edge) y = p.Y - outv.Y * SpawnRadius;
+        x = x < -edge ? -edge : x > edge ? edge : x;
+        y = y < -edge ? -edge : y > edge ? edge : y;
+
+        // MaxEnemyRadius, not the actual body's: this runs before the archetype is known, and
+        // erring large only clears the wreck by a few units more than strictly needed.
+        var clear = scenery is ScrapPiles piles
+            ? piles.PushOut(x, y, Cycles.MaxEnemyRadius)
+            : new SceneryPush { X = x, Y = y };
+        outv.X = clear.X;
+        outv.Y = clear.Y;
+    }
+}

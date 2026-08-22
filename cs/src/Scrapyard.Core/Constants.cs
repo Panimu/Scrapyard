@@ -75,7 +75,12 @@ public sealed class Tuning
     public readonly DirectorTuning Director = new();
 }
 
-public static class Cycles
+/// <summary>
+/// The cycle ladder. Split across two files because it is split across two in the TypeScript: the
+/// timing helper below lives in <c>config/tuning.ts</c>, the content-derived constants in
+/// <c>content/cycles.ts</c>.
+/// </summary>
+public static partial class Cycles
 {
     /// <summary>Which cycle a given run-second falls in. Clamped at 0, never negative.</summary>
     public static int IndexAt(double runSec, DirectorTuning d)

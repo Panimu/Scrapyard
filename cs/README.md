@@ -33,6 +33,8 @@ dotnet test
 | `ScrapPiles` — the Scrapyard's terrain | done, 6 seeded grids cell-for-cell |
 | `FlowField` — the field the horde steers by | done, 48x48 grids compared in full |
 | `Input` — quantise / dequantise | done, 569 samples incl. every exact half |
+| `Spawning.RollRingPosition` + disc sampler | done, stream state compared per roll |
+| `Flavours` / `Archetypes` / `Ranks` tables | done, every field bit-compared |
 | `MossWalls` / `CityBlocks` terrain | not started — 883 + 987 lines, same six questions |
 | The other 10 systems | not started — **this is the remaining job** |
 | Content catalogs | not started — data, not logic |
@@ -114,6 +116,10 @@ characteristic mistake:
   the *first* sample. `Math.Sin(-π)` returns `-1.22e-16`; the deterministic polynomial returns
   **exactly 0**, because the range reduction folds `r` to zero. Mathematically less accurate,
   deterministically correct, and a neat statement of the whole argument.
+- **A hand-transcribed content table**, which is the one place a typo can reach: my first
+  `Flavours` table guessed five of Heavy's numbers from a partial dump and had `Hp = 1` where the
+  real value is `10`. The fixture caught it on the first run. That is why every field of every
+  flavour is compared bit for bit rather than spot-checked.
 - **Banker's rounding in `QuantiseAxis`** — C#'s `Math.Round` default — fails on the first exact
   half. This is the layer boundary every byte of every recorded run passes through, so it would
   diverge a replay before the simulation ran a tick. `MidpointRounding.AwayFromZero` is not the fix
@@ -177,7 +183,8 @@ sites is a coin-flip on whether the port agrees. It needs a decision before `wea
 Eleven systems remain, in rough order of independence:
 
 - `playerMovement` needs scenery and pickups first — it calls `pushOutOfScenery` and `breakLootIn`.
-- `enemyAI` needs the flow field (**done**) plus the enemy catalog.
+- `enemyAI` now has everything it needs — flow field, `Flavours`, `RollRingPosition`, scenery.
+  It is trig-free, so it is the next system regardless of how the trig question lands.
 - `targeting` and `projectiles` have their scenery dependency met, but both reach the open trig
   question — see above.
 - `spawning`, `enemyAI` need the content catalogs and the flow field.
