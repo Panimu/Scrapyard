@@ -83,6 +83,34 @@ public sealed class HeroDef
         foreach (var (k, v) in Weapon) if (k == key) return v;
         return null;
     }
+
+    /// <summary>
+    /// This chassis with its NAMED-WEAPON bonus stripped and nothing else changed - the C# form of
+    /// the TypeScript's <c>{ ...hero, weaponBonus: undefined }</c>.
+    /// </summary>
+    /// <remarks>
+    /// FOR THE DRONE'S GUN, and this used to be backwards. <c>ResolveWeaponStats</c> looks up the
+    /// bonus keyed on the DEF being resolved, and a drone's gun is always the Machine Gun - so
+    /// Bone's whole identity ("Machine Gun, 30% harder-hitting") was reaching every drone a Bone
+    /// player built, whether or not Bone was holding an actual Machine Gun. MEASURED: T7 Drones
+    /// solo went from 112.8 dps to 130.8 on a chassis whose card says nothing about drones.
+    /// <para>
+    /// A chassis bonus is part of ONE WEAPON'S identity - what makes that gun, on that mech,
+    /// different from the same gun anywhere else. A drone firing borrowed Machine Gun numbers is
+    /// not the Machine Gun. <see cref="Weapon"/> stays: it is the blanket multiplier every gun
+    /// shares, not scoped to a single weapon's identity, so there are no borrowed numbers for it
+    /// to cause.
+    /// </para>
+    /// </remarks>
+    public HeroDef WithoutWeaponBonus() => WeaponBonus is null ? this : new HeroDef
+    {
+        Id = Id,
+        StartingWeapon = StartingWeapon,
+        StartingUpgrade = StartingUpgrade,
+        Player = Player,
+        Weapon = Weapon,
+        WeaponBonus = null,
+    };
 }
 
 /// <summary>

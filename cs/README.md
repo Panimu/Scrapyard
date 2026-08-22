@@ -2,8 +2,8 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles` and the loot-break path are done and proven. `weapons` and `drones` are next — both
-are unblocked.
+`projectiles`, `drones` and the loot-break path are done and proven. `weapons` is next — the last
+big file, and the only remaining system that needs new infrastructure.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -55,7 +55,8 @@ dotnet test
 | `Sheep` — the flock, `SheepRayHit`, `TakeSheepIn` | done, 13 driven cases over 2,924 ticks, stream compared every tick |
 | `Pickups.BreakLootIn` / `DropConsumable` | done, all three terrains + the flock, loot stream compared per break |
 | `Projectiles` — S7, all three behaviours | done, 8 driven cases over 320 ticks, hit buffer compared too |
-| The other 6 systems | not started — **this is the remaining job** |
+| `Drones` — S6b, the bay and its escort | done, 10 driven cases over 5,210 ticks |
+| The other 5 systems | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -177,6 +178,26 @@ the fault and watching the suite pass: the phase bolt's **scenery exemption** is
 case that flies through an emptied yard, and the barrel's **second on-screen check** is
 indistinguishable from the first unless a blast's centre and its drum are different points. Each
 now has a case built for it alone.
+
+**`Drones` is the only system that moves something the player does not control and the horde does
+not own.** It is a build clock, a two-state orbit and a magazine, and none of those is legible in a
+single call — the arrival gate that decides "chase it, then circle it" had two historical bugs (a
+spiral that never closes, and a drone that flew at the FAR side of the thing it was circling), and
+both look perfectly reasonable for the first few ticks.
+
+**The acquisition circle case took four attempts to make discriminate, and that is the lesson.** The
+circle is drawn around the PLAYER, never the drone, because a drone-anchored circle is transitive and
+walks the drone off the screen one legal hop at a time. Anchoring it to the drone and watching the
+suite pass three times in a row is what found each flaw in the case:
+
+1. the far body at 1400 was outside a drone-anchored circle too, so neither anchor reached it;
+2. moved to 600 it was reachable but never the NEAREST candidate, and the drone takes whichever
+   candidate is closest to itself;
+3. with a near body present at all, the RETENTION check — which is player-anchored and correct —
+   kept the drone on its legitimate target so the selection line never ran again.
+
+The case that works is ONE body just outside the player's circle and just inside a drone-anchored
+one, with nothing the drone may legitimately hold. The fault then fails at tick 12.
 
 ## Why the RNG came first
 
@@ -417,6 +438,21 @@ characteristic mistake:
   through an emptied yard where this is unreachable, so it took a bolt fired at a real wreck: the
   fault then fails with *"died at tick 5, expected -1"*.
 
+- **The drone's acquisition circle anchored to the DRONE instead of the player** — the bug that
+  walked drones off the screen. Fails at tick 12 of `acquisition-circle-is-the-players`, but only
+  after the case was rebuilt three times; see the README section above for what each earlier version
+  failed to discriminate, which is the more useful half of this entry.
+- **The drone gun's card mask removed** — Feed Systems on a drone is not a rate card but a LIFESPAN
+  card pointing the wrong way (at tier 7 it cut a drone's constant-fire life from 23 s to 14), and
+  Targeting Optics silently widens the leash that stops a drone leaving the screen. Fails the
+  resolved-gun comparison between the deep-stacked run and the Ordnance-only one.
+- **The hero's named-weapon bonus not stripped from the drone's gun** — a drone fires the Machine
+  Gun, so Bone's whole identity ("Machine Gun, 30% harder-hitting") reached every drone a Bone
+  player built, on a chassis whose card says nothing about drones. Fails on the first round's
+  damage: 3.822 where 2.94 was expected.
+- **The orbit's arrival gate removed**, so the phase advances while the drone is still transiting -
+  the spiral that never closes. Fails on tick 0 of `engage-and-orbit`.
+
 ### Known untested branch
 
 `RollFlavour`'s `options.Length <= 1` early return is unreachable on the Scrapyard: no cycle in its
@@ -490,17 +526,17 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Six systems remain: `playerMovement`, `weapons`, `drones`, `damage`, `pickups`, `progression`.
-(`sheep` and `projectiles` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
-that both of the next two need.)
+Five systems remain: `playerMovement`, `weapons`, `damage`, `pickups`, `progression`. (`sheep`,
+`projectiles` and `drones` are done, as is the `breakLootIn`/`DropConsumable` slice of `pickups`
+that several of them need.)
 
 In rough dependency order:
 
-- **`drones`** is fully unblocked: targeting, the weapon catalog, `ResolveWeaponStats`, both pools
-  and the event ids are all done, and unlike `weapons` it needs no beam buffer and no hero traits.
-- **`weapons`** is the largest single file left (1,587 lines) and the last big one. Beyond what is
-  already ported it needs a beam buffer on `World`, the hero-trait hook, and `SheepRayHit` — which
-  is done.
+- **`weapons`** is the largest single file left (1,587 lines), the last big one, and the only
+  remaining system that needs new infrastructure: a beam buffer on `World`, two scratch vectors and
+  a claims array, the hero-trait hook (whose registry is empty today, so it is a no-op that has to
+  exist), and `laserHardpoint` — the one piece of `WeaponCatalog` deliberately deferred, because it
+  reads the live weapon list. `SheepRayHit` and `BreakLootIn`, its other two imports, are done.
 - **`playerMovement`** needs `breakLootIn`, which is done.
 - **`pickups`** needs `progression`. Both terrains (`MossWalls`/`CityBlocks`) and
   `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done.

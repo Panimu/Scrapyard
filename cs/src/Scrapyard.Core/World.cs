@@ -116,6 +116,33 @@ public sealed class World
     /// </remarks>
     public WeaponDef[] WeaponDefs = WeaponCatalog.All;
 
+    /// <summary>The upgrade catalog this world was built with. Injected for the same reason
+    /// <see cref="WeaponDefs"/> is - the harness builds worlds against fixture catalogs.</summary>
+    public UpgradeDef[] UpgradeDefs = UpgradeCatalog.All;
+
+    /// <summary>The chassis roster. Injected, same reason.</summary>
+    public HeroDef[] HeroDefs = HeroCatalog.All;
+
+    /// <summary>
+    /// THE DRONE'S GUN: the Machine Gun at the drone BAY's tier, resolved once per tick.
+    /// </summary>
+    /// <remarks>
+    /// Held on the world rather than allocated per tick because it is rebuilt every tick and this
+    /// is a hot path. Derived, so it stays out of the world hash for the same reason
+    /// <see cref="WeaponInstance.Stats"/> does - it is a pure function of the bay's level, the
+    /// masked upgrade stacks and the meta tiers, all of which ARE hashed.
+    /// </remarks>
+    public readonly WeaponStats DroneGun = new();
+
+    /// <summary>
+    /// The workshop tiers this run was started with, or null when there are none.
+    /// </summary>
+    /// <remarks>
+    /// Persistent progression, resolved before a run exists and then read-only for its whole
+    /// length - which is why it is a plain field rather than run state.
+    /// </remarks>
+    public MetaSource? Meta;
+
     /// <summary>
     /// Half the arena's width, or infinity on an unbounded level. From the level definition.
     /// </summary>
