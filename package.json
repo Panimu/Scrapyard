@@ -43,6 +43,7 @@
     "golden:creatures": "tsx tools/creature_art_fixture.ts",
     "golden:chest": "tsx tools/chest_spin_fixture.ts",
     "creatureart": "tsx tools/gen_creature_art.ts",
+    "pediatext": "tsx tools/gen_pedia_text.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",

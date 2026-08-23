@@ -15,6 +15,7 @@ public enum Screen
     Workshop,
     Trophies,
     Settings,
+    Pedia,
     Playing,
     Paused,
 }
@@ -73,6 +74,7 @@ public static class Screens
             ("[W]", "WORKSHOP", true),
             ("[T]", "TROPHIES", true),
             ("[S]", "SETTINGS", true),
+            ("[P]", "SCRAPOPEDIA", true),
             ("[ESC]", "QUIT", true),
         });
 
@@ -397,6 +399,174 @@ public static class Screens
 
         Font.DrawCentred(batch, sprites.Blank, "[ARROWS] CHANGE   [C] CHANGELOG   [ESC] BACK",
                          vw / 2, vh - 16 * scale, scale, Dim);
+    }
+
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Rows the index shows at once, and lines a page shows at once.</summary>
+    public const int PediaRows = 11;
+
+    /// <summary>
+    /// Every level the bestiary lists, paired with its display name.
+    /// </summary>
+    /// <remarks>
+    /// FROM THE UNLOCK TABLE, which is the one place that already names every level - so a level
+    /// added there appears in the manual without a second list being remembered. City Chaos ships
+    /// no creatures of its own yet and simply contributes an empty group, which is what "none yet"
+    /// looks like rather than an omission.
+    /// </remarks>
+    public static IReadOnlyList<(ILevel Level, string Name)> PlayableLevels()
+    {
+        var outv = new List<(ILevel, string)>();
+        foreach (var l in HeroUnlocks.Levels) outv.Add((Simulation.LevelById(l.Id), l.Name));
+        return outv;
+    }
+
+    /// <summary>
+    /// The Scrapopedia: what every gun and every system actually does.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// WHY IT EXISTS GIVEN THE CARDS. A level-up card is read in four seconds with a horde closing
+    /// in, which is why its text carries no numbers and says what happens rather than how much.
+    /// That is the right trade at that moment and the wrong one everywhere else: the single most
+    /// confusing thing in this game is that every weapon picks its target by a DIFFERENT RULE, and
+    /// a card has no room to say so. This is the screen with time to explain it.
+    /// </para>
+    /// <para>
+    /// SECTIONS, THEN INDEX, THEN PAGE - and Back walks exactly one step and never more, so the key
+    /// means one thing everywhere. Three panes drawn from one variable, so the screen cannot end up
+    /// showing two of them or none.
+    /// </para>
+    /// </remarks>
+    public static void DrawPedia(SpriteBatch batch, Sprites sprites, PediaState st, int vw, int vh)
+    {
+        Backdrop(batch, sprites, vw, vh);
+        int scale = System.Math.Max(1, vh / 400);
+        int listW = System.Math.Min(vw - 40, 340 * scale);
+        int x0 = (vw - listW) / 2;
+
+        Font.DrawCentred(batch, sprites.Blank, "SCRAPOPEDIA", vw / 2, 12 * scale, scale * 2, Accent);
+
+        if (st.Section < 0)
+        {
+            int y = 46 * scale;
+            for (int i = 0; i < Pedia.Sections.Length; i++)
+            {
+                bool on = i == st.SectionCursor;
+                if (on) batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 3, listW + 8, 26 * scale), Panel);
+                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Label, x0, y, scale,
+                          on ? Ink : Dim);
+                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Blurb, x0,
+                          y + Font.LineHeight * scale, scale, Locked);
+                y += 28 * scale;
+            }
+            Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ENTER] OPEN   [ESC] BACK",
+                             vw / 2, vh - 16 * scale, scale, Dim);
+            return;
+        }
+
+        if (st.Page is null)
+        {
+            var rows = st.Rows;
+            Font.DrawCentred(batch, sprites.Blank, Pedia.Sections[st.Section].Label, vw / 2,
+                             30 * scale, scale, Dim);
+
+            int first = System.Math.Clamp(st.RowCursor - PediaRows / 2, 0,
+                                          System.Math.Max(0, rows.Count - PediaRows));
+            int y = 48 * scale;
+            for (int r = 0; r < PediaRows && first + r < rows.Count; r++)
+            {
+                var row = rows[first + r];
+                bool on = first + r == st.RowCursor;
+
+                if (row.Kind == Pedia.Kind.Heading)
+                {
+                    Font.Draw(batch, sprites.Blank, row.Text, x0, y, scale, Accent);
+                    Font.Draw(batch, sprites.Blank, row.Sub,
+                              x0 + listW - Font.Measure(row.Sub, scale), y, scale, Dim);
+                }
+                else
+                {
+                    if (on)
+                    {
+                        batch.Draw(sprites.Blank,
+                                   new Rectangle(x0 - 4, y - 2, listW + 8, Font.LineHeight * scale + 3),
+                                   Panel);
+                    }
+                    Font.Draw(batch, sprites.Blank, "  " + row.Text, x0, y, scale, on ? Ink : Dim);
+                }
+                y += (Font.LineHeight + 3) * scale;
+            }
+
+            // A GROUP WITH NOTHING IN IT IS STILL A GROUP, and it says so rather than looking
+            // broken - a heading with no rows under it is what "none yet" looks like here.
+            if (rows.Count <= Pedia.Sections.Length)
+            {
+                Font.DrawCentred(batch, sprites.Blank, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
+                                 scale, Locked);
+            }
+
+            Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ENTER] OPEN   [ESC] BACK",
+                             vw / 2, vh - 16 * scale, scale, Dim);
+            return;
+        }
+
+        DrawPediaPage(batch, sprites, st, x0, listW, scale, vw, vh);
+    }
+
+    /// <summary>
+    /// One page, wrapped to the window and scrolled a line at a time.
+    /// </summary>
+    /// <remarks>
+    /// WRAPPED HERE RATHER THAN IN THE PAGE. The text is authored as paragraphs and the width is a
+    /// property of the window, so the two meet at the last possible moment - which is what lets the
+    /// same page be right on a phone-shaped window and a wide one without the content knowing.
+    /// </remarks>
+    private static void DrawPediaPage(SpriteBatch batch, Sprites sprites, PediaState st, int x0,
+                                      int listW, int scale, int vw, int vh)
+    {
+        var page = st.Page!.Value;
+
+        var icon = page.Icon == "" ? null : sprites.Get("icon_" + page.Icon);
+        int headX = x0;
+        if (icon is not null)
+        {
+            int box = 20 * scale;
+            batch.Draw(icon, new Rectangle(x0, 30 * scale, box, box), Color.White);
+            headX += box + 6 * scale;
+        }
+        Font.Draw(batch, sprites.Blank, page.Title, headX, 30 * scale, scale, Ink);
+        Font.Draw(batch, sprites.Blank, page.Kind, headX, 30 * scale + Font.LineHeight * scale,
+                  scale, Accent);
+
+        var lines = st.Wrapped(listW, scale);
+        int shown = PediaRows;
+        int first = System.Math.Clamp(st.PageScroll, 0, System.Math.Max(0, lines.Count - shown));
+        int y = 60 * scale;
+        for (int i = 0; i < shown && first + i < lines.Count; i++)
+        {
+            string line = lines[first + i];
+            // A line that opens with a hash is a section heading, which is how the page marks one
+            // without the wrapper needing to know about structure.
+            if (line.StartsWith('#'))
+            {
+                Font.Draw(batch, sprites.Blank, line[1..].Trim(), x0, y, scale, Accent);
+            }
+            else
+            {
+                Font.Draw(batch, sprites.Blank, line, x0, y, scale, Ink);
+            }
+            y += (Font.LineHeight + 2) * scale;
+        }
+
+        if (lines.Count > shown)
+        {
+            Font.DrawCentred(batch, sprites.Blank, $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
+                             vw / 2, vh - 28 * scale, scale, Locked);
+        }
+        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] SCROLL   [ESC] BACK", vw / 2,
+                         vh - 16 * scale, scale, Dim);
     }
 
     // -----------------------------------------------------------------------------------------

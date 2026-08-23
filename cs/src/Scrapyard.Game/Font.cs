@@ -28,14 +28,14 @@ namespace Scrapyard.Game;
 /// </remarks>
 public static class Font
 {
-    public const int GlyphW = 5;
-    public const int GlyphH = 8;
+    public const int GlyphW = FontMetrics.GlyphW;
+    public const int GlyphH = FontMetrics.GlyphH;
 
     /// <summary>Columns between glyphs, at scale 1.</summary>
-    public const int Tracking = 1;
+    public const int Tracking = FontMetrics.Tracking;
 
     /// <summary>Rows between baselines, at scale 1.</summary>
-    public const int LineHeight = 10;
+    public const int LineHeight = FontMetrics.LineHeight;
 
     private const int First = 32;
     private const int Last = 126;
@@ -140,11 +140,8 @@ public static class Font
     };
 
     /// <summary>Width in pixels of a string at the given scale, tracking included.</summary>
-    public static int Measure(string s, int scale)
-    {
-        if (s.Length == 0) return 0;
-        return (s.Length * (GlyphW + Tracking) - Tracking) * scale;
-    }
+    /// <inheritdoc cref="FontMetrics.Measure"/>
+    public static int Measure(string s, int scale) => FontMetrics.Measure(s, scale);
 
     /// <summary>
     /// Draws a string with its top-left at (x, y). <paramref name="pixel"/> is any 1x1 white

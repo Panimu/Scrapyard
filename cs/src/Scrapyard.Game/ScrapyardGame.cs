@@ -143,6 +143,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _shopCursor;
     private int _trophyCursor;
     private int _settingsCursor;
+    private PediaState _pedia = null!;
 
     /// <summary>
     /// When the chest opened, in the render layer's own clock.
@@ -221,6 +222,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _cover = new GroundCover(_sprites);
         _paths = new GroundPaths(_sprites);
         _beams = new BeamLayer(_sprites, _fx);
+        // THE LEVELS, PAIRED WITH THEIR NAMES, because the bestiary lists one group per level
+        // and a level's entries are derived from its own resolver - so no map can list
+        // another's animals.
+        _pedia = new PediaState(_save, Screens.PlayableLevels());
 
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
@@ -351,6 +356,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.Workshop: UpdateWorkshop(keys); break;
             case Screen.Trophies: UpdateTrophies(keys); break;
             case Screen.Settings: UpdateSettings(keys); break;
+            case Screen.Pedia: UpdatePedia(keys); break;
             case Screen.Paused: UpdatePaused(keys); break;
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
@@ -369,6 +375,63 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
         if (Pressed(keys, Keys.T)) _screen = Screen.Trophies;
         if (Pressed(keys, Keys.S)) _screen = Screen.Settings;
+        if (Pressed(keys, Keys.P))
+        {
+            // REBUILT ON EVERY OPEN. The player has usually finished a run between two visits, and
+            // a manual that needed the game restarted before it admitted what you found would be
+            // worse than no manual.
+            _pedia.Open();
+            _screen = Screen.Pedia;
+        }
+    }
+
+    /// <summary>
+    /// Scrapopedia input. Back walks exactly one step, everywhere.
+    /// </summary>
+    /// <remarks>
+    /// The three panes are driven from one state object, so there is no case here that can leave
+    /// the screen showing two of them or none - the only thing this method decides is which way the
+    /// cursor moved.
+    /// </remarks>
+    private void UpdatePedia(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape))
+        {
+            if (!_pedia.Back()) _screen = Screen.Title;
+            return;
+        }
+
+        bool up = Pressed(keys, Keys.Up);
+        bool down = Pressed(keys, Keys.Down);
+        bool enter = Pressed(keys, Keys.Enter) || Pressed(keys, Keys.Space)
+                  || Pressed(keys, Keys.Right);
+
+        if (_pedia.Section < 0)
+        {
+            int n = Pedia.Sections.Length;
+            if (up) _pedia.SectionCursor = (_pedia.SectionCursor + n - 1) % n;
+            if (down) _pedia.SectionCursor = (_pedia.SectionCursor + 1) % n;
+            if (enter) _pedia.EnterSection(_pedia.SectionCursor);
+            return;
+        }
+
+        if (_pedia.Page is null)
+        {
+            if (up) _pedia.MoveRow(-1);
+            if (down) _pedia.MoveRow(1);
+            if (Pressed(keys, Keys.PageUp)) _pedia.MoveRow(-Screens.PediaRows);
+            if (Pressed(keys, Keys.PageDown)) _pedia.MoveRow(Screens.PediaRows);
+            if (enter) _pedia.OpenRow();
+            return;
+        }
+
+        if (up) _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - 1);
+        if (down) _pedia.PageScroll++;
+        if (Pressed(keys, Keys.PageUp))
+        {
+            _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - Screens.PediaRows);
+        }
+        if (Pressed(keys, Keys.PageDown)) _pedia.PageScroll += Screens.PediaRows;
     }
 
     /// <summary>
@@ -792,7 +855,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         var (mw, mh) = Surface;
 
         if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop
-            or Screen.Trophies or Screen.Settings)
+            or Screen.Trophies or Screen.Settings or Screen.Pedia)
         {
             GraphicsDevice.Clear(RenderTables.Outside);
             _batch.Begin(samplerState: SamplerState.PointClamp);
@@ -809,6 +872,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     Screens.DrawTrophies(_batch, _sprites, _save, _trophyCursor, mw, mh); break;
                 case Screen.Settings:
                     Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh); break;
+                case Screen.Pedia:
+                    Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();

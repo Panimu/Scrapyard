@@ -647,15 +647,53 @@ inside a numerical solver is the kind of dependency that survives until somebody
 solver — but the redundancy is now recorded, so the next person to inject it does not spend an
 afternoon writing a case that cannot exist.
 
+**The Scrapopedia's hardest requirement is a negative one.** It explains the thing a level-up card
+has no room to say — every weapon in this game picks its target by a *different rule*, the Cannon
+insisting on the biggest thing in range while the Machine Gun finishes the smallest, the missile
+racks not aiming at all — and it does that without ever giving away what the player has not found.
+
+- **Every description and every tier ladder is generated from the catalogs**, never retyped, so a
+  card whose wording changes changes the manual with it. `npm run pediatext` parses the authored
+  manual out of `scrapopediaScreen.ts` rather than duplicating it, which keeps one authored copy of
+  the prose; the generator refuses to emit if a card has no manual entry, because a card added
+  without one is a blank Targeting section that nothing else notices.
+- **It only shows what has been held.** A system's page appears once the card has been taken, a
+  chassis' once earned, a creature's once killed. An empty save opens on two entries: Slate, and the
+  Medium Laser it walks in holding.
+- **Nothing names an ascension until one is held** — not a page, not a heading, and *not a total*.
+  "0 / 5" tells a new player both that ascensions exist and how many to go looking for, so the group
+  is not emitted at all until the first one is found. `PediaTests` checks this by *searching every
+  string a player could reach*, not by inspecting the branch that is supposed to prevent it: a
+  branch can be right and a different page still leak the name.
+
+Sixteen injected faults, all caught.
+
+**And it turned up a real defect in the committed save layer.** The port was keying the bestiary as
+`"{cycleIndex}:{rank}"` — a bare catalog index, which is exactly what the rest of the save exists to
+avoid. The two levels' indices collided outright, so a Mossy kill unlocked a Scrapyard page, and
+reordering a ladder would have handed players somebody else's creatures. It is now
+`levelId/cycleName/rankName`, as the TypeScript has it, and a test builds both levels' bestiaries
+and asserts no key appears in two of them.
+
+**Three of my own tests were wrong before the code was.** One granted every secret achievement to a
+player holding no ascension — a state that cannot occur, since "Turned the Cannon into the Twin
+Mount" is awarded *for* holding one, and the test then failed on that achievement's own text. One
+asserted that no creature page carries another level's lore, when two rungs on two maps genuinely
+share a lead sentence by the author's choice. One asserted that no ladder row repeats what tier 1
+says, which is false for all seven passives — they stack, so they repeat. Each was replaced with the
+property actually intended: the state that can occur, the key the lore resolved from, and the count
+and numbering of the ladder rows.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
 draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout`,
-`MossDressingLayout`, `BeamLayout`, `CreatureArt` and `ChestSpin` hold every decision and no
-MonoGame types — as does `JsMath` — and the test csproj `<Compile Include>`s those exact files.
+`MossDressingLayout`, `BeamLayout`, `CreatureArt`, `ChestSpin`, `Pedia`,
+`PediaState` and `FontMetrics` hold every decision and no MonoGame types — as does `JsMath` — and
+the test csproj `<Compile Include>`s those exact files.
 
-What is not done yet, plainly: no Scrapopedia.
+Every screen and every layer of the web build now has a counterpart here.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not

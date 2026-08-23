@@ -47,6 +47,10 @@
     <Compile Include="..\..\src\Scrapyard.Game\BeamLayout.cs" Link="Linked\BeamLayout.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CreatureArt.cs" Link="Linked\CreatureArt.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\ChestSpin.cs" Link="Linked\ChestSpin.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\FontMetrics.cs" Link="Linked\FontMetrics.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\PediaText.cs" Link="Linked\PediaText.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\Pedia.cs" Link="Linked\Pedia.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\PediaState.cs" Link="Linked\PediaState.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CreatureArtTable.cs" Link="Linked\CreatureArtTable.cs" />
   </ItemGroup>
 

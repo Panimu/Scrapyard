@@ -140,7 +140,7 @@ public static class Progress
             save.CareerKills[key] = System.Math.Max(had, n);
         }
 
-        RecordBestiary(save, world);
+        RecordBestiary(save, world, level);
 
         // THE CAREER IS REBUILT after the totals above, because a condition satisfied on this call
         // should see the kills that satisfied it. The first `career` was for reading; this one is
@@ -190,16 +190,19 @@ public static class Progress
     /// the same as having seen an ELITE Rustling, and the rung was stamped on the body at spawn
     /// precisely so this could be asked at death.
     /// </remarks>
-    private static void RecordBestiary(Settings save, World world)
+    private static void RecordBestiary(Settings save, World world, ILevel level)
     {
         var seen = new HashSet<string>(save.KilledEnemies);
         var byCycleRank = world.Stats.KillsByCycleRank;
+        var scratch = new ResolvedCycle();
+
         for (int i = 0; i < byCycleRank.Length; i++)
         {
             if (byCycleRank[i] == 0) continue;
             int cycle = i / Ranks.Count;
             int rank = i % Ranks.Count;
-            string key = $"{cycle}:{rank}";
+            level.ResolveCycle(cycle, scratch);
+            string key = Bestiary.KeyOf(level.Id, scratch.Name, rank);
             if (seen.Add(key)) save.KilledEnemies.Add(key);
         }
     }
