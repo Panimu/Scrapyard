@@ -109,6 +109,12 @@ public static class Screens
         int y = (int)(vh * 0.46);
         Menu(batch, sprites, vw, ref y, scale, TitleRows(save), cursor);
 
+        // WHICH BUILD THIS IS, small and dim on the title screen and nowhere else - it is a serial
+        // number, not a feature, and the place it is wanted is when somebody is reporting a bug
+        // rather than when they are starting a run.
+        Font.DrawCentred(batch, sprites.Blank, BuildInfo.Label.ToUpperInvariant(), vw / 2,
+                         vh - 14 * scale, scale, Locked);
+
         var hero = HeroUnlocks.Heroes[System.Math.Clamp(save.LastHeroId, 0, HeroUnlocks.Heroes.Length - 1)];
         Font.DrawCentred(batch, sprites.Blank,
                          $"{hero.Name.ToUpperInvariant()}  /  {NameOfLevel(save.LastLevelId).ToUpperInvariant()}",

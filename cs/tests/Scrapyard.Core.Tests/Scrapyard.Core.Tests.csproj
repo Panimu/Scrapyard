@@ -23,6 +23,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scrapyard.Core\Scrapyard.Core.csproj" />
     <ProjectReference Include="..\..\src\Scrapyard.Meta\Scrapyard.Meta.csproj" />
+    <ProjectReference Include="..\..\src\Scrapyard.Golden\Scrapyard.Golden.csproj" />
+    <ProjectReference Include="..\..\src\Scrapyard.Sim\Scrapyard.Sim.csproj" />
   </ItemGroup>
 
   <!--
@@ -41,6 +43,7 @@
   <ItemGroup>
     <Compile Include="..\..\src\Scrapyard.Game\JsMath.cs" Link="Linked\JsMath.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\PadInput.cs" Link="Linked\PadInput.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\BuildInfo.cs" Link="Linked\BuildInfo.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\GroundCoverLayout.cs" Link="Linked\GroundCoverLayout.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\GroundPathsLayout.cs" Link="Linked\GroundPathsLayout.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CityDressingLayout.cs" Link="Linked\CityDressingLayout.cs" />

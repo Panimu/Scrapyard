@@ -43,6 +43,7 @@
     "golden:creatures": "tsx tools/creature_art_fixture.ts",
     "golden:chest": "tsx tools/chest_spin_fixture.ts",
     "golden:pad": "tsx tools/pad_fixture.ts",
+    "cs:sim": "dotnet run --project cs/src/Scrapyard.Sim -c Release --",
     "creatureart": "tsx tools/gen_creature_art.ts",
     "pediatext": "tsx tools/gen_pedia_text.ts",
     "changelog": "tsx tools/gen_changelog.ts",

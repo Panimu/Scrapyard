@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Scrapyard.Sim - the measurement rig.
+
+    THE REFERENCE BOT IS A TEST FIXTURE, NOT A GAME RULE, which is why it is here rather than in
+    Scrapyard.Core: it reads the world and never writes to it, and changing it invalidates every
+    recorded pacing baseline rather than changing the game.
+
+    It references Core and nothing else. No MonoGame, no window, no graphics device - a headless run
+    is the direct payoff of the pure-core mandate, and a rig that needed a display would give that
+    away for nothing.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Scrapyard.Sim</RootNamespace>
+    <AssemblyName>Scrapyard.Sim</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
+  </ItemGroup>
+
+</Project>

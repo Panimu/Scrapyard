@@ -766,6 +766,49 @@ orders of magnitude below anything a mistranslation could cause, and it **also a
 divergence is still non-zero**: if it ever becomes exact, the explanation has stopped being true and
 should be revisited.
 
+**The reference bot is ported, and it agrees with the original on all 98,970 recorded decisions.**
+That check cost no new fixture: the golden corpus already stores the bot's *output* — the two
+quantised axes it chose on every tick of nine runs — because the recorder captures inputs rather
+than regenerating them, so a diverged core could not be fed different inputs and quietly agree with
+itself. The side effect is 98,970 real decisions sitting there to check a ported bot against.
+
+It is a stronger test than it looks. The bot reads the whole world — every live enemy's position and
+rank, every gem, the player's hull fraction, the arena's half-width — so agreeing on the axes for
+98,970 consecutive ticks means agreeing about all of it, at every tick, through nine complete runs.
+A single body in the wrong place moves the flee vector and the axes with it. It is also *not* what
+keeps the replay honest: the corpus replay feeds recorded inputs and would pass with the bot deleted.
+This is about the instrument — pacing numbers from a C# run are only comparable with the
+TypeScript's if the thing taking them is the same thing.
+
+`Scrapyard.Sim` is the headless harness: `npm run cs:sim -- --seconds 120` plays a run and prints a
+timeline, with no window and no graphics device. It references Core and nothing else, which is
+purity enforcement as much as convenience — anything that crept into `Scrapyard.Core` and needed a
+display would fail to build there immediately.
+
+**Four injected faults survived the parity check, so the corpus was measured rather than argued
+with.** Over nine runs it never saw a dead enemy at bot-time, never came within 3,540 units of a
+fence when the push starts at 1,000, and never offered a level-up whose offensive card was not
+already first. Three of those branches now have direct tests, because the corpus is the oracle for
+what it covers and no amount of staring at it changes what it does not.
+
+**And the fourth turned out not to be a fault at all — it is a bug in the reference bot, in both
+builds.** The policy documents itself as "take the first offered upgrade tagged offence, else the
+first offer", and decides by asking whether any of a card's `effects` targets a weapon. **Every card
+in the catalog has an empty `effects` array** — all 21, in the TypeScript as much as here. The real
+data lives in `tierEffects`: ten cards carry one and six of those target a weapon. So the rule reads
+a field nothing populates, the loop always falls through, and the bot always takes whatever is
+leftmost. Six offensive cards are invisible to it. The port reproduces this deliberately — fixing it
+would make the C# bot a different instrument from the one that recorded every pacing baseline this
+project has — and `BotBranchTests.TheOffenceRuleIsDeadInBothBuilds` records it so the decision gets
+made rather than the behaviour rediscovered.
+
+**One more piece of arithmetic worth knowing:** the fence push cannot change the bot's *speed*, only
+its direction. The move is normalised at the end, so a push along the same axis as the whole move
+can only flip its sign — dividing a one-axis vector by its own length gives back ±1. The squared
+falloff shows up as *where* that flip happens, at about 368 units of slack, where the push finally
+exceeds the drift it is fighting. My first test asserted a magnitude and was wrong about the policy,
+not about the port.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
@@ -776,8 +819,8 @@ draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityD
 the test csproj `<Compile Include>`s those exact files.
 
 What is not ported, plainly: the virtual joystick, which is touch and this is a desktop build;
-the build-version string; and `src/sim/` - the reference bot and the DPS harness, which measure
-balance and are run from the TypeScript side.
+and the DPS and loadout harnesses, which measure single weapons rather than a run and are still
+run from the TypeScript side.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not

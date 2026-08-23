@@ -30,6 +30,35 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
   </ItemGroup>
 
+  <!--
+    THE VERSION IS THE COMMIT COUNT, computed here rather than stored anywhere.
+
+    A counter kept in the repository moves on every local build and every move is a diff; a
+    generated .cs file can be stale, committed by accident, or forgotten in .gitignore. Stamping the
+    assembly means the value cannot drift from the build carrying it - it does not exist until the
+    build makes it, which is the same argument the web build's Vite `define` makes.
+
+    ContinueOnError, and a fallback of nothing: this has to build outside a git checkout, and a
+    build that fails because it could not work out its own version number is a worse outcome than
+    one that says "dev build". BuildInfo.Format turns an empty or shallow answer into exactly that.
+
+    A SHALLOW CLONE REPORTS 1 FOREVER, which is why the deploy fetches full history and why a count
+    of 1 is treated as no answer at all - see BuildInfo.
+  -->
+  <Target Name="StampBuildLabel" BeforeTargets="GetAssemblyAttributes">
+    <Exec Command="git rev-list --count HEAD" ConsoleToMSBuild="true" ContinueOnError="true"
+          StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="ScrapyardCommitCount" />
+    </Exec>
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" ContinueOnError="true"
+          StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="ScrapyardShortSha" />
+    </Exec>
+    <PropertyGroup Condition="'$(ScrapyardCommitCount)' != '' And '$(ScrapyardShortSha)' != ''">
+      <InformationalVersion>$(ScrapyardCommitCount)+$(ScrapyardShortSha)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
     <ProjectReference Include="..\Scrapyard.Meta\Scrapyard.Meta.csproj" />

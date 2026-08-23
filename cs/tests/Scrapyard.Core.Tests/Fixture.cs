@@ -34,6 +34,24 @@ internal static class Fixture
         }
     }
 
+    /// <summary>
+    /// The golden corpus, through the SAME reader the replayer uses.
+    /// </summary>
+    /// <remarks>
+    /// Not a second parser. Two readers of one format is two chances to disagree about what the
+    /// format is, and the one that disagrees quietly is the one nobody is looking at.
+    /// </remarks>
+    public static (Scrapyard.Golden.CorpusRun[] Runs, string Path) LoadCorpus()
+    {
+        string path = System.IO.Path.Combine(RepoRoot, "goldens", "corpus.json");
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException(
+                $"The golden corpus is missing at {path}. Run `npm run golden -- record`.", path);
+        }
+        return (Scrapyard.Golden.Corpus.Load(path).ToArray(), path);
+    }
+
     public static JsonDocument Load(string name)
     {
         string path = Path.Combine(RepoRoot, "goldens", name);
