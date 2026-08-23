@@ -567,4 +567,60 @@ public class MetaTests
         Assert.Equal(200, earned.Credits);
         Assert.Equal(500, save.Credits);
     }
+
+    /// <summary>
+    /// A PREFERENCE THAT DOES NOT RESOLVE DEGRADES TO A DEFAULT, like every other saved field.
+    /// </summary>
+    /// <remarks>
+    /// A save written by a newer build, or edited by hand, must produce a working game. An
+    /// unrecognised animation preference is not a reason a player cannot start - and an
+    /// out-of-range render scale would divide the surface by something absurd.
+    /// </remarks>
+    [Fact]
+    public void UnknownPreferencesFallBackRatherThanSticking()
+    {
+        var s = new Settings { Animations = "sometimes", DprCap = 7 };
+        s.Reconcile();
+        Assert.Equal("system", s.Animations);
+        Assert.Equal(2, s.DprCap);
+
+        // And the ones that DO resolve survive untouched.
+        foreach (string pref in new[] { "system", "on", "off" })
+        {
+            var keep = new Settings { Animations = pref, DprCap = 1 };
+            keep.Reconcile();
+            Assert.Equal(pref, keep.Animations);
+            Assert.Equal(1, keep.DprCap);
+        }
+    }
+
+    /// <summary>
+    /// AUTO MEANS MOVE ON THE DESKTOP, AND THAT IS A DECISION.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The web build resolves <c>system</c> from the operating system's reduce-motion preference.
+    /// On Windows that answer comes from the same bit as "Show animations in Windows" - a setting
+    /// about whether a window animates as it minimises - so every player who turned it off for a
+    /// snappier desktop silently lost the chest reels without ever asking to. That is the bug the
+    /// three-state override was added to fix.
+    /// </para>
+    /// <para>
+    /// MonoGame exposes no cross-platform reduce-motion query, and the one Windows bit available is
+    /// precisely that one. Honouring it here would reproduce the bug rather than the behaviour, so
+    /// <c>system</c> resolves to "move" and a player who wants the reels calm has an explicit Off.
+    /// This test exists so that reading is recorded as a choice rather than rediscovered as an
+    /// oversight.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void OnlyAnExplicitOffReducesMotion()
+    {
+        Assert.False(new Settings { Animations = "system" }.ReducesMotion());
+        Assert.False(new Settings { Animations = "on" }.ReducesMotion());
+        Assert.True(new Settings { Animations = "off" }.ReducesMotion());
+
+        // A fresh save moves. The one setting that silences the machine has to be asked for.
+        Assert.False(new Settings().ReducesMotion());
+    }
 }

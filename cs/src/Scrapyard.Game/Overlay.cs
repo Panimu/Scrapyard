@@ -217,11 +217,105 @@ public static class Overlay
     // -----------------------------------------------------------------------------------------
 
     /// <summary>The Cyber Chest: three reels, a payout, and one key to close it.</summary>
-    public static void DrawChest(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
+    /// <summary>What the debug readout shows. Gathered by the caller, which is the only thing that
+    /// knows most of it.</summary>
+    public readonly record struct DebugInfo(
+        double FrameMs, double WorstMs, int Steps, int Enemies, int Projectiles, int Pickups,
+        int Effects, int DroppedEvents);
+
+    /// <summary>
+    /// Frame time, entity counts and dropped events, over the HUD.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE WORST FRAME IS THE NUMBER THAT MATTERS, not the mean. A mean of 16 ms with one 90 ms
+    /// spike a second is a game that stutters visibly and a readout that says it is fine; the two
+    /// are shown together so the gap between them is legible at a glance.
+    /// </para>
+    /// <para>
+    /// DROPPED EVENTS SHOULD STAY AT ZERO. The event ring is fixed-size and the renderer drains it
+    /// once a frame - anything else means effects were overwritten before they were drawn, which is
+    /// silent everywhere except here.
+    /// </para>
+    /// <para>
+    /// AND THE STEP COUNT IS HOW THE SIMULATION IS COPING. More than one means the frame was long
+    /// enough that the fixed step had to catch up, which is the difference between "the renderer is
+    /// slow" and "everything is slow".
+    /// </para>
+    /// </remarks>
+    public static void DrawDebug(SpriteBatch batch, Sprites sprites, World w, DebugInfo d,
+                                 int vw, int vh)
+    {
+        int scale = System.Math.Max(1, vh / 480);
+        string[] lines =
+        {
+            $"{d.FrameMs:0.0} MS  WORST {d.WorstMs:0.0}  X{d.Steps}",
+            $"ENEMY {d.Enemies}  SHELL {d.Projectiles}  GEM {d.Pickups}",
+            $"FX {d.Effects}  DROP {d.DroppedEvents}",
+            $"BEAM {w.Beams.Count}  WEAPONS {w.WeaponCount}",
+            $"TICK {w.Tick}  RUN {w.RunSec:0.0}S  PHASE {w.Phase}",
+        };
+
+        int wide = 0;
+        foreach (string l in lines) wide = System.Math.Max(wide, Font.Measure(l, scale));
+
+        int pad = 4 * scale;
+        int x = 8;
+        int y = vh - lines.Length * Font.LineHeight * scale - pad * 2 - 8;
+        batch.Draw(sprites.Blank,
+                   new Rectangle(x, y, wide + pad * 2, lines.Length * Font.LineHeight * scale + pad * 2),
+                   new Color(0, 0, 0, 170));
+
+        // A DROPPED EVENT IS THE ONE LINE WORTH COLOURING. Everything else here is a number you
+        // read; that one is a number you act on.
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var tint = i == 2 && d.DroppedEvents > 0 ? new Color(0xff, 0x6a, 0x5a) : Ink;
+            Font.Draw(batch, sprites.Blank, lines[i], x + pad,
+                      y + pad + i * Font.LineHeight * scale, scale, tint);
+        }
+    }
+
+    /// <summary>
+    /// The Cyber Chest - three reels, a payout, and the upgrades it just handed you.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THIS OVERLAY DECIDES NOTHING. The simulation rolled the whole spin on the tick the player
+    /// walked onto the chest: where each reel lands, what that pays, and exactly which upgrades are
+    /// coming. Everything here is animation arriving at an answer it was given - which is the only
+    /// way a chest can exist in this game at all, because a run is a seed and a list of inputs, and
+    /// an outcome invented inside an animation could never be replayed.
+    /// </para>
+    /// <para>
+    /// THE DECOYS COME FROM THE SAME POOL THE SIMULATION ROLLED FROM, and that is not cosmetic. A
+    /// machine that blurs past eight guns you have never carried and then lands on your Long Laser
+    /// is a machine that was never really spinning; the player has to believe any symbol going past
+    /// COULD have stopped there.
+    /// </para>
+    /// <para>
+    /// REDUCED MOTION COLLAPSES THE WHOLE THING TO THE RESULT - no spin, no landings, no
+    /// anticipation. Someone who has asked for less movement has not asked for a two-second spin,
+    /// and certainly has not asked for the machine to shake. See <c>Settings.ReducesMotion</c>: the
+    /// answer comes from the player's own three-state preference rather than from the system,
+    /// because on Windows the system's answer is about window minimise animations.
+    /// </para>
+    /// </remarks>
+    public static void DrawChest(SpriteBatch batch, Sprites sprites, World w, double elapsedMs,
+                                 bool reduced, int vw, int vh)
     {
         Scrim(batch, sprites, vw, vh);
         var chest = w.Chest;
         int scale = System.Math.Max(1, vh / 400);
+
+        Span<int> heat = stackalloc int[3];
+        ChestSpin.PlanHeat(chest.Reels, chest.Payout, chest.Ascension, heat);
+        Span<double> landAt = stackalloc double[3];
+        ChestSpin.LandAt(heat[1], landAt);
+
+        // A REDUCED SPIN IS NOT A FAST SPIN. Every reel is simply at its answer, which is what
+        // "collapses to the result" has to mean - a very quick spin still moves.
+        double t = reduced ? double.PositiveInfinity : elapsedMs;
 
         Font.DrawCentred(batch, sprites.Blank, "CYBER CHEST", vw / 2, (int)(vh * 0.16), scale * 2,
                          Accent);
@@ -232,27 +326,43 @@ public static class Overlay
         int x0 = (vw - (box * n + gap * (n - 1))) / 2;
         int y0 = (int)(vh * 0.30);
 
+        bool allLanded = true;
         for (int i = 0; i < n; i++)
         {
             int x = x0 + i * (box + gap);
+            double prog = ChestSpin.ReelProgress(i, t, landAt[i], heat[1] > ChestSpin.HeatNone);
+            bool landed = prog >= 1;
+            if (!landed) allLanded = false;
+
+            // THE WINDOW BRIGHTENS ON THE LANDING IT EARNED, and only reel three's is sized by an
+            // actual payout - see ChestSpin.PlanHeat for why reel two says nothing unless it is
+            // matching, and reel one never says anything at all.
             Frame(batch, sprites, x, y0, box, box);
-            int reel = chest.Reels[i];
-            if (reel < 0) continue;
-            var tex = sprites.Get(CardTexts.At(reel).IconKey);
-            if (tex is not null)
+            if (landed && heat[i] > ChestSpin.HeatNone)
             {
-                int pad = 6 * scale;
-                batch.Draw(tex, new Rectangle(x + pad, y0 + pad, box - pad * 2, box - pad * 2),
-                           Color.White);
+                var glow = heat[i] == ChestSpin.HeatBlaze ? Accent : new Color(0xff, 0xa0, 0x4f);
+                batch.Draw(sprites.Blank, new Rectangle(x - 2, y0 - 2, box + 4, box + 4),
+                           glow * 0.35f);
             }
+
+            DrawReel(batch, sprites, w, i, prog, x, y0, box, scale);
         }
 
         int ty = y0 + box + 14 * scale;
 
-        // AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, so it is announced rather
-        // than folded into the payout line.
+        // THE HEADLINE LANDS WITH THE LAST REEL, not after it: the word arrives on the same frame
+        // as the symbol that earned it, which is the moment the player is already looking at. It is
+        // the GRANTS list that waits out the beat, so the pause is spent on the detail.
+        if (!allLanded)
+        {
+            Font.DrawCentred(batch, sprites.Blank, "[1] SKIP", vw / 2, ty + 10 * scale, scale, Dim);
+            return;
+        }
+
         if (chest.Ascension >= 0)
         {
+            // AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, so it is announced
+            // rather than folded into the payout line.
             Font.DrawCentred(batch, sprites.Blank, "ASCENSION", vw / 2, ty, scale * 2, Accent);
             ty += 20 * scale;
             Font.DrawCentred(batch, sprites.Blank,
@@ -262,22 +372,102 @@ public static class Overlay
         }
         else
         {
+            string word = chest.Payout >= 0 && chest.Payout < ChestSpin.PayoutName.Length
+                ? ChestSpin.PayoutName[chest.Payout]
+                : "";
+            if (word != "")
+            {
+                Font.DrawCentred(batch, sprites.Blank, word, vw / 2, ty, scale * 2, Accent);
+                ty += 20 * scale;
+            }
             Font.DrawCentred(batch, sprites.Blank, $"{chest.Payout} UPGRADES", vw / 2, ty, scale,
                              Ink);
             ty += 14 * scale;
         }
 
-        for (int i = 0; i < chest.Payout && i < chest.Grants.Length; i++)
+        if (ChestSpin.GrantsShown(t, landAt[2]))
         {
-            int g = chest.Grants[i];
-            if (g < 0) continue;
-            Font.DrawCentred(batch, sprites.Blank, CardTexts.At(g).Name.ToUpperInvariant(), vw / 2,
-                             ty, scale, Dim);
-            ty += Font.LineHeight * scale;
+            for (int i = 0; i < chest.Payout && i < chest.Grants.Length; i++)
+            {
+                int g = chest.Grants[i];
+                if (g < 0) continue;
+                Font.DrawCentred(batch, sprites.Blank, CardTexts.At(g).Name.ToUpperInvariant(),
+                                 vw / 2, ty, scale, Dim);
+                ty += Font.LineHeight * scale;
+            }
         }
 
         Font.DrawCentred(batch, sprites.Blank, "[1] TAKE IT", vw / 2, ty + 10 * scale, scale, Accent);
     }
+
+    /// <summary>
+    /// One reel: a strip of icons scrolling up to the one the simulation chose.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE LAST TILE IS THE ANSWER and everything above it is decoration that exists to be blurred
+    /// past. The strip is drawn clipped to the window, so what is on screen is the tile the
+    /// progress lands on plus whatever is arriving behind it.
+    /// </para>
+    /// <para>
+    /// THE DECOYS ARE THE PLAYER'S OWN CARDS, walked deterministically from the reel's own index
+    /// rather than rolled - the renderer has no business drawing from any random stream, and a
+    /// stable strip means a reel that is redrawn mid-spin does not reshuffle underneath itself.
+    /// </para>
+    /// </remarks>
+    private static void DrawReel(SpriteBatch batch, Sprites sprites, World w, int r, double prog,
+                                 int x, int y, int box, int scale)
+    {
+        var chest = w.Chest;
+        int landed = chest.Reels[r];
+        if (landed < 0) return;
+
+        int tiles = ChestSpin.StripTiles(r);
+        int pad = 6 * scale;
+        int inner = box - pad * 2;
+
+        // How far up the strip we are, in tiles. At 1 the last tile - the answer - is in the window.
+        double at = prog * tiles;
+        int top = (int)System.Math.Floor(at);
+        double frac = at - top;
+
+        for (int k = 0; k <= 1; k++)
+        {
+            int index = top + k;
+            int card = index >= tiles ? landed : DecoyAt(w, r, index);
+            if (card < 0) continue;
+
+            var tex = sprites.Get(CardTexts.At(card).IconKey);
+            if (tex is null) continue;
+
+            // The tile slides up through the window; the one behind it comes in from below.
+            int oy = (int)((k - frac) * inner);
+            var dst = new Rectangle(x + pad, y + pad + oy, inner, inner);
+
+            // CLIPPED BY HAND rather than with a scissor rectangle: a scissor test is a device state
+            // change and this is inside one batch with everything else on screen.
+            if (dst.Bottom <= y + pad || dst.Y >= y + box - pad) continue;
+            batch.Draw(tex, dst, Color.White);
+        }
+    }
+
+    /// <summary>
+    /// A symbol to blur past, from the player's own loadout.
+    /// </summary>
+    /// <remarks>
+    /// DETERMINISTIC AND NOT FROM ANY RNG STREAM. The renderer must not touch the simulation's
+    /// randomness - drawing a frame twice would then change the run - and a strip walked from the
+    /// index is stable, so a reel redrawn mid-spin shows the same decoys it did last frame.
+    /// </remarks>
+    private static int DecoyAt(World w, int r, int index)
+    {
+        int n = CardTexts.All.Length;
+        if (n <= 0) return -1;
+        // Stepping by a number coprime with the catalog walks the whole of it without repeating,
+        // which is what stops a strip showing the same three icons over and over.
+        return (int)(((long)index * 7 + r * 3 + 1) % n);
+    }
+
 
     /// <summary>The end of the run, either way.</summary>
     public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)

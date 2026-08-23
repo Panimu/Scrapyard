@@ -607,15 +607,55 @@ A separate test measures the worst disagreement across the whole fixture and hol
 of magnitude below anything a real mistranslation could cause, so the relaxed comparison cannot
 quietly grow to cover a bug.
 
+**The settings screen ships with nothing that lies.** Three preferences that had nowhere to be set
+— and two of them were reachable in the web build only by editing a literal, which meant the one
+setting that can rescue a struggling machine was in practice unavailable to the person on the
+struggling machine. Each had to be made real before it could be offered:
+
+- **Performance mode** composes the whole frame into a half-size render target and blits it up
+  point-sampled. A smaller *surface*, not a smaller picture: world, HUD and menus are all laid out
+  for the target's size, because drawing the world small and the UI large needs two coordinate
+  systems and gets them out of step the first time a menu asks where something on the field is. It
+  applies at launch, and the row says so — a toggle that quietly does nothing until later is worse
+  than one that admits it.
+- **Debug readout** shows frame time, the worst frame in the last second, sim steps, entity counts
+  and dropped events. The worst frame is the number that matters: a mean of 16 ms with one 90 ms
+  spike a second is a game that stutters visibly and a readout that says it is fine.
+- **Animations** needed something to gate, so **the Cyber Chest now spins**. It was showing its
+  result statically; it is a slot machine, and the whole point of it is that *because the simulation
+  already decided everything*, the machine can react to its own spin while it is still going. Reel
+  one never speaks. Reel two speaks only on an exact match with reel one — it used to also flare on
+  a shared *type*, which fired on 50.9% of spins and taught the player the fuss meant nothing; it is
+  7.2% now. Reel three is sized by the actual prize, and a live jackpot buys the last reel an extra
+  crawl.
+
+`ChestSpinTests` enumerates 1,250 spins rather than sampling them — the space is small enough that
+sampling is only a way to miss the combination that matters. Seventeen injected faults, all caught.
+
+**`system` resolves to "move" on the desktop, and that is a decision rather than an oversight.**
+MonoGame exposes no cross-platform reduce-motion query, and the one Windows bit that exists is
+precisely the one the web build's own notes say means nothing about games — it is the same bit as
+"Show animations in Windows", which is why every player who turned that off for a snappier desktop
+silently lost the reels. Honouring it here would reproduce the bug rather than the behaviour, so a
+player who wants the machine calm has an explicit Off. A test records that reading so it is not
+rediscovered as a mistake.
+
+**One injected fault was proven not to be one.** Removing `ReelProgress`'s early return changes no
+observable value, because the bezier solver already clamps to 1 for any input at or above 1. The
+guard stays — the drawing relies on a landed reel being exactly 1, and resting that on a clamp
+inside a numerical solver is the kind of dependency that survives until somebody improves the
+solver — but the redundancy is now recorded, so the next person to inject it does not spend an
+afternoon writing a case that cannot exist.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
 draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout`,
-`MossDressingLayout`, `BeamLayout`, `CreatureArt` and `JsMath` hold every decision and no MonoGame
-types, and the test csproj `<Compile Include>`s those exact files.
+`MossDressingLayout`, `BeamLayout`, `CreatureArt` and `ChestSpin` hold every decision and no
+MonoGame types — as does `JsMath` — and the test csproj `<Compile Include>`s those exact files.
 
-What is not done yet, plainly: no Scrapopedia, and no settings screen.
+What is not done yet, plainly: no Scrapopedia.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not

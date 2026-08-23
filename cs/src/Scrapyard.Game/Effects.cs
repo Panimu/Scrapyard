@@ -94,6 +94,9 @@ public sealed class Effects
     public Effects(Sprites sprites) => _sprites = sprites;
 
     /// <summary>Drops everything. Called when a run starts, so the last run's explosions do not play.</summary>
+    /// <summary>Live particles, for the debug readout. Nothing else has any business asking.</summary>
+    public int Count => _count;
+
     public void Clear() => _count = 0;
 
     // -----------------------------------------------------------------------------------------

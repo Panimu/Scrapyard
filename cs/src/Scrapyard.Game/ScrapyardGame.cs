@@ -39,6 +39,38 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const double AccumulatorEps = 1e-9;
 
     private readonly GraphicsDeviceManager _graphics;
+
+    /// <summary>
+    /// The surface the whole frame is composed into, or null at full resolution.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PERFORMANCE MODE IS A SMALLER SURFACE, NOT A SMALLER PICTURE. Everything - the world, the
+    /// HUD, the menus - is laid out for this target's size and then the target is scaled up to the
+    /// window in one blit, which is what halving a device pixel ratio does in a browser. The
+    /// alternative some engines take, of drawing the world small and the UI large, needs two
+    /// coordinate systems and gets the two out of step the first time a menu wants to know where
+    /// something on the field is.
+    /// </para>
+    /// <para>
+    /// SAMPLED WITH POINT FILTERING on the way back up, like everything else here: this is pixel
+    /// art, and a bilinear upscale of a half-resolution frame is the one combination that looks
+    /// worse than either honest option.
+    /// </para>
+    /// </remarks>
+    private RenderTarget2D? _surface;
+
+    /// <summary>
+    /// 1 at full resolution, 2 in performance mode.
+    /// </summary>
+    /// <remarks>
+    /// READ ONCE AT LAUNCH and never again, which is what lets the settings screen promise "takes
+    /// effect next launch" honestly. Re-reading it per frame would mean rebuilding the target and
+    /// every size derived from it mid-run, and a half-built frame is worse than a setting that
+    /// waits.
+    /// </remarks>
+    private int _surfaceDivisor = 1;
+
     private SpriteBatch _batch = null!;
     private Sprites _sprites = null!;
     private readonly Camera _camera = new();
@@ -110,6 +142,37 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _levelCursor;
     private int _shopCursor;
     private int _trophyCursor;
+    private int _settingsCursor;
+
+    /// <summary>
+    /// When the chest opened, in the render layer's own clock.
+    /// </summary>
+    /// <remarks>
+    /// REAL SECONDS RATHER THAN TICKS, because the simulation is PAUSED while the chest is open -
+    /// the tick does not advance, so a spin keyed to it would never move. This is the one animation
+    /// in the game whose clock cannot be the simulation's, and it is safe precisely because the
+    /// spin decides nothing: the reels are showing an answer that was rolled before they started.
+    /// </remarks>
+    private double _chestOpenedSec = double.NegativeInfinity;
+    private bool _chestWasUp;
+
+
+    /// <summary>
+    /// Rolling frame timing for the debug readout.
+    /// </summary>
+    /// <remarks>
+    /// THE WORST FRAME IS KEPT OVER A WHOLE SECOND and then reset, rather than decayed. A decaying
+    /// maximum never quite forgets a stall, so a machine that hitched once at the loading screen
+    /// reads as hitching for the rest of the run; a hard window says "in the last second" and means
+    /// it.
+    /// </remarks>
+    private double _frameMsMean;
+
+    private double _worstMs;
+    private double _worstWindowMs;
+    private double _worstShown;
+    private int _lastSteps;
+
 
 
     /// <summary>Guards the end-of-run banking pass so it runs once rather than every frame.</summary>
@@ -145,9 +208,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     protected override void Initialize()
     {
         Window.Title = "Scrapyard";
-        Window.ClientSizeChanged += (_, _) => _camera.Resize(
-            GraphicsDevice.PresentationParameters.BackBufferWidth,
-            GraphicsDevice.PresentationParameters.BackBufferHeight);
+        Window.ClientSizeChanged += (_, _) => RebuildSurface();
         base.Initialize();
     }
 
@@ -187,8 +248,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // THE TITLE, not a run. A game that starts mid-fight gives the player no moment to choose a
         // chassis, spend credits, or find out what they unlocked last time.
         _screen = Screen.Title;
-        _camera.Resize(GraphicsDevice.PresentationParameters.BackBufferWidth,
-                       GraphicsDevice.PresentationParameters.BackBufferHeight);
+        _surfaceDivisor = _save.DprCap == 1 ? 2 : 1;
+        RebuildSurface();
         base.LoadContent();
     }
 
@@ -228,6 +289,54 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Size the render surface to the window, and tell the camera what it is drawing onto.
+    /// </summary>
+    /// <remarks>
+    /// THE OLD TARGET IS DISPOSED. A resize that leaked one would leak a full-screen texture per
+    /// drag of the window edge, which on a resize is dozens.
+    /// </remarks>
+    private void RebuildSurface()
+    {
+        int bw = System.Math.Max(1, GraphicsDevice.PresentationParameters.BackBufferWidth);
+        int bh = System.Math.Max(1, GraphicsDevice.PresentationParameters.BackBufferHeight);
+        int w = System.Math.Max(1, bw / _surfaceDivisor);
+        int h = System.Math.Max(1, bh / _surfaceDivisor);
+
+        _surface?.Dispose();
+        _surface = _surfaceDivisor == 1 ? null : new RenderTarget2D(GraphicsDevice, w, h);
+        _camera.Resize(w, h);
+    }
+
+    /// <summary>The size everything this frame is laid out for. See <see cref="_surface"/>.</summary>
+    private (int W, int H) Surface => _surface is null
+        ? (GraphicsDevice.PresentationParameters.BackBufferWidth,
+           GraphicsDevice.PresentationParameters.BackBufferHeight)
+        : (_surface.Width, _surface.Height);
+
+    /// <summary>
+    /// Put the composed surface on the screen.
+    /// </summary>
+    /// <remarks>
+    /// A NO-OP AT FULL RESOLUTION, where the frame was drawn straight onto the back buffer. In
+    /// performance mode this is the one blit that costs anything, and it is point-sampled: this is
+    /// pixel art, and a smooth upscale of a half-resolution frame looks worse than either honest
+    /// option.
+    /// </remarks>
+    private void Present()
+    {
+        if (_surface is null) return;
+        GraphicsDevice.SetRenderTarget(null);
+        GraphicsDevice.Clear(RenderTables.Outside);
+        _batch.Begin(samplerState: SamplerState.PointClamp);
+        _batch.Draw(_surface,
+                    new Rectangle(0, 0,
+                                  GraphicsDevice.PresentationParameters.BackBufferWidth,
+                                  GraphicsDevice.PresentationParameters.BackBufferHeight),
+                    Color.White);
+        _batch.End();
+    }
+
     protected override void Update(GameTime gameTime)
     {
         var keys = Keyboard.GetState();
@@ -241,6 +350,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.LevelSelect: UpdateLevelSelect(keys); break;
             case Screen.Workshop: UpdateWorkshop(keys); break;
             case Screen.Trophies: UpdateTrophies(keys); break;
+            case Screen.Settings: UpdateSettings(keys); break;
             case Screen.Paused: UpdatePaused(keys); break;
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
@@ -258,6 +368,49 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (Pressed(keys, Keys.Y) && _save.UnlockedLevels.Count > 1) _screen = Screen.LevelSelect;
         if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
         if (Pressed(keys, Keys.T)) _screen = Screen.Trophies;
+        if (Pressed(keys, Keys.S)) _screen = Screen.Settings;
+    }
+
+    /// <summary>
+    /// Settings input. Every change writes through immediately.
+    /// </summary>
+    /// <remarks>
+    /// SAVED ON CHANGE RATHER THAN ON BACK, because there is no confirm step and no cancel - so
+    /// leaving by any route at all, including the window being closed, has to keep what was set. A
+    /// settings write is one small file, and this screen cannot be reached while a run is live.
+    /// </remarks>
+    private void UpdateSettings(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) { _screen = Screen.Title; return; }
+
+        int n = Screens.SettingRows.Length;
+        if (Pressed(keys, Keys.Up)) _settingsCursor = (_settingsCursor + n - 1) % n;
+        if (Pressed(keys, Keys.Down)) _settingsCursor = (_settingsCursor + 1) % n;
+
+        int step = Pressed(keys, Keys.Right) || Pressed(keys, Keys.Enter) || Pressed(keys, Keys.Space)
+            ? 1
+            : Pressed(keys, Keys.Left) ? -1 : 0;
+        if (step == 0) return;
+
+        switch (_settingsCursor)
+        {
+            case 0:
+                _save.DprCap = _save.DprCap == 1 ? 2 : 1;
+                break;
+            case 1:
+                // Three states, cycled in the order the web build lists them.
+                _save.Animations = _save.Animations switch
+                {
+                    "system" => step > 0 ? "on" : "off",
+                    "on" => step > 0 ? "off" : "system",
+                    _ => step > 0 ? "system" : "on",
+                };
+                break;
+            default:
+                _save.Debug = !_save.Debug;
+                break;
+        }
+        _save.Save();
     }
 
     private void UpdateTrophies(KeyboardState keys)
@@ -384,6 +537,26 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         double dt = frameMs / 1000.0;
         _clockSec += dt;
+
+        // A 20-frame exponential mean: long enough to be readable, short enough to respond when
+        // something actually changes.
+        _frameMsMean += (frameMs - _frameMsMean) / 20;
+        if (frameMs > _worstMs) _worstMs = frameMs;
+        _worstWindowMs += frameMs;
+        if (_worstWindowMs >= 1000)
+        {
+            _worstShown = _worstMs;
+            _worstMs = 0;
+            _worstWindowMs = 0;
+        }
+        _lastSteps = steps;
+
+        // STAMPED ON THE EDGE, so the spin starts when the chest opens rather than restarting on
+        // whichever frame happens to notice. The simulation is paused while it is up, so this is
+        // the only clock the reels can run on.
+        bool chestUp = _sim.World.Phase == RunPhase.Chest;
+        if (chestUp && !_chestWasUp) _chestOpenedSec = _clockSec;
+        _chestWasUp = chestUp;
         _fx.Update(dt);
         _camera.Update(dt);
         // The envelope and the ember throttles advance every frame whether or not a beam is on
@@ -615,11 +788,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     protected override void Draw(GameTime gameTime)
     {
-        int mw = GraphicsDevice.PresentationParameters.BackBufferWidth;
-        int mh = GraphicsDevice.PresentationParameters.BackBufferHeight;
+        GraphicsDevice.SetRenderTarget(_surface);
+        var (mw, mh) = Surface;
 
         if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop
-            or Screen.Trophies)
+            or Screen.Trophies or Screen.Settings)
         {
             GraphicsDevice.Clear(RenderTables.Outside);
             _batch.Begin(samplerState: SamplerState.PointClamp);
@@ -634,9 +807,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh); break;
                 case Screen.Trophies:
                     Screens.DrawTrophies(_batch, _sprites, _save, _trophyCursor, mw, mh); break;
+                case Screen.Settings:
+                    Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();
+            Present();
             base.Draw(gameTime);
             return;
         }
@@ -683,22 +859,34 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _beams.DrawCores(_batch, _camera);
         _fx.Draw(_batch, _camera);
 
-        int vw = GraphicsDevice.PresentationParameters.BackBufferWidth;
-        int vh = GraphicsDevice.PresentationParameters.BackBufferHeight;
+        var (vw, vh) = Surface;
         Overlay.DrawHud(_batch, _sprites, w, vw, vh);
 
         switch (w.Phase)
         {
             case RunPhase.LevelUp: Overlay.DrawLevelUp(_batch, _sprites, w, vw, vh); break;
-            case RunPhase.Chest: Overlay.DrawChest(_batch, _sprites, w, vw, vh); break;
+            case RunPhase.Chest:
+                Overlay.DrawChest(_batch, _sprites, w, (_clockSec - _chestOpenedSec) * 1000,
+                                  _save.ReducesMotion(), vw, vh);
+                break;
             case RunPhase.Dead:
             case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh); break;
+        }
+
+        if (_save.Debug)
+        {
+            Overlay.DrawDebug(_batch, _sprites, w,
+                new Overlay.DebugInfo(_frameMsMean, _worstShown, _lastSteps, w.Enemies.Count,
+                                      w.Projectiles.Count, w.Pickups.Count, _fx.Count,
+                                      w.Events.Dropped),
+                vw, vh);
         }
 
         if (_screen == Screen.Paused) Screens.DrawPause(_batch, _sprites, w, vw, vh);
         if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
 
         _batch.End();
+        Present();
         base.Draw(gameTime);
     }
 

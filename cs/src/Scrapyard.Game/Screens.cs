@@ -14,6 +14,7 @@ public enum Screen
     LevelSelect,
     Workshop,
     Trophies,
+    Settings,
     Playing,
     Paused,
 }
@@ -71,6 +72,7 @@ public static class Screens
             ("[Y]", "YARD", save.UnlockedLevels.Count > 1),
             ("[W]", "WORKSHOP", true),
             ("[T]", "TROPHIES", true),
+            ("[S]", "SETTINGS", true),
             ("[ESC]", "QUIT", true),
         });
 
@@ -316,6 +318,85 @@ public static class Screens
 
         Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ESC] BACK", vw / 2,
                          vh - 16 * scale, scale, Dim);
+    }
+
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>The settings, in the order they are shown. The cursor is an index into this.</summary>
+    /// <remarks>
+    /// A LIST RATHER THAN A SWITCH ON THE CURSOR, because the alternative is the same three cases
+    /// written out in the drawing code and again in the input code, which is how a row ends up
+    /// drawing one setting and toggling another.
+    /// </remarks>
+    public static readonly string[] SettingRows = { "PERFORMANCE MODE", "ANIMATIONS", "DEBUG READOUT" };
+
+    /// <summary>
+    /// Settings.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE PREFERENCES THAT HAD NOWHERE TO BE SET. Two of these were reachable only by editing a
+    /// literal, which meant the one setting that can rescue a struggling machine - the render scale
+    /// - was in practice unavailable to the person on the struggling machine.
+    /// </para>
+    /// <para>
+    /// THEY SAVE ON CHANGE, NOT ON BACK. There is no confirm step here and no way to cancel, so
+    /// leaving by any route - the key, closing the window, the process being killed - has to keep
+    /// what was just set.
+    /// </para>
+    /// <para>
+    /// AND PERFORMANCE MODE SAYS WHEN IT LANDS. It takes effect on the next launch, and the row
+    /// says so rather than pretending otherwise: a toggle that quietly does nothing until later is
+    /// worse than one that admits it.
+    /// </para>
+    /// </remarks>
+    public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
+                                    int vw, int vh)
+    {
+        Backdrop(batch, sprites, vw, vh);
+        int scale = System.Math.Max(1, vh / 400);
+
+        Font.DrawCentred(batch, sprites.Blank, "SETTINGS", vw / 2, 14 * scale, scale * 2, Accent);
+
+        int listW = System.Math.Min(vw - 40, 320 * scale);
+        int x0 = (vw - listW) / 2;
+        int y = 48 * scale;
+        int rowH = 34 * scale;
+
+        for (int i = 0; i < SettingRows.Length; i++)
+        {
+            if (i == cursor)
+            {
+                batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 3, listW + 8, rowH - 4), Panel);
+            }
+
+            Font.Draw(batch, sprites.Blank, SettingRows[i], x0, y, scale,
+                      i == cursor ? Ink : Dim);
+
+            string value = i switch
+            {
+                0 => save.DprCap == 1 ? "ON" : "OFF",
+                1 => save.Animations.ToUpperInvariant(),
+                _ => save.Debug ? "ON" : "OFF",
+            };
+            // Right-aligned off the measured width rather than a glyph count: the value strings are
+            // different lengths and a fixed advance would leave them ragged against the edge.
+            Font.Draw(batch, sprites.Blank, value, x0 + listW - Font.Measure(value, scale), y,
+                      scale, i == cursor ? Accent : Dim);
+
+            string note = i switch
+            {
+                0 => "HALF RESOLUTION. TAKES EFFECT NEXT LAUNCH.",
+                // The note names the platform quirk that forced three choices rather than a switch.
+                1 => "CHEST REELS AND SCREEN EFFECTS. AUTO FOLLOWS THE SYSTEM.",
+                _ => "FRAME TIME AND COUNTS, OVER THE HUD.",
+            };
+            Font.Draw(batch, sprites.Blank, note, x0, y + Font.LineHeight * scale, scale, Locked);
+            y += rowH;
+        }
+
+        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] CHANGE   [C] CHANGELOG   [ESC] BACK",
+                         vw / 2, vh - 16 * scale, scale, Dim);
     }
 
     // -----------------------------------------------------------------------------------------

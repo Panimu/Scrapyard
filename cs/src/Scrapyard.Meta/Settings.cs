@@ -77,6 +77,65 @@ public sealed class Settings
 
     public bool Debug { get; set; }
 
+    /// <summary>
+    /// Render at half resolution. 1 for performance mode, 2 for full.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT WAS REACHABLE ONLY BY EDITING A LITERAL, which meant the one setting that can rescue a
+    /// struggling machine was in practice unavailable to the person on the struggling machine.
+    /// </para>
+    /// <para>
+    /// IT APPLIES ON RESTART, and the screen says so rather than pretending otherwise. The
+    /// resolution decides the size of the render target the whole frame is composed into;
+    /// re-applying it live means rebuilding that target and everything sized off it mid-run, which
+    /// is a real change to the renderer and not a settings screen's job. A toggle that quietly does
+    /// nothing until later is worse than one that says when it lands.
+    /// </para>
+    /// </remarks>
+    public int DprCap { get; set; } = 2;
+
+    /// <summary>
+    /// Whether things move: <c>system</c>, <c>on</c> or <c>off</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THREE STATES RATHER THAN A SWITCH, and the reason is a platform quirk rather than
+    /// indecision. The web build reads the operating system's reduce-motion preference - and on
+    /// Windows that answer comes from the same system bit as "Show animations in Windows", which is
+    /// about whether a window animates as it minimises and means nothing whatever about a game. So
+    /// every player who turned that off for a snappier desktop silently lost the chest reels
+    /// without ever asking to. "Automatic" is honest about deferring to the device; the other two
+    /// exist because the device's answer is sometimes about something else entirely.
+    /// </para>
+    /// <para>
+    /// STORED AS THE PREFERENCE, NEVER AS THE RESOLVED ANSWER. <see cref="ReducesMotion"/> turns it
+    /// into one of two states at the point of use; writing the resolved value down would freeze a
+    /// system setting into the save on whichever machine happened to save last.
+    /// </para>
+    /// </remarks>
+    public string Animations { get; set; } = "system";
+
+    /// <summary>
+    /// Does the game reduce motion right now?
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ONE ANSWER, COMPUTED IN ONE PLACE. In the web build this had to be published to an attribute
+    /// because CSS and JavaScript both needed it and could not see each other's copy; here there is
+    /// only one consumer, so the function IS the single source of truth and nothing else may ask
+    /// the question its own way.
+    /// </para>
+    /// <para>
+    /// <c>system</c> RESOLVES TO "MOVE" ON THE DESKTOP, and that is a decision rather than an
+    /// oversight. MonoGame exposes no cross-platform reduce-motion query, and the one Windows bit
+    /// that exists is precisely the one the web build's own note says means nothing about games -
+    /// so honouring it here would reproduce the bug rather than the behaviour. A player who wants
+    /// the reels calm has an explicit Off, which is the control the web build had to add anyway.
+    /// </para>
+    /// </remarks>
+    public bool ReducesMotion() => Animations == "off";
+
     // -----------------------------------------------------------------------------------------
 
     /// <summary>
@@ -285,6 +344,12 @@ public sealed class Settings
     /// </remarks>
     public void Reconcile()
     {
+        // THE PREFERENCES DEGRADE TO A DEFAULT RATHER THAN ERRORING, exactly like every other field
+        // in this file. A save written by a newer build, or edited by hand, must produce a working
+        // game - and an unrecognised animation preference is not a reason a player cannot start.
+        if (DprCap != 1 && DprCap != 2) DprCap = 2;
+        if (Animations != "on" && Animations != "off") Animations = "system";
+
         long refund = 0;
         var kept = new Dictionary<string, MetaPurchase>();
 
