@@ -60,9 +60,18 @@ public static class Screens
     private static readonly Color Accent = Palette.Accent;
     private static readonly Color Good = Palette.Good;
 
+    /// <param name="outRects">
+    /// When given, cleared and filled with each menu row's rect in draw order - the WHOLE reason
+    /// this exists is so the mouse hit-test in <c>ScrapyardGame</c> is checking the exact rect that
+    /// was actually painted, rather than a second copy of this layout's arithmetic kept in sync by
+    /// hand. Null when nobody is listening, which is every call this makes to itself (mech sizing,
+    /// the badge) and every capture taken by <c>--shot</c>.
+    /// </param>
     public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                 int badge, int vw, int vh, double timeSec)
+                                 int badge, int vw, int vh, double timeSec,
+                                 System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
 
@@ -192,6 +201,7 @@ public static class Screens
         for (int i = 0; i < rows.Length; i++)
         {
             var r = new Rectangle(x0, y, listW, rowH);
+            outRects?.Add(r);
             Button(batch, sprites, r, rows[i].Label, scale, i == 0, i == cursor);
 
             // THE ATTRACT BADGE, and only when there is something to buy: a permanent sticker stops
@@ -1230,9 +1240,12 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
+    /// <param name="outRects">See the same parameter on <see cref="DrawTitle"/>.</param>
     public static void DrawPause(SpriteBatch batch, Sprites sprites, World w, int cursor,
-                                 int vw, int vh)
+                                 int vw, int vh,
+                                 System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), Palette.Scrim);
         int scale = MenuScale(vh);
         int small = SmallScale(vh);
@@ -1275,8 +1288,9 @@ public static class Screens
 
         for (int i = 0; i < rows.Length; i++)
         {
-            Button(batch, sprites, new Rectangle(x0, y, width, rowH), rows[i].Label, scale, i == 0,
-                   i == cursor);
+            var r = new Rectangle(x0, y, width, rowH);
+            outRects?.Add(r);
+            Button(batch, sprites, r, rows[i].Label, scale, i == 0, i == cursor);
             y += rowH + gap;
         }
 

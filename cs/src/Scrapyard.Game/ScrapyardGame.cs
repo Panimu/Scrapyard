@@ -184,6 +184,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// a fresh intent.
     /// </remarks>
     private readonly MenuInput _menu = new();
+    private readonly MouseInput _mouse = new();
+
+    /// <summary>
+    /// Each menu's own row rects, one frame stale.
+    /// </summary>
+    /// <remarks>
+    /// FILLED BY LAST FRAME'S DRAW, READ BY THIS FRAME'S UPDATE - MonoGame runs Update before Draw,
+    /// so there is no ordering within a single frame that lets a click be tested against rects that
+    /// do not exist yet. A frame of lag on a WINDOW RESIZE is the only cost, and a resize is a rare,
+    /// discrete event next to a mouse position sampled fresh every frame regardless - the cursor
+    /// itself is never stale, only the rare case of a button moving under it mid-drag.
+    /// </remarks>
+    private readonly List<Rectangle> _titleRects = new();
+
+    private readonly List<Rectangle> _pauseRects = new();
+    private readonly List<Rectangle> _levelUpRects = new();
+    private Rectangle _hudPauseRect;
 
     /// <summary>Where to write a one-frame capture, and which screen to put on it.</summary>
     /// <remarks>
@@ -627,6 +644,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // axes, so a screen that sampled in its own handler would read the same physical stick
         // position more than once and treat each read as a fresh press.
         _menu.Sample(keys, pad);
+        _mouse.Sample(_surfaceDivisor);
 
         switch (_screen)
         {
@@ -675,6 +693,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         var rows = MenuRows.Title();
         MoveCursor(ref _titleCursor, rows);
+        if (MouseChoose(_titleRects, rows, ref _titleCursor)) { ChooseTitle(_titleCursor); return; }
         if (_menu.Confirm) { ChooseTitle(_titleCursor); return; }
         if (_menu.Back) Exit();
 
@@ -703,6 +722,25 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             cursor = ((cursor + step) % n + n) % n;
             if (rows[cursor].Enabled) return;
         }
+    }
+
+    /// <summary>
+    /// The mouse's half of <see cref="MoveCursor"/>: moves the cursor to whatever row the pointer
+    /// is over, and says whether this is the frame that row was clicked.
+    /// </summary>
+    /// <remarks>
+    /// HOVER MOVES THE CURSOR UNCONDITIONALLY, click or not - the highlight is expected to follow
+    /// the pointer the way it follows a thumbstick, and a mouse user reads "which row is lit" as
+    /// "which row Enter would pick" exactly as a pad user does. A DISABLED row neither takes the
+    /// cursor nor the click, the same rule <see cref="MoveCursor"/> already enforces for a
+    /// keyboard or pad - a locked menu entry is drawn and stepped over, not drawn and clickable.
+    /// </remarks>
+    private bool MouseChoose(List<Rectangle> rects, MenuRows.MenuRow[] rows, ref int cursor)
+    {
+        int hover = _mouse.Hover(rects);
+        if (hover < 0 || hover >= rows.Length || !rows[hover].Enabled) return false;
+        cursor = hover;
+        return _mouse.LeftClicked;
     }
 
     /// <summary>
@@ -916,6 +954,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         var rows = MenuRows.Pause();
         MoveCursor(ref _pauseCursor, rows);
+        if (MouseChoose(_pauseRects, rows, ref _pauseCursor)) { ChoosePause(_pauseCursor); return; }
         if (_menu.Confirm) { ChoosePause(_pauseCursor); return; }
 
         if (_menu.Back) _screen = Screen.Playing;
@@ -948,7 +987,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // START IS AN EDGE, not a level. Reading it as a level meant a held Start re-entered the
         // pause screen on every frame, which also made it impossible to leave: the web build
         // toggles, and so does this.
-        if (_menu.Back || _menu.PadStart)
+        // THE HUD's OWN BUTTON, for the player with neither a keyboard nor a pad in hand - a
+        // mouse-only session has no Escape and no Start, and .hud__pause exists in the web build
+        // for exactly that reason.
+        bool pauseClicked = _mouse.EverUsed && _hudPauseRect.Contains(_mouse.Position)
+                            && _mouse.LeftClicked;
+        if (_menu.Back || _menu.PadStart || pauseClicked)
         {
             _pauseCursor = 0;
             _menu.Reset();
@@ -1229,7 +1273,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (_sim.World.Phase == RunPhase.Chest)
         {
-            if (Pressed(keys, Keys.D1) || _menu.Confirm) _pendingChoice = 0;
+            // A CHEST TAKES ANY CHOICE, a click included - it is an acknowledgement, not a
+            // decision, so it does not matter where on the overlay the click landed.
+            if (Pressed(keys, Keys.D1) || _menu.Confirm || _mouse.LeftClicked) _pendingChoice = 0;
             return;
         }
 
@@ -1262,6 +1308,24 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             else if (_menu.PadFace(1)) _pendingChoice = 1;
             else if (_menu.PadFace(2)) _pendingChoice = 2;
             else if (_menu.PadFace(3)) _pendingChoice = Constants.ChooseReroll;
+        }
+
+        // THE MOUSE ANSWERS THE CARD TOO. _levelUpRects is the offer cards in order, then the
+        // reroll button LAST - see the outRects remark on Overlay.DrawLevelUp - so any index below
+        // the last is a card and the last index is reroll, whatever n happened to be this pick.
+        if (_pendingChoice == -1)
+        {
+            int hover = _mouse.Hover(_levelUpRects);
+            int lastIndex = _levelUpRects.Count - 1;
+            if (hover >= 0 && hover < lastIndex && _mouse.LeftClicked)
+            {
+                _pendingChoice = hover;
+            }
+            else if (hover == lastIndex && _mouse.LeftClicked)
+            {
+                bool canReroll = _sim.World.LevelUp.Rerolls > 0 || _sim.World.InfiniteRerolls;
+                if (canReroll) _pendingChoice = Constants.ChooseReroll;
+            }
         }
 
         // A slot the card is not offering is not a choice. ApplyChoice would refuse it anyway, but
@@ -1336,7 +1400,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             {
                 case Screen.Title:
                     Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, _titleBadge, mw, mh,
-                                      gameTime.TotalGameTime.TotalSeconds);
+                                      gameTime.TotalGameTime.TotalSeconds, _titleRects);
                     break;
                 case Screen.HeroSelect:
                     Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;
@@ -1410,11 +1474,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _fx.Draw(_batch, _camera);
 
         var (vw, vh) = Surface;
-        Overlay.DrawHud(_batch, _sprites, w, vw, vh);
+        Overlay.DrawHud(_batch, _sprites, w, vw, vh, out _hudPauseRect);
 
         switch (w.Phase)
         {
-            case RunPhase.LevelUp: Overlay.DrawLevelUp(_batch, _sprites, w, vw, vh); break;
+            case RunPhase.LevelUp:
+                Overlay.DrawLevelUp(_batch, _sprites, w, vw, vh, _levelUpRects); break;
             case RunPhase.Chest:
                 Overlay.DrawChest(_batch, _sprites, w, (_clockSec - _chestOpenedSec) * 1000,
                                   _save.ReducesMotion(), vw, vh);
@@ -1437,7 +1502,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 vw, vh);
         }
 
-        if (_screen == Screen.Paused) Screens.DrawPause(_batch, _sprites, w, _pauseCursor, vw, vh);
+        if (_screen == Screen.Paused)
+        {
+            Screens.DrawPause(_batch, _sprites, w, _pauseCursor, vw, vh, _pauseRects);
+        }
         if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
 
         _batch.End();

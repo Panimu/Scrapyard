@@ -39,10 +39,30 @@ public static class Overlay
     private static readonly Color Accent = Palette.Accent;
     private static readonly Color Good = Palette.Good;
 
-    public static void DrawHud(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
+    /// <param name="pauseRect">
+    /// Where the on-screen pause button was drawn, for the caller's own mouse hit-test - the same
+    /// arrangement <see cref="Screens.DrawTitle"/>'s <c>outRects</c> parameter documents. A single
+    /// rect rather than a list: this is the one clickable thing the HUD itself draws.
+    /// </param>
+    /// <remarks>
+    /// THE WEB BUILD HAS ONE OF THESE AND THE PORT DID NOT - a touch player has no Escape key, so
+    /// <c>.hud__pause</c> is not a nicety there, it is the only way in. A keyboard and a pad both
+    /// already reach Pause, which is exactly why this was easy to not notice was missing.
+    /// </remarks>
+    public static void DrawHud(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
+                               out Rectangle pauseRect)
     {
         var p = w.Player;
         int scale = System.Math.Max(1, vh / 360);
+
+        // TOP-RIGHT, same corner the web build's own `.hud__pause` uses - `top: 10px; right: 12px`
+        // scaled up from its 44px CSS tap target.
+        int pauseSize = 26 * scale;
+        pauseRect = new Rectangle(vw - 10 * scale - pauseSize, 10 * scale, pauseSize, pauseSize);
+        Screens.CardFace(batch, sprites, pauseRect, 6 * scale, Panel, Edge,
+                         System.Math.Max(1, scale / 2));
+        Font.DrawCentred(batch, sprites.Blank, "II", pauseRect.Center.X,
+                         pauseRect.Y + (pauseRect.Height - Font.GlyphH * scale) / 2, scale, Ink);
 
         // Hull. The number is on the bar rather than beside it: at a glance the bar is the answer,
         // and the number is for the moment you want to know exactly how much trouble you are in.
@@ -114,8 +134,15 @@ public static class Overlay
     // -----------------------------------------------------------------------------------------
 
     /// <summary>The level-up card: up to three offers, picked by number key.</summary>
-    public static void DrawLevelUp(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
+    /// <param name="outRects">
+    /// See the parameter of the same name on <see cref="Screens.DrawTitle"/>. Filled with each
+    /// card's rect in offer order, then the reroll button's, as the LAST entry - so index n is
+    /// always reroll whatever n (up to three) actually offered this pick.
+    /// </param>
+    public static void DrawLevelUp(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
+                                   System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         var lu = w.LevelUp;
         if (lu.OfferCount <= 0) return;
 
@@ -157,8 +184,9 @@ public static class Overlay
 
         for (int i = 0; i < n; i++)
         {
-            DrawCard(batch, sprites, w, lu.Offers[i], i,
-                     new Rectangle(x0, y, width, heights[i]), radius, scale, small);
+            var r = new Rectangle(x0, y, width, heights[i]);
+            outRects?.Add(r);
+            DrawCard(batch, sprites, w, lu.Offers[i], i, r, radius, scale, small);
             y += heights[i] + gap;
         }
 
@@ -169,8 +197,11 @@ public static class Overlay
         bool canReroll = lu.Rerolls > 0 || w.InfiniteRerolls;
         string reroll = w.InfiniteRerolls ? "REROLL (INFINITE)"
                       : lu.Rerolls > 0 ? $"REROLL ({lu.Rerolls})" : "NO REROLLS LEFT";
-        Screens.OverlayButton(batch, sprites, new Rectangle(x0, y, width, rerollH), reroll, "Q",
-                              scale, canReroll);
+        var rerollRect = new Rectangle(x0, y, width, rerollH);
+        // Always appended, even when disabled - a click on a dead reroll button is a click that
+        // should do nothing, not a click that falls through to whatever is drawn behind it.
+        outRects?.Add(rerollRect);
+        Screens.OverlayButton(batch, sprites, rerollRect, reroll, "Q", scale, canReroll);
         y += rerollH + 4 * scale;
 
         // AUTO-LEVEL, OFFERED WHERE IT IS WANTED. The pause menu has the switch, but the moment a
