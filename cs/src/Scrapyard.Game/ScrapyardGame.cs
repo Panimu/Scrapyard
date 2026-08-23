@@ -772,10 +772,34 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
     }
 
+    /// <summary>
+    /// The horde.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A CREATURE'S SIZE IS IN WORLD UNITS AND ITS ART IS IN PIXELS, so how many of those pixels
+    /// are actually the creature is a per-level question - see <see cref="CreatureArt.ContentPx"/>.
+    /// Getting it wrong draws a 26-unit runt as a 6.5-unit speck inside its own 26-unit collision
+    /// circle, which looks like a bug in the hitboxes rather than in the scaling.
+    /// </para>
+    /// <para>
+    /// A CREATURE THAT COMES APART shows a later frame as its health drops. Core has never heard of
+    /// it: the frames are content and the choice is made from the HP this method is already reading.
+    /// </para>
+    /// <para>
+    /// THE BOSS OUTLINE MOVES WITH THE BODY IT OUTLINES, which is why the gait is computed before
+    /// either is drawn rather than beside the body. It did not, once - the body squashed 13% and
+    /// rose inside a rigid halo, so the visible band nearly doubled twice a stride.
+    /// </para>
+    /// </remarks>
     private void DrawEnemies(World w)
     {
         var e = w.Enemies;
         var (x0, y0, x1, y1) = _camera.VisibleBounds(128);
+        var art = CreatureArtTable.ForLevel(_sim.Level.Id);
+        int facing = CreatureArtTable.FacingOf(_sim.Level.Id);
+        double rimScale = CreatureArtTable.RimScaleOf(_sim.Level.Id);
+        double clock = w.Tick + _alpha;
 
         for (int d = 0; d < e.Count; d++)
         {
@@ -784,26 +808,112 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             double y = Lerp(e.PrevY[d], e.Y[d]);
             if (x < x0 || x > x1 || y < y0 || y > y1) continue;
 
-            var tex = _sprites.Get(RenderTables.EnemySprite(e.TypeId[d]));
+            int typeId = e.TypeId[d];
+            int arch = e.Archetype[d];
+
+            // RANK MULTIPLIES BOTH the drawn size and the collision radius by the same factor, so
+            // the hitbox never lies about the drawing. Recovered from the radius rather than
+            // carried separately, because the radius is the one the simulation actually enforces.
+            double rankScale = e.Radius[d]
+                             / Archetypes.Radius[arch < Archetypes.Radius.Length ? arch : 0];
+
+            string key;
+            double drawUnits;
+            double gaitRate;
+            int gait;
+
+            if (typeId < art.Length)
+            {
+                var def = art[typeId];
+                // EVERY FRAME IS MEASURED INDEPENDENTLY. A hydra shrinks from 32 source pixels to
+                // 21 as it loses heads; measuring once and reusing the scale would stretch the last
+                // frame back up to full size, throwing away the one thing the effect is for.
+                int stage = CreatureArt.StageIndexFor(e.Hp[d], e.MaxHp[d], def.Frames.Length);
+                key = def.Frames[stage];
+
+                // The CADENCE comes from frame 0 and never moves, even as the creature comes apart:
+                // the phase is tick times rate, so a rate that changed with a stage would jump the
+                // phase by hundreds of radians mid-fight.
+                var whole = _sprites.Get(def.Frames[0]);
+                gaitRate = whole is null
+                    ? CreatureArt.GaitRateFor(def.DrawSize)
+                    : CreatureArt.GaitRateFor(
+                        whole.Height * def.DrawSize
+                        / CreatureArt.ContentPx(_sim.Level.Id, typeId, whole.Width, whole.Height));
+                drawUnits = def.DrawSize * rankScale;
+                gait = CreatureArtTable.GaitBySprite.TryGetValue(key, out int g)
+                    ? g : CreatureArt.GaitNone;
+            }
+            else
+            {
+                // A level with no creature table falls back to its archetype's size rather than
+                // drawing nothing - see CreatureArtTable.ForLevel.
+                key = RenderTables.EnemySprite(typeId);
+                drawUnits = RenderTables.DrawSize[arch < RenderTables.DrawSize.Length ? arch : 0]
+                          * rankScale;
+                gaitRate = CreatureArt.GaitRateFor(drawUnits);
+                gait = CreatureArt.GaitNone;
+            }
+
+            var tex = _sprites.Get(key);
             if (tex is null) continue;
 
-            int arch = e.Archetype[d];
-            double draw = RenderTables.DrawSize[arch < RenderTables.DrawSize.Length ? arch : 0];
-            // THE RANK'S OWN SIZE, taken from the body rather than the archetype: an elite is 1.5x
-            // and a boss 2.9x, and the pool's radius already carries that multiply.
-            draw *= e.Radius[d] / Archetypes.Radius[arch < Archetypes.Radius.Length ? arch : 0];
+            double px = CreatureArt.ContentPx(_sim.Level.Id, typeId, tex.Width, tex.Height);
+            double scale = px > 0 ? drawUnits / px : 1;
+            var pose = CreatureArt.PoseOf(gait, gaitRate, rankScale, clock, e.SpawnId[d]);
 
-            // Elites and bosses are recoloured rather than redrawn - the same art, unmistakably
-            // more dangerous. It is what the original does, and it is why one creature can carry a
-            // whole two-minute cycle.
+            // MIRRORED SO IT FACES THE WAY IT IS WALKING, from the direction the PACK draws rather
+            // than an assumption about it. A world-space shift does not flip for free the way a
+            // skew does, so it is mirrored here - a creature that shifted the same way whichever
+            // direction it walked would lean into one and away from the other.
+            bool flip = (e.Vx[d] < 0) == (facing > 0);
+            double bodyX = flip ? x - pose.Shift : x + pose.Shift;
+
             var tint = (e.Flags[d] & EnemyPool.FlagBoss) != 0 ? new Color(0x9f, 0xc8, 0xff)
                      : (e.Flags[d] & EnemyPool.FlagElite) != 0 ? new Color(0xff, 0xc0, 0x80)
                      : Color.White;
 
-            double aspect = (double)tex.Width / tex.Height;
-            Blit(tex, x, y, draw * aspect, draw, 0, tint);
+            if ((e.Flags[d] & EnemyPool.FlagBoss) != 0)
+            {
+                string? rimKey = CreatureArtTable.RimKeyFor(_sim.Level.Id, key);
+                var rimTex = rimKey is null ? tex : _sprites.Get(rimKey);
+                if (rimTex is not null)
+                {
+                    // The same scale for both when the rim is BAKED: it is the body's own box grown
+                    // by a fixed margin, so drawing it at the body's scale from the same centre
+                    // puts the band exactly where the dilation put it.
+                    BlitPosed(rimTex, bodyX, y, scale * rimScale, pose, flip,
+                              new Color(0x6f, 0xa8, 0xff));
+                }
+            }
+
+            BlitPosed(tex, bodyX, y, scale, pose, flip, tint);
         }
     }
+
+    /// <summary>
+    /// One body, deformed by its gait, with its feet left on the ground.
+    /// </summary>
+    /// <remarks>
+    /// THE ANCHOR IS THE SPRITE'S MIDDLE, so scaling alone lifts the bottom edge by half the change
+    /// - which reads as hovering, and is the one thing that would make this look worse than no
+    /// animation at all. Pushing the sprite back down by half of what it lost pins the bottom edge
+    /// wherever the scale goes, for a rim as much as for a body.
+    /// </remarks>
+    private void BlitPosed(Texture2D tex, double x, double y, double scale,
+                           CreatureArt.Pose pose, bool flip, Color tint)
+    {
+        double h = tex.Height * scale;
+        double plant = y + h * (1 - pose.ScaleY) / 2 - pose.Lift;
+        var screen = _camera.ToScreen(x, plant);
+        var s = new Vector2(
+            (float)(scale * pose.ScaleX * _camera.Scale),
+            (float)(scale * pose.ScaleY * _camera.Scale));
+        _batch.Draw(tex, screen, null, tint, 0f,
+                    new Vector2(tex.Width / 2f, tex.Height / 2f), s,
+                    flip ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
+    }
+
 
     /// <summary>
     /// The shells in flight, each drawn as whatever its weapon fires.

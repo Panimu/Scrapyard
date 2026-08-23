@@ -575,13 +575,45 @@ thin-beam case in the file. Pulse cases are counted on both sides of the rate ca
 reason: a sweep of long beams alone leaves the cap untested, and without it a point-blank shot
 strobes at 35 crossings a second.
 
+**The horde was one sprite per type at one size, standing still.** Three things were missing, and
+they fail in three different ways:
+
+- **The scale rule is per level, and it has to be.** A creature declares its size in *world units*,
+  so the renderer must know how many pixels of the source image are actually the creature — and
+  Kenney units sit in a fixed canvas with wildly varying margins while Mossy's bake trims every tile
+  to its own edges. Using one formula draws a 26-unit runt as a 6.5-unit speck inside its own
+  26-unit collision circle, which reads as a bug in the hitboxes rather than in the scaling.
+- **Damage stages are drawn, never simulated.** A snail becomes a slug at half health and a hydra
+  sheds a head every fifth of its bar. Core has never heard of either, and correctly so: the stages
+  change nothing about the fight, so putting them in the simulation would add state that must hash
+  and replay in exchange for nothing. The failure is *silent* — a snail that never loses its shell
+  is only noticeable to someone who knows it is supposed to.
+- **Some creatures walk on the spot.** Squash, rise and lean over a continuous cycle, or two poses
+  cut hard with no easing anywhere. The clock is the simulation's `tick + alpha`, so a recording and
+  a replay animate together, and it is read here and written back nowhere.
+
+`CreatureArtTable.cs` is **generated** from the level catalogs by `npm run creatureart`, and carries
+a digest of the catalog it was emitted from — a generated file nobody regenerates is worse than a
+hand-written one, because it looks authoritative. Twenty injected faults, all caught.
+
+**One fixture in the port is not compared bit for bit, and it is worth saying why.** ECMA-262 lets
+any engine's `Math.sin` differ from any other's in the last bit, and V8's and .NET's do — about one
+ULP on a value near 1. Demanding bit-equality of the gait would be demanding that two conforming
+implementations of an underspecified function agree; the difference is a hundred-thousandth of a
+pixel of squash. **This is exactly why `Scrapyard.Core` bans trig** and builds its own from
+exactly-rounded operations. Nothing in the render layer reaches the world, so a replay recorded on a
+phone still reproduces in Node — the creature in it just squashes by an invisibly different amount.
+A separate test measures the worst disagreement across the whole fixture and holds it seven orders
+of magnitude below anything a real mistranslation could cause, so the relaxed comparison cannot
+quietly grow to cover a bug.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
 draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout`,
-`MossDressingLayout`, `BeamLayout` and `JsMath` hold every decision and no MonoGame types, and the
-test csproj `<Compile Include>`s those exact files.
+`MossDressingLayout`, `BeamLayout`, `CreatureArt` and `JsMath` hold every decision and no MonoGame
+types, and the test csproj `<Compile Include>`s those exact files.
 
 What is not done yet, plainly: no Scrapopedia, and no settings screen.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
