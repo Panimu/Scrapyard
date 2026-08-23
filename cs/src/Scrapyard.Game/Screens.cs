@@ -57,7 +57,47 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
-    public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int vw, int vh)
+    /// <summary>One row of a menu that a cursor can sit on.</summary>
+    /// <remarks>
+    /// THE KEY IS STILL SHOWN, because a keyboard player should not have to walk a cursor to do
+    /// what one letter has always done. The cursor is for the pad; the shortcut is for the hands
+    /// already on a keyboard, and neither is the "real" way in.
+    /// </remarks>
+    public readonly record struct MenuRow(string Key, string Label, bool Enabled);
+
+    /// <summary>
+    /// The title menu's rows.
+    /// </summary>
+    /// <remarks>
+    /// BUILT IN ONE PLACE AND READ BY BOTH the drawing and the input. The two used to be a list of
+    /// hints here and a list of key handlers over in the game loop, which is how a screen ends up
+    /// advertising a control nothing implements - as the settings screen did with its changelog
+    /// row for two commits.
+    /// </remarks>
+    public static MenuRow[] TitleRows(Settings save) => new[]
+    {
+        new MenuRow("[ENTER]", "NEW RUN", true),
+        new MenuRow("[C]", "CHASSIS", true),
+        new MenuRow("[Y]", "YARD", save.UnlockedLevels.Count > 1),
+        new MenuRow("[W]", "WORKSHOP", true),
+        new MenuRow("[T]", "TROPHIES", true),
+        new MenuRow("[S]", "SETTINGS", true),
+        new MenuRow("[P]", "SCRAPOPEDIA", true),
+        new MenuRow("[ESC]", "QUIT", true),
+    };
+
+    /// <summary>The pause menu's rows. See <see cref="TitleRows"/>.</summary>
+    public static MenuRow[] PauseRows() => new[]
+    {
+        new MenuRow("[ESC]", "RESUME", true),
+        new MenuRow("[F5]", "NEW RUN", true),
+        new MenuRow("[A]", "AUTO LEVEL", true),
+        new MenuRow("[C]", "CHANGELOG", true),
+        new MenuRow("[BACKSPACE]", "ABANDON", true),
+    };
+
+    public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
+                                 int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
@@ -67,17 +107,7 @@ public static class Screens
                          (int)(vh * 0.22) + 34 * scale, scale, Dim);
 
         int y = (int)(vh * 0.46);
-        Menu(batch, sprites, vw, ref y, scale, new[]
-        {
-            ("[ENTER]", "NEW RUN", true),
-            ("[C]", "CHASSIS", true),
-            ("[Y]", "YARD", save.UnlockedLevels.Count > 1),
-            ("[W]", "WORKSHOP", true),
-            ("[T]", "TROPHIES", true),
-            ("[S]", "SETTINGS", true),
-            ("[P]", "SCRAPOPEDIA", true),
-            ("[ESC]", "QUIT", true),
-        });
+        Menu(batch, sprites, vw, ref y, scale, TitleRows(save), cursor);
 
         var hero = HeroUnlocks.Heroes[System.Math.Clamp(save.LastHeroId, 0, HeroUnlocks.Heroes.Length - 1)];
         Font.DrawCentred(batch, sprites.Blank,
@@ -643,7 +673,8 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
-    public static void DrawPause(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
+    public static void DrawPause(SpriteBatch batch, Sprites sprites, World w, int cursor,
+                                 int vw, int vh)
     {
         batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 200));
         int scale = System.Math.Max(1, vh / 340);
@@ -658,14 +689,7 @@ public static class Screens
                          scale, Dim);
 
         y += 30 * scale;
-        Menu(batch, sprites, vw, ref y, scale, new[]
-        {
-            ("[ESC]", "RESUME", true),
-            ("[F5]", "NEW RUN", true),
-            ("[A]", "AUTO LEVEL", true),
-            ("[C]", "CHANGELOG", true),
-            ("[BACKSPACE]", "ABANDON", true),
-        });
+        Menu(batch, sprites, vw, ref y, scale, PauseRows(), cursor);
 
         // WHAT IS BEING CARRIED, which is the other reason a player pauses. The card text says what
         // a weapon does; this says what is actually on the mech and at what tier, which is the
@@ -719,18 +743,35 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// A list of rows, with the cursor on one of them.
+    /// </summary>
+    /// <remarks>
+    /// A DISABLED ROW IS SHOWN AND NOT SKIPPED. "Yard" greyed out is the game saying a second map
+    /// exists and has not been earned; removing the row would say nothing at all, and the cursor
+    /// steps over it so it can never be chosen.
+    /// </remarks>
     private static void Menu(SpriteBatch batch, Sprites sprites, int vw, ref int y, int scale,
-                             (string Key, string Label, bool Enabled)[] items)
+                             MenuRow[] rows, int cursor)
     {
-        foreach (var (key, label, enabled) in items)
+        for (int i = 0; i < rows.Length; i++)
         {
-            var colour = enabled ? Ink : Locked;
-            int w = Font.Measure($"{key}  {label}", scale * 2);
-            Font.Draw(batch, sprites.Blank, key, vw / 2 - w / 2, y, scale * 2,
-                      enabled ? Accent : Locked);
-            Font.Draw(batch, sprites.Blank, label,
-                      vw / 2 - w / 2 + Font.Measure($"{key}  ", scale * 2), y, scale * 2, colour);
-            y += 26 * scale;
+            var row = rows[i];
+            string text = $"{row.Key}  {row.Label}";
+            int w = Font.Measure(text, scale);
+            int x = (vw - w) / 2;
+
+            if (i == cursor)
+            {
+                batch.Draw(sprites.Blank,
+                           new Rectangle(x - 6 * scale, y - 2 * scale,
+                                         w + 12 * scale, Font.LineHeight * scale + 4 * scale),
+                           Panel);
+            }
+
+            Font.Draw(batch, sprites.Blank, text, x, y,
+                      scale, !row.Enabled ? Locked : i == cursor ? Accent : Ink);
+            y += (Font.LineHeight + 6) * scale;
         }
     }
 

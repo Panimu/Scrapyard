@@ -144,6 +144,30 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _trophyCursor;
     private int _settingsCursor;
     private PediaState _pedia = null!;
+
+    /// <summary>
+    /// Keyboard and controller, merged into what a menu can be told.
+    /// </summary>
+    /// <remarks>
+    /// SAMPLED ONCE PER FRAME, before anything is dispatched. The Gamepad state has no events for
+    /// axes - a stick that moved is something you have to ask about - so a menu that polled it in
+    /// its own handler would sample the same physical position several times over and treat each as
+    /// a fresh intent.
+    /// </remarks>
+    private readonly MenuInput _menu = new();
+
+    /// <summary>Where the cursor is on the two menus that used to be hints only.</summary>
+    /// <remarks>
+    /// A CONTROLLER HAS TO BE ABLE TO REACH EVERY SCREEN, or it is not support, it is a demo - and
+    /// the title and pause menus were lists of keyboard shortcuts with nothing to move. The letter
+    /// shortcuts stay: the cursor is for the pad, and a keyboard player should not have to walk one
+    /// to do what a single key has always done.
+    /// </remarks>
+    private int _titleCursor;
+
+    private int _pauseCursor;
+
+
     private readonly ChangelogPage _changes = new();
 
     /// <summary>
@@ -381,6 +405,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         var pad = GamePad.GetState(PlayerIndex.One);
         double dt = gameTime.ElapsedGameTime.TotalMilliseconds / 1000.0;
 
+        // BEFORE ANYTHING IS DISPATCHED, and exactly once. See MenuInput: the pad has no events for
+        // axes, so a screen that sampled in its own handler would read the same physical stick
+        // position more than once and treat each read as a fresh press.
+        _menu.Sample(keys, pad);
+
         switch (_screen)
         {
             case Screen.Title: UpdateTitle(keys); break;
@@ -402,8 +431,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateTitle(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) Exit();
-        if (Pressed(keys, Keys.Enter)) StartRun();
+        var rows = Screens.TitleRows(_save);
+        MoveCursor(ref _titleCursor, rows);
+        if (_menu.Confirm) { ChooseTitle(_titleCursor); return; }
+        if (_menu.Back) Exit();
         if (Pressed(keys, Keys.C)) _screen = Screen.HeroSelect;
         if (Pressed(keys, Keys.Y) && _save.UnlockedLevels.Count > 1) _screen = Screen.LevelSelect;
         if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
@@ -437,32 +468,85 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private Screen _returnTo = Screen.Settings;
 
+    /// <summary>
+    /// Walk a cursor over a row list, skipping what cannot be chosen.
+    /// </summary>
+    /// <remarks>
+    /// A DISABLED ROW IS DRAWN AND STEPPED OVER. Greying out "Yard" is the game saying a second map
+    /// exists and has not been earned; letting the cursor rest on it would be a menu entry that
+    /// does nothing when pressed, which is worse than either showing or hiding it.
+    /// </remarks>
+    private void MoveCursor(ref int cursor, Screens.MenuRow[] rows)
+    {
+        int step = _menu.Vertical;
+        if (step == 0) return;
+
+        int n = rows.Length;
+        for (int i = 0; i < n; i++)
+        {
+            cursor = ((cursor + step) % n + n) % n;
+            if (rows[cursor].Enabled) return;
+        }
+    }
+
+    /// <summary>What the title menu's rows do. Paired with <see cref="Screens.TitleRows"/> by index.</summary>
+    private void ChooseTitle(int row)
+    {
+        switch (row)
+        {
+            case 0: StartRun(); break;
+            case 1: _screen = Screen.HeroSelect; break;
+            case 2: _screen = Screen.LevelSelect; break;
+            case 3: _screen = Screen.Workshop; break;
+            case 4: _screen = Screen.Trophies; break;
+            case 5: _screen = Screen.Settings; break;
+            case 6: _pedia.Open(); _screen = Screen.Pedia; break;
+            default: Exit(); break;
+        }
+    }
+
+    /// <summary>What the pause menu's rows do. Paired with <see cref="Screens.PauseRows"/> by index.</summary>
+    private void ChoosePause(int row)
+    {
+        switch (row)
+        {
+            case 0: _screen = Screen.Playing; break;
+            case 1: StartRun(unchecked(_seed * 1103515245 + 12345)); break;
+            case 2: _sim.World.AutoLevel = _sim.World.AutoLevel != 0 ? 0 : 1; break;
+            case 3: _changes.Open(); _returnTo = Screen.Paused; _screen = Screen.Changes; break;
+            default:
+                // ABANDONING BANKS FIRST - see UpdatePaused.
+                Bank();
+                _screen = Screen.Title;
+                break;
+        }
+    }
+
     private void UpdateChangelog(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) { _screen = _returnTo; return; }
+        if (_menu.Back) { _screen = _returnTo; return; }
 
-        if (Pressed(keys, Keys.Up)) _changes.Scroll = System.Math.Max(0, _changes.Scroll - 1);
-        if (Pressed(keys, Keys.Down)) _changes.Scroll++;
-        if (Pressed(keys, Keys.PageUp))
+        if (_menu.Vertical < 0) _changes.Scroll = System.Math.Max(0, _changes.Scroll - 1);
+        if (_menu.Vertical > 0) _changes.Scroll++;
+        if (_menu.PageUp)
         {
             _changes.Scroll = System.Math.Max(0, _changes.Scroll - Screens.ChangeRows);
         }
-        if (Pressed(keys, Keys.PageDown)) _changes.Scroll += Screens.ChangeRows;
+        if (_menu.PageDown) _changes.Scroll += Screens.ChangeRows;
         if (Pressed(keys, Keys.Home)) _changes.Scroll = 0;
     }
 
     private void UpdatePedia(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape))
+        if (_menu.Back)
         {
             if (!_pedia.Back()) _screen = Screen.Title;
             return;
         }
 
-        bool up = Pressed(keys, Keys.Up);
-        bool down = Pressed(keys, Keys.Down);
-        bool enter = Pressed(keys, Keys.Enter) || Pressed(keys, Keys.Space)
-                  || Pressed(keys, Keys.Right);
+        bool up = _menu.Vertical < 0;
+        bool down = _menu.Vertical > 0;
+        bool enter = _menu.Confirm || _menu.Horizontal > 0;
 
         if (_pedia.Section < 0)
         {
@@ -477,19 +561,19 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             if (up) _pedia.MoveRow(-1);
             if (down) _pedia.MoveRow(1);
-            if (Pressed(keys, Keys.PageUp)) _pedia.MoveRow(-Screens.PediaRows);
-            if (Pressed(keys, Keys.PageDown)) _pedia.MoveRow(Screens.PediaRows);
+            if (_menu.PageUp) _pedia.MoveRow(-Screens.PediaRows);
+            if (_menu.PageDown) _pedia.MoveRow(Screens.PediaRows);
             if (enter) _pedia.OpenRow();
             return;
         }
 
         if (up) _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - 1);
         if (down) _pedia.PageScroll++;
-        if (Pressed(keys, Keys.PageUp))
+        if (_menu.PageUp)
         {
             _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - Screens.PediaRows);
         }
-        if (Pressed(keys, Keys.PageDown)) _pedia.PageScroll += Screens.PediaRows;
+        if (_menu.PageDown) _pedia.PageScroll += Screens.PediaRows;
     }
 
     /// <summary>
@@ -502,11 +586,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private void UpdateSettings(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) { _screen = Screen.Title; return; }
+        if (_menu.Back) { _screen = Screen.Title; return; }
 
         int n = Screens.SettingRows.Length;
-        if (Pressed(keys, Keys.Up)) _settingsCursor = (_settingsCursor + n - 1) % n;
-        if (Pressed(keys, Keys.Down)) _settingsCursor = (_settingsCursor + 1) % n;
+        if (_menu.Vertical < 0) _settingsCursor = (_settingsCursor + n - 1) % n;
+        if (_menu.Vertical > 0) _settingsCursor = (_settingsCursor + 1) % n;
 
         // THE ROW SAID [C] CHANGELOG BEFORE THERE WAS ONE, which is the exact failure this screen's
         // own notes condemn: a control that is advertised and does nothing. It shipped that way for
@@ -519,9 +603,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             return;
         }
 
-        int step = Pressed(keys, Keys.Right) || Pressed(keys, Keys.Enter) || Pressed(keys, Keys.Space)
+        int step = _menu.Horizontal > 0 || _menu.Confirm
             ? 1
-            : Pressed(keys, Keys.Left) ? -1 : 0;
+            : _menu.Horizontal < 0 ? -1 : 0;
         if (step == 0) return;
 
         switch (_settingsCursor)
@@ -547,16 +631,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateTrophies(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+        if (_menu.Back) _screen = Screen.Title;
 
         int n = Meta.Achievements.All.Length;
-        if (Pressed(keys, Keys.Up)) _trophyCursor = (_trophyCursor + n - 1) % n;
-        if (Pressed(keys, Keys.Down)) _trophyCursor = (_trophyCursor + 1) % n;
-        if (Pressed(keys, Keys.PageUp))
+        if (_menu.Vertical < 0) _trophyCursor = (_trophyCursor + n - 1) % n;
+        if (_menu.Vertical > 0) _trophyCursor = (_trophyCursor + 1) % n;
+        if (_menu.PageUp)
         {
             _trophyCursor = System.Math.Max(0, _trophyCursor - Screens.TrophyRows);
         }
-        if (Pressed(keys, Keys.PageDown))
+        if (_menu.PageDown)
         {
             _trophyCursor = System.Math.Min(n - 1, _trophyCursor + Screens.TrophyRows);
         }
@@ -564,16 +648,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateHeroSelect(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+        if (_menu.Back) _screen = Screen.Title;
 
         const int cols = 8;
         int n = HeroUnlocks.Heroes.Length;
-        if (Pressed(keys, Keys.Left)) _heroCursor = (_heroCursor + n - 1) % n;
-        if (Pressed(keys, Keys.Right)) _heroCursor = (_heroCursor + 1) % n;
-        if (Pressed(keys, Keys.Up)) _heroCursor = (_heroCursor + n - cols) % n;
-        if (Pressed(keys, Keys.Down)) _heroCursor = (_heroCursor + cols) % n;
+        if (_menu.Horizontal < 0) _heroCursor = (_heroCursor + n - 1) % n;
+        if (_menu.Horizontal > 0) _heroCursor = (_heroCursor + 1) % n;
+        if (_menu.Vertical < 0) _heroCursor = (_heroCursor + n - cols) % n;
+        if (_menu.Vertical > 0) _heroCursor = (_heroCursor + cols) % n;
 
-        if (!Pressed(keys, Keys.Enter)) return;
+        if (!_menu.Confirm) return;
         // A LOCKED CHASSIS IS NOT SELECTABLE. The cursor may rest on it - the silhouette is worth
         // seeing - but pressing enter does nothing rather than starting a run as somebody else.
         if (!_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[_heroCursor].Id)) return;
@@ -585,13 +669,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateLevelSelect(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+        if (_menu.Back) _screen = Screen.Title;
 
         int n = HeroUnlocks.Levels.Length;
-        if (Pressed(keys, Keys.Up)) _levelCursor = (_levelCursor + n - 1) % n;
-        if (Pressed(keys, Keys.Down)) _levelCursor = (_levelCursor + 1) % n;
+        if (_menu.Vertical < 0) _levelCursor = (_levelCursor + n - 1) % n;
+        if (_menu.Vertical > 0) _levelCursor = (_levelCursor + 1) % n;
 
-        if (!Pressed(keys, Keys.Enter)) return;
+        if (!_menu.Confirm) return;
         string id = HeroUnlocks.Levels[_levelCursor].Id;
         if (!_save.UnlockedLevels.Contains(id)) return;
         _levelId = id;
@@ -602,20 +686,24 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateWorkshop(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) { _save.Save(); _screen = Screen.Title; }
+        if (_menu.Back) { _save.Save(); _screen = Screen.Title; }
 
         int n = WorkshopText.All.Length;
-        if (Pressed(keys, Keys.Up)) _shopCursor = (_shopCursor + n - 1) % n;
-        if (Pressed(keys, Keys.Down)) _shopCursor = (_shopCursor + 1) % n;
+        if (_menu.Vertical < 0) _shopCursor = (_shopCursor + n - 1) % n;
+        if (_menu.Vertical > 0) _shopCursor = (_shopCursor + 1) % n;
 
-        if (Pressed(keys, Keys.Enter) && _save.Buy(_shopCursor)) _save.Save();
+        if (_menu.Confirm && _save.Buy(_shopCursor)) _save.Save();
 
         if (Pressed(keys, Keys.R) && _save.RefundAll() > 0) _save.Save();
     }
 
     private void UpdatePaused(KeyboardState keys)
     {
-        if (Pressed(keys, Keys.Escape)) _screen = Screen.Playing;
+        var rows = Screens.PauseRows();
+        MoveCursor(ref _pauseCursor, rows);
+        if (_menu.Confirm) { ChoosePause(_pauseCursor); return; }
+
+        if (_menu.Back) _screen = Screen.Playing;
         if (Pressed(keys, Keys.F5)) StartRun(unchecked(_seed * 1103515245 + 12345));
 
         // FROM THE PAUSE MENU TOO, which is where the web build puts it - and BACK returns to the
@@ -642,8 +730,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdatePlaying(KeyboardState keys, GamePadState pad, GameTime gameTime)
     {
-        if (Pressed(keys, Keys.Escape) || (pad.IsConnected && pad.Buttons.Start == ButtonState.Pressed))
+        // START IS AN EDGE, not a level. Reading it as a level meant a held Start re-entered the
+        // pause screen on every frame, which also made it impossible to leave: the web build
+        // toggles, and so does this.
+        if (_menu.Back || _menu.PadStart)
         {
+            _pauseCursor = 0;
+            _menu.Reset();
             _screen = Screen.Paused;
             return;
         }
@@ -918,11 +1011,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (_sim.World.Phase == RunPhase.Chest)
         {
-            if (Pressed(keys, Keys.D1) || Pressed(keys, Keys.Space) || Pressed(keys, Keys.Enter) ||
-                (pad.IsConnected && pad.Buttons.A == ButtonState.Pressed))
-            {
-                _pendingChoice = 0;
-            }
+            if (Pressed(keys, Keys.D1) || _menu.Confirm) _pendingChoice = 0;
             return;
         }
 
@@ -949,10 +1038,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // The pad answers the card too, so a controller run never has to reach for the keyboard.
         if (_pendingChoice == -1 && pad.IsConnected)
         {
-            if (pad.Buttons.A == ButtonState.Pressed) _pendingChoice = 0;
-            else if (pad.Buttons.B == ButtonState.Pressed) _pendingChoice = 1;
-            else if (pad.Buttons.X == ButtonState.Pressed) _pendingChoice = 2;
-            else if (pad.Buttons.Y == ButtonState.Pressed) _pendingChoice = Constants.ChooseReroll;
+            // EDGES, so a button still held from the last card does not take the next one the frame
+            // it appears. `_pendingChoice` guards a single frame; it does not guard the next card.
+            if (_menu.PadFace(0)) _pendingChoice = 0;
+            else if (_menu.PadFace(1)) _pendingChoice = 1;
+            else if (_menu.PadFace(2)) _pendingChoice = 2;
+            else if (_menu.PadFace(3)) _pendingChoice = Constants.ChooseReroll;
         }
 
         // A slot the card is not offering is not a choice. ApplyChoice would refuse it anyway, but
@@ -986,9 +1077,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (mx == 0 && my == 0 && pad.IsConnected)
         {
-            mx = pad.ThumbSticks.Left.X;
-            // SCREEN SPACE, not stick space: the pad's +y is up and the world's is down.
-            my = -pad.ThumbSticks.Left.Y;
+            // THROUGH THE SAME RESOLUTION THE MENUS USE, which is what buys the dead zone, the
+            // d-pad, and the clamp to the disc. Taking the raw axes - which is what this did - let
+            // a worn stick drift the mech while nobody was touching it, and made a corner-held
+            // stick half again as fast as a cardinal one.
+            var (ax, ay) = PadInput.ResolveStick(
+                pad.ThumbSticks.Left.X,
+                // SCREEN SPACE, not stick space: the pad's +y is up and the world's is down.
+                -pad.ThumbSticks.Left.Y,
+                (pad.DPad.Right == ButtonState.Pressed ? 1 : 0)
+                    - (pad.DPad.Left == ButtonState.Pressed ? 1 : 0),
+                (pad.DPad.Down == ButtonState.Pressed ? 1 : 0)
+                    - (pad.DPad.Up == ButtonState.Pressed ? 1 : 0));
+            mx = ax;
+            my = ay;
         }
 
         return new InputFrame
@@ -1014,7 +1116,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             _batch.Begin(samplerState: SamplerState.PointClamp);
             switch (_screen)
             {
-                case Screen.Title: Screens.DrawTitle(_batch, _sprites, _save, mw, mh); break;
+                case Screen.Title: Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, mw, mh); break;
                 case Screen.HeroSelect:
                     Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;
                 case Screen.LevelSelect:
@@ -1110,7 +1212,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 vw, vh);
         }
 
-        if (_screen == Screen.Paused) Screens.DrawPause(_batch, _sprites, w, vw, vh);
+        if (_screen == Screen.Paused) Screens.DrawPause(_batch, _sprites, w, _pauseCursor, vw, vh);
         if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
 
         _batch.End();

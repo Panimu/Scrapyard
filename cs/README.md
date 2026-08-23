@@ -727,6 +727,45 @@ commits with nothing bound to it — precisely the "toggle that lies" failure th
 condemn. It surfaced only from walking the source tree file by file to answer "what is left", which
 is an argument for doing that periodically rather than trusting a mental list.
 
+**A controller that cannot finish a level-up is not support, it is a demo.** The port read pad
+movement and the level-up face buttons and nothing else — no menu could be reached with one, and
+three things in the run were wrong:
+
+- **The stick had no dead zone, no d-pad and no clamp.** Raw axes meant a worn stick drifted the
+  mech while nobody was touching it, and a stick held into its corner reports about 1.41 on the
+  diagonal — so diagonal movement was half again as fast as cardinal, which is the oldest bug in
+  twin-stick movement. The d-pad **wins outright** rather than being averaged: it is digital and
+  unambiguous, and averaging lets a stick nobody is touching bend a deliberate direction.
+- **Start was a level, not an edge**, so a held Start re-entered the pause screen every frame and
+  could never leave it. The level-up buttons had the same shape.
+- **The title and pause menus were hint lists with no cursor.** Both now have one, and the rows are
+  built in *one* place read by both the drawing and the input — the two used to be a list of hints
+  here and a list of key handlers over in the game loop, which is exactly how the settings screen
+  ended up advertising a changelog nothing implemented.
+
+**The merge happens at the input, not at the screen.** The web build walks the DOM and moves real
+focus, because its overlays are made of real buttons and a focus index per overlay would be eight
+things to keep in step. This build has no DOM — its menus are already a cursor and a list, which is
+the model that DOM walk was approximating — so one `MenuInput` merges keyboard and pad into the
+handful of things a menu can be told, and a screen asks whether the player said "down" without
+caring what they said it with. Same reasoning, opposite end.
+
+`resolveStick` is exported from the web build *specifically* so it can be pinned by a test rather
+than by playing; `PadInputTests` is the other half of that bargain, sweeping 2,527 stick positions
+across the dead-zone edge and into the corners. Fourteen injected faults, all caught — and one of
+them found a test of mine that proved nothing: every diagonal I had checked was one where both
+components agreed in sign, so a port that simply preferred the horizontal returned the same answer
+on all of them.
+
+**A second approximated-maths divergence, and the reference is the approximate one this time.** The
+web build divides by `Math.hypot`, which ECMA-262 leaves implementation-defined; this build divides
+by a square root, which IEEE-754 requires to be correctly rounded. They disagree by one ULP and
+cannot be made to agree — .NET's own `double.Hypot` does not match V8's either, which was checked
+rather than assumed. The comparison is relaxed, a separate test holds the worst divergence seven
+orders of magnitude below anything a mistranslation could cause, and it **also asserts the
+divergence is still non-zero**: if it ever becomes exact, the explanation has stopped being true and
+should be revisited.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
@@ -736,8 +775,7 @@ draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityD
 `PediaState` and `FontMetrics` hold every decision and no MonoGame types — as does `JsMath` — and
 the test csproj `<Compile Include>`s those exact files.
 
-What is not ported, plainly: the virtual joystick (touch, and this is a desktop build); full
-gamepad navigation of the menus, though a pad already drives movement and the level-up choice;
+What is not ported, plainly: the virtual joystick, which is touch and this is a desktop build;
 the build-version string; and `src/sim/` - the reference bot and the DPS harness, which measure
 balance and are run from the TypeScript side.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
