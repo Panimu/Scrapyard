@@ -1,3 +1,5 @@
+using System;
+
 using Scrapyard.Core;
 using Scrapyard.Meta;
 
@@ -40,10 +42,21 @@ public sealed class PediaState
     private int _wrappedFor = -1;
     private int _wrappedScale = -1;
 
+    /// <summary>Build the manual against one save.</summary>
+    /// <remarks>
+    /// IT REFUSES A NULL SAVE, and that is not defensive tidiness - it is a bug this held for three
+    /// commits. The front-end built this above the line that loads the save, so the manual captured
+    /// a null and threw the moment anyone pressed ENTER on a section. Nothing caught it: the index
+    /// is unit-tested with a save in hand, and the sections pane draws without touching one, so the
+    /// screen opened, looked right, and died one keypress in.
+    ///
+    /// Failing HERE turns that into a crash at startup, where a wiring mistake belongs.
+    /// </remarks>
     public PediaState(Settings save, IReadOnlyList<(ILevel Level, string Name)> levels)
     {
-        _save = save;
-        _levels = levels;
+        _save = save ?? throw new ArgumentNullException(
+            nameof(save), "The Scrapopedia was built before the save was loaded.");
+        _levels = levels ?? throw new ArgumentNullException(nameof(levels));
     }
 
     /// <summary>Open the screen fresh. See the remarks on rebuilding.</summary>

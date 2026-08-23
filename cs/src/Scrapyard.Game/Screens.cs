@@ -816,61 +816,142 @@ public static class Screens
     public static void DrawPedia(SpriteBatch batch, Sprites sprites, PediaState st, int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
-        int listW = System.Math.Min(vw - 40, 340 * scale);
-        int x0 = (vw - listW) / 2;
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
+        int radius = 7 * scale;
+        int thick = System.Math.Max(1, scale / 2);
 
-        Font.DrawCentred(batch, sprites.Blank, "SCRAPOPEDIA", vw / 2, 12 * scale, scale * 2, Accent);
+        int y = Head(batch, sprites, "REFERENCE", "SCRAPOPEDIA", vw, 10 * scale, scale);
+        int btnH = 27 * scale;
+        int backY = vh - 12 * scale - btnH;
+        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+        int bottom = backY - 8 * scale;
 
+        // --- the sections ---------------------------------------------------------------------
         if (st.Section < 0)
         {
-            int y = 46 * scale;
+            // FOUR FULL-WIDTH ROWS rather than a two-by-two grid: this is the first thing the screen
+            // shows, and a row has space for a line saying what is behind it where a tile does not.
             for (int i = 0; i < Pedia.Sections.Length; i++)
             {
+                int h = 6 * scale + Font.GlyphH * scale + 3 * scale + Font.LineHeight * small
+                      + 6 * scale;
+                var r = new Rectangle(x0, y, w, h);
                 bool on = i == st.SectionCursor;
-                if (on) batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 3, listW + 8, 26 * scale), Panel);
-                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Label, x0, y, scale,
-                          on ? Ink : Dim);
-                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Blurb, x0,
-                          y + Font.LineHeight * scale, scale, Locked);
-                y += 28 * scale;
+
+                if (on) Cursor(batch, sprites, r, radius, thick * 2);
+                Card(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
+                     thick);
+
+                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Label, r.X + 7 * scale,
+                          r.Y + 6 * scale, scale, Palette.Ink);
+                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Blurb, r.X + 7 * scale,
+                          r.Y + 6 * scale + Font.GlyphH * scale + 3 * scale, small, Palette.Faint);
+                y += h + 5 * scale;
             }
-            Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ENTER] OPEN   [ESC] BACK",
-                             vw / 2, vh - 16 * scale, scale, Dim);
             return;
         }
 
+        // --- one section's index --------------------------------------------------------------
         if (st.Page is null)
         {
             var rows = st.Rows;
-            Font.DrawCentred(batch, sprites.Blank, Pedia.Sections[st.Section].Label, vw / 2,
-                             30 * scale, scale, Dim);
+            Font.DrawCentred(batch, sprites.Blank, Spaced(Pedia.Sections[st.Section].Label), vw / 2,
+                             y, small, Palette.Faint);
+            y += Font.LineHeight * small + 6 * scale;
 
-            int first = System.Math.Clamp(st.RowCursor - PediaRows / 2, 0,
-                                          System.Math.Max(0, rows.Count - PediaRows));
-            int y = 48 * scale;
-            for (int r = 0; r < PediaRows && first + r < rows.Count; r++)
+            int icon = 17 * scale;
+
+            // 52 PIXELS, WHICH IS `.pedia__entry`'s min-height and not a number pulled from the
+            // text. The row was sized to its own contents and came out at 34: the icon fitted, the
+            // name fitted, and the left stripe had six pixels of straight edge between two fourteen
+            // pixel corners - so the one mark saying what KIND of entry it is was a dot.
+            int entryH = System.Math.Max(26 * scale, icon + 8 * scale);
+            int headH = Font.LineHeight * small + 5 * scale;
+
+            // The window keeps the cursor in view a row at a time. Headings are rows too, so this
+            // counts them - which is why the index is one array and one integer in the first place.
+            int fit = 0;
+            int used = 0;
+            for (int i = st.RowCursor; i < rows.Count; i++)
             {
-                var row = rows[first + r];
-                bool on = first + r == st.RowCursor;
+                used += rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+                if (y + used > bottom) break;
+                fit++;
+            }
+
+            int first = st.RowCursor;
+            while (first > 0)
+            {
+                int sum = 0;
+                for (int i = first - 1; i < st.RowCursor + fit && i < rows.Count; i++)
+                {
+                    sum += rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+                }
+                if (y + sum > bottom) break;
+                first--;
+            }
+
+            for (int i = first; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                bool on = i == st.RowCursor;
 
                 if (row.Kind == Pedia.Kind.Heading)
                 {
-                    Font.Draw(batch, sprites.Blank, row.Text, x0, y, scale, Accent);
+                    if (y + headH > bottom) break;
+                    // A GROUP HEADING IS NOT A CARD. It is the label above a run of them - eleven
+                    // pixels, letterspaced, with the tally down the right edge so the three groups
+                    // line up.
+                    Font.Draw(batch, sprites.Blank, Spaced(row.Text), x0 + 2 * scale, y, small,
+                              Palette.Faint);
                     Font.Draw(batch, sprites.Blank, row.Sub,
-                              x0 + listW - Font.Measure(row.Sub, scale), y, scale, Dim);
+                              x0 + w - 2 * scale - Font.Measure(row.Sub, small), y, small,
+                              Palette.Faint);
+                    y += headH;
+                    continue;
                 }
-                else
+
+                if (y + entryH > bottom) break;
+                var r = new Rectangle(x0, y, w, entryH);
+                bool sealedRow = row.Kind == Pedia.Kind.Achievement && row.Sub != "";
+
+                if (on) Cursor(batch, sprites, r, radius, thick * 2);
+                Card(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
+                     thick);
+
+                // WHICH POOL, in the same colours the level-up cards and the chest reels use. The
+                // stripe is the only thing on the row that says what KIND of entry it is, and it
+                // does it without a word.
+                batch.Draw(sprites.Blank,
+                           new Rectangle(r.X, r.Y + radius, 2 * scale, r.Height - radius * 2),
+                           StripeOf(row, sealedRow));
+
+                int ix = r.X + 2 * scale + 5 * scale;
+                var tex = row.Icon == "" ? null : sprites.Get(row.Icon);
+                if (tex is not null)
                 {
-                    if (on)
-                    {
-                        batch.Draw(sprites.Blank,
-                                   new Rectangle(x0 - 4, y - 2, listW + 8, Font.LineHeight * scale + 3),
-                                   Panel);
-                    }
-                    Font.Draw(batch, sprites.Blank, "  " + row.Text, x0, y, scale, on ? Ink : Dim);
+                    batch.Draw(tex, new Rectangle(ix, r.Y + (entryH - icon) / 2, icon, icon),
+                               Color.White);
                 }
-                y += (Font.LineHeight + 3) * scale;
+                else if (sealedRow)
+                {
+                    // THE SEALED PLATE, dashed rather than solid: it reads as a space left for
+                    // something rather than as a thing in its own right.
+                    var plate = new Rectangle(ix, r.Y + (entryH - icon) / 2, icon, icon);
+                    Dashed(batch, sprites, plate, 4 * scale, scale);
+                    Font.DrawCentred(batch, sprites.Blank, "?", plate.Center.X,
+                                     plate.Y + (icon - Font.GlyphH * small) / 2, small,
+                                     Palette.Faint);
+                }
+
+                Font.Draw(batch, sprites.Blank, row.Text.ToUpperInvariant(), ix + icon + 5 * scale,
+                          r.Y + (entryH - Font.GlyphH * small) / 2, small,
+                          sealedRow ? Palette.Faint : Palette.Ink);
+
+                y += entryH + 4 * scale;
             }
 
             // A GROUP WITH NOTHING IN IT IS STILL A GROUP, and it says so rather than looking
@@ -878,15 +959,48 @@ public static class Screens
             if (rows.Count <= Pedia.Sections.Length)
             {
                 Font.DrawCentred(batch, sprites.Blank, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
-                                 scale, Locked);
+                                 small, Palette.Locked);
             }
-
-            Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ENTER] OPEN   [ESC] BACK",
-                             vw / 2, vh - 16 * scale, scale, Dim);
             return;
         }
 
-        DrawPediaPage(batch, sprites, st, x0, listW, scale, vw, vh);
+        DrawPediaPage(batch, sprites, st, x0, w, scale, small, vw, bottom, y);
+    }
+
+    /// <summary>The colour of an index row's left edge.</summary>
+    /// <remarks>
+    /// AN ASCENSION IS A WEAPON AND IS NOT THE WEAPON IT CAME FROM, so it takes gold of its own
+    /// rather than the weapon accent. A chassis is neither pool and takes the ink. A creature takes
+    /// hull red, because that is what it is here to take off you.
+    /// </remarks>
+    private static Color StripeOf(Pedia.Row row, bool sealedRow) => row.Kind switch
+    {
+        Pedia.Kind.Ascension => Palette.Ascension,
+        Pedia.Kind.Mech => Palette.Faint,
+        Pedia.Kind.Creature or Pedia.Kind.Rank => Palette.Hp,
+        Pedia.Kind.Achievement => sealedRow ? Palette.Faint : Palette.Accent,
+        // A card is a weapon or a system, and the entry it came from is the thing that knows which.
+        // `Row.Index` is that entry's index by construction - the same index the page builder opens
+        // - so this asks the catalog rather than guessing from the name.
+        _ => row.Index >= 0 && row.Index < PediaText.All.Length
+             && PediaText.All[row.Index].Kind == "weapon" ? Palette.Accent : Palette.Shop,
+    };
+
+    /// <summary>A dashed outline: a space left for something rather than a thing.</summary>
+    private static void Dashed(SpriteBatch batch, Sprites sprites, Rectangle r, int dash, int thick)
+    {
+        for (int x = r.X; x < r.Right; x += dash * 2)
+        {
+            int len = System.Math.Min(dash, r.Right - x);
+            batch.Draw(sprites.Blank, new Rectangle(x, r.Y, len, thick), Palette.Edge);
+            batch.Draw(sprites.Blank, new Rectangle(x, r.Bottom - thick, len, thick), Palette.Edge);
+        }
+        for (int yy = r.Y; yy < r.Bottom; yy += dash * 2)
+        {
+            int len = System.Math.Min(dash, r.Bottom - yy);
+            batch.Draw(sprites.Blank, new Rectangle(r.X, yy, thick, len), Palette.Edge);
+            batch.Draw(sprites.Blank, new Rectangle(r.Right - thick, yy, thick, len), Palette.Edge);
+        }
     }
 
     /// <summary>
@@ -898,26 +1012,40 @@ public static class Screens
     /// same page be right on a phone-shaped window and a wide one without the content knowing.
     /// </remarks>
     private static void DrawPediaPage(SpriteBatch batch, Sprites sprites, PediaState st, int x0,
-                                      int listW, int scale, int vw, int vh)
+                                      int w, int scale, int small, int vw, int bottom, int y)
     {
         var page = st.Page!.Value;
 
+        // THE PAGE HEAD IS THE ENTRY, LARGER. Same icon, same name, same kind in the same colour -
+        // so arriving at a page from a row is obviously the same thing opened rather than a new one.
+        int box = 26 * scale;
         var icon = page.Icon == "" ? null : sprites.Get("icon_" + page.Icon);
         int headX = x0;
         if (icon is not null)
         {
-            int box = 20 * scale;
-            batch.Draw(icon, new Rectangle(x0, 30 * scale, box, box), Color.White);
+            batch.Draw(icon, new Rectangle(x0, y, box, box), Color.White);
             headX += box + 6 * scale;
         }
-        Font.Draw(batch, sprites.Blank, page.Title, headX, 30 * scale, scale, Ink);
-        Font.Draw(batch, sprites.Blank, page.Kind, headX, 30 * scale + Font.LineHeight * scale,
-                  scale, Accent);
 
-        var lines = st.Wrapped(listW, scale);
-        int shown = PediaRows;
+        var kindColour = page.Kind switch
+        {
+            "ASCENSION" => Palette.Ascension,
+            "SYSTEM" => Palette.Shop,
+            "CHASSIS" => Palette.Dim,
+            "CREATURE" or "RANK" => Palette.Hp,
+            _ => Palette.Accent,
+        };
+        Font.Draw(batch, sprites.Blank, page.Title, headX, y, scale, Palette.Ink);
+        Font.Draw(batch, sprites.Blank, Spaced(page.Kind), headX,
+                  y + Font.GlyphH * scale + 4 * scale, small, kindColour);
+        y += System.Math.Max(box, Font.GlyphH * scale + 4 * scale + Font.LineHeight * small)
+           + 8 * scale;
+
+        var lines = st.Wrapped(w, small);
+        int lineH = Font.LineHeight * small + 2 * scale;
+        int shown = System.Math.Max(1, (bottom - y) / lineH);
         int first = System.Math.Clamp(st.PageScroll, 0, System.Math.Max(0, lines.Count - shown));
-        int y = 60 * scale;
+
         for (int i = 0; i < shown && first + i < lines.Count; i++)
         {
             string line = lines[first + i];
@@ -925,22 +1053,22 @@ public static class Screens
             // without the wrapper needing to know about structure.
             if (line.StartsWith('#'))
             {
-                Font.Draw(batch, sprites.Blank, line[1..].Trim(), x0, y, scale, Accent);
+                Font.Draw(batch, sprites.Blank, Spaced(line[1..].Trim()), x0, y, small,
+                          Palette.Faint);
             }
             else
             {
-                Font.Draw(batch, sprites.Blank, line, x0, y, scale, Ink);
+                Font.Draw(batch, sprites.Blank, line, x0, y, small, Palette.Ink);
             }
-            y += (Font.LineHeight + 2) * scale;
+            y += lineH;
         }
 
         if (lines.Count > shown)
         {
-            Font.DrawCentred(batch, sprites.Blank, $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
-                             vw / 2, vh - 28 * scale, scale, Locked);
+            Font.DrawCentred(batch, sprites.Blank,
+                             $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
+                             vw / 2, bottom - Font.GlyphH * small, small, Palette.Locked);
         }
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] SCROLL   [ESC] BACK", vw / 2,
-                         vh - 16 * scale, scale, Dim);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -972,46 +1100,60 @@ public static class Screens
                                      int scroll, int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
-        int listW = System.Math.Min(vw - 40, 340 * scale);
-        int x0 = (vw - listW) / 2;
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "CHANGELOG", vw / 2, 12 * scale, scale * 2, Accent);
+        int y = Head(batch, sprites, "WHAT CHANGED", "CHANGELOG", vw, 10 * scale, scale);
         string latest = Changelog.All.Length > 0
             ? "LATEST: " + Changelog.FormatTime(Changelog.All[0].At).ToUpperInvariant()
             : "NO ENTRIES YET";
-        Font.DrawCentred(batch, sprites.Blank, latest, vw / 2, 32 * scale, scale, Dim);
+        Font.DrawCentred(batch, sprites.Blank, latest, vw / 2, y, small, Palette.Faint);
+        y += Font.LineHeight * small + 8 * scale;
 
-        int first = System.Math.Clamp(scroll, 0, System.Math.Max(0, lines.Count - ChangeRows));
-        int y = 50 * scale;
-        for (int i = 0; i < ChangeRows && first + i < lines.Count; i++)
+        int btnH = 27 * scale;
+        int backY = vh - 12 * scale - btnH;
+        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+        int bottom = backY - 18 * scale - Font.GlyphH * small;
+
+        // AS MANY LINES AS THE WINDOW HOLDS, worked out from the window. The port had thirteen, a
+        // constant chosen once against one size, and on a 720-tall screen it showed thirteen lines
+        // of a three-thousand-line file with two thirds of the screen empty under them.
+        int lineH = Font.LineHeight * small + 2 * scale;
+        int shown = System.Math.Max(1, (bottom - y) / lineH);
+        int first = System.Math.Clamp(scroll, 0, System.Math.Max(0, lines.Count - shown));
+
+        for (int i = 0; i < shown && first + i < lines.Count; i++)
         {
             string line = lines[first + i];
             // The markers travel on the line, so the wrapper never needs to know about structure:
             // `@` is a timestamp, `#` a title, everything else a note.
             if (line.StartsWith('@'))
             {
-                Font.Draw(batch, sprites.Blank, line[1..], x0, y, scale, Locked);
+                Font.Draw(batch, sprites.Blank, Spaced(line[1..]), x0, y, small, Palette.Faint);
             }
             else if (line.StartsWith('#'))
             {
-                Font.Draw(batch, sprites.Blank, line[1..], x0, y, scale, Accent);
+                // AT THE SAME SIZE AS THE NOTES UNDER IT, and brighter instead. The wrap was
+                // computed once at this scale and the line breaks are part of it, so setting the
+                // title larger ran every long headline straight out of the column - the width is
+                // the contract, and ink is the hierarchy that does not break it.
+                Font.Draw(batch, sprites.Blank, line[1..], x0, y, small, Palette.Ink);
             }
             else
             {
-                Font.Draw(batch, sprites.Blank, line, x0, y, scale, Ink);
+                Font.Draw(batch, sprites.Blank, line, x0, y, small, Palette.Dim);
             }
-            y += (Font.LineHeight + 2) * scale;
+            y += lineH;
         }
 
-        if (lines.Count > ChangeRows)
+        if (lines.Count > shown)
         {
             Font.DrawCentred(batch, sprites.Blank,
-                             $"{first + 1} - {System.Math.Min(first + ChangeRows, lines.Count)} OF {lines.Count}",
-                             vw / 2, vh - 28 * scale, scale, Locked);
+                             $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
+                             vw / 2, backY - 8 * scale - Font.GlyphH * small, small, Palette.Locked);
         }
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] SCROLL   [ESC] BACK", vw / 2,
-                         vh - 16 * scale, scale, Dim);
     }
 
     // -----------------------------------------------------------------------------------------

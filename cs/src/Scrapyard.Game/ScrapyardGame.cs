@@ -307,11 +307,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _cover = new GroundCover(_sprites);
         _paths = new GroundPaths(_sprites);
         _beams = new BeamLayer(_sprites, _fx);
-        // THE LEVELS, PAIRED WITH THEIR NAMES, because the bestiary lists one group per level
-        // and a level's entries are derived from its own resolver - so no map can list
-        // another's animals.
-        _pedia = new PediaState(_save, Screens.PlayableLevels());
-
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
         CardTexts.Verify(UpgradeCatalog.All.Length);
@@ -319,6 +314,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         HeroUnlocks.Verify(HeroCatalog.All.Length);
 
         _save = Settings.Load();
+
+        // THE LEVELS, PAIRED WITH THEIR NAMES, because the bestiary lists one group per level and a
+        // level's entries are derived from its own resolver - so no map can list another's animals.
+        //
+        // AFTER THE SAVE IS LOADED, and that ordering is the whole of a bug this held for three
+        // commits: built above it, the manual captured a null save and threw the moment anyone
+        // pressed ENTER on a section. The unit tests could not see it - they call `Pedia.Index` with
+        // a save in hand - and the sections pane itself draws fine, so the screen opened, looked
+        // right, and died one keypress in.
+        _pedia = new PediaState(_save, Screens.PlayableLevels());
 
         // THE FIRST SHOWING IS A SHOWING TOO. The game opens on the title without arriving there,
         // so without this a player with credits banked from a previous session sees no attract
@@ -480,15 +485,33 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             _screen = _shotScreen switch
             {
                 "settings" => Screen.Settings,
-                "pedia" => Screen.Pedia,
+                "pedia" or "pedia-index" or "pedia-page" => Screen.Pedia,
                 "workshop" => Screen.Workshop,
                 "heroes" => Screen.HeroSelect,
                 "levels" => Screen.LevelSelect,
                 "changes" => Screen.Changes,
                 _ => Screen.Title,
             };
-            if (_screen == Screen.Pedia) _pedia.Open();
             if (_screen == Screen.Changes) _changes.Open();
+
+            // `pedia`, `pedia-index` and `pedia-page` are three DIFFERENT screens behind one name -
+            // sections, then a section's index, then a page - and a capture that could only ever
+            // reach the first would leave the other two checked by nobody.
+            if (_screen == Screen.Pedia)
+            {
+                _pedia.Open();
+                if (_shotScreen != "pedia")
+                {
+                    _pedia.EnterSection(0);
+                    // Past the group heading, onto the first entry that opens something.
+                    while (_pedia.RowCursor < _pedia.Rows.Count
+                           && _pedia.Rows[_pedia.RowCursor].Kind == Pedia.Kind.Heading)
+                    {
+                        _pedia.RowCursor++;
+                    }
+                    if (_shotScreen == "pedia-page") _pedia.OpenRow();
+                }
+            }
         }
 
         // BEFORE ANYTHING IS DISPATCHED, and exactly once. See MenuInput: the pad has no events for

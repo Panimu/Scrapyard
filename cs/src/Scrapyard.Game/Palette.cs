@@ -88,6 +88,18 @@ public static class Palette
     /// </remarks>
     public static readonly Color Shop = new(0x4f, 0xb8, 0xff);
 
+    /// <summary>An ascension, and nothing else in the game.</summary>
+    /// <remarks>
+    /// #ffc247, WHICH IS NOT THE ACCENT even though both are gold. An ascension IS a weapon and it
+    /// is not the weapon it came from, so it takes a colour of its own; it is also the only entry in
+    /// the manual that is there because of something that HAPPENED rather than something that was
+    /// picked up, and a shade nothing else uses is how a player learns to spot that.
+    /// </remarks>
+    public static readonly Color Ascension = new(0xff, 0xc2, 0x47);
+
+    /// <summary>Hull, and the horde that takes it off you. <c>--hp</c>.</summary>
+    public static readonly Color Hp = new(0xd7, 0x50, 0x3f);
+
     /// <summary>
     /// The scrim a menu lays over the world. <c>rgba(6, 9, 13, 0.86)</c>.
     /// </summary>

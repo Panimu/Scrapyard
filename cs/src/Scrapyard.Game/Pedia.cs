@@ -70,7 +70,17 @@ public static class Pedia
     /// alternative - a list of groups each holding a list of entries - needs two indices and gets
     /// them out of step the first time a group turns out to be empty.
     /// </remarks>
-    public readonly record struct Row(Kind Kind, string Text, string Sub, int Index, string Key);
+    /// <param name="Icon">
+    /// The sprite key drawn beside the name, or empty where there is nothing to draw.
+    /// <para>
+    /// CARRIED ON THE ROW rather than looked up while drawing. Resolving it at draw time would mean
+    /// repeating the switch that built the row - "a Card's icon is its id, an Ascension's is its own
+    /// field, a chassis is `mech_` and its id" - in a second place, and the two would eventually
+    /// disagree about one kind. The row is built once from the entry that knows.
+    /// </para>
+    /// </param>
+    public readonly record struct Row(
+        Kind Kind, string Text, string Sub, int Index, string Key, string Icon = "");
 
     /// <summary>
     /// Build one section's index against what this save has actually earned.
@@ -104,7 +114,7 @@ public static class Pedia
                     var e = PediaText.All[i];
                     if (e.Kind != kind) continue;
                     total++;
-                    if (save.EarnedCards.Contains(e.Id)) found.Add(new Row(Kind.Card, e.Name, "", i, e.Id));
+                    if (save.EarnedCards.Contains(e.Id)) found.Add(new Row(Kind.Card, e.Name, "", i, e.Id, "icon_" + e.Id));
                 }
                 rows.Add(Heading(kind == "weapon" ? "WEAPONS" : "SYSTEMS", found.Count, total));
                 rows.AddRange(found);
@@ -116,7 +126,7 @@ public static class Pedia
                 var a = PediaText.Ascensions[i];
                 if (save.HeldAscensions.Contains(a.ParentId))
                 {
-                    ascended.Add(new Row(Kind.Ascension, a.Name, "", i, a.ParentId));
+                    ascended.Add(new Row(Kind.Ascension, a.Name, "", i, a.ParentId, "icon_" + a.Icon));
                 }
             }
             // The heading itself is the leak, not the entries under it.
@@ -134,7 +144,7 @@ public static class Pedia
             for (int i = 0; i < PediaText.Heroes.Length; i++)
             {
                 var h = PediaText.Heroes[i];
-                if (save.UnlockedHeroes.Contains(h.Id)) found.Add(new Row(Kind.Mech, h.Name, "", i, h.Id));
+                if (save.UnlockedHeroes.Contains(h.Id)) found.Add(new Row(Kind.Mech, h.Name, "", i, h.Id, "mech_" + h.Id));
             }
             rows.Add(Heading("CHASSIS", found.Count, PediaText.Heroes.Length));
             rows.AddRange(found);
@@ -182,9 +192,12 @@ public static class Pedia
             var a = Achievements.All[i];
             bool got = save.UnlockedAchievements.Contains(a.Id);
             if (got) earned++;
+            // AN UNEARNED TROPHY HAS NO ICON, and that is the sealed plate rather than an
+            // oversight: the icon is a card's art or a chassis, and showing it would name the thing
+            // the silhouette is there not to name.
             trophies.Add(new Row(Kind.Achievement,
                                  Achievements.Display(a, got).Name.ToUpperInvariant(),
-                                 got ? "" : "-", i, a.Id));
+                                 got ? "" : "-", i, a.Id, got ? "icon_" + a.Icon : ""));
         }
         rows.Add(Heading("TROPHIES", earned, Achievements.All.Length));
         rows.AddRange(trophies);

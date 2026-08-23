@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 using Scrapyard.Core;
 using Scrapyard.Game;
 using Scrapyard.Meta;
@@ -537,4 +540,33 @@ public class PediaTests
             }
         }
     }
+
+    /// <summary>
+    /// The manual will not be built before there is a save to build it against.
+    /// </summary>
+    /// <remarks>
+    /// THE BUG THIS IS FOR WAS IN THE WIRING, not in anything tested here. The front-end constructed
+    /// `PediaState` above the line that loads the save; every test in this file passed, because they
+    /// all hand it a save. The sections pane draws without touching one, so the screen opened and
+    /// looked correct, and pressing ENTER on a section threw.
+    ///
+    /// The guard is what makes that reachable from a test at all: an integration test that opens the
+    /// real screen needs a graphics device, and a null captured in a constructor is invisible until
+    /// something asks for it.
+    /// </remarks>
+    [Fact]
+    public void TheManualRefusesToBeBuiltWithoutASave()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PediaState(null!, Screens_PlayableLevelsStandIn()));
+    }
+
+    /// <summary>The level pairs the manual wants, without dragging the drawing layer in.</summary>
+    private static IReadOnlyList<(ILevel Level, string Name)> Screens_PlayableLevelsStandIn()
+    {
+        var outv = new List<(ILevel, string)>();
+        foreach (var l in HeroUnlocks.Levels) outv.Add((Simulation.LevelById(l.Id), l.Name));
+        return outv;
+    }
+
 }
