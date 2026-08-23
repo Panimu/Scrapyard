@@ -170,17 +170,17 @@ public static class Overlay
             stack += heights[i] + gap;
         }
 
-        int rerollH = Font.GlyphH * scale + 12 * scale;
-        int autoH = Font.LineHeight * small + 6 * scale;
+        int rerollH = UiFont.GlyphH(scale) + 12 * scale;
+        int autoH = UiFont.LineHeight(small) + 6 * scale;
         int bottom = vh - 12 * scale - autoH - rerollH - 4 * scale;
         int y = bottom - stack;
 
-        Font.DrawCentred(batch, sprites.Blank, Screens.Spaced("LEVEL UP"), vw / 2,
-                         y - 10 * scale - Font.GlyphH * scale * 2 - Font.LineHeight * small,
+        Screens.UiDrawCentred(batch, sprites, Screens.Spaced("LEVEL UP"), vw / 2,
+                         y - 10 * scale - UiFont.GlyphH(scale * 2) - UiFont.LineHeight(small),
                          small, Faint);
         string owed = lu.Pending > 1 ? $"CHOOSE ONE ({lu.Pending} PENDING)" : "CHOOSE ONE";
-        Font.DrawCentred(batch, sprites.Blank, owed, vw / 2,
-                         y - 8 * scale - Font.GlyphH * scale * 2, scale * 2, Ink);
+        Screens.UiDrawCentred(batch, sprites, owed, vw / 2,
+                         y - 8 * scale - UiFont.GlyphH(scale * 2), scale * 2, Ink);
 
         for (int i = 0; i < n; i++)
         {
@@ -211,7 +211,7 @@ public static class Overlay
         //
         // BELOW THE REROLL, which is already below the cards: this is the least-reached control on
         // the screen and the one with the largest consequence, so it sits furthest from the thumb.
-        Font.DrawCentred(batch, sprites.Blank, "[A] AUTO LEVEL FROM HERE", vw / 2, y, small, Faint);
+        Screens.UiDrawCentred(batch, sprites, "[A] AUTO LEVEL FROM HERE", vw / 2, y, small, Faint);
     }
 
     /// <summary>What one offer says: its name, its tier line, and what the tier does.</summary>
@@ -265,9 +265,9 @@ public static class Overlay
         if (t.Name == "") return 0;
 
         int textW = width - 14 * scale - 22 * scale;
-        int h = 7 * scale + Font.GlyphH * scale + 2 * scale;
-        if (t.Tier != "") h += Font.LineHeight * small + 3 * scale;
-        h += Font.Wrap(t.Desc, textW, small).Count * Font.LineHeight * small;
+        int h = 7 * scale + UiFont.GlyphH(scale) + 2 * scale;
+        if (t.Tier != "") h += UiFont.LineHeight(small) + 3 * scale;
+        h += UiFont.Wrap(t.Desc, textW, small).Count * UiFont.LineHeight(small);
         h += 7 * scale;
         return System.Math.Max(h, 39 * scale);
     }
@@ -302,27 +302,27 @@ public static class Overlay
 
         // The key that takes it, on the left where the eye starts, rather than centred where the
         // name is. One glyph: a card is chosen by pressing a number.
-        Font.Draw(batch, sprites.Blank, $"[{slot + 1}]", r.Right - pad - Font.Measure("[9]", small),
+        Screens.UiDraw(batch, sprites, $"[{slot + 1}]", r.Right - pad - UiFont.Measure("[9]", small),
                   r.Y + pad, small, Faint);
 
         int ty = r.Y + pad;
-        Font.Draw(batch, sprites.Blank, t.Name.ToUpperInvariant(), ix, ty, scale, Ink);
-        ty += Font.GlyphH * scale + 2 * scale;
+        Screens.UiDraw(batch, sprites, t.Name.ToUpperInvariant(), ix, ty, scale, Ink);
+        ty += UiFont.GlyphH(scale) + 2 * scale;
 
         if (t.Tier != "")
         {
             // DIMMED ON AN ORDINARY TIER so the unlock still reads as the louder card. One number
             // to move rather than a second pair of colours that can drift out of sync.
-            Font.Draw(batch, sprites.Blank, Screens.Spaced(t.Tier), ix, ty, small,
+            Screens.UiDraw(batch, sprites, Screens.Spaced(t.Tier), ix, ty, small,
                       unlock ? key : key * 0.72f);
-            ty += Font.LineHeight * small + 3 * scale;
+            ty += UiFont.LineHeight(small) + 3 * scale;
         }
 
         int textW = r.Width - (ix - r.X) - pad - 22 * scale;
-        foreach (string line in Font.Wrap(t.Desc, textW, small))
+        foreach (string line in UiFont.Wrap(t.Desc, textW, small))
         {
-            Font.Draw(batch, sprites.Blank, line, ix, ty, small, Dim);
-            ty += Font.LineHeight * small;
+            Screens.UiDraw(batch, sprites, line, ix, ty, small, Dim);
+            ty += UiFont.LineHeight(small);
         }
     }
 
@@ -429,7 +429,7 @@ public static class Overlay
         // "collapses to the result" has to mean - a very quick spin still moves.
         double t = reduced ? double.PositiveInfinity : elapsedMs;
 
-        Font.DrawCentred(batch, sprites.Blank, "CYBER CHEST", vw / 2, (int)(vh * 0.16), scale * 2,
+        Screens.UiDrawCentred(batch, sprites, "CYBER CHEST", vw / 2, (int)(vh * 0.16), scale * 2,
                          Accent);
 
         int box = 56 * scale;
@@ -467,7 +467,7 @@ public static class Overlay
         // the GRANTS list that waits out the beat, so the pause is spent on the detail.
         if (!allLanded)
         {
-            Font.DrawCentred(batch, sprites.Blank, "[1] SKIP", vw / 2, ty + 10 * scale, scale, Dim);
+            Screens.UiDrawCentred(batch, sprites, "[1] SKIP", vw / 2, ty + 10 * scale, scale, Dim);
             return;
         }
 
@@ -475,9 +475,9 @@ public static class Overlay
         {
             // AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, so it is announced
             // rather than folded into the payout line.
-            Font.DrawCentred(batch, sprites.Blank, "ASCENSION", vw / 2, ty, scale * 2, Accent);
+            Screens.UiDrawCentred(batch, sprites, "ASCENSION", vw / 2, ty, scale * 2, Accent);
             ty += 20 * scale;
-            Font.DrawCentred(batch, sprites.Blank,
+            Screens.UiDrawCentred(batch, sprites,
                              CardTexts.At(chest.Ascension).Name.ToUpperInvariant(), vw / 2, ty,
                              scale, Ink);
             ty += 14 * scale;
@@ -489,10 +489,10 @@ public static class Overlay
                 : "";
             if (word != "")
             {
-                Font.DrawCentred(batch, sprites.Blank, word, vw / 2, ty, scale * 2, Accent);
+                Screens.UiDrawCentred(batch, sprites, word, vw / 2, ty, scale * 2, Accent);
                 ty += 20 * scale;
             }
-            Font.DrawCentred(batch, sprites.Blank, $"{chest.Payout} UPGRADES", vw / 2, ty, scale,
+            Screens.UiDrawCentred(batch, sprites, $"{chest.Payout} UPGRADES", vw / 2, ty, scale,
                              Ink);
             ty += 14 * scale;
         }
@@ -503,13 +503,13 @@ public static class Overlay
             {
                 int g = chest.Grants[i];
                 if (g < 0) continue;
-                Font.DrawCentred(batch, sprites.Blank, CardTexts.At(g).Name.ToUpperInvariant(),
+                Screens.UiDrawCentred(batch, sprites, CardTexts.At(g).Name.ToUpperInvariant(),
                                  vw / 2, ty, scale, Dim);
-                ty += Font.LineHeight * scale;
+                ty += UiFont.LineHeight(scale);
             }
         }
 
-        Font.DrawCentred(batch, sprites.Blank, "[1] TAKE IT", vw / 2, ty + 10 * scale, scale, Accent);
+        Screens.UiDrawCentred(batch, sprites, "[1] TAKE IT", vw / 2, ty + 10 * scale, scale, Accent);
     }
 
     /// <summary>
@@ -703,13 +703,13 @@ public static class Overlay
         bool won = w.Phase == RunPhase.Victory;
 
         int y = 12 * scale;
-        Font.DrawCentred(batch, sprites.Blank,
+        Screens.UiDrawCentred(batch, sprites,
                          Screens.Spaced(won ? "SCRAPLORD DOWN" : "RUN OVER"), vw / 2, y, small,
                          Faint);
-        y += Font.LineHeight * small + 3 * scale;
-        Font.DrawCentred(batch, sprites.Blank, won ? "SURVIVED" : "SCRAPPED", vw / 2, y, scale * 2,
+        y += UiFont.LineHeight(small) + 3 * scale;
+        Screens.UiDrawCentred(batch, sprites, won ? "SURVIVED" : "SCRAPPED", vw / 2, y, scale * 2,
                          won ? Good : Palette.Hp);
-        y += Font.GlyphH * scale * 2 + 10 * scale;
+        y += UiFont.GlyphH(scale * 2) + 10 * scale;
 
         int btnH = 27 * scale;
         int backY = vh - 12 * scale - btnH;
@@ -736,7 +736,7 @@ public static class Overlay
 
         int gap = 4 * scale;
         int cellW = (width - gap) / 2;
-        int cellH = 6 * scale + Font.LineHeight * small + Font.GlyphH * scale + 8 * scale;
+        int cellH = 6 * scale + UiFont.LineHeight(small) + UiFont.GlyphH(scale) + 8 * scale;
         int thick = System.Math.Max(1, scale / 2);
 
         for (int i = 0; i < stats.Count; i++)
@@ -746,10 +746,10 @@ public static class Overlay
             var r = new Rectangle(x0 + i % 2 * (cellW + gap), cy, cellW, cellH);
             Screens.CardFace(batch, sprites, r, 6 * scale, Panel, Edge, thick);
 
-            Font.Draw(batch, sprites.Blank, Screens.Spaced(stats[i].K), r.X + 6 * scale,
+            Screens.UiDraw(batch, sprites, Screens.Spaced(stats[i].K), r.X + 6 * scale,
                       r.Y + 6 * scale, small, Faint);
-            Font.Draw(batch, sprites.Blank, stats[i].V, r.X + 6 * scale,
-                      r.Y + 6 * scale + Font.LineHeight * small, scale, Ink);
+            Screens.UiDraw(batch, sprites, stats[i].V, r.X + 6 * scale,
+                      r.Y + 6 * scale + UiFont.LineHeight(small), scale, Ink);
         }
         y += (stats.Count + 1) / 2 * (cellH + gap) + 4 * scale;
 
@@ -780,24 +780,24 @@ public static class Overlay
         }
         if (rows.Count == 0) rows.Add(("NONE DEALT", ""));
 
-        int listH = 6 * scale + Font.LineHeight * small
-                  + (Font.LineHeight * small + scale) * rows.Count + 8 * scale;
+        int listH = 6 * scale + UiFont.LineHeight(small)
+                  + (UiFont.LineHeight(small) + scale) * rows.Count + 8 * scale;
         if (y + listH <= bottom)
         {
             var r = new Rectangle(x0, y, width, listH);
             Screens.CardFace(batch, sprites, r, 6 * scale, Panel, Edge, thick);
 
             int ly = r.Y + 6 * scale;
-            Font.Draw(batch, sprites.Blank, Screens.Spaced("DAMAGE BY SOURCE"), r.X + 6 * scale, ly,
+            Screens.UiDraw(batch, sprites, Screens.Spaced("DAMAGE BY SOURCE"), r.X + 6 * scale, ly,
                       small, Faint);
-            ly += Font.LineHeight * small + 2 * scale;
+            ly += UiFont.LineHeight(small) + 2 * scale;
 
             foreach (var (k, v) in rows)
             {
-                Font.Draw(batch, sprites.Blank, k, r.X + 6 * scale, ly, small, Dim);
-                Font.Draw(batch, sprites.Blank, v,
-                          r.Right - 6 * scale - Font.Measure(v, small), ly, small, Ink);
-                ly += Font.LineHeight * small + scale;
+                Screens.UiDraw(batch, sprites, k, r.X + 6 * scale, ly, small, Dim);
+                Screens.UiDraw(batch, sprites, v,
+                          r.Right - 6 * scale - UiFont.Measure(v, small), ly, small, Ink);
+                ly += UiFont.LineHeight(small) + scale;
             }
         }
     }

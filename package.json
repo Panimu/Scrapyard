@@ -73,6 +73,7 @@
     "floor": "node tools/make-floor.mjs",
     "icons": "tsx tools/make-icons.mjs",
     "titlefont": "node tools/make-title-art.mjs",
+    "uifont": "node tools/make-ui-font.mjs",
     "screenshot": "tsx tools/screenshot.ts",
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
     "dps": "tsx tools/dps.ts",

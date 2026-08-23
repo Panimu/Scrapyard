@@ -95,24 +95,24 @@ public static class Screens
         var subTex = sprites.Get("title_sub");
 
         // TARGET HEIGHT MATCHES WHAT THE OLD PIXEL WORDMARK STOOD, so every measurement below that
-        // was tuned against Font.GlyphH * scale * 4 still holds. The subtitle's height then follows
+        // was tuned against UiFont.GlyphH(scale * 4) still holds. The subtitle's height then follows
         // the WORDMARK'S OWN scale factor rather than a second constant - the two PNGs were baked
         // from the same CSS proportion (62px to 27px) at the same multiplier, so scaling one by
         // "target over source" and applying that identical factor to the other reproduces that
         // proportion exactly rather than approximating it with a second hand-picked number.
-        int wordH = Font.GlyphH * scale * 4;
+        int wordH = UiFont.GlyphH(scale * 4);
         int wordW = wordTex is not null ? wordH * wordTex.Width / wordTex.Height : 0;
         int subH2 = wordTex is not null && subTex is not null
             ? System.Math.Max(1, subTex.Height * wordH / wordTex.Height)
-            : Font.GlyphH * scale * 2;
+            : UiFont.GlyphH(scale * 2);
         int subW = subTex is not null ? subH2 * subTex.Width / subTex.Height : 0;
 
         int nameH = wordH + 6 * scale;
         int subH = subH2 + 10 * scale;
-        int tagH = Font.LineHeight * tagScale * 2 + 16 * scale;
+        int tagH = UiFont.LineHeight(tagScale) * 2 + 16 * scale;
         int menuH = rows.Length * (rowH + gap);
-        int bankH = save.Credits > 0 ? Font.LineHeight * scale + 6 * scale : 0;
-        int verH = Font.GlyphH * tagScale + 20 * scale;
+        int bankH = save.Credits > 0 ? UiFont.LineHeight(scale) + 6 * scale : 0;
+        int verH = UiFont.GlyphH(tagScale) + 20 * scale;
 
         // MEASURED, THEN CENTRED, which is what `justify-content: center` does and what placing
         // things at fractions of the height does not. Sizing the mech against the wordmark is the
@@ -129,7 +129,7 @@ public static class Screens
         {
             // A SHADE UNDER HALF THE WORDMARK'S WIDTH, which is the proportion the web build has -
             // off the baked texture's own measured width now, rather than the pixel font's.
-            artW = wordTex is not null ? wordW / 2 : Font.Measure("SCRAPYARD", scale * 4) / 2;
+            artW = wordTex is not null ? wordW / 2 : UiFont.Measure("SCRAPYARD", scale * 4) / 2;
             artH = artW * art.Height / art.Width;
 
             int room = vh - (nameH + subH + tagH + menuH + bankH + verH) - 16 * scale;
@@ -178,8 +178,8 @@ public static class Screens
             // NO BAKED ASSET FOUND: fall back to the pixel font rather than draw nothing. This is
             // the same "a hole in the picture, not a crash" rule Sprites.Get documents for every
             // other missing texture.
-            Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
-            Font.DrawCentred(batch, sprites.Blank, "S U R V I V O R S", vw / 2, y + nameH, scale * 2,
+            UiDrawCentred(batch, sprites, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
+            UiDrawCentred(batch, sprites, "S U R V I V O R S", vw / 2, y + nameH, scale * 2,
                              Accent);
         }
         y += nameH;
@@ -192,10 +192,10 @@ public static class Screens
         //
         // SMALLER AND FAINTER THAN THE BUTTONS - 13px against their 18 in the original: there to be
         // read once and then ignored.
-        Font.DrawCentred(batch, sprites.Blank, $"HEAVY MECHS. {minutes} MINUTES OF HORDE.",
+        UiDrawCentred(batch, sprites, $"HEAVY MECHS. {minutes} MINUTES OF HORDE.",
                          vw / 2, y, tagScale, Palette.Faint);
-        Font.DrawCentred(batch, sprites.Blank, "EVERY SCRAPLORD DOWN.", vw / 2,
-                         y + Font.LineHeight * tagScale, tagScale, Palette.Faint);
+        UiDrawCentred(batch, sprites, "EVERY SCRAPLORD DOWN.", vw / 2,
+                         y + UiFont.LineHeight(tagScale), tagScale, Palette.Faint);
         y += tagH;
 
         for (int i = 0; i < rows.Length; i++)
@@ -255,7 +255,7 @@ public static class Screens
         // says nothing at all when there is nothing banked.
         if (save.Credits > 0)
         {
-            Font.DrawCentred(batch, sprites.Blank, $"{save.Credits} CREDITS BANKED", vw / 2,
+            UiDrawCentred(batch, sprites, $"{save.Credits} CREDITS BANKED", vw / 2,
                              y + 6 * scale, scale, Palette.Dim);
         }
 
@@ -263,8 +263,8 @@ public static class Screens
         // THE SMALLEST THING ON THE SCREEN, and pinned to the bottom of it. 11px against the
         // tagline's 13 and the buttons' 18: it is a serial number, not a feature.
         int verScale = System.Math.Max(1, scale - 1);
-        Font.DrawCentred(batch, sprites.Blank, BuildInfo.Label.ToUpperInvariant(), vw / 2,
-                         vh - 10 * scale - Font.GlyphH * verScale, verScale, Palette.Faint);
+        UiDrawCentred(batch, sprites, BuildInfo.Label.ToUpperInvariant(), vw / 2,
+                         vh - 10 * scale - UiFont.GlyphH(verScale), verScale, Palette.Faint);
     }
 
     /// <summary>
@@ -308,10 +308,10 @@ public static class Screens
         }
 
         int y = Head(batch, sprites, "NEW GAME", "PICK A MECH", vw, 8 * scale, scale);
-        Font.DrawCentred(batch, sprites.Blank,
+        UiDrawCentred(batch, sprites,
                          "SIXTEEN CHASSIS. EIGHT CARRY A BONUS TO ONE WEAPON.", vw / 2, y, small,
                          Palette.Faint);
-        y += Font.LineHeight * small + 6 * scale;
+        y += UiFont.LineHeight(small) + 6 * scale;
 
         var (actionsY, backBtn, nextBtn) =
             Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "NEXT", "ENTER");
@@ -346,8 +346,8 @@ public static class Screens
             int h0 = 5 * scale + art + 6 * scale;
             if (save.UnlockedHeroes.Contains(roster[i].Id))
             {
-                int n = Font.Wrap(roster[i].Line.ToUpperInvariant(), tileW - 6 * scale, small).Count;
-                h0 += 4 * scale + Font.GlyphH * small + 3 * scale + Font.LineHeight * small * n;
+                int n = UiFont.Wrap(roster[i].Line.ToUpperInvariant(), tileW - 6 * scale, small).Count;
+                h0 += 4 * scale + UiFont.GlyphH(small) + 3 * scale + UiFont.LineHeight(small) * n;
             }
             if (h0 > rowH[i / cols]) rowH[i / cols] = h0;
         }
@@ -355,7 +355,7 @@ public static class Screens
         // The window follows the cursor a ROW at a time - a grid that scrolled by tiles would put
         // the two halves of a row on different pages. It scrolls only far enough to bring the
         // cursor's row on screen, so moving back up walks the list back rather than jumping.
-        int bottom = actionsY - 8 * scale - Font.GlyphH * small;
+        int bottom = actionsY - 8 * scale - UiFont.GlyphH(small);
         int cursorRow = cursor / cols;
         int firstRow = 0;
         while (firstRow < cursorRow)
@@ -402,14 +402,14 @@ public static class Screens
             int ty = r.Y + 5 * scale + art + 4 * scale;
             if (owned)
             {
-                Font.DrawCentred(batch, sprites.Blank, h.Name.ToUpperInvariant(), r.Center.X, ty,
+                UiDrawCentred(batch, sprites, h.Name.ToUpperInvariant(), r.Center.X, ty,
                                  small, Palette.Ink);
-                ty += Font.GlyphH * small + 3 * scale;
-                foreach (string line in Font.Wrap(h.Line.ToUpperInvariant(), tileW - 6 * scale, small))
+                ty += UiFont.GlyphH(small) + 3 * scale;
+                foreach (string line in UiFont.Wrap(h.Line.ToUpperInvariant(), tileW - 6 * scale, small))
                 {
-                    Font.DrawCentred(batch, sprites.Blank, line, r.Center.X, ty, small,
+                    UiDrawCentred(batch, sprites, line, r.Center.X, ty, small,
                                      Palette.Faint);
-                    ty += Font.LineHeight * small;
+                    ty += UiFont.LineHeight(small);
                 }
             }
             else
@@ -418,24 +418,24 @@ public static class Screens
                 // grey shape is the one place on this screen where contrast has to be deliberate -
                 // without the halo the question mark reads as a hole in the mech.
                 int qx = r.X + tileW / 2;
-                int qy = r.Y + 5 * scale + (art - Font.GlyphH * scale * 2) / 2;
+                int qy = r.Y + 5 * scale + (art - UiFont.GlyphH(scale * 2)) / 2;
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     for (int dy = -1; dy <= 1; dy++)
                     {
                         if (dx == 0 && dy == 0) continue;
-                        Font.DrawCentred(batch, sprites.Blank, "?", qx + dx * scale, qy + dy * scale,
+                        UiDrawCentred(batch, sprites, "?", qx + dx * scale, qy + dy * scale,
                                          scale * 2, Color.Black * 0.9f);
                     }
                 }
-                Font.DrawCentred(batch, sprites.Blank, "?", qx, qy, scale * 2, Palette.Ink);
+                UiDrawCentred(batch, sprites, "?", qx, qy, scale * 2, Palette.Ink);
             }
         }
 
         // THE ONE NUMBER THAT PERSISTS, said here as well as on the title because this is the screen
         // a player reaches on the way into a run - and the workshop is one button back.
-        Font.DrawCentred(batch, sprites.Blank, save.Credits + " CREDITS BANKED", vw / 2,
-                         actionsY - 6 * scale - Font.GlyphH * small, small, Palette.Dim);
+        UiDrawCentred(batch, sprites, save.Credits + " CREDITS BANKED", vw / 2,
+                         actionsY - 6 * scale - UiFont.GlyphH(small), small, Palette.Dim);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -478,10 +478,10 @@ public static class Screens
             bool open = save.UnlockedLevels.Contains(l.Id) && l.Playable;
             int textW = w - pad * 3 - art;
 
-            var blurb = open ? Font.Wrap(l.Line.ToUpperInvariant(), textW, small)
+            var blurb = open ? UiFont.Wrap(l.Line.ToUpperInvariant(), textW, small)
                              : (IReadOnlyList<string>)System.Array.Empty<string>();
-            int h = System.Math.Max(art, Font.GlyphH * scale + 4 * scale
-                                         + Font.LineHeight * small * blurb.Count) + pad * 2;
+            int h = System.Math.Max(art, UiFont.GlyphH(scale) + 4 * scale
+                                         + UiFont.LineHeight(small) * blurb.Count) + pad * 2;
             var r = new Rectangle(x0, y, w, h);
             outRects?.Add(r);
 
@@ -502,15 +502,15 @@ public static class Screens
             }
 
             int tx = well.Right + pad;
-            int ty = r.Y + (h - (Font.GlyphH * scale + 4 * scale
-                                 + Font.LineHeight * small * blurb.Count)) / 2;
-            Font.Draw(batch, sprites.Blank, l.Name.ToUpperInvariant(), tx, ty, scale,
+            int ty = r.Y + (h - (UiFont.GlyphH(scale) + 4 * scale
+                                 + UiFont.LineHeight(small) * blurb.Count)) / 2;
+            UiDraw(batch, sprites, l.Name.ToUpperInvariant(), tx, ty, scale,
                       open ? Palette.Ink : Palette.Locked);
-            ty += Font.GlyphH * scale + 4 * scale;
+            ty += UiFont.GlyphH(scale) + 4 * scale;
             foreach (string line in blurb)
             {
-                Font.Draw(batch, sprites.Blank, line, tx, ty, small, Palette.Faint);
-                ty += Font.LineHeight * small;
+                UiDraw(batch, sprites, line, tx, ty, small, Palette.Faint);
+                ty += UiFont.LineHeight(small);
             }
 
             // TBD AND LOCKED ARE DIFFERENT ANSWERS. One says the yard is not built; the other says
@@ -519,11 +519,11 @@ public static class Screens
             if (!open)
             {
                 string flag = !l.Playable ? "TBD" : "LOCKED";
-                int fw = Font.Measure(flag, small) + 5 * scale;
+                int fw = UiFont.Measure(flag, small) + 5 * scale;
                 var box = new Rectangle(r.Right - pad - fw, r.Y + pad,
-                                        fw, Font.GlyphH * small + 4 * scale);
+                                        fw, UiFont.GlyphH(small) + 4 * scale);
                 CardFace(batch, sprites, box, 3 * scale, Palette.Sunken, Palette.Edge, thick);
-                Font.DrawCentred(batch, sprites.Blank, flag, box.Center.X, box.Y + 2 * scale, small,
+                UiDrawCentred(batch, sprites, flag, box.Center.X, box.Y + 2 * scale, small,
                                  Palette.Faint);
             }
 
@@ -583,11 +583,11 @@ public static class Screens
         // decisions below is measured against - and it stays put while the list scrolls, so a player
         // at the bottom of the list does not have to come back up to find out what they can afford.
         string credits = save.Credits.ToString();
-        Font.DrawCentred(batch, sprites.Blank, credits, vw / 2, y, scale * 3, Palette.Shop);
-        y += Font.GlyphH * scale * 3 + 4 * scale;
-        Font.DrawCentred(batch, sprites.Blank, Spaced("CREDITS BANKED"), vw / 2, y, small,
+        UiDrawCentred(batch, sprites, credits, vw / 2, y, scale * 3, Palette.Shop);
+        y += UiFont.GlyphH(scale * 3) + 4 * scale;
+        UiDrawCentred(batch, sprites, Spaced("CREDITS BANKED"), vw / 2, y, small,
                          Palette.Faint);
-        y += Font.LineHeight * small + 6 * scale;
+        y += UiFont.LineHeight(small) + 6 * scale;
 
         // The buttons first: the list is what gives up room, not the way out of the screen.
         long spent = save.TotalSpent();
@@ -660,26 +660,26 @@ public static class Screens
             int textW = r.Width - stripe - pad * 3 - buyW;
             int ty = r.Y + pad;
 
-            Font.Draw(batch, sprites.Blank, def.Name.ToUpperInvariant(), tx, ty, scale, Palette.Ink);
-            ty += Font.GlyphH * scale + 3 * scale;
+            UiDraw(batch, sprites, def.Name.ToUpperInvariant(), tx, ty, scale, Palette.Ink);
+            ty += UiFont.GlyphH(scale) + 2 * scale;
 
-            foreach (string line in Font.Wrap(def.Blurb.ToUpperInvariant(), textW, small))
+            foreach (string line in UiFont.Wrap(def.Blurb.ToUpperInvariant(), textW, small))
             {
-                Font.Draw(batch, sprites.Blank, line, tx, ty, small, Palette.Dim);
-                ty += Font.LineHeight * small;
+                UiDraw(batch, sprites, line, tx, ty, small, Palette.Dim);
+                ty += UiFont.LineHeight(small);
             }
             ty += 2 * scale;
 
             // A row that owns none of it has no current effect to state, so the PROMISE is the whole
             // line - and it is faint, because it is the one row state where this text is not
             // describing your mech.
-            foreach (string line in Font.Wrap(SummaryOf(def, owned), textW, small))
+            foreach (string line in UiFont.Wrap(SummaryOf(def, owned), textW, small))
             {
-                Font.Draw(batch, sprites.Blank, line, tx, ty, small,
-                          owned <= 0 ? Palette.Faint : Palette.Shop);
-                ty += Font.LineHeight * small;
+                UiDraw(batch, sprites, line, tx, ty, small,
+                      owned <= 0 ? Palette.Faint : Palette.Shop);
+                ty += UiFont.LineHeight(small);
             }
-            ty += 3 * scale;
+            ty += 2 * scale;
 
             for (int t = 0; t < def.Tiers; t++)
             {
@@ -722,11 +722,17 @@ public static class Screens
                                  int scale, int small)
     {
         int textW = w - stripe - pad * 3 - buyW;
-        int h = pad + Font.GlyphH * scale + 3 * scale;
-        h += Font.Wrap(def.Blurb.ToUpperInvariant(), textW, small).Count * Font.LineHeight * small;
+        // TRIMMED FROM 3/3/3 TO 2/2/2 SCALE UNITS a section - the proportional font this now draws
+        // in wraps the same prose in fewer lines than the old fixed-width grid did, but not by as
+        // much as hoped: this game's own text is all upper-case, and upper-case letterforms in most
+        // faces are already fairly UNIFORM in width, which is exactly the case a proportional font
+        // has the least advantage over a monospaced one. Sixteen rows at four visible on screen
+        // needed the gaps trimmed as well as the font swapped to actually show a fifth.
+        int h = pad + UiFont.GlyphH(scale) + 2 * scale;
+        h += UiFont.Wrap(def.Blurb.ToUpperInvariant(), textW, small).Count * UiFont.LineHeight(small);
         h += 2 * scale;
-        h += Font.Wrap(SummaryOf(def, owned), textW, small).Count * Font.LineHeight * small;
-        h += 3 * scale + 3 * scale + pad;
+        h += UiFont.Wrap(SummaryOf(def, owned), textW, small).Count * UiFont.LineHeight(small);
+        h += 2 * scale + 2 * scale + pad;
 
         return System.Math.Max(h, 22 * scale + pad * 2);
     }
@@ -750,18 +756,18 @@ public static class Screens
 
         if (full)
         {
-            Font.DrawCentred(batch, sprites.Blank, "MAXED", r.Center.X,
-                             r.Y + (r.Height - Font.GlyphH * small) / 2, small, Palette.Faint);
+            UiDrawCentred(batch, sprites, "MAXED", r.Center.X,
+                         r.Y + (r.Height - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
             return;
         }
 
         var ink = lit ? Palette.OnAccent : afford ? Palette.Ink : Palette.Faint;
-        int block = Font.GlyphH * scale + Font.LineHeight * small;
+        int block = UiFont.GlyphH(scale) + UiFont.LineHeight(small);
         int top = r.Y + (r.Height - block) / 2;
-        Font.DrawCentred(batch, sprites.Blank, def.Cost.ToString(), r.Center.X, top, scale, ink);
-        Font.DrawCentred(batch, sprites.Blank, lit ? "ENTER" : "CR", r.Center.X,
-                         top + Font.GlyphH * scale + 2 * scale, small,
-                         lit ? Palette.OnAccent : Palette.Faint);
+        UiDrawCentred(batch, sprites, def.Cost.ToString(), r.Center.X, top, scale, ink);
+        UiDrawCentred(batch, sprites, lit ? "ENTER" : "CR", r.Center.X,
+                     top + UiFont.GlyphH(scale) + 2 * scale, small,
+                     lit ? Palette.OnAccent : Palette.Faint);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -823,7 +829,7 @@ public static class Screens
         // The left button is sized to its own words plus the padding `.btn:first-child` asks for;
         // the right one takes what is left, which is what `flex: 1 1 auto` beside `flex: 0 0 auto`
         // comes to.
-        int leftW = Font.Measure(leftLabel, scale) + Font.Measure(leftKey, scale) + 24 * scale;
+        int leftW = UiFont.Measure(leftLabel, scale) + UiFont.Measure(leftKey, scale) + 24 * scale;
         leftW = System.Math.Min(leftW, w - 40 * scale);
 
         var left = new Rectangle(x0, y, leftW, h);
@@ -841,13 +847,13 @@ public static class Screens
              primary ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
 
         int small = System.Math.Max(1, scale - 1);
-        int keyW = Font.Measure(key, small);
-        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X - keyW / 2,
-                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
-                         primary ? Palette.OnAccent : Palette.Ink);
-        Font.Draw(batch, sprites.Blank, key, r.Right - keyW - 7 * scale,
-                  r.Y + (r.Height - Font.GlyphH * small) / 2, small,
-                  primary ? Palette.OnAccent * 0.65f : Palette.Faint);
+        int keyW = UiFont.Measure(key, small);
+        UiDrawCentred(batch, sprites, label, r.Center.X - keyW / 2,
+                     r.Y + (r.Height - UiFont.GlyphH(scale)) / 2, scale,
+                     primary ? Palette.OnAccent : Palette.Ink);
+        UiDraw(batch, sprites, key, r.Right - keyW - 7 * scale,
+              r.Y + (r.Height - UiFont.GlyphH(small)) / 2, small,
+              primary ? Palette.OnAccent * 0.65f : Palette.Faint);
     }
 
     /// <summary>
@@ -895,8 +901,8 @@ public static class Screens
             int ctrlH = segmented ? 22 * scale : 16 * scale;
 
             int textW = w - pad * 2 - ctrlW - pad;
-            var note = Font.Wrap(SettingNote(i), textW, small);
-            int textH = Font.GlyphH * scale + 4 * scale + Font.LineHeight * small * note.Count;
+            var note = UiFont.Wrap(SettingNote(i), textW, small);
+            int textH = UiFont.GlyphH(scale) + 4 * scale + UiFont.LineHeight(small) * note.Count;
             int rowH = System.Math.Max(textH, ctrlH) + pad * 2;
 
             var r = new Rectangle(x0, y, w, rowH);
@@ -904,13 +910,13 @@ public static class Screens
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
-            Font.Draw(batch, sprites.Blank, MenuRows.Settings[i], r.X + pad, r.Y + pad, scale,
+            UiDraw(batch, sprites, MenuRows.Settings[i], r.X + pad, r.Y + pad, scale,
                       Palette.Ink);
-            int ny = r.Y + pad + Font.GlyphH * scale + 4 * scale;
+            int ny = r.Y + pad + UiFont.GlyphH(scale) + 4 * scale;
             foreach (string line in note)
             {
-                Font.Draw(batch, sprites.Blank, line, r.X + pad, ny, small, Palette.Faint);
-                ny += Font.LineHeight * small;
+                UiDraw(batch, sprites, line, r.X + pad, ny, small, Palette.Faint);
+                ny += UiFont.LineHeight(small);
             }
 
             var ctrl = new Rectangle(r.Right - pad - ctrlW, r.Y + (rowH - ctrlH) / 2, ctrlW, ctrlH);
@@ -1009,7 +1015,7 @@ public static class Screens
             // shows, and a row has space for a line saying what is behind it where a tile does not.
             for (int i = 0; i < Pedia.Sections.Length; i++)
             {
-                int h = 6 * scale + Font.GlyphH * scale + 3 * scale + Font.LineHeight * small
+                int h = 6 * scale + UiFont.GlyphH(scale) + 3 * scale + UiFont.LineHeight(small)
                       + 6 * scale;
                 var r = new Rectangle(x0, y, w, h);
                 outRects?.Add(r);
@@ -1019,10 +1025,10 @@ public static class Screens
                 CardFace(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
                      thick);
 
-                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Label, r.X + 7 * scale,
+                UiDraw(batch, sprites, Pedia.Sections[i].Label, r.X + 7 * scale,
                           r.Y + 6 * scale, scale, Palette.Ink);
-                Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Blurb, r.X + 7 * scale,
-                          r.Y + 6 * scale + Font.GlyphH * scale + 3 * scale, small, Palette.Faint);
+                UiDraw(batch, sprites, Pedia.Sections[i].Blurb, r.X + 7 * scale,
+                          r.Y + 6 * scale + UiFont.GlyphH(scale) + 3 * scale, small, Palette.Faint);
                 y += h + 5 * scale;
             }
             outRects?.Add(backBtn);
@@ -1037,9 +1043,9 @@ public static class Screens
             {
                 for (int i = 0; i < rows.Count; i++) outRects.Add(Rectangle.Empty);
             }
-            Font.DrawCentred(batch, sprites.Blank, Spaced(Pedia.Sections[st.Section].Label), vw / 2,
+            UiDrawCentred(batch, sprites, Spaced(Pedia.Sections[st.Section].Label), vw / 2,
                              y, small, Palette.Faint);
-            y += Font.LineHeight * small + 6 * scale;
+            y += UiFont.LineHeight(small) + 6 * scale;
 
             int icon = 17 * scale;
 
@@ -1048,7 +1054,7 @@ public static class Screens
             // name fitted, and the left stripe had six pixels of straight edge between two fourteen
             // pixel corners - so the one mark saying what KIND of entry it is was a dot.
             int entryH = System.Math.Max(26 * scale, icon + 8 * scale);
-            int headH = Font.LineHeight * small + 5 * scale;
+            int headH = UiFont.LineHeight(small) + 5 * scale;
 
             // The window keeps the cursor in view a row at a time. Headings are rows too, so this
             // counts them - which is why the index is one array and one integer in the first place.
@@ -1084,10 +1090,10 @@ public static class Screens
                     // A GROUP HEADING IS NOT A CARD. It is the label above a run of them - eleven
                     // pixels, letterspaced, with the tally down the right edge so the three groups
                     // line up.
-                    Font.Draw(batch, sprites.Blank, Spaced(row.Text), x0 + 2 * scale, y, small,
+                    UiDraw(batch, sprites, Spaced(row.Text), x0 + 2 * scale, y, small,
                               Palette.Faint);
-                    Font.Draw(batch, sprites.Blank, row.Sub,
-                              x0 + w - 2 * scale - Font.Measure(row.Sub, small), y, small,
+                    UiDraw(batch, sprites, row.Sub,
+                              x0 + w - 2 * scale - UiFont.Measure(row.Sub, small), y, small,
                               Palette.Faint);
                     y += headH;
                     continue;
@@ -1122,13 +1128,13 @@ public static class Screens
                     // something rather than as a thing in its own right.
                     var plate = new Rectangle(ix, r.Y + (entryH - icon) / 2, icon, icon);
                     Dashed(batch, sprites, plate, 4 * scale, scale);
-                    Font.DrawCentred(batch, sprites.Blank, "?", plate.Center.X,
-                                     plate.Y + (icon - Font.GlyphH * small) / 2, small,
+                    UiDrawCentred(batch, sprites, "?", plate.Center.X,
+                                     plate.Y + (icon - UiFont.GlyphH(small)) / 2, small,
                                      Palette.Faint);
                 }
 
-                Font.Draw(batch, sprites.Blank, row.Text.ToUpperInvariant(), ix + icon + 5 * scale,
-                          r.Y + (entryH - Font.GlyphH * small) / 2, small,
+                UiDraw(batch, sprites, row.Text.ToUpperInvariant(), ix + icon + 5 * scale,
+                          r.Y + (entryH - UiFont.GlyphH(small)) / 2, small,
                           sealedRow ? Palette.Faint : Palette.Ink);
 
                 y += entryH + 4 * scale;
@@ -1138,7 +1144,7 @@ public static class Screens
             // broken - a heading with no rows under it is what "none yet" looks like here.
             if (rows.Count <= Pedia.Sections.Length)
             {
-                Font.DrawCentred(batch, sprites.Blank, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
+                UiDrawCentred(batch, sprites, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
                                  small, Palette.Locked);
             }
             outRects?.Add(backBtn);
@@ -1223,14 +1229,14 @@ public static class Screens
             "CREATURE" or "RANK" => Palette.Hp,
             _ => Palette.Accent,
         };
-        Font.Draw(batch, sprites.Blank, page.Title, headX, y, scale, Palette.Ink);
-        Font.Draw(batch, sprites.Blank, Spaced(page.Kind), headX,
-                  y + Font.GlyphH * scale + 4 * scale, small, kindColour);
-        y += System.Math.Max(box, Font.GlyphH * scale + 4 * scale + Font.LineHeight * small)
+        UiDraw(batch, sprites, page.Title, headX, y, scale, Palette.Ink);
+        UiDraw(batch, sprites, Spaced(page.Kind), headX,
+                  y + UiFont.GlyphH(scale) + 4 * scale, small, kindColour);
+        y += System.Math.Max(box, UiFont.GlyphH(scale) + 4 * scale + UiFont.LineHeight(small))
            + 8 * scale;
 
         var lines = st.Wrapped(w, small);
-        int lineH = Font.LineHeight * small + 2 * scale;
+        int lineH = UiFont.LineHeight(small) + 2 * scale;
         int shown = System.Math.Max(1, (bottom - y) / lineH);
         int first = System.Math.Clamp(st.PageScroll, 0, System.Math.Max(0, lines.Count - shown));
 
@@ -1241,21 +1247,21 @@ public static class Screens
             // without the wrapper needing to know about structure.
             if (line.StartsWith('#'))
             {
-                Font.Draw(batch, sprites.Blank, Spaced(line[1..].Trim()), x0, y, small,
+                UiDraw(batch, sprites, Spaced(line[1..].Trim()), x0, y, small,
                           Palette.Faint);
             }
             else
             {
-                Font.Draw(batch, sprites.Blank, line, x0, y, small, Palette.Ink);
+                UiDraw(batch, sprites, line, x0, y, small, Palette.Ink);
             }
             y += lineH;
         }
 
         if (lines.Count > shown)
         {
-            Font.DrawCentred(batch, sprites.Blank,
+            UiDrawCentred(batch, sprites,
                              $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
-                             vw / 2, bottom - Font.GlyphH * small, small, Palette.Locked);
+                             vw / 2, bottom - UiFont.GlyphH(small), small, Palette.Locked);
         }
     }
 
@@ -1301,20 +1307,20 @@ public static class Screens
         string latest = Changelog.All.Length > 0
             ? "LATEST: " + Changelog.FormatTime(Changelog.All[0].At).ToUpperInvariant()
             : "NO ENTRIES YET";
-        Font.DrawCentred(batch, sprites.Blank, latest, vw / 2, y, small, Palette.Faint);
-        y += Font.LineHeight * small + 8 * scale;
+        UiDrawCentred(batch, sprites, latest, vw / 2, y, small, Palette.Faint);
+        y += UiFont.LineHeight(small) + 8 * scale;
 
         int btnH = 27 * scale;
         int backY = vh - 12 * scale - btnH;
         var backBtn = new Rectangle(x0, backY, w, btnH);
         ActionButton(batch, sprites, backBtn, "BACK", "ESC", scale, true);
         outRects?.Add(backBtn);
-        int bottom = backY - 18 * scale - Font.GlyphH * small;
+        int bottom = backY - 18 * scale - UiFont.GlyphH(small);
 
         // AS MANY LINES AS THE WINDOW HOLDS, worked out from the window. The port had thirteen, a
         // constant chosen once against one size, and on a 720-tall screen it showed thirteen lines
         // of a three-thousand-line file with two thirds of the screen empty under them.
-        int lineH = Font.LineHeight * small + 2 * scale;
+        int lineH = UiFont.LineHeight(small) + 2 * scale;
         int shown = System.Math.Max(1, (bottom - y) / lineH);
         int first = System.Math.Clamp(scroll, 0, System.Math.Max(0, lines.Count - shown));
 
@@ -1325,7 +1331,7 @@ public static class Screens
             // `@` is a timestamp, `#` a title, everything else a note.
             if (line.StartsWith('@'))
             {
-                Font.Draw(batch, sprites.Blank, Spaced(line[1..]), x0, y, small, Palette.Faint);
+                UiDraw(batch, sprites, Spaced(line[1..]), x0, y, small, Palette.Faint);
             }
             else if (line.StartsWith('#'))
             {
@@ -1333,20 +1339,20 @@ public static class Screens
                 // computed once at this scale and the line breaks are part of it, so setting the
                 // title larger ran every long headline straight out of the column - the width is
                 // the contract, and ink is the hierarchy that does not break it.
-                Font.Draw(batch, sprites.Blank, line[1..], x0, y, small, Palette.Ink);
+                UiDraw(batch, sprites, line[1..], x0, y, small, Palette.Ink);
             }
             else
             {
-                Font.Draw(batch, sprites.Blank, line, x0, y, small, Palette.Dim);
+                UiDraw(batch, sprites, line, x0, y, small, Palette.Dim);
             }
             y += lineH;
         }
 
         if (lines.Count > shown)
         {
-            Font.DrawCentred(batch, sprites.Blank,
+            UiDrawCentred(batch, sprites,
                              $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
-                             vw / 2, backY - 8 * scale - Font.GlyphH * small, small, Palette.Locked);
+                             vw / 2, backY - 8 * scale - UiFont.GlyphH(small), small, Palette.Locked);
         }
     }
 
@@ -1374,26 +1380,26 @@ public static class Screens
         // than beside them, because on a phone there is only one column and the run is the thing
         // being resumed - the loadout is what you paused to look at, and the button is how you leave.
         var loadout = Loadout(w);
-        int slotH = 13 * scale + Font.GlyphH * small;
+        int slotH = 13 * scale + UiFont.GlyphH(small);
         int loadH = 0;
         foreach (var (_, slots) in loadout)
         {
-            loadH += Font.LineHeight * small + 4 * scale
+            loadH += UiFont.LineHeight(small) + 4 * scale
                    + System.Math.Max(1, slots.Count) * (slotH + 2 * scale) + 8 * scale;
         }
 
-        int titleH = Font.GlyphH * scale * 2 + 6 * scale;
-        int statH = Font.LineHeight * small + 12 * scale;
+        int titleH = UiFont.GlyphH(scale * 2) + 6 * scale;
+        int statH = UiFont.LineHeight(small) + 12 * scale;
         int menuH = rows.Length * (rowH + gap);
-        int noteH = Font.LineHeight * small + 12 * scale;
+        int noteH = UiFont.LineHeight(small) + 12 * scale;
         int y = System.Math.Max(10 * scale, (vh - (titleH + statH + menuH + loadH + noteH)) / 2);
 
-        Font.DrawCentred(batch, sprites.Blank, Spaced("PAUSED"), vw / 2, y, scale * 2, Palette.Ink);
+        UiDrawCentred(batch, sprites, Spaced("PAUSED"), vw / 2, y, scale * 2, Palette.Ink);
         y += titleH;
 
         int mins = (int)(w.RunSec / 60);
         int secs = (int)(w.RunSec % 60);
-        Font.DrawCentred(batch, sprites.Blank,
+        UiDrawCentred(batch, sprites,
                          $"{mins}:{secs:00}   LV {w.Player.Level}   {w.Stats.Kills:0} KILLS",
                          vw / 2, y, small, Palette.Faint);
         y += statH;
@@ -1412,8 +1418,8 @@ public static class Screens
         y += 4 * scale;
         foreach (var (title, slots) in loadout)
         {
-            Font.Draw(batch, sprites.Blank, Spaced(title), x0 + 2 * scale, y, small, Palette.Faint);
-            y += Font.LineHeight * small + 4 * scale;
+            UiDraw(batch, sprites, Spaced(title), x0 + 2 * scale, y, small, Palette.Faint);
+            y += UiFont.LineHeight(small) + 4 * scale;
 
             // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a panel
             // that failed to load; a hollow slot with "EMPTY" in it reads as a mount you have not
@@ -1422,8 +1428,8 @@ public static class Screens
             {
                 var r = new Rectangle(x0, y, width, slotH);
                 RoundOutline(batch, sprites, r, 4 * scale, thick, Palette.Button);
-                Font.Draw(batch, sprites.Blank, "EMPTY", r.X + 6 * scale,
-                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Faint);
+                UiDraw(batch, sprites, "EMPTY", r.X + 6 * scale,
+                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
                 y += slotH + 2 * scale;
             }
 
@@ -1435,11 +1441,11 @@ public static class Screens
                            new Rectangle(r.X, r.Y + 2 * scale, 2 * scale, r.Height - 4 * scale),
                            Palette.Accent);
 
-                Font.Draw(batch, sprites.Blank, name, r.X + 6 * scale,
-                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Ink);
+                UiDraw(batch, sprites, name, r.X + 6 * scale,
+                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Ink);
                 string t = "T" + tier;
-                Font.Draw(batch, sprites.Blank, t, r.Right - 6 * scale - Font.Measure(t, small),
-                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Accent);
+                UiDraw(batch, sprites, t, r.Right - 6 * scale - UiFont.Measure(t, small),
+                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Accent);
                 y += slotH + 2 * scale;
             }
             y += 8 * scale;
@@ -1448,7 +1454,7 @@ public static class Screens
         // ABANDONING IS SAFE, and saying so matters: the banking rule means everything earned is
         // already in the save. A player who does not know that will keep playing a run they are not
         // enjoying to protect progress they already have.
-        Font.DrawCentred(batch, sprites.Blank, "EVERYTHING EARNED IS ALREADY BANKED", vw / 2,
+        UiDrawCentred(batch, sprites, "EVERYTHING EARNED IS ALREADY BANKED", vw / 2,
                          y + 4 * scale, small, Palette.Dim);
     }
 
@@ -1499,20 +1505,20 @@ public static class Screens
         {
             var row = rows[i];
             string text = $"{row.Key}  {row.Label}";
-            int w = Font.Measure(text, scale);
+            int w = UiFont.Measure(text, scale);
             int x = (vw - w) / 2;
 
             if (i == cursor)
             {
                 batch.Draw(sprites.Blank,
                            new Rectangle(x - 6 * scale, y - 2 * scale,
-                                         w + 12 * scale, Font.LineHeight * scale + 4 * scale),
+                                         w + 12 * scale, UiFont.LineHeight(scale) + 4 * scale),
                            Panel);
             }
 
-            Font.Draw(batch, sprites.Blank, text, x, y,
+            UiDraw(batch, sprites, text, x, y,
                       scale, !row.Enabled ? Locked : i == cursor ? Accent : Ink);
-            y += (Font.LineHeight + 6) * scale;
+            y += UiFont.LineHeight(scale) + 6 * scale;
         }
     }
 
@@ -1657,10 +1663,31 @@ public static class Screens
                             int vw, int y, int scale)
     {
         int small = System.Math.Max(1, scale - 1);
-        Font.DrawCentred(batch, sprites.Blank, Spaced(eyebrow), vw / 2, y, small, Palette.Faint);
-        y += Font.LineHeight * small + 3 * scale;
-        Font.DrawCentred(batch, sprites.Blank, title, vw / 2, y, scale * 2, Palette.Ink);
-        return y + Font.GlyphH * scale * 2 + 8 * scale;
+        UiDrawCentred(batch, sprites, Spaced(eyebrow), vw / 2, y, small, Palette.Faint);
+        y += UiFont.LineHeight(small) + 3 * scale;
+        UiDrawCentred(batch, sprites, title, vw / 2, y, scale * 2, Palette.Ink);
+        return y + UiFont.GlyphH(scale * 2) + 8 * scale;
+    }
+
+    /// <summary>The baked atlas behind every <c>UiDraw</c>/<c>UiDrawCentred</c> call.</summary>
+    private static Texture2D? UiTex(Sprites sprites) => sprites.Get("ui_font");
+
+    /// <summary>
+    /// The menu chrome's own smooth font - see <see cref="UiFont"/> - with the same
+    /// "missing texture is a hole, not a crash" rule every other sprite in this game follows.
+    /// </summary>
+    internal static void UiDraw(SpriteBatch batch, Sprites sprites, string s, int x, int y,
+                               int scale, Color colour)
+    {
+        var tex = UiTex(sprites);
+        if (tex is not null) UiFont.Draw(batch, tex, s, x, y, scale, colour);
+    }
+
+    internal static void UiDrawCentred(SpriteBatch batch, Sprites sprites, string s, int cx, int y,
+                                      int scale, Color colour)
+    {
+        var tex = UiTex(sprites);
+        if (tex is not null) UiFont.DrawCentred(batch, tex, s, cx, y, scale, colour);
     }
 
     /// <summary>Put a space between every letter.</summary>
@@ -1727,8 +1754,8 @@ public static class Screens
                                          cell.Height - 4), Palette.Edge);
             }
 
-            Font.DrawCentred(batch, sprites.Blank, options[i], cell.Center.X,
-                             cell.Y + (cell.Height - Font.GlyphH * scale) / 2, scale,
+            UiDrawCentred(batch, sprites, options[i], cell.Center.X,
+                             cell.Y + (cell.Height - UiFont.GlyphH(scale)) / 2, scale,
                              i == chosen ? Palette.OnAccent : Palette.Dim);
         }
     }
@@ -1789,9 +1816,9 @@ public static class Screens
             RoundRect(batch, sprites, r, radius, Palette.Accent * (primary ? 0.25f : 0.35f));
         }
 
-        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X,
-                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
-                         primary ? Palette.OnAccent : Palette.Ink);
+        UiDrawCentred(batch, sprites, label, r.Center.X,
+                     r.Y + (r.Height - UiFont.GlyphH(scale)) / 2, scale,
+                     primary ? Palette.OnAccent : Palette.Ink);
     }
 
     /// <summary>A wide button on an overlay, which may be unavailable.</summary>
@@ -1807,14 +1834,14 @@ public static class Screens
                  System.Math.Max(1, scale / 2));
 
         int small = System.Math.Max(1, scale - 1);
-        int keyW = Font.Measure(key, small);
-        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X - keyW / 2,
-                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
-                         enabled ? Palette.Ink : Palette.Faint);
+        int keyW = UiFont.Measure(key, small);
+        UiDrawCentred(batch, sprites, label, r.Center.X - keyW / 2,
+                     r.Y + (r.Height - UiFont.GlyphH(scale)) / 2, scale,
+                     enabled ? Palette.Ink : Palette.Faint);
         if (enabled)
         {
-            Font.Draw(batch, sprites.Blank, key, r.Right - keyW - 7 * scale,
-                      r.Y + (r.Height - Font.GlyphH * small) / 2, small, Palette.Faint);
+            UiDraw(batch, sprites, key, r.Right - keyW - 7 * scale,
+                  r.Y + (r.Height - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
         }
     }
 
