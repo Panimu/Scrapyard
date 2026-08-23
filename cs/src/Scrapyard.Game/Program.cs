@@ -17,8 +17,10 @@ public static class Program
         int seed = args.Length > 0 && int.TryParse(args[0], out var s)
             ? s
             : unchecked((int)DateTime.Now.Ticks);
-        int heroId = args.Length > 1 && int.TryParse(args[1], out var h) ? h : 0;
-        string levelId = args.Length > 2 ? args[2] : "scrapyard";
+        // -1 AND "" MEAN "ASK THE SAVE". A default of 0 and "scrapyard" here would silently
+        // override the chassis and yard the player last chose, every launch.
+        int heroId = args.Length > 1 && int.TryParse(args[1], out var h) ? h : -1;
+        string levelId = args.Length > 2 ? args[2] : "";
 
         using var game = new ScrapyardGame(seed, heroId, levelId);
         game.Run();

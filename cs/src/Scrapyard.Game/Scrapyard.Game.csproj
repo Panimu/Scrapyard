@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
+    <ProjectReference Include="..\Scrapyard.Meta\Scrapyard.Meta.csproj" />
   </ItemGroup>
 
 </Project>

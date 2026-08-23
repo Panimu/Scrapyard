@@ -345,6 +345,41 @@ flag before counting a splash kill, but `QueryCircleLiveInto` already skips dead
 blast never sees what the first one killed. `TheSplashKillGuardIsUnreachableBecauseTheQuerySkipsTheDead`
 pins that precondition rather than posing a position the game cannot produce.
 
+## The save file, and where it lives
+
+`Scrapyard.Meta` is its own project, and both boundaries around it are deliberate.
+
+It is **not in `Scrapyard.Core`** because core does not know what a save IS. A run is
+`{ seed, heroId, levelId, inputs }`; which chassis a player may PICK is answered before a run
+exists, and `StepWorld` is handed a `heroId` that has already been chosen, never a lock to evaluate.
+Putting unlocks in core would put persistent state inside the thing the golden master vouches for.
+
+It is **not in `Scrapyard.Game`** because none of it draws — which also makes it testable, since the
+test project can reference it without pulling MonoGame in behind it. That is why `MetaTests` exists
+and `CardTexts` had to settle for a startup check.
+
+The rules it holds to, all of them from `CLAUDE.md`:
+
+- **IDs, never catalog indices.** An index is only meaningful beside the table that produced it.
+  `Settings.ToMetaTiers` is the ONE place an id becomes an index, and it happens on the way into a
+  run rather than on the way into the file.
+- **Filtered on load.** An id nothing resolves is dropped, and a purchase made under a superseded
+  `version` is REFUNDED at the price actually paid — refunding at the current price would make a
+  price cut a way to make money.
+- **Every field degrades to a default.** A truncated, hand-edited or newer-format save starts empty
+  rather than refusing to start.
+- **Banked DURING the run, not at the end** — once a second, and again when it ends. Every recorder
+  is a set union that reports only what is new, so a run that ends in an alt-F4 keeps what it found.
+- **One evaluator.** `Unlocks.Meets` serves the roster, the levels and the cards. There is no second
+  path, so they cannot disagree about what a condition means.
+- **`Never` means the criteria have not been written.** Four chassis carry it, and `MetaTests` pins
+  that it stays unreachable even against a maxed-out career.
+
+One bug worth recording because it would have been invisible: the first draft banked credits by
+comparing the run's tally against the career purse. That works exactly once — after the first run
+the purse is always larger, and nothing banks again for the rest of the player's life. It is now a
+delta of the run's own counter, and `CreditsBankOnEveryRunNotJustTheFirst` is the test.
+
 ## The front-end
 
 `Scrapyard.Game` is a MonoGame window over `Scrapyard.Core`. **The dependency runs one way only**:
@@ -378,15 +413,17 @@ system font is not on a Steam Deck; and the house art generator draws through he
 which is not installed on every machine that has to build this. A 5x7 table has none of those
 problems, cannot go missing at runtime, and suits pixel art better than a hinted vector face would.
 
-**Card text is generated, not retyped.** `Scrapyard.Core` knows a card by an integer — names and
-descriptions change nothing about what happens, so they are not in the ported simulation. But the
-front-end has to draw them, and retyping 21 descriptions into another language is how three cards
-end up mislabelled. `npx tsx tools/gen_card_text.ts` emits `CardTexts.cs`; `CardTexts.Verify` refuses
-to start if a card has been added upstream without regenerating.
+**Text, prices and locks are generated, not retyped.** `Scrapyard.Core` knows a card by an integer
+and a workshop upgrade by its effects — names, blurbs, costs, versions and unlock conditions change
+nothing about what happens, so none of them is in the ported simulation. `npm run uitext` emits
+three files from the catalogs that own them: `CardTexts.cs`, `WorkshopText.cs` and `UnlockTables.cs`.
+Each carries a `Verify` that refuses to start if the catalog has moved on. A lock retyped wrong is
+either a chassis nobody can earn or one everybody gets free, and neither announces itself.
 
-What is not done yet, plainly: no muzzle flashes, hit sparks, damage numbers or death effects; no
-ground dressing or paths; no pause menu, Scrapopedia, achievements or save file; no audio; and the
-Scrapyard's ground cover and the city's finer props are absent. The HUD is bars and a loadout strip.
+What is not done yet, plainly: no ground dressing, paths or litter; no pause menu; no Scrapopedia;
+no achievement table (the condition language it needs is ported and tested, but the 388-line table
+and its `platformKey`s are not); no workshop screen, so credits accumulate with nothing to spend
+them on; and no audio.
 
 ## What the corpus caught that 183 unit tests did not
 

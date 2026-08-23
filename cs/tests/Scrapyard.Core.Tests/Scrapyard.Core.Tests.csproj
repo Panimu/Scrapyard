@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scrapyard.Core\Scrapyard.Core.csproj" />
+    <ProjectReference Include="..\..\src\Scrapyard.Meta\Scrapyard.Meta.csproj" />
   </ItemGroup>
 
 </Project>

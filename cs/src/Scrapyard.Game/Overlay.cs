@@ -310,6 +310,29 @@ public static class Overlay
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// What the run has just earned, in the corner.
+    /// </summary>
+    /// <remarks>
+    /// SHOWN WHILE THE RUN CONTINUES, because that is when it is earned - the banking happens on a
+    /// clock rather than at the end, so the news arrives at the moment it becomes true. Telling the
+    /// player on the summary screen instead would make an unlock feel like a reward for stopping.
+    /// </remarks>
+    public static void DrawToast(SpriteBatch batch, Sprites sprites, List<string> lines, int vw,
+                                 int vh)
+    {
+        if (lines.Count == 0) return;
+        int scale = System.Math.Max(1, vh / 400);
+        int y = vh / 3;
+        foreach (string line in lines)
+        {
+            Font.DrawCentred(batch, sprites.Blank, "UNLOCKED", vw / 2, y, scale, Dim);
+            Font.DrawCentred(batch, sprites.Blank, line.ToUpperInvariant(), vw / 2,
+                             y + Font.LineHeight * scale, scale * 2, Accent);
+            y += Font.LineHeight * scale * 4;
+        }
+    }
+
     private static void Scrim(SpriteBatch batch, Sprites sprites, int vw, int vh) =>
         batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 190));
 

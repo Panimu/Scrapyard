@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 using Scrapyard.Core;
+using Scrapyard.Meta;
 
 namespace Scrapyard.Game;
 
@@ -67,6 +68,33 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private int _pendingChoice = -1;
 
+    private Settings _save = null!;
+    private readonly HeroUnlocks _roster = new();
+
+    /// <summary>
+    /// Seconds until the next banking pass.
+    /// </summary>
+    /// <remarks>
+    /// BANKED DURING THE RUN, NOT AT THE END. Every recorder is a set union that reports only what
+    /// is new, so calling it often is free - and a run that ends in an alt-F4, a crash or a flat
+    /// battery keeps what it found. A game that banked at the end would punish the player for the
+    /// one thing they did not control.
+    /// </remarks>
+    private double _bankLeft;
+
+    /// <summary>How much of this run's credit tally has already reached the save.</summary>
+    private long _creditsBanked;
+
+    /// <summary>Guards the end-of-run banking pass so it runs once rather than every frame.</summary>
+    private bool _bankedEnd;
+
+    private const double BankEverySec = 1;
+
+    /// <summary>What the last banking pass newly earned, and how long it stays on screen.</summary>
+    private readonly List<string> _toast = new();
+
+    private double _toastLeft;
+
     public ScrapyardGame(int seed, int heroId, string levelId)
     {
         _seed = seed;
@@ -102,9 +130,26 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _sprites = new Sprites(GraphicsDevice, Sprites.FindRoot());
         _terrain = new Terrain(_sprites);
         _fx = new Effects(_sprites);
-        // The card text table is generated from the TypeScript catalog; this is what notices when
-        // it has been left behind by a card added there.
+
+        // The generated tables are checked against the ported catalogs here, once, so a table left
+        // behind by a card added upstream fails loudly instead of mislabelling three cards.
         CardTexts.Verify(UpgradeCatalog.All.Length);
+        WorkshopText.Verify(MetaCatalog.All.Length);
+        HeroUnlocks.Verify(HeroCatalog.All.Length);
+
+        _save = Settings.Load();
+        if (_heroId < 0) _heroId = _save.LastHeroId;
+        if (_levelId == "") _levelId = _save.LastLevelId;
+
+        // A SAVE CAN NAME SOMETHING IT NO LONGER OWNS - a hand-edited file, or a build where a
+        // chassis was removed. Falling back to the one thing every save owns beats refusing to
+        // start.
+        if (_heroId < 0 || _heroId >= HeroUnlocks.Heroes.Length ||
+            !_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[_heroId].Id))
+        {
+            _heroId = 0;
+        }
+        if (!_save.UnlockedLevels.Contains(_levelId)) _levelId = "scrapyard";
         NewRun(_seed, _heroId, _levelId);
         _camera.Resize(GraphicsDevice.PresentationParameters.BackBufferWidth,
                        GraphicsDevice.PresentationParameters.BackBufferHeight);
@@ -116,7 +161,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _seed = seed;
         _heroId = heroId;
         _levelId = levelId;
-        _sim = new Simulation(seed, heroId, levelId);
+
+        // THE WORKSHOP IS APPLIED HERE OR NOWHERE. Its tiers are read once when the world is built
+        // and never recomputed, so a purchase made mid-run would do nothing until the next one -
+        // which is exactly the behaviour the simulation's "seeded once" rule is protecting.
+        _sim = new Simulation(seed, heroId, levelId, Constants.RunLengthSec, _save.ToMetaTiers());
+        ApplySave(_sim.World);
+
+        _save.LastHeroId = heroId;
+        _save.LastLevelId = levelId;
+        _bankLeft = BankEverySec;
+        _creditsBanked = 0;
+        _bankedEnd = false;
+        _toast.Clear();
+        _toastLeft = 0;
         _accumulatorMs = 0;
         _alpha = 0;
         _walkClock = 0;
@@ -145,11 +203,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // F5 restarts on a fresh seed, which is the one thing a playtester wants most and the
         // simulation makes free: a run IS its seed.
         if (Pressed(keys, Keys.F5)) NewRun(unchecked(_seed * 1103515245 + 12345), _heroId, _levelId);
-        if (Pressed(keys, Keys.F1)) NewRun(_seed, (_heroId + 15) % 16, _levelId);
-        if (Pressed(keys, Keys.F2)) NewRun(_seed, (_heroId + 1) % 16, _levelId);
-        if (Pressed(keys, Keys.F6)) NewRun(_seed, _heroId, "scrapyard");
-        if (Pressed(keys, Keys.F7)) NewRun(_seed, _heroId, "mossy-mayhem");
-        if (Pressed(keys, Keys.F8)) NewRun(_seed, _heroId, "city-chaos");
+        if (Pressed(keys, Keys.F1)) NewRun(_seed, NextOwnedHero(_heroId, -1), _levelId);
+        if (Pressed(keys, Keys.F2)) NewRun(_seed, NextOwnedHero(_heroId, 1), _levelId);
+        if (Pressed(keys, Keys.F6)) TryLevel("scrapyard");
+        if (Pressed(keys, Keys.F7)) TryLevel("mossy-mayhem");
+        if (Pressed(keys, Keys.F8)) TryLevel("city-chaos");
 
         var frame = ReadInput(keys, pad);
 
@@ -180,11 +238,144 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _fx.Update(dt);
         _camera.Update(dt);
 
+        // ON A CLOCK WHILE THE RUN IS LIVE, and once more the moment it ends. The second call is
+        // what catches a victory or a death whose unlock would otherwise wait for a tick that never
+        // comes.
+        _bankLeft -= dt;
+        bool over = _sim.Finished;
+        if (_bankLeft <= 0 || (over && !_bankedEnd))
+        {
+            _bankLeft = BankEverySec;
+            if (over) _bankedEnd = true;
+            Bank();
+        }
+        if (!over) _bankedEnd = false;
+
+        if (_toastLeft > 0) _toastLeft -= dt;
+
         _alpha = _accumulatorMs / DtMs;
         _walkClock += dt;
         _prevKeys = keys;
 
         base.Update(gameTime);
+    }
+
+
+    /// <summary>
+    /// Applies the save to a world that has just been built.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A CARD THAT MUST BE EARNED STARTS LOCKED, and everything else starts offerable. The deck
+    /// defaults to all-unlocked precisely so a fixture or a headless run offers the whole thing
+    /// without having to say so; a real run is where the save gets to narrow it.
+    /// </para>
+    /// <para>
+    /// <c>AscensionSeen</c> IS NOT AN UNLOCK. It records whether the player has ever REACHED a
+    /// tier 8, and auto-level's first rule reads it to decide whether a pick completes an ascension
+    /// worth taking. A save that has never seen one leaves it zeroed, which is correct: you cannot
+    /// aim for a thing you have not been shown.
+    /// </para>
+    /// </remarks>
+    private void ApplySave(World w)
+    {
+        w.InfiniteRerolls = _save.InfiniteRerolls;
+        w.AutoLevel = 0;
+
+        var earned = new HashSet<string>(_save.EarnedCards);
+        var seen = new HashSet<string>(_save.HeldAscensions);
+        var locked = new HashSet<string>();
+        foreach (var c in HeroUnlocks.Cards) locked.Add(c.Id);
+
+        for (int i = 0; i < w.UpgradeDefs.Length && i < CardTexts.All.Length; i++)
+        {
+            string id = CardTexts.All[i].Id;
+            w.CardUnlocked[i] = (byte)(!locked.Contains(id) || earned.Contains(id) ? 1 : 0);
+            w.AscensionSeen[i] = (byte)(w.UpgradeDefs[i].Ascension is not null && seen.Contains(id)
+                ? 1 : 0);
+        }
+    }
+
+    /// <summary>
+    /// Folds what the run has earned into the save, and shows it.
+    /// </summary>
+    /// <remarks>
+    /// CALLED ON A CLOCK AND AT THE END, never only at the end. See <see cref="_bankLeft"/>.
+    /// </remarks>
+    private void Bank()
+    {
+        var earned = Progress.Bank(_save, _sim.World, _sim.Level, _roster, ref _creditsBanked);
+        RecordHeldAscensions();
+        _save.Save();
+
+        if (!earned.Any) return;
+        foreach (string h in earned.Heroes) _toast.Add($"CHASSIS: {NameOfHero(h)}");
+        foreach (string l in earned.Levels) _toast.Add($"YARD: {NameOfLevel(l)}");
+        foreach (string c in earned.Cards) _toast.Add($"CARD: {c}");
+        if (_toast.Count > 0) _toastLeft = 5;
+    }
+
+    /// <summary>
+    /// Remembers any tier 8 the run has reached.
+    /// </summary>
+    /// <remarks>
+    /// AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, and this is the record of
+    /// having found one - which is what lets auto-level aim for it next time and what the
+    /// Scrapopedia would gate a tier-8 entry on. It is not an unlock: the card is offerable either
+    /// way.
+    /// </remarks>
+    private void RecordHeldAscensions()
+    {
+        var stacks = _sim.World.LevelUp.Stacks;
+        for (int i = 0; i < stacks.Length && i < CardTexts.All.Length; i++)
+        {
+            if (stacks[i] < UpgradeCatalog.WeaponAscendedTier) continue;
+            string id = CardTexts.All[i].Id;
+            if (!_save.HeldAscensions.Contains(id)) _save.HeldAscensions.Add(id);
+        }
+    }
+
+    private static string NameOfHero(string id)
+    {
+        foreach (var h in HeroUnlocks.Heroes)
+        {
+            if (h.Id == id) return h.Name;
+        }
+        return id;
+    }
+
+    private static string NameOfLevel(string id)
+    {
+        foreach (var l in HeroUnlocks.Levels)
+        {
+            if (l.Id == id) return l.Name;
+        }
+        return id;
+    }
+
+    /// <summary>
+    /// The next chassis the save actually owns, in either direction.
+    /// </summary>
+    /// <remarks>
+    /// A LOCKED CHASSIS IS NOT SELECTABLE, which is the whole point of the lock - and cycling past
+    /// it silently is better than stopping on one the player cannot use.
+    /// </remarks>
+    private int NextOwnedHero(int from, int step)
+    {
+        int n = HeroUnlocks.Heroes.Length;
+        for (int k = 1; k <= n; k++)
+        {
+            int at = ((from + step * k) % n + n) % n;
+            if (_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[at].Id)) return at;
+        }
+        return from;
+    }
+
+    /// <summary>Switches level, if the save owns it.</summary>
+    private void TryLevel(string id)
+    {
+        if (!_save.UnlockedLevels.Contains(id)) return;
+        NewRun(_seed, _heroId, id);
     }
 
     private bool Pressed(KeyboardState now, Keys k) => now.IsKeyDown(k) && !_prevKeys.IsKeyDown(k);
@@ -315,6 +506,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case RunPhase.Dead:
             case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh); break;
         }
+
+        if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
 
         _batch.End();
         base.Draw(gameTime);

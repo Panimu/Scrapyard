@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Scrapyard.Meta - the save file and everything that reads it.
+
+    A SEPARATE PROJECT FROM BOTH ITS NEIGHBOURS, and the two boundaries are different.
+
+    It is not in Scrapyard.Core because core does not know what a save IS. A run is
+    { seed, heroId, levelId, inputs } and nothing else; which chassis a player may PICK is a
+    question answered before a run exists, and stepWorld is handed a heroId that has already been
+    chosen, never a lock to evaluate. Putting unlocks in core would put persistent state inside the
+    thing the golden master vouches for.
+
+    It is not in Scrapyard.Game because none of it draws. That also makes it testable: the test
+    project can reference this without pulling MonoGame in behind it.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <RootNamespace>Scrapyard.Meta</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
+  </ItemGroup>
+
+</Project>
