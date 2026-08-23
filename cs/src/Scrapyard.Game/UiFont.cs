@@ -17,14 +17,17 @@ namespace Scrapyard.Game;
 /// already takes.
 /// </para>
 /// <para>
-/// STILL POINT-SAMPLED, matching every other draw call on the screens that use this - which costs
-/// this font some of the smoothness the title wordmark has, where the draw switches to linear
-/// sampling for exactly those two textures. Doing that everywhere this font appears would mean
-/// splitting nearly every screen's draw into a point-sampled pass for its cards and icons and a
-/// second linear pass for its text, which is a bigger change than a first pass through the menu
-/// chrome earns yet. The atlas is baked well oversampled (48px against the handful of pixels most
-/// UI text actually draws at) specifically so point sampling still reads as smooth text rather than
-/// as a second pixel font - a known, accepted trade rather than an oversight.
+/// LINEAR-SAMPLED, like the two title wordmark textures - <c>Screens.UiDraw</c>/<c>UiDrawCentred</c>
+/// switch the batch to <c>SamplerState.LinearClamp</c> around every call into this class and back
+/// to point after, the same swap the wordmark itself does for exactly those two textures. This
+/// font started point-sampled, on the theory that the atlas's own oversampling (48px against the
+/// handful of pixels most UI text draws at) would keep it reading as smooth text regardless. It
+/// did not hold up once Settings could put the window at nearly any resolution: most real window
+/// sizes draw a glyph SMALLER than its baked cell, and point-sampling a minified, anti-aliased
+/// source is exactly what turns into visibly blurry text rather than crisp small text - a player
+/// reported it directly. Point sampling stays the rule for every actual pixel-art texture in this
+/// game; this atlas and the wordmark are baked art, not pixel art, which is the distinction that
+/// decides the sampler, not which draw call happens to be doing the drawing.
 /// </para>
 /// </remarks>
 public static class UiFont

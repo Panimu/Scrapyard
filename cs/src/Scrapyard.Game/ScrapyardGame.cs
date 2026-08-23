@@ -580,7 +580,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             _screen = _shotScreen switch
             {
-                "settings" or "settings-resolution" => Screen.Settings,
+                "settings" or "settings-resolution" or "settings-scroll" => Screen.Settings,
                 "pedia" or "pedia-index" or "pedia-page" => Screen.Pedia,
                 "workshop" => Screen.Workshop,
                 "heroes" => Screen.HeroSelect,
@@ -689,6 +689,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 _resolutionCursor = DisplayModes.NearestIndex(_resolutions, _save.ResolutionWidth,
                                                                _save.ResolutionHeight);
                 _resolutionOpen = true;
+            }
+
+            // THE LAST ROW, to check the scroll window actually reaches it - see DrawSettings'
+            // own remark on why the list scrolls at all.
+            if (_shotScreen == "settings-scroll" && _screen == Screen.Settings)
+            {
+                _settingsCursor = MenuRows.SettingsRows.Length - 1;
             }
         }
 

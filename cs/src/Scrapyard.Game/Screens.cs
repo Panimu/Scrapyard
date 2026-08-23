@@ -892,14 +892,13 @@ public static class Screens
                                     bool resolutionOpen = false, int resolutionCursor = 0,
                                     System.Collections.Generic.List<Rectangle>? resolutionRects = null)
     {
-        outRects?.Clear();
         resolutionRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
 
-        int y = Head(batch, sprites, "OPTIONS", "SETTINGS", vw, 12 * scale, scale);
-        var (_, changelogBtn, backBtn) =
+        int y0 = Head(batch, sprites, "OPTIONS", "SETTINGS", vw, 12 * scale, scale);
+        var (actionsY, changelogBtn, backBtn) =
             Actions(batch, sprites, vw, vh, scale, "CHANGELOG", "C", "BACK", "ESC");
 
         int w = Column(vw, scale);
@@ -907,42 +906,84 @@ public static class Screens
         int pad = 7 * scale;
         int radius = 8 * scale;
         int thick = System.Math.Max(1, scale / 2);
+        int gap = 5 * scale;
+        int bottom = actionsY - 6 * scale;
 
         // SIZED TO THE WIDEST REALISTIC LABEL rather than measured per row, so the control does not
         // change width as the choice changes - "800X600" and "3840X2160" share a control.
         int ddW = UiFont.Measure("9999X9999", small) + 30 * scale;
 
-        Rectangle resolutionRow = Rectangle.Empty;
-
+        int n = MenuRows.SettingsRows.Length;
+        var rowH = new int[n];
+        var headH = new int[n]; // 0 for a row with no heading directly above it.
         string lastSection = "";
-        for (int i = 0; i < MenuRows.SettingsRows.Length; i++)
+        for (int i = 0; i < n; i++)
         {
             var row = MenuRows.SettingsRows[i];
 
-            // A HEADING IS DRAWN WHENEVER THE SECTION CHANGES, not from a second list kept in step
-            // by hand - see MenuRows.SettingsRows' own remark on why the grouping lives on the row.
+            // A HEADING IS MEASURED WHENEVER THE SECTION CHANGES, not from a second list kept in
+            // step by hand - see MenuRows.SettingsRows' own remark on why the grouping lives on
+            // the row.
             if (row.Section != lastSection)
             {
-                if (lastSection != "") y += 4 * scale;
-                UiDraw(batch, sprites, Spaced(row.Section), x0 + 2 * scale, y, small, Palette.Faint);
-                y += UiFont.LineHeight(small) + 5 * scale;
+                headH[i] = (i > 0 ? 4 * scale : 0) + UiFont.LineHeight(small) + 5 * scale;
                 lastSection = row.Section;
             }
 
-            // The control comes first because it sets the row's height and the width the words get
-            // to wrap in - the card is sized around its contents, not the other way about.
             bool segmented = row.Kind == MenuRows.SettingKind.Animations;
             bool dropdown = row.Kind == MenuRows.SettingKind.Resolution;
             int ctrlW = dropdown ? ddW : segmented ? 42 * scale : 26 * scale;
             int ctrlH = dropdown || segmented ? 22 * scale : 16 * scale;
+            int textW = w - pad * 2 - ctrlW - pad;
+            int lines = UiFont.Wrap(SettingNote(row.Kind), textW, small).Count;
+            int textH = UiFont.GlyphH(scale) + 4 * scale + UiFont.LineHeight(small) * lines;
+            rowH[i] = System.Math.Max(textH, ctrlH) + pad * 2;
+        }
 
+        // THE WINDOW FOLLOWS THE CURSOR, THE SAME WAY THE WORKSHOP'S OWN LIST DOES. A settings
+        // list long enough to need scrolling is not a design goal here - it is a five-row list -
+        // but a screen that can silently draw its own exit buttons underneath a card the moment a
+        // player's resolution makes the content a little taller is worse than one with a scroll
+        // window it will almost never actually need to use.
+        int first = 0;
+        while (first < cursor)
+        {
+            int sum = 0;
+            for (int i = first; i <= cursor; i++) sum += headH[i] + rowH[i] + gap;
+            if (sum <= bottom - y0) break;
+            first++;
+        }
+
+        if (outRects is not null)
+        {
+            outRects.Clear();
+            for (int i = 0; i < n; i++) outRects.Add(Rectangle.Empty);
+        }
+
+        Rectangle resolutionRow = Rectangle.Empty;
+        int y = y0;
+        for (int i = first; i < n; i++)
+        {
+            if (y + headH[i] + rowH[i] > bottom) break;
+            var row = MenuRows.SettingsRows[i];
+
+            if (headH[i] > 0)
+            {
+                UiDraw(batch, sprites, Spaced(row.Section), x0 + 2 * scale, y, small, Palette.Faint);
+            }
+            y += headH[i];
+
+            // The control comes first because it sets the width the words get to wrap in - the
+            // card is sized around its contents, not the other way about.
+            bool segmented = row.Kind == MenuRows.SettingKind.Animations;
+            bool dropdown = row.Kind == MenuRows.SettingKind.Resolution;
+            int ctrlW = dropdown ? ddW : segmented ? 42 * scale : 26 * scale;
+            int ctrlH = dropdown || segmented ? 22 * scale : 16 * scale;
             int textW = w - pad * 2 - ctrlW - pad;
             var note = UiFont.Wrap(SettingNote(row.Kind), textW, small);
-            int textH = UiFont.GlyphH(scale) + 4 * scale + UiFont.LineHeight(small) * note.Count;
-            int rowH = System.Math.Max(textH, ctrlH) + pad * 2;
 
-            var r = new Rectangle(x0, y, w, rowH);
-            outRects?.Add(r);
+            var r = new Rectangle(x0, y, w, rowH[i]);
+            if (outRects is not null) outRects[i] = r;
             if (dropdown) resolutionRow = r;
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
@@ -955,7 +996,7 @@ public static class Screens
                 ny += UiFont.LineHeight(small);
             }
 
-            var ctrl = new Rectangle(r.Right - pad - ctrlW, r.Y + (rowH - ctrlH) / 2, ctrlW, ctrlH);
+            var ctrl = new Rectangle(r.Right - pad - ctrlW, r.Y + (rowH[i] - ctrlH) / 2, ctrlW, ctrlH);
             switch (row.Kind)
             {
                 case MenuRows.SettingKind.Animations:
@@ -977,7 +1018,7 @@ public static class Screens
                     break;
             }
 
-            y += rowH + 5 * scale;
+            y += rowH[i] + gap;
         }
 
         outRects?.Add(changelogBtn);
@@ -1768,18 +1809,41 @@ public static class Screens
     /// The menu chrome's own smooth font - see <see cref="UiFont"/> - with the same
     /// "missing texture is a hole, not a crash" rule every other sprite in this game follows.
     /// </summary>
+    /// <remarks>
+    /// LINEAR-SAMPLED, LIKE THE TITLE WORDMARK - and for the same reason, not the same trade-off
+    /// UiFont's own class remarks describe. The atlas is baked at a fixed pixel size and every menu
+    /// screen draws it at a SCALED size that depends on the window, and now that Settings can put
+    /// the window at nearly any resolution, "the handful of pixels most UI text draws at" the
+    /// original point-sampling trade-off assumed is no longer reliably true - most real windows
+    /// land the glyph cell SMALLER than its baked size, which point sampling on a soft,
+    /// anti-aliased source turns into exactly the "blurry text" a player reported rather than the
+    /// crisp small text point sampling gives actual pixel art. Every other texture in this game
+    /// stays point-sampled on purpose; this one and the wordmark are baked art rather than pixel
+    /// art, which is the same distinction the wordmark's own remarks already draw.
+    /// </remarks>
     internal static void UiDraw(SpriteBatch batch, Sprites sprites, string s, int x, int y,
                                int scale, Color colour)
     {
         var tex = UiTex(sprites);
-        if (tex is not null) UiFont.Draw(batch, tex, s, x, y, scale, colour);
+        if (tex is null) return;
+        batch.End();
+        batch.Begin(samplerState: SamplerState.LinearClamp);
+        UiFont.Draw(batch, tex, s, x, y, scale, colour);
+        batch.End();
+        batch.Begin(samplerState: SamplerState.PointClamp);
     }
 
+    /// <inheritdoc cref="UiDraw"/>
     internal static void UiDrawCentred(SpriteBatch batch, Sprites sprites, string s, int cx, int y,
                                       int scale, Color colour)
     {
         var tex = UiTex(sprites);
-        if (tex is not null) UiFont.DrawCentred(batch, tex, s, cx, y, scale, colour);
+        if (tex is null) return;
+        batch.End();
+        batch.Begin(samplerState: SamplerState.LinearClamp);
+        UiFont.DrawCentred(batch, tex, s, cx, y, scale, colour);
+        batch.End();
+        batch.Begin(samplerState: SamplerState.PointClamp);
     }
 
     /// <summary>Put a space between every letter.</summary>
