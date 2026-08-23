@@ -492,14 +492,42 @@ golden would have hidden:
 
 Ten injected faults, each confirmed to turn the suite red before it was trusted.
 
+**City Chaos was drawing two of its six passes.** The C# had asphalt, roofs, site fencing and
+drums; the original also lays a painted centre line, scatters construction litter and cones, hangs a
+windowed frontage under every building's southern edge, and puts furniture on interior roof slabs —
+and it chose fence pieces by ring membership and pile/rubble by what the cell *originally* held,
+neither of which the port did. All six passes are now there, in the order the original draws them,
+which is the whole of the depth sorting: a stain painted over a fence reads as a glitch, and a roof
+drawn after a frontage paints over it.
+
+`CityDressingTests` compares 8,405 cells across five seeds — every decal, its position to the bit,
+its size, its rotation, every autotile index and every alpha. Sixteen injected faults, each
+confirmed to turn the suite red first. Two of them exposed holes in the fixture rather than in the
+port:
+
+- **The fixture's city was pristine**, so nothing had ever been broken in it beyond fence. Deleting
+  the check that distinguishes a felled drum from a felled fence passed everything — rubble is
+  splintered boards and hazard tape, which is nonsense lying where a fuel drum went up, and no drum
+  had ever been destroyed in the window to notice. It now breaks every other drum, so both states
+  are present.
+- **The cell hash's `Math.imul` cannot be got wrong visibly.** This hash genuinely wraps on both
+  terms, unlike the two ground layers — but the arena is about 200 cells across, and a plain float64
+  multiply agrees exactly until the product passes 2^53, at around thirteen million. The injected
+  fault moved not one cell. The function is pinned at large coordinates instead, which cannot arise
+  in play and can certainly arise in a refactor.
+
+Three hashes in one renderer, two of them plain multiplies and one a genuine `imul`, all identical
+on the page. That is the argument for reading each original rather than applying a remembered rule.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
-draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout` and `JsMath` hold every
-decision and no MonoGame types, and the test csproj `<Compile Include>`s those exact files.
+draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout` and
+`JsMath` hold every decision and no MonoGame types, and the test csproj `<Compile Include>`s those
+exact files.
 
-What is not done yet, plainly: no ground litter; no Scrapopedia; and no settings screen.
+What is not done yet, plainly: no Scrapopedia, and no settings screen.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not

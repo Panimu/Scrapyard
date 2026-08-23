@@ -213,73 +213,160 @@ public sealed class Terrain
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// City Chaos, in the six passes the original draws it in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE ORDER IS THE WHOLE OF THE DEPTH SORTING, and each step is there because leaving it out
+    /// looks wrong in a specific way:
+    /// </para>
+    /// <list type="number">
+    /// <item>asphalt over every road cell - the pavement between blocks is the floor itself</item>
+    /// <item>the painted centre line, on each road's middle seam, skipped at crossings</item>
+    /// <item>litter - stains, spills, offcuts, cones - UNDER the street layer, because a stain
+    /// painted over a fence would read as a glitch</item>
+    /// <item>the things that STAND on the ground: fencing, material piles, rubble, drums</item>
+    /// <item>frontages, hung into the empty cell below a building's southern edge</item>
+    /// <item>roofs and their furniture, last, because a face hangs into the cell below its own and
+    /// a roof drawn afterwards would paint over the frontage above it</item>
+    /// </list>
+    /// <para>
+    /// Every art-only decision - which decal, which pile, where in the cell, how turned - is in
+    /// <see cref="CityDressingLayout"/>, which carries no MonoGame types so the tests can compile
+    /// it. Nothing in this method decides anything.
+    /// </para>
+    /// </remarks>
     private void DrawCity(SpriteBatch batch, Camera cam, CityBlocks c)
     {
-        var (x0, y0, x1, y1) = cam.VisibleBounds(CityBlocks.CityCell);
-        int cx0 = CityBlocks.CityCellOf(x0);
-        int cx1 = CityBlocks.CityCellOf(x1);
-        int cy0 = CityBlocks.CityCellOf(y0);
-        int cy1 = CityBlocks.CityCellOf(y1);
+        const double cell = CityBlocks.CityCell;
 
-        // THE ROADS FIRST, because everything else stands on them. A road cell is simply a cell the
-        // block grid left empty, so it is drawn from the absence rather than from a second table.
+        // One cell of margin each side, and an extra row at the bottom because the faces pass hangs
+        // a cell below its own.
+        int cx0 = CityBlocks.CityCellOf(cam.X - cam.HalfW) - 1;
+        int cx1 = CityBlocks.CityCellOf(cam.X + cam.HalfW) + 1;
+        int cy0 = CityBlocks.CityCellOf(cam.Y - cam.HalfH) - 1;
+        int cy1 = CityBlocks.CityCellOf(cam.Y + cam.HalfH) + 2;
+
+        // 1 and 2: asphalt and its centre line.
         var road = _sprites.Get("croad");
-        if (road is not null)
-        {
-            for (int cy = cy0; cy <= cy1; cy++)
-            {
-                for (int cx = cx0; cx <= cx1; cx++)
-                {
-                    if (c.CityKindAt(cx, cy) != CityBlocks.CityEmpty) continue;
-                    BlitCell(batch, cam, road, cx, cy, CityBlocks.CityCell);
-                }
-            }
-        }
-
+        var dash = _sprites.Get("croad_dash");
         for (int cy = cy0; cy <= cy1; cy++)
         {
             for (int cx = cx0; cx <= cx1; cx++)
             {
-                int kind = c.CityKindAt(cx, cy);
-                if (kind == CityBlocks.CityEmpty) continue;
+                if (!CityBlocks.CityIsRoad(cx, cy)) continue;
+                if (road is not null) BlitCell(batch, cam, road, cx, cy, cell);
 
-                if (kind == CityBlocks.CityBuilding)
-                {
-                    var tex = _sprites.Get(AutoTile("cwall_t", cx, cy,
-                        (a, b) => c.CityKindAt(a, b) == CityBlocks.CityBuilding));
-                    if (tex is null) continue;
-                    BlitCell(batch, cam, tex, cx, cy, CityBlocks.CityCell);
-                    continue;
-                }
+                if (dash is null) continue;
+                int which = CityDressingLayout.DashAt(cx, cy);
+                if (which == 0) continue;
 
-                if (kind == CityBlocks.CityFence)
-                {
-                    // THE SITE FENCE, and its sprite carries the mask: `cfence_m<n>_<variant>`,
-                    // where n is which neighbours are also fence. A fence drawn without that is a
-                    // row of disconnected panels.
-                    int mask = 0;
-                    if (c.CityKindAt(cx, cy - 1) == CityBlocks.CityFence) mask |= 1;
-                    if (c.CityKindAt(cx + 1, cy) == CityBlocks.CityFence) mask |= 2;
-                    if (c.CityKindAt(cx, cy + 1) == CityBlocks.CityFence) mask |= 4;
-                    if (c.CityKindAt(cx - 1, cy) == CityBlocks.CityFence) mask |= 8;
-                    if (mask == 0) mask = 1;
-                    int variant = Scatter(cx, cy, 7) & 1;
-                    var tex = _sprites.Get($"cfence_m{mask}_{variant}");
-                    if (tex is null) continue;
-                    BlitCell(batch, cam, tex, cx, cy, CityBlocks.CityCell);
-                    continue;
-                }
-
-                if (kind == CityBlocks.CityBarrel)
-                {
-                    var tex = _sprites.Get("scrap_6");
-                    if (tex is null) continue;
-                    double size = CityBlocks.CityBarrelHalf * 2;
-                    Blit(batch, cam, tex, CityBlocks.CityCentre(cx), CityBlocks.CityCentre(cy),
-                         size, size, Color.White);
-                }
+                // The stripe is a thin quad along the seam: an eighth of a cell wide, a cell long,
+                // anchored at the top of its own edge and turned a quarter for the other axis.
+                double sx = which == 1 ? (cx + 1) * cell : cx * cell;
+                double sy = which == 1 ? cy * cell : (cy + 1) * cell;
+                var stripe = new Vector2(
+                    (float)(cell * cam.Scale / dash.Height * 0.125),
+                    (float)(cell * cam.Scale / dash.Height));
+                batch.Draw(dash, cam.ToScreen(sx, sy), null, Color.White,
+                           which == 1 ? 0f : (float)(-System.Math.PI / 2),
+                           new Vector2(dash.Width / 2f, 0), stripe, SpriteEffects.None, 0f);
             }
         }
+
+        // 3: litter, on the open ground of construction blocks only.
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (!CityDressingLayout.LittersHere(c, cx, cy)) continue;
+                BlitDecal(batch, cam, CityDressingLayout.LitterAt(cx, cy), "clitter");
+                BlitDecal(batch, cam, CityDressingLayout.ConeAt(cx, cy), "ccone");
+            }
+        }
+
+        // 4: everything standing in the street, plus the drums.
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (c.CityKindAt(cx, cy) == CityBlocks.CityBarrel)
+                {
+                    // THE SAME OBJECT AS THE SCRAPYARD'S, SO THE SAME PICTURE. Sized from the
+                    // collider rather than the cell: the drum's box is inset, and paint that
+                    // overhung it would be a barrel you could shoot past.
+                    var drum = _sprites.Get("scrap_6");
+                    if (drum is null) continue;
+                    double d = CityBlocks.CityBarrelHalf * 2;
+                    Blit(batch, cam, drum, CityBlocks.CityCentre(cx), CityBlocks.CityCentre(cy),
+                         d, d, Color.White);
+                    continue;
+                }
+
+                var st = CityDressingLayout.StreetAt(c, cx, cy);
+                if (st.Kind == CityDressingLayout.StreetKind.None) continue;
+
+                string key = st.Kind switch
+                {
+                    CityDressingLayout.StreetKind.Rubble => $"crubble{st.Index}",
+                    CityDressingLayout.StreetKind.Pile => $"cpile{st.Index}",
+                    _ => $"cfence_m{st.Index / CityDressingLayout.FenceVariants + 1}"
+                         + $"_{st.Index % CityDressingLayout.FenceVariants}",
+                };
+                var tex = _sprites.Get(key);
+                if (tex is null) continue;
+                Blit(batch, cam, tex, CityBlocks.CityCentre(cx), CityBlocks.CityCentre(cy),
+                     cell, cell, Color.White * (float)st.Alpha);
+            }
+        }
+
+        // 5: frontages, under the roofs that follow.
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (c.CityKindAt(cx, cy) != CityBlocks.CityBuilding) continue;
+                if (c.CityKindAt(cx, cy + 1) == CityBlocks.CityBuilding) continue;
+
+                var face = _sprites.Get($"cface{CityDressingLayout.FaceVariant(cx, cy)}");
+                if (face is null) continue;
+                var scale = new Vector2(
+                    (float)(cell * cam.Scale / face.Width),
+                    (float)(CityDressingLayout.FaceHeight * cam.Scale / face.Height));
+                batch.Draw(face, cam.ToScreen(cx * cell, (cy + 1) * cell), null, Color.White,
+                           0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            }
+        }
+
+        // 6: roofs and their furniture.
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (c.CityKindAt(cx, cy) != CityBlocks.CityBuilding) continue;
+                var (col, row) = CityDressingLayout.RoofTile(c, cx, cy);
+                var roof = _sprites.Get($"cwall_t{col}{row}");
+                if (roof is not null) BlitCell(batch, cam, roof, cx, cy, cell);
+                BlitDecal(batch, cam, CityDressingLayout.RoofPropAt(cx, cy, col, row), "croofprop");
+            }
+        }
+    }
+
+    /// <summary>One hash-placed decal, centred on the point the layout chose.</summary>
+    /// <remarks>
+    /// SQUARE SCALE FROM THE WIDTH, as the original does. These sprites are not all square, and
+    /// scaling each axis to the cell would squash a length of cable into a coil of one.
+    /// </remarks>
+    private void BlitDecal(SpriteBatch batch, Camera cam, CityDressingLayout.Decal? d, string prefix)
+    {
+        if (d is not { } decal) return;
+        var tex = _sprites.Get($"{prefix}{decal.Variant}");
+        if (tex is null) return;
+
+        var scale = new Vector2((float)(decal.Size * cam.Scale / tex.Width));
+        batch.Draw(tex, cam.ToScreen(decal.X, decal.Y), null, Color.White, (float)decal.Rotation,
+                   new Vector2(tex.Width / 2f, tex.Height / 2f), scale, SpriteEffects.None, 0f);
     }
 
     // -----------------------------------------------------------------------------------------
