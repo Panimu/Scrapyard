@@ -268,7 +268,7 @@ public static class Collision
             double py = proj.Y[pd];
             double pr = proj.Radius[pd];
 
-            int found = hash.QueryCircleLiveInto(enemies, px, py, pr + w.MaxEnemyRadius, candidates);
+            int found = hash.QueryCircleLiveInto(enemies, px, py, pr + Cycles.MaxEnemyRadius, candidates);
             if (found == 0) continue;
 
             // Compact the true overlaps this shell has not already damaged to the front of the
@@ -336,10 +336,14 @@ public static class Collision
         var player = w.Player;
         double px = player.X;
         double py = player.Y;
-        double pr = w.PlayerRadius;
+        // THE RESOLVED STAT, not a world field. A field here would be one more thing production
+        // has to remember to write and the tests can quietly write for it - which is exactly what
+        // happened: `w.PlayerRadius` sat at zero in every real run while the fixture supplied the
+        // real 26, so no enemy could ever reach the mech and the shield was never spent.
+        double pr = player.Stats.Radius;
 
         ushort[] candidates = w.Scratch.Candidates;
-        int found = w.Spatial.QueryCircleLiveInto(enemies, px, py, pr + w.MaxEnemyRadius, candidates);
+        int found = w.Spatial.QueryCircleLiveInto(enemies, px, py, pr + Cycles.MaxEnemyRadius, candidates);
         if (found == 0) return;
 
         var contacts = w.Contacts;
@@ -515,9 +519,7 @@ public static class Spawning
 
         // MaxEnemyRadius, not the actual body's: this runs before the archetype is known, and
         // erring large only clears the wreck by a few units more than strictly needed.
-        var clear = scenery is ScrapPiles piles
-            ? piles.PushOut(x, y, Cycles.MaxEnemyRadius)
-            : new SceneryPush { X = x, Y = y };
+        var clear = scenery.PushOut(x, y, Cycles.MaxEnemyRadius);
         outv.X = clear.X;
         outv.Y = clear.Y;
     }

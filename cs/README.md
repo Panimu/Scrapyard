@@ -1,14 +1,17 @@
 # Scrapyard.Core — the C# port
 
-A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
-the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones`, `weapons`, `playerMovement`, `progression`, `pickups` and `damage` are
-done and proven. **Every system is ported.** What remains is the golden corpus runner that replays
-`goldens/corpus.json` end to end.
+A port of `src/core` from TypeScript. **It is done, and it is proven done**: every run in
+`goldens/corpus.json` replays bit-exactly — 9 runs, 98,970 ticks, 1,661 checkpoints, every world
+hash and every stats hash identical.
 
-The contract is `goldens/corpus.json` at the repository root, and the specification is
-[`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
-of this.
+```
+cd cs && dotnet run --project src/Scrapyard.Golden -- verify
+```
+
+That command is the only claim about this port that means anything. Everything else here is a unit
+test, and unit tests can all pass while the port is wrong: one ULP in one position produces a
+completely different world three thousand ticks later, and no fixture is three thousand ticks long.
+The specification is [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md).
 
 ```
 cd cs
@@ -63,7 +66,9 @@ dotnet test
 | `PlayerMovement` — S3, the chassis and its three clocks | done, 14 driven cases over 8,100 ticks |
 | `Progression` — the deck, the picker, the chest, the ascensions | done, 21 posed cases, both streams compared with draw counts |
 | `Damage` — S9, the only stage that changes an hp number | done, 23 posed cases, the kill feed compared in order |
-| Golden corpus replay | not started — **this is the remaining job** |
+| `Step.StepWorld` — the stage order | done, and the corpus is what proves the order |
+| `Simulation` — world construction | done, port of `createWorld` + `Simulation` |
+| Golden corpus replay | **done — all 9 runs, every checkpoint** |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
 comparison per catalog rather than an adversarial fixture, because there is no order to lose and no
@@ -338,6 +343,64 @@ One more dormant branch, handled the same way as the beam mount cap: `ApplySplas
 flag before counting a splash kill, but `QueryCircleLiveInto` already skips dead bodies, so a second
 blast never sees what the first one killed. `TheSplashKillGuardIsUnreachableBecauseTheQuerySkipsTheDead`
 pins that precondition rather than posing a position the game cannot produce.
+
+## What the corpus caught that 183 unit tests did not
+
+Every system had a fixture. Every fixture was adversarially built and proven to fail under injected
+faults. The port still had **nine** defects, and the corpus found all nine in an afternoon. They fall
+into three groups, and the groups are more useful than the list.
+
+**Five were uninitialised fields** — the same mistake five times, in five places:
+
+| Field | TypeScript | C# had | What it did |
+|---|---|---|---|
+| `Player.Level` | `1` | `0` | a run one level behind its own XP curve, forever |
+| `WeaponInstance.Level` / `TurretX` / `TargetDense` / `Ammo` | `1`, `1`, `-1`, `-1` | all `0` | every empty slot hashed as a tier-0 gun aimed at enemy 0 with an empty magazine |
+| `DifficultyState.HpRamp` / `SpeedRamp` | `1` | `0` | every enemy spawned with zero hit points and zero speed until the first whole second |
+| `LevelUpState.Offers` / `LastTaken` | `-1` | `0` | an unopened card hashing as three offers of catalog index 0 |
+| `RunStats.KilledByRank` | `-1` | `0` | a run that never died reporting it was killed by a runt |
+
+The rule this produces is short: **any field whose "unset" value is not zero must be written in the
+constructor.** A port that only ever reads such a field later will not notice, and no fixture that
+sets up its own state will either — every one of these was invisible precisely because the fixtures
+wrote the fields they cared about before reading them.
+
+**Two were fields that should never have existed.** `World.MaxEnemyRadius` and `World.PlayerRadius`
+were world fields shadowing a constant and a resolved stat. Production never wrote them, so both sat
+at zero: no projectile could find a body more than its own radius away, and no enemy could reach the
+mech at all. **`CollisionTests` passed the whole time, because its fixture set both.** A test that
+supplies a value production forgets is not testing that value — it is hiding it.
+
+**One was a narrowed interface.** `EnemyAI` and the spawn ring pushed bodies out of `ScrapPiles` and,
+for anything else, did nothing — so on both lattice levels every enemy walked through every wall.
+The `is ScrapPiles` test was a leftover from before `IScenery` had `PushOut`, and it is the reason
+`IScenery` exists.
+
+**One was the float32 rule**, in the shape this project has now hit twice: `p.X[d] -
+world.Enemies.X[e]` is `float - float`, which C# evaluates in single precision, where JavaScript
+widens both reads and subtracts in double. One ULP in a sheep's heading at tick 5,690.
+
+The honest summary is that **the unit tests found the bugs inside functions and the corpus found the
+bugs between them.** Not one of the nine was a mistranslated line: they were defaults, wiring, and a
+type. That is what a golden master is for, and it is why "the port is correct when the corpus passes"
+is the only claim this README makes.
+
+## Working a divergence
+
+The workflow that found all nine, in order:
+
+1. `dotnet run --project src/Scrapyard.Golden -- verify` — first divergence per run, and the
+   window it landed in. **`stats` matching while `world` diverges** immediately rules out every
+   crediting site.
+2. `-- dump <run> --from A --to B` beside `npx tsx tools/golden_ticks.ts <run> A B` — per-tick
+   hashes from both languages. Diff them; the first differing row is the tick, and everything after
+   it is downstream.
+3. `-- dump <run> --enemies-at T` beside the same tick in TypeScript — the pools, column by column.
+   Every one of the nine came down to a single column of a single row.
+
+Every run diverging at checkpoint 0 means the world was already wrong before tick 0, which is a
+CONSTRUCTION difference and no amount of bisecting will localise it. `dump` prints the world at
+construction for exactly that case.
 
 ## Why the RNG came first
 
@@ -699,14 +762,16 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-**Every system is ported.** What is left is the thing the whole exercise was for: a
-`Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs. Only that makes the
-corpus meaningful, and it is the last thing that can be built rather than the first — it needs all of
-`stepWorld`, which now exists.
+The port satisfies its contract. What could come next is not more porting:
 
-The remaining gap before it can run is the STAGE ORDER itself: every system is ported and tested in
-isolation, but nothing yet calls them in sequence. `stepWorld` is a short function over a fixed list
-of stages, and porting it is the next step.
+- **A front-end.** `Scrapyard.Core` references nothing and never will, so whatever renders it is a
+  separate project that reads the world and draws it. That choice is still open.
+- **Keeping the corpus honest.** `verify` should run in CI, and the corpus should be re-recorded
+  whenever a TypeScript change is INTENDED to change the simulation — never to make a red build go
+  green.
+- **The measurement harnesses** (`npm run sim` / `dps` / `loadout`) have no C# equivalent. They are
+  balance instruments rather than correctness ones, so they are wanted only if balance work moves
+  to this side.
 
 Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
 the corpus meaningful, and it is the last thing that can be built rather than the first.

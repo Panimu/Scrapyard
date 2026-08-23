@@ -50,7 +50,6 @@ public class CollisionTests
         {
             string name = c.GetProperty("name").GetString()!;
             var w = new World(1, Shape());
-            w.MaxEnemyRadius = maxEnemyRadius;
 
             var enemies = c.GetProperty("enemies").EnumerateArray().ToArray();
             for (int i = 0; i < enemies.Length; i++)
@@ -87,7 +86,7 @@ public class CollisionTests
             var pl = c.GetProperty("player");
             w.Player.X = pl.GetProperty("x").F64();
             w.Player.Y = pl.GetProperty("y").F64();
-            w.PlayerRadius = pl.GetProperty("radius").F64();
+            w.Player.Stats.Radius = pl.GetProperty("radius").F64();
 
             int t = 0;
             foreach (var expect in c.GetProperty("perTick").EnumerateArray())
@@ -152,10 +151,9 @@ public class CollisionTests
         // Clamping at 0 rather than letting it run negative is what keeps the column's byte pattern
         // - and therefore the world hash - from drifting for enemies that never touch anything.
         var w = new World(1, Shape());
-        w.MaxEnemyRadius = Root.GetProperty("maxEnemyRadius").F64();
         w.Enemies.Alloc(0, 0, 0, 9999, 9999, 1);
         w.Enemies.ContactTimer[0] = 0.001f;
-        w.PlayerRadius = 26;
+        w.Player.Stats.Radius = 26;
 
         for (int i = 0; i < 10; i++)
         {

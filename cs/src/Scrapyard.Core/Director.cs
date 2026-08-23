@@ -674,6 +674,26 @@ public interface ILevel
     int Sheep { get; }
 
     void ResolveCycle(int index, ResolvedCycle outc);
+
+    /// <summary>The id the corpus and the save file name this level by. Permanent once shipped.</summary>
+    string Id { get; }
+
+    /// <summary>
+    /// Half the yard, or <see cref="double.PositiveInfinity"/> for a level with no fence.
+    /// </summary>
+    /// <remarks>
+    /// Copied onto <c>World.ArenaHalf</c> at construction and read by everything that clamps - the
+    /// magnet, the spawn ring, the mech's own movement. Infinity is not a sentinel that needs a
+    /// branch anywhere: every one of those tests is a comparison, and a comparison against infinity
+    /// is simply never true.
+    /// </remarks>
+    double ArenaHalf { get; }
+
+    /// <summary>
+    /// THE LEVEL'S OWN WORLD GENERATION, not core's. A level supplies its terrain rather than
+    /// ticking a box on a shared generator.
+    /// </summary>
+    IScenery MakeScenery(int seed);
 }
 
 /// <summary>The Scrapyard.</summary>
@@ -685,4 +705,8 @@ public sealed class ScrapyardLevel : ILevel
     public int Sheep => 0;
 
     public void ResolveCycle(int index, ResolvedCycle outc) => ScrapyardLadder.Resolve(index, outc);
+
+    public string Id => "scrapyard";
+    public double ArenaHalf => Constants.ArenaHalf;
+    public IScenery MakeScenery(int seed) => ScrapPiles.Create(seed, Constants.ArenaSize);
 }

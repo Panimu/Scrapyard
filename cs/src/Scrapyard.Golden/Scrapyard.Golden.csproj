@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Scrapyard.Golden - the replayer that decides whether the port is correct.
+
+    `goldens/corpus.json` is the contract, and this is the thing that reads it. Everything else in
+    this repository is a unit test: they can all pass while the port is wrong, because a divergence
+    of one ULP in one position produces a completely different world three thousand ticks later and
+    no fixture is three thousand ticks long.
+
+    It references Scrapyard.Core and System.Text.Json and nothing else, for the reason the core
+    project references nothing: what this verifies has to be the simulation, not the simulation plus
+    whatever a framework brought with it.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Scrapyard.Golden</RootNamespace>
+    <AssemblyName>Scrapyard.Golden</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
+  </ItemGroup>
+
+</Project>

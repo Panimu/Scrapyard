@@ -69,20 +69,6 @@ public sealed class World
     public readonly FlowField Flow = new();
 
     /// <summary>
-    /// The largest radius any creature in the level's ladder can have.
-    /// </summary>
-    /// <remarks>
-    /// A world field rather than a constant: the TypeScript derives it from the content catalog,
-    /// which this port does not have yet. Collision pads every broad-phase query by it, so a value
-    /// that is too SMALL silently misses hits against the biggest bodies - which is why the fixture
-    /// supplies the real one rather than letting a plausible number be guessed here.
-    /// </remarks>
-    public double MaxEnemyRadius;
-
-    /// <summary>The player's collision radius. Derived from hero and upgrades in the TypeScript.</summary>
-    public double PlayerRadius;
-
-    /// <summary>
     /// How long a full run is, seconds. From <c>WorldConfig</c>, which this port does not have as a
     /// type of its own yet - the one field a ported system reads sits here instead.
     /// </summary>
@@ -379,13 +365,29 @@ public sealed class PlayerState
 public sealed class WeaponInstance
 {
     public int DefId;
-    public int Level;
+
+    /// <summary>Tier 1, not zero: a slot that holds a gun holds it at some tier, and 1 is the first.</summary>
+    public int Level = 1;
+
     public double CooldownLeft;
-    public double TurretX, TurretY;
-    public int TargetDense;
+
+    /// <summary>
+    /// FACING +X AT START, matching the chassis: the art faces +x, so a fresh mech and its turret
+    /// agree on frame 1 and the turret does not snap on the first target.
+    /// </summary>
+    public double TurretX = 1;
+
+    public double TurretY;
+
+    /// <summary>-1 is NO TARGET. Zero is a real dense index - the first enemy in the pool.</summary>
+    public int TargetDense = -1;
+
     public double Heat;
     public bool Overheated;
-    public int Ammo;
+
+    /// <summary>-1 is A MAGAZINE THIS GUN DOES NOT HAVE. Zero is an empty one, which reloads.</summary>
+    public int Ammo = -1;
+
     public double ReloadLeft;
     public bool DroneBanked;
 
@@ -458,8 +460,19 @@ public sealed class SpawnDirector
 
 public sealed class DifficultyState
 {
-    public double HpRamp;
-    public double SpeedRamp;
+    /// <summary>
+    /// The within-cycle ramps, and they start at ONE rather than zero.
+    /// </summary>
+    /// <remarks>
+    /// They are MULTIPLIERS: every enemy's hp and speed are scaled by them at spawn. Zero is not a
+    /// neutral starting value, it is "every enemy has no hit points and cannot move" - so a run
+    /// built with C#'s default would spawn a field of already-dead statues until the first whole
+    /// second ticked over and the ramp was recomputed.
+    /// </remarks>
+    public double HpRamp = 1;
+
+    public double SpeedRamp = 1;
+
     public int LastWholeSecond;
 }
 
@@ -473,13 +486,25 @@ public sealed class LevelUpState
 
     public readonly byte[] Stacks;
     public int PicksTaken;
-    public int LastTaken;
+
+    /// <summary>
+    /// The catalog index of the last card taken, or -1 for a run that has taken none.
+    /// </summary>
+    /// <remarks>
+    /// -1, NOT ZERO, for the reason every "unset" in this file is -1: zero is a real catalog index,
+    /// so a fresh run would report having just taken whatever card sits first in the table.
+    /// </remarks>
+    public int LastTaken = -1;
+
     public int Rerolls;
     public int RerollsUsed;
 
     public LevelUpState(int offers, int upgradeCount)
     {
+        // -1 IS AN EMPTY SLOT, and the hash walks this array in FULL rather than to OfferCount - so
+        // a zero-filled card is not merely untidy, it hashes as three offers of catalog index 0.
         Offers = new int[offers];
+        System.Array.Fill(Offers, -1);
         Stacks = new byte[upgradeCount];
     }
 }

@@ -33,6 +33,7 @@
     "golden:progression": "tsx tools/progression_fixture.ts",
     "golden:pickups": "tsx tools/pickups_fixture.ts",
     "golden:damage": "tsx tools/damage_fixture.ts",
+    "golden:ticks": "tsx tools/golden_ticks.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",

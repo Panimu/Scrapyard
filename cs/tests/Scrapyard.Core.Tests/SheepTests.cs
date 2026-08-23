@@ -45,6 +45,12 @@ public class SheepTests
         public int CycleCount => MossyLadder.All.Length;
         public int Sheep { get; init; }
         public void ResolveCycle(int index, ResolvedCycle outc) => MossyLadder.Resolve(index, outc);
+
+        // Not reached by this stage: the flock steers by the mech and the hash, never by the fence
+        // or the terrain. Present because ILevel requires them.
+        public string Id => "mossy-mayhem";
+        public double ArenaHalf => double.PositiveInfinity;
+        public IScenery MakeScenery(int seed) => new MossWalls(seed);
     }
 
     [Fact]

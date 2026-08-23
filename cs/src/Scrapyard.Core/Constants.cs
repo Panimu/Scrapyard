@@ -92,6 +92,57 @@ public static class Constants
     /// </summary>
     public const double SplashRimFrac = 0.4;
 
+    /// <summary>The Scrapyard's fenced yard, edge to edge.</summary>
+    public const int ArenaSize = 12288;
+
+    public const double ArenaHalf = ArenaSize / 2.0;
+
+    /// <summary>How long a run lasts before the clock alone can end it.</summary>
+    public const double RunLengthSec = 960;
+
+    // ---- POOL CAPACITIES ------------------------------------------------------------------
+    // Every one of these is a hard ceiling: nothing here grows, and every pool is allocated once.
+    // They lived only in the fixtures' shape blocks until a Simulation needed to build a world for
+    // itself.
+
+    public const int EnemyCap = 512;
+    public const int ProjectileCap = 256;
+
+    /// <summary>
+    /// 768, not 512, and the extra room is REQUIRED rather than generous.
+    /// </summary>
+    /// <remarks>
+    /// At the gem soft cap the drop path RETIRES a gem and allocates a new one in the same breath,
+    /// and a retire is a deferred mark-dead - S12 is the only place a slot is actually freed. So a
+    /// tick that lands <see cref="MaxKillsPerTick"/> kills while saturated grows the pool by that
+    /// many before the reaper runs: 500 + 128 = 628 in the worst case. 512 would have failed the
+    /// allocation and silently sent the XP down the fallback path.
+    /// </remarks>
+    public const int PickupCap = 768;
+
+    public const int DroneCap = 8;
+    public const int SheepCap = 24;
+
+    // ---- PER-TICK SCRATCH SIZES -----------------------------------------------------------
+
+    public const int MaxHitsPerTick = 512;
+    public const int MaxContactsPerTick = 128;
+    public const int MaxQueryCandidates = 2048;
+
+    /// <summary>Power of two - the ring masks rather than divides.</summary>
+    public const int EventRingCapacity = 1024;
+
+    public const int TraitScratchLen = 8;
+    public const int WeaponScratchLen = 4;
+
+    /// <summary>The most cards a single chest spin can hand over.</summary>
+    public const int ChestMaxPayout = 5;
+
+    // ---- THE SPATIAL HASH -----------------------------------------------------------------
+
+    public const double SpatialCellSize = 64;
+    public const int SpatialBucketCount = 4096;
+
     /// <summary>
     /// How many bodies one CHAIN LASER beam may cross, counting the first.
     /// </summary>

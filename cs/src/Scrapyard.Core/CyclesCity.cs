@@ -116,4 +116,14 @@ public sealed class CityChaosLevel : ILevel
     public int Sheep => 0;
 
     public void ResolveCycle(int index, ResolvedCycle outc) => CityLadder.Resolve(index, outc);
+
+    public string Id => "city-chaos";
+
+    /// <summary>
+    /// NO FENCE. The lattice is the boundary here - a player who walks far enough meets more of it,
+    /// never an edge - so every clamp that reads this compares against infinity and is never true.
+    /// </summary>
+    public double ArenaHalf => double.PositiveInfinity;
+
+    public IScenery MakeScenery(int seed) => new CityBlocks(seed);
 }

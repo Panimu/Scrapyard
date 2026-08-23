@@ -353,9 +353,11 @@ public static class EnemyAI
             if (ny < -bound) ny = -bound;
             else if (ny > bound) ny = bound;
 
-            var push = scenery is ScrapPiles piles
-                ? piles.PushOut(nx, ny, p.Radius[d])
-                : new SceneryPush { X = nx, Y = ny };
+            // THROUGH THE INTERFACE, never narrowed to one terrain. Testing for ScrapPiles here
+            // made both lattices unpushable - enemies walked through the moss walls and through
+            // the city's buildings, on every tick, in silence. Every terrain answers PushOut, and
+            // the two that are not piles are exactly the two where a wall is the whole level.
+            var push = scenery.PushOut(nx, ny, p.Radius[d]);
 
             if (push.Hit)
             {

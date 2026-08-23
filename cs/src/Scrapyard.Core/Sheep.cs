@@ -272,8 +272,12 @@ public static class Sheep
                     for (int k = 0; k < n; k++)
                     {
                         int e = near[k];
-                        ax += p.X[d] - world.Enemies.X[e];
-                        ay += p.Y[d] - world.Enemies.Y[e];
+                        // (double) ON THE FIRST OPERAND. Both sides are float columns, and C#
+                        // would evaluate `float - float` in SINGLE precision and round before the
+                        // widening add - where JavaScript widens both reads and subtracts in
+                        // double. One ULP here, four thousand ticks later a different flock.
+                        ax += (double)p.X[d] - world.Enemies.X[e];
+                        ay += (double)p.Y[d] - world.Enemies.Y[e];
                     }
                     if (distP2 < AvoidRadius * AvoidRadius)
                     {

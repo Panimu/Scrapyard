@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{195A7BA3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrapyard.Core.Tests", "tests\Scrapyard.Core.Tests\Scrapyard.Core.Tests.csproj", "{8F2912C1-7B83-4928-A3DA-A722B5C8819F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrapyard.Golden", "src\Scrapyard.Golden\Scrapyard.Golden.csproj", "{864216FF-15F7-426A-BC13-263D270796EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{8F2912C1-7B83-4928-A3DA-A722B5C8819F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F2912C1-7B83-4928-A3DA-A722B5C8819F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F2912C1-7B83-4928-A3DA-A722B5C8819F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{864216FF-15F7-426A-BC13-263D270796EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{864216FF-15F7-426A-BC13-263D270796EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{864216FF-15F7-426A-BC13-263D270796EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{864216FF-15F7-426A-BC13-263D270796EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C13808AE-D63A-4DAD-BD72-FACEB9B28E42} = {78E26CA6-ECF0-4FFF-AEF9-F5338AD2AF27}
 		{8F2912C1-7B83-4928-A3DA-A722B5C8819F} = {195A7BA3-3EC3-4609-AD6F-E888CCDDF02D}
+		{864216FF-15F7-426A-BC13-263D270796EC} = {78E26CA6-ECF0-4FFF-AEF9-F5338AD2AF27}
 	EndGlobalSection
 EndGlobal
