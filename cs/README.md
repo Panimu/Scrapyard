@@ -5,7 +5,8 @@ A port of `src/core` from TypeScript. **It is done, and it is proven done**: eve
 hash and every stats hash identical.
 
 ```
-cd cs && dotnet run --project src/Scrapyard.Golden -- verify
+cd cs && dotnet run --project src/Scrapyard.Golden -- verify   # prove it
+cd cs && dotnet run --project src/Scrapyard.Game               # play it
 ```
 
 That command is the only claim about this port that means anything. Everything else here is a unit
@@ -343,6 +344,49 @@ One more dormant branch, handled the same way as the beam mount cap: `ApplySplas
 flag before counting a splash kill, but `QueryCircleLiveInto` already skips dead bodies, so a second
 blast never sees what the first one killed. `TheSplashKillGuardIsUnreachableBecauseTheQuerySkipsTheDead`
 pins that precondition rather than posing a position the game cannot produce.
+
+## The front-end
+
+`Scrapyard.Game` is a MonoGame window over `Scrapyard.Core`. **The dependency runs one way only**:
+it reads the world and never writes to it, which is the same line `src/render/` holds on the
+TypeScript side and is what keeps a run played here reproducible in a test runner with no window.
+
+| | |
+|---|---|
+| WASD / arrows / stick | move |
+| 1 / 2 / 3 | take a card, or acknowledge a chest |
+| Q | reroll |
+| F1 / F2 | cycle chassis |
+| F5 | new seed |
+| F6 / F7 / F8 | Scrapyard / Mossy Mayhem / City Chaos |
+
+`Scrapyard.exe <seed> <heroId> <levelId>` replays an exact run, because a run IS its seed.
+
+**The accumulator is the simulation's contract, not MonoGame's.** `IsFixedTimeStep` is off and the
+loop keeps its own — a frame's elapsed time is banked, whole 1/60 steps come out of it, and at most
+five are taken in one frame. That is a port of `Simulation.advance`, and it matters twice: a step
+must be exactly 1/60 s for a replay to reproduce, and a machine that stalls must not run the world
+at double speed to catch up, which is how a player dies to something they never saw.
+
+**Sprites load straight from `public/sprites/`**, shared with the web build rather than copied
+through MonoGame's Content Pipeline — a second copy is a copy that drifts from the one the artist
+tools write. They are cached lazily: there are 431 files and a run touches a fraction of them.
+
+**The font is a table in `Font.cs`, authored rather than loaded.** A TTF in the repository is a
+licence obligation and a permanent asset, which this project requires approval for every time; a
+system font is not on a Steam Deck; and the house art generator draws through headless Chromium,
+which is not installed on every machine that has to build this. A 5x7 table has none of those
+problems, cannot go missing at runtime, and suits pixel art better than a hinted vector face would.
+
+**Card text is generated, not retyped.** `Scrapyard.Core` knows a card by an integer — names and
+descriptions change nothing about what happens, so they are not in the ported simulation. But the
+front-end has to draw them, and retyping 21 descriptions into another language is how three cards
+end up mislabelled. `npx tsx tools/gen_card_text.ts` emits `CardTexts.cs`; `CardTexts.Verify` refuses
+to start if a card has been added upstream without regenerating.
+
+What is not done yet, plainly: no muzzle flashes, hit sparks, damage numbers or death effects; no
+ground dressing or paths; no pause menu, Scrapopedia, achievements or save file; no audio; and the
+Scrapyard's ground cover and the city's finer props are absent. The HUD is bars and a loadout strip.
 
 ## What the corpus caught that 183 unit tests did not
 

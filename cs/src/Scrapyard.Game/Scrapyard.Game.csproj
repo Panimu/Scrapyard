@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Scrapyard.Game - a MonoGame front-end over Scrapyard.Core.
+
+    THE SIMULATION IS NOT IN HERE, and the dependency runs one way only. This project reads the
+    world and draws it; it never writes to it. That is the same line `src/render/` holds on the
+    TypeScript side, and it is what keeps a replay recorded here reproducible in a test runner with
+    no window at all.
+
+    It loads PNGs straight out of `public/sprites/` with Texture2D.FromStream rather than going
+    through MonoGame's Content Pipeline. The sprites are already built, checked in, and shared with
+    the web build - running them through a second build step would mean two copies that can drift.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <RootNamespace>Scrapyard.Game</RootNamespace>
+    <AssemblyName>Scrapyard</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scrapyard.Core\Scrapyard.Core.csproj" />
+  </ItemGroup>
+
+</Project>
