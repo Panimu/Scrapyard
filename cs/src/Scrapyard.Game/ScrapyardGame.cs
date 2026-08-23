@@ -104,6 +104,36 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>Walk-cycle phase, in seconds. Render-only: the simulation has no idea it exists.</summary>
     private double _walkClock;
 
+    /// <summary>
+    /// The mech's own damage/heal/insurance tint, as seconds of flash remaining.
+    /// </summary>
+    /// <remarks>
+    /// COSMETIC TIMERS, DECAYED BY REAL SECONDS PER RENDERED FRAME - not by sim ticks, same as
+    /// <see cref="_walkClock"/> - because a flash is about what the eye just saw, which happens at
+    /// the display's rate rather than the simulation's.
+    /// </remarks>
+    private double _playerFlash;
+
+    private double _healFlash;
+
+    /// <summary>Seconds of Mech Insurance immunity left, and how long the window was.</summary>
+    /// <remarks>
+    /// BOTH ARE KEPT, not just the remaining time: the pulse fades OUT across the window rather
+    /// than holding steady, so the fraction <c>_savedFor / _savedTotal</c> is what the tint is
+    /// actually driven by.
+    /// </remarks>
+    private double _savedFor;
+
+    private double _savedTotal;
+
+    private const double PlayerFlashSec = 0.12;
+    private const double HealFlashSec = 0.45;
+    private const double InsurancePulseHz = 9;
+
+    private static readonly Color PlayerHitTint = new(0xff, 0xb0, 0xa8);
+    private static readonly Color PlayerHealTint = new(0xb6, 0xf5, 0xc4);
+    private static readonly Color InsuranceSavedTint = new(0xff, 0xd2, 0x57);
+
     private KeyboardState _prevKeys;
 
     /// <summary>
@@ -376,6 +406,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _accumulatorMs = 0;
         _alpha = 0;
         _walkClock = 0;
+        _playerFlash = 0;
+        _healFlash = 0;
+        _savedFor = 0;
+        _savedTotal = 0;
         _fx?.Clear();
         // SEEDED FROM THE RUN, so the same seed lays the same gravel on every machine - without a
         // byte of it reaching the world.
@@ -525,9 +559,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 // stalls dead at the first level-up and every later phase is unreachable. Taking the
                 // first offer is arbitrary and that is fine - the point is to get somewhere, not to
                 // play well.
+                // RUNNING NEEDS A FLOOR, not just a target: it is the phase the world is ALREADY
+                // in the instant a run starts, so "stop when the phase is Running" would stop on
+                // tick zero and hand back the spawn frame. `--shot hud` wants the HUD mid-fight,
+                // past the point elites and bosses exist, which the first 90 seconds guarantee.
+                int minTicks = want == RunPhase.Running ? 60 * 100 : 0;
                 var frame = InputFrame.Empty;
                 for (int i = 0; i < 60 * (Constants.RunLengthSec + 120)
-                                && _sim.World.Phase != want; i++)
+                                && (i < minTicks
+                                    || (_sim.World.Phase != want
+                                        && _sim.World.Phase != RunPhase.Dead)); i++)
                 {
                     double fx = 0;
                     double fy = 0;
@@ -1030,6 +1071,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         _alpha = _accumulatorMs / DtMs;
         _walkClock += dt;
+        if (_playerFlash > 0) _playerFlash -= dt;
+        if (_healFlash > 0) _healFlash -= dt;
+        if (_savedFor > 0) _savedFor -= dt;
     }
 
     /// <summary>
@@ -1492,6 +1536,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// rose inside a rigid halo, so the visible band nearly doubled twice a stride.
     /// </para>
     /// </remarks>
+    /// <summary>Scratch buffers for <see cref="DrawEnemies"/>'s Y-sort, kept across frames.</summary>
+    /// <remarks>
+    /// SIZED TO THE POOL'S OWN CAPACITY AND REUSED, never allocated per frame. A struct-of-arrays
+    /// pool is fixed-size for exactly this reason - see World's own remarks on why - and a sort
+    /// buffer that grew and shrank with the live count would throw away that guarantee the moment
+    /// it needed a new one mid-fight.
+    /// </remarks>
+    private int[] _enemyOrder = System.Array.Empty<int>();
+
+    private double[] _enemyOrderY = System.Array.Empty<double>();
+
     private void DrawEnemies(World w)
     {
         var e = w.Enemies;
@@ -1501,12 +1556,33 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         double rimScale = CreatureArtTable.RimScaleOf(_sim.Level.Id);
         double clock = w.Tick + _alpha;
 
+        // DRAWN BACK TO FRONT BY Y, not by pool slot. The pool packs live enemies densely but in
+        // SPAWN order, which has nothing to do with depth - without this, a boss standing in front
+        // of a regular painted after it in the pool would show through the regular instead of
+        // behind it, flickering as the two swap pool slots on death and respawn elsewhere.
+        if (_enemyOrder.Length < e.Capacity)
+        {
+            _enemyOrder = new int[e.Capacity];
+            _enemyOrderY = new double[e.Capacity];
+        }
+        int visible = 0;
         for (int d = 0; d < e.Count; d++)
         {
             if ((e.Flags[d] & EnemyPool.FlagDead) != 0) continue;
+            double ey = Lerp(e.PrevY[d], e.Y[d]);
+            double ex = Lerp(e.PrevX[d], e.X[d]);
+            if (ex < x0 || ex > x1 || ey < y0 || ey > y1) continue;
+            _enemyOrder[visible] = d;
+            _enemyOrderY[visible] = ey;
+            visible++;
+        }
+        System.Array.Sort(_enemyOrderY, _enemyOrder, 0, visible);
+
+        for (int k = 0; k < visible; k++)
+        {
+            int d = _enemyOrder[k];
             double x = Lerp(e.PrevX[d], e.X[d]);
             double y = Lerp(e.PrevY[d], e.Y[d]);
-            if (x < x0 || x > x1 || y < y0 || y > y1) continue;
 
             int typeId = e.TypeId[d];
             int arch = e.Archetype[d];
@@ -1588,7 +1664,62 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             }
 
             BlitPosed(tex, bodyX, y, scale, pose, flip, tint);
+
+            // RANK DECIDES THE BAR, AND NOTHING ELSE DOES. Elites and bosses always carry one;
+            // a regular never does, whatever chassis it happens to be built on - a 125 HP body
+            // that LOOKS wide gets no more of a bar than one that does not, because a bar has to
+            // mean "this one is a rank above you", not "this one happens to be drawn on a wide
+            // hull".
+            //
+            // AT THE UN-SHIFTED POSITION (x, y), not bodyX: the bar tracks the enemy, not its
+            // gait wobble.
+            bool ranked = (e.Flags[d] & (EnemyPool.FlagBoss | EnemyPool.FlagElite)) != 0;
+            if (ranked && e.Hp[d] < e.MaxHp[d])
+            {
+                DrawHpBar(x, y, e.Radius[d], drawUnits, e.Hp[d] / e.MaxHp[d]);
+            }
         }
+    }
+
+    private const double HpBarWFrac = 0.9;
+    private const double HpBarH = 4;
+    private const double HpBarGap = 8;
+
+    /// <summary>
+    /// Two flat quads over an enemy: the track, then the fill.
+    /// </summary>
+    /// <remarks>
+    /// ONE COLOUR STEP AT A TIME rather than a gradient - green above half, gold above a fifth,
+    /// red under it - because a bar read at a glance in the middle of a fight needs a state
+    /// ("fine" / "worry" / "about to die"), not a continuous number nobody has time to read.
+    /// </remarks>
+    private void DrawHpBar(double x, double y, double radius, double drawSize, double frac)
+    {
+        double w = drawSize * HpBarWFrac;
+        // CENTRE Y, not a top edge - the track and the fill share it and differ only in height,
+        // which is what makes the fill read as INSET within the track rather than as a second bar
+        // drawn on top of it.
+        double midY = y - radius - HpBarGap;
+
+        WorldRect(x - w / 2, midY, w, HpBarH, new Color(0x1b, 0x20, 0x28) * 0.85f);
+
+        // LEFT-ANCHORED: the fill's left edge sits at the track's left edge always and it shrinks
+        // from the RIGHT as health drops, which is what every health bar anyone has seen before
+        // does.
+        double fw = w * System.Math.Clamp(frac, 0, 1);
+        var fillColour = frac > 0.5 ? new Color(0x8b, 0xd4, 0x50)
+                        : frac > 0.22 ? new Color(0xe7, 0xb9, 0x00)
+                        : new Color(0xd7, 0x50, 0x3f);
+        WorldRect(x - w / 2, midY, fw, HpBarH - 1.5, fillColour);
+    }
+
+    /// <summary>A flat quad given in world units, centred vertically on <paramref name="midY"/>.</summary>
+    private void WorldRect(double left, double midY, double w, double h, Color colour)
+    {
+        var screen = _camera.ToScreen(left, midY - h / 2);
+        int sw = System.Math.Max(1, (int)(w * _camera.Scale));
+        int sh = System.Math.Max(1, (int)(h * _camera.Scale));
+        _batch.Draw(_sprites.Blank, new Rectangle((int)screen.X, (int)screen.Y, sw, sh), colour);
     }
 
     /// <summary>
@@ -1718,13 +1849,32 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             key = $"mech_{stem}_w{frame}";
         }
 
+        // DAMAGE WINS OVER THE HEAL: being hit is the more urgent fact, so a heal landing on the
+        // same frame as a hit does not soften the warning.
+        var tint = _playerFlash > 0 ? PlayerHitTint : _healFlash > 0 ? PlayerHealTint : Color.White;
+
+        // THE INSURANCE WINDOW, WORN BY THE MECH ITSELF, and it outranks both flashes above. The
+        // burst effect says the save happened; this says it is STILL happening, which is the half
+        // that changes what the player does next - three seconds of immunity nobody can see is
+        // three seconds spent running from a fight that could have been walked through.
+        //
+        // A PULSE RATHER THAN A STEADY TINT: a constant gold reads as a new paint job within about
+        // a second, where a pulse is unmistakably a timer. It fades out over the window rather than
+        // stopping dead, so the protection ending is something the player saw coming.
+        if (_savedFor > 0 && _savedTotal > 0)
+        {
+            double left = _savedFor / _savedTotal;
+            double pulse = 0.5 + 0.5 * System.Math.Sin((_savedTotal - _savedFor) * InsurancePulseHz);
+            tint = Color.Lerp(tint, InsuranceSavedTint, (float)(left * (0.45 + 0.55 * pulse)));
+        }
+
         var body = _sprites.Get(key) ?? _sprites.Get($"mech_{stem}");
         if (body is not null)
         {
             // The chassis faces where it is looking, and the art faces +x, so no offset.
             double face = System.Math.Atan2(p.FaceY, p.FaceX);
             double bw = RenderTables.MechDrawW;
-            Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, Color.White);
+            Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
         }
 
         // THE TURRETS, aimed independently of the chassis - the difference between where the mech
@@ -1746,7 +1896,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (turret is null) continue;
             double a = System.Math.Atan2(inst.TurretY, inst.TurretX);
             double tw = RenderTables.TurretDrawW;
-            Blit(turret, px, py, tw * ((double)turret.Width / turret.Height), tw, a, Color.White);
+            Blit(turret, px, py, tw * ((double)turret.Width / turret.Height), tw, a, tint);
         }
     }
 
@@ -1835,16 +1985,38 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 case EventKind.PlayerDamaged:
                     _fx.Spark(a, b);
                     _camera.Shake(2, 0.12);
+                    _playerFlash = PlayerFlashSec;
                     break;
 
                 case EventKind.PlayerShieldBroken:
+                    // A RIM WENT DOWN. Blue burst and DELIBERATELY NO _playerFlash - the red hit
+                    // tint means "that cost you HP", and setting it here would teach the player to
+                    // read a blocked hit as a taken one, which is the opposite of what the shield
+                    // is telling them.
                     _fx.ShieldBreak(a, b, new Color(0x6f, 0xd8, 0xff));
                     _camera.Shake(4, 0.22);
                     break;
 
                 case EventKind.PlayerRepaired:
+                    _fx.Sparkle(a, b, new Color(0xff, 0xd2, 0x57));
+                    _healFlash = HealFlashSec;
+                    break;
+
+                // MECH INSURANCE PAID OUT. The burst says it happened; _savedFor is the aftermath,
+                // worn by the chassis for as long as the immunity actually lasts (`c`) rather than
+                // a duration repeated here - so the shimmer cannot drift from the protection.
                 case EventKind.PlayerSaved:
                     _fx.Sparkle(a, b, new Color(0xff, 0xd2, 0x57));
+                    _savedFor = c;
+                    _savedTotal = c;
+                    _camera.Shake(14, 0.5);
+                    break;
+
+                // A LEVEL IS GOOD NEWS TOO. The same green flash a repair pickup gets - it is not
+                // healing, but it is the same "something in your favour just happened" beat, and
+                // giving it a colour of its own would be a second thing to teach the player.
+                case EventKind.LevelUp:
+                    _healFlash = HealFlashSec;
                     break;
 
                 case EventKind.PlayerShieldRestored:
