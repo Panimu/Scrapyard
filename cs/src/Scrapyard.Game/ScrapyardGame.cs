@@ -42,6 +42,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private Sprites _sprites = null!;
     private readonly Camera _camera = new();
     private Terrain _terrain = null!;
+    private Effects _fx = null!;
 
     private Simulation _sim = null!;
     private string _levelId;
@@ -100,6 +101,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _batch = new SpriteBatch(GraphicsDevice);
         _sprites = new Sprites(GraphicsDevice, Sprites.FindRoot());
         _terrain = new Terrain(_sprites);
+        _fx = new Effects(_sprites);
         // The card text table is generated from the TypeScript catalog; this is what notices when
         // it has been left behind by a card added there.
         CardTexts.Verify(UpgradeCatalog.All.Length);
@@ -118,7 +120,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _accumulatorMs = 0;
         _alpha = 0;
         _walkClock = 0;
-        _camera.Follow(_sim.World.Player.X, _sim.World.Player.Y);
+        _fx?.Clear();
+        _camera.SnapTo(_sim.World.Player.X, _sim.World.Player.Y);
+        // DROP WHAT THE LAST RUN LEFT IN THE RING, or its explosions play over this one's first
+        // second. The read cursor belongs to the renderer, which is exactly why it can be moved
+        // here without the simulation noticing.
+        _sim.World.Events.ReadCursor = _sim.World.Events.WriteCursor;
     }
 
     // -----------------------------------------------------------------------------------------
@@ -165,8 +172,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // stutter for a burst, and a burst is the one that kills you.
         if (steps >= MaxStepsPerFrame && _accumulatorMs > DtMs) _accumulatorMs = 0;
 
+        // DRAINED AFTER THE STEPS, so a frame that took three ticks plays all three ticks' effects.
+        DrainEvents();
+        if (steps > 0) SpawnBeamFlares();
+
+        double dt = frameMs / 1000.0;
+        _fx.Update(dt);
+        _camera.Update(dt);
+
         _alpha = _accumulatorMs / DtMs;
-        _walkClock += frameMs / 1000.0;
+        _walkClock += dt;
         _prevKeys = keys;
 
         base.Update(gameTime);
@@ -287,6 +302,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         DrawDrones(w);
         DrawPlayer(w, px, py);
         DrawBeams(w);
+        _fx.Draw(_batch, _camera);
 
         int vw = GraphicsDevice.PresentationParameters.BackBufferWidth;
         int vh = GraphicsDevice.PresentationParameters.BackBufferHeight;
@@ -542,6 +558,143 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
     }
 
+
+
+    /// <summary>
+    /// The flare where each beam leaves the chassis.
+    /// </summary>
+    /// <remarks>
+    /// SPAWNED PER TICK, NOT PER FRAME, and guarded on a step having happened. A beam has no
+    /// discrete shot to announce - it IS its geometry - so there is no event to drain and the flare
+    /// has to come off the buffer directly. Doing that in Draw instead would tie how bright the
+    /// muzzle looks to the frame rate, which is the sort of thing that looks fine at 60 and wrong
+    /// on anything else.
+    /// </remarks>
+    private void SpawnBeamFlares()
+    {
+        var w = _sim.World;
+        var beams = w.Beams;
+        for (int i = 0; i < beams.Count; i++)
+        {
+            double dx = beams.X1[i] - beams.X0[i];
+            double dy = beams.Y1[i] - beams.Y0[i];
+            if (dx * dx + dy * dy < 0.25) continue;
+
+            var tint = new Color(0x7f, 0xd8, 0xff);
+            int slot = beams.WeaponIdx[i];
+            if (slot >= 0 && slot < w.WeaponCount)
+            {
+                int defId = w.Weapons[slot].DefId;
+                if (defId >= 0 && defId < w.WeaponDefs.Length)
+                {
+                    tint = FromHex(w.WeaponDefs[defId].BeamColour);
+                }
+            }
+            _fx.BeamStart(beams.X0[i], beams.Y0[i], tint);
+        }
+    }
+
+    /// <summary>
+    /// Turns the tick's events into effects.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE READ CURSOR BELONGS TO THE RENDERER. It is the one field of the event ring the
+    /// simulation never touches and the one part of the ring left out of the world hash - which is
+    /// what lets a headless run and a rendered run of the same seed produce identical worlds while
+    /// only one of them is drawing anything.
+    /// </para>
+    /// <para>
+    /// EVENTS ARE THE ONLY CHANNEL for anything that HAPPENED rather than anything that IS. A shell
+    /// landing leaves no state behind - by the time the renderer looks, the shell has been reaped
+    /// and the body it hit may have been too - so the flash has to be driven by the record of the
+    /// event rather than by a search for its aftermath.
+    /// </para>
+    /// <para>
+    /// A DROPPED EVENT IS A MISSING EFFECT AND NOTHING WORSE. The ring overwrites when a tick
+    /// pushes more than it can hold; the simulation is unaffected, and the cost is a spark nobody
+    /// saw.
+    /// </para>
+    /// </remarks>
+    private void DrainEvents()
+    {
+        var r = _sim.World.Events;
+        while (r.ReadCursor != r.WriteCursor)
+        {
+            int i = r.ReadCursor++ & r.Mask;
+            double a = r.A[i];
+            double b = r.B[i];
+            double c = r.C[i];
+            double d = r.D[i];
+
+            switch (r.Kind[i])
+            {
+                case EventKind.WeaponFired:
+                    // Payload is the muzzle position then the shot's unit direction - everything
+                    // needed to place and rotate the flash without recomputing it.
+                    _fx.Muzzle(a, b, c, d);
+                    _camera.Kick(c, d);
+                    break;
+
+                case EventKind.DroneFired:
+                    _fx.Muzzle(a, b, c, d);
+                    break;
+
+                case EventKind.ProjectileHit:
+                    _fx.Impact(a, b);
+                    break;
+
+                case EventKind.ProjectileDetonated:
+                    // `c` is the RADIUS, not a dense index: by the time this is read the shell has
+                    // been reaped, and this event is the only place that number survives the tick.
+                    _fx.ArtilleryBlast(a, b, c);
+                    _camera.Shake(3, 0.18);
+                    break;
+
+                case EventKind.EnemyDamaged:
+                    _fx.Spark(a, b);
+                    break;
+
+                case EventKind.EnemyKilled:
+                    _fx.Puff(a, b, 34);
+                    break;
+
+                case EventKind.BarrelBroken:
+                case EventKind.WallBroken:
+                    // `c` carries the prop's radius, so the puff is the size of what broke.
+                    _fx.Puff(a, b, System.Math.Max(18, c * 1.6));
+                    break;
+
+                case EventKind.GemCollected:
+                    _fx.Sparkle(a, b, RenderTables.GemTint[
+                        (int)System.Math.Clamp(d, 0, RenderTables.GemTint.Length - 1)]);
+                    break;
+
+                case EventKind.ConsumableTaken:
+                    _fx.Sparkle(a, b, new Color(0x6f, 0xe3, 0x6f));
+                    break;
+
+                case EventKind.PlayerDamaged:
+                    _fx.Spark(a, b);
+                    _camera.Shake(2, 0.12);
+                    break;
+
+                case EventKind.PlayerShieldBroken:
+                    _fx.ShieldBreak(a, b, new Color(0x6f, 0xd8, 0xff));
+                    _camera.Shake(4, 0.22);
+                    break;
+
+                case EventKind.PlayerRepaired:
+                case EventKind.PlayerSaved:
+                    _fx.Sparkle(a, b, new Color(0xff, 0xd2, 0x57));
+                    break;
+
+                case EventKind.BossSpawned:
+                    _camera.Shake(5, 0.35);
+                    break;
+            }
+        }
+    }
 
     /// <summary>
     /// Which barrel a gun shows. Four exist; everything else takes the default.
