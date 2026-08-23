@@ -144,6 +144,35 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _trophyCursor;
     private int _settingsCursor;
     private PediaState _pedia = null!;
+    private readonly ChangelogPage _changes = new();
+
+    /// <summary>
+    /// How long the world still has to hold still for the insurance payout.
+    /// </summary>
+    /// <remarks>
+    /// ONE PAYOUT PER RUN, so <c>_saveSeen</c> latching is the whole trigger and it cannot repeat.
+    /// Caught off the WORLD rather than off the event ring, because the ring is drained during the
+    /// draw - which is after this point in the frame, so the freeze would start a frame late and
+    /// the burst would play over a battlefield that had already moved.
+    /// </remarks>
+    private double _savePauseLeft;
+
+    private bool _saveSeen;
+
+    /// <summary>The last auto-pick's name, and how long it still floats for.</summary>
+    private string _pickName = "";
+
+    private double _pickLeft;
+
+    /// <summary>Picks the simulation had taken when this was last looked at.</summary>
+    /// <remarks>
+    /// THE EDGE, NOT THE LEVEL. Auto-level takes a card on some tick and the phase is back to
+    /// running before the next frame, so there is no state to poll - the count going up is the only
+    /// evidence that anything happened.
+    /// </remarks>
+    private int _picksSeen;
+
+
 
     /// <summary>
     /// When the chest opened, in the render layer's own clock.
@@ -283,6 +312,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _fx?.Clear();
         // SEEDED FROM THE RUN, so the same seed lays the same gravel on every machine - without a
         // byte of it reaching the world.
+        _saveSeen = false;
+        _savePauseLeft = 0;
+        _picksSeen = 0;
+        _pickLeft = 0;
         _cover?.Begin(seed);
         _paths?.Begin(seed);
         _camera.SnapTo(_sim.World.Player.X, _sim.World.Player.Y);
@@ -357,6 +390,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.Trophies: UpdateTrophies(keys); break;
             case Screen.Settings: UpdateSettings(keys); break;
             case Screen.Pedia: UpdatePedia(keys); break;
+            case Screen.Changes: UpdateChangelog(keys); break;
             case Screen.Paused: UpdatePaused(keys); break;
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
@@ -393,6 +427,30 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// the screen showing two of them or none - the only thing this method decides is which way the
     /// cursor moved.
     /// </remarks>
+    /// <summary>
+    /// Where BACK goes from the changelog.
+    /// </summary>
+    /// <remarks>
+    /// IT IS REACHABLE FROM TWO PLACES - the settings screen and the pause menu - and leaving it
+    /// has to return to whichever one opened it. A fixed destination would drop a player out of a
+    /// paused run onto the title screen, losing the run.
+    /// </remarks>
+    private Screen _returnTo = Screen.Settings;
+
+    private void UpdateChangelog(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) { _screen = _returnTo; return; }
+
+        if (Pressed(keys, Keys.Up)) _changes.Scroll = System.Math.Max(0, _changes.Scroll - 1);
+        if (Pressed(keys, Keys.Down)) _changes.Scroll++;
+        if (Pressed(keys, Keys.PageUp))
+        {
+            _changes.Scroll = System.Math.Max(0, _changes.Scroll - Screens.ChangeRows);
+        }
+        if (Pressed(keys, Keys.PageDown)) _changes.Scroll += Screens.ChangeRows;
+        if (Pressed(keys, Keys.Home)) _changes.Scroll = 0;
+    }
+
     private void UpdatePedia(KeyboardState keys)
     {
         if (Pressed(keys, Keys.Escape))
@@ -449,6 +507,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int n = Screens.SettingRows.Length;
         if (Pressed(keys, Keys.Up)) _settingsCursor = (_settingsCursor + n - 1) % n;
         if (Pressed(keys, Keys.Down)) _settingsCursor = (_settingsCursor + 1) % n;
+
+        // THE ROW SAID [C] CHANGELOG BEFORE THERE WAS ONE, which is the exact failure this screen's
+        // own notes condemn: a control that is advertised and does nothing. It shipped that way for
+        // two commits.
+        if (Pressed(keys, Keys.C))
+        {
+            _changes.Open();
+            _returnTo = Screen.Settings;
+            _screen = Screen.Changes;
+            return;
+        }
 
         int step = Pressed(keys, Keys.Right) || Pressed(keys, Keys.Enter) || Pressed(keys, Keys.Space)
             ? 1
@@ -548,6 +617,19 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         if (Pressed(keys, Keys.Escape)) _screen = Screen.Playing;
         if (Pressed(keys, Keys.F5)) StartRun(unchecked(_seed * 1103515245 + 12345));
+
+        // FROM THE PAUSE MENU TOO, which is where the web build puts it - and BACK returns to the
+        // pause menu rather than the title, because the run is still open behind it.
+        // AND OFF AGAIN HERE, which is the only place it can go off - see the level-up card.
+        if (Pressed(keys, Keys.A)) _sim.World.AutoLevel = _sim.World.AutoLevel != 0 ? 0 : 1;
+
+        if (Pressed(keys, Keys.C))
+        {
+            _changes.Open();
+            _returnTo = Screen.Paused;
+            _screen = Screen.Changes;
+            return;
+        }
         if (Pressed(keys, Keys.Back))
         {
             // ABANDONING BANKS FIRST. Everything the run earned is already in the save by the
@@ -591,6 +673,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             steps++;
         }
 
+        // MECH INSURANCE HOLDS THE WORLD STILL. The accumulator is cleared rather than banked, so
+        // the four seconds are not paid back as a burst of catch-up ticks the moment the banner
+        // goes - which would hand the crowd that just killed the player four seconds of free
+        // movement while they were reading.
+        if (_savePauseLeft > 0)
+        {
+            _savePauseLeft -= frameMs / 1000.0;
+            _accumulatorMs = 0;
+        }
+
         // WHATEVER IS LEFT IS DROPPED once the step budget is spent. Banking it would trade a
         // stutter for a burst, and a burst is the one that kills you.
         if (steps >= MaxStepsPerFrame && _accumulatorMs > DtMs) _accumulatorMs = 0;
@@ -617,6 +709,33 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // STAMPED ON THE EDGE, so the spin starts when the chest opens rather than restarting on
         // whichever frame happens to notice. The simulation is paused while it is up, so this is
         // the only clock the reels can run on.
+        // THE PICK TOAST, off the edge in the pick count.
+        var lu = _sim.World.LevelUp;
+        if (lu.PicksTaken != _picksSeen)
+        {
+            _picksSeen = lu.PicksTaken;
+            if (_sim.World.AutoLevel != 0 && lu.LastTaken >= 0
+                && lu.LastTaken < CardTexts.All.Length)
+            {
+                // The name AT ITS NEW TIER, so an ascension announces itself as what it became
+                // rather than as the card that grew into it.
+                _pickName = NameAtTier(lu.LastTaken, lu.Stacks[lu.LastTaken]);
+                _pickLeft = Overlay.PickRiseSec;
+            }
+            // NO BANKING HOOK IS NEEDED HERE, unlike the web build. There, the level-up overlay's
+            // own close was where a taken card got recorded, so auto-level - which never draws the
+            // overlay - had to bank off this edge instead. This build banks on a clock regardless,
+            // so an auto-pick is in the save within the second either way.
+        }
+        if (_pickLeft > 0) _pickLeft -= dt;
+
+        if (!_saveSeen && _sim.World.Player.InsuranceUsed != 0)
+        {
+            _saveSeen = true;
+            _savePauseLeft = Overlay.SavePauseSec;
+            _camera.Shake(9, 0.5);
+        }
+
         bool chestUp = _sim.World.Phase == RunPhase.Chest;
         if (chestUp && !_chestWasUp) _chestOpenedSec = _clockSec;
         _chestWasUp = chestUp;
@@ -679,6 +798,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private void ApplySave(World w)
     {
         w.InfiniteRerolls = _save.InfiniteRerolls;
+
+        // AUTO-LEVEL IS A PER-RUN SWITCH and every run opens with it OFF, which is why it is set
+        // here rather than read from the save: a player who let the game pick for them last night
+        // has not asked it to keep doing so.
         w.AutoLevel = 0;
 
         var earned = new HashSet<string>(_save.EarnedCards);
@@ -701,6 +824,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <remarks>
     /// CALLED ON A CLOCK AND AT THE END, never only at the end. See <see cref="_bankLeft"/>.
     /// </remarks>
+    /// <summary>
+    /// What a card is called at a tier.
+    /// </summary>
+    /// <remarks>
+    /// AN ASCENSION ANNOUNCES ITSELF AS WHAT IT BECAME rather than as the card that grew into it. A
+    /// tier 8 renames the gun and redraws its icon, so a toast reading "Cannon" for the pick that
+    /// turned it into the Twin Mount would be reporting the wrong event entirely.
+    /// </remarks>
+    private static string NameAtTier(int index, int tier)
+    {
+        var card = CardTexts.At(index);
+        return tier >= UpgradeCatalog.WeaponAscendedTier
+               && PediaText.AscensionOf(card.Id) is { } asc
+            ? asc.Name
+            : card.Name;
+    }
+
     private void Bank()
     {
         var earned = Progress.Bank(_save, _sim.World, _sim.Level, _roster, ref _creditsBanked);
@@ -788,6 +928,19 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (_sim.World.Phase != RunPhase.LevelUp) return;
 
+        // AUTO-LEVEL, OFFERED WHERE IT IS WANTED. The pause menu has the switch, but the moment a
+        // player decides they are tired of choosing is the moment a card is in front of them - and
+        // making them pause, find a menu and come back is asking them to do the thing they just
+        // said they did not want to do.
+        //
+        // ONE-WAY HERE, deliberately: turning it off is something you do when NO card is up, since
+        // auto-level means you never see this screen again. The pause menu is where it goes off.
+        if (Pressed(keys, Keys.A))
+        {
+            _sim.World.AutoLevel = 1;
+            return;
+        }
+
         if (Pressed(keys, Keys.D1)) _pendingChoice = 0;
         else if (Pressed(keys, Keys.D2)) _pendingChoice = 1;
         else if (Pressed(keys, Keys.D3)) _pendingChoice = 2;
@@ -855,7 +1008,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         var (mw, mh) = Surface;
 
         if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop
-            or Screen.Trophies or Screen.Settings or Screen.Pedia)
+            or Screen.Trophies or Screen.Settings or Screen.Pedia or Screen.Changes)
         {
             GraphicsDevice.Clear(RenderTables.Outside);
             _batch.Begin(samplerState: SamplerState.PointClamp);
@@ -874,6 +1027,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh); break;
                 case Screen.Pedia:
                     Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh); break;
+                case Screen.Changes:
+                    Screens.DrawChangelog(_batch, _sprites,
+                        _changes.Lines(System.Math.Min(mw - 40, 340 * System.Math.Max(1, mh / 400)),
+                                       System.Math.Max(1, mh / 400)),
+                        _changes.Scroll, mw, mh); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();
@@ -937,6 +1095,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case RunPhase.Dead:
             case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh); break;
         }
+
+        var toastAt = _camera.ToScreen(px, py);
+        Overlay.DrawPickToast(_batch, _sprites, _pickName, _pickLeft, (int)toastAt.X,
+                              (int)toastAt.Y, vh);
+        Overlay.DrawSaved(_batch, _sprites, _savePauseLeft, vw, vh);
 
         if (_save.Debug)
         {
@@ -1398,6 +1561,14 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 case EventKind.PlayerRepaired:
                 case EventKind.PlayerSaved:
                     _fx.Sparkle(a, b, new Color(0xff, 0xd2, 0x57));
+                    break;
+
+                case EventKind.PlayerShieldRestored:
+                    _fx.ShieldRestore(a, b, new Color(0x6f, 0xd8, 0xff));
+                    break;
+
+                case EventKind.SheepTaken:
+                    _fx.SheepTaken(a, b, c);
                     break;
 
                 case EventKind.BossSpawned:

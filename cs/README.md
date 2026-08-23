@@ -684,6 +684,49 @@ says, which is false for all seven passives — they stack, so they repeat. Each
 property actually intended: the state that can occur, the key the lore resolved from, and the count
 and numbering of the ladder rows.
 
+**The changelog is the only place the game tells anyone what changed**, which is what makes it
+worth a screen rather than a link. All 235 entries and 628 notes are generated from
+`src/ui/changelog.ts` — the file the project's rules say to update — so there is one authored copy
+and it is the one people already edit. It is reachable from the pause menu and from settings, and
+Back returns to whichever opened it: a fixed destination would drop a player out of a paused run
+onto the title screen and lose the run.
+
+**And the generator refuses to emit a log that is out of order** — which found a real one. The
+TypeScript had a single entry misplaced: "The Hornet, sharpened" at 06:54 sitting above two entries
+from later the same morning. Nothing catches that by eye, because the stamps are only ever read by
+someone scrolling past them. **Fixing it meant moving one entry in `src/ui/changelog.ts`** — the
+only edit this port has made to the web game, and it changes no text, only position.
+
+**Every generated string is now checked against the font's range**, and that caught a whole class of
+defect. The bitmap font has glyphs for 32..126 and a character outside it draws *nothing while still
+advancing the pen* — so an em dash comes out as an unexplained gap mid-sentence, which reads as a
+renderer bug rather than a font limitation. The changelog had 116 of them, the manual one more, plus
+35 curly apostrophes and a stray Ñ. They are folded to ASCII **at generation time**, on the way out,
+so the TypeScript keeps its real typography: the web build has a real font and should not be made
+poorer to suit a target it does not have.
+
+**Three player-facing things that were simulated but never shown:**
+
+- **The insurance banner.** Mech Insurance fires once per run at the exact instant the run would
+  otherwise have ended, in the middle of whatever crowd just killed you — and everything about that
+  moment works against noticing it. The world now holds still for 4.2 seconds, the viewport shakes,
+  and a banner says what happened. The port had marked it with a small sparkle.
+- **Auto-level.** `World.AutoLevel` was hard-zeroed. The simulation supported it all along and the
+  corpus covers it; it needed a card (`[A]` on the level-up screen, one-way, because turning it off
+  is something you do when no card is up) and a switch in the pause menu, plus the toast that floats
+  the pick over the mech — without which a run quietly grows stronger and the player is no longer
+  playing it.
+- **The pause loadout.** What is actually on the mech and at what tier, named at its current tier so
+  an ascended gun reads as what it became.
+
+Plus two effects core emits and the web build draws that the port ignored: the shield coming back
+(a ring blooming outward, the opposite gesture to the break) and a sheep collected.
+
+**A bug I shipped, and how it was found.** The settings screen advertised `[C] CHANGELOG` for two
+commits with nothing bound to it — precisely the "toggle that lies" failure that screen's own notes
+condemn. It surfaced only from walking the source tree file by file to answer "what is left", which
+is an argument for doing that periodically rather than trusting a mental list.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
@@ -693,7 +736,10 @@ draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityD
 `PediaState` and `FontMetrics` hold every decision and no MonoGame types — as does `JsMath` — and
 the test csproj `<Compile Include>`s those exact files.
 
-Every screen and every layer of the web build now has a counterpart here.
+What is not ported, plainly: the virtual joystick (touch, and this is a desktop build); full
+gamepad navigation of the menus, though a pad already drives movement and the level-up choice;
+the build-version string; and `src/sim/` - the reference bot and the DPS harness, which measure
+balance and are run from the TypeScript side.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not

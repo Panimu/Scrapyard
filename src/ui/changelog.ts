@@ -321,14 +321,6 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     ],
   },
   {
-    at: '2026-08-19T06:54Z',
-    title: 'THE HORNET, SHARPENED',
-    notes: [
-      'The short missiles a Hornet warhead splits into now corner noticeably harder — a child born pointing the wrong way comes around in time to matter.',
-      'Once the Hornet stands, the deck stops offering both missile racks for the rest of the run. The freed slot is for something new, not for climbing the same ladder twice.',
-    ],
-  },
-  {
     at: '2026-08-19T11:58Z',
     title: 'SOMETHING IS BEING BUILT',
     notes: [
@@ -445,6 +437,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     title: 'THE SIEGE REMEMBERS WHERE YOU WERE',
     notes: [
       'Siege Heavies no longer track you as you move. The whole ring converges on the spot you were standing when it closed, for a full minute and a half — stand your ground and it is a tightening noose; step out of it and it becomes a slow grey knot forming on the yard where you used to be. When the time is up, the mass turns and comes for you after all.',
+    ],
+  },
+  {
+    at: '2026-08-19T06:54Z',
+    title: 'THE HORNET, SHARPENED',
+    notes: [
+      'The short missiles a Hornet warhead splits into now corner noticeably harder — a child born pointing the wrong way comes around in time to matter.',
+      'Once the Hornet stands, the deck stops offering both missile racks for the rest of the run. The freed slot is for something new, not for climbing the same ladder twice.',
     ],
   },
   {

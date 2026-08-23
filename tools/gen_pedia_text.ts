@@ -214,8 +214,32 @@ function loreRows(table: Record<string, { lead: string; notes: string[] }>): str
     .join('\n');
 }
 
+/**
+ * FOLDS TYPOGRAPHY TO ASCII, because the C# build draws with a bitmap font that has glyphs for
+ * 32..126 and nothing else.
+ *
+ * A character outside that range draws NOTHING while still advancing the pen, so an em dash - of
+ * which the changelog alone has 116 - comes out as an unexplained gap in the middle of a sentence.
+ * That is worse than a substitution, because a gap looks like a bug in the renderer rather than a
+ * limitation of the font.
+ *
+ * THE WEB BUILD IS UNAFFECTED and keeps its real typography: this runs on the way OUT, at
+ * generation time, so the TypeScript that authors the prose is never made poorer to suit a target
+ * it does not have.
+ */
+function toAscii(s: string): string {
+  return s
+    .replace(/[\u2014\u2013]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00a0/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function cs(s: string): string {
-  return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}"`;
+  return `"${toAscii(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}"`;
 }
 
 const out: string[] = [];

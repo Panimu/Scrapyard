@@ -234,6 +234,39 @@ public sealed class Effects
     }
 
     /// <summary>
+    /// An Energy Shield layer coming BACK.
+    /// </summary>
+    /// <remarks>
+    /// A ring blooming OUTWARD, which is the opposite gesture to the break - and the distinction is
+    /// the whole job of the pair. The player has to read "the field is up again" rather than "you
+    /// were hit", out of the corner of their eye, in a fraction of a second.
+    /// </remarks>
+    public void ShieldRestore(double x, double y, Color tint)
+    {
+        int i = Alloc(KindFlash, x, y, ShieldBreakLife);
+        _size0[i] = 14;
+        _size1[i] = 88;
+        _tint[i] = tint;
+    }
+
+    /// <summary>
+    /// A sheep collected.
+    /// </summary>
+    /// <remarks>
+    /// A PUFF AND A RING OF EMBERS, sized off the sheep's own radius so a big one makes a big
+    /// noise. The embers go out evenly rather than in a spray: nothing hit it, it was picked up.
+    /// </remarks>
+    public void SheepTaken(double x, double y, double radius)
+    {
+        Puff(x, y, radius * 3.4);
+        for (int k = 0; k < 6; k++)
+        {
+            double a = (k / 6.0) * System.Math.PI * 2;
+            BeamEmber(x, y, System.Math.Cos(a), System.Math.Sin(a), new Color(0xff, 0xf4, 0xe4));
+        }
+    }
+
+    /// <summary>
     /// The debris a beam throws back off what it is burning.
     /// </summary>
     /// <remarks>

@@ -16,6 +16,7 @@ public enum Screen
     Trophies,
     Settings,
     Pedia,
+    Changes,
     Playing,
     Paused,
 }
@@ -571,6 +572,77 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>Lines the changelog shows at once.</summary>
+    public const int ChangeRows = 13;
+
+    /// <summary>
+    /// The changelog.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT IS THE ONLY PLACE THE GAME TELLS ANYONE WHAT CHANGED, which is why it is worth a screen
+    /// rather than a link. The entries are generated from <c>src/ui/changelog.ts</c> - the file the
+    /// project's rules say to update - so there is one authored copy and it is the one people
+    /// already edit.
+    /// </para>
+    /// <para>
+    /// TIMES ARE PRINTED AS UTC, verbatim, never converted to the machine's zone. A changelog
+    /// records when the REPOSITORY changed; converting would make two people comparing notes on one
+    /// build read different timestamps for the same entry.
+    /// </para>
+    /// <para>
+    /// AND IT ALWAYS OPENS AT THE NEWEST ENTRY, however far the last visit scrolled - the reason to
+    /// open it is nearly always to find out what just changed.
+    /// </para>
+    /// </remarks>
+    public static void DrawChangelog(SpriteBatch batch, Sprites sprites, List<string> lines,
+                                     int scroll, int vw, int vh)
+    {
+        Backdrop(batch, sprites, vw, vh);
+        int scale = System.Math.Max(1, vh / 400);
+        int listW = System.Math.Min(vw - 40, 340 * scale);
+        int x0 = (vw - listW) / 2;
+
+        Font.DrawCentred(batch, sprites.Blank, "CHANGELOG", vw / 2, 12 * scale, scale * 2, Accent);
+        string latest = Changelog.All.Length > 0
+            ? "LATEST: " + Changelog.FormatTime(Changelog.All[0].At).ToUpperInvariant()
+            : "NO ENTRIES YET";
+        Font.DrawCentred(batch, sprites.Blank, latest, vw / 2, 32 * scale, scale, Dim);
+
+        int first = System.Math.Clamp(scroll, 0, System.Math.Max(0, lines.Count - ChangeRows));
+        int y = 50 * scale;
+        for (int i = 0; i < ChangeRows && first + i < lines.Count; i++)
+        {
+            string line = lines[first + i];
+            // The markers travel on the line, so the wrapper never needs to know about structure:
+            // `@` is a timestamp, `#` a title, everything else a note.
+            if (line.StartsWith('@'))
+            {
+                Font.Draw(batch, sprites.Blank, line[1..], x0, y, scale, Locked);
+            }
+            else if (line.StartsWith('#'))
+            {
+                Font.Draw(batch, sprites.Blank, line[1..], x0, y, scale, Accent);
+            }
+            else
+            {
+                Font.Draw(batch, sprites.Blank, line, x0, y, scale, Ink);
+            }
+            y += (Font.LineHeight + 2) * scale;
+        }
+
+        if (lines.Count > ChangeRows)
+        {
+            Font.DrawCentred(batch, sprites.Blank,
+                             $"{first + 1} - {System.Math.Min(first + ChangeRows, lines.Count)} OF {lines.Count}",
+                             vw / 2, vh - 28 * scale, scale, Locked);
+        }
+        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] SCROLL   [ESC] BACK", vw / 2,
+                         vh - 16 * scale, scale, Dim);
+    }
+
+    // -----------------------------------------------------------------------------------------
+
     public static void DrawPause(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
     {
         batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 200));
@@ -590,8 +662,53 @@ public static class Screens
         {
             ("[ESC]", "RESUME", true),
             ("[F5]", "NEW RUN", true),
+            ("[A]", "AUTO LEVEL", true),
+            ("[C]", "CHANGELOG", true),
             ("[BACKSPACE]", "ABANDON", true),
         });
+
+        // WHAT IS BEING CARRIED, which is the other reason a player pauses. The card text says what
+        // a weapon does; this says what is actually on the mech and at what tier, which is the
+        // question the level-up screen keeps asking and nothing else answers.
+        //
+        // NAMED AT THEIR CURRENT TIER, so an ascended gun reads as what it became.
+        y += 18 * scale;
+        for (int kind = 0; kind < 2; kind++)
+        {
+            var held = new List<string>();
+            for (int i = 0; i < w.UpgradeDefs.Length && i < CardTexts.All.Length; i++)
+            {
+                int stacks = w.LevelUp.Stacks[i];
+                if (stacks <= 0) continue;
+                bool weapon = w.UpgradeDefs[i].Kind == UpgradeKind.Weapon;
+                if (weapon != (kind == 0)) continue;
+
+                var card = CardTexts.At(i);
+                string name = stacks >= UpgradeCatalog.WeaponAscendedTier
+                              && PediaText.AscensionOf(card.Id) is { } asc
+                    ? asc.Name
+                    : card.Name;
+                held.Add($"{name.ToUpperInvariant()} {stacks}");
+            }
+
+            Font.DrawCentred(batch, sprites.Blank, kind == 0 ? "WEAPONS" : "PASSIVES", vw / 2, y,
+                             scale, Accent);
+            y += Font.LineHeight * scale + 2;
+
+            // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a
+            // panel that failed to load; "none" reads as an answer.
+            if (held.Count == 0)
+            {
+                Font.DrawCentred(batch, sprites.Blank, "NONE", vw / 2, y, scale, Locked);
+                y += Font.LineHeight * scale + 2;
+            }
+            foreach (string h in held)
+            {
+                Font.DrawCentred(batch, sprites.Blank, h, vw / 2, y, scale, Ink);
+                y += Font.LineHeight * scale + 2;
+            }
+            y += 6 * scale;
+        }
 
         // ABANDONING IS SAFE, and saying so matters: the banking rule means everything earned is
         // already in the save. A player who does not know that will keep playing a run they are not

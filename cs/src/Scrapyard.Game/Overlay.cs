@@ -140,6 +140,16 @@ public static class Overlay
             : lu.Rerolls > 0 ? $"[Q] REROLL  x{lu.Rerolls}" : "NO REROLLS LEFT";
         Font.DrawCentred(batch, sprites.Blank, reroll, vw / 2, y0 + cardH + 10 * scale, scale,
                          lu.Rerolls > 0 || w.InfiniteRerolls ? Ink : Dim);
+
+        // AUTO-LEVEL, OFFERED WHERE IT IS WANTED. The pause menu has the switch, but the moment a
+        // player decides they are tired of choosing is the moment a card is in front of them - and
+        // making them pause, find a menu and come back is asking them to do the thing they just
+        // said they did not want to do.
+        //
+        // BELOW THE REROLL, which is already below the cards: this is the least-reached control on
+        // the screen and the one with the largest consequence, so it sits furthest from the thumb.
+        Font.DrawCentred(batch, sprites.Blank, "[A] AUTO LEVEL FROM HERE", vw / 2,
+                         y0 + cardH + 24 * scale, scale, Dim);
     }
 
     private static void DrawCard(SpriteBatch batch, Sprites sprites, World w, int offer, int slot,
@@ -468,6 +478,102 @@ public static class Overlay
         return (int)(((long)index * 7 + r * 3 + 1) % n);
     }
 
+
+    /// <summary>How long an auto-pick's name floats over the mech.</summary>
+    public const double PickRiseSec = 1.5;
+
+    /// <summary>
+    /// THE AUTO-LEVEL PICK, floated over the mech.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When the game is choosing cards, the level-up screen never appears - which is the point of
+    /// the feature and also its one problem: without this the player has NO idea what they just
+    /// got. A run that quietly grows stronger is a run the player is no longer playing.
+    /// </para>
+    /// <para>
+    /// ONLY WHEN THE GAME CHOSE. A card the player picked themselves was on screen a moment ago
+    /// with its name on it, and repeating it over the mech would be noise.
+    /// </para>
+    /// <para>
+    /// AND IT RISES AND FADES rather than sitting somewhere. It has to be readable without being
+    /// something to look at: the fight did not stop for this.
+    /// </para>
+    /// </remarks>
+    public static void DrawPickToast(SpriteBatch batch, Sprites sprites, string name, double left,
+                                     int px, int py, int vh)
+    {
+        if (left <= 0 || name.Length == 0) return;
+        int scale = System.Math.Max(1, vh / 400);
+
+        double t = 1 - left / PickRiseSec;
+        // Fades over the last third, so it is at full strength while it is worth reading.
+        float alpha = (float)(t > 0.66 ? (1 - t) / 0.34 : 1);
+        int y = py - (int)(t * 34 * scale) - 20 * scale;
+
+        Font.DrawCentred(batch, sprites.Blank, name.ToUpperInvariant(), px, y, scale,
+                         Accent * alpha);
+    }
+
+    /// <summary>
+    /// Seconds the world holds still when Mech Insurance pays out, and therefore how long the
+    /// banner is up.
+    /// </summary>
+    /// <remarks>
+    /// 4.2 s, up from 1.2. The old figure was sized to READING the banner, which is the wrong thing
+    /// to size it to: the player has just watched themselves die and is still holding a direction.
+    /// The pause is for the moment to land, not for the words to be finished.
+    /// </remarks>
+    public const double SavePauseSec = 4.2;
+
+    /// <summary>
+    /// THE INSURANCE BANNER - the one moment the game stops to tell you something happened.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A FULL STOP AND NOT A TOAST.</b> Mech Insurance fires ONCE PER RUN, at the exact instant
+    /// the run would otherwise have ended, in the middle of whatever crowd just killed you.
+    /// Everything about that moment works against noticing it: the player is already reacting to
+    /// dying, the screen is at its busiest, and the mechanic's own evidence - a full health bar -
+    /// looks identical to never having been in trouble.
+    /// </para>
+    /// <para>
+    /// So the simulation freezes, the viewport shakes, and this says in words what just happened. A
+    /// toast in the corner - the shape the achievements use - would be the wrong instrument twice
+    /// over: it is for things that can be read later, and it does not stop the thing that is about
+    /// to kill them again.
+    /// </para>
+    /// <para>
+    /// <b>IT IS INERT.</b> No prompt, no key, nothing to acknowledge. It happens TO the player and
+    /// then it is gone, and it must not eat the input they are almost certainly making.
+    /// </para>
+    /// </remarks>
+    public static void DrawSaved(SpriteBatch batch, Sprites sprites, double left, int vw, int vh)
+    {
+        if (left <= 0) return;
+        int scale = System.Math.Max(1, vh / 400);
+
+        // THE FLASH IS ONLY AT THE START. A scrim that lasted the whole freeze would read as a
+        // menu, and this is the opposite of a menu: the battlefield has to stay visible, because
+        // what the player needs to understand is that it is still there and they are still in it.
+        double t = 1 - left / SavePauseSec;
+        double flash = t < 0.12 ? 1 - t / 0.12 : 0;
+        if (flash > 0)
+        {
+            batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh),
+                       new Color(0xff, 0xd2, 0x57) * (float)(flash * 0.5));
+        }
+
+        int y = (int)(vh * 0.34);
+        var band = new Rectangle(0, y - 6 * scale, vw, 46 * scale);
+        batch.Draw(sprites.Blank, band, new Color(0, 0, 0, 190));
+
+        Font.DrawCentred(batch, sprites.Blank, "MECH INSURANCE", vw / 2, y, scale, Dim);
+        Font.DrawCentred(batch, sprites.Blank, "HULL RESTORED", vw / 2, y + 12 * scale, scale * 2,
+                         Accent);
+        Font.DrawCentred(batch, sprites.Blank, "SPENT - YOU ARE UNTOUCHABLE FOR A MOMENT", vw / 2,
+                         y + 34 * scale, scale, Ink);
+    }
 
     /// <summary>The end of the run, either way.</summary>
     public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
