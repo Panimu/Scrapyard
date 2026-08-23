@@ -88,9 +88,11 @@ public static class Progress
         public List<string> Heroes { get; } = new();
         public List<string> Levels { get; } = new();
         public List<string> Cards { get; } = new();
+        public List<string> Achievements { get; } = new();
         public long Credits { get; set; }
 
-        public bool Any => Heroes.Count > 0 || Levels.Count > 0 || Cards.Count > 0 || Credits > 0;
+        public bool Any => Heroes.Count > 0 || Levels.Count > 0 || Cards.Count > 0 ||
+                           Achievements.Count > 0 || Credits > 0;
     }
 
     /// <summary>
@@ -166,6 +168,15 @@ public static class Progress
         {
             save.EarnedCards.Add(card.Id);
             earned.Cards.Add(card.Name);
+        }
+
+        // ACHIEVEMENTS LAST, and against the same career every other lock was judged against. They
+        // ask the same kind of question as an unlock and go through the same evaluator, so a trophy
+        // and the chassis it is about can never disagree.
+        foreach (var a in Meta.Achievements.NewlyEarned(save, run, career))
+        {
+            save.UnlockedAchievements.Add(a.Id);
+            earned.Achievements.Add(a.Name);
         }
 
         return earned;

@@ -303,6 +303,152 @@ public class MetaTests
     }
 
     // -----------------------------------------------------------------------------------------
+    // Achievements
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// EVERY EARNABLE CHASSIS HAS AN ACHIEVEMENT, AND IT ASKS THE IDENTICAL QUESTION.
+    /// </summary>
+    /// <remarks>
+    /// The two tables are derived from one source by the generator, but "derived once" is not the
+    /// same promise as "cannot drift" - somebody can hand-edit either file. This is the invariant
+    /// itself: hand-copying a condition is how a player ends up holding the mech without the
+    /// trophy, and that failure would otherwise be invisible until somebody earned one.
+    ///
+    /// `always` and `never` are excluded on purpose. Slate is not an accomplishment, and a chassis
+    /// whose criteria have not been written gets no achievement at all.
+    /// </remarks>
+    [Fact]
+    public void EveryEarnableChassisHasAMatchingAchievement()
+    {
+        int checked_ = 0;
+        foreach (var h in HeroUnlocks.Heroes)
+        {
+            if (h.Cond.Kind is UnlockKind.Always or UnlockKind.Never) continue;
+
+            var match = Meta.Achievements.All.FirstOrDefault(a => a.Id == $"mech-{h.Id}");
+            Assert.True(match.Id != null, $"{h.Id} is earnable but has no achievement");
+
+            Assert.Equal(h.Cond.Kind, match.Cond.Kind);
+            Assert.Equal(h.Cond.Count, match.Cond.Count);
+            Assert.Equal(h.Cond.UpgradeId, match.Cond.UpgradeId);
+            Assert.Equal(h.Cond.LevelId, match.Cond.LevelId);
+            Assert.Equal(h.Cond.Rank, match.Cond.Rank);
+            Assert.Equal(h.Cond.Weapons, match.Cond.Weapons);
+            checked_++;
+        }
+        Assert.True(checked_ >= 8, $"only {checked_} chassis were checked - has the table gone stale?");
+    }
+
+    /// <summary>
+    /// A CHASSIS WHOSE CRITERIA HAVE NOT BEEN WRITTEN GETS NO ACHIEVEMENT.
+    /// </summary>
+    /// <remarks>
+    /// An unreachable trophy in the list is worse than no trophy: it tells a completionist there is
+    /// something to find and then never lets them find it.
+    /// </remarks>
+    [Fact]
+    public void NeverChassisHaveNoAchievement()
+    {
+        foreach (var h in HeroUnlocks.Heroes)
+        {
+            if (h.Cond.Kind != UnlockKind.Never) continue;
+            Assert.DoesNotContain(Meta.Achievements.All, a => a.Id == $"mech-{h.Id}");
+        }
+    }
+
+    /// <summary>
+    /// <c>PlatformKey</c> IS PERMANENT AND MUST BE UNIQUE, and it must never equal the internal id.
+    /// </summary>
+    /// <remarks>
+    /// Game Center and Steam treat their identifier as un-renameable, so two entries sharing one
+    /// would orphan a player's copy the day either is touched. The id is ours to rename freely,
+    /// which is exactly why the two must not be the same string.
+    /// </remarks>
+    [Fact]
+    public void PlatformKeysAreUniqueAndDistinctFromIds()
+    {
+        var keys = new HashSet<string>();
+        var ids = new HashSet<string>();
+        foreach (var a in Meta.Achievements.All)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(a.PlatformKey), $"{a.Id} has no platform key");
+            Assert.True(keys.Add(a.PlatformKey), $"duplicate platform key: {a.PlatformKey}");
+            Assert.True(ids.Add(a.Id), $"duplicate id: {a.Id}");
+            Assert.NotEqual(a.Id, a.PlatformKey);
+        }
+    }
+
+    /// <summary>
+    /// A SECRET SHOWS NOTHING BUT ITS SHAPE UNTIL EARNED.
+    /// </summary>
+    /// <remarks>
+    /// "Unlock the Chain Laser" is a sentence that tells you a Chain Laser exists, that a Medium
+    /// Laser becomes one, and that there is something to go looking for - which was taken out of
+    /// the manual on purpose. An achievement list is exactly the back door it would return through.
+    /// </remarks>
+    [Fact]
+    public void SecretAchievementsHideTheirNameUntilEarned()
+    {
+        var secret = Meta.Achievements.All.First(a => a.Secret);
+
+        var (hiddenName, hiddenDesc) = Meta.Achievements.Display(secret, earned: false);
+        Assert.DoesNotContain(secret.Name, hiddenName);
+        Assert.Equal("", hiddenDesc);
+
+        var (shownName, shownDesc) = Meta.Achievements.Display(secret, earned: true);
+        Assert.Equal(secret.Name, shownName);
+        Assert.Equal(secret.Description, shownDesc);
+    }
+
+    /// <summary>
+    /// DESCRIPTIONS ARE IN THE PAST TENSE, because they are the ONLY place a condition is ever
+    /// stated to a player - and only after the fact.
+    /// </summary>
+    /// <remarks>
+    /// A crude check, and deliberately so: it cannot prove good prose, but it catches the specific
+    /// slip of writing an imperative ("Reach wave 3") where the game only ever reports ("Reached
+    /// wave 3"). There is no imperative describer anywhere in the port, which is what keeps the
+    /// criteria unpublished.
+    /// </remarks>
+    [Fact]
+    public void AchievementDescriptionsReportRatherThanInstruct()
+    {
+        string[] imperatives = { "Reach ", "Survive ", "Kill ", "Clear ", "Win ", "Unlock ", "Die " };
+        foreach (var a in Meta.Achievements.All)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(a.Description), $"{a.Id} has no description");
+            foreach (string bad in imperatives)
+            {
+                Assert.False(a.Description.StartsWith(bad, StringComparison.Ordinal),
+                    $"{a.Id} instructs rather than reports: \"{a.Description}\"");
+            }
+        }
+    }
+
+    [Fact]
+    public void AchievementsAreBankedOnceAndCounted()
+    {
+        var sim = new Simulation(99, 0, "scrapyard");
+        var save = new Settings();
+        save.Reconcile();
+        var roster = new HeroUnlocks();
+
+        sim.World.Director.CycleIndex = 2;   // reached wave 3
+        long banked = 0;
+
+        var first = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
+        var second = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
+
+        Assert.NotEmpty(first.Achievements);
+        Assert.Empty(second.Achievements);
+
+        var (got, total) = Meta.Achievements.Tally(save);
+        Assert.Equal(first.Achievements.Count, got);
+        Assert.Equal(Meta.Achievements.All.Length, total);
+    }
+
+    // -----------------------------------------------------------------------------------------
     // The workshop
     // -----------------------------------------------------------------------------------------
 

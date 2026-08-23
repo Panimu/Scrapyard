@@ -423,17 +423,32 @@ system font is not on a Steam Deck; and the house art generator draws through he
 which is not installed on every machine that has to build this. A 5x7 table has none of those
 problems, cannot go missing at runtime, and suits pixel art better than a hinted vector face would.
 
+**Achievements are DERIVED, and a test enforces it.** Every earnable chassis has an achievement
+asking the identical question — the generator derives both from one source, but "derived once" is
+not the same promise as "cannot drift", since either file can be hand-edited. So
+`EveryEarnableChassisHasAMatchingAchievement` compares the two conditions field by field: hand-copying
+a condition is how a player ends up holding the mech without the trophy, and that failure is
+otherwise invisible until somebody earns one. `platformKey` is checked unique and distinct from the
+internal id, because both platforms treat it as un-renameable. Chassis whose criteria have not been
+written get no achievement at all — an unreachable trophy is worse than no trophy.
+
+**Descriptions report, never instruct.** "Reached wave 3", not "Reach wave 3", and a test catches
+the slip. The criteria are published nowhere else: a locked chassis is a silhouette and a question
+mark, and the achievement that fires on earning it is the whole of the explanation. There is no
+imperative describer anywhere in the port, deliberately.
+
 **Text, prices and locks are generated, not retyped.** `Scrapyard.Core` knows a card by an integer
 and a workshop upgrade by its effects — names, blurbs, costs, versions and unlock conditions change
 nothing about what happens, so none of them is in the ported simulation. `npm run uitext` emits
-three files from the catalogs that own them: `CardTexts.cs`, `WorkshopText.cs` and `UnlockTables.cs`.
+four files from the catalogs that own them: `CardTexts.cs`, `WorkshopText.cs`, `UnlockTables.cs` and
+`Achievements.cs`.
 Each carries a `Verify` that refuses to start if the catalog has moved on. A lock retyped wrong is
 either a chassis nobody can earn or one everybody gets free, and neither announces itself.
 
-What is not done yet, plainly: no ground dressing, paths or litter; no Scrapopedia; no achievement
-table (the condition language it needs is ported and tested, but the 388-line table and its
-permanent `platformKey`s are not); and no settings screen. There is no audio in the original either
-— no `AudioContext`, no sound files — so its absence here is not a gap.
+What is not done yet, plainly: no ground dressing, paths or litter; no Scrapopedia; no achievements
+LIST screen (the 25 achievements are earned, banked and announced, but there is nowhere to browse
+them); and no settings screen. There is no audio in the original either — no `AudioContext`, no
+sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not
 

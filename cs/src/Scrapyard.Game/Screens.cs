@@ -72,6 +72,10 @@ public static class Screens
             ("[ESC]", "QUIT", true),
         });
 
+        var (got, total) = Meta.Achievements.Tally(save);
+        Font.DrawCentred(batch, sprites.Blank, $"{got} / {total} ACHIEVEMENTS", vw / 2,
+                         vh - 46 * scale, scale, Dim);
+
         var hero = HeroUnlocks.Heroes[System.Math.Clamp(save.LastHeroId, 0, HeroUnlocks.Heroes.Length - 1)];
         Font.DrawCentred(batch, sprites.Blank,
                          $"{hero.Name.ToUpperInvariant()}  /  {NameOfLevel(save.LastLevelId).ToUpperInvariant()}",

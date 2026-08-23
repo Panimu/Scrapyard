@@ -426,6 +426,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         foreach (string h in earned.Heroes) _toast.Add($"CHASSIS: {NameOfHero(h)}");
         foreach (string l in earned.Levels) _toast.Add($"YARD: {NameOfLevel(l)}");
         foreach (string c in earned.Cards) _toast.Add($"CARD: {c}");
+        foreach (string a in earned.Achievements) _toast.Add(a);
         if (_toast.Count > 0) _toastLeft = 5;
     }
 

@@ -8,6 +8,7 @@
  *   cs/src/Scrapyard.Game/CardTexts.cs      upgrade card names and descriptions
  *   cs/src/Scrapyard.Meta/WorkshopText.cs   workshop names, blurbs, PRICES and VERSIONS
  *   cs/src/Scrapyard.Meta/UnlockTables.cs   every lock on a chassis, a level and a card
+ *   cs/src/Scrapyard.Meta/Achievements.cs   the achievement table, platform keys included
  *
  * WHY GENERATE RATHER THAN PORT. `Scrapyard.Core` knows a card by an integer and a workshop upgrade
  * by its effects: names, blurbs, costs and versions change nothing about what happens, so none of
@@ -30,6 +31,7 @@ import { resolve } from 'node:path';
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
 import { META_CATALOG } from '../src/core/data/meta.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
+import { ACHIEVEMENT_CATALOG } from '../src/core/data/achievements.js';
 import { LEVEL_CATALOG } from '../src/core/content/levels.js';
 import { WEAPON_CATALOG } from '../src/core/data/weapons.js';
 
@@ -338,6 +340,118 @@ const unlockOut = resolve(process.cwd(), 'cs/src/Scrapyard.Meta/UnlockTables.cs'
 writeFileSync(unlockOut, unlockSrc);
 console.log(`wrote ${unlockOut}  (${HERO_CATALOG.length} chassis, ${LEVEL_CATALOG.length} levels)`);
 void WEAPON_CATALOG;
+
+// ---------------------------------------------------------------------------------------------
+// Achievements
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The achievement table, with the DERIVED entries already derived.
+ *
+ * `MECH_ACHIEVEMENTS` and the level entries are generated in the TypeScript from the chassis and
+ * level unlocks, and their descriptions come from `describeUnlockDone`. Emitting the RESOLVED table
+ * keeps that derivation in one place: the C# side gets the same condition object the roster got,
+ * from the same run of the same generator, so the two cannot disagree about what a condition means.
+ * `AchievementTests` then pins the invariant on the C# side as well, so a hand-edit to either table
+ * fails rather than quietly parting them.
+ *
+ * `platformKey` IS PERMANENT. Game Center and Steam both treat their identifier as un-renameable -
+ * you cannot change one after a player has earned it without orphaning their copy. It is
+ * transcribed here exactly, never derived from the C# side, and retiring an achievement means
+ * removing the entry rather than reusing its key.
+ */
+const achRows = ACHIEVEMENT_CATALOG.map((a) => {
+  const r = a as unknown as Record<string, unknown>;
+  return `        new("${cs(String(r.id))}", "${cs(String(r.platformKey))}", "${cs(String(r.name))}", ` +
+    `"${cs(String(r.description))}", "${cs(String(r.icon))}", ${r.secret === true}, ${condOf(r.cond)}),`;
+}).join('\n');
+
+const achSrc = `using Scrapyard.Core;
+
+namespace Scrapyard.Meta;
+
+/// <summary>
+/// One achievement: what it is called, what it says once earned, and the condition behind it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b><c>PlatformKey</c> IS PERMANENT ONCE SHIPPED.</b> Game Center and Steam each want their own
+/// identifier, minted in their own console, and both treat it as un-renameable: you cannot change
+/// one after a player has earned it without orphaning their copy. <see cref="Id"/> is ours and may
+/// be renamed whenever it reads better - the two must never be the same string, and retiring an
+/// achievement means removing the entry rather than reusing its key.
+/// </para>
+/// <para>
+/// <b><see cref="Description"/> IS IN THE PAST TENSE, and it is the only place a condition is ever
+/// stated to a player.</b> "Reached wave 3", never "Reach wave 3". The criteria are published
+/// nowhere else: a locked chassis is a silhouette and a question mark, and the achievement that
+/// fires on earning it is the whole of the explanation.
+/// </para>
+/// <para>
+/// <b>SECRET MEANS THE NAME IS HIDDEN UNTIL EARNED.</b> "Unlock the Chain Laser" is a sentence that
+/// tells you a Chain Laser exists, that a Medium Laser becomes one, and that there is something to
+/// go looking for - which was taken out of the manual on purpose. An achievement list is exactly
+/// the back door that would come in through.
+/// </para>
+/// </remarks>
+public readonly record struct AchievementDef(
+    string Id, string PlatformKey, string Name, string Description, string Icon, bool Secret,
+    UnlockCond Cond);
+
+public static class Achievements
+{
+    /// <summary>
+    /// ORDER IS PRESENTATION ORDER and nothing else. Nothing indexes into this - the save stores
+    /// earned achievements by <c>Id</c> - so it can be reordered freely.
+    /// </summary>
+    public static readonly AchievementDef[] All =
+    {
+${achRows}
+    };
+
+    /// <summary>
+    /// Which achievements this run has just earned.
+    /// </summary>
+    /// <remarks>
+    /// A SET UNION against the save, like every other recorder, so calling it once a second reports
+    /// each one exactly once.
+    /// </remarks>
+    public static IEnumerable<AchievementDef> NewlyEarned(Settings save, RunRecord run,
+                                                          CareerRecord career)
+    {
+        foreach (var a in All)
+        {
+            if (save.UnlockedAchievements.Contains(a.Id)) continue;
+            if (!Unlocks.Meets(a.Cond, run, career)) continue;
+            yield return a;
+        }
+    }
+
+    /// <summary>How many are earned, and out of how many.</summary>
+    public static (int Earned, int Total) Tally(Settings save)
+    {
+        int n = 0;
+        foreach (var a in All)
+        {
+            if (save.UnlockedAchievements.Contains(a.Id)) n++;
+        }
+        return (n, All.Length);
+    }
+
+    /// <summary>
+    /// What to show in a list: a secret nobody has earned shows nothing but its shape.
+    /// </summary>
+    public static (string Name, string Description) Display(AchievementDef a, bool earned)
+    {
+        if (a.Secret && !earned) return ("? ? ?", "");
+        return (a.Name, a.Description);
+    }
+}
+`;
+
+const achOut = resolve(process.cwd(), 'cs/src/Scrapyard.Meta/Achievements.cs');
+writeFileSync(achOut, achSrc);
+console.log(`wrote ${achOut}  (${ACHIEVEMENT_CATALOG.length} achievements)`);
 
 const cardsOut = resolve(process.cwd(), 'cs/src/Scrapyard.Game/CardTexts.cs');
 const shopOut = resolve(process.cwd(), 'cs/src/Scrapyard.Meta/WorkshopText.cs');
