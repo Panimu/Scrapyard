@@ -46,6 +46,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private Effects _fx = null!;
     private GroundCover _cover = null!;
     private GroundPaths _paths = null!;
+    private BeamLayer _beams = null!;
+
+    /// <summary>
+    /// Real seconds since the window opened, for animation that is NOT the simulation's.
+    /// </summary>
+    /// <remarks>
+    /// A beam's flicker, breathing and travelling pulses are keyed to this rather than to the tick,
+    /// so they look identical when the platform clamps the frame rate to 30 - and they are read
+    /// here and written back to the world nowhere, which is the line that keeps a phone session
+    /// reproducing in Node. The sway on Mossy Mayhem is the opposite case and deliberately so: it
+    /// uses the TICK, because a wood has to look the same in a replay.
+    /// </remarks>
+    private double _clockSec;
+
 
     private Simulation _sim = null!;
     private string _levelId;
@@ -145,6 +159,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _fx = new Effects(_sprites);
         _cover = new GroundCover(_sprites);
         _paths = new GroundPaths(_sprites);
+        _beams = new BeamLayer(_sprites, _fx);
 
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
@@ -366,11 +381,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         // DRAINED AFTER THE STEPS, so a frame that took three ticks plays all three ticks' effects.
         DrainEvents();
-        if (steps > 0) SpawnBeamFlares();
 
         double dt = frameMs / 1000.0;
+        _clockSec += dt;
         _fx.Update(dt);
         _camera.Update(dt);
+        // The envelope and the ember throttles advance every frame whether or not a beam is on
+        // screen: the fade-out exists precisely for the frames after the simulation stops
+        // publishing one.
+        _beams.Update(_sim.World, dt, _clockSec,
+                      Lerp(_sim.World.Player.PrevX, _sim.World.Player.X),
+                      Lerp(_sim.World.Player.PrevY, _sim.World.Player.Y));
 
         // ON A CLOCK WHILE THE RUN IS LIVE, and once more the moment it ends. The second call is
         // what catches a victory or a death whose unlock would otherwise wait for a tick that never
@@ -643,7 +664,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         DrawSheep(w);
         DrawDrones(w);
         DrawPlayer(w, px, py);
-        DrawBeams(w);
+
+        // THE BEAMS COST THE FRAME ITS ONLY TWO BLEND-STATE CHANGES, and the split is what buys
+        // three lasers that are three colours. The dark sheath goes into this normal batch, under
+        // the light; the halo, body, travelling pulses and every flare go into an ADDITIVE batch;
+        // the opaque core comes back to normal on top, so the middle of a beam is the weapon's own
+        // hue whatever is behind it. Additive light alone on a rust-orange floor clips every
+        // channel and draws all three lasers as the same white line.
+        _beams.BeginFrame(_clockSec);
+        _beams.DrawSheaths(_batch, _camera);
+        _batch.End();
+
+        _batch.Begin(blendState: BlendState.Additive, samplerState: SamplerState.PointClamp);
+        _beams.DrawGlow(_batch, _camera, _clockSec);
+        _batch.End();
+
+        _batch.Begin(samplerState: SamplerState.PointClamp);
+        _beams.DrawCores(_batch, _camera);
         _fx.Draw(_batch, _camera);
 
         int vw = GraphicsDevice.PresentationParameters.BackBufferWidth;
@@ -906,40 +943,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
 
     /// <summary>
-    /// The flare where each beam leaves the chassis.
-    /// </summary>
-    /// <remarks>
-    /// SPAWNED PER TICK, NOT PER FRAME, and guarded on a step having happened. A beam has no
-    /// discrete shot to announce - it IS its geometry - so there is no event to drain and the flare
-    /// has to come off the buffer directly. Doing that in Draw instead would tie how bright the
-    /// muzzle looks to the frame rate, which is the sort of thing that looks fine at 60 and wrong
-    /// on anything else.
-    /// </remarks>
-    private void SpawnBeamFlares()
-    {
-        var w = _sim.World;
-        var beams = w.Beams;
-        for (int i = 0; i < beams.Count; i++)
-        {
-            double dx = beams.X1[i] - beams.X0[i];
-            double dy = beams.Y1[i] - beams.Y0[i];
-            if (dx * dx + dy * dy < 0.25) continue;
-
-            var tint = new Color(0x7f, 0xd8, 0xff);
-            int slot = beams.WeaponIdx[i];
-            if (slot >= 0 && slot < w.WeaponCount)
-            {
-                int defId = w.Weapons[slot].DefId;
-                if (defId >= 0 && defId < w.WeaponDefs.Length)
-                {
-                    tint = FromHex(w.WeaponDefs[defId].BeamColour);
-                }
-            }
-            _fx.BeamStart(beams.X0[i], beams.Y0[i], tint);
-        }
-    }
-
-    /// <summary>
     /// Turns the tick's events into effects.
     /// </summary>
     /// <remarks>
@@ -1054,74 +1057,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             WeaponIds.FlakCannon => "turret_twin",
             _ => "turret",
         };
-    }
-
-    /// <summary>
-    /// The beams fired on the last simulated tick.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A SHELL IS AN OBJECT AND A BEAM IS AN EVENT. There is no beam pool to interpolate: the
-    /// buffer is filled at S6, billed at S9 and cleared at the next tick's S0, so what is on screen
-    /// is exactly what was fired this tick and nothing older. That is also why beams are drawn LAST
-    /// - they are light, and light goes over the thing emitting it.
-    /// </para>
-    /// <para>
-    /// TWO LAYERS: a wide translucent halo and a bright core. The original draws five with a
-    /// gradient quad; two is the smallest number that still reads as a beam rather than as a
-    /// coloured rectangle, and it needs no gradient texture.
-    /// </para>
-    /// <para>
-    /// A BEAM THAT TOUCHED NOTHING IS STILL DRAWN. It reached its full length and billed nobody,
-    /// which is a miss - and a miss the player cannot see is a weapon that looks broken.
-    /// </para>
-    /// </remarks>
-    private void DrawBeams(World w)
-    {
-        var beams = w.Beams;
-        for (int i = 0; i < beams.Count; i++)
-        {
-            double x0 = beams.X0[i];
-            double y0 = beams.Y0[i];
-            double x1 = beams.X1[i];
-            double y1 = beams.Y1[i];
-            double dx = x1 - x0;
-            double dy = y1 - y0;
-            double len = System.Math.Sqrt(dx * dx + dy * dy);
-            // The swath pushes a zero-length entry at each covered body to bill it; there is
-            // nothing to draw for those.
-            if (len < 0.5) continue;
-
-            int slot = beams.WeaponIdx[i];
-            double half = 3;
-            var tint = new Color(0x7f, 0xd8, 0xff);
-            if (slot >= 0 && slot < w.WeaponCount)
-            {
-                int defId = w.Weapons[slot].DefId;
-                if (defId >= 0 && defId < w.WeaponDefs.Length)
-                {
-                    var def = w.WeaponDefs[defId];
-                    if (def.BeamWidth > 0) half = def.BeamWidth;
-                    tint = FromHex(def.BeamColour);
-                }
-            }
-
-            double angle = System.Math.Atan2(dy, dx);
-            BeamQuad(x0, y0, len, half * 5, angle, tint * 0.28f);
-            BeamQuad(x0, y0, len, half * 2, angle, tint * 0.85f);
-            BeamQuad(x0, y0, len, half * 0.8, angle, Color.White * 0.9f);
-        }
-    }
-
-    /// <summary>One layer of a beam: a quad anchored at the muzzle end and rotated along it.</summary>
-    private void BeamQuad(double x0, double y0, double len, double width, double angle, Color tint)
-    {
-        var screen = _camera.ToScreen(x0, y0);
-        var scale = new Vector2((float)(len * _camera.Scale), (float)(width * _camera.Scale));
-        // Origin on the LEFT edge, centred vertically: the quad grows away from the muzzle rather
-        // than out of both ends of it.
-        _batch.Draw(_sprites.Blank, screen, null, tint, (float)angle, new Vector2(0, 0.5f), scale,
-                    SpriteEffects.None, 0f);
     }
 
     /// <summary>A packed 0xRRGGBB from the weapon catalog.</summary>

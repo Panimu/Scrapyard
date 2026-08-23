@@ -539,13 +539,49 @@ Three hashes in one renderer, two of them plain multiplies and one a genuine `im
 identical on the page. That is the argument for reading each original rather than applying a
 remembered rule.
 
+**The lasers were three flat quads.** The original is a profile — a dark sheath under the light, an
+additive halo and body, travelling energy, and an opaque core on top — and every part of that exists
+for a stated reason:
+
+- **The core is normal-blended and opaque, and the sheath is a dark band under the additive run**,
+  because this game's floor is rust orange rather than black. Additive light on a bright warm ground
+  clips every channel and draws all three lasers as the same white line, which is exactly what the
+  first web version did on a real screenshot after looking correct against a dark background.
+- **The additive layers are hue-purified.** `0x4fa8ff` carries 79/255 of red, and on a floor whose
+  red is already near saturation that red only moves the result towards white. Draining it and
+  renormalising is what keeps a blue laser blue instead of salmon.
+- **The envelope is render-only.** The simulation republishes a beam every tick while it fires and
+  simply stops on the tick it is refused, so the raw buffer snaps on and off and reads as a glitch.
+  The fade draws the *last published segment*, dimming and narrowing in place — it never moves,
+  never lengthens and never spawns impact effects, so the afterglow cannot claim a hit the
+  simulation did not make.
+- **The core collapses rather than dissolving.** Fading an opaque coloured core by alpha alone
+  leaves a translucent hue over rust orange, and a half-transparent green line on an orange floor is
+  khaki.
+- **Layer widths change regime at a half-width of 3.** Below it they are multiples of the beam;
+  above it a fixed rim plus a filament core. The Giga Laser's half-width is its *hitbox*, so the
+  plain multipliers drew a 9.6-unit beam with an 86-unit halo and a core wider than the thing that
+  burns.
+
+This costs the frame its only two blend-state changes: sheaths into the normal batch, light into an
+additive one, cores back to normal. `BeamTests` compares layer widths, colour rules, the envelope,
+flicker, travelling pulses and the emitter's heat glow — all to the bit. Eighteen injected faults,
+all caught.
+
+The fixture **sweeps half-widths across the regime boundary** rather than sampling the three lasers
+that exist, and asserts the sweep straddles it — including that the core crosses from wider than the
+nominal beam to a thread inside it, since a port that kept it a plain multiple would pass every
+thin-beam case in the file. Pulse cases are counted on both sides of the rate cap for the same
+reason: a sweep of long beams alone leaves the cap untested, and without it a point-blank shot
+strobes at 35 crossings a second.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
 draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout`,
-`MossDressingLayout` and `JsMath` hold every decision and no MonoGame types, and the test csproj
-`<Compile Include>`s those exact files.
+`MossDressingLayout`, `BeamLayout` and `JsMath` hold every decision and no MonoGame types, and the
+test csproj `<Compile Include>`s those exact files.
 
 What is not done yet, plainly: no Scrapopedia, and no settings screen.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.

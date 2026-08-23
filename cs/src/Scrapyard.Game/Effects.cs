@@ -44,6 +44,9 @@ public sealed class Effects
     private const double BurstLife = 0.2;
     private const double SparkLife = 0.1;
     private const double SparkleLife = 0.18;
+    /// <summary>The cut-out flash, long enough to be seen and short enough not to linger.</summary>
+    private const double OverheatLife = 0.22;
+
     private const double EmberLife = 0.36;
     private const double ScorchLife = 0.42;
     private const double BeamStartLife = 0.14;
@@ -225,6 +228,51 @@ public sealed class Effects
         _size0[i] = 7;
         _size1[i] = 2;
         _tint[i] = tint;
+    }
+
+    /// <summary>
+    /// The debris a beam throws back off what it is burning.
+    /// </summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="Ember"/> because its life is jittered and it shrinks to nothing
+    /// rather than to a visible speck: an ember cools, it does not bloom. A stream of them at a
+    /// fixed lifetime pulses visibly, which reads as the weapon stuttering.
+    /// </remarks>
+    public void BeamEmber(double x, double y, double dirX, double dirY, Color tint)
+    {
+        int i = Alloc(KindEmber, x, y, EmberLife * (0.7 + Rand() * 0.6));
+        double a = System.Math.Atan2(dirY, dirX) + (Rand() * 2 - 1) * EmberSpread;
+        double speed = EmberSpeedMin + Rand() * (EmberSpeedMax - EmberSpeedMin);
+        _vx[i] = System.Math.Cos(a) * speed;
+        _vy[i] = System.Math.Sin(a) * speed;
+        _rot[i] = a;
+        _size0[i] = 7;
+        _size1[i] = 1.5;
+        _tint[i] = tint;
+    }
+
+    /// <summary>
+    /// A laser cutting out.
+    /// </summary>
+    /// <remarks>
+    /// FIRED ON THE EDGE where the weapon latches overheated, never on the level, so it marks the
+    /// MOMENT the weapon dies rather than the whole time it is dead. Six sparks straight out of the
+    /// emitter, evenly spread so it reads as a discharge rather than as another impact - six is the
+    /// whole budget for the event, and it fires twice a burst.
+    /// </remarks>
+    public void OverheatBurst(double x, double y, Color tint)
+    {
+        int f = Alloc(KindFlash, x, y, OverheatLife);
+        _size0[f] = 10;
+        _size1[f] = 74;
+        _tint[f] = new Color(0xff, 0xb0, 0x50);
+
+        for (int k = 0; k < 6; k++)
+        {
+            double a = (k / 6.0) * System.Math.PI * 2 + Rand() * 0.6;
+            BeamEmber(x, y, System.Math.Cos(a), System.Math.Sin(a),
+                      Color.Lerp(tint, Color.White, 0.45f));
+        }
     }
 
     /// <summary>

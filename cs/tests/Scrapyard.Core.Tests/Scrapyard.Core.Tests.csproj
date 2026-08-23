@@ -44,6 +44,7 @@
     <Compile Include="..\..\src\Scrapyard.Game\GroundPathsLayout.cs" Link="Linked\GroundPathsLayout.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CityDressingLayout.cs" Link="Linked\CityDressingLayout.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\MossDressingLayout.cs" Link="Linked\MossDressingLayout.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\BeamLayout.cs" Link="Linked\BeamLayout.cs" />
   </ItemGroup>
 
 </Project>

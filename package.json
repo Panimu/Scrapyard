@@ -39,6 +39,7 @@
     "golden:paths": "tsx tools/ground_paths_fixture.ts",
     "golden:city": "tsx tools/city_dressing_fixture.ts",
     "golden:moss": "tsx tools/moss_dressing_fixture.ts",
+    "golden:beams": "tsx tools/beam_fixture.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",
