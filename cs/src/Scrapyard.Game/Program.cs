@@ -14,6 +14,25 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // A SCREEN, AS A FILE. `--shot out.png [screen]` draws one frame and exits, which is the
+        // only way to LOOK at a screen without a person in front of it - and a menu that has been
+        // checked by arithmetic rather than by eye is a menu that has been checked for the wrong
+        // thing. Two rounds of "it still looks wrong" is what this is for.
+        string shot = "";
+        string shotScreen = "title";
+        var rest = new List<string>();
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "--shot" && i + 1 < args.Length)
+            {
+                shot = args[++i];
+                if (i + 1 < args.Length && !int.TryParse(args[i + 1], out _)) shotScreen = args[++i];
+                continue;
+            }
+            rest.Add(args[i]);
+        }
+        args = rest.ToArray();
+
         int seed = args.Length > 0 && int.TryParse(args[0], out var s)
             ? s
             : unchecked((int)DateTime.Now.Ticks);
@@ -23,6 +42,7 @@ public static class Program
         string levelId = args.Length > 2 ? args[2] : "";
 
         using var game = new ScrapyardGame(seed, heroId, levelId);
+        if (shot != "") game.ShootAndExit(shot, shotScreen);
         game.Run();
     }
 }

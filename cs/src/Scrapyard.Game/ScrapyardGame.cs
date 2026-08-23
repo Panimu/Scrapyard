@@ -155,6 +155,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private readonly MenuInput _menu = new();
 
+    /// <summary>Where to write a one-frame capture, and which screen to put on it.</summary>
+    /// <remarks>
+    /// SEE Program: this exists so a screen can be LOOKED AT without a person in front of it. It
+    /// draws the frame the game would have drawn, through the same code, rather than a special
+    /// rendering path that could be right while the real one is wrong.
+    /// </remarks>
+    private string _shotPath = "";
+
+    private string _shotScreen = "";
+
+
     /// <summary>Where the cursor is on the two menus that used to be hints only.</summary>
     /// <remarks>
     /// A CONTROLLER HAS TO BE ABLE TO REACH EVERY SCREEN, or it is not support, it is a demo - and
@@ -426,11 +437,59 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _batch.End();
     }
 
+    /// <summary>Draw one frame to a PNG and quit.</summary>
+    public void ShootAndExit(string path, string screen)
+    {
+        _shotPath = path;
+        _shotScreen = screen;
+    }
+
+    /// <summary>
+    /// Write the frame just drawn, if this run was asked for one.
+    /// </summary>
+    /// <remarks>
+    /// FROM THE BACK BUFFER, after everything has been composed - including the upscale a
+    /// performance-mode surface goes through - so the file is what the player would see rather than
+    /// an intermediate nobody looks at.
+    /// </remarks>
+    private void SaveShot()
+    {
+        if (_shotPath == "") return;
+
+        int w = GraphicsDevice.PresentationParameters.BackBufferWidth;
+        int h = GraphicsDevice.PresentationParameters.BackBufferHeight;
+        var data = new Color[w * h];
+        GraphicsDevice.GetBackBufferData(data);
+
+        using var tex = new Texture2D(GraphicsDevice, w, h);
+        tex.SetData(data);
+        using (var file = File.Create(_shotPath)) tex.SaveAsPng(file, w, h);
+
+        Console.WriteLine($"wrote {_shotPath} ({w}x{h}, {_shotScreen})");
+        Exit();
+    }
+
     protected override void Update(GameTime gameTime)
     {
         var keys = Keyboard.GetState();
         var pad = GamePad.GetState(PlayerIndex.One);
         double dt = gameTime.ElapsedGameTime.TotalMilliseconds / 1000.0;
+
+        if (_shotScreen != "")
+        {
+            _screen = _shotScreen switch
+            {
+                "settings" => Screen.Settings,
+                "pedia" => Screen.Pedia,
+                "workshop" => Screen.Workshop,
+                "heroes" => Screen.HeroSelect,
+                "levels" => Screen.LevelSelect,
+                "changes" => Screen.Changes,
+                _ => Screen.Title,
+            };
+            if (_screen == Screen.Pedia) _pedia.Open();
+            if (_screen == Screen.Changes) _changes.Open();
+        }
 
         // BEFORE ANYTHING IS DISPATCHED, and exactly once. See MenuInput: the pad has no events for
         // axes, so a screen that sampled in its own handler would read the same physical stick
@@ -1162,6 +1221,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();
             Present();
+            SaveShot();
             base.Draw(gameTime);
             return;
         }

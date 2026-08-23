@@ -46,15 +46,19 @@ public enum Screen
 /// </remarks>
 public static class Screens
 {
-    private static readonly Color Ink = new(0xf2, 0xec, 0xdf);
-    private static readonly Color Dim = new(0x9a, 0x92, 0x84);
-    private static readonly Color Locked = new(0x4a, 0x43, 0x39);
-    private static readonly Color Panel = new(0x1a, 0x16, 0x12);
-    private static readonly Color Edge = new(0x53, 0x48, 0x3a);
-    private static readonly Color Accent = new(0xff, 0xd3, 0x4f);
-    private static readonly Color Good = new(0x6f, 0xe3, 0x6f);
 
     // -----------------------------------------------------------------------------------------
+
+    // THE PALETTE IS SHARED AND IS THE WEB BUILD'S OWN. See Palette: these were a warm brown set
+    // invented here, which read as sepia beside the original's cool slate.
+    private static readonly Color Ink = Palette.Ink;
+    private static readonly Color Dim = Palette.Dim;
+    private static readonly Color Faint = Palette.Faint;
+    private static readonly Color Locked = Palette.Locked;
+    private static readonly Color Panel = Palette.Panel;
+    private static readonly Color Edge = Palette.Edge;
+    private static readonly Color Accent = Palette.Accent;
+    private static readonly Color Good = Palette.Good;
 
     public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                  int badge, int vw, int vh)
@@ -62,97 +66,126 @@ public static class Screens
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
 
-        // THE HEAD FLOWS, it is not placed at fractions. The first version put the art and the name
-        // at fixed shares of the height and they overlapped by sixty pixels at 720p - which is what
-        // a stacked column gives you for free and hand-placed fractions do not.
+        var rows = MenuRows.Title();
+        int minutes = (int)System.Math.Round(Constants.RunLengthSec / 60);
+        int tagScale = System.Math.Max(1, scale - 1);
+        int rowH = 27 * scale;
+        int gap = 6 * scale;
+        int listW = System.Math.Min(vw - 40 * scale, 170 * scale);
+        int x0 = (vw - listW) / 2;
+
+        // MEASURED, THEN CENTRED, which is what `justify-content: center` does and what placing
+        // things at fractions of the height does not. Sizing the mech against the wordmark is the
+        // right RELATIONSHIP and it pushed Settings off the bottom of a 720-tall window, because
+        // nothing had asked whether the block still fit.
         //
-        // SIZED OFF THE HEIGHT rather than the width, because height is the constrained axis in a
-        // landscape window: the web build is portrait-first and takes 46% of the WIDTH, which on a
-        // wide monitor would be a mech filling half the screen.
-        int y = (int)(vh * 0.05);
+        // THE MECH IS WHAT GIVES, and it gives first. It is the one element with no words in it, so
+        // shrinking it costs nothing a player needs to read; shrinking the menu or the name costs
+        // legibility, and dropping a gap costs the layout its shape.
+        int nameH = Font.GlyphH * scale * 4 + 6 * scale;
+        int subH = Font.GlyphH * scale * 2 + 10 * scale;
+        int tagH = Font.LineHeight * tagScale * 2 + 16 * scale;
+        int menuH = rows.Length * (rowH + gap);
+        int bankH = save.Credits > 0 ? Font.LineHeight * scale + 6 * scale : 0;
+        int verH = Font.GlyphH * tagScale + 20 * scale;
 
         var art = sprites.Get("mech_slate");
+        int artW = 0;
+        int artH = 0;
         if (art is not null)
         {
-            int h = (int)(vh * 0.20);
-            int w = h * art.Width / art.Height;
+            // A SHADE UNDER HALF THE WORDMARK'S WIDTH, which is the proportion the web build has.
+            artW = Font.Measure("SCRAPYARD", scale * 4) / 2;
+            artH = artW * art.Height / art.Width;
+
+            int room = vh - (nameH + subH + tagH + menuH + bankH + verH) - 16 * scale;
+            if (artH > room)
+            {
+                artH = System.Math.Max(0, room);
+                artW = artH * art.Width / art.Height;
+            }
+        }
+
+        int artGap = artH > 0 ? 8 * scale : 0;
+        int total = artH + artGap + nameH + subH + tagH + menuH + bankH;
+        int y = System.Math.Max(8 * scale, (vh - verH - total) / 2);
+
+        if (artH > 0)
+        {
             // A CHASSIS RATHER THAN A LOGO, because there is no logo and a mech is what the game is
             // about. Dimmed: it is behind the name rather than beside it.
-            batch.Draw(art, new Rectangle((vw - w) / 2, y, w, h), Color.White * 0.55f);
-            y += h + 8 * scale;
+            batch.Draw(art, new Rectangle((vw - artW) / 2, y, artW, artH), Color.White * 0.55f);
+            y += artH + artGap;
         }
 
         Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
-        y += Font.GlyphH * scale * 4 + 6 * scale;
+        y += nameH;
 
         // SPACED OUT BY HAND. The bitmap font has one tracking value, so the wide letter-spacing
         // the wordmark wants is spaces between the glyphs - which is what it looks like anyway.
         Font.DrawCentred(batch, sprites.Blank, "S U R V I V O R S", vw / 2, y, scale * 2, Accent);
-        y += Font.GlyphH * scale * 2 + 10 * scale;
+        y += subH;
 
         // THE WIN CONDITION, AND IT IS THE REAL ONE. Outlasting the clock is not winning: a run
         // ends in victory when the timer has passed AND no Scraplord is left standing, so the
         // minutes describe THE HORDE rather than the run. The number is derived rather than spelled
         // out, because a word in prose is a thing that cannot be checked.
-        int minutes = (int)System.Math.Round(Constants.RunLengthSec / 60);
+        //
+        // SMALLER AND FAINTER THAN THE BUTTONS - 13px against their 18 in the original: there to be
+        // read once and then ignored.
         Font.DrawCentred(batch, sprites.Blank, $"HEAVY MECHS. {minutes} MINUTES OF HORDE.",
-                         vw / 2, y, scale, Dim);
-        y += Font.LineHeight * scale;
-        Font.DrawCentred(batch, sprites.Blank, "EVERY SCRAPLORD DOWN.", vw / 2, y, scale, Dim);
-        y += Font.LineHeight * scale + 14 * scale;
-
-        var rows = MenuRows.Title();
-        int listW = System.Math.Min(vw - 40, 340 * scale / 2);
-        int x0 = (vw - listW) / 2;
+                         vw / 2, y, tagScale, Palette.Faint);
+        Font.DrawCentred(batch, sprites.Blank, "EVERY SCRAPLORD DOWN.", vw / 2,
+                         y + Font.LineHeight * tagScale, tagScale, Palette.Faint);
+        y += tagH;
 
         for (int i = 0; i < rows.Length; i++)
         {
-            // NEW GAME IS TALLER AND BRIGHTER, because the thumb goes to the biggest thing and that
-            // should be the one that starts a run.
-            bool primary = i == 0;
-            int rowH = (primary ? 22 : 18) * scale;
-            bool on = i == cursor;
-
-            Frame(batch, sprites, x0, y, listW, rowH);
-            if (on)
-            {
-                batch.Draw(sprites.Blank, new Rectangle(x0 + 2, y + 2, listW - 4, rowH - 4), Panel);
-            }
-
-            int textScale = primary ? scale * 2 : scale;
-            Font.DrawCentred(batch, sprites.Blank, rows[i].Label, vw / 2,
-                             y + (rowH - Font.LineHeight * textScale) / 2, textScale,
-                             on ? Accent : primary ? Ink : Dim);
+            var r = new Rectangle(x0, y, listW, rowH);
+            Button(batch, sprites, r, rows[i].Label, scale, i == 0, i == cursor);
 
             // THE ATTRACT BADGE, and only when there is something to buy: a permanent sticker stops
             // meaning anything the first time it is seen not to be true.
+            //
+            // ON THE TOP-RIGHT CORNER, hanging off it. It is a sticker slapped on the button rather
+            // than part of it, which is why it overlaps the edge and carries a dark ring to lift it
+            // off - `top: -9px; right: -10px` with a 2px border of the page ground.
             if (i == 1 && badge >= 0)
             {
                 string word = MenuRows.AttractStrings[badge % MenuRows.AttractStrings.Length];
-                int bw = Font.Measure(word, scale) + 6 * scale;
-                batch.Draw(sprites.Blank,
-                           new Rectangle(x0 + listW - bw / 2, y - 3 * scale, bw,
-                                         Font.LineHeight * scale + 4 * scale), Accent);
-                Font.Draw(batch, sprites.Blank, word, x0 + listW - bw / 2 + 3 * scale,
-                          y - scale, scale, Panel);
+                int pad = 4 * scale;
+                int bw = Font.Measure(word, scale) + pad * 2;
+                int bh = Font.GlyphH * scale + pad;
+                var box = new Rectangle(r.Right - bw + 5 * scale, r.Y - bh / 2, bw, bh);
+
+                int ring = System.Math.Max(1, scale);
+                RoundRect(batch, sprites,
+                          new Rectangle(box.X - ring, box.Y - ring,
+                                        box.Width + ring * 2, box.Height + ring * 2),
+                          2 * scale, Palette.Scrim);
+                RoundRect(batch, sprites, box, 2 * scale, Palette.Accent);
+                Font.DrawCentred(batch, sprites.Blank, word, box.Center.X, box.Y + pad / 2,
+                                 scale, Palette.OnAccent);
             }
 
-            Font.Draw(batch, sprites.Blank, rows[i].Key, x0 + 4 * scale,
-                      y + (rowH - Font.LineHeight * scale) / 2, scale, Locked);
-            y += rowH + 6 * scale;
+            y += rowH + gap;
         }
 
+        // THE ONE NUMBER ON THE SCREEN. It is the only thing that persists between runs, so it is
+        // the only thing that makes this a place you have been before rather than a splash - and it
+        // says nothing at all when there is nothing banked.
         if (save.Credits > 0)
         {
             Font.DrawCentred(batch, sprites.Blank, $"{save.Credits} CREDITS BANKED", vw / 2,
-                             y + 4 * scale, scale, Dim);
+                             y + 6 * scale, scale, Palette.Dim);
         }
 
-        // WHICH BUILD THIS IS, and it is here because this is the screen a playtester is on when
-        // they need it: the answer to "have you got the fix yet" has to be readable without
-        // starting a run. Small and dim - it is a serial number, not a feature.
+
+        // THE SMALLEST THING ON THE SCREEN, and pinned to the bottom of it. 11px against the
+        // tagline's 13 and the buttons' 18: it is a serial number, not a feature.
+        int verScale = System.Math.Max(1, scale - 1);
         Font.DrawCentred(batch, sprites.Blank, BuildInfo.Label.ToUpperInvariant(), vw / 2,
-                         vh - 14 * scale, scale, Locked);
+                         vh - 10 * scale - Font.GlyphH * verScale, verScale, Palette.Faint);
     }
 
     public static void DrawHeroSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
@@ -701,20 +734,88 @@ public static class Screens
     }
 
     /// <summary>The menu ground: the floor tile, dimmed, so a menu is somewhere rather than nowhere.</summary>
+    /// <summary>
+    /// A filled rounded rectangle, drawn as horizontal slices.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE BUTTONS ARE SOLID, not outlines. The port drew them as hairline frames, which reads as a
+    /// wireframe of a menu rather than a menu - the web build fills them, and the fill is most of
+    /// what makes a button look pressable.
+    /// </para>
+    /// <para>
+    /// SLICED RATHER THAN TEXTURED. There is one 1x1 white pixel to draw with, so the corner is a
+    /// row-by-row inset off a circle: a couple of dozen quads for a button, which is nothing beside
+    /// the horde and avoids carrying a nine-slice texture for four rectangles.
+    /// </para>
+    /// </remarks>
+    private static void RoundRect(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
+                                  Color colour)
+    {
+        int rad = System.Math.Min(radius, System.Math.Min(r.Width, r.Height) / 2);
+        if (rad <= 0)
+        {
+            batch.Draw(sprites.Blank, r, colour);
+            return;
+        }
+
+        batch.Draw(sprites.Blank,
+                   new Rectangle(r.X, r.Y + rad, r.Width, r.Height - rad * 2), colour);
+
+        for (int i = 0; i < rad; i++)
+        {
+            // How far in this row starts, off the quarter circle.
+            double dy = rad - i - 0.5;
+            int inset = rad - (int)System.Math.Round(System.Math.Sqrt(rad * rad - dy * dy));
+            int w = r.Width - inset * 2;
+            if (w <= 0) continue;
+            batch.Draw(sprites.Blank, new Rectangle(r.X + inset, r.Y + i, w, 1), colour);
+            batch.Draw(sprites.Blank,
+                       new Rectangle(r.X + inset, r.Y + r.Height - 1 - i, w, 1), colour);
+        }
+    }
+
+    /// <summary>One menu button: a fill, an outline, and a centred label.</summary>
+    /// <remarks>
+    /// NO KEY IS PRINTED ON IT. The web build's buttons carry their label and nothing else, and the
+    /// port drew a "[ENTER]" over on the left that the centred label ran straight through. The
+    /// letter shortcuts still work; they are a convenience for hands already on a keyboard rather
+    /// than the way in, which is the cursor.
+    /// </remarks>
+    private static void Button(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
+                               int scale, bool primary, bool cursor)
+    {
+        int radius = 7 * scale;
+        RoundRect(batch, sprites, r, radius, primary ? Palette.Accent : Palette.Button);
+
+        // THE CURSOR IS A BRIGHTER EDGE rather than a different fill, so a pad user can see where
+        // they are without the row changing what it is.
+        if (cursor)
+        {
+            RoundRect(batch, sprites, r, radius, Palette.Accent * (primary ? 0.25f : 0.35f));
+        }
+
+        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X,
+                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
+                         primary ? Palette.OnAccent : Palette.Ink);
+    }
+
+    /// <summary>The ground every out-of-run menu sits on.</summary>
+    /// <remarks>
+    /// NOT THE YARD. The port tiled the floor sprite here and scrimmed it, which put every menu on
+    /// warm rust; the web build's canvas is BLANK on these screens, because the simulation is not
+    /// running yet. What is behind a title screen is black, and the overlay's own
+    /// rgba(6, 9, 13, 0.86) over black is the near-black the chrome was coloured against.
+    ///
+    /// The two draws are kept apart rather than folded into one constant so the arithmetic stays
+    /// legible: this is a scrim over an empty canvas, and it is the SAME scrim the in-run overlays
+    /// put over a live frame - where the yard showing through is the point.
+    /// </remarks>
     private static void Backdrop(SpriteBatch batch, Sprites sprites, int vw, int vh)
     {
-        var tex = sprites.Get("floor");
-        if (tex is not null)
-        {
-            for (int y = 0; y < vh; y += 128)
-            {
-                for (int x = 0; x < vw; x += 128)
-                {
-                    batch.Draw(tex, new Rectangle(x, y, 128, 128), Color.White);
-                }
-            }
-        }
-        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 205));
+        var all = new Rectangle(0, 0, vw, vh);
+        batch.Draw(sprites.Blank, all, Color.Black);
+        batch.Draw(sprites.Blank, all, Palette.Scrim);
     }
 
     private static void Frame(SpriteBatch batch, Sprites sprites, int x, int y, int w, int h)

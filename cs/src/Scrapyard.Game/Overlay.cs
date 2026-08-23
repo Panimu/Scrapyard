@@ -26,13 +26,19 @@ namespace Scrapyard.Game;
 /// </remarks>
 public static class Overlay
 {
-    private static readonly Color Ink = new(0xf2, 0xec, 0xdf);
-    private static readonly Color Dim = new(0x9a, 0x92, 0x84);
-    private static readonly Color Panel = new(0x1a, 0x16, 0x12);
-    private static readonly Color Edge = new(0x53, 0x48, 0x3a);
-    private static readonly Color Accent = new(0xff, 0xd3, 0x4f);
 
     /// <summary>The always-on readout: hull, shield, XP, level, clock, and what is in your hands.</summary>
+    // THE PALETTE IS SHARED AND IS THE WEB BUILD'S OWN. See Palette: these were a warm brown set
+    // invented here, which read as sepia beside the original's cool slate.
+    private static readonly Color Ink = Palette.Ink;
+    private static readonly Color Dim = Palette.Dim;
+    private static readonly Color Faint = Palette.Faint;
+    private static readonly Color Locked = Palette.Locked;
+    private static readonly Color Panel = Palette.Panel;
+    private static readonly Color Edge = Palette.Edge;
+    private static readonly Color Accent = Palette.Accent;
+    private static readonly Color Good = Palette.Good;
+
     public static void DrawHud(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
     {
         var p = w.Player;
