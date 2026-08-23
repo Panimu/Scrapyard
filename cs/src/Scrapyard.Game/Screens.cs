@@ -210,26 +210,34 @@ public static class Screens
             // ON THE TOP-RIGHT CORNER, hanging off it. It is a sticker slapped on the button rather
             // than part of it, which is why it overlaps the edge and carries a dark ring to lift it
             // off - `top: -9px; right: -10px` with a 2px border of the page ground.
+            //
+            // ROTATION PIVOT PULLED IN TOWARD THE CORNER ITSELF - 30% of the badge hangs past it
+            // rather than the ~9% a fixed 5px offset gave a typical word, which left the corner
+            // sitting almost on the badge's own right edge instead of somewhere near its middle.
+            // A PROPORTION OF THE BADGE'S OWN WIDTH rather than a second fixed pixel count, so a
+            // longer attract string does not throw the balance off again.
             if (i == 1 && badge >= 0)
             {
                 string word = MenuRows.AttractStrings[badge % MenuRows.AttractStrings.Length];
                 int pad = 4 * scale;
                 int bw = Font.Measure(word, scale) + pad * 2;
                 int bh = Font.GlyphH * scale + pad;
-                var box = new Rectangle(r.Right - bw + 5 * scale, r.Y - bh / 2, bw, bh);
+                var box = new Rectangle(r.Right - (int)(bw * 0.7), r.Y - bh / 2, bw, bh);
                 var centre = new Vector2(box.Center.X, box.Center.Y);
 
                 // SLAPPED ON AT AN ANGLE AND WOBBLING, which is the point: everything else on this
                 // screen is square to the world and holding still, so the one thing that is neither
                 // is the one thing the eye goes to. `@keyframes badge-wobble` swings between -8deg
-                // and +8deg every 1.6s, ease-in-out; a cosine of the same period and amplitude
-                // starts and ends at the same two extremes with the same easing-by-construction
-                // shape, without needing the CSS timing curve reproduced exactly - nothing here
-                // touches replay state, so an approximation costs nothing.
-                const double WobblePeriodSec = 1.6;
+                // and +8deg on a fixed schedule; this runs SLOWER than that (2.0s against the CSS's
+                // 1.6) and EASED THROUGH BOTH DERIVATIVES rather than a raw sinusoid - see Wobble -
+                // because the web build's animation is a two-keyframe CSS ease and this had been
+                // approximating it with a cosine, which shares the "slow at the ends" shape but not
+                // the "gentle at the ends" one. Nothing here touches replay state, so neither
+                // difference from the CSS original costs anything.
+                const double WobblePeriodSec = 2.0;
                 const float WobbleDeg = 8f;
                 float rotation = MathHelper.ToRadians(
-                    -WobbleDeg * (float)System.Math.Cos(2 * System.Math.PI * timeSec / WobblePeriodSec));
+                    WobbleDeg * (float)Wobble(timeSec, WobblePeriodSec));
 
                 int ring = System.Math.Max(1, scale);
                 RotatedRect(batch, sprites, centre, bw + ring * 2, bh + ring * 2, rotation,
@@ -1619,6 +1627,28 @@ public static class Screens
                              cell.Y + (cell.Height - Font.GlyphH * scale) / 2, scale,
                              i == chosen ? Palette.OnAccent : Palette.Dim);
         }
+    }
+
+    /// <summary>
+    /// A value that eases from -1 to +1 and back over one period, rather than swinging through it
+    /// at a raw sinusoid's pace.
+    /// </summary>
+    /// <remarks>
+    /// TWO SMOOTHERSTEP HALVES, not one cosine. A cosine already has zero VELOCITY at each turning
+    /// point, which is why it reads as smooth at all - but its ACCELERATION does not flatten out
+    /// the same way, so the sweep through the middle still feels like the fastest, most mechanical
+    /// part of the motion. Ken Perlin's smootherstep - 6x^5 - 15x^4 + 10x^3 - has zero velocity AND
+    /// zero acceleration at both x=0 and x=1, so easing each half-swing through it removes the
+    /// jerk at the turn as well as the speed, which is the difference between "smooth" and "eased".
+    /// </remarks>
+    private static double Wobble(double timeSec, double period)
+    {
+        double phase = timeSec / period - System.Math.Floor(timeSec / period);
+        // First half [0, 0.5) eases -1 up to +1; second half [0.5, 1) eases +1 back down to -1,
+        // so the two meet exactly at the midpoint with the same value from both sides.
+        double u = phase < 0.5 ? phase * 2 : (phase - 0.5) * 2;
+        double eased = u * u * u * (u * (u * 6 - 15) + 10);
+        return phase < 0.5 ? -1 + 2 * eased : 1 - 2 * eased;
     }
 
     /// <summary>A solid rectangle, filled and rotated about its own centre.</summary>
