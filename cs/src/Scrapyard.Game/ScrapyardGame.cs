@@ -1291,7 +1291,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             switch (_screen)
             {
                 case Screen.Title:
-                    Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, _titleBadge, mw, mh);
+                    Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, _titleBadge, mw, mh,
+                                      gameTime.TotalGameTime.TotalSeconds);
                     break;
                 case Screen.HeroSelect:
                     Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;

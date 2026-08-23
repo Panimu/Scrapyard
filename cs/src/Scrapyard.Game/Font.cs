@@ -189,6 +189,53 @@ public static class Font
         Draw(batch, pixel, s, cx - Measure(s, scale) / 2, y, scale, colour);
 
     /// <summary>
+    /// Draws a string centred on <paramref name="centre"/> and spun about it.
+    /// </summary>
+    /// <remarks>
+    /// EVERY LIT PIXEL IS ITS OWN ROTATED QUAD, not the finished word rotated as one block. This
+    /// font has no texture backing it - <see cref="Draw"/> blits a scaled quad per lit cell - so
+    /// there is no single sprite to hand MonoGame's rotated <c>Draw</c> overload. Rotating each
+    /// cell's OFFSET from centre and its OWN quad by the same angle gives the same picture a
+    /// pre-rendered rotated sprite would.
+    /// </remarks>
+    public static void DrawCentredRotated(SpriteBatch batch, Texture2D pixel, string s,
+                                          Vector2 centre, int scale, Color colour, float rotation)
+    {
+        float cos = (float)System.Math.Cos(rotation);
+        float sin = (float)System.Math.Sin(rotation);
+
+        // Local space, unrotated: (0, 0) is the centre of the string's bounding box.
+        float penX = -Measure(s, scale) / 2f;
+        float top = -(GlyphH * scale) / 2f;
+
+        foreach (char ch in s)
+        {
+            int c = ch;
+            if (c >= First && c <= Last)
+            {
+                int at = (c - First) * GlyphH;
+                for (int row = 0; row < GlyphH; row++)
+                {
+                    int bits = Bits[at + row];
+                    if (bits == 0) continue;
+                    for (int col = 0; col < GlyphW; col++)
+                    {
+                        if ((bits & (1 << col)) == 0) continue;
+                        float lx = penX + col * scale;
+                        float ly = top + row * scale;
+                        var pos = new Vector2(
+                            centre.X + lx * cos - ly * sin,
+                            centre.Y + lx * sin + ly * cos);
+                        batch.Draw(pixel, pos, null, colour, rotation, Vector2.Zero,
+                                   new Vector2(scale, scale), SpriteEffects.None, 0f);
+                    }
+                }
+            }
+            penX += (GlyphW + Tracking) * scale;
+        }
+    }
+
+    /// <summary>
     /// Greedy word wrap to a pixel width. Returns the lines; the caller decides line spacing.
     /// </summary>
     /// <remarks>

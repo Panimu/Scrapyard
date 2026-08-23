@@ -216,4 +216,5 @@ npm run fence       redraw the perimeter fence
 npm run scrap       redraw the scenery
 npm run drone       redraw the drone
 npm run icons       redraw the upgrade card icons
+npm run titlefont   rebake the title screen's wordmark (C# front-end only)
 ```

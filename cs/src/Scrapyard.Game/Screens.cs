@@ -61,7 +61,7 @@ public static class Screens
     private static readonly Color Good = Palette.Good;
 
     public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                 int badge, int vw, int vh)
+                                 int badge, int vw, int vh, double timeSec)
     {
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
@@ -74,6 +74,37 @@ public static class Screens
         int listW = System.Math.Min(vw - 40 * scale, 170 * scale);
         int x0 = (vw - listW) / 2;
 
+        // THE WORDMARK IS AN IMAGE, not the pixel font. title_word.png / title_sub.png are baked
+        // by `npm run titlefont` from the web build's OWN font declaration - the CSS never gives
+        // `.title__word` a font-family of its own, so it inherits the page root's
+        // `-apple-system, ... system-ui, sans-serif`, meaning the real logotype is a smooth, heavy
+        // system UI face and never the pixel grid the rest of this screen draws in. Baking it once
+        // as an image sidesteps every reason Font.cs gives for not loading a typeface at runtime -
+        // nothing is vendored into the repository and nothing is read from a live font at draw
+        // time, only two small PNGs already checked in.
+        var wordTex = sprites.Get("title_word");
+        var subTex = sprites.Get("title_sub");
+
+        // TARGET HEIGHT MATCHES WHAT THE OLD PIXEL WORDMARK STOOD, so every measurement below that
+        // was tuned against Font.GlyphH * scale * 4 still holds. The subtitle's height then follows
+        // the WORDMARK'S OWN scale factor rather than a second constant - the two PNGs were baked
+        // from the same CSS proportion (62px to 27px) at the same multiplier, so scaling one by
+        // "target over source" and applying that identical factor to the other reproduces that
+        // proportion exactly rather than approximating it with a second hand-picked number.
+        int wordH = Font.GlyphH * scale * 4;
+        int wordW = wordTex is not null ? wordH * wordTex.Width / wordTex.Height : 0;
+        int subH2 = wordTex is not null && subTex is not null
+            ? System.Math.Max(1, subTex.Height * wordH / wordTex.Height)
+            : Font.GlyphH * scale * 2;
+        int subW = subTex is not null ? subH2 * subTex.Width / subTex.Height : 0;
+
+        int nameH = wordH + 6 * scale;
+        int subH = subH2 + 10 * scale;
+        int tagH = Font.LineHeight * tagScale * 2 + 16 * scale;
+        int menuH = rows.Length * (rowH + gap);
+        int bankH = save.Credits > 0 ? Font.LineHeight * scale + 6 * scale : 0;
+        int verH = Font.GlyphH * tagScale + 20 * scale;
+
         // MEASURED, THEN CENTRED, which is what `justify-content: center` does and what placing
         // things at fractions of the height does not. Sizing the mech against the wordmark is the
         // right RELATIONSHIP and it pushed Settings off the bottom of a 720-tall window, because
@@ -82,20 +113,14 @@ public static class Screens
         // THE MECH IS WHAT GIVES, and it gives first. It is the one element with no words in it, so
         // shrinking it costs nothing a player needs to read; shrinking the menu or the name costs
         // legibility, and dropping a gap costs the layout its shape.
-        int nameH = Font.GlyphH * scale * 4 + 6 * scale;
-        int subH = Font.GlyphH * scale * 2 + 10 * scale;
-        int tagH = Font.LineHeight * tagScale * 2 + 16 * scale;
-        int menuH = rows.Length * (rowH + gap);
-        int bankH = save.Credits > 0 ? Font.LineHeight * scale + 6 * scale : 0;
-        int verH = Font.GlyphH * tagScale + 20 * scale;
-
         var art = sprites.Get("mech_slate");
         int artW = 0;
         int artH = 0;
         if (art is not null)
         {
-            // A SHADE UNDER HALF THE WORDMARK'S WIDTH, which is the proportion the web build has.
-            artW = Font.Measure("SCRAPYARD", scale * 4) / 2;
+            // A SHADE UNDER HALF THE WORDMARK'S WIDTH, which is the proportion the web build has -
+            // off the baked texture's own measured width now, rather than the pixel font's.
+            artW = wordTex is not null ? wordW / 2 : Font.Measure("SCRAPYARD", scale * 4) / 2;
             artH = artW * art.Height / art.Width;
 
             int room = vh - (nameH + subH + tagH + menuH + bankH + verH) - 16 * scale;
@@ -118,12 +143,37 @@ public static class Screens
             y += artH + artGap;
         }
 
-        Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
+        // SWITCHED TO LINEAR SAMPLING FOR THESE TWO DRAWS ONLY, and back to point either side of
+        // them. Every other texture in this game is sampled POINT so pixel art stays crisp at any
+        // window size; these two are baked from a smooth vector face at a fixed resolution and
+        // then scaled, so POINT sampling would show the bake's own pixel grid instead of the smooth
+        // edge the web build has. The batch is left OPEN, on PointClamp, when this method returns -
+        // matching how the caller's own Begin(PointClamp) left it - because the caller draws more
+        // (the toast, if one is up) after this screen returns.
+        if (wordTex is not null)
+        {
+            batch.End();
+            batch.Begin(samplerState: SamplerState.LinearClamp);
+            batch.Draw(wordTex, new Rectangle((vw - wordW) / 2, y, wordW, wordH), Ink);
+            if (subTex is not null)
+            {
+                batch.Draw(subTex,
+                           new Rectangle((vw - subW) / 2, y + nameH - 6 * scale, subW, subH2),
+                           Accent);
+            }
+            batch.End();
+            batch.Begin(samplerState: SamplerState.PointClamp);
+        }
+        else
+        {
+            // NO BAKED ASSET FOUND: fall back to the pixel font rather than draw nothing. This is
+            // the same "a hole in the picture, not a crash" rule Sprites.Get documents for every
+            // other missing texture.
+            Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
+            Font.DrawCentred(batch, sprites.Blank, "S U R V I V O R S", vw / 2, y + nameH, scale * 2,
+                             Accent);
+        }
         y += nameH;
-
-        // SPACED OUT BY HAND. The bitmap font has one tracking value, so the wide letter-spacing
-        // the wordmark wants is spaces between the glyphs - which is what it looks like anyway.
-        Font.DrawCentred(batch, sprites.Blank, "S U R V I V O R S", vw / 2, y, scale * 2, Accent);
         y += subH;
 
         // THE WIN CONDITION, AND IT IS THE REAL ONE. Outlasting the clock is not winning: a run
@@ -157,15 +207,26 @@ public static class Screens
                 int bw = Font.Measure(word, scale) + pad * 2;
                 int bh = Font.GlyphH * scale + pad;
                 var box = new Rectangle(r.Right - bw + 5 * scale, r.Y - bh / 2, bw, bh);
+                var centre = new Vector2(box.Center.X, box.Center.Y);
+
+                // SLAPPED ON AT AN ANGLE AND WOBBLING, which is the point: everything else on this
+                // screen is square to the world and holding still, so the one thing that is neither
+                // is the one thing the eye goes to. `@keyframes badge-wobble` swings between -8deg
+                // and +8deg every 1.6s, ease-in-out; a cosine of the same period and amplitude
+                // starts and ends at the same two extremes with the same easing-by-construction
+                // shape, without needing the CSS timing curve reproduced exactly - nothing here
+                // touches replay state, so an approximation costs nothing.
+                const double WobblePeriodSec = 1.6;
+                const float WobbleDeg = 8f;
+                float rotation = MathHelper.ToRadians(
+                    -WobbleDeg * (float)System.Math.Cos(2 * System.Math.PI * timeSec / WobblePeriodSec));
 
                 int ring = System.Math.Max(1, scale);
-                RoundRect(batch, sprites,
-                          new Rectangle(box.X - ring, box.Y - ring,
-                                        box.Width + ring * 2, box.Height + ring * 2),
-                          2 * scale, Palette.Scrim);
-                RoundRect(batch, sprites, box, 2 * scale, Palette.Accent);
-                Font.DrawCentred(batch, sprites.Blank, word, box.Center.X, box.Y + pad / 2,
-                                 scale, Palette.OnAccent);
+                RotatedRect(batch, sprites, centre, bw + ring * 2, bh + ring * 2, rotation,
+                            Palette.Scrim);
+                RotatedRect(batch, sprites, centre, bw, bh, rotation, Palette.Accent);
+                Font.DrawCentredRotated(batch, sprites.Blank, word, centre, scale, Palette.OnAccent,
+                                        rotation);
             }
 
             y += rowH + gap;
@@ -1544,6 +1605,20 @@ public static class Screens
                              cell.Y + (cell.Height - Font.GlyphH * scale) / 2, scale,
                              i == chosen ? Palette.OnAccent : Palette.Dim);
         }
+    }
+
+    /// <summary>A solid rectangle, filled and rotated about its own centre.</summary>
+    /// <remarks>
+    /// NOT ROUNDED. <c>RoundRect</c>'s corner algorithm walks rows in SCREEN SPACE and has nothing
+    /// to rotate; redoing it for an arbitrary angle is a lot of code to spend on 4px of corner
+    /// radius on a badge the size of a fingertip that is also constantly moving. The eye is on the
+    /// wobble, not the corner.
+    /// </remarks>
+    private static void RotatedRect(SpriteBatch batch, Sprites sprites, Vector2 centre, int w,
+                                    int h, float rotation, Color colour)
+    {
+        batch.Draw(sprites.Blank, centre, null, colour, rotation, new Vector2(0.5f, 0.5f),
+                   new Vector2(w, h), SpriteEffects.None, 0f);
     }
 
     /// <summary>One menu button: a fill, an outline, and a centred label.</summary>
