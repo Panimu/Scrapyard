@@ -93,6 +93,12 @@ public static class Archetypes
     public static readonly double[] Mass = { 0.5, 1.2, 3, 7, 1e9 };
 
     /// <summary>
+    /// Seconds between contact ticks from THIS enemy. Per-enemy, not global i-frames: one runt must
+    /// not be able to soak the player's invulnerability on behalf of a bruiser.
+    /// </summary>
+    public static readonly double[] ContactInterval = { 0.6, 0.6, 0.7, 0.8, 0.9 };
+
+    /// <summary>
     /// The flavours each body class may roll, PLAIN FIRST. The order is the format: `rollFlavour`
     /// picks from index 1 upward, so reordering a row changes which variant a seed produces.
     /// </summary>

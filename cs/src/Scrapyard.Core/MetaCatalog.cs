@@ -290,6 +290,22 @@ public static class MetaCatalog
     /// way, and nothing about determinism depends on which side of the call owns the storage.
     /// </remarks>
     /// <summary>
+    /// How many tiers of one workshop upgrade the save holds, clamped to what it can hold. Port of
+    /// <c>metaTierOf</c>.
+    /// </summary>
+    public static int MetaTierOf(System.ReadOnlySpan<int> tiers, int id)
+    {
+        for (int i = 0; i < All.Length; i++)
+        {
+            var def = All[i];
+            if (def.Id != id) continue;
+            int owned = i < tiers.Length ? tiers[i] : 0;
+            return owned > def.Tiers ? def.Tiers : owned < 0 ? 0 : owned;
+        }
+        return 0;
+    }
+
+    /// <summary>
     /// The workshop's contribution to a WHOLE-RUN allowance - reroll count, weapon slots, passive
     /// slots. Port of <c>metaRunGrant</c>.
     /// </summary>

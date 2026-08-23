@@ -88,6 +88,11 @@ public static class Constants
     public const double MagnetTangentDamp = 6;
 
     /// <summary>
+    /// What a body AT THE RIM of a blast takes, as a fraction of what the epicentre takes.
+    /// </summary>
+    public const double SplashRimFrac = 0.4;
+
+    /// <summary>
     /// How many bodies one CHAIN LASER beam may cross, counting the first.
     /// </summary>
     /// <remarks>

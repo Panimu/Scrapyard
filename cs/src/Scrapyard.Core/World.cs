@@ -534,7 +534,15 @@ public sealed class RunStats
     public double LasersOverheated;
     public double SplashKills;
     public double Reloads;
-    public double KilledByRank;
+    /// <summary>
+    /// The RANK of whatever landed the last bite, or -1 for a run that has not ended in death.
+    /// </summary>
+    /// <remarks>
+    /// -1, NOT ZERO, and the default is load-bearing: zero is <c>Ranks.Regular</c>, a real answer,
+    /// so a run that never died would report having been killed by a runt. Set once, in the contact
+    /// path, before the early return that drops the rest of the buffer.
+    /// </remarks>
+    public double KilledByRank = -1;
     public double DamageByShield;
     public double GemsCollected;
     public double ShotsFired;

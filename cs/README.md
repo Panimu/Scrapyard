@@ -2,8 +2,9 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones`, `weapons`, `playerMovement`, `progression` and `pickups` are done and
-proven. ONE system remains - `damage` - and it needs no new infrastructure.
+`projectiles`, `drones`, `weapons`, `playerMovement`, `progression`, `pickups` and `damage` are
+done and proven. **Every system is ported.** What remains is the golden corpus runner that replays
+`goldens/corpus.json` end to end.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -61,8 +62,8 @@ dotnet test
 | `BeamBuffer` / `LaserHardpoint` / hero-trait hook | done, arrived with `Weapons` |
 | `PlayerMovement` — S3, the chassis and its three clocks | done, 14 driven cases over 8,100 ticks |
 | `Progression` — the deck, the picker, the chest, the ascensions | done, 21 posed cases, both streams compared with draw counts |
-| `Damage` — S9 | not started — **this is the remaining job** |
-| Golden corpus replay | not started — needs all of `stepWorld` |
+| `Damage` — S9, the only stage that changes an hp number | done, 23 posed cases, the kill feed compared in order |
+| Golden corpus replay | not started — **this is the remaining job** |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
 comparison per catalog rather than an adversarial fixture, because there is no order to lose and no
@@ -315,6 +316,28 @@ Two more things turned out **not to be faults**, alongside the two recorded unde
 marking a chest dead before rather than after `OpenChest` (both mark it within the tick, and
 `OpenChest` touches no pickups), and iterating the chest's grants past its payout. Neither is worth
 a test.
+
+**`Damage` is posed rather than driven, and that is a property of the system rather than a
+shortcut.** S9 has no clock — its `dt` is explicitly unused, and the two per-tick rates that could
+have lived there are elsewhere on purpose (hp regen is a chassis property in S3; the contact cooldown
+is S8's clock). So every branch is a decision about a stated position, and 23 posed cases cover them
+where a driven run would mostly re-measure the same three.
+
+**The kill feed is compared in order, not as a set**, because its order is an observable: S10 derives
+each gem's spawn id from the feed index, so beam-then-hit-then-contact decides which of two
+simultaneous kills gets the lower id. Swapping two stages trades two gems' identities and nothing
+else — which is exactly the kind of difference a set comparison would call equal.
+
+A fourth `World` initialiser bug, of the same family as the three `Progression` found:
+`RunStats.KilledByRank` is `-1` in TypeScript and was zero here. Zero is `Ranks.Regular` — a real
+answer — so a run that never died would have reported being killed by a runt on its summary screen.
+The pattern is now unmistakable enough to state as a rule: **any field whose "unset" value is not
+zero has to be written in the constructor, and a port that only reads it later will not notice.**
+
+One more dormant branch, handled the same way as the beam mount cap: `ApplySplash` re-checks the DEAD
+flag before counting a splash kill, but `QueryCircleLiveInto` already skips dead bodies, so a second
+blast never sees what the first one killed. `TheSplashKillGuardIsUnreachableBecauseTheQuerySkipsTheDead`
+pins that precondition rather than posing a position the game cannot produce.
 
 ## Why the RNG came first
 
@@ -676,10 +699,14 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-One system remains: **`damage`** (S9, 655 lines). Everything it depends on is done — `pickups`
-(which it feeds through the `KillFeed`), the per-level creature ladders (`MossyLadder`/`CityLadder`),
-the hit and contact buffers, and all three terrains. `enemyCatalog.ts`/`cycles.ts` themselves needed
-no further porting (see above). Nothing left needs new infrastructure.
+**Every system is ported.** What is left is the thing the whole exercise was for: a
+`Scrapyard.Golden` console runner that replays `goldens/corpus.json` and diffs. Only that makes the
+corpus meaningful, and it is the last thing that can be built rather than the first — it needs all of
+`stepWorld`, which now exists.
+
+The remaining gap before it can run is the STAGE ORDER itself: every system is ported and tested in
+isolation, but nothing yet calls them in sequence. `stepWorld` is a short function over a fixed list
+of stages, and porting it is the next step.
 
 Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
 the corpus meaningful, and it is the last thing that can be built rather than the first.
