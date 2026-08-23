@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-23T22:01Z',
+    title: 'THE LOADOUT ROW IS BACK WHERE IT BELONGS',
+    notes: [
+      'It sits under the XP bar again rather than down in the bottom-left corner, so reading what you are carrying no longer means looking away from the hull, the clock and everything else the HUD is telling you. Each gun is a small panel edged in its own colour.',
+      'The insurance banner and the unlock toast use the interface font now, like the rest of the HUD.',
+    ],
+  },
+  {
     at: '2026-08-23T21:16Z',
     title: 'THE LOADOUT ROW SHOWS WHAT EACH GUN IS WAITING ON',
     notes: [

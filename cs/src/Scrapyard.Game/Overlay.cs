@@ -101,7 +101,8 @@ public static class Overlay
         Screens.UiDraw(batch, sprites, $"LV {p.Level}   {mins}:{secs:00}   x{w.Stats.Kills:0}",
                        12, y, small, Dim);
 
-        DrawLoadout(batch, sprites, w, vw, vh, scale);
+        y += UiFont.LineHeight(small) + 4 * scale;
+        DrawLoadout(batch, sprites, w, 12, y, barW, scale);
     }
 
     /// <summary>
@@ -135,27 +136,36 @@ public static class Overlay
     /// smaller fraction - which would look like the upgrade had made the gun cooler.
     /// </para>
     /// </remarks>
-    private static void DrawLoadout(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
-                                    int scale)
+    private static void DrawLoadout(SpriteBatch batch, Sprites sprites, World w, int x, int y,
+                                    int rowW, int scale)
     {
-        int small = System.Math.Max(1, scale - 1);
-        int box = 20 * scale;
-        int barH = 4 * scale;
-        int gap = 4 * scale;
-        int rowH = box + 2 * scale + barH + scale + UiFont.GlyphH(small);
-        int ix = 12;
-        int iy = vh - 12 - rowH;
+        if (w.WeaponCount <= 0) return;
 
+        int small = System.Math.Max(1, scale - 1);
+        int gap = 4 * scale;
+        int icon = 11 * scale;
+        int barH = 8 * scale;
+        int pad = 3 * scale;
+        int chipH = pad * 2 + System.Math.Max(icon, barH);
+
+        // UNDER THE XP BAR, which is where the original puts it - the HUD is a column and this is
+        // the row after the bars. The port had it in the BOTTOM-LEFT corner, as far from the hull
+        // and the clock as the screen allows, so reading your loadout meant looking away from
+        // everything else the HUD is telling you.
+        //
+        // THE CHIPS SHARE THE BAR'S WIDTH, one per weapon, so a big loadout gets narrower chips
+        // rather than a row running off the side of the window.
+        int chipW = System.Math.Min(64 * scale,
+                                    (rowW - gap * (w.WeaponCount - 1)) / w.WeaponCount);
+        if (chipW < icon + pad * 2) chipW = icon + pad * 2;
+
+        int ix = x;
         for (int i = 0; i < w.WeaponCount; i++)
         {
             var inst = w.Weapons[i];
             if (inst.DefId < 0 || inst.DefId >= w.WeaponDefs.Length) continue;
             var def = w.WeaponDefs[inst.DefId];
             var stats = inst.Stats;
-
-            int cardIndex = CardIndexForWeapon(w, inst.DefId);
-            var tex = cardIndex >= 0 ? sprites.Get(CardTexts.At(cardIndex).IconKey) : null;
-            if (tex is not null) batch.Draw(tex, new Rectangle(ix, iy, box, box), Color.White);
 
             bool beam = def.Kind == WeaponKind.Beam;
             bool mag = stats.AmmoCapacity > 0;
@@ -194,40 +204,63 @@ public static class Overlay
             // the warning red; a reload is a procedure that is going to finish, and stays calm.
             if (inst.Overheated) fill = OutColour;
 
-            int by = iy + box + 2 * scale;
-            batch.Draw(sprites.Blank, new Rectangle(ix, by, box, barH), Palette.Sunken);
-            int fw = (int)System.Math.Round(box * frac);
-            if (fw > 0) batch.Draw(sprites.Blank, new Rectangle(ix, by, fw, barH), fill);
+            // THE CHIP IS A PANEL, keyed by the weapon's own colour at the very bottom of its
+            // range - enough to say which gun this is without becoming a second thing to look at
+            // beside the bar itself.
+            var chip = new Rectangle(ix, y, chipW, chipH);
+            Screens.CardFace(batch, sprites, chip, 4 * scale, new Color(8, 11, 16) * 0.62f,
+                             fill * 0.35f, System.Math.Max(1, scale / 2));
+
+            int cardIndex = CardIndexForWeapon(w, inst.DefId);
+            var tex = cardIndex >= 0 ? sprites.Get(CardTexts.At(cardIndex).IconKey) : null;
+            if (tex is not null)
+            {
+                batch.Draw(tex, new Rectangle(ix + pad, y + (chipH - icon) / 2, icon, icon),
+                           Color.White);
+            }
+
+            int bx = ix + pad + icon + pad;
+            int bw = chip.Right - pad - bx;
+            if (bw <= 0) { ix += chipW + gap; continue; }
+
+            int by = y + (chipH - barH) / 2;
+            batch.Draw(sprites.Blank, new Rectangle(bx, by, bw, barH), Palette.Sunken);
+            int fw = (int)System.Math.Round(bw * frac);
+            if (fw > 0) batch.Draw(sprites.Blank, new Rectangle(bx, by, fw, barH), fill);
 
             // THE RESUME NOTCH, and only on a beam: it is a property of heat's hysteresis and says
             // nothing about a magazine or a cooldown.
             if (beam)
             {
-                int nx = ix + (int)System.Math.Round(
-                    box * System.Math.Clamp(stats.HeatResume / capacity, 0, 1));
+                int nx = bx + (int)System.Math.Round(
+                    bw * System.Math.Clamp(stats.HeatResume / capacity, 0, 1));
                 batch.Draw(sprites.Blank,
-                           new Rectangle(nx, by - scale, System.Math.Max(1, scale / 2),
-                                         barH + 2 * scale),
-                           Ink);
+                           new Rectangle(nx, by, System.Math.Max(1, scale / 2), barH), Ink);
             }
 
-            // THE TIER, and the countdown that replaces it while the gun is away - so "when do I
-            // get it back" always has an answer on screen.
+            // THE READOUT SITS INSIDE THE TRACK rather than under it - the tier normally, and the
+            // countdown that replaces it while the gun is away, so "when do I get it back" always
+            // has an answer without the row needing a second line to be legible.
             string label = inst.Level.ToString();
-            var labelTint = Dim;
+            var labelTint = Ink;
             if (inst.Overheated)
             {
                 label = "OUT";
-                labelTint = OutColour;
+                labelTint = Color.White;
             }
             else if (reloading)
             {
                 label = inst.ReloadLeft.ToString("0.0");
-                labelTint = MagColour;
+                labelTint = Color.White;
             }
 
-            Screens.UiDraw(batch, sprites, label, ix, by + barH + scale, small, labelTint);
-            ix += box + gap;
+            // RIGHT-ALIGNED INSIDE THE TRACK, not centred: a beam's resume notch sits at its own
+            // threshold, which for every laser in the game is the halfway mark - so a centred
+            // readout is drawn exactly on top of it and the two become one illegible smudge.
+            int lw = UiFont.Measure(label, small);
+            Screens.UiDraw(batch, sprites, label, bx + bw - lw - 2 * scale,
+                           by + (barH - UiFont.GlyphH(small)) / 2, small, labelTint);
+            ix += chipW + gap;
         }
     }
 
@@ -856,11 +889,12 @@ public static class Overlay
         var band = new Rectangle(0, y - 6 * scale, vw, 46 * scale);
         batch.Draw(sprites.Blank, band, new Color(0, 0, 0, 190));
 
-        Font.DrawCentred(batch, sprites.Blank, "MECH INSURANCE", vw / 2, y, scale, Dim);
-        Font.DrawCentred(batch, sprites.Blank, "HULL RESTORED", vw / 2, y + 12 * scale, scale * 2,
-                         Accent);
-        Font.DrawCentred(batch, sprites.Blank, "SPENT - YOU ARE UNTOUCHABLE FOR A MOMENT", vw / 2,
-                         y + 34 * scale, scale, Ink);
+        Screens.UiDrawCentred(batch, sprites, Screens.Spaced("MECH INSURANCE"), vw / 2, y, scale,
+                              Dim);
+        Screens.UiDrawCentred(batch, sprites, "HULL RESTORED", vw / 2, y + 12 * scale, scale * 2,
+                              Accent);
+        Screens.UiDrawCentred(batch, sprites, "SPENT - YOU ARE UNTOUCHABLE FOR A MOMENT", vw / 2,
+                              y + 34 * scale, scale, Ink);
     }
 
     /// <summary>The end of the run, either way.</summary>
@@ -1045,10 +1079,11 @@ public static class Overlay
         int y = vh / 3;
         foreach (string line in lines)
         {
-            Font.DrawCentred(batch, sprites.Blank, "UNLOCKED", vw / 2, y, scale, Dim);
-            Font.DrawCentred(batch, sprites.Blank, line.ToUpperInvariant(), vw / 2,
-                             y + Font.LineHeight * scale, scale * 2, Accent);
-            y += Font.LineHeight * scale * 4;
+            Screens.UiDrawCentred(batch, sprites, Screens.Spaced("UNLOCKED"), vw / 2, y, scale,
+                                  Dim);
+            Screens.UiDrawCentred(batch, sprites, line.ToUpperInvariant(), vw / 2,
+                                  y + UiFont.LineHeight(scale), scale * 2, Accent);
+            y += UiFont.LineHeight(scale) + UiFont.LineHeight(scale * 2) + 8 * scale;
         }
     }
 
