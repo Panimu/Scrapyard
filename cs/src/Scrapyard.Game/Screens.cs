@@ -873,13 +873,27 @@ public static class Screens
     /// headings are not rows and consume no entry - then CHANGELOG, then BACK. A click anywhere on
     /// a row steps it exactly one CONFIRM would - the segmented Animations row cycles rather than
     /// jumping straight to whichever of its three words was under the pointer, matching the level
-    /// of precision every other control in this game offers a mouse.
+    /// of precision every other control in this game offers a mouse. Resolution is the one
+    /// exception: a click or CONFIRM on it opens the dropdown rather than stepping anything -
+    /// see <paramref name="resolutionRects"/>.
+    /// </param>
+    /// <param name="resolutions">The Resolution dropdown's own choices - see DisplayModes.</param>
+    /// <param name="resolutionOpen">Is the Resolution dropdown open right now?</param>
+    /// <param name="resolutionCursor">Which entry of <paramref name="resolutions"/> is highlighted.</param>
+    /// <param name="resolutionRects">
+    /// One rectangle per entry of <paramref name="resolutions"/>, filled only while
+    /// <paramref name="resolutionOpen"/> - empty otherwise, the same "nothing to click" convention
+    /// <see cref="Rectangle.Empty"/> gives every other list in this game.
     /// </param>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                     int vw, int vh,
-                                    System.Collections.Generic.List<Rectangle>? outRects = null)
+                                    System.Collections.Generic.List<Rectangle>? outRects = null,
+                                    (int W, int H)[]? resolutions = null,
+                                    bool resolutionOpen = false, int resolutionCursor = 0,
+                                    System.Collections.Generic.List<Rectangle>? resolutionRects = null)
     {
         outRects?.Clear();
+        resolutionRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
@@ -895,8 +909,10 @@ public static class Screens
         int thick = System.Math.Max(1, scale / 2);
 
         // SIZED TO THE WIDEST REALISTIC LABEL rather than measured per row, so the control does not
-        // change width as Resolution is stepped through - "800X600" and "7680X4320" share a control.
-        int stepperW = UiFont.Measure("9999X9999", small) + 34 * scale;
+        // change width as the choice changes - "800X600" and "3840X2160" share a control.
+        int ddW = UiFont.Measure("9999X9999", small) + 30 * scale;
+
+        Rectangle resolutionRow = Rectangle.Empty;
 
         string lastSection = "";
         for (int i = 0; i < MenuRows.SettingsRows.Length; i++)
@@ -916,9 +932,9 @@ public static class Screens
             // The control comes first because it sets the row's height and the width the words get
             // to wrap in - the card is sized around its contents, not the other way about.
             bool segmented = row.Kind == MenuRows.SettingKind.Animations;
-            bool stepper = row.Kind == MenuRows.SettingKind.Resolution;
-            int ctrlW = stepper ? stepperW : segmented ? 42 * scale : 26 * scale;
-            int ctrlH = stepper || segmented ? 22 * scale : 16 * scale;
+            bool dropdown = row.Kind == MenuRows.SettingKind.Resolution;
+            int ctrlW = dropdown ? ddW : segmented ? 42 * scale : 26 * scale;
+            int ctrlH = dropdown || segmented ? 22 * scale : 16 * scale;
 
             int textW = w - pad * 2 - ctrlW - pad;
             var note = UiFont.Wrap(SettingNote(row.Kind), textW, small);
@@ -927,6 +943,7 @@ public static class Screens
 
             var r = new Rectangle(x0, y, w, rowH);
             outRects?.Add(r);
+            if (dropdown) resolutionRow = r;
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
@@ -946,8 +963,8 @@ public static class Screens
                     Segmented(batch, sprites, ctrl, new[] { "A", "ON", "OFF" }, chosen, small);
                     break;
                 case MenuRows.SettingKind.Resolution:
-                    Stepper(batch, sprites, ctrl, $"{save.ResolutionWidth}X{save.ResolutionHeight}",
-                            small);
+                    DropdownButton(batch, sprites, ctrl, $"{save.ResolutionWidth}X{save.ResolutionHeight}",
+                                   resolutionOpen, small);
                     break;
                 case MenuRows.SettingKind.Fullscreen:
                     Pill(batch, sprites, ctrl, save.Fullscreen);
@@ -965,6 +982,45 @@ public static class Screens
 
         outRects?.Add(changelogBtn);
         outRects?.Add(backBtn);
+
+        // THE OPTION LIST IS DRAWN LAST, so it lands on top of every row and button under it - the
+        // same reason a real dropdown floats rather than pushing the rest of the page down. Nothing
+        // beneath it is clickable while it is open; see UpdateResolutionDropdown's early return.
+        if (resolutionOpen && resolutions is not null && resolutionRow != Rectangle.Empty)
+        {
+            DrawResolutionOptions(batch, sprites, resolutions, resolutionCursor, resolutionRow,
+                                  scale, small, resolutionRects);
+        }
+    }
+
+    /// <summary>The Resolution dropdown's own open list, floating below the row that opened it.</summary>
+    private static void DrawResolutionOptions(SpriteBatch batch, Sprites sprites,
+                                              (int W, int H)[] resolutions, int cursor,
+                                              Rectangle anchor, int scale, int small,
+                                              System.Collections.Generic.List<Rectangle>? outRects)
+    {
+        int optH = 22 * scale;
+        int gap = 2 * scale;
+        int pad = 4 * scale;
+        int panelH = resolutions.Length * (optH + gap) - gap + pad * 2;
+        var panel = new Rectangle(anchor.X, anchor.Bottom + 4 * scale, anchor.Width, panelH);
+
+        CardFace(batch, sprites, panel, 8 * scale, Palette.Panel, Palette.Accent,
+                 System.Math.Max(1, scale / 2));
+
+        int oy = panel.Y + pad;
+        for (int i = 0; i < resolutions.Length; i++)
+        {
+            var opt = new Rectangle(panel.X + pad, oy, panel.Width - pad * 2, optH);
+            outRects?.Add(opt);
+
+            if (i == cursor) RoundRect(batch, sprites, opt, 5 * scale, Palette.Button);
+            UiDrawCentred(batch, sprites, $"{resolutions[i].W}X{resolutions[i].H}", opt.Center.X,
+                         opt.Y + (opt.Height - UiFont.GlyphH(small)) / 2, small,
+                         i == cursor ? Palette.Ink : Palette.Dim);
+
+            oy += optH + gap;
+        }
     }
 
     private static string SettingNote(MenuRows.SettingKind kind) => kind switch
@@ -1760,22 +1816,23 @@ public static class Screens
                   on ? Palette.OnAccent : Palette.Faint);
     }
 
-    /// <summary>A value that cycles, with arrows either side saying which way CONFIRM steps it.</summary>
+    /// <summary>A button that opens a floating list of choices - see DrawResolutionOptions.</summary>
     /// <remarks>
-    /// FOR A CHOICE WITH TOO MANY OPTIONS FOR <see cref="Segmented"/> to hold - Resolution can be
-    /// six or more entries long on a real display, and a segmented bar cramming that many words
-    /// into one row's width would be unreadable rather than merely tight.
+    /// FOR A CHOICE WITH TOO MANY OPTIONS FOR <see cref="Segmented"/> to hold - Resolution is six
+    /// entries, and a segmented bar cramming that many words into one row's width would be
+    /// unreadable rather than merely tight. The chevron flips to point at whichever action CONFIRM
+    /// takes next, the same convention a mouse-driven dropdown gives for free with a cursor icon.
     /// </remarks>
-    private static void Stepper(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
-                                int scale)
+    private static void DropdownButton(SpriteBatch batch, Sprites sprites, Rectangle r,
+                                       string label, bool open, int scale)
     {
-        CardFace(batch, sprites, r, 6 * scale, Palette.Sunken, Palette.Edge,
-                 System.Math.Max(1, scale / 2));
+        CardFace(batch, sprites, r, 6 * scale, Palette.Sunken,
+                 open ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
 
         int ty = r.Y + (r.Height - UiFont.GlyphH(scale)) / 2;
-        UiDrawCentred(batch, sprites, "<", r.X + 9 * scale, ty, scale, Palette.Dim);
-        UiDrawCentred(batch, sprites, ">", r.Right - 9 * scale, ty, scale, Palette.Dim);
-        UiDrawCentred(batch, sprites, label, r.Center.X, ty, scale, Palette.Ink);
+        UiDraw(batch, sprites, label, r.X + 8 * scale, ty, scale, Palette.Ink);
+        UiDrawCentred(batch, sprites, open ? "^" : "v", r.Right - 10 * scale, ty, scale,
+                     open ? Palette.Accent : Palette.Dim);
     }
 
     /// <summary>A row of mutually exclusive options, one of them lit.</summary>

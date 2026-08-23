@@ -174,9 +174,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _settingsCursor;
 
     /// <summary>
-    /// The Resolution row's own choices, read from the adapter once - see DisplayModes.
+    /// The Resolution dropdown's own choices, read once - see DisplayModes.
     /// </summary>
     private (int W, int H)[] _resolutions = System.Array.Empty<(int, int)>();
+
+    /// <summary>Is the Resolution dropdown open? See UpdateResolutionDropdown.</summary>
+    private bool _resolutionOpen;
+
+    private int _resolutionCursor;
+    private readonly List<Rectangle> _resolutionRects = new();
 
     private PediaState _pedia = null!;
 
@@ -574,7 +580,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             _screen = _shotScreen switch
             {
-                "settings" => Screen.Settings,
+                "settings" or "settings-resolution" => Screen.Settings,
                 "pedia" or "pedia-index" or "pedia-page" => Screen.Pedia,
                 "workshop" => Screen.Workshop,
                 "heroes" => Screen.HeroSelect,
@@ -676,6 +682,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     }
                     if (_shotScreen == "pedia-page") _pedia.OpenRow();
                 }
+            }
+
+            if (_shotScreen == "settings-resolution" && _screen == Screen.Settings)
+            {
+                _resolutionCursor = DisplayModes.NearestIndex(_resolutions, _save.ResolutionWidth,
+                                                               _save.ResolutionHeight);
+                _resolutionOpen = true;
             }
         }
 
@@ -905,6 +918,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private void UpdateSettings(KeyboardState keys)
     {
+        // THE DROPDOWN IS A SEPARATE SMALL STATE MACHINE while it is open - see
+        // UpdateResolutionDropdown - so the rows it is floating over cannot be reached by
+        // keyboard, pad or a click that happens to land on one of them underneath it.
+        if (_resolutionOpen) { UpdateResolutionDropdown(); return; }
+
         if (_menu.Back) { ToTitle(); return; }
 
         int n = MenuRows.SettingsRows.Length;
@@ -949,15 +967,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 display = true;
                 break;
             case MenuRows.SettingKind.Resolution:
-                // NEAREST, THEN STEPPED - the stored size may not be one of this adapter's own
-                // modes at all (a save carried over from a different monitor), so the row starts
-                // from whichever entry is closest before moving one either way.
-                int at = DisplayModes.NearestIndex(_resolutions, _save.ResolutionWidth,
-                                                   _save.ResolutionHeight);
-                at = ((at + step) % _resolutions.Length + _resolutions.Length) % _resolutions.Length;
-                (_save.ResolutionWidth, _save.ResolutionHeight) = _resolutions[at];
-                display = true;
-                break;
+                // OPENS THE DROPDOWN rather than changing anything itself - nothing is saved or
+                // applied until a choice is actually made in UpdateResolutionDropdown, so this
+                // returns rather than falling through to the save below. Highlighted at the
+                // closest entry to what is stored now, which may not be one of the common sizes
+                // at all (a save carried over from a larger display).
+                _resolutionCursor = DisplayModes.NearestIndex(_resolutions, _save.ResolutionWidth,
+                                                               _save.ResolutionHeight);
+                _resolutionOpen = true;
+                return;
             case MenuRows.SettingKind.PerformanceMode:
                 _save.DprCap = _save.DprCap == 1 ? 2 : 1;
                 break;
@@ -976,6 +994,50 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
         if (display) ApplyDisplaySettings();
         _save.Save();
+    }
+
+    /// <summary>
+    /// The Resolution dropdown, while it is open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// BACK CLOSES IT WITHOUT CHOOSING, and so does a click outside the list - the same
+    /// one-level-at-a-time unwind <see cref="PediaState.Back"/> gives its own nested Section and
+    /// Page states. Settings has no reason to differ just because its nesting is a bool instead of
+    /// a field on a struct.
+    /// </para>
+    /// <para>
+    /// NOTHING IS SAVED UNTIL A CHOICE IS ACTUALLY MADE. Opening the dropdown and backing out of
+    /// it again must leave the resolution exactly as it was, the same as walking into any other
+    /// screen and leaving without touching anything.
+    /// </para>
+    /// </remarks>
+    private void UpdateResolutionDropdown()
+    {
+        int n = _resolutions.Length;
+        if (_menu.Vertical < 0) _resolutionCursor = (_resolutionCursor + n - 1) % n;
+        if (_menu.Vertical > 0) _resolutionCursor = (_resolutionCursor + 1) % n;
+
+        int hover = _mouse.Hover(_resolutionRects);
+        bool picked = _menu.Confirm;
+        if (hover >= 0 && hover < n)
+        {
+            _resolutionCursor = hover;
+            if (_mouse.LeftClicked) picked = true;
+        }
+        else if (_mouse.LeftClicked)
+        {
+            _resolutionOpen = false;
+            return;
+        }
+
+        if (_menu.Back) { _resolutionOpen = false; return; }
+        if (!picked) return;
+
+        (_save.ResolutionWidth, _save.ResolutionHeight) = _resolutions[_resolutionCursor];
+        ApplyDisplaySettings();
+        _save.Save();
+        _resolutionOpen = false;
     }
 
     private void UpdateHeroSelect(KeyboardState keys)
@@ -1543,7 +1605,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                                          _workshopRects); break;
                 case Screen.Settings:
                     Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh,
-                                         _settingsRects); break;
+                                         _settingsRects, _resolutions, _resolutionOpen,
+                                         _resolutionCursor, _resolutionRects); break;
                 case Screen.Pedia:
                     Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh, _pediaRects); break;
                 case Screen.Changes:

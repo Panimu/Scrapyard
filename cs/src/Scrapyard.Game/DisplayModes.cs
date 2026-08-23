@@ -5,64 +5,60 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Scrapyard.Game;
 
 /// <summary>
-/// The resolutions the Settings screen's Resolution row cycles through.
+/// The resolutions the Settings screen's Resolution dropdown offers.
 /// </summary>
 /// <remarks>
 /// <para>
-/// READ FROM THE ADAPTER, not hand-typed. A fixed list would offer a 4K display nothing native
-/// and a laptop player sizes their panel does not have; <c>GraphicsAdapter.SupportedDisplayModes</c>
-/// already knows exactly what the machine in front of it can do.
+/// A FIXED, CURATED LIST rather than every mode <c>GraphicsAdapter.SupportedDisplayModes</c>
+/// reports - that enumeration includes every refresh rate and pixel format the driver will admit
+/// to, which on a real machine is dozens of entries and reads as noise in a dropdown meant to be
+/// scanned at a glance. Six names everyone recognises serves a player better than a complete and
+/// unreadable one.
 /// </para>
 /// <para>
-/// <see cref="Fallback"/> ONLY FIRES IF THE ADAPTER REPORTS NOTHING AT ALL, which does not happen
-/// on a real display but costs nothing to guard - the same "never error, degrade to a default"
-/// rule the save file follows for every other preference.
+/// CAPPED TO THE DESKTOP'S CURRENT RESOLUTION, so a 1080p display is never offered a 4K entry it
+/// cannot actually show. <c>CurrentDisplayMode</c> is one query rather than an enumeration, and is
+/// the same "what is this machine actually showing right now" question the cap needs answered.
 /// </para>
 /// </remarks>
 public static class DisplayModes
 {
-    private static readonly (int W, int H)[] Fallback =
+    /// <summary>The common list, ascending. Every 16:9 size a player is likely to have heard of.</summary>
+    private static readonly (int W, int H)[] Common =
     {
-        (1280, 720), (1600, 900), (1920, 1080), (2560, 1440), (3840, 2160),
+        (1280, 720), (1366, 768), (1600, 900), (1920, 1080), (2560, 1440), (3840, 2160),
     };
 
-    /// <summary>Every distinct resolution the default adapter offers, ascending, deduplicated.</summary>
+    /// <summary>The common resolutions, capped to what the desktop is currently showing.</summary>
     public static (int W, int H)[] List()
     {
-        var seen = new HashSet<(int, int)>();
-        var list = new List<(int, int)>();
-
+        int maxW = int.MaxValue;
+        int maxH = int.MaxValue;
         var adapter = GraphicsAdapter.DefaultAdapter;
         if (adapter is not null)
         {
-            foreach (var mode in adapter.SupportedDisplayModes)
-            {
-                // A FLOOR, NOT A CEILING. Nothing here caps the top of the list - a player with an
-                // 8K panel should see it - but a mode too small to lay this UI out in is not a
-                // resolution worth offering.
-                if (mode.Width < 800 || mode.Height < 600) continue;
-                if (seen.Add((mode.Width, mode.Height))) list.Add((mode.Width, mode.Height));
-            }
+            maxW = adapter.CurrentDisplayMode.Width;
+            maxH = adapter.CurrentDisplayMode.Height;
         }
 
-        if (list.Count == 0) return Fallback;
+        var list = new List<(int, int)>();
+        foreach (var mode in Common)
+        {
+            if (mode.Item1 <= maxW && mode.Item2 <= maxH) list.Add(mode);
+        }
 
-        list.Sort((a, b) => a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1) : a.Item2.CompareTo(b.Item2));
-
-        // ALWAYS INCLUDES THE GAME'S OWN BASE SIZE, even off an adapter list that does not happen
-        // to offer it exactly - every layout in this game was measured against 1280x720, so it is
-        // the one resolution a player should always be able to pick back.
-        if (!seen.Contains((1280, 720))) list.Insert(0, (1280, 720));
+        // NEVER EMPTY. A display smaller than every common entry still gets the game's own base
+        // size, native or not - every layout in this game was measured against it.
+        if (list.Count == 0) list.Add((1280, 720));
 
         return list.ToArray();
     }
 
     /// <summary>The closest entry in <paramref name="modes"/> to a stored width and height.</summary>
     /// <remarks>
-    /// NEAREST, NOT EXACT-OR-DEFAULT. A save written on one monitor and loaded on another may name
-    /// a resolution this adapter does not offer at all; landing on the closest match keeps the
-    /// Resolution row starting somewhere sensible instead of snapping to the top of the list every
-    /// time the player owns two displays.
+    /// NEAREST, NOT EXACT-OR-DEFAULT. A save may name a size that fell out of the common list -
+    /// capped off a smaller display since, or set by hand - so the dropdown starts highlighting
+    /// the closest match instead of snapping to the top of the list.
     /// </remarks>
     public static int NearestIndex((int W, int H)[] modes, int w, int h)
     {
