@@ -168,18 +168,26 @@ public static class Pedia
             return rows;
         }
 
-        var got = new List<Row>();
+        // EVERY TROPHY IS LISTED, EARNED OR NOT, which is the one place this screen shows a thing
+        // the player has not got. An achievement is a goal as much as a record, so a list of only
+        // the ones already earned would be a list that says nothing about what is left.
+        //
+        // AN UNEARNED ONE IS SEALED RATHER THAN NAMED. `Display` hands back the silhouette form,
+        // and for a SECRET that is question marks and no description - "Turned the Cannon into the
+        // Twin Mount" would give away the whole thing this screen exists not to give away.
+        var trophies = new List<Row>();
+        int earned = 0;
         for (int i = 0; i < Achievements.All.Length; i++)
         {
             var a = Achievements.All[i];
-            if (save.UnlockedAchievements.Contains(a.Id))
-            {
-                got.Add(new Row(Kind.Achievement, Achievements.Display(a, true).Name.ToUpperInvariant(),
-                                "", i, a.Id));
-            }
+            bool got = save.UnlockedAchievements.Contains(a.Id);
+            if (got) earned++;
+            trophies.Add(new Row(Kind.Achievement,
+                                 Achievements.Display(a, got).Name.ToUpperInvariant(),
+                                 got ? "" : "-", i, a.Id));
         }
-        rows.Add(Heading("EARNED", got.Count, Achievements.All.Length));
-        rows.AddRange(got);
+        rows.Add(Heading("TROPHIES", earned, Achievements.All.Length));
+        rows.AddRange(trophies);
         return rows;
     }
 
@@ -315,8 +323,10 @@ public static class Pedia
 
             default:
             {
+                // THE PAGE TELLS THE TRUTH ABOUT WHETHER IT IS HELD. `Row.Sub` carries that from
+                // the index, so a sealed trophy opens to its silhouette rather than to its answer.
                 var a = Achievements.All[row.Index];
-                var (name, desc) = Achievements.Display(a, true);
+                var (name, desc) = Achievements.Display(a, row.Sub == "");
                 // IN THE PAST TENSE, which is the whole rule: this is a record of what happened,
                 // never an instruction. There is deliberately no imperative describer anywhere.
                 body.Add(desc);

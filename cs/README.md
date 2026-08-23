@@ -809,6 +809,32 @@ falloff shows up as *where* that flip happens, at about 368 units of slack, wher
 exceeds the drift it is fighting. My first test asserted a magnitude and was wrong about the policy,
 not about the port.
 
+**The title screen was not the title screen.** It had grown into a list of every destination the
+game has — eight rows of letter shortcuts — because in C# a shortcut is free to add and each new
+screen got one. The real one is four entries and a name: a chassis behind the wordmark, "SCRAPYARD"
+over a spaced-out "SURVIVORS", the two-line tagline, **New Game** larger and brighter than the rest,
+Upgrades with an attract badge, Scrapopedia above Settings because one is about the game and the
+other about the device, then the banked total and the build label.
+
+Three things followed from matching it:
+
+- **Chassis and yard stopped being destinations.** They are steps in starting a run, so New Game
+  leads into the picker and the picker leads into the yard, exactly as the web build's
+  title → chassis → yard → run does. Back walks one step, so the yard returns to the picker rather
+  than skipping to the title.
+- **The Trophies screen went.** It duplicated a section of the Scrapopedia — and checking that
+  turned up a real divergence: the web's Scrapopedia lists **every** achievement with a `?` for the
+  unearned, and the port listed only the earned ones. So a fresh save saw an empty screen where it
+  should have seen a wall of question marks. Fixed, with a test that every secret's row *and* its
+  page show the sealed form.
+- **The rows moved out of the drawing.** `MenuRows` has no MonoGame in it, so what a title screen
+  offers — a decision about the game — can be tested without a graphics device.
+
+**The head flows rather than sitting at fractions of the height**, which is what caught the bug in
+my first attempt: art and name were placed at fixed shares and overlapped by sixty pixels at 720p. A
+stacked column gives that for free; hand-placed fractions do not. The layout is now checked to fit
+at 640x360 through 1920x1080.
+
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker

@@ -141,7 +141,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private int _levelCursor;
     private int _shopCursor;
-    private int _trophyCursor;
     private int _settingsCursor;
     private PediaState _pedia = null!;
 
@@ -164,6 +163,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// to do what a single key has always done.
     /// </remarks>
     private int _titleCursor;
+
+    /// <summary>
+    /// Which attract word the Upgrades badge is showing, or -1 for none.
+    /// </summary>
+    /// <remarks>
+    /// ROLLED ONCE PER SHOWING rather than per frame, which is the whole point of it: a word that
+    /// changed sixty times a second is a flicker, and one that never changed is a sticker a
+    /// returning player's eye learns to skip. It is -1 when there is nothing the bank could buy,
+    /// because a permanent nudge stops meaning anything the first time it is seen not to be true.
+    /// </remarks>
+    private int _titleBadge = -1;
+
+    /// <summary>
+    /// Where BACK goes from the changelog.
+    /// </summary>
+    /// <remarks>
+    /// IT IS REACHABLE FROM TWO PLACES - the settings screen and the pause menu - and leaving it
+    /// has to return to whichever one opened it. A fixed destination would drop a player out of a
+    /// paused run onto the title screen, losing the run.
+    /// </remarks>
+    private Screen _returnTo = Screen.Settings;
+
 
     private int _pauseCursor;
 
@@ -287,6 +308,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         HeroUnlocks.Verify(HeroCatalog.All.Length);
 
         _save = Settings.Load();
+
+        // THE FIRST SHOWING IS A SHOWING TOO. The game opens on the title without arriving there,
+        // so without this a player with credits banked from a previous session sees no attract
+        // badge until they have been somewhere else and come back.
+        _titleBadge = _save.CanBuyAnything() ? System.Math.Abs(_titleRoll.Next()) : -1;
+
         if (_heroId < 0) _heroId = _save.LastHeroId;
         if (_levelId == "") _levelId = _save.LastLevelId;
 
@@ -305,7 +332,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         // THE TITLE, not a run. A game that starts mid-fight gives the player no moment to choose a
         // chassis, spend credits, or find out what they unlocked last time.
-        _screen = Screen.Title;
+        ToTitle();
         _surfaceDivisor = _save.DprCap == 1 ? 2 : 1;
         RebuildSurface();
         base.LoadContent();
@@ -416,7 +443,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.HeroSelect: UpdateHeroSelect(keys); break;
             case Screen.LevelSelect: UpdateLevelSelect(keys); break;
             case Screen.Workshop: UpdateWorkshop(keys); break;
-            case Screen.Trophies: UpdateTrophies(keys); break;
             case Screen.Settings: UpdateSettings(keys); break;
             case Screen.Pedia: UpdatePedia(keys); break;
             case Screen.Changes: UpdateChangelog(keys); break;
@@ -429,44 +455,43 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         base.Update(gameTime);
     }
 
-    private void UpdateTitle(KeyboardState keys)
+    /// <summary>
+    /// Arrive at the title, rolling the attract badge.
+    /// </summary>
+    /// <remarks>
+    /// EVERY ROUTE BACK TO THE TITLE GOES THROUGH HERE, so the badge is rolled once per showing
+    /// rather than once at startup - a run happens between one showing and the next, and the credits
+    /// it banked are exactly what decides whether there is anything to buy.
+    /// </remarks>
+    private void ToTitle()
     {
-        var rows = Screens.TitleRows(_save);
-        MoveCursor(ref _titleCursor, rows);
-        if (_menu.Confirm) { ChooseTitle(_titleCursor); return; }
-        if (_menu.Back) Exit();
-        if (Pressed(keys, Keys.C)) _screen = Screen.HeroSelect;
-        if (Pressed(keys, Keys.Y) && _save.UnlockedLevels.Count > 1) _screen = Screen.LevelSelect;
-        if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
-        if (Pressed(keys, Keys.T)) _screen = Screen.Trophies;
-        if (Pressed(keys, Keys.S)) _screen = Screen.Settings;
-        if (Pressed(keys, Keys.P))
-        {
-            // REBUILT ON EVERY OPEN. The player has usually finished a run between two visits, and
-            // a manual that needed the game restarted before it admitted what you found would be
-            // worse than no manual.
-            _pedia.Open();
-            _screen = Screen.Pedia;
-        }
+        _titleBadge = _save.CanBuyAnything() ? System.Math.Abs(_titleRoll.Next()) : -1;
+        _menu.Reset();
+        _screen = Screen.Title;
     }
 
     /// <summary>
-    /// Scrapopedia input. Back walks exactly one step, everywhere.
+    /// The attract word's own randomness, and the only randomness in the front end.
     /// </summary>
     /// <remarks>
-    /// The three panes are driven from one state object, so there is no case here that can leave
-    /// the screen showing two of them or none - the only thing this method decides is which way the
-    /// cursor moved.
+    /// ITS OWN GENERATOR, seeded off nothing the simulation can see. A word on a menu must never
+    /// come out of a stream a run reads, or which sticker the shop is wearing would change the
+    /// game.
     /// </remarks>
-    /// <summary>
-    /// Where BACK goes from the changelog.
-    /// </summary>
-    /// <remarks>
-    /// IT IS REACHABLE FROM TWO PLACES - the settings screen and the pause menu - and leaving it
-    /// has to return to whichever one opened it. A fixed destination would drop a player out of a
-    /// paused run onto the title screen, losing the run.
-    /// </remarks>
-    private Screen _returnTo = Screen.Settings;
+    private readonly System.Random _titleRoll = new();
+
+    private void UpdateTitle(KeyboardState keys)
+    {
+        var rows = MenuRows.Title();
+        MoveCursor(ref _titleCursor, rows);
+        if (_menu.Confirm) { ChooseTitle(_titleCursor); return; }
+        if (_menu.Back) Exit();
+
+        // The letter shortcuts, for hands already on a keyboard. Same four destinations.
+        if (Pressed(keys, Keys.W)) ChooseTitle(1);
+        if (Pressed(keys, Keys.P)) ChooseTitle(2);
+        if (Pressed(keys, Keys.S)) ChooseTitle(3);
+    }
 
     /// <summary>
     /// Walk a cursor over a row list, skipping what cannot be chosen.
@@ -476,7 +501,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// exists and has not been earned; letting the cursor rest on it would be a menu entry that
     /// does nothing when pressed, which is worse than either showing or hiding it.
     /// </remarks>
-    private void MoveCursor(ref int cursor, Screens.MenuRow[] rows)
+    private void MoveCursor(ref int cursor, MenuRows.MenuRow[] rows)
     {
         int step = _menu.Vertical;
         if (step == 0) return;
@@ -489,19 +514,26 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
     }
 
-    /// <summary>What the title menu's rows do. Paired with <see cref="Screens.TitleRows"/> by index.</summary>
+    /// <summary>
+    /// What the title menu's rows do. Paired with <see cref="Screens.TitleRows"/> by index.
+    /// </summary>
+    /// <remarks>
+    /// NEW GAME OPENS THE CHASSIS PICKER rather than starting a run outright. Picking a mech and a
+    /// yard are steps in starting a run, not places to visit - which is why they are no longer
+    /// entries of their own here, and why the picker leads into the yard rather than back.
+    /// </remarks>
     private void ChooseTitle(int row)
     {
         switch (row)
         {
-            case 0: StartRun(); break;
-            case 1: _screen = Screen.HeroSelect; break;
-            case 2: _screen = Screen.LevelSelect; break;
-            case 3: _screen = Screen.Workshop; break;
-            case 4: _screen = Screen.Trophies; break;
-            case 5: _screen = Screen.Settings; break;
-            case 6: _pedia.Open(); _screen = Screen.Pedia; break;
-            default: Exit(); break;
+            case 0:
+                _heroCursor = _save.LastHeroId;
+                _menu.Reset();
+                _screen = Screen.HeroSelect;
+                break;
+            case 1: _screen = Screen.Workshop; break;
+            case 2: _pedia.Open(); _screen = Screen.Pedia; break;
+            default: _screen = Screen.Settings; break;
         }
     }
 
@@ -517,7 +549,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             default:
                 // ABANDONING BANKS FIRST - see UpdatePaused.
                 Bank();
-                _screen = Screen.Title;
+                ToTitle();
                 break;
         }
     }
@@ -540,7 +572,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         if (_menu.Back)
         {
-            if (!_pedia.Back()) _screen = Screen.Title;
+            if (!_pedia.Back()) ToTitle();
             return;
         }
 
@@ -586,9 +618,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private void UpdateSettings(KeyboardState keys)
     {
-        if (_menu.Back) { _screen = Screen.Title; return; }
+        if (_menu.Back) { ToTitle(); return; }
 
-        int n = Screens.SettingRows.Length;
+        int n = MenuRows.Settings.Length;
         if (_menu.Vertical < 0) _settingsCursor = (_settingsCursor + n - 1) % n;
         if (_menu.Vertical > 0) _settingsCursor = (_settingsCursor + 1) % n;
 
@@ -629,26 +661,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _save.Save();
     }
 
-    private void UpdateTrophies(KeyboardState keys)
-    {
-        if (_menu.Back) _screen = Screen.Title;
-
-        int n = Meta.Achievements.All.Length;
-        if (_menu.Vertical < 0) _trophyCursor = (_trophyCursor + n - 1) % n;
-        if (_menu.Vertical > 0) _trophyCursor = (_trophyCursor + 1) % n;
-        if (_menu.PageUp)
-        {
-            _trophyCursor = System.Math.Max(0, _trophyCursor - Screens.TrophyRows);
-        }
-        if (_menu.PageDown)
-        {
-            _trophyCursor = System.Math.Min(n - 1, _trophyCursor + Screens.TrophyRows);
-        }
-    }
-
     private void UpdateHeroSelect(KeyboardState keys)
     {
-        if (_menu.Back) _screen = Screen.Title;
+        if (_menu.Back) ToTitle();
 
         const int cols = 8;
         int n = HeroUnlocks.Heroes.Length;
@@ -664,12 +679,21 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _heroId = _heroCursor;
         _save.LastHeroId = _heroId;
         _save.Save();
-        StartRun();
+
+        // ON TO THE YARD, which is the next step rather than a separate errand. The web build's
+        // flow is title, chassis, yard, run - and a picker that started the run itself would make
+        // the level a thing you could only change by going looking for it.
+        _levelCursor = System.Math.Max(0, System.Array.FindIndex(
+            HeroUnlocks.Levels, l => l.Id == _save.LastLevelId));
+        _menu.Reset();
+        _screen = Screen.LevelSelect;
     }
 
     private void UpdateLevelSelect(KeyboardState keys)
     {
-        if (_menu.Back) _screen = Screen.Title;
+        // BACK IS ONE STEP, so it returns to the picker this screen was reached from rather than
+        // skipping to the title - the same rule every other screen in the game follows.
+        if (_menu.Back) { _menu.Reset(); _screen = Screen.HeroSelect; return; }
 
         int n = HeroUnlocks.Levels.Length;
         if (_menu.Vertical < 0) _levelCursor = (_levelCursor + n - 1) % n;
@@ -681,12 +705,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _levelId = id;
         _save.LastLevelId = id;
         _save.Save();
-        _screen = Screen.Title;
+        StartRun();
     }
 
     private void UpdateWorkshop(KeyboardState keys)
     {
-        if (_menu.Back) { _save.Save(); _screen = Screen.Title; }
+        if (_menu.Back) { _save.Save(); ToTitle(); }
 
         int n = WorkshopText.All.Length;
         if (_menu.Vertical < 0) _shopCursor = (_shopCursor + n - 1) % n;
@@ -699,7 +723,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdatePaused(KeyboardState keys)
     {
-        var rows = Screens.PauseRows();
+        var rows = MenuRows.Pause();
         MoveCursor(ref _pauseCursor, rows);
         if (_menu.Confirm) { ChoosePause(_pauseCursor); return; }
 
@@ -724,7 +748,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // banking clock, but the last second of it may not be - and a player who walks away
             // from a run should not lose the kill that was still counting.
             Bank();
-            _screen = Screen.Title;
+            ToTitle();
         }
     }
 
@@ -1110,21 +1134,21 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         var (mw, mh) = Surface;
 
         if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop
-            or Screen.Trophies or Screen.Settings or Screen.Pedia or Screen.Changes)
+            or Screen.Settings or Screen.Pedia or Screen.Changes)
         {
             GraphicsDevice.Clear(RenderTables.Outside);
             _batch.Begin(samplerState: SamplerState.PointClamp);
             switch (_screen)
             {
-                case Screen.Title: Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, mw, mh); break;
+                case Screen.Title:
+                    Screens.DrawTitle(_batch, _sprites, _save, _titleCursor, _titleBadge, mw, mh);
+                    break;
                 case Screen.HeroSelect:
                     Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;
                 case Screen.LevelSelect:
                     Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh); break;
                 case Screen.Workshop:
                     Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh); break;
-                case Screen.Trophies:
-                    Screens.DrawTrophies(_batch, _sprites, _save, _trophyCursor, mw, mh); break;
                 case Screen.Settings:
                     Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh); break;
                 case Screen.Pedia:

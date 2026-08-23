@@ -61,9 +61,17 @@ public class PediaTests
     /// AN EMPTY SAVE OPENS ON TWO ENTRIES: Slate, and the Medium Laser it walks in holding.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The screen is a record rather than a catalogue, and this is what that means on the first
     /// run. A manual that opened full would be a briefing, which is the thing it was deliberately
     /// not made into.
+    /// </para>
+    /// <para>
+    /// TROPHIES AND RANKS ARE THE TWO EXCEPTIONS, and both on purpose. A rank explains what elite
+    /// and boss MEAN, which is a rule of the game rather than a discovery. And an achievement is a
+    /// goal as much as a record - a list of only the ones already earned would say nothing about
+    /// what is left - so every trophy is listed and an unearned one is SEALED rather than named.
+    /// </para>
     /// </remarks>
     [Fact]
     public void AnEmptySaveShowsOnlyWhatItWalksInHolding()
@@ -76,13 +84,87 @@ public class PediaTests
         {
             foreach (var row in Pedia.Index(s, save, levels))
             {
-                if (row.Kind != Pedia.Kind.Heading && row.Kind != Pedia.Kind.Rank) entries++;
+                if (row.Kind is Pedia.Kind.Heading or Pedia.Kind.Rank
+                    or Pedia.Kind.Achievement) continue;
+                entries++;
             }
         }
 
         Assert.True(entries <= 2,
             $"a fresh save opens the manual on {entries} entries - it should be a record of what " +
             "has been held, not a catalogue");
+    }
+
+    /// <summary>
+    /// AN UNEARNED TROPHY IS LISTED AND SEALED; AN EARNED ONE IS NAMED.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the one place the manual shows something the player has not got, because an
+    /// achievement is a goal as much as a record. What it must not do is give the goal away: a
+    /// SECRET reads as question marks with no description, since "Turned the Cannon into the Twin
+    /// Mount" tells you a Twin Mount exists, that a Cannon becomes one, and that there is something
+    /// to go looking for.
+    /// </para>
+    /// <para>
+    /// The port listed only earned trophies until this was checked against the web build, which
+    /// lists every one with a sealed marker on the unearned - so a fresh save saw an empty screen
+    /// where it should have seen a wall of question marks.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void UnearnedTrophiesAreListedButNotGivenAway()
+    {
+        var levels = Levels();
+        var save = Fresh();
+
+        var blank = Pedia.Index(Pedia.SectionAchievements, save, levels);
+        int listed = blank.FindAll(r => r.Kind == Pedia.Kind.Achievement).Count;
+        Assert.Equal(Meta.Achievements.All.Length, listed);
+
+        // Nothing earned, so the heading counts none of them.
+        var heading = blank.Find(r => r.Kind == Pedia.Kind.Heading);
+        Assert.Equal($"0 / {Meta.Achievements.All.Length}", heading.Sub);
+
+        // AND EVERY SECRET SHOWS ITS SEALED FORM, checked ROW BY ROW rather than by searching the
+        // whole screen for its words. Two achievements genuinely share a description - "Cleared
+        // the Mossy Mayhem" belongs to a secret chassis and to a visible level - so a global search
+        // reports the visible one's own text as a leak. What must hold is that THIS row and THIS
+        // page are sealed, which is the claim rather than a proxy for it.
+        int sealedRows = 0;
+        foreach (var row in blank)
+        {
+            if (row.Kind != Pedia.Kind.Achievement) continue;
+            var a = Meta.Achievements.All[row.Index];
+            if (!a.Secret) continue;
+
+            var (real, _) = Meta.Achievements.Display(a, true);
+            Assert.NotEqual(real.ToUpperInvariant(), row.Text);
+
+            var page = Pedia.Build(row, levels);
+            Assert.NotEqual(real.ToUpperInvariant(), page.Title);
+            foreach (string line in page.Body)
+            {
+                Assert.DoesNotContain(real, line, StringComparison.OrdinalIgnoreCase);
+            }
+            sealedRows++;
+        }
+
+        Assert.True(sealedRows > 0,
+                    "no secret achievement in the catalog - the sealing rule is untested");
+
+
+        // Earning one names it, and moves the count.
+        var held = Fresh();
+        var first = Meta.Achievements.All[0];
+        held.UnlockedAchievements.Add(first.Id);
+
+        var after = Pedia.Index(Pedia.SectionAchievements, held, levels);
+        Assert.Equal($"1 / {Meta.Achievements.All.Length}",
+                     after.Find(r => r.Kind == Pedia.Kind.Heading).Sub);
+        Assert.Contains(after, r => r.Kind == Pedia.Kind.Achievement
+                                    && r.Text == Meta.Achievements.Display(first, true)
+                                                     .Name.ToUpperInvariant());
     }
 
     /// <summary>

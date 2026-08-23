@@ -13,7 +13,6 @@ public enum Screen
     HeroSelect,
     LevelSelect,
     Workshop,
-    Trophies,
     Settings,
     Pedia,
     Changes,
@@ -57,80 +56,105 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
-    /// <summary>One row of a menu that a cursor can sit on.</summary>
-    /// <remarks>
-    /// THE KEY IS STILL SHOWN, because a keyboard player should not have to walk a cursor to do
-    /// what one letter has always done. The cursor is for the pad; the shortcut is for the hands
-    /// already on a keyboard, and neither is the "real" way in.
-    /// </remarks>
-    public readonly record struct MenuRow(string Key, string Label, bool Enabled);
-
-    /// <summary>
-    /// The title menu's rows.
-    /// </summary>
-    /// <remarks>
-    /// BUILT IN ONE PLACE AND READ BY BOTH the drawing and the input. The two used to be a list of
-    /// hints here and a list of key handlers over in the game loop, which is how a screen ends up
-    /// advertising a control nothing implements - as the settings screen did with its changelog
-    /// row for two commits.
-    /// </remarks>
-    public static MenuRow[] TitleRows(Settings save) => new[]
-    {
-        new MenuRow("[ENTER]", "NEW RUN", true),
-        new MenuRow("[C]", "CHASSIS", true),
-        new MenuRow("[Y]", "YARD", save.UnlockedLevels.Count > 1),
-        new MenuRow("[W]", "WORKSHOP", true),
-        new MenuRow("[T]", "TROPHIES", true),
-        new MenuRow("[S]", "SETTINGS", true),
-        new MenuRow("[P]", "SCRAPOPEDIA", true),
-        new MenuRow("[ESC]", "QUIT", true),
-    };
-
-    /// <summary>The pause menu's rows. See <see cref="TitleRows"/>.</summary>
-    public static MenuRow[] PauseRows() => new[]
-    {
-        new MenuRow("[ESC]", "RESUME", true),
-        new MenuRow("[F5]", "NEW RUN", true),
-        new MenuRow("[A]", "AUTO LEVEL", true),
-        new MenuRow("[C]", "CHANGELOG", true),
-        new MenuRow("[BACKSPACE]", "ABANDON", true),
-    };
-
     public static void DrawTitle(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                 int vw, int vh)
+                                 int badge, int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
 
-        Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, (int)(vh * 0.22), scale * 3, Accent);
-        Font.DrawCentred(batch, sprites.Blank, $"{save.Credits} CREDITS", vw / 2,
-                         (int)(vh * 0.22) + 34 * scale, scale, Dim);
+        // THE HEAD FLOWS, it is not placed at fractions. The first version put the art and the name
+        // at fixed shares of the height and they overlapped by sixty pixels at 720p - which is what
+        // a stacked column gives you for free and hand-placed fractions do not.
+        //
+        // SIZED OFF THE HEIGHT rather than the width, because height is the constrained axis in a
+        // landscape window: the web build is portrait-first and takes 46% of the WIDTH, which on a
+        // wide monitor would be a mech filling half the screen.
+        int y = (int)(vh * 0.05);
 
-        int y = (int)(vh * 0.46);
-        Menu(batch, sprites, vw, ref y, scale, TitleRows(save), cursor);
+        var art = sprites.Get("mech_slate");
+        if (art is not null)
+        {
+            int h = (int)(vh * 0.20);
+            int w = h * art.Width / art.Height;
+            // A CHASSIS RATHER THAN A LOGO, because there is no logo and a mech is what the game is
+            // about. Dimmed: it is behind the name rather than beside it.
+            batch.Draw(art, new Rectangle((vw - w) / 2, y, w, h), Color.White * 0.55f);
+            y += h + 8 * scale;
+        }
 
-        // WHICH BUILD THIS IS, small and dim on the title screen and nowhere else - it is a serial
-        // number, not a feature, and the place it is wanted is when somebody is reporting a bug
-        // rather than when they are starting a run.
+        Font.DrawCentred(batch, sprites.Blank, "SCRAPYARD", vw / 2, y, scale * 4, Ink);
+        y += Font.GlyphH * scale * 4 + 6 * scale;
+
+        // SPACED OUT BY HAND. The bitmap font has one tracking value, so the wide letter-spacing
+        // the wordmark wants is spaces between the glyphs - which is what it looks like anyway.
+        Font.DrawCentred(batch, sprites.Blank, "S U R V I V O R S", vw / 2, y, scale * 2, Accent);
+        y += Font.GlyphH * scale * 2 + 10 * scale;
+
+        // THE WIN CONDITION, AND IT IS THE REAL ONE. Outlasting the clock is not winning: a run
+        // ends in victory when the timer has passed AND no Scraplord is left standing, so the
+        // minutes describe THE HORDE rather than the run. The number is derived rather than spelled
+        // out, because a word in prose is a thing that cannot be checked.
+        int minutes = (int)System.Math.Round(Constants.RunLengthSec / 60);
+        Font.DrawCentred(batch, sprites.Blank, $"HEAVY MECHS. {minutes} MINUTES OF HORDE.",
+                         vw / 2, y, scale, Dim);
+        y += Font.LineHeight * scale;
+        Font.DrawCentred(batch, sprites.Blank, "EVERY SCRAPLORD DOWN.", vw / 2, y, scale, Dim);
+        y += Font.LineHeight * scale + 14 * scale;
+
+        var rows = MenuRows.Title();
+        int listW = System.Math.Min(vw - 40, 340 * scale / 2);
+        int x0 = (vw - listW) / 2;
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            // NEW GAME IS TALLER AND BRIGHTER, because the thumb goes to the biggest thing and that
+            // should be the one that starts a run.
+            bool primary = i == 0;
+            int rowH = (primary ? 22 : 18) * scale;
+            bool on = i == cursor;
+
+            Frame(batch, sprites, x0, y, listW, rowH);
+            if (on)
+            {
+                batch.Draw(sprites.Blank, new Rectangle(x0 + 2, y + 2, listW - 4, rowH - 4), Panel);
+            }
+
+            int textScale = primary ? scale * 2 : scale;
+            Font.DrawCentred(batch, sprites.Blank, rows[i].Label, vw / 2,
+                             y + (rowH - Font.LineHeight * textScale) / 2, textScale,
+                             on ? Accent : primary ? Ink : Dim);
+
+            // THE ATTRACT BADGE, and only when there is something to buy: a permanent sticker stops
+            // meaning anything the first time it is seen not to be true.
+            if (i == 1 && badge >= 0)
+            {
+                string word = MenuRows.AttractStrings[badge % MenuRows.AttractStrings.Length];
+                int bw = Font.Measure(word, scale) + 6 * scale;
+                batch.Draw(sprites.Blank,
+                           new Rectangle(x0 + listW - bw / 2, y - 3 * scale, bw,
+                                         Font.LineHeight * scale + 4 * scale), Accent);
+                Font.Draw(batch, sprites.Blank, word, x0 + listW - bw / 2 + 3 * scale,
+                          y - scale, scale, Panel);
+            }
+
+            Font.Draw(batch, sprites.Blank, rows[i].Key, x0 + 4 * scale,
+                      y + (rowH - Font.LineHeight * scale) / 2, scale, Locked);
+            y += rowH + 6 * scale;
+        }
+
+        if (save.Credits > 0)
+        {
+            Font.DrawCentred(batch, sprites.Blank, $"{save.Credits} CREDITS BANKED", vw / 2,
+                             y + 4 * scale, scale, Dim);
+        }
+
+        // WHICH BUILD THIS IS, and it is here because this is the screen a playtester is on when
+        // they need it: the answer to "have you got the fix yet" has to be readable without
+        // starting a run. Small and dim - it is a serial number, not a feature.
         Font.DrawCentred(batch, sprites.Blank, BuildInfo.Label.ToUpperInvariant(), vw / 2,
                          vh - 14 * scale, scale, Locked);
-
-        var hero = HeroUnlocks.Heroes[System.Math.Clamp(save.LastHeroId, 0, HeroUnlocks.Heroes.Length - 1)];
-        Font.DrawCentred(batch, sprites.Blank,
-                         $"{hero.Name.ToUpperInvariant()}  /  {NameOfLevel(save.LastLevelId).ToUpperInvariant()}",
-                         vw / 2, vh - 30 * scale, scale, Dim);
     }
 
-    // -----------------------------------------------------------------------------------------
-
-    /// <summary>
-    /// The roster. Owned chassis show their sprite and name; locked ones show a silhouette.
-    /// </summary>
-    /// <remarks>
-    /// A LOCKED CHASSIS IS A SILHOUETTE AND A QUESTION MARK, and no more than that. Stating the
-    /// criteria here would turn the roster into a checklist and delete the one thing an unlock is
-    /// for, which is being surprised by it.
-    /// </remarks>
     public static void DrawHeroSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                       int vw, int vh)
     {
@@ -283,112 +307,9 @@ public static class Screens
 
     // -----------------------------------------------------------------------------------------
 
-    /// <summary>Rows the trophy list shows at once. The rest scrolls.</summary>
-    public const int TrophyRows = 9;
-
-    /// <summary>
-    /// The trophy case.
-    /// </summary>
-    /// <remarks>
-    /// A SECRET SHOWS NOTHING BUT ITS SHAPE. Its icon is drawn as a silhouette, its name is question
-    /// marks and its description is blank - because "Turned a Medium Laser into the Chain Laser" is
-    /// a sentence that tells you a Chain Laser exists, that a Medium Laser becomes one, and that
-    /// there is something to go looking for. That was taken out of the manual on purpose, and a
-    /// trophy list is exactly the back door it would come back in through.
-    ///
-    /// AND THE DESCRIPTION IS IN THE PAST TENSE even when shown, because it is a record of what
-    /// happened rather than an instruction. There is no imperative form of it anywhere in the port.
-    /// </remarks>
-    public static void DrawTrophies(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                    int vw, int vh)
-    {
-        Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
-
-        var (got, total) = Meta.Achievements.Tally(save);
-        Font.DrawCentred(batch, sprites.Blank, "TROPHIES", vw / 2, 10 * scale, scale * 2, Accent);
-        Font.DrawCentred(batch, sprites.Blank, $"{got} OF {total}", vw / 2, 32 * scale, scale, Dim);
-
-        var all = Meta.Achievements.All;
-        int rowH = 26 * scale;
-        int listW = System.Math.Min(vw - 40, 300 * scale);
-        int x0 = (vw - listW) / 2;
-        int top = 50 * scale;
-
-        // The window follows the cursor rather than paging, so moving one row never jumps the view.
-        int first = System.Math.Clamp(cursor - TrophyRows / 2, 0,
-                                      System.Math.Max(0, all.Length - TrophyRows));
-
-        for (int r = 0; r < TrophyRows && first + r < all.Length; r++)
-        {
-            int i = first + r;
-            var a = all[i];
-            bool earned = save.UnlockedAchievements.Contains(a.Id);
-            var (name, desc) = Meta.Achievements.Display(a, earned);
-            int y = top + r * rowH;
-
-            if (i == cursor)
-            {
-                batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 2, listW + 8, rowH - 2), Panel);
-            }
-
-            int box = 20 * scale;
-            var tex = sprites.Get(a.Icon);
-            if (tex is not null)
-            {
-                batch.Draw(tex, new Rectangle(x0, y, box, box),
-                           earned ? Color.White : new Color(0, 0, 0, 190));
-            }
-
-            Font.Draw(batch, sprites.Blank, name.ToUpperInvariant(), x0 + box + 6 * scale, y, scale,
-                      earned ? Ink : Locked);
-            if (desc != "")
-            {
-                Font.Draw(batch, sprites.Blank, desc, x0 + box + 6 * scale,
-                          y + Font.LineHeight * scale, scale, Dim);
-            }
-        }
-
-        if (all.Length > TrophyRows)
-        {
-            Font.DrawCentred(batch, sprites.Blank, $"{cursor + 1} / {all.Length}", vw / 2,
-                             top + TrophyRows * rowH + 4 * scale, scale, Dim);
-        }
-
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ESC] BACK", vw / 2,
-                         vh - 16 * scale, scale, Dim);
-    }
-
     // -----------------------------------------------------------------------------------------
 
-    /// <summary>The settings, in the order they are shown. The cursor is an index into this.</summary>
-    /// <remarks>
-    /// A LIST RATHER THAN A SWITCH ON THE CURSOR, because the alternative is the same three cases
-    /// written out in the drawing code and again in the input code, which is how a row ends up
-    /// drawing one setting and toggling another.
-    /// </remarks>
-    public static readonly string[] SettingRows = { "PERFORMANCE MODE", "ANIMATIONS", "DEBUG READOUT" };
 
-    /// <summary>
-    /// Settings.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// THE PREFERENCES THAT HAD NOWHERE TO BE SET. Two of these were reachable only by editing a
-    /// literal, which meant the one setting that can rescue a struggling machine - the render scale
-    /// - was in practice unavailable to the person on the struggling machine.
-    /// </para>
-    /// <para>
-    /// THEY SAVE ON CHANGE, NOT ON BACK. There is no confirm step here and no way to cancel, so
-    /// leaving by any route - the key, closing the window, the process being killed - has to keep
-    /// what was just set.
-    /// </para>
-    /// <para>
-    /// AND PERFORMANCE MODE SAYS WHEN IT LANDS. It takes effect on the next launch, and the row
-    /// says so rather than pretending otherwise: a toggle that quietly does nothing until later is
-    /// worse than one that admits it.
-    /// </para>
-    /// </remarks>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                     int vw, int vh)
     {
@@ -402,14 +323,14 @@ public static class Screens
         int y = 48 * scale;
         int rowH = 34 * scale;
 
-        for (int i = 0; i < SettingRows.Length; i++)
+        for (int i = 0; i < MenuRows.Settings.Length; i++)
         {
             if (i == cursor)
             {
                 batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 3, listW + 8, rowH - 4), Panel);
             }
 
-            Font.Draw(batch, sprites.Blank, SettingRows[i], x0, y, scale,
+            Font.Draw(batch, sprites.Blank, MenuRows.Settings[i], x0, y, scale,
                       i == cursor ? Ink : Dim);
 
             string value = i switch
@@ -437,8 +358,6 @@ public static class Screens
         Font.DrawCentred(batch, sprites.Blank, "[ARROWS] CHANGE   [C] CHANGELOG   [ESC] BACK",
                          vw / 2, vh - 16 * scale, scale, Dim);
     }
-
-    // -----------------------------------------------------------------------------------------
 
     /// <summary>Rows the index shows at once, and lines a page shows at once.</summary>
     public const int PediaRows = 11;
@@ -695,7 +614,7 @@ public static class Screens
                          scale, Dim);
 
         y += 30 * scale;
-        Menu(batch, sprites, vw, ref y, scale, PauseRows(), cursor);
+        Menu(batch, sprites, vw, ref y, scale, MenuRows.Pause(), cursor);
 
         // WHAT IS BEING CARRIED, which is the other reason a player pauses. The card text says what
         // a weapon does; this says what is actually on the mech and at what tier, which is the
@@ -758,7 +677,7 @@ public static class Screens
     /// steps over it so it can never be chosen.
     /// </remarks>
     private static void Menu(SpriteBatch batch, Sprites sprites, int vw, ref int y, int scale,
-                             MenuRow[] rows, int cursor)
+                             MenuRows.MenuRow[] rows, int cursor)
     {
         for (int i = 0; i < rows.Length; i++)
         {
