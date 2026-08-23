@@ -22,42 +22,87 @@ namespace Scrapyard.Game;
 /// a different thing happening rather than a bigger number.
 /// </para>
 /// </remarks>
-public readonly record struct CardText(string Id, string Name, string Description)
+/// <param name="Id">The upgrade's id on disk.</param>
+/// <param name="Name">What the card is called.</param>
+/// <param name="Description">What the thing IS - shown when a card would unlock it.</param>
+/// <param name="Weapon">
+/// Ordnance rather than a system. It decides which of two colours the card wears, and a passive
+/// announced as a weapon is the kind of small lie that teaches a player the card text cannot be
+/// trusted.
+/// </param>
+/// <param name="Tiers">
+/// What each tier DOES, indexed from zero for tier 1. Authored beside the deltas that implement
+/// them, so a balance pass cannot move a number without moving the sentence.
+/// </param>
+public readonly record struct CardText(
+    string Id, string Name, string Description, bool Weapon, string[] Tiers)
 {
     /// <summary>The upgrade card icons on disk are <c>icon_&lt;id&gt;.png</c>.</summary>
     public string IconKey => "icon_" + Id;
+
+    /// <summary>What tier <paramref name="tier"/> does, or the description if it says nothing.</summary>
+    /// <remarks>
+    /// FALLS BACK RATHER THAN THROWS. This draws whatever catalog the simulation was built with,
+    /// and a card whose tier list is short has to degrade to its description - inside a phase
+    /// transition is the worst possible place to discover an off-by-one.
+    /// </remarks>
+    public string TierAt(int tier) =>
+        tier >= 1 && tier <= Tiers.Length ? Tiers[tier - 1] : Description;
 }
 
 public static class CardTexts
 {
     public static readonly CardText[] All =
     {
-        new("w-cannon", "Cannon", "Lobs a heavy shell at the highest-HP enemy in range. One target, hit hard."),
-        new("w-missile-short", "Short Missiles", "Two homing missiles fired where you last moved. Slow to rearm, hits hard."),
-        new("w-missile-long", "Long Missiles", "Three missiles on a long fuse, fired where you last moved. Weak homing, wide reach."),
-        new("w-machine-gun", "Machine Gun", "Two rounds at a time into the weakest enemy, very close in. A deep belt, then a long reload."),
-        new("w-flak-cannon", "Flak Cannon", "Three shells a burst into a wide, random spray at the nearest enemy - far-reaching and wildly inaccurate. A deep magazine, then a long reload."),
-        new("w-artillery", "Heavy Artillery", "Two shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast."),
-        new("w-drone", "Drones", "Builds a drone that flies escort, hunts anything that comes close, and shoots it with a machine gun until its magazine is dry. Then it detonates."),
-        new("w-phase-cannon", "Phase Cannon", "One plasma bolt that flies through everything - the horde, the wrecks, the walls - and bursts on the thickest knot of enemies it can find."),
-        new("w-laser-short", "Short Laser", "Green beam. Burns whatever stands between you and the weakest enemy."),
-        new("w-laser-medium", "Medium Laser", "Blue beam. Moderate damage at middling range, and it runs hot."),
-        new("w-laser-long", "Long Laser", "Red beam. Heavy damage at long range, in short bursts."),
-        new("p-range", "Targeting Optics", "Every weapon reaches further."),
-        new("p-damage", "Ordnance", "Every weapon hits harder. A hotter-running laser burns through its heat faster."),
-        new("p-rate", "Feed Systems", "Every weapon fires more often - shorter cooldowns, faster heat dispersion, a quicker reload."),
-        new("p-speed", "Servo Drive", "The chassis moves faster."),
-        new("p-armour", "Ablative Plate", "Takes something off every hit you take - never all of it, and never nothing."),
-        new("p-repair", "Field Repair", "A repair clock. Every few seconds it puts a little of your hull back - the only thing in the yard that mends you without being picked up."),
-        new("p-shield", "Energy Shield", "A blue rim absorbs one hit outright and burns whatever broke it. A moment of immunity with it, and then it comes back."),
-        new("p-radiator", "Radiator Bank", "Every beam runs a bigger heat buffer and sheds it faster between bursts."),
-        new("p-blast", "Shaped Charges", "Every blast reaches wider."),
-        new("p-ammo", "Ammo Drums", "Every magazine on the chassis carries more rounds."),
+        new("w-cannon", "Cannon", "Lobs a heavy shell at the highest-HP enemy in range. One target, hit hard.", true,
+            new[] { "Unlock.", "Reaches further.", "Lays and fires quicker.", "A heavier shell.", "Reaches further again.", "Lays and fires quicker again.", "Shells punch through one extra enemy." }),
+        new("w-missile-short", "Short Missiles", "Two homing missiles fired where you last moved. Slow to rearm, hits hard.", true,
+            new[] { "Unlock.", "Rearms sooner.", "Homes more tightly.", "Heavier warheads.", "Rearms sooner again.", "Homes more tightly again.", "A third missile." }),
+        new("w-missile-long", "Long Missiles", "Three missiles on a long fuse, fired where you last moved. Weak homing, wide reach.", true,
+            new[] { "Unlock.", "Rearms sooner.", "Homes more tightly.", "Heavier warheads.", "A fourth missile.", "A longer fuse, so they fly further before they fall.", "A fifth missile." }),
+        new("w-machine-gun", "Machine Gun", "Two rounds at a time into the weakest enemy, very close in. A deep belt, then a long reload.", true,
+            new[] { "Unlock.", "A harder-hitting round.", "Spins faster.", "A deeper magazine.", "Reaches further.", "A much harder-hitting round.", "Reloads much faster." }),
+        new("w-flak-cannon", "Flak Cannon", "Three shells a burst into a wide, random spray at the nearest enemy - far-reaching and wildly inaccurate. A deep magazine, then a long reload.", true,
+            new[] { "Unlock.", "A harder-hitting shell.", "Fires faster.", "A deeper magazine.", "Reaches further.", "A much harder-hitting shell.", "Reloads much faster." }),
+        new("w-artillery", "Heavy Artillery", "Two shells fall on random ground nearby after a short fuse. Aims at nothing. Big blast.", true,
+            new[] { "Unlock.", "A wider blast.", "Shells fall more often.", "Heavier shells.", "A wider blast again.", "Shells fall more often again.", "A third shell." }),
+        new("w-drone", "Drones", "Builds a drone that flies escort, hunts anything that comes close, and shoots it with a machine gun until its magazine is dry. Then it detonates.", true,
+            new[] { "Unlock.", "Builds faster.", "A second drone.", "Builds faster again.", "A third drone.", "Builds faster again.", "A fourth drone, and faster still." }),
+        new("w-phase-cannon", "Phase Cannon", "One plasma bolt that flies through everything - the horde, the wrecks, the walls - and bursts on the thickest knot of enemies it can find.", true,
+            new[] { "Unlock.", "A heavier bolt.", "A wider burst.", "Rearms sooner.", "A heavier bolt again.", "A wider burst again.", "Rearms sooner still." }),
+        new("w-laser-short", "Short Laser", "Green beam. Burns whatever stands between you and the weakest enemy.", true,
+            new[] { "Unlock.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner." }),
+        new("w-laser-medium", "Medium Laser", "Blue beam. Moderate damage at middling range, and it runs hot.", true,
+            new[] { "Unlock.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner." }),
+        new("w-laser-long", "Long Laser", "Red beam. Heavy damage at long range, in short bursts.", true,
+            new[] { "Unlock.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner.", "Burns hotter - and heats itself up faster doing it.", "A bigger heat sink: longer bursts before it cuts out.", "Sheds heat faster, so it comes back sooner." }),
+        new("p-range", "Targeting Optics", "Every weapon reaches further.", false,
+            new[] { "Every weapon reaches a little further.", "Every weapon reaches a little further.", "Every weapon reaches further.", "Every weapon reaches further.", "Every weapon reaches further.", "Every weapon reaches much further.", "Every weapon reaches much further." }),
+        new("p-damage", "Ordnance", "Every weapon hits harder. A hotter-running laser burns through its heat faster.", false,
+            new[] { "Every weapon hits a little harder.", "Every weapon hits a little harder.", "Every weapon hits harder.", "Every weapon hits harder.", "Every weapon hits harder.", "Every weapon hits much harder.", "Every weapon hits much harder." }),
+        new("p-rate", "Feed Systems", "Every weapon fires more often - shorter cooldowns, faster heat dispersion, a quicker reload.", false,
+            new[] { "Everything fires a little more often, and reloads a little sooner.", "Everything fires a little more often, and reloads a little sooner.", "Everything fires more often, and reloads sooner.", "Everything fires more often, and reloads sooner.", "Everything fires more often, and reloads sooner.", "Everything fires much more often, and reloads much sooner.", "Everything fires much more often, and reloads much sooner." }),
+        new("p-speed", "Servo Drive", "The chassis moves faster.", false,
+            new[] { "The chassis moves a little faster.", "The chassis moves a little faster.", "The chassis moves faster.", "The chassis moves faster.", "The chassis moves faster.", "The chassis moves much faster.", "The chassis moves much faster." }),
+        new("p-armour", "Ablative Plate", "Takes something off every hit you take - never all of it, and never nothing.", false,
+            new[] { "A little more plating.", "A little more plating.", "More plating.", "More plating.", "Much more plating.", "Much more plating.", "Much more plating." }),
+        new("p-repair", "Field Repair", "A repair clock. Every few seconds it puts a little of your hull back - the only thing in the yard that mends you without being picked up.", false,
+            new[] { "Unlock.", "Repairs more each time.", "Repairs more each time.", "Repairs sooner.", "Repairs more each time.", "Repairs more each time.", "Repairs sooner again." }),
+        new("p-shield", "Energy Shield", "A blue rim absorbs one hit outright and burns whatever broke it. A moment of immunity with it, and then it comes back.", false,
+            new[] { "Unlock.", "Comes back sooner.", "A longer moment of immunity when it breaks.", "Comes back sooner again.", "A longer moment still.", "Comes back much sooner.", "A second rim. Each recharges in turn." }),
+        new("p-radiator", "Radiator Bank", "Every beam runs a bigger heat buffer and sheds it faster between bursts.", false,
+            new[] { "Sheds heat a little faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a much bigger heat buffer.", "Sheds heat much faster between bursts." }),
+        new("p-blast", "Shaped Charges", "Every blast reaches wider.", false,
+            new[] { "Every blast reaches a little wider.", "Every blast reaches a little wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches much wider.", "Every blast reaches much wider." }),
+        new("p-ammo", "Ammo Drums", "Every magazine on the chassis carries more rounds.", false,
+            new[] { "A little more in every drum.", "A little more in every drum.", "More in every drum.", "More in every drum.", "More in every drum.", "Much more in every drum.", "Much more in every drum." }),
     };
 
     /// <summary>The text for a catalog index, or a placeholder if the table has gone stale.</summary>
     public static CardText At(int index) =>
-        index >= 0 && index < All.Length ? All[index] : new CardText("", "?", "");
+        index >= 0 && index < All.Length
+            ? All[index]
+            : new CardText("", "?", "", false, System.Array.Empty<string>());
 
     /// <summary>
     /// Throws if this table and the ported catalog have drifted apart.

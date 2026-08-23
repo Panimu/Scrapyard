@@ -282,7 +282,7 @@ public static class Screens
             var r = new Rectangle(x0 + (i % cols) * (tileW + gap), ry, tileW, rowH[row]);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
-            Card(batch, sprites, r, radius,
+            CardFace(batch, sprites, r, radius,
                  i == cursor ? Palette.Button : Palette.Panel, Palette.Edge, thick);
 
             var tex = owned ? sprites.Get(h.Art) : sprites.Silhouette(h.Art);
@@ -378,7 +378,7 @@ public static class Screens
             var r = new Rectangle(x0, y, w, h);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
-            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+            CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
             // The art sits in a well rather than on the card - a darker box the picture is inside,
             // which is what `.level__art { background: #0a0d12 }` is for.
@@ -414,7 +414,7 @@ public static class Screens
                 int fw = Font.Measure(flag, small) + 5 * scale;
                 var box = new Rectangle(r.Right - pad - fw, r.Y + pad,
                                         fw, Font.GlyphH * small + 4 * scale);
-                Card(batch, sprites, box, 3 * scale, Palette.Sunken, Palette.Edge, thick);
+                CardFace(batch, sprites, box, 3 * scale, Palette.Sunken, Palette.Edge, thick);
                 Font.DrawCentred(batch, sprites.Blank, flag, box.Center.X, box.Y + 2 * scale, small,
                                  Palette.Faint);
             }
@@ -518,7 +518,7 @@ public static class Screens
             var r = new Rectangle(x0, y, w, heights[i]);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
-            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+            CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
             // MAXED READS AS DONE RATHER THAN AS DISABLED: the row keeps its text and loses its
             // colour, which is what `.upgrades__row--full` does by swapping the stripe to faint ink.
@@ -615,7 +615,7 @@ public static class Screens
                                   bool full, bool afford, bool cursor, int scale, int small)
     {
         bool lit = afford && cursor;
-        Card(batch, sprites, r, 6 * scale, lit ? Palette.Accent : Palette.Button,
+        CardFace(batch, sprites, r, 6 * scale, lit ? Palette.Accent : Palette.Button,
              lit ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
 
         if (full)
@@ -653,8 +653,19 @@ public static class Screens
     /// a shortcoming of the original rather than the original.
     /// </para>
     /// </remarks>
-    private static int Column(int vw, int scale) =>
+    public static int Column(int vw, int scale) =>
         System.Math.Min(vw - 24 * scale, 190 * scale);
+
+    /// <summary>The size every menu's body text is set at, for a window this tall.</summary>
+    /// <remarks>
+    /// ASKED FOR RATHER THAN RESTATED. A caller that needs to know how wide the text will wrap - the
+    /// changelog does, because it wraps before it draws - was writing the formula out again, and the
+    /// two copies drifted the moment one screen changed size.
+    /// </remarks>
+    public static int MenuScale(int vh) => System.Math.Max(1, vh / 300);
+
+    /// <summary>The smaller of the two sizes: notes, blurbs, eyebrows, prose.</summary>
+    public static int SmallScale(int vh) => System.Math.Max(1, MenuScale(vh) - 1);
 
     /// <summary>Two buttons across the bottom of a menu, the right one primary.</summary>
     /// <returns>The y they start at, so a list above can stop there.</returns>
@@ -689,7 +700,7 @@ public static class Screens
                                      string key, int scale, bool primary)
     {
         int radius = 7 * scale;
-        Card(batch, sprites, r, radius, primary ? Palette.Accent : Palette.Button,
+        CardFace(batch, sprites, r, radius, primary ? Palette.Accent : Palette.Button,
              primary ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
 
         int small = System.Math.Max(1, scale - 1);
@@ -743,7 +754,7 @@ public static class Screens
 
             var r = new Rectangle(x0, y, w, rowH);
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
-            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+            CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
             Font.Draw(batch, sprites.Blank, MenuRows.Settings[i], r.X + pad, r.Y + pad, scale,
                       Palette.Ink);
@@ -842,7 +853,7 @@ public static class Screens
                 bool on = i == st.SectionCursor;
 
                 if (on) Cursor(batch, sprites, r, radius, thick * 2);
-                Card(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
+                CardFace(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
                      thick);
 
                 Font.Draw(batch, sprites.Blank, Pedia.Sections[i].Label, r.X + 7 * scale,
@@ -919,7 +930,7 @@ public static class Screens
                 bool sealedRow = row.Kind == Pedia.Kind.Achievement && row.Sub != "";
 
                 if (on) Cursor(batch, sprites, r, radius, thick * 2);
-                Card(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
+                CardFace(batch, sprites, r, radius, on ? Palette.Button : Palette.Panel, Palette.Edge,
                      thick);
 
                 // WHICH POOL, in the same colours the level-up cards and the chest reels use. The
@@ -1161,69 +1172,127 @@ public static class Screens
     public static void DrawPause(SpriteBatch batch, Sprites sprites, World w, int cursor,
                                  int vw, int vh)
     {
-        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 200));
-        int scale = System.Math.Max(1, vh / 340);
+        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), Palette.Scrim);
+        int scale = MenuScale(vh);
+        int small = SmallScale(vh);
+        int width = Column(vw, scale);
+        int x0 = (vw - width) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "PAUSED", vw / 2, (int)(vh * 0.30), scale * 3, Accent);
+        var rows = MenuRows.Pause();
+        int rowH = 27 * scale;
+        int gap = 5 * scale;
+        int radius = 7 * scale;
+        int thick = System.Math.Max(1, scale / 2);
+
+        // MEASURED AND CENTRED, the same as the title. What is carried sits UNDER the buttons rather
+        // than beside them, because on a phone there is only one column and the run is the thing
+        // being resumed - the loadout is what you paused to look at, and the button is how you leave.
+        var loadout = Loadout(w);
+        int slotH = 13 * scale + Font.GlyphH * small;
+        int loadH = 0;
+        foreach (var (_, slots) in loadout)
+        {
+            loadH += Font.LineHeight * small + 4 * scale
+                   + System.Math.Max(1, slots.Count) * (slotH + 2 * scale) + 8 * scale;
+        }
+
+        int titleH = Font.GlyphH * scale * 2 + 6 * scale;
+        int statH = Font.LineHeight * small + 12 * scale;
+        int menuH = rows.Length * (rowH + gap);
+        int noteH = Font.LineHeight * small + 12 * scale;
+        int y = System.Math.Max(10 * scale, (vh - (titleH + statH + menuH + loadH + noteH)) / 2);
+
+        Font.DrawCentred(batch, sprites.Blank, Spaced("PAUSED"), vw / 2, y, scale * 2, Palette.Ink);
+        y += titleH;
 
         int mins = (int)(w.RunSec / 60);
         int secs = (int)(w.RunSec % 60);
-        int y = (int)(vh * 0.30) + 40 * scale;
         Font.DrawCentred(batch, sprites.Blank,
-                         $"{mins}:{secs:00}   LV {w.Player.Level}   x{w.Stats.Kills:0}", vw / 2, y,
-                         scale, Dim);
+                         $"{mins}:{secs:00}   LV {w.Player.Level}   {w.Stats.Kills:0} KILLS",
+                         vw / 2, y, small, Palette.Faint);
+        y += statH;
 
-        y += 30 * scale;
-        Menu(batch, sprites, vw, ref y, scale, MenuRows.Pause(), cursor);
+        for (int i = 0; i < rows.Length; i++)
+        {
+            Button(batch, sprites, new Rectangle(x0, y, width, rowH), rows[i].Label, scale, i == 0,
+                   i == cursor);
+            y += rowH + gap;
+        }
 
         // WHAT IS BEING CARRIED, which is the other reason a player pauses. The card text says what
         // a weapon does; this says what is actually on the mech and at what tier, which is the
         // question the level-up screen keeps asking and nothing else answers.
-        //
-        // NAMED AT THEIR CURRENT TIER, so an ascended gun reads as what it became.
-        y += 18 * scale;
-        for (int kind = 0; kind < 2; kind++)
+        y += 4 * scale;
+        foreach (var (title, slots) in loadout)
         {
-            var held = new List<string>();
-            for (int i = 0; i < w.UpgradeDefs.Length && i < CardTexts.All.Length; i++)
-            {
-                int stacks = w.LevelUp.Stacks[i];
-                if (stacks <= 0) continue;
-                bool weapon = w.UpgradeDefs[i].Kind == UpgradeKind.Weapon;
-                if (weapon != (kind == 0)) continue;
+            Font.Draw(batch, sprites.Blank, Spaced(title), x0 + 2 * scale, y, small, Palette.Faint);
+            y += Font.LineHeight * small + 4 * scale;
 
-                var card = CardTexts.At(i);
-                string name = stacks >= UpgradeCatalog.WeaponAscendedTier
-                              && PediaText.AscensionOf(card.Id) is { } asc
-                    ? asc.Name
-                    : card.Name;
-                held.Add($"{name.ToUpperInvariant()} {stacks}");
+            // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a panel
+            // that failed to load; a hollow slot with "EMPTY" in it reads as a mount you have not
+            // filled - which is the thing the player is actually deciding about.
+            if (slots.Count == 0)
+            {
+                var r = new Rectangle(x0, y, width, slotH);
+                RoundOutline(batch, sprites, r, 4 * scale, thick, Palette.Button);
+                Font.Draw(batch, sprites.Blank, "EMPTY", r.X + 6 * scale,
+                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Faint);
+                y += slotH + 2 * scale;
             }
 
-            Font.DrawCentred(batch, sprites.Blank, kind == 0 ? "WEAPONS" : "PASSIVES", vw / 2, y,
-                             scale, Accent);
-            y += Font.LineHeight * scale + 2;
+            foreach (var (name, tier) in slots)
+            {
+                var r = new Rectangle(x0, y, width, slotH);
+                RoundRect(batch, sprites, r, 4 * scale, Palette.Button);
+                batch.Draw(sprites.Blank,
+                           new Rectangle(r.X, r.Y + 2 * scale, 2 * scale, r.Height - 4 * scale),
+                           Palette.Accent);
 
-            // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a
-            // panel that failed to load; "none" reads as an answer.
-            if (held.Count == 0)
-            {
-                Font.DrawCentred(batch, sprites.Blank, "NONE", vw / 2, y, scale, Locked);
-                y += Font.LineHeight * scale + 2;
+                Font.Draw(batch, sprites.Blank, name, r.X + 6 * scale,
+                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Ink);
+                string t = "T" + tier;
+                Font.Draw(batch, sprites.Blank, t, r.Right - 6 * scale - Font.Measure(t, small),
+                          r.Y + (slotH - Font.GlyphH * small) / 2, small, Palette.Accent);
+                y += slotH + 2 * scale;
             }
-            foreach (string h in held)
-            {
-                Font.DrawCentred(batch, sprites.Blank, h, vw / 2, y, scale, Ink);
-                y += Font.LineHeight * scale + 2;
-            }
-            y += 6 * scale;
+            y += 8 * scale;
         }
 
         // ABANDONING IS SAFE, and saying so matters: the banking rule means everything earned is
         // already in the save. A player who does not know that will keep playing a run they are not
         // enjoying to protect progress they already have.
         Font.DrawCentred(batch, sprites.Blank, "EVERYTHING EARNED IS ALREADY BANKED", vw / 2,
-                         vh - 24 * scale, scale, Dim);
+                         y + 4 * scale, small, Palette.Dim);
+    }
+
+    /// <summary>What is on the mech, by pool, named at the tier it is actually at.</summary>
+    /// <remarks>
+    /// NAMED AT THEIR CURRENT TIER, so an ascended gun reads as what it BECAME rather than as the
+    /// weapon it was built out of. A player looking at this list is deciding what to take next, and
+    /// a Cannon that is no longer a Cannon would send them looking for a tier that does not exist.
+    /// </remarks>
+    private static List<(string Title, List<(string Name, int Tier)> Slots)> Loadout(World w)
+    {
+        var outv = new List<(string, List<(string, int)>)>();
+        for (int kind = 0; kind < 2; kind++)
+        {
+            var held = new List<(string, int)>();
+            for (int i = 0; i < w.UpgradeDefs.Length && i < CardTexts.All.Length; i++)
+            {
+                int stacks = w.LevelUp.Stacks[i];
+                if (stacks <= 0) continue;
+                if ((w.UpgradeDefs[i].Kind == UpgradeKind.Weapon) != (kind == 0)) continue;
+
+                var card = CardTexts.At(i);
+                string name = stacks >= UpgradeCatalog.WeaponAscendedTier
+                              && PediaText.AscensionOf(card.Id) is { } asc
+                    ? asc.Name
+                    : card.Name;
+                held.Add((name.ToUpperInvariant(), stacks));
+            }
+            outv.Add((kind == 0 ? "WEAPONS" : "SYSTEMS", held));
+        }
+        return outv;
     }
 
     // -----------------------------------------------------------------------------------------
@@ -1317,13 +1386,62 @@ public static class Screens
     /// `var(--line)` hairline, sixteen pixels of radius.
     /// </para>
     /// </remarks>
-    private static void Card(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
-                             Color fill, Color line, int thick)
+    public static void CardFace(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
+                                Color fill, Color line, int thick)
     {
         RoundRect(batch, sprites, r, radius, line);
         RoundRect(batch, sprites,
                   new Rectangle(r.X + thick, r.Y + thick, r.Width - thick * 2, r.Height - thick * 2),
                   radius - thick, fill);
+    }
+
+    /// <summary>A rounded outline with nothing inside it.</summary>
+    /// <remarks>
+    /// A REAL HOLE, not a fill in the ground's colour. `CardFace` draws the border as the layer
+    /// UNDER the fill, which is right for a card and wrong for anything hollow - an empty weapon
+    /// mount drawn that way came out as a solid panel, because a transparent fill simply let the
+    /// border rectangle show through whole.
+    ///
+    /// This walks the same quarter circle and draws only the `thick` pixels at each end of every
+    /// row, so what is behind it - a scrimmed yard, in the one place this is used - stays visible
+    /// through the middle. That is `background: transparent` with an inset ring, which is what an
+    /// empty slot is in the original.
+    /// </remarks>
+    private static void RoundOutline(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
+                                     int thick, Color colour)
+    {
+        int rad = System.Math.Min(radius, System.Math.Min(r.Width, r.Height) / 2);
+
+        for (int i = rad; i < r.Height - rad; i++)
+        {
+            batch.Draw(sprites.Blank, new Rectangle(r.X, r.Y + i, thick, 1), colour);
+            batch.Draw(sprites.Blank, new Rectangle(r.Right - thick, r.Y + i, thick, 1), colour);
+        }
+
+        for (int i = 0; i < rad; i++)
+        {
+            double dy = rad - i - 0.5;
+            int inset = rad - (int)System.Math.Round(System.Math.Sqrt(rad * rad - dy * dy));
+            int w = r.Width - inset * 2;
+            if (w <= 0) continue;
+
+            // The corner rows: the straight span at the very top and bottom, and two end caps for
+            // every row between.
+            bool cap = i < thick;
+            foreach (int y in new[] { r.Y + i, r.Y + r.Height - 1 - i })
+            {
+                if (cap)
+                {
+                    batch.Draw(sprites.Blank, new Rectangle(r.X + inset, y, w, 1), colour);
+                }
+                else
+                {
+                    batch.Draw(sprites.Blank, new Rectangle(r.X + inset, y, thick, 1), colour);
+                    batch.Draw(sprites.Blank,
+                               new Rectangle(r.X + r.Width - inset - thick, y, thick, 1), colour);
+                }
+            }
+        }
     }
 
     /// <summary>Mark the row the cursor is on.</summary>
@@ -1364,7 +1482,7 @@ public static class Screens
     /// set in cannot be asked for - it has to be spelled. At this size a space IS 0.18em to within
     /// a pixel, which is why it looks right rather than merely different.
     /// </remarks>
-    private static string Spaced(string text)
+    public static string Spaced(string text)
     {
         var sb = new System.Text.StringBuilder(text.Length * 2);
         foreach (char c in text)
@@ -1383,7 +1501,7 @@ public static class Screens
     /// </remarks>
     private static void Pill(SpriteBatch batch, Sprites sprites, Rectangle r, bool on)
     {
-        Card(batch, sprites, r, r.Height / 2, on ? Palette.Accent : Palette.Sunken,
+        CardFace(batch, sprites, r, r.Height / 2, on ? Palette.Accent : Palette.Sunken,
              on ? Palette.Accent : Palette.Edge, System.Math.Max(1, r.Height / 16));
 
         int knob = r.Height - 4;
@@ -1402,7 +1520,7 @@ public static class Screens
     private static void Segmented(SpriteBatch batch, Sprites sprites, Rectangle r,
                                   string[] options, int chosen, int scale)
     {
-        Card(batch, sprites, r, 6 * scale, Palette.Sunken, Palette.Edge, System.Math.Max(1, scale / 2));
+        CardFace(batch, sprites, r, 6 * scale, Palette.Sunken, Palette.Edge, System.Math.Max(1, scale / 2));
 
         int seg = r.Width / options.Length;
         for (int i = 0; i < options.Length; i++)
@@ -1451,6 +1569,30 @@ public static class Screens
         Font.DrawCentred(batch, sprites.Blank, label, r.Center.X,
                          r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
                          primary ? Palette.OnAccent : Palette.Ink);
+    }
+
+    /// <summary>A wide button on an overlay, which may be unavailable.</summary>
+    /// <remarks>
+    /// GREYED IS NOT HIDDEN. A reroll you cannot afford still says REROLL and still says how many
+    /// you have, because "no rerolls left" is information and an absent button is not.
+    /// </remarks>
+    public static void OverlayButton(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
+                                     string key, int scale, bool enabled)
+    {
+        int radius = 7 * scale;
+        CardFace(batch, sprites, r, radius, Palette.Button, Palette.Edge,
+                 System.Math.Max(1, scale / 2));
+
+        int small = System.Math.Max(1, scale - 1);
+        int keyW = Font.Measure(key, small);
+        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X - keyW / 2,
+                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
+                         enabled ? Palette.Ink : Palette.Faint);
+        if (enabled)
+        {
+            Font.Draw(batch, sprites.Blank, key, r.Right - keyW - 7 * scale,
+                      r.Y + (r.Height - Font.GlyphH * small) / 2, small, Palette.Faint);
+        }
     }
 
     /// <summary>The ground every out-of-run menu sits on.</summary>

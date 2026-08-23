@@ -490,8 +490,76 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 "heroes" => Screen.HeroSelect,
                 "levels" => Screen.LevelSelect,
                 "changes" => Screen.Changes,
+                "hud" or "pause" or "levelup" or "chest" or "end" => Screen.Playing,
                 _ => Screen.Title,
             };
+
+            // THE IN-RUN OVERLAYS NEED A RUN BEHIND THEM, which is most of what they are: a pause
+            // screen over a blank canvas is not a pause screen. So the capture starts a real run and
+            // PLAYS it with the reference bot until the phase it wants comes round on its own -
+            // rather than forcing the state, which would draw a level-up over a world that has no
+            // reason to be showing one and hide exactly the mismatches a capture is for.
+            if (_screen == Screen.Playing)
+            {
+                StartRun(_seed);
+                int want = _shotScreen switch
+                {
+                    "levelup" => RunPhase.LevelUp,
+                    "chest" => RunPhase.Chest,
+                    "end" => RunPhase.Victory,
+                    _ => RunPhase.Running,
+                };
+
+                // IT WALKS AWAY FROM THE CROWD, rather than in a circle or not at all. This is not
+                // the reference bot: that lives in `Scrapyard.Sim`, the measurement rig, and making
+                // the game depend on it so a screenshot can be taken would put a test harness in the
+                // shipped binary.
+                //
+                // But it cannot be nothing either. A fixed circle walked straight into the horde and
+                // the mech was dead at twelve seconds, so `--shot chest` handed back a death screen
+                // - and a capture that quietly shows a different screen from the one asked for is
+                // worse than one that fails. Summing the direction away from everything nearby is
+                // five lines and survives long enough to reach a boss.
+                // AND IT ANSWERS THE CARDS IT IS NOT WAITING FOR. `StepWorld` takes one branch while
+                // the phase is LevelUp or Chest and consumes `ChooseIndex`; a loop that only walks
+                // stalls dead at the first level-up and every later phase is unreachable. Taking the
+                // first offer is arbitrary and that is fine - the point is to get somewhere, not to
+                // play well.
+                var frame = InputFrame.Empty;
+                for (int i = 0; i < 60 * (Constants.RunLengthSec + 120)
+                                && _sim.World.Phase != want; i++)
+                {
+                    double fx = 0;
+                    double fy = 0;
+                    var pl = _sim.World.Player;
+                    for (int e = 0; e < _sim.World.Enemies.Count; e++)
+                    {
+                        double dx = pl.X - _sim.World.Enemies.X[e];
+                        double dy = pl.Y - _sim.World.Enemies.Y[e];
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 < 1 || d2 > 400 * 400) continue;
+                        fx += dx / d2;
+                        fy += dy / d2;
+                    }
+
+                    // Nothing near: keep drifting, so the mech does not stand in one spot while the
+                    // yard fills up around it.
+                    if (fx == 0 && fy == 0)
+                    {
+                        fx = Trig.Cos(i * 3 * System.Math.PI / 180);
+                        fy = Trig.Sin(i * 3 * System.Math.PI / 180);
+                    }
+
+                    double mag = System.Math.Sqrt(fx * fx + fy * fy);
+                    frame.MoveX = (int)(127 * fx / mag);
+                    frame.MoveY = (int)(127 * fy / mag);
+                    frame.ChooseIndex = _sim.World.Phase is RunPhase.LevelUp or RunPhase.Chest
+                                        ? 0 : -1;
+                    _sim.Step(in frame);
+                }
+
+                if (_shotScreen == "pause") _screen = Screen.Paused;
+            }
             if (_screen == Screen.Changes) _changes.Open();
 
             // `pedia`, `pedia-index` and `pedia-page` are three DIFFERENT screens behind one name -
@@ -1236,9 +1304,14 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 case Screen.Pedia:
                     Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh); break;
                 case Screen.Changes:
+                    // WRAPPED TO THE SAME WIDTH AND SIZE THE SCREEN DRAWS AT, asked of the screen
+                    // rather than restated. These were a second copy of the layout - a 340-wide
+                    // column at `mh / 400` - and when the screen moved to the shared column at
+                    // `mh / 300` they stayed put, so every line was wrapped for a width the text
+                    // was no longer drawn in.
                     Screens.DrawChangelog(_batch, _sprites,
-                        _changes.Lines(System.Math.Min(mw - 40, 340 * System.Math.Max(1, mh / 400)),
-                                       System.Math.Max(1, mh / 400)),
+                        _changes.Lines(Screens.Column(mw, Screens.MenuScale(mh)),
+                                       Screens.SmallScale(mh)),
                         _changes.Scroll, mw, mh); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
@@ -1324,6 +1397,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         _batch.End();
         Present();
+        SaveShot();
         base.Draw(gameTime);
     }
 

@@ -120,32 +120,58 @@ public static class Overlay
         if (lu.OfferCount <= 0) return;
 
         Scrim(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
+        int scale = Screens.MenuScale(vh);
+        int small = Screens.SmallScale(vh);
+        int width = Screens.Column(vw, scale);
+        int x0 = (vw - width) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "LEVEL UP", vw / 2, (int)(vh * 0.10), scale * 2, Accent);
-        string owed = lu.Pending > 1 ? $"{lu.Pending} PICKS OWED" : "CHOOSE ONE";
-        Font.DrawCentred(batch, sprites.Blank, owed, vw / 2, (int)(vh * 0.10) + 22 * scale, scale, Dim);
-
+        // THREE CARDS DOWN THE SCREEN AND PINNED TO THE BOTTOM OF IT, not three columns across the
+        // middle. The port had them side by side and stretched to half the window's height, which
+        // gave every card a third of a phone's width to wrap two sentences in and left two thirds
+        // of each card empty underneath. `justify-content: flex-end` on a column is where the cards
+        // actually live: a full-width row is what a sentence wants, and the bottom of the screen is
+        // where the thumb already is.
         int n = lu.OfferCount;
-        int gap = 12 * scale;
-        int cardW = System.Math.Min((vw - gap * (n + 1)) / n, 150 * scale);
-        int cardH = (int)(vh * 0.52);
-        int totalW = cardW * n + gap * (n - 1);
-        int x0 = (vw - totalW) / 2;
-        int y0 = (int)(vh * 0.22);
+        int gap = 5 * scale;
+        int radius = 7 * scale;
+
+        var heights = new int[n];
+        int stack = 0;
+        for (int i = 0; i < n; i++)
+        {
+            heights[i] = CardHeight(w, lu.Offers[i], width, scale, small);
+            stack += heights[i] + gap;
+        }
+
+        int rerollH = Font.GlyphH * scale + 12 * scale;
+        int autoH = Font.LineHeight * small + 6 * scale;
+        int bottom = vh - 12 * scale - autoH - rerollH - 4 * scale;
+        int y = bottom - stack;
+
+        Font.DrawCentred(batch, sprites.Blank, Screens.Spaced("LEVEL UP"), vw / 2,
+                         y - 10 * scale - Font.GlyphH * scale * 2 - Font.LineHeight * small,
+                         small, Faint);
+        string owed = lu.Pending > 1 ? $"CHOOSE ONE ({lu.Pending} PENDING)" : "CHOOSE ONE";
+        Font.DrawCentred(batch, sprites.Blank, owed, vw / 2,
+                         y - 8 * scale - Font.GlyphH * scale * 2, scale * 2, Ink);
 
         for (int i = 0; i < n; i++)
         {
-            DrawCard(batch, sprites, w, lu.Offers[i], i, x0 + i * (cardW + gap), y0, cardW, cardH, scale);
+            DrawCard(batch, sprites, w, lu.Offers[i], i,
+                     new Rectangle(x0, y, width, heights[i]), radius, scale, small);
+            y += heights[i] + gap;
         }
 
-        // The reroll, and its count, because a reroll you have forgotten you own is a reroll you
-        // will not spend.
-        string reroll = w.InfiniteRerolls
-            ? "[Q] REROLL"
-            : lu.Rerolls > 0 ? $"[Q] REROLL  x{lu.Rerolls}" : "NO REROLLS LEFT";
-        Font.DrawCentred(batch, sprites.Blank, reroll, vw / 2, y0 + cardH + 10 * scale, scale,
-                         lu.Rerolls > 0 || w.InfiniteRerolls ? Ink : Dim);
+        // REROLL SITS BELOW THE CARDS, not among them. It is not a fourth option - taking it does
+        // not spend the level - and a thumb reaching for the bottom card must not find it by
+        // accident.
+        y += 2 * scale;
+        bool canReroll = lu.Rerolls > 0 || w.InfiniteRerolls;
+        string reroll = w.InfiniteRerolls ? "REROLL (INFINITE)"
+                      : lu.Rerolls > 0 ? $"REROLL ({lu.Rerolls})" : "NO REROLLS LEFT";
+        Screens.OverlayButton(batch, sprites, new Rectangle(x0, y, width, rerollH), reroll, "Q",
+                              scale, canReroll);
+        y += rerollH + 4 * scale;
 
         // AUTO-LEVEL, OFFERED WHERE IT IS WANTED. The pause menu has the switch, but the moment a
         // player decides they are tired of choosing is the moment a card is in front of them - and
@@ -154,79 +180,118 @@ public static class Overlay
         //
         // BELOW THE REROLL, which is already below the cards: this is the least-reached control on
         // the screen and the one with the largest consequence, so it sits furthest from the thumb.
-        Font.DrawCentred(batch, sprites.Blank, "[A] AUTO LEVEL FROM HERE", vw / 2,
-                         y0 + cardH + 24 * scale, scale, Dim);
+        Font.DrawCentred(batch, sprites.Blank, "[A] AUTO LEVEL FROM HERE", vw / 2, y, small, Faint);
     }
 
-    private static void DrawCard(SpriteBatch batch, Sprites sprites, World w, int offer, int slot,
-                                 int x, int y, int cw, int ch, int scale)
+    /// <summary>What one offer says: its name, its tier line, and what the tier does.</summary>
+    /// <remarks>
+    /// READ ONCE AND MEASURED ONCE. The card's height depends on how its description wraps, and the
+    /// height has to be known before the stack can be positioned - so both go through here rather
+    /// than the wrapping being done twice and going out of step.
+    /// </remarks>
+    private static (string Name, string Tier, string Desc, string Stacks, bool Weapon, string? Icon)
+        CardText(World w, int offer)
     {
-        Frame(batch, sprites, x, y, cw, ch);
-
-        string key = $"[{slot + 1}]";
-        Font.Draw(batch, sprites.Blank, key, x + 6 * scale, y + 5 * scale, scale, Accent);
-
-        string name;
-        string desc;
-        string? icon = null;
-        string tier = "";
-
         if (offer == Constants.OfferHeal)
         {
             // THE CONSOLATION PAIR, dealt only when every upgrade in the game has been taken. It
             // exists so an emptied pool does not read as the game failing to hand out a level-up.
-            name = "FIELD REPAIR";
-            desc = "Patch the hull. There is nothing left to bolt on.";
+            return ("FIELD REPAIR", "", "Patch the hull. There is nothing left to bolt on.",
+                    "SALVAGE", false, null);
         }
-        else if (offer == Constants.OfferCredits)
+        if (offer == Constants.OfferCredits)
         {
-            name = "SALVAGE";
-            desc = "A handful of credits. There is nothing left to bolt on.";
+            return ("SALVAGE", "", "A handful of credits. There is nothing left to bolt on.",
+                    "SALVAGE", false, null);
         }
-        else if (offer >= 0)
+        if (offer < 0) return ("", "", "", "", false, null);
+
+        var text = CardTexts.At(offer);
+        int held = offer < w.LevelUp.Stacks.Length ? w.LevelUp.Stacks[offer] : 0;
+        int tier = held + 1;
+        int max = offer < UpgradeCatalog.All.Length ? UpgradeCatalog.All[offer].MaxStacks : 1;
+        bool unlock = held == 0;
+        bool weapon = text.Weapon;
+
+        // "NEW WEAPON" ONLY IF IT IS ONE. A passive announced as a weapon is the kind of small lie
+        // that teaches a player the card text cannot be trusted.
+        string tierLine = unlock
+            ? $"NEW {(weapon ? "WEAPON" : "SYSTEM")} - TIER {tier} OF {max}"
+            : $"TIER {tier} OF {max}";
+
+        // WHAT THIS TIER DOES, straight from the catalog - the number on screen is the number. An
+        // unlock shows the card's own description instead, because "Unlock." describes nothing.
+        string desc = unlock ? text.Description : text.TierAt(tier);
+
+        // THE TIER YOU WOULD BE TAKING, not the one you hold. "TIER 3" on a card you own two of is
+        // the honest label: it is what the pick buys.
+        return (text.Name, tierLine, desc, unlock ? "NEW" : $"TIER {tier}", weapon, text.IconKey);
+    }
+
+    private static int CardHeight(World w, int offer, int width, int scale, int small)
+    {
+        var t = CardText(w, offer);
+        if (t.Name == "") return 0;
+
+        int textW = width - 14 * scale - 22 * scale;
+        int h = 7 * scale + Font.GlyphH * scale + 2 * scale;
+        if (t.Tier != "") h += Font.LineHeight * small + 3 * scale;
+        h += Font.Wrap(t.Desc, textW, small).Count * Font.LineHeight * small;
+        h += 7 * scale;
+        return System.Math.Max(h, 39 * scale);
+    }
+
+    private static void DrawCard(SpriteBatch batch, Sprites sprites, World w, int offer, int slot,
+                                 Rectangle r, int radius, int scale, int small)
+    {
+        var t = CardText(w, offer);
+        if (t.Name == "") return;
+
+        // WHICH POOL, BEFORE A WORD IS READ. Gold is ordnance and blue is systems, and they are the
+        // same two colours the chest reels and the manual's index already use - so the card is
+        // saying something the player has learned rather than something they have to learn here.
+        var key = t.Weapon ? Palette.Accent : Palette.Shop;
+        bool unlock = t.Stacks == "NEW";
+
+        // An unlock takes its pool's colour for a border. It is the louder card on purpose: a
+        // weapon you do not have yet is a different kind of offer from a tier of one you do.
+        Screens.CardFace(batch, sprites, r, radius, Palette.Panel, unlock ? key : Palette.Edge,
+                         System.Math.Max(1, scale / 2));
+
+        int pad = 7 * scale;
+        int ix = r.X + pad;
+
+        var tex = t.Icon is null ? null : sprites.Get(t.Icon);
+        if (tex is not null)
         {
-            var text = CardTexts.At(offer);
-            name = text.Name;
-            desc = text.Description;
-            icon = text.IconKey;
-            int held = offer < w.LevelUp.Stacks.Length ? w.LevelUp.Stacks[offer] : 0;
-            // THE TIER YOU WOULD BE TAKING, not the one you hold. "TIER 3" on a card you own two of
-            // is the honest label: it is what the pick buys.
-            tier = held == 0 ? "NEW" : $"TIER {held + 1}";
-        }
-        else
-        {
-            return;
+            int box = 16 * scale;
+            batch.Draw(tex, new Rectangle(ix, r.Y + pad, box, box), Color.White);
+            ix += box + 6 * scale;
         }
 
-        int cx = x + cw / 2;
-        int iy = y + 20 * scale;
-        int box = System.Math.Min(cw - 24 * scale, 48 * scale);
-        if (icon is not null)
+        // The key that takes it, on the left where the eye starts, rather than centred where the
+        // name is. One glyph: a card is chosen by pressing a number.
+        Font.Draw(batch, sprites.Blank, $"[{slot + 1}]", r.Right - pad - Font.Measure("[9]", small),
+                  r.Y + pad, small, Faint);
+
+        int ty = r.Y + pad;
+        Font.Draw(batch, sprites.Blank, t.Name.ToUpperInvariant(), ix, ty, scale, Ink);
+        ty += Font.GlyphH * scale + 2 * scale;
+
+        if (t.Tier != "")
         {
-            var tex = sprites.Get(icon);
-            if (tex is not null)
-            {
-                batch.Draw(tex, new Rectangle(cx - box / 2, iy, box, box), Color.White);
-            }
+            // DIMMED ON AN ORDINARY TIER so the unlock still reads as the louder card. One number
+            // to move rather than a second pair of colours that can drift out of sync.
+            Font.Draw(batch, sprites.Blank, Screens.Spaced(t.Tier), ix, ty, small,
+                      unlock ? key : key * 0.72f);
+            ty += Font.LineHeight * small + 3 * scale;
         }
 
-        int ty = iy + box + 8 * scale;
-        Font.DrawCentred(batch, sprites.Blank, tier, cx, ty, scale,
-                         tier == "NEW" ? Accent : Dim);
-        ty += 10 * scale;
-
-        foreach (string line in Font.Wrap(name.ToUpperInvariant(), cw - 12 * scale, scale))
+        int textW = r.Width - (ix - r.X) - pad - 22 * scale;
+        foreach (string line in Font.Wrap(t.Desc, textW, small))
         {
-            Font.DrawCentred(batch, sprites.Blank, line, cx, ty, scale, Ink);
-            ty += Font.LineHeight * scale;
-        }
-        ty += 4 * scale;
-
-        foreach (string line in Font.Wrap(desc, cw - 14 * scale, scale))
-        {
-            Font.DrawCentred(batch, sprites.Blank, line, cx, ty, scale, Dim);
-            ty += Font.LineHeight * scale;
+            Font.Draw(batch, sprites.Blank, line, ix, ty, small, Dim);
+            ty += Font.LineHeight * small;
         }
     }
 
@@ -582,32 +647,149 @@ public static class Overlay
     }
 
     /// <summary>The end of the run, either way.</summary>
+    /// <summary>
+    /// What the run came to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE SCREEN IS THE REWARD FOR A RUN THAT ENDED BADLY, which is most of them. A death that
+    /// prints four numbers is a death; a death that shows what the guns actually did, what killed
+    /// the most, and how close the horde got, is a run you want to think about. The web build gives
+    /// this a whole scrolling body for that reason, and the port had it as a four-line epitaph.
+    /// </para>
+    /// <para>
+    /// SURVIVED AND SCRAPPED, and the difference is a colour as well as a word - green for a win,
+    /// hull red for a loss, because both of those already mean that everywhere else on screen.
+    /// </para>
+    /// </remarks>
     public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
     {
         Scrim(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
+        int scale = Screens.MenuScale(vh);
+        int small = Screens.SmallScale(vh);
+        int width = Screens.Column(vw, scale);
+        int x0 = (vw - width) / 2;
         bool won = w.Phase == RunPhase.Victory;
 
-        Font.DrawCentred(batch, sprites.Blank, won ? "YARD CLEARED" : "WRECKED", vw / 2,
-                         (int)(vh * 0.32), scale * 3,
-                         won ? Accent : new Color(0xd6, 0x3c, 0x3c));
+        int y = 12 * scale;
+        Font.DrawCentred(batch, sprites.Blank,
+                         Screens.Spaced(won ? "SCRAPLORD DOWN" : "RUN OVER"), vw / 2, y, small,
+                         Faint);
+        y += Font.LineHeight * small + 3 * scale;
+        Font.DrawCentred(batch, sprites.Blank, won ? "SURVIVED" : "SCRAPPED", vw / 2, y, scale * 2,
+                         won ? Good : Palette.Hp);
+        y += Font.GlyphH * scale * 2 + 10 * scale;
 
-        int mins = (int)(w.RunSec / 60);
-        int secs = (int)(w.RunSec % 60);
-        int y = (int)(vh * 0.32) + 34 * scale;
-        foreach (string line in new[]
+        int btnH = 27 * scale;
+        int backY = vh - 12 * scale - btnH;
+        Screens.OverlayButton(batch, sprites, new Rectangle(x0, backY, width, btnH), "NEW RUN",
+                              "F5", scale, true);
+        int bottom = backY - 8 * scale;
+
+        // --- the numbers, two across ------------------------------------------------------------
+        var stats = new List<(string K, string V)>
         {
-            $"SURVIVED   {mins}:{secs:00}",
-            $"KILLS      {w.Stats.Kills:0}",
-            $"LEVEL      {w.Player.Level}",
-            $"DAMAGE     {w.Stats.DamageDealt:0}",
-        })
+            ("SURVIVED", $"{(int)(w.RunSec / 60)}:{(int)(w.RunSec % 60):00}"),
+            ("LEVEL", w.Player.Level.ToString()),
+            ("KILLS", $"{w.Stats.Kills:0}"),
+            ("PEAK HORDE", $"{w.Stats.PeakEnemies:0}"),
+            ("DAMAGE DEALT", Compact(w.Stats.DamageDealt)),
+            ("DAMAGE TAKEN", Compact(w.Stats.DamageTaken)),
+            ("ACCURACY", w.Stats.ShotsFired > 0
+                         ? $"{(int)System.Math.Round(w.Stats.ShotsHit / w.Stats.ShotsFired * 100)}%"
+                         : "-"),
+            ("GEMS", $"{w.Stats.GemsCollected:0}"),
+        };
+        if (w.Stats.DamagePrevented > 0) stats.Add(("SHIELDED", Compact(w.Stats.DamagePrevented)));
+        if (w.Stats.Credits > 0) stats.Add(("CREDITS", $"+{w.Stats.Credits:0}"));
+
+        int gap = 4 * scale;
+        int cellW = (width - gap) / 2;
+        int cellH = 6 * scale + Font.LineHeight * small + Font.GlyphH * scale + 8 * scale;
+        int thick = System.Math.Max(1, scale / 2);
+
+        for (int i = 0; i < stats.Count; i++)
         {
-            Font.DrawCentred(batch, sprites.Blank, line, vw / 2, y, scale, Ink);
-            y += Font.LineHeight * scale + 2;
+            int cy = y + i / 2 * (cellH + gap);
+            if (cy + cellH > bottom) break;
+            var r = new Rectangle(x0 + i % 2 * (cellW + gap), cy, cellW, cellH);
+            Screens.CardFace(batch, sprites, r, 6 * scale, Panel, Edge, thick);
+
+            Font.Draw(batch, sprites.Blank, Screens.Spaced(stats[i].K), r.X + 6 * scale,
+                      r.Y + 6 * scale, small, Faint);
+            Font.Draw(batch, sprites.Blank, stats[i].V, r.X + 6 * scale,
+                      r.Y + 6 * scale + Font.LineHeight * small, scale, Ink);
         }
+        y += (stats.Count + 1) / 2 * (cellH + gap) + 4 * scale;
 
-        Font.DrawCentred(batch, sprites.Blank, "[F5] NEW RUN", vw / 2, y + 12 * scale, scale, Dim);
+        // --- what did the damage ----------------------------------------------------------------
+        //
+        // SORTED, AND ONLY WHAT FIRED. A list of every weapon in the game with zeroes beside the
+        // ones never held says nothing; the four guns that were carried, biggest first, is the
+        // question a player asks after a run - "which of these was actually doing the work".
+        var sources = new List<(string Name, double Amount)>();
+        for (int i = 0; i < w.Stats.DamageByWeapon.Length && i < w.WeaponDefs.Length; i++)
+        {
+            if (w.Stats.DamageByWeapon[i] > 0)
+            {
+                sources.Add((WeaponName(w, i).ToUpperInvariant(), w.Stats.DamageByWeapon[i]));
+            }
+        }
+        if (w.Stats.DamageByShield > 0) sources.Add(("ENERGY SHIELD", w.Stats.DamageByShield));
+        sources.Sort((a, b) => b.Amount.CompareTo(a.Amount));
+
+        double total = 0;
+        foreach (var src in sources) total += src.Amount;
+
+        var rows = new List<(string, string)>();
+        foreach (var src in sources)
+        {
+            int pct = total > 0 ? (int)System.Math.Round(src.Amount / total * 100) : 0;
+            rows.Add((src.Name, $"{Compact(src.Amount)}  {pct}%"));
+        }
+        if (rows.Count == 0) rows.Add(("NONE DEALT", ""));
+
+        int listH = 6 * scale + Font.LineHeight * small
+                  + (Font.LineHeight * small + scale) * rows.Count + 8 * scale;
+        if (y + listH <= bottom)
+        {
+            var r = new Rectangle(x0, y, width, listH);
+            Screens.CardFace(batch, sprites, r, 6 * scale, Panel, Edge, thick);
+
+            int ly = r.Y + 6 * scale;
+            Font.Draw(batch, sprites.Blank, Screens.Spaced("DAMAGE BY SOURCE"), r.X + 6 * scale, ly,
+                      small, Faint);
+            ly += Font.LineHeight * small + 2 * scale;
+
+            foreach (var (k, v) in rows)
+            {
+                Font.Draw(batch, sprites.Blank, k, r.X + 6 * scale, ly, small, Dim);
+                Font.Draw(batch, sprites.Blank, v,
+                          r.Right - 6 * scale - Font.Measure(v, small), ly, small, Ink);
+                ly += Font.LineHeight * small + scale;
+            }
+        }
+    }
+
+    /// <summary>A weapon's own name, for the summary's damage table.</summary>
+    private static string WeaponName(World w, int defId)
+    {
+        int card = CardIndexForWeapon(w, defId);
+        return card >= 0 ? CardTexts.At(card).Name : $"WEAPON {defId}";
+    }
+
+    /// <summary>Four thousand four hundred and twenty-seven as "4.4K".</summary>
+    /// <remarks>
+    /// THE EXACT FIGURE IS NOT THE POINT on this screen. Damage dealt is read to compare two guns
+    /// against each other, and eight digits in a column defeat that faster than a rounded number
+    /// ever could.
+    /// </remarks>
+    private static string Compact(double v)
+    {
+        if (v >= 1_000_000) return $"{v / 1_000_000:0.0}M";
+        if (v >= 10_000) return $"{v / 1000:0}K";
+        if (v >= 1000) return $"{v / 1000:0.0}K";
+        return $"{v:0}";
     }
 
     // -----------------------------------------------------------------------------------------
@@ -635,8 +817,18 @@ public static class Overlay
         }
     }
 
+    /// <summary>The dimming an overlay lays over the fight.</summary>
+    /// <remarks>
+    /// THE SAME SCRIM THE MENUS USE - rgba(6, 9, 13, 0.86) - because it IS the same scrim: one
+    /// `.overlay` rule in the stylesheet covers the pause screen, the level-up, the chest and the
+    /// summary alike. A flat 75% black here was a second value that happened to look similar, and
+    /// it left the yard reading warm behind cool chrome.
+    ///
+    /// NOT OPAQUE, and that matters: the fight is still there behind it, and a solid ground would
+    /// turn a pause into having left the game.
+    /// </remarks>
     private static void Scrim(SpriteBatch batch, Sprites sprites, int vw, int vh) =>
-        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), new Color(0, 0, 0, 190));
+        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), Palette.Scrim);
 
     /// <summary>A panel with a one-pixel edge. Drawn from the blank texture; no nine-patch needed.</summary>
     private static void Frame(SpriteBatch batch, Sprites sprites, int x, int y, int w, int h)

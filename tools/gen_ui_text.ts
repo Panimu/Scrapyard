@@ -43,9 +43,22 @@ function cs(s: string): string {
 // Upgrade card text
 // ---------------------------------------------------------------------------------------------
 
+/*
+ * THE TIER STRINGS COME TOO, and they are the reason the card in front of a player is worth
+ * reading. A card's description says what the weapon IS; `tiers[n]` says what taking it right now
+ * would do, and the two are different sentences on every card past the first pick.
+ *
+ * They live in the TypeScript beside the `perLevel` deltas that implement them, precisely so a
+ * balance pass cannot move a number without moving the sentence - which is exactly why they are
+ * generated from there rather than retyped here.
+ */
 const cardRows = UPGRADE_CATALOG.map((u) => {
-  const r = u as unknown as Record<string, string>;
-  return `        new("${cs(r.id)}", "${cs(r.name)}", "${cs(r.description)}"),`;
+  const r = u as unknown as Record<string, unknown>;
+  const tiers = (r.tiers as readonly string[] | undefined) ?? [];
+  const list = tiers.map((t) => `"${cs(t)}"`).join(', ');
+  return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", ` +
+    `"${cs(String(r.description))}", ${r.kind === 'weapon' ? 'true' : 'false'},\n` +
+    `            new[] { ${list} }),`;
 }).join('\n');
 
 const cardsSrc = `namespace Scrapyard.Game;
@@ -72,10 +85,32 @@ const cardsSrc = `namespace Scrapyard.Game;
 /// a different thing happening rather than a bigger number.
 /// </para>
 /// </remarks>
-public readonly record struct CardText(string Id, string Name, string Description)
+/// <param name="Id">The upgrade's id on disk.</param>
+/// <param name="Name">What the card is called.</param>
+/// <param name="Description">What the thing IS - shown when a card would unlock it.</param>
+/// <param name="Weapon">
+/// Ordnance rather than a system. It decides which of two colours the card wears, and a passive
+/// announced as a weapon is the kind of small lie that teaches a player the card text cannot be
+/// trusted.
+/// </param>
+/// <param name="Tiers">
+/// What each tier DOES, indexed from zero for tier 1. Authored beside the deltas that implement
+/// them, so a balance pass cannot move a number without moving the sentence.
+/// </param>
+public readonly record struct CardText(
+    string Id, string Name, string Description, bool Weapon, string[] Tiers)
 {
     /// <summary>The upgrade card icons on disk are <c>icon_&lt;id&gt;.png</c>.</summary>
     public string IconKey => "icon_" + Id;
+
+    /// <summary>What tier <paramref name="tier"/> does, or the description if it says nothing.</summary>
+    /// <remarks>
+    /// FALLS BACK RATHER THAN THROWS. This draws whatever catalog the simulation was built with,
+    /// and a card whose tier list is short has to degrade to its description - inside a phase
+    /// transition is the worst possible place to discover an off-by-one.
+    /// </remarks>
+    public string TierAt(int tier) =>
+        tier >= 1 && tier <= Tiers.Length ? Tiers[tier - 1] : Description;
 }
 
 public static class CardTexts
@@ -87,7 +122,9 @@ ${cardRows}
 
     /// <summary>The text for a catalog index, or a placeholder if the table has gone stale.</summary>
     public static CardText At(int index) =>
-        index >= 0 && index < All.Length ? All[index] : new CardText("", "?", "");
+        index >= 0 && index < All.Length
+            ? All[index]
+            : new CardText("", "?", "", false, System.Array.Empty<string>());
 
     /// <summary>
     /// Throws if this table and the ported catalog have drifted apart.
