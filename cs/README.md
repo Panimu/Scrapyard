@@ -516,16 +516,36 @@ port:
   fault moved not one cell. The function is pinned at large coordinates instead, which cannot arise
   in play and can certainly arise in a refactor.
 
-Three hashes in one renderer, two of them plain multiplies and one a genuine `imul`, all identical
-on the page. That is the argument for reading each original rather than applying a remembered rule.
+**Mossy Mayhem was an approximation rather than a port.** It had grass and something tree-shaped;
+it did not have the cliff faces that give a wall height, the undergrowth that hides the line where
+trunks meet the ground, or the sway. Nor did it have the parts that do not show:
+
+- **Stems are drawn south-first**, so a nearer trunk covers a further one — and the standing count
+  is taken off the *end* of that order, so a clump falls towards the player who is shooting at it.
+  Drop the sort and the wood still looks right; it just falls from the wrong side.
+- **The sway is phased per cell.** A wood where every tree reaches the same frame on the same tick
+  is a chorus line, and far more obviously wrong than no animation at all.
+- **`stemFrac` re-mixes rather than slicing the cell hash**, because the raw bits are too correlated
+  for six positions and taking them straight lined every clump's trunks up on a diagonal.
+
+`MossDressingTests` compares every stem and bush of every treed cell across four seeds and three
+ticks — position, size, variant and sway frame, all to the bit. Sixteen injected faults, all caught.
+The fixture's wood is deliberately damaged (a third flattened, a third with exactly one stem taken
+off) because a pristine lattice reaches neither the felled branch nor the partly-felled one, and
+those are what the sort exists for. It also counts the clumps the sort genuinely reorders: a clump
+whose stems happen to come out of the hash already in increasing y is no evidence for sorting them.
+
+Three hashes in one renderer, two of them plain multiplies and one a genuine `imul` used twice, all
+identical on the page. That is the argument for reading each original rather than applying a
+remembered rule.
 
 **The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
 MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
 version of the cover fixture transcribed the hash a second time into the test file. That is weaker
 than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
-draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout` and
-`JsMath` hold every decision and no MonoGame types, and the test csproj `<Compile Include>`s those
-exact files.
+draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout`, `CityDressingLayout`,
+`MossDressingLayout` and `JsMath` hold every decision and no MonoGame types, and the test csproj
+`<Compile Include>`s those exact files.
 
 What is not done yet, plainly: no Scrapopedia, and no settings screen.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.

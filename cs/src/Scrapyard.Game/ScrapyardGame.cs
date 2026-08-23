@@ -636,7 +636,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // A road is painted ON the ground, and a rock sits ON the road.
         _paths.Draw(_batch, _camera);
         _cover.Draw(_batch, _camera);
-        _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf);
+        _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf, w.Tick);
         DrawPickups(w);
         DrawEnemies(w);
         DrawProjectiles(w);

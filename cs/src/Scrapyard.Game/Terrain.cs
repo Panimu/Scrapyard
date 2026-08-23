@@ -30,12 +30,12 @@ public sealed class Terrain
 
     public Terrain(Sprites sprites) => _sprites = sprites;
 
-    public void Draw(SpriteBatch batch, Camera cam, IScenery scenery, double arenaHalf)
+    public void Draw(SpriteBatch batch, Camera cam, IScenery scenery, double arenaHalf, int tick)
     {
         switch (scenery)
         {
             case ScrapPiles p: DrawPiles(batch, cam, p); break;
-            case MossWalls m: DrawMoss(batch, cam, m); break;
+            case MossWalls m: DrawMoss(batch, cam, m, tick); break;
             case CityBlocks c: DrawCity(batch, cam, c); break;
         }
         DrawFence(batch, cam, arenaHalf);
@@ -157,58 +157,132 @@ public sealed class Terrain
 
     // -----------------------------------------------------------------------------------------
 
-    private void DrawMoss(SpriteBatch batch, Camera cam, MossWalls m)
+    /// <summary>
+    /// Mossy Mayhem, in the four passes the original draws it in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE SIMULATION OWNS THE LATTICE; THIS ONLY LOOKS AT IT. Nothing here generates anything or
+    /// writes to the world - it asks about the cells on screen and picks a texture. That matters
+    /// more than usual on this level because the walls are COLLISION: a renderer that derived its
+    /// own layout would eventually draw a gap the mech cannot drive through.
+    /// </para>
+    /// <list type="number">
+    /// <item>tops - the grass surface of every wall cell</item>
+    /// <item>faces - a cliff face under any cell with nothing below it, which is what gives a wall
+    /// height</item>
+    /// <item>stumps, where a tree has been felled</item>
+    /// <item>the standing wood and its undergrowth</item>
+    /// </list>
+    /// <para>
+    /// FACES COME AFTER TOPS because a face hangs into the cell below its own, and that cell is
+    /// empty by definition - but a face belonging to the row above would otherwise be painted over
+    /// by a top.
+    /// </para>
+    /// <para>
+    /// Where every stem stands and how big it is lives in <see cref="MossDressingLayout"/>, which
+    /// has no MonoGame types so the tests compile it directly.
+    /// </para>
+    /// </remarks>
+    private void DrawMoss(SpriteBatch batch, Camera cam, MossWalls m, int tick)
     {
-        var (x0, y0, x1, y1) = cam.VisibleBounds(MossWalls.WallCell);
-        int cx0 = MossWalls.WallCellOf(x0);
-        int cx1 = MossWalls.WallCellOf(x1);
-        int cy0 = MossWalls.WallCellOf(y0);
-        int cy1 = MossWalls.WallCellOf(y1);
+        const double cell = MossWalls.WallCell;
+
+        // One cell of margin on every side: a tree is wider than its cell and a face hangs below
+        // its own, so a cell just off screen can still have art that reaches onto it.
+        int cx0 = MossWalls.WallCellOf(cam.X - cam.HalfW) - 1;
+        int cx1 = MossWalls.WallCellOf(cam.X + cam.HalfW) + 1;
+        int cy0 = MossWalls.WallCellOf(cam.Y - cam.HalfH) - 2;
+        int cy1 = MossWalls.WallCellOf(cam.Y + cam.HalfH) + 1;
+
+        // 1 and 2: grass, then the cliff faces under its southern edges.
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (!MossDressingLayout.HasTop(m, cx, cy)) continue;
+                var (col, row) = MossDressingLayout.TopTile(m, cx, cy);
+                var top = _sprites.Get($"mwall_t{col}{row}");
+                if (top is not null) BlitCell(batch, cam, top, cx, cy, cell);
+            }
+        }
+
+        double faceH = cell * MossDressingLayout.FaceFraction;
+        for (int cy = cy0; cy <= cy1; cy++)
+        {
+            for (int cx = cx0; cx <= cx1; cx++)
+            {
+                if (!MossDressingLayout.HasFace(m, cx, cy)) continue;
+                int v = MossDressingLayout.VariantOf(cx, cy, MossDressingLayout.FaceCount);
+                var face = _sprites.Get($"mwall_face{v}");
+                if (face is null) continue;
+                var scale = new Vector2(
+                    (float)(cell * cam.Scale / face.Width),
+                    (float)(faceH * cam.Scale / face.Height));
+                batch.Draw(face, cam.ToScreen(cx * cell, (cy + 1) * cell), null, Color.White, 0f,
+                           Vector2.Zero, scale, SpriteEffects.None, 0f);
+            }
+        }
+
+        // 3 and 4: the wood. Cells run north to south and stems south-first within a cell, which is
+        // the whole of the depth sorting - a nearer trunk covers a further one, and a bush skirting
+        // the foot of a clump sits in front of every stem in its own cell.
+        Span<MossDressingLayout.Stem> stems = stackalloc MossDressingLayout.Stem[MossDressingLayout.MaxStems];
+        Span<MossDressingLayout.Stem> bushes = stackalloc MossDressingLayout.Stem[MossDressingLayout.BushCount];
 
         for (int cy = cy0; cy <= cy1; cy++)
         {
             for (int cx = cx0; cx <= cx1; cx++)
             {
-                int kind = m.WallKindAt(cx, cy);
-                if (kind == MossWalls.WallEmpty) continue;
+                if (!MossDressingLayout.HasWood(m, cx, cy)) continue;
 
-                if (kind == MossWalls.WallSolid)
+                int n = MossDressingLayout.StemsOf(m, cx, cy, tick, stems);
+                for (int i = 0; i < n; i++)
                 {
-                    var tex = _sprites.Get(AutoTile("mwall_t", cx, cy,
-                        (a, b) => m.WallKindAt(a, b) == MossWalls.WallSolid));
-                    if (tex is null) continue;
-                    BlitCell(batch, cam, tex, cx, cy, MossWalls.WallCell);
-                    continue;
-                }
-
-                // A CLUMP IS SEVERAL TREES SHARING A COLLIDER, and how many are still standing is
-                // simulation state - a treeline visibly thins under fire rather than vanishing when
-                // the first shell lands. Felled stems leave stumps, which is the only way a player
-                // can see where a gap has been opened.
-                int standing = m.WallStemsStanding(cx, cy);
-                int total = MossWalls.WallStemsAt(m.Seed, cx, cy);
-                double centreX = MossWalls.WallCentre(cx);
-                double centreY = MossWalls.WallCentre(cy);
-
-                for (int i = 0; i < total; i++)
-                {
-                    // Deterministic scatter from the cell and the stem index: the same wood always
-                    // looks the same, and it costs no state to say so.
-                    int h = Scatter(cx, cy, i);
-                    double ox = ((h & 0xff) / 255.0 - 0.5) * MossWalls.WallCell * 0.7;
-                    double oy = (((h >> 8) & 0xff) / 255.0 - 0.5) * MossWalls.WallCell * 0.7;
-                    bool felled = i >= standing;
-                    string key = felled
-                        ? $"mwall_stump{(h >> 16) % 3}"
-                        : $"mwall_tree{(h >> 16) % 3}";
+                    var st = stems[i];
+                    string key = st.Felled ? $"mwall_stump{st.Variant}" : $"mwall_tree{st.Variant}";
                     var tex = _sprites.Get(key);
                     if (tex is null) continue;
-                    double size = felled ? 26 : 54;
-                    Blit(batch, cam, tex, centreX + ox, centreY + oy,
-                         size * ((double)tex.Width / tex.Height), size, Color.White);
+                    // A stump is one image; a standing tree is an eight-frame sway strip.
+                    BlitStem(batch, cam, tex, st, st.Felled ? 1 : MossDressingLayout.SwayFrames,
+                             byHeight: true);
+                }
+
+                MossDressingLayout.BushesOf(m, cx, cy, tick, bushes);
+                for (int k = 0; k < MossDressingLayout.BushCount; k++)
+                {
+                    var tex = _sprites.Get($"mwall_bush{bushes[k].Variant}");
+                    if (tex is null) continue;
+                    BlitStem(batch, cam, tex, bushes[k], MossDressingLayout.SwayFrames,
+                             byHeight: false);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// One stem, stump or bush, from a horizontal sway strip.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ANCHORED AT BOTTOM CENTRE, because that is where a trunk meets the ground. Anchoring at the
+    /// middle would bury half of every stem in the cell above.
+    /// </para>
+    /// <para>
+    /// THE SPRITE IS A STRIP OF <paramref name="frames"/> EQUAL COLUMNS sharing one texture, so the
+    /// frame is a source rectangle rather than a separate file - and the scale must be taken from
+    /// the FRAME's width, not the strip's, or every tree comes out an eighth of its proper size.
+    /// </para>
+    /// </remarks>
+    private static void BlitStem(SpriteBatch batch, Camera cam, Texture2D tex,
+                                 MossDressingLayout.Stem st, int frames, bool byHeight)
+    {
+        int fw = tex.Width / frames;
+        var src = new Rectangle(st.Frame * fw, 0, fw, tex.Height);
+        double scale = byHeight ? st.Height / tex.Height : st.Width / fw;
+        batch.Draw(tex, cam.ToScreen(st.X, st.Y), src, Color.White, 0f,
+                   new Vector2(fw / 2f, tex.Height), new Vector2((float)(scale * cam.Scale)),
+                   SpriteEffects.None, 0f);
     }
 
     // -----------------------------------------------------------------------------------------
