@@ -108,4 +108,13 @@ public static class Palette
     /// solid ground would turn a pause into having left the game.
     /// </remarks>
     public static readonly Color Scrim = new Color(0x06, 0x09, 0x0d) * 0.86f;
+
+    /// <summary>The page itself, behind every menu that is not an overlay on the fight. <c>--bg</c>.</summary>
+    /// <remarks>
+    /// NOT BLACK. <c>Screens.Backdrop</c> drew flat <c>Color.Black</c> with <see cref="Scrim"/>
+    /// stacked on top of it - a token meant for dimming the world behind a PAUSE, drawn instead
+    /// under a title screen with no world behind it at all. Close enough to black to go unnoticed,
+    /// but the stylesheet's own page background was never black; it is this very dark blue.
+    /// </remarks>
+    public static readonly Color Bg = new(0x0b, 0x0e, 0x13);
 }

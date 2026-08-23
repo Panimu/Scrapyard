@@ -343,11 +343,20 @@ public static class Screens
             // Sizing it as though it carried them is what `.hero--locked { justify-content: center }`
             // is there to stop - a row whose height comes from an unlocked neighbour's full stat
             // block leaves the silhouette hanging off the top edge with a tile of nothing under it.
-            int h0 = 5 * scale + art + 6 * scale;
+            //
+            // MATCHES THE DRAW LOOP'S OWN GAPS EXACTLY rather than reserving a second, larger set
+            // on top of them - the two used to disagree by a good ten pixels a row, which was the
+            // whole reason the roster showed three rows instead of four on a phone-height window:
+            // a fourth row seven pixels too tall to fit was held back rather than shown.
+            int h0 = 5 * scale + art + 4 * scale;
             if (save.UnlockedHeroes.Contains(roster[i].Id))
             {
                 int n = UiFont.Wrap(roster[i].Line.ToUpperInvariant(), tileW - 6 * scale, small).Count;
-                h0 += 4 * scale + UiFont.GlyphH(small) + 3 * scale + UiFont.LineHeight(small) * n;
+                h0 += UiFont.GlyphH(small) + 2 * scale + UiFont.LineHeight(small) * n + 2 * scale;
+            }
+            else
+            {
+                h0 += 2 * scale;
             }
             if (h0 > rowH[i / cols]) rowH[i / cols] = h0;
         }
@@ -404,7 +413,7 @@ public static class Screens
             {
                 UiDrawCentred(batch, sprites, h.Name.ToUpperInvariant(), r.Center.X, ty,
                                  small, Palette.Ink);
-                ty += UiFont.GlyphH(small) + 3 * scale;
+                ty += UiFont.GlyphH(small) + 2 * scale;
                 foreach (string line in UiFont.Wrap(h.Line.ToUpperInvariant(), tileW - 6 * scale, small))
                 {
                     UiDrawCentred(batch, sprites, line, r.Center.X, ty, small,
@@ -464,24 +473,42 @@ public static class Screens
         int x0 = (vw - w) / 2;
 
         int y = Head(batch, sprites, "NEW GAME", "CHOOSE A YARD", vw, 12 * scale, scale);
-        var (_, backBtn, deployBtn) =
+        var (actionsY, backBtn, deployBtn) =
             Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "DEPLOY", "ENTER");
 
         int pad = 7 * scale;
         int radius = 8 * scale;
         int thick = System.Math.Max(1, scale / 2);
         int art = 42 * scale;
+        int textW = w - pad * 3 - art;
+
+        // THREE YARDS, NEVER MORE - there is no scroll window here because this list does not
+        // need one, which used to mean it always sat pinned to the header with a few hundred
+        // pixels of nothing below it before the buttons. Measured once up front so it can be
+        // centred in whatever room is actually there instead.
+        var heights = new int[HeroUnlocks.Levels.Length];
+        for (int i = 0; i < heights.Length; i++)
+        {
+            var l = HeroUnlocks.Levels[i];
+            bool open = save.UnlockedLevels.Contains(l.Id) && l.Playable;
+            var blurb = open ? UiFont.Wrap(l.Line.ToUpperInvariant(), textW, small)
+                             : (IReadOnlyList<string>)System.Array.Empty<string>();
+            heights[i] = System.Math.Max(art, UiFont.GlyphH(scale) + 4 * scale
+                                         + UiFont.LineHeight(small) * blurb.Count) + pad * 2;
+        }
+        int total = 0;
+        foreach (int hh in heights) total += hh + 6 * scale;
+        int avail = actionsY - 10 * scale - y;
+        if (total < avail) y += (avail - total) / 2;
 
         for (int i = 0; i < HeroUnlocks.Levels.Length; i++)
         {
             var l = HeroUnlocks.Levels[i];
             bool open = save.UnlockedLevels.Contains(l.Id) && l.Playable;
-            int textW = w - pad * 3 - art;
 
             var blurb = open ? UiFont.Wrap(l.Line.ToUpperInvariant(), textW, small)
                              : (IReadOnlyList<string>)System.Array.Empty<string>();
-            int h = System.Math.Max(art, UiFont.GlyphH(scale) + 4 * scale
-                                         + UiFont.LineHeight(small) * blurb.Count) + pad * 2;
+            int h = heights[i];
             var r = new Rectangle(x0, y, w, h);
             outRects?.Add(r);
 
@@ -1146,10 +1173,18 @@ public static class Screens
         {
             // FOUR FULL-WIDTH ROWS rather than a two-by-two grid: this is the first thing the screen
             // shows, and a row has space for a line saying what is behind it where a tile does not.
+            int sectionH = 6 * scale + UiFont.GlyphH(scale) + 3 * scale + UiFont.LineHeight(small)
+                          + 6 * scale;
+
+            // FOUR SECTIONS, NEVER MORE - centred in whatever room BACK leaves rather than pinned
+            // to the header with the rest of the screen empty below the last row.
+            int sectionsTotal = (sectionH + 5 * scale) * Pedia.Sections.Length;
+            int sectionsAvail = bottom - y;
+            if (sectionsTotal < sectionsAvail) y += (sectionsAvail - sectionsTotal) / 2;
+
             for (int i = 0; i < Pedia.Sections.Length; i++)
             {
-                int h = 6 * scale + UiFont.GlyphH(scale) + 3 * scale + UiFont.LineHeight(small)
-                      + 6 * scale;
+                int h = sectionH;
                 var r = new Rectangle(x0, y, w, h);
                 outRects?.Add(r);
                 bool on = i == st.SectionCursor;
@@ -2022,21 +2057,22 @@ public static class Screens
 
     /// <summary>The ground every out-of-run menu sits on.</summary>
     /// <remarks>
+    /// <para>
     /// NOT THE YARD. The port tiled the floor sprite here and scrimmed it, which put every menu on
     /// warm rust; the web build's canvas is BLANK on these screens, because the simulation is not
-    /// running yet. What is behind a title screen is black, and the overlay's own
-    /// rgba(6, 9, 13, 0.86) over black is the near-black the chrome was coloured against.
-    ///
-    /// The two draws are kept apart rather than folded into one constant so the arithmetic stays
-    /// legible: this is a scrim over an empty canvas, and it is the SAME scrim the in-run overlays
-    /// put over a live frame - where the yard showing through is the point.
+    /// running yet.
+    /// </para>
+    /// <para>
+    /// NOT BLACK EITHER, and not <see cref="Palette.Scrim"/> laid over it - that combination held
+    /// on here for a while, close enough to black that nobody noticed it was standing in for the
+    /// stylesheet's actual page background rather than being it. <c>Scrim</c> is what a PAUSE lays
+    /// over a live frame, so the fight still shows through; there is no fight here to dim, so
+    /// stacking it under an empty menu was two draws doing the work <see cref="Palette.Bg"/> - the
+    /// real <c>--bg</c> - does in one.
+    /// </para>
     /// </remarks>
-    private static void Backdrop(SpriteBatch batch, Sprites sprites, int vw, int vh)
-    {
-        var all = new Rectangle(0, 0, vw, vh);
-        batch.Draw(sprites.Blank, all, Color.Black);
-        batch.Draw(sprites.Blank, all, Palette.Scrim);
-    }
+    private static void Backdrop(SpriteBatch batch, Sprites sprites, int vw, int vh) =>
+        batch.Draw(sprites.Blank, new Rectangle(0, 0, vw, vh), Palette.Bg);
 
     private static void Frame(SpriteBatch batch, Sprites sprites, int x, int y, int w, int h)
     {
