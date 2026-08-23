@@ -595,6 +595,30 @@ public class MetaTests
     }
 
     /// <summary>
+    /// A ZERO OR ABSURD BACKBUFFER DEGRADES TO THE GAME'S OWN BASE SIZE, the same "never error"
+    /// rule every other saved field follows - see <see cref="UnknownPreferencesFallBackRatherThanSticking"/>.
+    /// </summary>
+    [Fact]
+    public void OutOfRangeResolutionFallsBackToBaseSize()
+    {
+        var s = new Settings { ResolutionWidth = 0, ResolutionHeight = -10 };
+        s.Reconcile();
+        Assert.Equal(1280, s.ResolutionWidth);
+        Assert.Equal(720, s.ResolutionHeight);
+
+        var huge = new Settings { ResolutionWidth = 99_999, ResolutionHeight = 99_999 };
+        huge.Reconcile();
+        Assert.Equal(1280, huge.ResolutionWidth);
+        Assert.Equal(720, huge.ResolutionHeight);
+
+        // A resolution that DOES fall in range survives untouched.
+        var keep = new Settings { ResolutionWidth = 2560, ResolutionHeight = 1440 };
+        keep.Reconcile();
+        Assert.Equal(2560, keep.ResolutionWidth);
+        Assert.Equal(1440, keep.ResolutionHeight);
+    }
+
+    /// <summary>
     /// AUTO MEANS MOVE ON THE DESKTOP, AND THAT IS A DECISION.
     /// </summary>
     /// <remarks>

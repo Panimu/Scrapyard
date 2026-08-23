@@ -117,4 +117,61 @@ public class TitleScreenTests
                     && minutes * 60 >= Core.Constants.RunLengthSec - 30,
                     "the tagline's minutes no longer round to the run length");
     }
+
+    /// <summary>
+    /// EVERY SECTION'S ROWS SIT TOGETHER.
+    /// </summary>
+    /// <remarks>
+    /// DrawSettings draws a heading whenever a row's section differs from the one before it,
+    /// rather than grouping by section itself - see MenuRows.SettingsRows' own remark on why. That
+    /// only draws each section once if the rows for one section are never split by a row from
+    /// another; this is the test that would catch it if they ever were.
+    /// </remarks>
+    [Fact]
+    public void SettingsSectionsAreContiguous()
+    {
+        var rows = MenuRows.SettingsRows;
+        Assert.NotEmpty(rows);
+
+        var seenSections = new System.Collections.Generic.HashSet<string>();
+        string current = rows[0].Section;
+        seenSections.Add(current);
+        foreach (var row in rows)
+        {
+            if (row.Section == current) continue;
+            Assert.True(seenSections.Add(row.Section),
+                $"section \"{row.Section}\" reappears after another section started - " +
+                "its rows are not contiguous");
+            current = row.Section;
+        }
+    }
+
+    /// <summary>Every SettingKind is drawn by exactly one row - no duplicate and none forgotten.</summary>
+    [Fact]
+    public void EverySettingKindHasExactlyOneRow()
+    {
+        var kinds = (MenuRows.SettingKind[])System.Enum.GetValues(typeof(MenuRows.SettingKind));
+        var rowKinds = System.Array.ConvertAll(MenuRows.SettingsRows, r => r.Kind);
+
+        foreach (var kind in kinds)
+        {
+            Assert.Single(System.Array.FindAll(rowKinds, k => k == kind));
+        }
+        Assert.Equal(kinds.Length, MenuRows.SettingsRows.Length);
+    }
+
+    /// <summary>
+    /// THE GAME HAS NO AUDIO SYSTEM, so Settings has no SFX section - see MenuRows.SettingsRows'
+    /// own remark on why a slider that controls nothing is worse than no slider.
+    /// </summary>
+    [Fact]
+    public void SettingsHasNoAudioSectionYet()
+    {
+        foreach (var row in MenuRows.SettingsRows)
+        {
+            Assert.DoesNotContain("SFX", row.Section);
+            Assert.DoesNotContain("AUDIO", row.Section);
+            Assert.DoesNotContain("VOLUME", row.Section);
+        }
+    }
 }

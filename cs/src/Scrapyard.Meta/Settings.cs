@@ -95,6 +95,21 @@ public sealed class Settings
     /// </remarks>
     public int DprCap { get; set; } = 2;
 
+    /// <summary>Windowed or filling the screen.</summary>
+    /// <remarks>
+    /// APPLIES IMMEDIATELY, unlike <see cref="DprCap"/>: this only asks the window manager for a
+    /// different backbuffer, the same request <c>Window.AllowUserResizing</c> already lets a
+    /// player make by hand, so there is no render target to rebuild and nothing to defer to the
+    /// next launch.
+    /// </remarks>
+    public bool Fullscreen { get; set; }
+
+    /// <summary>The window or screen size, in pixels. Applies immediately - see <see cref="Fullscreen"/>.</summary>
+    public int ResolutionWidth { get; set; } = 1280;
+
+    /// <summary>The window or screen size, in pixels. Applies immediately - see <see cref="Fullscreen"/>.</summary>
+    public int ResolutionHeight { get; set; } = 720;
+
     /// <summary>
     /// Whether things move: <c>system</c>, <c>on</c> or <c>off</c>.
     /// </summary>
@@ -349,6 +364,13 @@ public sealed class Settings
         // game - and an unrecognised animation preference is not a reason a player cannot start.
         if (DprCap != 1 && DprCap != 2) DprCap = 2;
         if (Animations != "on" && Animations != "off") Animations = "system";
+
+        // A GENERIC SANITY RANGE, not validated against any actual display - this project cannot
+        // see one (see the class remarks on where MonoGame stops). Scrapyard.Game.DisplayModes
+        // resolves a stored size against the real adapter at the point of use; this just keeps a
+        // hand-edited or corrupted file from asking for a zero or absurd backbuffer.
+        if (ResolutionWidth < 640 || ResolutionWidth > 15360) ResolutionWidth = 1280;
+        if (ResolutionHeight < 480 || ResolutionHeight > 8640) ResolutionHeight = 720;
 
         long refund = 0;
         var kept = new Dictionary<string, MetaPurchase>();

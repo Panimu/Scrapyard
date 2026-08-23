@@ -857,21 +857,23 @@ public static class Screens
     }
 
     /// <summary>
-    /// Settings: three rows, each a card with its own control.
+    /// Settings: a handful of rows, each a card with its own control, grouped under section
+    /// headings.
     /// </summary>
     /// <remarks>
-    /// THE NOTE IS THE POINT OF THE ROW. Two of these three settings are about a device rather than
-    /// about the game - half resolution "takes effect next launch", and Auto follows a system
-    /// preference that on Windows is really about window animations - and a switch with a name and
-    /// no explanation invites a player to flip it and wonder why nothing happened. The web build
-    /// gives every row a `.setting__note`, and it is not decoration.
+    /// THE NOTE IS THE POINT OF THE ROW. Most of these settings are about a device rather than
+    /// about the game - half resolution "takes effect next launch", Resolution and Fullscreen ask
+    /// the window manager directly, and Auto follows a system preference that on Windows is really
+    /// about window animations - and a switch with a name and no explanation invites a player to
+    /// flip it and wonder why nothing happened. The web build gives every row a `.setting__note`,
+    /// and it is not decoration.
     /// </remarks>
     /// <param name="outRects">
-    /// See <see cref="DrawTitle"/>. One entry per row in <c>MenuRows.Settings</c>, then CHANGELOG,
-    /// then BACK. A click anywhere on a row steps it exactly one CONFIRM would - the segmented
-    /// Animations row cycles rather than jumping straight to whichever of its three words was
-    /// under the pointer, matching the level of precision every other control in this game offers
-    /// a mouse.
+    /// See <see cref="DrawTitle"/>. One entry per row in <c>MenuRows.SettingsRows</c> - section
+    /// headings are not rows and consume no entry - then CHANGELOG, then BACK. A click anywhere on
+    /// a row steps it exactly one CONFIRM would - the segmented Animations row cycles rather than
+    /// jumping straight to whichever of its three words was under the pointer, matching the level
+    /// of precision every other control in this game offers a mouse.
     /// </param>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                     int vw, int vh,
@@ -892,16 +894,34 @@ public static class Screens
         int radius = 8 * scale;
         int thick = System.Math.Max(1, scale / 2);
 
-        for (int i = 0; i < MenuRows.Settings.Length; i++)
+        // SIZED TO THE WIDEST REALISTIC LABEL rather than measured per row, so the control does not
+        // change width as Resolution is stepped through - "800X600" and "7680X4320" share a control.
+        int stepperW = UiFont.Measure("9999X9999", small) + 34 * scale;
+
+        string lastSection = "";
+        for (int i = 0; i < MenuRows.SettingsRows.Length; i++)
         {
+            var row = MenuRows.SettingsRows[i];
+
+            // A HEADING IS DRAWN WHENEVER THE SECTION CHANGES, not from a second list kept in step
+            // by hand - see MenuRows.SettingsRows' own remark on why the grouping lives on the row.
+            if (row.Section != lastSection)
+            {
+                if (lastSection != "") y += 4 * scale;
+                UiDraw(batch, sprites, Spaced(row.Section), x0 + 2 * scale, y, small, Palette.Faint);
+                y += UiFont.LineHeight(small) + 5 * scale;
+                lastSection = row.Section;
+            }
+
             // The control comes first because it sets the row's height and the width the words get
             // to wrap in - the card is sized around its contents, not the other way about.
-            bool segmented = i == 1;
-            int ctrlW = segmented ? 42 * scale : 26 * scale;
-            int ctrlH = segmented ? 22 * scale : 16 * scale;
+            bool segmented = row.Kind == MenuRows.SettingKind.Animations;
+            bool stepper = row.Kind == MenuRows.SettingKind.Resolution;
+            int ctrlW = stepper ? stepperW : segmented ? 42 * scale : 26 * scale;
+            int ctrlH = stepper || segmented ? 22 * scale : 16 * scale;
 
             int textW = w - pad * 2 - ctrlW - pad;
-            var note = UiFont.Wrap(SettingNote(i), textW, small);
+            var note = UiFont.Wrap(SettingNote(row.Kind), textW, small);
             int textH = UiFont.GlyphH(scale) + 4 * scale + UiFont.LineHeight(small) * note.Count;
             int rowH = System.Math.Max(textH, ctrlH) + pad * 2;
 
@@ -910,8 +930,7 @@ public static class Screens
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
-            UiDraw(batch, sprites, MenuRows.Settings[i], r.X + pad, r.Y + pad, scale,
-                      Palette.Ink);
+            UiDraw(batch, sprites, row.Label, r.X + pad, r.Y + pad, scale, Palette.Ink);
             int ny = r.Y + pad + UiFont.GlyphH(scale) + 4 * scale;
             foreach (string line in note)
             {
@@ -920,14 +939,25 @@ public static class Screens
             }
 
             var ctrl = new Rectangle(r.Right - pad - ctrlW, r.Y + (rowH - ctrlH) / 2, ctrlW, ctrlH);
-            if (segmented)
+            switch (row.Kind)
             {
-                int chosen = save.Animations switch { "on" => 1, "off" => 2, _ => 0 };
-                Segmented(batch, sprites, ctrl, new[] { "A", "ON", "OFF" }, chosen, small);
-            }
-            else
-            {
-                Pill(batch, sprites, ctrl, i == 0 ? save.DprCap == 1 : save.Debug);
+                case MenuRows.SettingKind.Animations:
+                    int chosen = save.Animations switch { "on" => 1, "off" => 2, _ => 0 };
+                    Segmented(batch, sprites, ctrl, new[] { "A", "ON", "OFF" }, chosen, small);
+                    break;
+                case MenuRows.SettingKind.Resolution:
+                    Stepper(batch, sprites, ctrl, $"{save.ResolutionWidth}X{save.ResolutionHeight}",
+                            small);
+                    break;
+                case MenuRows.SettingKind.Fullscreen:
+                    Pill(batch, sprites, ctrl, save.Fullscreen);
+                    break;
+                case MenuRows.SettingKind.PerformanceMode:
+                    Pill(batch, sprites, ctrl, save.DprCap == 1);
+                    break;
+                default:
+                    Pill(batch, sprites, ctrl, save.Debug);
+                    break;
             }
 
             y += rowH + 5 * scale;
@@ -937,11 +967,17 @@ public static class Screens
         outRects?.Add(backBtn);
     }
 
-    private static string SettingNote(int i) => i switch
+    private static string SettingNote(MenuRows.SettingKind kind) => kind switch
     {
-        0 => "RENDERS AT HALF RESOLUTION. TAKES EFFECT NEXT TIME THE GAME LOADS.",
-        1 => "SPINNING CHEST REELS, BAR FILLS AND SCREEN EFFECTS. AUTO FOLLOWS YOUR DEVICE'S " +
-             "REDUCE-MOTION SETTING, WHICH SOME SYSTEMS TURN ON FOR REASONS UNRELATED TO GAMES.",
+        MenuRows.SettingKind.Fullscreen =>
+            "SWITCHES BETWEEN A WINDOW AND FILLING THE SCREEN. TAKES EFFECT IMMEDIATELY.",
+        MenuRows.SettingKind.Resolution =>
+            "THE WINDOW OR SCREEN SIZE. TAKES EFFECT IMMEDIATELY.",
+        MenuRows.SettingKind.PerformanceMode =>
+            "RENDERS AT HALF RESOLUTION. TAKES EFFECT NEXT TIME THE GAME LOADS.",
+        MenuRows.SettingKind.Animations =>
+            "SPINNING CHEST REELS, BAR FILLS AND SCREEN EFFECTS. AUTO FOLLOWS YOUR DEVICE'S " +
+            "REDUCE-MOTION SETTING, WHICH SOME SYSTEMS TURN ON FOR REASONS UNRELATED TO GAMES.",
         _ => "FRAME TIME, ENTITY COUNTS AND DROPPED EVENTS, OVER THE HUD.",
     };
 
@@ -1722,6 +1758,24 @@ public static class Screens
         int kx = on ? r.Right - knob - 2 : r.X + 2;
         RoundRect(batch, sprites, new Rectangle(kx, r.Y + 2, knob, knob), knob / 2,
                   on ? Palette.OnAccent : Palette.Faint);
+    }
+
+    /// <summary>A value that cycles, with arrows either side saying which way CONFIRM steps it.</summary>
+    /// <remarks>
+    /// FOR A CHOICE WITH TOO MANY OPTIONS FOR <see cref="Segmented"/> to hold - Resolution can be
+    /// six or more entries long on a real display, and a segmented bar cramming that many words
+    /// into one row's width would be unreadable rather than merely tight.
+    /// </remarks>
+    private static void Stepper(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
+                                int scale)
+    {
+        CardFace(batch, sprites, r, 6 * scale, Palette.Sunken, Palette.Edge,
+                 System.Math.Max(1, scale / 2));
+
+        int ty = r.Y + (r.Height - UiFont.GlyphH(scale)) / 2;
+        UiDrawCentred(batch, sprites, "<", r.X + 9 * scale, ty, scale, Palette.Dim);
+        UiDrawCentred(batch, sprites, ">", r.Right - 9 * scale, ty, scale, Palette.Dim);
+        UiDrawCentred(batch, sprites, label, r.Center.X, ty, scale, Palette.Ink);
     }
 
     /// <summary>A row of mutually exclusive options, one of them lit.</summary>

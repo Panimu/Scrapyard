@@ -172,6 +172,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private int _levelCursor;
     private int _shopCursor;
     private int _settingsCursor;
+
+    /// <summary>
+    /// The Resolution row's own choices, read from the adapter once - see DisplayModes.
+    /// </summary>
+    private (int W, int H)[] _resolutions = System.Array.Empty<(int, int)>();
+
     private PediaState _pedia = null!;
 
     /// <summary>
@@ -367,6 +373,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         HeroUnlocks.Verify(HeroCatalog.All.Length);
 
         _save = Settings.Load();
+        _resolutions = DisplayModes.List();
+
+        // NOT UNDER --shot. A capture is taken for verification, in an environment that may have
+        // no real display or one this process should not go full-screen on - the same reason the
+        // window otherwise just follows whatever size the OS handed it.
+        if (_shotScreen == "") ApplyDisplaySettings();
 
         // THE LEVELS, PAIRED WITH THEIR NAMES, because the bestiary lists one group per level and a
         // level's entries are derived from its own resolver - so no map can list another's animals.
@@ -450,6 +462,27 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     }
 
     // -----------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Pushes <see cref="Settings.Fullscreen"/> and the stored resolution to the window manager.
+    /// </summary>
+    /// <remarks>
+    /// A BACKBUFFER REQUEST, not a render-target rebuild - the same request
+    /// <c>Window.AllowUserResizing</c> already lets a player make by dragging the edge, which is
+    /// why this can apply immediately where <see cref="Settings.DprCap"/> cannot: that one changes
+    /// the size of <see cref="_surface"/>, everything else this frame is laid out for, and doing
+    /// that mid-run is a bigger change than a settings row's own job.
+    /// <see cref="Window"/>'s own <c>ClientSizeChanged</c> handler calls
+    /// <see cref="RebuildSurface"/> once this actually resizes the backbuffer, so nothing here
+    /// needs to call it directly.
+    /// </remarks>
+    private void ApplyDisplaySettings()
+    {
+        _graphics.IsFullScreen = _save.Fullscreen;
+        _graphics.PreferredBackBufferWidth = _save.ResolutionWidth;
+        _graphics.PreferredBackBufferHeight = _save.ResolutionHeight;
+        _graphics.ApplyChanges();
+    }
 
     /// <summary>
     /// Size the render surface to the window, and tell the camera what it is drawing onto.
@@ -874,7 +907,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         if (_menu.Back) { ToTitle(); return; }
 
-        int n = MenuRows.Settings.Length;
+        int n = MenuRows.SettingsRows.Length;
         if (_menu.Vertical < 0) _settingsCursor = (_settingsCursor + n - 1) % n;
         if (_menu.Vertical > 0) _settingsCursor = (_settingsCursor + 1) % n;
 
@@ -908,12 +941,27 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             : _menu.Horizontal < 0 ? -1 : 0;
         if (step == 0) return;
 
-        switch (_settingsCursor)
+        bool display = false;
+        switch (MenuRows.SettingsRows[_settingsCursor].Kind)
         {
-            case 0:
+            case MenuRows.SettingKind.Fullscreen:
+                _save.Fullscreen = !_save.Fullscreen;
+                display = true;
+                break;
+            case MenuRows.SettingKind.Resolution:
+                // NEAREST, THEN STEPPED - the stored size may not be one of this adapter's own
+                // modes at all (a save carried over from a different monitor), so the row starts
+                // from whichever entry is closest before moving one either way.
+                int at = DisplayModes.NearestIndex(_resolutions, _save.ResolutionWidth,
+                                                   _save.ResolutionHeight);
+                at = ((at + step) % _resolutions.Length + _resolutions.Length) % _resolutions.Length;
+                (_save.ResolutionWidth, _save.ResolutionHeight) = _resolutions[at];
+                display = true;
+                break;
+            case MenuRows.SettingKind.PerformanceMode:
                 _save.DprCap = _save.DprCap == 1 ? 2 : 1;
                 break;
-            case 1:
+            case MenuRows.SettingKind.Animations:
                 // Three states, cycled in the order the web build lists them.
                 _save.Animations = _save.Animations switch
                 {
@@ -926,6 +974,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 _save.Debug = !_save.Debug;
                 break;
         }
+        if (display) ApplyDisplaySettings();
         _save.Save();
     }
 

@@ -104,22 +104,59 @@ public static class MenuRows
     /// splash - and it says nothing at all when there is nothing banked.
     /// </para>
     /// </remarks>
-    /// <summary>The settings, in the order they are shown. The cursor is an index into this.</summary>
+    /// <summary>What a settings row controls.</summary>
+    public enum SettingKind
+    {
+        Fullscreen,
+        Resolution,
+        PerformanceMode,
+        Animations,
+        DebugReadout,
+    }
+
+    /// <summary>One settings row: its label, what it controls, and which section it falls under.</summary>
+    public readonly record struct SettingsRow(string Label, SettingKind Kind, string Section);
+
+    /// <summary>
+    /// The settings, in the order they are shown, grouped into sections. The cursor is an index
+    /// into this - see <see cref="ScrapyardGame"/>'s UpdateSettings.
+    /// </summary>
     /// <remarks>
-    /// A LIST RATHER THAN A SWITCH ON THE CURSOR, because the alternative is the same three cases
+    /// <para>
+    /// A LIST RATHER THAN A SWITCH ON THE CURSOR, because the alternative is the same cases
     /// written out in the drawing code and again in the input code, which is how a row ends up
     /// drawing one setting and toggling another.
+    /// </para>
+    /// <para>
+    /// THE SECTION IS DATA ON THE ROW, not a second parallel list of headings and counts. A
+    /// heading is drawn whenever a row's <see cref="SettingsRow.Section"/> differs from the row
+    /// before it, so the sections cannot drift out of step with which rows are actually in them -
+    /// there is nowhere for a heading and its rows to disagree about how many there are.
+    /// </para>
+    /// <para>
+    /// THIS LIST HAS NO SFX OR AUDIO SECTION, because the game has no audio system - not in this
+    /// port, not in the web build it mirrors. A volume slider that controls nothing is worse than
+    /// no slider: it tells a player something is broken when nothing is there to break. Add the
+    /// section when a sound actually plays, not before.
+    /// </para>
     /// </remarks>
-    public static readonly string[] Settings = { "PERFORMANCE MODE", "ANIMATIONS", "DEBUG READOUT" };
+    public static readonly SettingsRow[] SettingsRows =
+    {
+        new("FULLSCREEN", SettingKind.Fullscreen, "DISPLAY"),
+        new("RESOLUTION", SettingKind.Resolution, "DISPLAY"),
+        new("PERFORMANCE MODE", SettingKind.PerformanceMode, "DISPLAY"),
+        new("ANIMATIONS", SettingKind.Animations, "ACCESSIBILITY"),
+        new("DEBUG READOUT", SettingKind.DebugReadout, "ADVANCED"),
+    };
 
     /// <summary>
     /// Settings.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// THE PREFERENCES THAT HAD NOWHERE TO BE SET. Two of these were reachable only by editing a
-    /// literal, which meant the one setting that can rescue a struggling machine - the render scale
-    /// - was in practice unavailable to the person on the struggling machine.
+    /// THE PREFERENCES THAT HAD NOWHERE TO BE SET. Several of these were reachable only by editing
+    /// a literal, which meant the one setting that can rescue a struggling machine - the render
+    /// scale - was in practice unavailable to the person on the struggling machine.
     /// </para>
     /// <para>
     /// THEY SAVE ON CHANGE, NOT ON BACK. There is no confirm step here and no way to cancel, so
@@ -127,9 +164,11 @@ public static class MenuRows
     /// what was just set.
     /// </para>
     /// <para>
-    /// AND PERFORMANCE MODE SAYS WHEN IT LANDS. It takes effect on the next launch, and the row
-    /// says so rather than pretending otherwise: a toggle that quietly does nothing until later is
-    /// worse than one that admits it.
+    /// PERFORMANCE MODE STILL SAYS WHEN IT LANDS - next launch, because it resizes the render
+    /// target everything else this frame is laid out for, which is a bigger change than a settings
+    /// row's own job. Fullscreen and Resolution apply immediately: both only ask the window
+    /// manager for a different backbuffer, the same request <c>Window.AllowUserResizing</c> already
+    /// lets a player make by hand, so there is nothing to defer.
     /// </para>
     /// </remarks>
 }
