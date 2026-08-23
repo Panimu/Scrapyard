@@ -815,9 +815,18 @@ public static class Screens
     /// So the port caps it and centres it. Copying the desktop behaviour faithfully would reproduce
     /// a shortcoming of the original rather than the original.
     /// </para>
+    /// <para>
+    /// WIDENED FROM THE ORIGINAL 190, once Settings could put the game in a real desktop window or
+    /// genuine fullscreen rather than only ever the small default this was tuned against. The cap
+    /// is still a fraction of a 16:9 window's own width - <c>vw - 24 * scale</c> stays the binding
+    /// constraint long before this one would - so a phone-shaped or narrow window is untouched;
+    /// this only widens the column once there is real width sitting unused either side of it. A
+    /// narrower column also means more of a Workshop row's blurb wraps onto extra lines, which was
+    /// quietly capping how many of sixteen upgrades fit on screen at once.
+    /// </para>
     /// </remarks>
     public static int Column(int vw, int scale) =>
-        System.Math.Min(vw - 24 * scale, 190 * scale);
+        System.Math.Min(vw - 24 * scale, 270 * scale);
 
     /// <summary>The size every menu's body text is set at, for a window this tall.</summary>
     /// <remarks>
