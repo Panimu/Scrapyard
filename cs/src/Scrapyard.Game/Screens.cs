@@ -13,6 +13,7 @@ public enum Screen
     HeroSelect,
     LevelSelect,
     Workshop,
+    Trophies,
     Playing,
     Paused,
 }
@@ -69,12 +70,9 @@ public static class Screens
             ("[C]", "CHASSIS", true),
             ("[Y]", "YARD", save.UnlockedLevels.Count > 1),
             ("[W]", "WORKSHOP", true),
+            ("[T]", "TROPHIES", true),
             ("[ESC]", "QUIT", true),
         });
-
-        var (got, total) = Meta.Achievements.Tally(save);
-        Font.DrawCentred(batch, sprites.Blank, $"{got} / {total} ACHIEVEMENTS", vw / 2,
-                         vh - 46 * scale, scale, Dim);
 
         var hero = HeroUnlocks.Heroes[System.Math.Clamp(save.LastHeroId, 0, HeroUnlocks.Heroes.Length - 1)];
         Font.DrawCentred(batch, sprites.Blank,
@@ -240,6 +238,84 @@ public static class Screens
         Font.DrawCentred(batch, sprites.Blank,
                          "[ARROWS] MOVE   [ENTER] BUY   [R] SELL ALL BACK   [ESC] DONE",
                          vw / 2, vh - 16 * scale, scale, Dim);
+    }
+
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Rows the trophy list shows at once. The rest scrolls.</summary>
+    public const int TrophyRows = 9;
+
+    /// <summary>
+    /// The trophy case.
+    /// </summary>
+    /// <remarks>
+    /// A SECRET SHOWS NOTHING BUT ITS SHAPE. Its icon is drawn as a silhouette, its name is question
+    /// marks and its description is blank - because "Turned a Medium Laser into the Chain Laser" is
+    /// a sentence that tells you a Chain Laser exists, that a Medium Laser becomes one, and that
+    /// there is something to go looking for. That was taken out of the manual on purpose, and a
+    /// trophy list is exactly the back door it would come back in through.
+    ///
+    /// AND THE DESCRIPTION IS IN THE PAST TENSE even when shown, because it is a record of what
+    /// happened rather than an instruction. There is no imperative form of it anywhere in the port.
+    /// </remarks>
+    public static void DrawTrophies(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
+                                    int vw, int vh)
+    {
+        Backdrop(batch, sprites, vw, vh);
+        int scale = System.Math.Max(1, vh / 400);
+
+        var (got, total) = Meta.Achievements.Tally(save);
+        Font.DrawCentred(batch, sprites.Blank, "TROPHIES", vw / 2, 10 * scale, scale * 2, Accent);
+        Font.DrawCentred(batch, sprites.Blank, $"{got} OF {total}", vw / 2, 32 * scale, scale, Dim);
+
+        var all = Meta.Achievements.All;
+        int rowH = 26 * scale;
+        int listW = System.Math.Min(vw - 40, 300 * scale);
+        int x0 = (vw - listW) / 2;
+        int top = 50 * scale;
+
+        // The window follows the cursor rather than paging, so moving one row never jumps the view.
+        int first = System.Math.Clamp(cursor - TrophyRows / 2, 0,
+                                      System.Math.Max(0, all.Length - TrophyRows));
+
+        for (int r = 0; r < TrophyRows && first + r < all.Length; r++)
+        {
+            int i = first + r;
+            var a = all[i];
+            bool earned = save.UnlockedAchievements.Contains(a.Id);
+            var (name, desc) = Meta.Achievements.Display(a, earned);
+            int y = top + r * rowH;
+
+            if (i == cursor)
+            {
+                batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 2, listW + 8, rowH - 2), Panel);
+            }
+
+            int box = 20 * scale;
+            var tex = sprites.Get(a.Icon);
+            if (tex is not null)
+            {
+                batch.Draw(tex, new Rectangle(x0, y, box, box),
+                           earned ? Color.White : new Color(0, 0, 0, 190));
+            }
+
+            Font.Draw(batch, sprites.Blank, name.ToUpperInvariant(), x0 + box + 6 * scale, y, scale,
+                      earned ? Ink : Locked);
+            if (desc != "")
+            {
+                Font.Draw(batch, sprites.Blank, desc, x0 + box + 6 * scale,
+                          y + Font.LineHeight * scale, scale, Dim);
+            }
+        }
+
+        if (all.Length > TrophyRows)
+        {
+            Font.DrawCentred(batch, sprites.Blank, $"{cursor + 1} / {all.Length}", vw / 2,
+                             top + TrophyRows * rowH + 4 * scale, scale, Dim);
+        }
+
+        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ESC] BACK", vw / 2,
+                         vh - 16 * scale, scale, Dim);
     }
 
     // -----------------------------------------------------------------------------------------

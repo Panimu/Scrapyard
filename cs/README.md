@@ -445,10 +445,32 @@ four files from the catalogs that own them: `CardTexts.cs`, `WorkshopText.cs`, `
 Each carries a `Verify` that refuses to start if the catalog has moved on. A lock retyped wrong is
 either a chassis nobody can earn or one everybody gets free, and neither announces itself.
 
-What is not done yet, plainly: no ground dressing, paths or litter; no Scrapopedia; no achievements
-LIST screen (the 25 achievements are earned, banked and announced, but there is nowhere to browse
-them); and no settings screen. There is no audio in the original either — no `AudioContext`, no
-sound files — so its absence here is not a gap.
+**The trophy case shows a secret's shape and nothing else.** A secret achievement draws as a
+silhouette under three question marks, because "Turned a Medium Laser into the Chain Laser" tells
+you a Chain Laser exists, that a Medium Laser becomes one, and that there is something worth going
+to look for. Ascension was kept out of the Scrapopedia on purpose; a browsable trophy list is
+exactly the back door it would return through.
+
+**The ground cover is a pure function of its cell, and it is bit-compared.** Rocks and rubble are
+decoration — they collide with nothing and reach no part of the world hash — so there is no reason
+for them to live in `Scrapyard.Core`, and a good reason not to: a purely visual change to how many
+rocks there are would otherwise alter a recorded run. Instead each cell hashes its own coordinates
+and the run seed into everything about the rock in it, storing nothing, and
+`GroundCoverTests` compares 605 cells across five seeds against a fixture from the live TypeScript.
+
+That fixture earned its place immediately. The hash's first mix is a plain JavaScript `*` — a
+**float64** multiply whose product passes 2^53 and loses low bits before `^` coerces it to int32 —
+while the two after it are `Math.imul` and genuinely wrap. Applying the porting guide's imul rule to
+all three gave a yard that was entirely plausible and quietly a different one. The second attempt
+then spelled the hex constants as decimals and got two of the three wrong. **Both wrong versions
+looked completely correct on screen**, which is the whole argument for bit-comparing a decoration:
+the failure mode is not a broken build, it is a screenshot of a bug that nobody else can reproduce.
+
+Large seeds are in that fixture deliberately — at small seeds a float64 multiply and an imul agree,
+so a fixture of tidy little numbers would have passed against the broken port.
+
+What is not done yet, plainly: no ground paths or litter; no Scrapopedia; and no settings screen.
+There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not
 

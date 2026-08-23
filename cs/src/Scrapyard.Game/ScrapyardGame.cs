@@ -44,6 +44,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private readonly Camera _camera = new();
     private Terrain _terrain = null!;
     private Effects _fx = null!;
+    private GroundCover _cover = null!;
 
     private Simulation _sim = null!;
     private string _levelId;
@@ -93,6 +94,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private int _levelCursor;
     private int _shopCursor;
+    private int _trophyCursor;
 
 
     /// <summary>Guards the end-of-run banking pass so it runs once rather than every frame.</summary>
@@ -140,6 +142,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _sprites = new Sprites(GraphicsDevice, Sprites.FindRoot());
         _terrain = new Terrain(_sprites);
         _fx = new Effects(_sprites);
+        _cover = new GroundCover(_sprites);
 
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
@@ -195,6 +198,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _alpha = 0;
         _walkClock = 0;
         _fx?.Clear();
+        // SEEDED FROM THE RUN, so the same seed lays the same gravel on every machine - without a
+        // byte of it reaching the world.
+        _cover?.Begin(seed);
         _camera.SnapTo(_sim.World.Player.X, _sim.World.Player.Y);
         // DROP WHAT THE LAST RUN LEFT IN THE RING, or its explosions play over this one's first
         // second. The read cursor belongs to the renderer, which is exactly why it can be moved
@@ -216,6 +222,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.HeroSelect: UpdateHeroSelect(keys); break;
             case Screen.LevelSelect: UpdateLevelSelect(keys); break;
             case Screen.Workshop: UpdateWorkshop(keys); break;
+            case Screen.Trophies: UpdateTrophies(keys); break;
             case Screen.Paused: UpdatePaused(keys); break;
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
@@ -232,6 +239,24 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (Pressed(keys, Keys.C)) _screen = Screen.HeroSelect;
         if (Pressed(keys, Keys.Y) && _save.UnlockedLevels.Count > 1) _screen = Screen.LevelSelect;
         if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
+        if (Pressed(keys, Keys.T)) _screen = Screen.Trophies;
+    }
+
+    private void UpdateTrophies(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+
+        int n = Meta.Achievements.All.Length;
+        if (Pressed(keys, Keys.Up)) _trophyCursor = (_trophyCursor + n - 1) % n;
+        if (Pressed(keys, Keys.Down)) _trophyCursor = (_trophyCursor + 1) % n;
+        if (Pressed(keys, Keys.PageUp))
+        {
+            _trophyCursor = System.Math.Max(0, _trophyCursor - Screens.TrophyRows);
+        }
+        if (Pressed(keys, Keys.PageDown))
+        {
+            _trophyCursor = System.Math.Min(n - 1, _trophyCursor + Screens.TrophyRows);
+        }
     }
 
     private void UpdateHeroSelect(KeyboardState keys)
@@ -569,7 +594,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int mw = GraphicsDevice.PresentationParameters.BackBufferWidth;
         int mh = GraphicsDevice.PresentationParameters.BackBufferHeight;
 
-        if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop)
+        if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop
+            or Screen.Trophies)
         {
             GraphicsDevice.Clear(RenderTables.Outside);
             _batch.Begin(samplerState: SamplerState.PointClamp);
@@ -582,6 +608,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh); break;
                 case Screen.Workshop:
                     Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh); break;
+                case Screen.Trophies:
+                    Screens.DrawTrophies(_batch, _sprites, _save, _trophyCursor, mw, mh); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();
@@ -600,6 +628,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _batch.Begin(samplerState: SamplerState.PointClamp);
 
         DrawFloor(w);
+        // OVER THE FLOOR AND UNDER THE TERRAIN: a rock is on the ground, and a scrap pile is on
+        // top of the rock.
+        _cover.Draw(_batch, _camera);
         _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf);
         DrawPickups(w);
         DrawEnemies(w);
