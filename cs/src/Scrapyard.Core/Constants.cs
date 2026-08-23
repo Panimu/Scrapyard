@@ -44,6 +44,49 @@ public static class Constants
     /// </summary>
     public const int ConsumableSpawnIdBase = 0x40000000;
 
+    /// <summary>Above the consumables' band, for the same reason theirs sits above the gems'.</summary>
+    public const int ChestSpawnIdBase = 0x60000000;
+
+    /// <summary>
+    /// How many pickups may lie on the ground before the drop path starts RETIRING the oldest gem
+    /// to make room. See <c>Pickups.DropGems</c>.
+    /// </summary>
+    /// <remarks>
+    /// 500, up from 400, and the reason 400 was wrong is worth writing down: a gem only leaves the
+    /// pool when it is COLLECTED, and nobody collects them all. The reference bot picks up 58% of
+    /// what it drops and a player who kites picks up about 25%, so live gems climb by roughly one
+    /// per second of survival for the whole run - monotonically, with nothing to drain them.
+    ///
+    /// At 400 that meant saturation around 6 minutes for a kiting player and 13 for the bot, and
+    /// saturation used to mean NO KILL PRODUCED A GEM EVER AGAIN. Raising the number buys time; the
+    /// retire-oldest rule is what actually fixes it.
+    /// </remarks>
+    public const int GemSoftCap = 500;
+
+    /// <summary>
+    /// The kills a single tick may report. Also the stride of a gem's derived spawn id, which is
+    /// why a port must not quietly widen it: <c>1 + tick * MaxKillsPerTick + k</c> has to stay
+    /// unique and totally ordered across a whole run.
+    /// </summary>
+    public const int MaxKillsPerTick = 128;
+
+    /// <summary>
+    /// Uint16 ceiling. An absorbed gem SATURATES here rather than wrapping round to a white gem.
+    /// </summary>
+    public const int MaxGemValue = 65535;
+
+    /// <summary>
+    /// How fast the SIDEWAYS half of a magnetised gem's velocity is bled off, per second.
+    /// </summary>
+    /// <remarks>
+    /// 6 is a time constant of about 0.17 s: fast enough that no gem completes a lap, slow enough
+    /// that a gem thrown sideways by a blast still visibly curves rather than snapping onto the
+    /// radius. Above about 12 the arc disappears and gems appear to change direction; below about 3
+    /// the orbits come back. It is here rather than in Tuning because it is not a balance dial - it
+    /// is the difference between the magnet working and not.
+    /// </remarks>
+    public const double MagnetTangentDamp = 6;
+
     /// <summary>
     /// How many bodies one CHAIN LASER beam may cross, counting the first.
     /// </summary>
@@ -299,13 +342,37 @@ public sealed class CombatTuning
     public double ShieldBreakDamage = 30;
 }
 
-/// <summary>
-/// Gems and consumables. PARTIAL, like everything else here - only the fields a ported system
-/// reads. The gem magnet, the collection radii and the consolation pair arrive with the rest of
-/// <c>pickups.ts</c>; what is here is what <c>BreakLootIn</c> and <c>DropConsumable</c> need.
-/// </summary>
+/// <summary>Gems and consumables.</summary>
 public sealed class PickupTuning
 {
+    /// <summary>XP values that define a gem tier boundary: white / green / blue / gold / boss.</summary>
+    public readonly double[] GemTierValues = { 1, 3, 9, 45, 500 };
+
+    /// <summary>Inside pickupRadius a gem ACCELERATES toward the player - it chases, it does not teleport.</summary>
+    public double MagnetAccel = 1400;
+
+    public double MagnetMaxSpeed = 600;
+
+    /// <summary>Collection distance, world units. Generous: a gem you visibly touched must be collected.</summary>
+    public double CollectRadius = 18;
+
+    /// <summary>
+    /// How near you have to be to pick a consumable UP. Bigger than <see cref="CollectRadius"/>
+    /// because a consumable does not come to you - it is not magnetised, and walking over to it is
+    /// the whole decision the barrel poses - so the target has to be forgiving once you are on top
+    /// of it.
+    /// </summary>
+    public double ConsumableRadius = 34;
+
+    /// <summary>Seconds during which a magnet pulls EVERY gem, at any distance.</summary>
+    public double MagnetSec = 4;
+
+    /// <summary>
+    /// Seconds of PLAYED time between one destroyed barrel standing back up somewhere in the yard.
+    /// 0 turns regrowth off entirely and the run is played on the barrels it started with.
+    /// </summary>
+    public double BarrelRegrowSec = 18;
+
     /// <summary>Spanner heal, as a fraction of MAX HP - so it stays worth picking up at every level.</summary>
     public double RepairFrac = 0.25;
 
@@ -342,6 +409,17 @@ public sealed class PickupTuning
     public double ConsolationHealFrac = 0.1;
 
     public double ConsolationCredits = 15;
+
+    /// <summary>Which gem sprite a value draws. Highest boundary that fits. Port of <c>gemTierForValue</c>.</summary>
+    public int GemTierForValue(double value)
+    {
+        var v = GemTierValues;
+        if (value >= v[4]) return 4;
+        if (value >= v[3]) return 3;
+        if (value >= v[2]) return 2;
+        if (value >= v[1]) return 1;
+        return 0;
+    }
 }
 
 /// <summary>

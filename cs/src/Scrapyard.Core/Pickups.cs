@@ -1,17 +1,34 @@
 namespace Scrapyard.Core;
 
 /// <summary>
-/// THE LOOT-BREAK PATH out of <c>src/core/systems/pickups.ts</c>: what happens when something
-/// reaches a fuel drum, a tree, a site fence or a sheep.
+/// S10 - <see cref="UpdatePickups"/>. THE ONLY PICKUP ALLOCATION SITE IN THE SIMULATION. Port of
+/// <c>src/core/systems/pickups.ts</c>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A SLICE, NOT THE WHOLE FILE, and the boundary is a dependency rather than a mood. The rest of
-/// <c>pickups.ts</c> - the gem magnet, collection, chests, barrel regrowth, the consolation pair -
-/// needs <c>progression</c>, which is unported. <see cref="BreakLootIn"/> and
-/// <see cref="DropConsumable"/> need only terrain, the flock, the pickup pool and the loot stream,
-/// all of which exist. They are on the critical path for BOTH <c>weapons</c> and
-/// <c>projectiles</c>, which is why they arrive ahead of the file they live in.
+/// Two passes, in this order and no other: drain the KillFeed into gems, then magnet every live gem
+/// toward the player and collect the ones that arrive. It runs after <c>UpdateDamage</c> (S9) so a
+/// kill's gem exists on the SAME TICK the kill happened, and before <c>UpdateProgression</c> (S11)
+/// so the XP that gem is worth can level you on that same tick. The whole reward chain - shell
+/// lands, body dies, gem drops, gem is magnetised, XP banks, card opens - can complete inside 16 ms,
+/// and the reason is just that the stages are in the right order.
+/// </para>
+/// <para>
+/// <b>THE MAGNET CHASES, IT DOES NOT TELEPORT.</b> Inside <c>PickupRadius</c> a gem ACCELERATES
+/// toward the player at <c>MagnetAccel</c>, capped at <c>MagnetMaxSpeed</c>, and is collected inside
+/// <c>CollectRadius</c>. Snapping gems to the player would be one line shorter and would delete the
+/// single best piece of feedback in the game: the moment a kill happens and eleven gems come
+/// streaming at you is the reward, and it is legible precisely because it takes a few hundred
+/// milliseconds and you can see it coming. Leaving the field ZEROES a gem's velocity rather than
+/// letting it coast - the magnet is a FIELD, not a launcher, and a coasting gem would need a drag
+/// constant that does not exist in Tuning and must not be invented here.
+/// </para>
+/// <para>
+/// <b>OVERFLOW RECYCLES THE OLDEST GEM SO THE NEWEST ONE STILL DROPS.</b> Gems only leave the field
+/// when they are picked up, and nobody picks up all of them, so the pool climbs monotonically and at
+/// <see cref="Constants.GemSoftCap"/> EVERY subsequent kill is at the cap. Refusing there would be
+/// refusing for the rest of the run - which is what the old rule did, and players correctly reported
+/// that enemies had stopped dropping anything. See <c>RecycleOldestGem</c>.
 /// </para>
 /// <para>
 /// <b>FOUR CALLERS, NONE OF WHICH KNOW WHICH MAP THEY ARE ON.</b> A shell, a beam, a blast and the
@@ -25,6 +42,14 @@ namespace Scrapyard.Core;
 /// player happened to be shooting at the time, so the number of draws per run is a function of how
 /// they play. Pulling those out of the spawn stream would make the horde itself depend on how much
 /// scenery someone shot.
+/// </para>
+/// <para>
+/// <b>A GEM'S SPAWN ID IS DERIVED, NOT STORED:</b> <c>1 + tick * MaxKillsPerTick + killIndex</c>. It
+/// has to be unique among live gems (the renderer keys sprites off it) and totally ordered (it is
+/// the overflow tie-break), and there is exactly one gem per KillFeed entry, so the tick and the
+/// feed index already identify it. Deriving it avoids adding a counter field to <see cref="World"/>
+/// - which would have to be reset, hashed and kept monotonic - and it stays inside u32 for 33,554
+/// ticks x 128, far past a 54,000-tick run. It is 1-based so 0 stays available as "none".
 /// </para>
 /// </remarks>
 public static class Pickups
@@ -242,5 +267,508 @@ public static class Pickups
             if (value >= thresholds[i]) tier = i;
         }
         return tier;
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // The stage
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>S10. Drains the kill feed into gems, then magnets and collects.</summary>
+    public static void UpdatePickups(World world, IScenery scenery, double dt)
+    {
+        var p = world.Player;
+        if (p.MagnetSec > 0)
+        {
+            p.MagnetSec -= dt;
+            if (p.MagnetSec < 0) p.MagnetSec = 0;
+        }
+        RegrowBarrels(world, scenery);
+        DropGems(world);
+        MagnetAndCollect(world, dt);
+    }
+
+    /// <summary>
+    /// Stands one broken drum back up every <c>BarrelRegrowSec</c> of PLAYED time.
+    /// </summary>
+    /// <remarks>
+    /// THE YARD USED TO BE A FIXED ALLOWANCE. Scenery was generated once at world creation and a
+    /// broken barrel was gone for the rest of the run, so a 16-minute run spent its second half in
+    /// ground the player had already stripped - the piles do not move, so a cleared area stays
+    /// cleared and the whole mechanic quietly stopped existing partway through.
+    ///
+    /// <c>RunTicks</c> RATHER THAN <c>Tick</c>, and a modulo rather than a stored timer. RunTicks is
+    /// frozen while a level-up card or a chest is open, so the cadence counts time the player was
+    /// actually PLAYING - eighteen seconds of fighting, not eighteen seconds of menu. The modulo
+    /// means there is no timer to add to World, to reset, or to keep in the hash; the schedule is a
+    /// pure function of the clock.
+    /// </remarks>
+    private static void RegrowBarrels(World world, IScenery scenery)
+    {
+        int every = (int)Input.JsRound(world.Tuning.Pickups.BarrelRegrowSec / Constants.Dt);
+        if (every <= 0) return;
+        if (world.RunTicks == 0 || world.RunTicks % every != 0) return;
+
+        long i = scenery.RegrowBarrel(world.Rng.Loot, world.Player.X, world.Player.Y);
+        if (i < 0) return;
+        world.Events.Push(EventKind.BarrelGrew, world.Tick,
+                          scenery.PieceX(i), scenery.PieceY(i), scenery.PieceRadius(i), 0);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // Drops
+    // -----------------------------------------------------------------------------------------
+
+    private static void DropChest(World world, double x, double y)
+    {
+        uint handle = world.Pickups.Alloc(PickupPool.KindChest, 0, 0, x, y,
+                                          unchecked((uint)(Constants.ChestSpawnIdBase + world.Tick)));
+        if (handle == Handle.Null) return;
+        int d = world.Pickups.Count - 1;
+        world.Pickups.Flags[d] |= PickupPool.FlagAuto;
+        world.Events.Push(EventKind.GemSpawned, world.Tick, x, y, 0, 0);
+    }
+
+    private static void DropGems(World world)
+    {
+        var feed = world.Kills;
+        if (feed.Count == 0) return;
+
+        var pool = world.Pickups;
+        var tuning = world.Tuning.Pickups;
+
+        for (int k = 0; k < feed.Count; k++)
+        {
+            int value = feed.XpValue[k];
+            // Zero-value kills drop nothing. The 900 u despawn ring never reaches this stage at
+            // all - it marks enemies dead without writing a KillFeed entry, because a kill you did
+            // not make must not pay.
+            if (value <= 0) continue;
+
+            double x = feed.X[k];
+            double y = feed.Y[k];
+
+            // A CYBER CHEST as well as a core. Dropped here rather than in UpdateDamage because
+            // this is already the stage that turns a KillFeed entry into something on the ground,
+            // and the feed carries both the flags and the flavour that say which kills pay one.
+            //
+            // ABOVE the cap check, deliberately. It used to sit below it, behind a `continue`, so a
+            // boss killed while the field was saturated - which is to say any boss in the back half
+            // of a long run - left no chest at all. The one guaranteed reward in the game must not
+            // be contingent on how many gems happen to be lying in a corner of the yard.
+            //
+            // A BOSS LEAVES ONE, and so does anything whose FLAVOUR says it does - the Chest
+            // Dropper, an elite that exists to be shot for exactly this. Read off the table rather
+            // than tested by id, so a second body that pays a chest is a literal in Flavours.All and not
+            // a third clause here.
+            int flavour = feed.Flavour[k];
+            bool flavourPays = flavour >= 0 && flavour < Flavours.All.Length &&
+                               Flavours.All[flavour].DropsChest;
+            if ((feed.Flags[k] & EnemyPool.FlagBoss) != 0 || flavourPays)
+            {
+                DropChest(world, x, y);
+            }
+
+            // MAKE ROOM RATHER THAN REFUSE THE DROP. At the cap, every kill is at the cap, so
+            // refusing here is refusing for the rest of the run.
+            if (pool.Count >= Constants.GemSoftCap) RecycleOldestGem(world);
+
+            uint spawnId = unchecked((uint)(1 + world.Tick * Constants.MaxKillsPerTick + k));
+            int tier = tuning.GemTierForValue(value);
+            uint handle = pool.Alloc(PickupPool.KindGem, value, tier, x, y, spawnId);
+            if (handle == Handle.Null)
+            {
+                // Pool genuinely exhausted below the soft cap (only reachable with a hostile
+                // PickupCapacity). Absorb rather than discard: the player's XP is never quietly
+                // deleted.
+                AbsorbIntoNearest(world, x, y, value);
+                continue;
+            }
+
+            world.Events.Push(EventKind.GemSpawned, world.Tick, x, y, value, tier);
+        }
+    }
+
+    /// <summary>
+    /// Retires the OLDEST live gem, merging its value into the live gem nearest to it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// OLDEST - not furthest, not smallest. Age is the honest proxy for "abandoned": the yard is
+    /// 12,288 units across and the fighting moves around it, so a gem that has survived a long time
+    /// is one nobody went back for. Distance-from-player would eat the gem the player is sprinting
+    /// towards the instant they turned around; smallest-value would strip the field of exactly the
+    /// cheap gems that make a horde kill look like a horde kill. Age is also free to compute -
+    /// SpawnId is already a monotonic clock and already unique, so "oldest" is a minimum over a
+    /// field the pool has to carry anyway.
+    /// </para>
+    /// <para>
+    /// NEAREST TO THE RETIRED GEM, not nearest to the player. The merge is meant to be invisible:
+    /// two gems in a forgotten corner become one richer gem in that same corner. Sending the value
+    /// to the player's neighbourhood instead would be a slow teleport of XP across the map, and
+    /// would make the gems around the player silently swell for reasons nothing on screen explains.
+    /// </para>
+    /// <para>
+    /// Consumables and chests are skipped by kind in both passes. They share the pool but not the
+    /// rule - a spanner is not spare capacity, and a chest that evaporated because the gem field
+    /// filled up would be the boss-reward bug again in a different costume.
+    /// </para>
+    /// </remarks>
+    private static void RecycleOldestGem(World world)
+    {
+        var pool = world.Pickups;
+        int n = pool.Count;
+
+        int oldest = -1;
+        for (int d = 0; d < n; d++)
+        {
+            if ((pool.Flags[d] & PickupPool.FlagDead) != 0) continue;
+            if (pool.Kind[d] != PickupPool.KindGem) continue;
+            if (oldest < 0 || pool.SpawnId[d] < pool.SpawnId[oldest]) oldest = d;
+        }
+        if (oldest < 0) return;
+
+        double ox = pool.X[oldest];
+        double oy = pool.Y[oldest];
+
+        int best = -1;
+        double bestD2 = 0;
+        for (int d = 0; d < n; d++)
+        {
+            if (d == oldest) continue;
+            if ((pool.Flags[d] & PickupPool.FlagDead) != 0) continue;
+            if (pool.Kind[d] != PickupPool.KindGem) continue;
+            double dx = pool.X[d] - ox;
+            double dy = pool.Y[d] - oy;
+            double d2 = dx * dx + dy * dy;
+            if (best < 0 || d2 < bestD2 || (d2 == bestD2 && pool.SpawnId[d] < pool.SpawnId[best]))
+            {
+                best = d;
+                bestD2 = d2;
+            }
+        }
+        // The oldest gem is the only gem. Retiring it would delete its XP outright, so it stays and
+        // the caller's drop simply takes another slot - PickupCapacity has headroom above the soft
+        // cap for exactly this sort of edge.
+        if (best < 0) return;
+
+        int total = pool.Value[best] + pool.Value[oldest];
+        int clamped = total > Constants.MaxGemValue ? Constants.MaxGemValue : total;
+        pool.Value[best] = (ushort)clamped;
+        pool.Tier[best] = (byte)world.Tuning.Pickups.GemTierForValue(clamped);
+        world.Events.Push(EventKind.GemSpawned, world.Tick,
+                          pool.X[best], pool.Y[best], clamped, pool.Tier[best]);
+
+        // Marked, not removed - S12 owns removal, so `pool.Count` does not fall until the end of
+        // the tick and the caller's Alloc takes a fresh slot above it.
+        pool.MarkDead(oldest);
+    }
+
+    /// <summary>
+    /// Adds <paramref name="value"/> to the nearest live gem, upgrading its tier.
+    /// </summary>
+    /// <remarks>
+    /// Ties on exact distance go to the lower SpawnId, which makes the choice a strict total order
+    /// and therefore independent of dense index - important, because dense indices are reshuffled by
+    /// every reap.
+    /// </remarks>
+    private static void AbsorbIntoNearest(World world, double x, double y, int value)
+    {
+        var pool = world.Pickups;
+        int n = pool.Count;
+
+        int best = -1;
+        double bestD2 = 0;
+        for (int d = 0; d < n; d++)
+        {
+            if ((pool.Flags[d] & PickupPool.FlagDead) != 0) continue;
+            if (pool.Kind[d] != PickupPool.KindGem) continue;
+            double dx = pool.X[d] - x;
+            double dy = pool.Y[d] - y;
+            double d2 = dx * dx + dy * dy;
+            if (best < 0 || d2 < bestD2 || (d2 == bestD2 && pool.SpawnId[d] < pool.SpawnId[best]))
+            {
+                best = d;
+                bestD2 = d2;
+            }
+        }
+        // Nothing live to absorb into: only reachable if the pool is simultaneously at the soft cap
+        // and empty, which is a contradiction. Guarded rather than asserted - a lost gem is not
+        // worth a crash.
+        if (best < 0) return;
+
+        int total = pool.Value[best] + value;
+        int clamped = total > Constants.MaxGemValue ? Constants.MaxGemValue : total;
+        pool.Value[best] = (ushort)clamped;
+        pool.Tier[best] = (byte)world.Tuning.Pickups.GemTierForValue(clamped);
+
+        world.Events.Push(EventKind.GemSpawned, world.Tick,
+                          pool.X[best], pool.Y[best], clamped, pool.Tier[best]);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // Magnet + collection
+    // -----------------------------------------------------------------------------------------
+
+    private static void MagnetAndCollect(World world, double dt)
+    {
+        var pool = world.Pickups;
+        int n = pool.Count;
+        if (n == 0) return;
+
+        var player = world.Player;
+        double px = player.X;
+        double py = player.Y;
+
+        var tuning = world.Tuning.Pickups;
+        double pickupR = player.Stats.PickupRadius;
+        double pickupR2 = pickupR * pickupR;
+        double collectR2 = tuning.CollectRadius * tuning.CollectRadius;
+        double accel = tuning.MagnetAccel;
+        double maxSpeed = tuning.MagnetMaxSpeed;
+        double maxSpeed2 = maxSpeed * maxSpeed;
+
+        // Top tier of GemTierValues - the boss core, which is attracted from any distance.
+        int bossTier = tuning.GemTierValues.Length - 1;
+
+        double consumableR2 = tuning.ConsumableRadius * tuning.ConsumableRadius;
+        // While a MAGNET is running, every gem is in the field whatever the distance.
+        bool magnetAll = player.MagnetSec > 0;
+
+        for (int d = 0; d < n; d++)
+        {
+            if ((pool.Flags[d] & PickupPool.FlagDead) != 0) continue;
+
+            double dx = px - pool.X[d];
+            double dy = py - pool.Y[d];
+            double d2 = dx * dx + dy * dy;
+
+            // CONSUMABLES ARE WALKED OVER. They do not chase and are not chased: no magnet term, no
+            // velocity, just a generous contact radius. That is the point of them - a barrel poses a
+            // question ("is that spanner worth crossing the field for, right now") and a consumable
+            // that flew to the player would answer it for them.
+            //
+            // A SPANNER AT FULL HEALTH IS LEFT WHERE IT LIES rather than consumed for nothing. It
+            // used to clamp to maxHp on collection, which is the same thing as deleting it - and a
+            // player at full health walks over spanners constantly, because full health is the state
+            // you spend most of a good run in. So the one reward that answers "I am about to die"
+            // was mostly being destroyed by people who were fine. It now waits.
+            //
+            // NOT AN EARLY `continue`: it falls through to the same skip every consumable takes, so
+            // the spanner is simply not TAKEN. It stays in the pool, keeps its position, and is
+            // collected the moment the player comes back to it having lost something.
+            if (pool.Kind[d] != PickupPool.KindGem)
+            {
+                if (d2 <= consumableR2 && !WouldBeWasted(world, pool.Kind[d]))
+                {
+                    TakeConsumable(world, d);
+                    continue;
+                }
+
+                // A RUNNING MAGNET SWEEPS UP COINS AND SPANNERS TOO, and only while it is running.
+                // The MAGNET is the one pickup whose entire proposition is that it collects for you,
+                // and a magnet that hoovered the XP off the floor while leaving the money and the
+                // repairs lying there reads as broken rather than as restraint. NOT the dice and not
+                // a chest: a chest is a set-piece you walk to and it stops the run to open, so
+                // dragging either would be the magnet reaching past what it is for.
+                //
+                // `d2 == 0` IS FOLDED IN, and it is not theoretical here the way it is for a gem. A
+                // gem at zero distance was collected two lines above and never reaches the
+                // normalise. A spanner is the one thing in the pool that can sit at EXACTLY zero and
+                // stay there: dragged to the mech at full hull, refused by WouldBeWasted, and parked
+                // on the pixel. 1 / sqrt(0) is Infinity, 0 * Infinity is NaN, and a NaN position is
+                // a pickup that can never be collected again and never draws.
+                bool dragged =
+                    magnetAll &&
+                    d2 != 0 &&
+                    (pool.Kind[d] == PickupPool.KindCredit || pool.Kind[d] == PickupPool.KindRepair);
+                if (!dragged)
+                {
+                    pool.Vx[d] = 0;
+                    pool.Vy[d] = 0;
+                    continue;
+                }
+                // A SPANNER AT FULL HULL IS STILL NOT TAKEN - it falls through to the same magnet
+                // terms as everything else and simply arrives, then waits at the mech's feet for the
+                // hit that makes it worth something. WouldBeWasted above is what refuses it, and it
+                // keeps refusing.
+            }
+            else
+            {
+                // `d2 == 0` is folded in here so the normalise below can never divide by zero: a gem
+                // sitting exactly on the player is, by any reading, collected.
+                if (d2 <= collectR2 || d2 == 0)
+                {
+                    Collect(world, d);
+                    continue;
+                }
+
+                if (!magnetAll && d2 > pickupR2 && pool.Tier[d] < bossTier)
+                {
+                    // Outside the field. The magnet is a field, not a launcher - a gem that leaves
+                    // it stops rather than coasting on a drag constant that does not exist in
+                    // Tuning.
+                    pool.Vx[d] = 0;
+                    pool.Vy[d] = 0;
+                    continue;
+                }
+            }
+
+            double inv = 1 / Math.Sqrt(d2);
+            double ux = dx * inv;
+            double uy = dy * inv;
+
+            // SPLIT THE VELOCITY AND DAMP THE SIDEWAYS HALF. This is the whole fix for gems that
+            // ORBITED. Acceleration toward a point, with no damping, is not a magnet - it is
+            // gravity, and gravity makes satellites. Any gem with a sideways component kept it
+            // forever: it swung round the player instead of arriving, and the moment its circle
+            // carried it past PickupRadius the field let go and the velocity was zeroed, which is
+            // the "flung away and lands still" half of the same bug. Both halves are one missing
+            // term.
+            //
+            // So the velocity is resolved into RADIAL (toward the player) and TANGENTIAL (around
+            // him). The radial part accelerates exactly as before. The tangential part is what makes
+            // an orbit, and it is damped away in about a sixth of a second - so a gem curves in hard
+            // and lands, and nothing can ever settle into a stable circle.
+            //
+            // NOT A GLOBAL DRAG, which is the other way to kill an orbit and the wrong one: drag
+            // would also slow the approach, and the approach is the feedback the whole magnet exists
+            // to give.
+            double vr = pool.Vx[d] * ux + pool.Vy[d] * uy;
+            double tx = pool.Vx[d] - vr * ux;
+            double ty = pool.Vy[d] - vr * uy;
+            double keep = 1 - Constants.MagnetTangentDamp * dt;
+            double damp = keep > 0 ? keep : 0;
+            tx *= damp;
+            ty *= damp;
+
+            double nvr = vr + accel * dt;
+            double vx = ux * nvr + tx;
+            double vy = uy * nvr + ty;
+
+            double s2 = vx * vx + vy * vy;
+            if (s2 > maxSpeed2)
+            {
+                double kk = maxSpeed / Math.Sqrt(s2);
+                vx *= kk;
+                vy *= kk;
+            }
+
+            // THE INTEGRATE READS THE UNROUNDED LOCAL, not the float that was just stored beside
+            // it. The TypeScript is `pool.vx[d] = vx; let x = pool.x[d] + vx * dt` - `vx` there is
+            // still the full-precision local, and only the POOL copy is narrowed. Reading
+            // `pool.Vx[d]` back here instead would round once more than the original does and drift
+            // a gem's whole approach.
+            pool.Vx[d] = (float)vx;
+            pool.Vy[d] = (float)vy;
+            double nx = pool.X[d] + vx * dt;
+            double ny = pool.Y[d] + vy * dt;
+
+            // THE FENCE, and it is the magnet that needs it rather than the drop. A gem is dropped
+            // where a body died, and bodies are held inside the yard - but the magnet is a
+            // launcher-shaped accelerator: at 600 u/s it covers 10 u per tick against an 18 u
+            // collect radius, so a gem crossing at a shallow angle can miss the player entirely.
+            // Standing AT the fence, the miss throws it into the void, where it stops - and where
+            // the player can never get within 18 u of it, because they cannot reach the wire.
+            // Measured at 89 u outside the bound before this clamp, which is XP silently deleted.
+            double edge = world.ArenaHalf;
+            if (nx < -edge) nx = -edge;
+            else if (nx > edge) nx = edge;
+            if (ny < -edge) ny = -edge;
+            else if (ny > edge) ny = edge;
+
+            pool.X[d] = (float)nx;
+            pool.Y[d] = (float)ny;
+        }
+    }
+
+    /// <summary>Banks the gem's face value.</summary>
+    /// <remarks>
+    /// Scaling by <c>XpGain</c> is deliberately NOT done here: UpdateProgression owns that multiply,
+    /// so <c>XpBanked</c> always means "raw XP picked up this tick" and a Data Siphon taken
+    /// mid-flight cannot double-count against a gem already in transit.
+    /// </remarks>
+    private static void Collect(World world, int d)
+    {
+        var pool = world.Pickups;
+        world.XpBanked += pool.Value[d];
+        world.Stats.GemsCollected++;
+        world.Events.Push(EventKind.GemCollected, world.Tick,
+                          pool.X[d], pool.Y[d], pool.Value[d], pool.Tier[d]);
+        // Marked, never removed. S12 is the only removal site, so this dense index stays valid for
+        // UpdateProgression and for the renderer's drain after StepWorld returns.
+        pool.MarkDead(d);
+    }
+
+    /// <summary>Would running over this consumable throw it away?</summary>
+    /// <remarks>
+    /// ONE KIND ANSWERS YES: a repair at full health. Credits always land, and a magnet is a refresh
+    /// rather than a stack, so taking a second one mid-pull genuinely does something.
+    ///
+    /// <c>&gt;=</c> rather than <c>&gt;</c>: hp is a float that regen and clamping both write, so
+    /// "full" is a state the number reaches exactly and must not be one ulp away from.
+    /// </remarks>
+    private static bool WouldBeWasted(World world, int kind)
+    {
+        if (kind != PickupPool.KindRepair) return false;
+        return world.Player.Hp >= world.Player.Stats.MaxHp;
+    }
+
+    /// <summary>Applies a consumable and marks it taken.</summary>
+    /// <remarks>
+    /// All three land INSTANTLY and none of them opens a menu. A bullet-heaven's floor pickups have
+    /// to resolve in the moment the player runs over them, because the player is running over them
+    /// while being chased - anything that needed a decision would be a pause button with extra steps.
+    /// </remarks>
+    private static void TakeConsumable(World world, int d)
+    {
+        var pool = world.Pickups;
+        var player = world.Player;
+        int kind = pool.Kind[d];
+        int value = pool.Value[d];
+
+        if (kind == PickupPool.KindChest)
+        {
+            // FREEZES THE WORLD. OpenChest rolls the spin and sets RunPhase.Chest, so this tick is
+            // the last one the horde moves until the player acknowledges the overlay. Marked dead
+            // first: the chest must not still be sitting there to be collected a second time on the
+            // tick the phase changes back.
+            pool.MarkDead(d);
+            world.Stats.Consumables++;
+            world.Events.Push(EventKind.ConsumableTaken, world.Tick, pool.X[d], pool.Y[d], 0, kind);
+            Progression.OpenChest(world);
+            return;
+        }
+
+        if (kind == PickupPool.KindRepair)
+        {
+            // Clamped to max: a spanner tops you up, it never overheals into a buffer the HUD cannot
+            // show.
+            double hp = player.Hp + value;
+            player.Hp = hp > player.Stats.MaxHp ? player.Stats.MaxHp : hp;
+        }
+        else if (kind == PickupPool.KindCredit)
+        {
+            world.Stats.Credits += value;
+        }
+        else if (kind == PickupPool.KindDice)
+        {
+            // BANKED, NOT SPENT. It sits on the run until the player chooses to burn it on a card
+            // they do not like, which is the whole point: every other consumable resolves the
+            // instant you touch it, and this one is the only thing in the yard you can decide what
+            // to do with later.
+            world.LevelUp.Rerolls += value;
+            world.Stats.Dice++;
+        }
+        else if (kind == PickupPool.KindMagnet)
+        {
+            // Refreshed, not stacked. Two magnets inside four seconds is a longer pull, not a double
+            // one - there is nothing for a second copy of "every gem is attracted" to do.
+            double sec = world.Tuning.Pickups.MagnetSec;
+            if (sec > player.MagnetSec) player.MagnetSec = sec;
+        }
+
+        world.Stats.Consumables++;
+        world.Events.Push(EventKind.ConsumableTaken, world.Tick, pool.X[d], pool.Y[d], value, kind);
+        pool.MarkDead(d);
     }
 }

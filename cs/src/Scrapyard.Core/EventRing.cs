@@ -334,9 +334,53 @@ public sealed class ContactBuffer
     }
 }
 
+/// <summary>
+/// The bodies that died this tick, and everything a DROP needs to know about them. Port of
+/// <c>KillFeed</c> in <c>events/ring.ts</c>.
+/// </summary>
+/// <remarks>
+/// The enemy is reaped at S12 and the drop stage runs after it, so anything a drop depends on has
+/// to travel in the feed rather than be looked up from the body - by then there is no body. That
+/// is why the position, the flavour and the flags are copied in rather than referenced.
+/// </remarks>
 public sealed class KillFeed
 {
+    public readonly int Capacity;
     public int Count;
+    public readonly float[] X;
+    public readonly float[] Y;
+    public readonly ushort[] XpValue;
+    public readonly byte[] Archetype;
+
+    /// <summary>
+    /// The dead body's FLAVOUR. Carried for the same reason the position is. <c>DropsChest</c> is
+    /// read off it - see <c>EnemyCatalog.Flavours</c>.
+    /// </summary>
+    public readonly byte[] Flavour;
+    public readonly byte[] Flags;
+
+    public KillFeed(int capacity)
+    {
+        Capacity = capacity;
+        X = new float[capacity];
+        Y = new float[capacity];
+        XpValue = new ushort[capacity];
+        Archetype = new byte[capacity];
+        Flavour = new byte[capacity];
+        Flags = new byte[capacity];
+    }
+
+    public void Push(double x, double y, int xpValue, int archetype, int flavour, int flags)
+    {
+        if (Count >= Capacity) return;
+        int i = Count++;
+        X[i] = (float)x;
+        Y[i] = (float)y;
+        XpValue[i] = (ushort)xpValue;
+        Archetype[i] = (byte)archetype;
+        Flavour[i] = (byte)flavour;
+        Flags[i] = (byte)flags;
+    }
 }
 
 /// <summary>

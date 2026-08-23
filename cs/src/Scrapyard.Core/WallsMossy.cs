@@ -628,4 +628,7 @@ public sealed class MossWalls : IScenery
     public double PieceX(long i) => WallCentre(WallCellX(i));
     public double PieceY(long i) => WallCentre(WallCellY(i));
     public double PieceRadius(long i) => WallHalf;
+
+    /// <summary>NOTHING COMES BACK HERE. A wood the player cut through stays cut.</summary>
+    public long RegrowBarrel(Rng rng, double px, double py) => -1;
 }

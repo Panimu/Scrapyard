@@ -2,8 +2,8 @@
 
 A port of `src/core` from TypeScript. **In progress**: the pools, the hashes, spatial/flow/collision,
 the director and targeting, every content catalog, all three terrains, `stats.ts`, `sheep`,
-`projectiles`, `drones`, `weapons`, `playerMovement`, `progression` and the loot-break path are
-done and proven. Two systems remain, and neither needs new infrastructure.
+`projectiles`, `drones`, `weapons`, `playerMovement`, `progression` and `pickups` are done and
+proven. ONE system remains - `damage` - and it needs no new infrastructure.
 
 The contract is `goldens/corpus.json` at the repository root, and the specification is
 [`docs/PORTING-GOLDEN-MASTER.md`](../docs/PORTING-GOLDEN-MASTER.md). Read that before writing any
@@ -53,15 +53,15 @@ dotnet test
 | `CityBlocks` — City Chaos's road grid | done, incl. both push-out "buried" topologies and the two reachability invariants |
 | `EventKind` — the 32 event ids and their names | done, whole table compared both ways — **one was wrong** |
 | `Sheep` — the flock, `SheepRayHit`, `TakeSheepIn` | done, 13 driven cases over 2,924 ticks, stream compared every tick |
-| `Pickups.BreakLootIn` / `DropConsumable` | done, all three terrains + the flock, loot stream compared per break |
+| `Pickups` — S10, gems, the magnet, consumables, regrowth | done, 28 posed cases, every position and velocity compared as f32 bits |
+| `KillFeed` / `IScenery.RegrowBarrel` / `MetaRunGrant` | done, arrived with `Pickups` and `Progression` |
 | `Projectiles` — S7, all three behaviours | done, 8 driven cases over 320 ticks, hit buffer compared too |
 | `Drones` — S6b, the bay and its escort | done, 10 driven cases over 5,210 ticks |
 | `Weapons` — S6, seven patterns, beams, heat, three ascensions | done, 21 driven cases over 6,540 ticks |
 | `BeamBuffer` / `LaserHardpoint` / hero-trait hook | done, arrived with `Weapons` |
 | `PlayerMovement` — S3, the chassis and its three clocks | done, 14 driven cases over 8,100 ticks |
 | `Progression` — the deck, the picker, the chest, the ascensions | done, 21 posed cases, both streams compared with draw counts |
-| `MetaCatalog.MetaRunGrant` / `World.SeedRunGrants` | done, arrived with `Progression` |
-| The other 2 systems | not started — **this is the remaining job** |
+| `Damage` — S9 | not started — **this is the remaining job** |
 | Golden corpus replay | not started — needs all of `stepWorld` |
 
 **Content catalogs are data, not logic**, and are held to a different bar: one bit-exact table
@@ -274,6 +274,47 @@ Two injected faults turned out **not to be faults**, which is worth writing down
 them: flipping `target < w` to `target <= w` in either weighted pick differs only when a float draw
 lands exactly on a bucket edge, and iterating the chest's `grants` past its `payout` reads the `-1`
 fill and grants nothing. A test that failed on either of those would be over-fitted, not stricter.
+
+**`Pickups` is two systems in one file, and it is measured two ways.** The drop half is branch
+logic over the kill feed — which kills pay a chest, when the soft cap retires a gem, which gem it
+merges into — so its cases pose an exact pool, run one tick and compare everything. The magnet half
+is an INTEGRATOR, and an integrator cannot be checked at its endpoints: a gem arrives at the player
+under almost any wrong constant. Those cases run the whole approach and compare every position and
+velocity on every tick as raw f32 bits.
+
+**The tangential damp is the reason that per-tick comparison exists.** It is invisible in a final
+position and invisible in a total — what it changes is the SHAPE of the curve. Removing it still
+delivers the gem; it just orbits first, which is the bug the term was added to fix. Dropping the
+term diverges on tick 0 and the fixture catches it immediately.
+
+One float32 bug was found and fixed here, and it is worth recording because it is a shape this port
+has not hit before. The TypeScript reads:
+
+```js
+pool.vx[d] = vx;                    // narrows to f32 in the POOL
+let x = pool.x[d] + vx * dt;        // integrates the UNROUNDED local
+```
+
+The C# first draft wrote `pool.X[d] + pool.Vx[d] * dt`, reading the freshly-narrowed value straight
+back. That is one extra rounding per tick, and it showed up as a single ULP on a gem's y position.
+The rule this project already had — *transcribe the source's exact expression* — covers it; the new
+part is that a variable and the array slot it was just stored into are DIFFERENT EXPRESSIONS even
+though they hold "the same" number.
+
+**Three of `PickupsTests`' assertions read the fixture rather than a C# run, on purpose.** They
+check that the CASES still discriminate — that the gem really closes, that it really is launched
+sideways hard enough for the damp to matter, that something really reaches the fence. The bit
+comparison is what tests the port; these are what stop it from becoming a comparison of two
+identical nothings. That failure mode is not hypothetical: while building this fixture, four cases
+in a row measured nothing (a chest case whose pool reset made every allocation look like a failure,
+a barrel-regrowth group whose clock never advanced so all three read zero draws, a
+"standing over it" case that broke barrels across the whole yard, and a moss case that silently ran
+on the Scrapyard because `'mossy'` is not a level id). Each passed. Each proved nothing.
+
+Two more things turned out **not to be faults**, alongside the two recorded under `Progression`:
+marking a chest dead before rather than after `OpenChest` (both mark it within the tick, and
+`OpenChest` touches no pickups), and iterating the chest's grants past its payout. Neither is worth
+a test.
 
 ## Why the RNG came first
 
@@ -635,16 +676,10 @@ so it cannot silently recur. `Trig.Atan2` above is the C# side of that fix. `wea
 
 ## Next
 
-Two systems remain: `damage` and the rest of `pickups`. (`sheep`, `projectiles`, `drones`,
-`weapons`, `playerMovement` and `progression` are done, as is the `breakLootIn`/`DropConsumable`
-slice of `pickups` that several of them need. Nothing left needs new infrastructure.)
-
-In rough dependency order:
-- **`pickups`** needs `progression`, which is now done. Both terrains (`MossWalls`/`CityBlocks`) and
-  `Sheep.TakeSheepIn`, which its loot path calls alongside the barrel case, are done too — so this
-  is unblocked.
-- **`damage`** needs `pickups`. The per-level creature ladders it reads (`MossyLadder`/`CityLadder`)
-  are already done; `enemyCatalog.ts`/`cycles.ts` themselves needed no further porting (see above).
+One system remains: **`damage`** (S9, 655 lines). Everything it depends on is done — `pickups`
+(which it feeds through the `KillFeed`), the per-level creature ladders (`MossyLadder`/`CityLadder`),
+the hit and contact buffers, and all three terrains. `enemyCatalog.ts`/`cycles.ts` themselves needed
+no further porting (see above). Nothing left needs new infrastructure.
 
 Then a `Scrapyard.Golden` console runner replays `goldens/corpus.json` and diffs. Only that makes
 the corpus meaningful, and it is the last thing that can be built rather than the first.

@@ -59,7 +59,7 @@ public sealed class World
 
     public readonly HitBuffer Hits;
     public readonly ContactBuffer Contacts;
-    public readonly KillFeed Kills = new();
+    public readonly KillFeed Kills = new(Constants.MaxKillsPerTick);
     public readonly WorldScratch Scratch;
 
     /// <summary>Broad phase over the enemy pool. Rebuilt every tick; deliberately not hashed.</summary>

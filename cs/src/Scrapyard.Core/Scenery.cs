@@ -83,6 +83,34 @@ public interface IScenery
     double PieceX(long i);
     double PieceY(long i);
     double PieceRadius(long i);
+
+    /// <summary>
+    /// Stands ONE destroyed barrel back up, somewhere the player is not looking. Returns the cell
+    /// it revived, or -1 if there was nothing eligible.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT REVIVES A CELL RATHER THAN PLACING A NEW BARREL. <see cref="Destroy"/> zeroes the radius
+    /// and touches nothing else, so a broken drum leaves its position and its variant sitting in
+    /// the grid. Reviving it is therefore one write, and it inherits every guarantee the original
+    /// layout was built with for free: it is on the jittered grid, it is inside the fence, it is
+    /// outside the player's opening, and it cannot overlap another pile - because it is exactly
+    /// where a barrel already stood. It also means the yard can never hold MORE barrels than it
+    /// opened with, which is the property that stops a long run turning into a barrel farm.
+    /// </para>
+    /// <para>
+    /// ONE RNG DRAW, WHATEVER THE CANDIDATE COUNT: two passes - count the eligible cells, then draw
+    /// one index into that count - rather than a reservoir sample, which would spend a draw per
+    /// candidate and make the stream's position depend on how much of the yard the player happens
+    /// to have cleared. Nothing is drawn at all when there is nothing to revive, so an untouched
+    /// yard never moves the stream.
+    /// </para>
+    /// <para>
+    /// The two lattices return -1 unconditionally. A wood the player cut through stays cut, and a
+    /// construction site they opened stays open.
+    /// </para>
+    /// </remarks>
+    long RegrowBarrel(Rng rng, double px, double py);
 }
 
 /// <summary>The result of pushing a body out of terrain. Reused; callers copy what they need.</summary>
@@ -478,4 +506,47 @@ public sealed class ScrapPiles : IScenery
     public double PieceX(long i) => X[(int)i];
     public double PieceY(long i) => Y[(int)i];
     public double PieceRadius(long i) => Radius[(int)i];
+
+    /// <summary>
+    /// How far a drum must stand from the mech to come back. A hair past the camera's own reach
+    /// (500.9 u on the short axis), so a barrel is never seen standing up - it is always something
+    /// that was already there when the player arrived.
+    /// </summary>
+    public const double BarrelRegrowMinDist = 560;
+
+    /// <inheritdoc/>
+    public long RegrowBarrel(Rng rng, double px, double py)
+    {
+        int n = Radius.Length;
+        double min2 = BarrelRegrowMinDist * BarrelRegrowMinDist;
+
+        // `Variant == Barrel && Radius == 0` identifies a BROKEN barrel and nothing else: a cell
+        // that never held anything was skipped before its variant was written, so it is still 0
+        // (cars), and no empty cell can be mistaken for a drum that was there.
+        int eligible = 0;
+        for (int i = 0; i < n; i++)
+        {
+            if (Variant[i] != Barrel || Radius[i] != 0) continue;
+            double dx = X[i] - px;
+            double dy = Y[i] - py;
+            if (dx * dx + dy * dy < min2) continue;
+            eligible++;
+        }
+        if (eligible == 0) return -1;
+
+        int pick = rng.NextInt(eligible);
+        for (int i = 0; i < n; i++)
+        {
+            if (Variant[i] != Barrel || Radius[i] != 0) continue;
+            double dx = X[i] - px;
+            double dy = Y[i] - py;
+            if (dx * dx + dy * dy < min2) continue;
+            if (pick-- > 0) continue;
+            Radius[i] = (float)BarrelRadius;
+            Count++;
+            Version++;
+            return i;
+        }
+        return -1;
+    }
 }

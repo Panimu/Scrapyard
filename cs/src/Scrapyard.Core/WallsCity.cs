@@ -767,4 +767,7 @@ public sealed class CityBlocks : IScenery
     public double PieceX(long i) => CityCentre(CityCellX(i));
     public double PieceY(long i) => CityCentre(CityCellY(i));
     public double PieceRadius(long i) => CellHalf(CityKindAt(CityCellX(i), CityCellY(i)));
+
+    /// <summary>NOTHING COMES BACK HERE. A construction site the player opened stays open.</summary>
+    public long RegrowBarrel(Rng rng, double px, double py) => -1;
 }
