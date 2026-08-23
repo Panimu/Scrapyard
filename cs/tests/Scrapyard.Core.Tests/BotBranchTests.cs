@@ -10,17 +10,25 @@ namespace Scrapyard.Core.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>MEASURED, NOT ASSUMED.</b> Four injected faults survived the 98,970-tick parity check, so the
-/// corpus was walked to find out whether the check was weak or the branches were unreachable. Over
-/// nine complete runs it never once saw a dead enemy at bot-time, never came within 3,540 units of
-/// a fence when the push starts at 1,000, and never offered a level-up whose offence card was not
-/// already first.
+/// <b>MEASURED, NOT ASSUMED.</b> Four injected faults survived the parity check recorded against
+/// the pre-fix bot, so the corpus was walked to find out whether the check was weak or the branches
+/// were unreachable. Over nine complete runs it never once saw a dead enemy at bot-time and never
+/// came within 3,540 units of a fence when the push starts at 1,000.
 /// </para>
 /// <para>
-/// So the corpus is the oracle for what it covers, and these are the rest. Each is a branch that
-/// matters - a bot that fears corpses measures a crowd that is not there, a bot that ignores the
-/// fence walks into the wire and stands there, and a bot that takes the first offer rather than the
-/// offensive one measures a different game.
+/// THE FOURTH FAULT WAS THE OFFENCE RULE ITSELF, and it is no longer on this list: the rule read
+/// <c>Effects</c>, an array empty on every card, so it never found anything and the bot always took
+/// the first offer - which agreed with "always offence" on every recorded pick simply because nine
+/// runs never happened to deal the offer slots in an order where the two would disagree. That was
+/// a hole in the CORPUS's coverage, not a proof the rule worked; the fix now reads <c>Kind</c> and
+/// <c>TierEffects</c>, where the real per-tier data lives, and
+/// <see cref="TheOffenceRuleFindsWeaponAndTierEffectCards"/> below is the direct test the corpus
+/// coverage never provided.
+/// </para>
+/// <para>
+/// So the corpus is the oracle for what it covers, and these are the rest. A bot that fears corpses
+/// measures a crowd that is not there, and a bot that ignores the fence walks into the wire and
+/// stands there.
 /// </para>
 /// <para>
 /// <b>THE WALL ONE IS REACHABLE IN A REAL RUN</b>, just not in a two-minute one: the skirt keeps
@@ -193,58 +201,82 @@ public class BotBranchTests
     }
 
     /// <summary>
-    /// THE GREEDY-OFFENCE RULE NEVER FIRES, IN EITHER BUILD, AND THAT IS FAITHFUL.
+    /// THE GREEDY-OFFENCE RULE NOW FINDS AN OFFENCE CARD, IN EITHER BUILD.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The policy documents itself as "take the first offered upgrade tagged offence, else the
-    /// first offer", and it decides by asking whether any of a card's <c>effects</c> targets a
-    /// weapon. EVERY CARD IN THE CATALOG HAS AN EMPTY <c>effects</c> ARRAY - all 21 of them, in the
-    /// TypeScript as much as here. The real data lives in <c>tierEffects</c>, a per-tier ramp: ten
-    /// cards have one and six of those target a weapon.
+    /// It used to decide by asking whether any of a card's <c>Effects</c> targets a weapon, and
+    /// EVERY CARD IN THE CATALOG HAS AN EMPTY <c>Effects</c> ARRAY - all 21 of them, in the
+    /// TypeScript as much as here. The real per-tier data lives in <c>TierEffects</c>; a weapon
+    /// card's own numbers live in <see cref="Scrapyard.Core.WeaponCatalog"/> and are on neither.
+    /// So the rule read a field nothing populates, the loop always fell through, and the bot always
+    /// took the FIRST OFFER whatever it was - a defensible policy on its own, just not the one the
+    /// name "greedy offence" promised.
     /// </para>
     /// <para>
-    /// So the rule reads a field nothing populates, the loop always falls through, and the bot
-    /// always takes the FIRST OFFER. That is why removing the check entirely changed not one of the
-    /// 98,970 recorded decisions - it is not a fault, it is dead code, and it is dead in the
-    /// original too.
-    /// </para>
-    /// <para>
-    /// THE PORT REPRODUCES IT ON PURPOSE. Fixing it here would make the C# bot a different
-    /// instrument from the one that recorded every pacing baseline this project has, which is
-    /// exactly the failure the "reference bot is a measurement instrument" rule exists to prevent.
-    /// It is worth someone deciding about - six offensive cards are invisible to the bot - and this
-    /// test is here so the decision is made rather than the behaviour rediscovered.
+    /// FIXED IN BOTH BUILDS TOGETHER, and the golden corpus regenerated from the fixed TypeScript
+    /// bot afterwards - the "reference bot is a measurement instrument, keep it stable" rule is
+    /// about not letting the two builds' bots quietly diverge, not about preserving a bug once it
+    /// is found. A stale corpus recorded under the old rule would fail parity against a C# port
+    /// that had been fixed but not the other way, which is exactly backwards.
     /// </para>
     /// </remarks>
     [Fact]
-    public void TheOffenceRuleIsDeadInBothBuilds()
+    public void TheOffenceRuleFindsWeaponAndTierEffectCards()
     {
         var (_, w) = Quiet();
-
-        int withFlatEffects = 0;
-        int withTierEffects = 0;
-        for (int i = 0; i < w.UpgradeDefs.Length; i++)
-        {
-            if (w.UpgradeDefs[i].Effects.Length > 0) withFlatEffects++;
-            if (w.UpgradeDefs[i].TierEffects is not null) withTierEffects++;
-        }
-
-        Assert.Equal(0, withFlatEffects);
-        Assert.True(withTierEffects > 0,
-            "no card has tier effects either - the catalog has changed shape and the note above " +
-            "about where the data really lives needs rewriting");
-
-        // And the consequence, stated: whatever is offered, the bot takes slot 0.
         var bot = new BotPolicy.State();
         w.Phase = RunPhase.LevelUp;
         w.LevelUp.OfferCount = 3;
-        for (int a = 0; a < 3; a++)
-        {
-            w.LevelUp.Offers[0] = a;
-            w.LevelUp.Offers[1] = (a + 7) % w.UpgradeDefs.Length;
-            w.LevelUp.Offers[2] = (a + 13) % w.UpgradeDefs.Length;
-            Assert.Equal(0, BotPolicy.Frame(bot, w).ChooseIndex);
-        }
+
+        // Slot 0 touches nothing weapon-related (a flat player stat with no tier ramp on a
+        // weapon key), slot 1 is a weapon card, slot 2 a passive whose tier effects target a
+        // weapon stat. The bot must skip slot 0 for slot 1.
+        w.LevelUp.Offers[0] = UpgradeIds.PArmour;
+        w.LevelUp.Offers[1] = UpgradeIds.WCannon;
+        w.LevelUp.Offers[2] = UpgradeIds.PRange;
+        Assert.Equal(1, BotPolicy.Frame(bot, w).ChooseIndex);
+
+        // With no weapon card offered, the tier-effects passive is what the rule was blind to
+        // before the fix - it must be found in slot 1, past the same non-weapon armour card.
+        w.LevelUp.Offers[0] = UpgradeIds.PArmour;
+        w.LevelUp.Offers[1] = UpgradeIds.PRange;
+        w.LevelUp.Offers[2] = UpgradeIds.PSpeed;
+        Assert.Equal(1, BotPolicy.Frame(bot, w).ChooseIndex);
+
+        // And when nothing offered touches a weapon at all, it still falls through to the first
+        // offer - the fallback the rule always had is unchanged.
+        w.LevelUp.Offers[0] = UpgradeIds.PArmour;
+        w.LevelUp.Offers[1] = UpgradeIds.PSpeed;
+        w.LevelUp.Offers[2] = UpgradeIds.PShield;
+        Assert.Equal(0, BotPolicy.Frame(bot, w).ChooseIndex);
+    }
+
+    /// <summary>
+    /// <c>TierEffects</c> IS INDEXED BY THE TIER A PICK WOULD GRANT, not by the tier already held.
+    /// </summary>
+    /// <remarks>
+    /// Stacks held is tier ALREADY taken; the pick on offer grants the next one, so index 0 is read
+    /// while 0 are held and index 6 while 6 are held (granting tier 7). Off by one here would have
+    /// the bot judge a card by the wrong rung - usually harmless, since most cards ramp the same
+    /// stat every tier, but silently wrong is silently wrong.
+    /// </remarks>
+    [Fact]
+    public void TierEffectsAreReadAtTheTierAboutToBeGranted()
+    {
+        var (_, w) = Quiet();
+        var bot = new BotPolicy.State();
+        w.Phase = RunPhase.LevelUp;
+        w.LevelUp.OfferCount = 2;
+        w.LevelUp.Offers[0] = UpgradeIds.PArmour;
+        w.LevelUp.Offers[1] = UpgradeIds.PRange;
+
+        // Fully maxed: TierEffects[7] does not exist, so the weapon-ramp card must stop being
+        // found rather than throw or fall back to some other index.
+        w.LevelUp.Stacks[UpgradeIds.PRange] = UpgradeCatalog.WeaponMaxTier;
+        Assert.Equal(0, BotPolicy.Frame(bot, w).ChooseIndex);
+
+        w.LevelUp.Stacks[UpgradeIds.PRange] = 0;
+        Assert.Equal(1, BotPolicy.Frame(bot, w).ChooseIndex);
     }
 }

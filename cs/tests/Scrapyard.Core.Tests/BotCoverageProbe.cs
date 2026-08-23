@@ -99,6 +99,10 @@ public class BotCoverageProbe
         _out.WriteLine($"level-up ticks                 {levelUps}");
         _out.WriteLine($"picks where offence is not #1  {offenceNotFirst}");
 
-        Assert.True(ticks > 90000);
+        // See BotParityTests: the floor moved from 90,000 to 60,000 when the offence rule was
+        // fixed - a bot that genuinely spends every pick on offence rather than falling through to
+        // whatever was offered first dies to some scenarios sooner, so the same nine runs now total
+        // 69,241 ticks. Set with headroom under the measured total rather than pinned to it.
+        Assert.True(ticks > 60000);
     }
 }

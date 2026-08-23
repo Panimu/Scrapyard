@@ -22,8 +22,8 @@ namespace Scrapyard.Sim;
 /// </para>
 /// <para>
 /// <b>AND IT IS PINNED AGAINST THE ORIGINAL, TICK FOR TICK.</b> The golden corpus records this
-/// bot's OUTPUT - the quantised axes it chose on every one of 98,970 ticks - so the C# bot can be
-/// compared against 98,970 real decisions without a single new fixture. See
+/// bot's OUTPUT - the quantised axes it chose on every tick of nine recorded runs - so the C# bot
+/// can be compared against tens of thousands of real decisions without a single new fixture. See
 /// <c>BotParityTests</c>.
 /// </para>
 /// </remarks>
@@ -271,10 +271,26 @@ public static class BotPolicy
     /// Greedy offence: the first offered upgrade that touches a weapon, else the first offer.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// DELIBERATELY SIMPLE. A smarter bot would make pacing numbers depend on bot cleverness rather
-    /// than on the game. And "offence" is DERIVED FROM THE EFFECTS rather than read off a tag,
-    /// which means a new upgrade is classified correctly the moment it is authored, with no tag for
-    /// anybody to forget.
+    /// than on the game.
+    /// </para>
+    /// <para>
+    /// PORT OF A BUG FIX, not a change made here first. Every card's <c>Effects</c> is empty - the
+    /// TypeScript header on <c>UpgradeCatalog</c> says the same - so checking it, as this used to,
+    /// meant "offence" never found anything and silently fell through to the first offer every
+    /// time. It went unnoticed for a long time because falling through to the first offer is a
+    /// defensible bot policy on its own; it is simply not the one the name promises, and it made
+    /// every pacing number quietly about "whichever card the deck deals first" rather than about
+    /// greedy weapon-seeking.
+    /// </para>
+    /// <para>
+    /// A WEAPON CARD IS OFFENCE ON ITS OWN, checked by <c>Kind</c> rather than by effect: it puts a
+    /// gun in a slot or levels one already there, and carries neither <c>Effects</c> nor
+    /// <c>TierEffects</c> - a weapon's own numbers live in <see cref="Scrapyard.Core.WeaponCatalog"/>,
+    /// not here. A passive's per-tier magnitude lives in <c>TierEffects</c>, indexed by the tier
+    /// this pick would GRANT - stacks already held, before the pick, so index 0 is tier 1.
+    /// </para>
     /// </remarks>
     private static int PickUpgrade(World world)
     {
@@ -285,11 +301,26 @@ public static class BotPolicy
         {
             int idx = lu.Offers[i];
             if (idx < 0 || idx >= world.UpgradeDefs.Length) continue;
-            foreach (var fx in world.UpgradeDefs[idx].Effects)
-            {
-                if (fx.Target == EffectTarget.Weapon) return i;
-            }
+            var def = world.UpgradeDefs[idx];
+
+            if (def.Kind == UpgradeKind.Weapon || TouchesWeapon(world, def, idx)) return i;
         }
         return 0;
+    }
+
+    /// <summary>Whether the tier a pick would GRANT touches a weapon stat.</summary>
+    private static bool TouchesWeapon(World world, UpgradeDef def, int idx)
+    {
+        if (def.TierEffects is null) return false;
+
+        var lu = world.LevelUp;
+        int held = idx < lu.Stacks.Length ? lu.Stacks[idx] : 0;
+        if (held >= def.TierEffects.Length) return false;
+
+        foreach (var fx in def.TierEffects[held])
+        {
+            if (fx.Target == EffectTarget.Weapon) return true;
+        }
+        return false;
     }
 }

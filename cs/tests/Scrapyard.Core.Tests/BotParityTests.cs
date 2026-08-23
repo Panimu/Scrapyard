@@ -13,15 +13,15 @@ namespace Scrapyard.Core.Tests;
 /// <b>NO NEW FIXTURE WAS NEEDED FOR THIS.</b> The golden corpus already stores the reference bot's
 /// OUTPUT - the two quantised axes it chose on every tick of nine runs - because the recorder
 /// captures inputs rather than regenerating them. That was done so a diverged core could not be fed
-/// different inputs and quietly agree with itself; the side effect is 98,970 recorded decisions
-/// sitting there, against which a ported bot can be checked for free.
+/// different inputs and quietly agree with itself; the side effect is tens of thousands of recorded
+/// decisions sitting there, against which a ported bot can be checked for free.
 /// </para>
 /// <para>
 /// <b>IT IS A STRONGER TEST THAN IT LOOKS.</b> The bot reads the whole world - every live enemy's
 /// position and rank, every gem, the player's hull fraction, the arena's half-width - so agreeing
-/// on the axes for 98,970 consecutive ticks means the port agrees about all of it, at every tick,
-/// through nine complete runs. A single body in the wrong place moves the flee vector and the axes
-/// with it.
+/// on the axes for tens of thousands of consecutive ticks means the port agrees about all of it, at
+/// every tick, through nine complete runs. A single body in the wrong place moves the flee vector
+/// and the axes with it.
 /// </para>
 /// <para>
 /// <b>AND IT IS NOT WHAT KEEPS THE REPLAY HONEST.</b> The corpus replay feeds RECORDED inputs, so
@@ -77,12 +77,24 @@ public class BotParityTests
             }
         }
 
-        Assert.True(ticks > 90000, $"only {ticks} ticks were compared");
+        // THE FLOOR MOVED WHEN THE OFFENCE RULE WAS FIXED. The corpus is recorded against a bot
+        // that genuinely seeks weapon cards now rather than one that happened to agree with that
+        // description; a bot that spends every pick on offence rather than defence dies to some
+        // scenarios sooner, so the same nine runs now total 69,241 ticks rather than 98,970. That
+        // is not a weaker check - every one of those ticks is still a real per-tick agreement - it
+        // is a smaller number for an honest reason, and the floor is set with headroom under it
+        // rather than pinned to the exact figure, so the next deliberate re-recording does not have
+        // to touch this file to pass.
+        Assert.True(ticks > 60000, $"only {ticks} ticks were compared");
 
         // A bot that returned zero for everything would agree with nothing, but a corpus of
         // stationary runs would let it: these say the recording is of a bot that actually played.
         Assert.True(moving > ticks / 2, $"the bot moved on only {moving} of {ticks} ticks");
-        Assert.True(choosing > 100, $"the bot made only {choosing} choices across the corpus");
+
+        // THE FLOOR MOVED FOR THE SAME REASON AS ABOVE: the fixed corpus reaches 99 picks
+        // against the old 100+ - a run that dies sooner offers fewer level-ups on the way down.
+        // Headroom under the measured number rather than pinned to it, as above.
+        Assert.True(choosing > 50, $"the bot made only {choosing} choices across the corpus");
     }
 
     /// <summary>

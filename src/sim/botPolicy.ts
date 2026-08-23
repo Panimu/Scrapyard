@@ -235,7 +235,7 @@ function wallPush(v: number, arenaHalf: number): number {
 }
 
 /**
- * Greedy offence: take the first offered upgrade tagged `offence`, else the first offer.
+ * Greedy offence: take the first offered upgrade that touches a weapon, else the first offer.
  * Deliberately simple - a smarter bot would make pacing numbers depend on bot cleverness rather
  * than on the game.
  */
@@ -245,10 +245,22 @@ function pickUpgrade(world: World): number {
   for (let i = 0; i < lu.offerCount; i++) {
     const idx = lu.offers[i];
     const def = world.upgradeCatalog[idx];
-    // "Offence" = anything that touches the weapon. UpgradeDef carries no tag field; deriving the
-    // category from the effects themselves means a new upgrade is classified correctly the moment
-    // it is authored, with no tag to forget.
-    if (def !== undefined && def.effects.some((fx) => fx.target === 'weapon')) return i;
+    if (def === undefined) continue;
+
+    // A WEAPON CARD IS OFFENCE ON ITS OWN. It puts a gun in a slot or levels one already there,
+    // and it carries neither `effects` nor `tierEffects` - a weapon's own numbers live in the
+    // weapon catalog, not here - so `kind` is the only place that shows.
+    if (def.kind === 'weapon') return i;
+
+    // A PASSIVE'S PER-TIER MAGNITUDE LIVES IN `tierEffects`, indexed by the tier this pick would
+    // GRANT (stacks already held, before the pick - tierEffects[0] is tier 1). `effects` is the
+    // OTHER mechanism a card can use for a flat, non-ramping bonus, and it is empty on every
+    // upgrade in the game today: checking it here, as this used to, is why "greedy offence" never
+    // found any and fell through to the first offer every time - undetected, because doing that
+    // also happens to be a defensible bot policy, just not the one the name promises.
+    const held = lu.stacks[idx] ?? 0;
+    const tier = def.tierEffects?.[held];
+    if (tier !== undefined && tier.some((fx) => fx.target === 'weapon')) return i;
   }
   return 0;
 }
