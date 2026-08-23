@@ -201,6 +201,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private readonly List<Rectangle> _pauseRects = new();
     private readonly List<Rectangle> _levelUpRects = new();
     private Rectangle _hudPauseRect;
+    private readonly List<Rectangle> _heroSelectRects = new();
+    private readonly List<Rectangle> _levelSelectRects = new();
+    private readonly List<Rectangle> _workshopRects = new();
+    private readonly List<Rectangle> _settingsRects = new();
+    private readonly List<Rectangle> _pediaRects = new();
+    private readonly List<Rectangle> _changelogRects = new();
 
     /// <summary>Where to write a one-frame capture, and which screen to put on it.</summary>
     /// <remarks>
@@ -785,7 +791,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdateChangelog(KeyboardState keys)
     {
-        if (_menu.Back) { _screen = _returnTo; return; }
+        bool backClicked = _mouse.Hover(_changelogRects) == 0 && _mouse.LeftClicked;
+        if (_menu.Back || backClicked) { _screen = _returnTo; return; }
 
         if (_menu.Vertical < 0) _changes.Scroll = System.Math.Max(0, _changes.Scroll - 1);
         if (_menu.Vertical > 0) _changes.Scroll++;
@@ -799,7 +806,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdatePedia(KeyboardState keys)
     {
-        if (_menu.Back)
+        // BACK IS ALWAYS THE LAST outRects ENTRY, whichever of the three panes is showing - see
+        // the remark on Screens.DrawPedia - so this one check covers all three without needing to
+        // know which pane is active, the same way _menu.Back already does not need to know.
+        int hover = _mouse.Hover(_pediaRects);
+        bool backClicked = _pediaRects.Count > 0 && hover == _pediaRects.Count - 1
+                           && _mouse.LeftClicked;
+        if (_menu.Back || backClicked)
         {
             if (!_pedia.Back()) ToTitle();
             return;
@@ -814,6 +827,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             int n = Pedia.Sections.Length;
             if (up) _pedia.SectionCursor = (_pedia.SectionCursor + n - 1) % n;
             if (down) _pedia.SectionCursor = (_pedia.SectionCursor + 1) % n;
+            if (hover >= 0 && hover < n)
+            {
+                _pedia.SectionCursor = hover;
+                if (_mouse.LeftClicked) enter = true;
+            }
             if (enter) _pedia.EnterSection(_pedia.SectionCursor);
             return;
         }
@@ -824,6 +842,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (down) _pedia.MoveRow(1);
             if (_menu.PageUp) _pedia.MoveRow(-Screens.PediaRows);
             if (_menu.PageDown) _pedia.MoveRow(Screens.PediaRows);
+            // A HEADING NEVER GETS A HIT RECT - see DrawPedia's outRects remark - so a hover that
+            // lands on one is simply never reported here, the same way it can never be clicked.
+            if (hover >= 0 && hover < _pedia.Rows.Count)
+            {
+                _pedia.RowCursor = hover;
+                if (_mouse.LeftClicked) enter = true;
+            }
             if (enter) _pedia.OpenRow();
             return;
         }
@@ -856,7 +881,18 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // THE ROW SAID [C] CHANGELOG BEFORE THERE WAS ONE, which is the exact failure this screen's
         // own notes condemn: a control that is advertised and does nothing. It shipped that way for
         // two commits.
-        if (Pressed(keys, Keys.C))
+        bool openChangelog = Pressed(keys, Keys.C);
+        bool rowClicked = false;
+        int hover = _mouse.Hover(_settingsRects);
+        if (hover >= 0 && hover < n)
+        {
+            _settingsCursor = hover;
+            if (_mouse.LeftClicked) rowClicked = true;
+        }
+        else if (hover == n && _mouse.LeftClicked) openChangelog = true; // CHANGELOG
+        else if (hover == n + 1 && _mouse.LeftClicked) { ToTitle(); return; } // BACK
+
+        if (openChangelog)
         {
             _changes.Open();
             _returnTo = Screen.Settings;
@@ -864,7 +900,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             return;
         }
 
-        int step = _menu.Horizontal > 0 || _menu.Confirm
+        // A CLICK STEPS A ROW EXACTLY ONE CONFIRM WOULD - see DrawSettings' outRects remark. The
+        // segmented Animations row cycles rather than landing on whichever of its three words the
+        // pointer happened to be over.
+        int step = _menu.Horizontal > 0 || _menu.Confirm || rowClicked
             ? 1
             : _menu.Horizontal < 0 ? -1 : 0;
         if (step == 0) return;
@@ -894,14 +933,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         if (_menu.Back) ToTitle();
 
-        const int cols = 8;
+        // TWO COLUMNS, not eight - the grid Screens.DrawHeroSelect actually draws now, since the
+        // title-menu rewrite moved every picker to a single phone-width column. This constant was
+        // never updated with it, so a keyboard or pad's vertical step jumped eight tiles across a
+        // two-wide grid - landing on roughly the right ROW by luck at best.
+        const int cols = 2;
         int n = HeroUnlocks.Heroes.Length;
         if (_menu.Horizontal < 0) _heroCursor = (_heroCursor + n - 1) % n;
         if (_menu.Horizontal > 0) _heroCursor = (_heroCursor + 1) % n;
         if (_menu.Vertical < 0) _heroCursor = (_heroCursor + n - cols) % n;
         if (_menu.Vertical > 0) _heroCursor = (_heroCursor + cols) % n;
 
-        if (!_menu.Confirm) return;
+        bool confirmed = _menu.Confirm;
+        int hover = _mouse.Hover(_heroSelectRects);
+        if (hover >= 0 && hover < n)
+        {
+            _heroCursor = hover;
+            if (_mouse.LeftClicked) confirmed = true;
+        }
+        else if (hover == n && _mouse.LeftClicked) { ToTitle(); return; } // BACK
+        else if (hover == n + 1 && _mouse.LeftClicked) confirmed = true; // NEXT
+
+        if (!confirmed) return;
         // A LOCKED CHASSIS IS NOT SELECTABLE. The cursor may rest on it - the silhouette is worth
         // seeing - but pressing enter does nothing rather than starting a run as somebody else.
         if (!_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[_heroCursor].Id)) return;
@@ -928,7 +981,22 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Vertical < 0) _levelCursor = (_levelCursor + n - 1) % n;
         if (_menu.Vertical > 0) _levelCursor = (_levelCursor + 1) % n;
 
-        if (!_menu.Confirm) return;
+        bool confirmed = _menu.Confirm;
+        int hover = _mouse.Hover(_levelSelectRects);
+        if (hover >= 0 && hover < n)
+        {
+            _levelCursor = hover;
+            if (_mouse.LeftClicked) confirmed = true;
+        }
+        else if (hover == n && _mouse.LeftClicked)
+        {
+            _menu.Reset();
+            _screen = Screen.HeroSelect;
+            return;
+        }
+        else if (hover == n + 1 && _mouse.LeftClicked) confirmed = true; // DEPLOY
+
+        if (!confirmed) return;
         string id = HeroUnlocks.Levels[_levelCursor].Id;
         if (!_save.UnlockedLevels.Contains(id)) return;
         _levelId = id;
@@ -945,7 +1013,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Vertical < 0) _shopCursor = (_shopCursor + n - 1) % n;
         if (_menu.Vertical > 0) _shopCursor = (_shopCursor + 1) % n;
 
-        if (_menu.Confirm && _save.Buy(_shopCursor)) _save.Save();
+        bool buyClicked = false;
+        int hover = _mouse.Hover(_workshopRects);
+        if (hover >= 0 && hover < n)
+        {
+            _shopCursor = hover;
+            if (_mouse.LeftClicked) buyClicked = true;
+        }
+        else if (hover == n && _mouse.LeftClicked) // REFUND
+        {
+            if (_save.RefundAll() > 0) _save.Save();
+        }
+        else if (hover == n + 1 && _mouse.LeftClicked) { _save.Save(); ToTitle(); return; } // BACK
+
+        if ((_menu.Confirm || buyClicked) && _save.Buy(_shopCursor)) _save.Save();
 
         if (Pressed(keys, Keys.R) && _save.RefundAll() > 0) _save.Save();
     }
@@ -1403,15 +1484,19 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                                       gameTime.TotalGameTime.TotalSeconds, _titleRects);
                     break;
                 case Screen.HeroSelect:
-                    Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;
+                    Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh,
+                                           _heroSelectRects); break;
                 case Screen.LevelSelect:
-                    Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh); break;
+                    Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh,
+                                            _levelSelectRects); break;
                 case Screen.Workshop:
-                    Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh); break;
+                    Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh,
+                                         _workshopRects); break;
                 case Screen.Settings:
-                    Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh); break;
+                    Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh,
+                                         _settingsRects); break;
                 case Screen.Pedia:
-                    Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh); break;
+                    Screens.DrawPedia(_batch, _sprites, _pedia, mw, mh, _pediaRects); break;
                 case Screen.Changes:
                     // WRAPPED TO THE SAME WIDTH AND SIZE THE SCREEN DRAWS AT, asked of the screen
                     // rather than restated. These were a second copy of the layout - a 340-wide
@@ -1421,7 +1506,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     Screens.DrawChangelog(_batch, _sprites,
                         _changes.Lines(Screens.Column(mw, Screens.MenuScale(mh)),
                                        Screens.SmallScale(mh)),
-                        _changes.Scroll, mw, mh); break;
+                        _changes.Scroll, mw, mh, _changelogRects); break;
             }
             if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
             _batch.End();

@@ -283,8 +283,17 @@ public static class Screens
     /// past tense. There is deliberately no imperative version of that text anywhere in the game.
     /// </para>
     /// </remarks>
+    /// <param name="outRects">
+    /// See the parameter of the same name on <see cref="DrawTitle"/>. Filled index-aligned with
+    /// the roster - <c>outRects[i]</c> is chassis <c>i</c>'s tile, <c>Rectangle.Empty</c> for any
+    /// scrolled out of view this frame - then the BACK button, then NEXT, as the last two entries.
+    /// Index-aligned rather than append-in-draw-order because the grid scrolls: the first tile
+    /// drawn is not always chassis 0, and a mouse click has to land on the chassis under it, not
+    /// on "whichever tile happened to be added to the list first".
+    /// </param>
     public static void DrawHeroSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                      int vw, int vh)
+                                      int vw, int vh,
+                                      System.Collections.Generic.List<Rectangle>? outRects = null)
     {
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
@@ -292,13 +301,25 @@ public static class Screens
         int w = Column(vw, scale);
         int x0 = (vw - w) / 2;
 
+        if (outRects is not null)
+        {
+            outRects.Clear();
+            for (int i = 0; i < HeroUnlocks.Heroes.Length + 2; i++) outRects.Add(Rectangle.Empty);
+        }
+
         int y = Head(batch, sprites, "NEW GAME", "PICK A MECH", vw, 8 * scale, scale);
         Font.DrawCentred(batch, sprites.Blank,
                          "SIXTEEN CHASSIS. EIGHT CARRY A BONUS TO ONE WEAPON.", vw / 2, y, small,
                          Palette.Faint);
         y += Font.LineHeight * small + 6 * scale;
 
-        int actionsY = Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "NEXT", "ENTER");
+        var (actionsY, backBtn, nextBtn) =
+            Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "NEXT", "ENTER");
+        if (outRects is not null)
+        {
+            outRects[^2] = backBtn;
+            outRects[^1] = nextBtn;
+        }
 
         // --- the grid -------------------------------------------------------------------------
         var roster = HeroUnlocks.Heroes;
@@ -359,6 +380,7 @@ public static class Screens
             var h = roster[i];
             bool owned = save.UnlockedHeroes.Contains(h.Id);
             var r = new Rectangle(x0 + (i % cols) * (tileW + gap), ry, tileW, rowH[row]);
+            if (outRects is not null) outRects[i] = r;
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius,
@@ -427,9 +449,14 @@ public static class Screens
     /// Mayhem is next is the reason to finish the Scrapyard, and hiding it would hide the ladder.
     /// What it is LIKE is the reward.
     /// </remarks>
+    /// <param name="outRects">
+    /// See <see cref="DrawTitle"/>. One entry per yard in order, then BACK, then DEPLOY.
+    /// </param>
     public static void DrawLevelSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                       int vw, int vh)
+                                       int vw, int vh,
+                                       System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
@@ -437,7 +464,8 @@ public static class Screens
         int x0 = (vw - w) / 2;
 
         int y = Head(batch, sprites, "NEW GAME", "CHOOSE A YARD", vw, 12 * scale, scale);
-        Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "DEPLOY", "ENTER");
+        var (_, backBtn, deployBtn) =
+            Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "DEPLOY", "ENTER");
 
         int pad = 7 * scale;
         int radius = 8 * scale;
@@ -455,6 +483,7 @@ public static class Screens
             int h = System.Math.Max(art, Font.GlyphH * scale + 4 * scale
                                          + Font.LineHeight * small * blurb.Count) + pad * 2;
             var r = new Rectangle(x0, y, w, h);
+            outRects?.Add(r);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
@@ -500,6 +529,9 @@ public static class Screens
 
             y += h + 6 * scale;
         }
+
+        outRects?.Add(backBtn);
+        outRects?.Add(deployBtn);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -525,9 +557,20 @@ public static class Screens
     /// spent between runs is a different kind of decision and gets a different colour.
     /// </para>
     /// </remarks>
+    /// <param name="outRects">
+    /// See <see cref="DrawHeroSelect"/>'s remark - index-aligned to <c>WorkshopText.All</c>,
+    /// <c>Rectangle.Empty</c> for any upgrade scrolled out of view, then REFUND, then BACK as the
+    /// last two entries.
+    /// </param>
     public static void DrawWorkshop(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                    int vw, int vh)
+                                    int vw, int vh,
+                                    System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        if (outRects is not null)
+        {
+            outRects.Clear();
+            for (int i = 0; i < WorkshopText.All.Length + 2; i++) outRects.Add(Rectangle.Empty);
+        }
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
@@ -553,10 +596,17 @@ public static class Screens
         int backY = vh - 12 * scale - btnH;
         int refundY = backY - 5 * scale - refundH;
 
-        ActionButton(batch, sprites, new Rectangle(x0, refundY, w, refundH),
+        var refundBtn = new Rectangle(x0, refundY, w, refundH);
+        var backBtn = new Rectangle(x0, backY, w, btnH);
+        ActionButton(batch, sprites, refundBtn,
                      spent > 0 ? "REFUND ALL (" + spent + " CR)" : "NOTHING TO REFUND", "R", scale,
                      false);
-        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+        ActionButton(batch, sprites, backBtn, "BACK", "ESC", scale, true);
+        if (outRects is not null)
+        {
+            outRects[^2] = refundBtn;
+            outRects[^1] = backBtn;
+        }
 
         // --- the list -------------------------------------------------------------------------
         int pad = 6 * scale;
@@ -595,6 +645,7 @@ public static class Screens
             int owned = save.TierOf(i);
             bool full = owned >= def.Tiers;
             var r = new Rectangle(x0, y, w, heights[i]);
+            if (outRects is not null) outRects[i] = r;
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
@@ -754,8 +805,14 @@ public static class Screens
     /// cannot be walked to, and a button nothing says how to reach is a button that does not exist.
     /// It is set faint and right-aligned so the label still reads as the label.
     /// </remarks>
-    private static int Actions(SpriteBatch batch, Sprites sprites, int vw, int vh, int scale,
-                               string leftLabel, string leftKey, string rightLabel, string rightKey)
+    /// <returns>
+    /// The row's own top, then the left button's rect, then the right's - the last two exist so a
+    /// caller collecting mouse hit-rects for its own screen has something to add without
+    /// recomputing this layout a second time.
+    /// </returns>
+    private static (int Y, Rectangle Left, Rectangle Right) Actions(
+        SpriteBatch batch, Sprites sprites, int vw, int vh, int scale,
+        string leftLabel, string leftKey, string rightLabel, string rightKey)
     {
         int w = Column(vw, scale);
         int x0 = (vw - w) / 2;
@@ -769,10 +826,11 @@ public static class Screens
         int leftW = Font.Measure(leftLabel, scale) + Font.Measure(leftKey, scale) + 24 * scale;
         leftW = System.Math.Min(leftW, w - 40 * scale);
 
-        ActionButton(batch, sprites, new Rectangle(x0, y, leftW, h), leftLabel, leftKey, scale, false);
-        ActionButton(batch, sprites, new Rectangle(x0 + leftW + gap, y, w - leftW - gap, h),
-                     rightLabel, rightKey, scale, true);
-        return y;
+        var left = new Rectangle(x0, y, leftW, h);
+        var right = new Rectangle(x0 + leftW + gap, y, w - leftW - gap, h);
+        ActionButton(batch, sprites, left, leftLabel, leftKey, scale, false);
+        ActionButton(batch, sprites, right, rightLabel, rightKey, scale, true);
+        return (y, left, right);
     }
 
     private static void ActionButton(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
@@ -802,15 +860,25 @@ public static class Screens
     /// no explanation invites a player to flip it and wonder why nothing happened. The web build
     /// gives every row a `.setting__note`, and it is not decoration.
     /// </remarks>
+    /// <param name="outRects">
+    /// See <see cref="DrawTitle"/>. One entry per row in <c>MenuRows.Settings</c>, then CHANGELOG,
+    /// then BACK. A click anywhere on a row steps it exactly one CONFIRM would - the segmented
+    /// Animations row cycles rather than jumping straight to whichever of its three words was
+    /// under the pointer, matching the level of precision every other control in this game offers
+    /// a mouse.
+    /// </param>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                    int vw, int vh)
+                                    int vw, int vh,
+                                    System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
 
         int y = Head(batch, sprites, "OPTIONS", "SETTINGS", vw, 12 * scale, scale);
-        Actions(batch, sprites, vw, vh, scale, "CHANGELOG", "C", "BACK", "ESC");
+        var (_, changelogBtn, backBtn) =
+            Actions(batch, sprites, vw, vh, scale, "CHANGELOG", "C", "BACK", "ESC");
 
         int w = Column(vw, scale);
         int x0 = (vw - w) / 2;
@@ -832,6 +900,7 @@ public static class Screens
             int rowH = System.Math.Max(textH, ctrlH) + pad * 2;
 
             var r = new Rectangle(x0, y, w, rowH);
+            outRects?.Add(r);
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
 
@@ -857,6 +926,9 @@ public static class Screens
 
             y += rowH + 5 * scale;
         }
+
+        outRects?.Add(changelogBtn);
+        outRects?.Add(backBtn);
     }
 
     private static string SettingNote(int i) => i switch
@@ -903,8 +975,18 @@ public static class Screens
     /// showing two of them or none.
     /// </para>
     /// </remarks>
-    public static void DrawPedia(SpriteBatch batch, Sprites sprites, PediaState st, int vw, int vh)
+    /// <param name="outRects">
+    /// See <see cref="DrawTitle"/>. BACK IS ALWAYS THE LAST ENTRY, whichever of the three panes is
+    /// showing - sections, one section's index, or a page - so a caller can hit-test it without
+    /// knowing which pane is active. The sections pane fills four entries before it; the index
+    /// pane fills one per row index-aligned to <c>st.Rows</c> (a heading gets
+    /// <see cref="Rectangle.Empty"/>, the same scrolling safety <see cref="DrawWorkshop"/> needs);
+    /// a page fills nothing before it.
+    /// </param>
+    public static void DrawPedia(SpriteBatch batch, Sprites sprites, PediaState st, int vw, int vh,
+                                 System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
@@ -916,7 +998,8 @@ public static class Screens
         int y = Head(batch, sprites, "REFERENCE", "SCRAPOPEDIA", vw, 10 * scale, scale);
         int btnH = 27 * scale;
         int backY = vh - 12 * scale - btnH;
-        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+        var backBtn = new Rectangle(x0, backY, w, btnH);
+        ActionButton(batch, sprites, backBtn, "BACK", "ESC", scale, true);
         int bottom = backY - 8 * scale;
 
         // --- the sections ---------------------------------------------------------------------
@@ -929,6 +1012,7 @@ public static class Screens
                 int h = 6 * scale + Font.GlyphH * scale + 3 * scale + Font.LineHeight * small
                       + 6 * scale;
                 var r = new Rectangle(x0, y, w, h);
+                outRects?.Add(r);
                 bool on = i == st.SectionCursor;
 
                 if (on) Cursor(batch, sprites, r, radius, thick * 2);
@@ -941,6 +1025,7 @@ public static class Screens
                           r.Y + 6 * scale + Font.GlyphH * scale + 3 * scale, small, Palette.Faint);
                 y += h + 5 * scale;
             }
+            outRects?.Add(backBtn);
             return;
         }
 
@@ -948,6 +1033,10 @@ public static class Screens
         if (st.Page is null)
         {
             var rows = st.Rows;
+            if (outRects is not null)
+            {
+                for (int i = 0; i < rows.Count; i++) outRects.Add(Rectangle.Empty);
+            }
             Font.DrawCentred(batch, sprites.Blank, Spaced(Pedia.Sections[st.Section].Label), vw / 2,
                              y, small, Palette.Faint);
             y += Font.LineHeight * small + 6 * scale;
@@ -1006,6 +1095,7 @@ public static class Screens
 
                 if (y + entryH > bottom) break;
                 var r = new Rectangle(x0, y, w, entryH);
+                if (outRects is not null) outRects[i] = r;
                 bool sealedRow = row.Kind == Pedia.Kind.Achievement && row.Sub != "";
 
                 if (on) Cursor(batch, sprites, r, radius, thick * 2);
@@ -1051,10 +1141,12 @@ public static class Screens
                 Font.DrawCentred(batch, sprites.Blank, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
                                  small, Palette.Locked);
             }
+            outRects?.Add(backBtn);
             return;
         }
 
         DrawPediaPage(batch, sprites, st, x0, w, scale, small, vw, bottom, y);
+        outRects?.Add(backBtn);
     }
 
     /// <summary>The colour of an index row's left edge.</summary>
@@ -1108,8 +1200,14 @@ public static class Screens
 
         // THE PAGE HEAD IS THE ENTRY, LARGER. Same icon, same name, same kind in the same colour -
         // so arriving at a page from a row is obviously the same thing opened rather than a new one.
+        //
+        // page.Icon IS ALREADY THE FINAL SPRITE KEY, never a bare id needing a prefix added here -
+        // see Pedia.Page's construction, where each kind resolves its own "icon_" (a card, an
+        // ascension) or has none to add (an achievement's Icon already carries whatever it needs).
+        // A blanket prefix here once pointed every earned achievement at a sprite that did not
+        // exist.
         int box = 26 * scale;
-        var icon = page.Icon == "" ? null : sprites.Get("icon_" + page.Icon);
+        var icon = page.Icon == "" ? null : sprites.Get(page.Icon);
         int headX = x0;
         if (icon is not null)
         {
@@ -1186,9 +1284,13 @@ public static class Screens
     /// open it is nearly always to find out what just changed.
     /// </para>
     /// </remarks>
+    /// <param name="outRects">See <see cref="DrawTitle"/>. The BACK button, and nothing else -
+    /// this screen is prose with a scrollbar, not a list of things to pick.</param>
     public static void DrawChangelog(SpriteBatch batch, Sprites sprites, List<string> lines,
-                                     int scroll, int vw, int vh)
+                                     int scroll, int vw, int vh,
+                                     System.Collections.Generic.List<Rectangle>? outRects = null)
     {
+        outRects?.Clear();
         Backdrop(batch, sprites, vw, vh);
         int scale = System.Math.Max(1, vh / 300);
         int small = System.Math.Max(1, scale - 1);
@@ -1204,7 +1306,9 @@ public static class Screens
 
         int btnH = 27 * scale;
         int backY = vh - 12 * scale - btnH;
-        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+        var backBtn = new Rectangle(x0, backY, w, btnH);
+        ActionButton(batch, sprites, backBtn, "BACK", "ESC", scale, true);
+        outRects?.Add(backBtn);
         int bottom = backY - 18 * scale - Font.GlyphH * small;
 
         // AS MANY LINES AS THE WINDOW HOLDS, worked out from the window. The port had thirteen, a

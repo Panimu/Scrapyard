@@ -195,9 +195,16 @@ public static class Pedia
             // AN UNEARNED TROPHY HAS NO ICON, and that is the sealed plate rather than an
             // oversight: the icon is a card's art or a chassis, and showing it would name the thing
             // the silhouette is there not to name.
+            //
+            // NO "icon_" PREFIX HERE - unlike a card's or an ascension's, an achievement's Icon is
+            // already the FINAL sprite key (see AchievementDef.Icon and its generator): most name a
+            // chassis or a level's own art directly ("mech_moss", "scrap_0"), and the handful tied
+            // to a weapon card already carry their own "icon_" prefix baked in at authoring time
+            // ("icon_w-twin-mount"). Adding a second one here was pointing every earned trophy at a
+            // sprite key that does not exist, so nothing ever drew.
             trophies.Add(new Row(Kind.Achievement,
                                  Achievements.Display(a, got).Name.ToUpperInvariant(),
-                                 got ? "" : "-", i, a.Id, got ? "icon_" + a.Icon : ""));
+                                 got ? "" : "-", i, a.Id, got ? a.Icon : ""));
         }
         rows.Add(Heading("TROPHIES", earned, Achievements.All.Length));
         rows.AddRange(trophies);
@@ -253,8 +260,11 @@ public static class Pedia
                 // Tier 1 is the unlock and says nothing worth a row, so the list starts at the
                 // first rung that changes something.
                 for (int t = 1; t < e.Tiers.Length; t++) body.Add($"{t + 1}. {e.Tiers[t]}");
+                // "icon_" + THE BARE CARD ID, resolved here rather than at draw time - see the
+                // remark on the achievement row above for why a page's Icon is always the final,
+                // ready-to-load key and never has a prefix added again downstream.
                 return new Page(e.Name.ToUpperInvariant(),
-                                e.Kind == "weapon" ? "WEAPON" : "SYSTEM", e.Id, body);
+                                e.Kind == "weapon" ? "WEAPON" : "SYSTEM", "icon_" + e.Id, body);
             }
 
             case Kind.Ascension:
@@ -271,7 +281,7 @@ public static class Pedia
                 // a page saying "every weapon has one of these" would hand over eight secrets for
                 // the price of one.
                 body.Add($"Carried to its last tier alongside {a.RequiresName}, and opened out of a Cyber Chest.");
-                return new Page(a.Name.ToUpperInvariant(), "ASCENSION", a.Icon, body);
+                return new Page(a.Name.ToUpperInvariant(), "ASCENSION", "icon_" + a.Icon, body);
             }
 
             case Kind.Mech:
