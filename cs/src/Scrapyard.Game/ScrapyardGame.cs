@@ -2121,17 +2121,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                  new Color(255, 255, 255, 110));
         }
 
-        // WALKING OR STANDING, decided by the mech's own speed rather than by the input: a mech
-        // still sliding to a stop after the stick is released is still walking, and the art should
-        // agree with the physics rather than with the thumb.
-        double speed2 = p.Vx * p.Vx + p.Vy * p.Vy;
-        string key = $"mech_{stem}";
-        if (speed2 > 25)
-        {
-            int frame = (int)(_walkClock / RenderTables.MechWalkFrameSec) % RenderTables.MechWalkFrames;
-            key = $"mech_{stem}_w{frame}";
-        }
-
         // DAMAGE WINS OVER THE HEAL: being hit is the more urgent fact, so a heal landing on the
         // same frame as a hit does not soften the warning.
         var tint = _playerFlash > 0 ? PlayerHitTint : _healFlash > 0 ? PlayerHealTint : Color.White;
@@ -2151,13 +2140,36 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             tint = Color.Lerp(tint, InsuranceSavedTint, (float)(left * (0.45 + 0.55 * pulse)));
         }
 
-        var body = _sprites.Get(key) ?? _sprites.Get($"mech_{stem}");
+        // The chassis faces where it is looking, and the art faces +x, so no offset. Shared by the
+        // body and the legs below - make-mechs.mjs lays both out on the same canvas specifically so
+        // they register exactly when stacked at the same position, size and rotation.
+        double face = System.Math.Atan2(p.FaceY, p.FaceX);
+        double bw = RenderTables.MechDrawW;
+
+        // THE BODY - torso, mount, cockpit, thrusters - DRAWS EVERY FRAME, walking or not. See
+        // make-mechs.mjs's own remark: a chassis is THREE layers (body, shadow, six leg frames),
+        // and "the renderer stacks them and swaps only the leg texture" - the paint and the guns
+        // are stored once rather than baked into all six walk frames. Picking body OR the current
+        // leg frame, instead of drawing both, is exactly why a moving mech had no torso: the leg
+        // frames are legs only by design, not a fallback that happened to be missing one.
+        var body = _sprites.Get($"mech_{stem}");
         if (body is not null)
         {
-            // The chassis faces where it is looking, and the art faces +x, so no offset.
-            double face = System.Math.Atan2(p.FaceY, p.FaceX);
-            double bw = RenderTables.MechDrawW;
             Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
+        }
+
+        // THE LEGS, ADDITIONALLY, ONLY WHILE WALKING - decided by the mech's own speed rather than
+        // by the input: a mech still sliding to a stop after the stick is released is still
+        // walking, and the art should agree with the physics rather than with the thumb.
+        double speed2 = p.Vx * p.Vx + p.Vy * p.Vy;
+        if (speed2 > 25)
+        {
+            int frame = (int)(_walkClock / RenderTables.MechWalkFrameSec) % RenderTables.MechWalkFrames;
+            var legs = _sprites.Get($"mech_{stem}_w{frame}");
+            if (legs is not null)
+            {
+                Blit(legs, px, py, bw * ((double)legs.Width / legs.Height), bw, face, tint);
+            }
         }
 
         // THE TURRETS, aimed independently of the chassis - the difference between where the mech
