@@ -108,6 +108,87 @@ public sealed class Settings
     [JsonIgnore]
     public int HeroesOwned => UnlockedHeroes.Count;
 
+    /// <summary>Tiers owned of one workshop upgrade, by catalog index.</summary>
+    public int TierOf(int index)
+    {
+        var def = WorkshopText.At(index);
+        return def.Id != "" && MetaTiers.TryGetValue(def.Id, out var p) ? p.Tiers : 0;
+    }
+
+    /// <summary>Can the next tier of this upgrade be bought right now?</summary>
+    public bool CanBuy(int index)
+    {
+        var def = WorkshopText.At(index);
+        if (def.Id == "") return false;
+        return TierOf(index) < def.Tiers && Credits >= def.Cost;
+    }
+
+    /// <summary>Is there anything at all worth opening the workshop for?</summary>
+    public bool CanBuyAnything()
+    {
+        for (int i = 0; i < WorkshopText.All.Length; i++)
+        {
+            if (CanBuy(i)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Buys one tier. Returns false and changes nothing if it cannot be afforded or is maxed.
+    /// </summary>
+    /// <remarks>
+    /// THE PURCHASE RECORDS THE DEAL IT WAS BOUGHT UNDER - the version and the price actually paid.
+    /// That is what a later version bump refunds against, and it is why the record is written here
+    /// rather than the tier count simply being incremented.
+    ///
+    /// FLAT PER TIER, not escalating. The seventh tier of Ordnance Stores costs what the first did.
+    /// That is the catalog's decision, not this function's - the price is read, never computed.
+    /// </remarks>
+    public bool Buy(int index)
+    {
+        if (!CanBuy(index)) return false;
+        var def = WorkshopText.At(index);
+        int owned = TierOf(index);
+
+        Credits -= def.Cost;
+        MetaTiers[def.Id] = new MetaPurchase
+        {
+            Tiers = owned + 1,
+            Version = def.Version,
+            Cost = def.Cost,
+        };
+        return true;
+    }
+
+    /// <summary>Everything the workshop has been paid, at the prices paid.</summary>
+    public long TotalSpent()
+    {
+        long n = 0;
+        foreach (var (id, p) in MetaTiers)
+        {
+            n += (long)p.Tiers * p.Cost;
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// Sells the whole workshop back and returns what it paid.
+    /// </summary>
+    /// <remarks>
+    /// A FULL REFUND AT THE PRICES PAID, because the workshop is a build rather than a purchase: a
+    /// player who wants to try the other half of the tree should not have to grind the credits
+    /// twice. It is all-or-nothing rather than per-upgrade so there is no arithmetic to do - the
+    /// question is "start again?", not "which of these sixteen".
+    /// </remarks>
+    public long RefundAll()
+    {
+        long owed = TotalSpent();
+        if (owed <= 0) return 0;
+        MetaTiers.Clear();
+        Credits = System.Math.Clamp(Credits + owed, 0, MaxBankedCredits);
+        return owed;
+    }
+
     public CareerRecord Career(Func<string, int> weaponIdOf) => new()
     {
         KillsWith = CareerKills

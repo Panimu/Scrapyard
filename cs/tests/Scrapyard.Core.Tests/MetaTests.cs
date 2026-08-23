@@ -302,6 +302,99 @@ public class MetaTests
         Assert.Equal(500, save.Credits);
     }
 
+    // -----------------------------------------------------------------------------------------
+    // The workshop
+    // -----------------------------------------------------------------------------------------
+
+    [Fact]
+    public void BuyingSpendsCreditsAndRecordsTheDeal()
+    {
+        var def = WorkshopText.All[2];
+        var save = new Settings { Credits = def.Cost * 3 };
+        save.Reconcile();
+
+        Assert.True(save.CanBuy(2));
+        Assert.True(save.Buy(2));
+
+        Assert.Equal(1, save.TierOf(2));
+        Assert.Equal(def.Cost * 2, save.Credits);
+        // The DEAL is recorded, not just the count - that is what a later version bump refunds.
+        Assert.Equal(def.Version, save.MetaTiers[def.Id].Version);
+        Assert.Equal(def.Cost, save.MetaTiers[def.Id].Cost);
+    }
+
+    [Fact]
+    public void BuyingWhatYouCannotAffordChangesNothing()
+    {
+        var def = WorkshopText.All[0];
+        var save = new Settings { Credits = def.Cost - 1 };
+        save.Reconcile();
+
+        Assert.False(save.CanBuy(0));
+        Assert.False(save.Buy(0));
+        Assert.Equal(def.Cost - 1, save.Credits);
+        Assert.Equal(0, save.TierOf(0));
+    }
+
+    [Fact]
+    public void AnUpgradeStopsAtItsTierCeiling()
+    {
+        var def = WorkshopText.All[0];
+        var save = new Settings { Credits = def.Cost * (def.Tiers + 5) };
+        save.Reconcile();
+
+        for (int i = 0; i < def.Tiers; i++) Assert.True(save.Buy(0));
+
+        Assert.Equal(def.Tiers, save.TierOf(0));
+        Assert.False(save.CanBuy(0));
+        Assert.False(save.Buy(0));
+        // Only what was actually bought was charged.
+        Assert.Equal(def.Cost * 5, save.Credits);
+    }
+
+    /// <summary>
+    /// SELLING BACK IS ALL-OR-NOTHING AND LOSSLESS, because the workshop is a build rather than a
+    /// purchase: trying the other half of the tree should not mean grinding the credits twice.
+    /// </summary>
+    [Fact]
+    public void RefundingReturnsExactlyWhatWasSpent()
+    {
+        var save = new Settings { Credits = 10_000 };
+        save.Reconcile();
+        long before = save.Credits;
+
+        save.Buy(0);
+        save.Buy(0);
+        save.Buy(4);
+        long spent = before - save.Credits;
+        Assert.True(spent > 0);
+        Assert.Equal(spent, save.TotalSpent());
+
+        Assert.Equal(spent, save.RefundAll());
+        Assert.Equal(before, save.Credits);
+        Assert.Empty(save.MetaTiers);
+    }
+
+    /// <summary>
+    /// A PURCHASE REACHES THE SIMULATION. The whole point of the workshop is that it changes a run,
+    /// and the seam it changes it through is the tier array the world is built with.
+    /// </summary>
+    [Fact]
+    public void APurchasedSlotShowsUpInTheWorld()
+    {
+        int mounts = Array.FindIndex(WorkshopText.All, e => e.Id == "m-mounts");
+        Assert.True(mounts >= 0, "the Reinforced Mounts upgrade has been renamed");
+
+        var save = new Settings { Credits = 100_000 };
+        save.Reconcile();
+        Assert.True(save.Buy(mounts));
+
+        var plain = new Simulation(7, 0, "scrapyard");
+        var bought = new Simulation(7, 0, "scrapyard", Constants.RunLengthSec, save.ToMetaTiers());
+
+        Assert.Equal(plain.World.MaxWeapons + 1, bought.World.MaxWeapons);
+    }
+
     /// <summary>
     /// CREDITS BANK ACROSS RUNS, which the first draft of this got wrong: it compared the run's
     /// tally against the career purse, so nothing banked after the first run ever.

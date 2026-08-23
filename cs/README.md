@@ -386,16 +386,26 @@ delta of the run's own counter, and `CreditsBankOnEveryRunNotJustTheFirst` is th
 it reads the world and never writes to it, which is the same line `src/render/` holds on the
 TypeScript side and is what keeps a run played here reproducible in a test runner with no window.
 
+It opens on a title screen rather than mid-fight: a game that starts in a run gives the player no
+moment to choose a chassis, spend credits, or find out what they unlocked last time.
+
 | | |
 |---|---|
-| WASD / arrows / stick | move |
-| 1 / 2 / 3 | take a card, or acknowledge a chest |
-| Q | reroll |
-| F1 / F2 | cycle chassis |
-| F5 | new seed |
-| F6 / F7 / F8 | Scrapyard / Mossy Mayhem / City Chaos |
+| **Title** | ENTER run · C chassis · Y yard · W workshop · ESC quit |
+| **In a run** | WASD / arrows / stick to move · 1 2 3 to take a card · Q reroll · ESC pause |
+| **Paused** | ESC resume · F5 new run · BACKSPACE abandon |
+| **Menus** | arrows to move · ENTER to choose · ESC back |
 
 `Scrapyard.exe <seed> <heroId> <levelId>` replays an exact run, because a run IS its seed.
+
+**A menu is outside a run, not on top of one.** The world is built when a run starts and thrown away
+when it ends — which is why the workshop can only be entered from the title. Its tiers are read ONCE
+when the world is built and never recomputed, so a purchase made mid-run would do nothing until the
+next one, and offering it there would be worse than not offering it.
+
+**Pause is a screen, not a phase.** `RunPhase` has Intro, Running, LevelUp, Dead, Victory and Chest,
+and none of them means "the player walked away". Pausing is the front-end choosing not to step,
+which is exactly what it is — the simulation never learns it happened.
 
 **The accumulator is the simulation's contract, not MonoGame's.** `IsFixedTimeStep` is off and the
 loop keeps its own — a frame's elapsed time is banked, whole 1/60 steps come out of it, and at most
@@ -420,10 +430,10 @@ three files from the catalogs that own them: `CardTexts.cs`, `WorkshopText.cs` a
 Each carries a `Verify` that refuses to start if the catalog has moved on. A lock retyped wrong is
 either a chassis nobody can earn or one everybody gets free, and neither announces itself.
 
-What is not done yet, plainly: no ground dressing, paths or litter; no pause menu; no Scrapopedia;
-no achievement table (the condition language it needs is ported and tested, but the 388-line table
-and its `platformKey`s are not); no workshop screen, so credits accumulate with nothing to spend
-them on; and no audio.
+What is not done yet, plainly: no ground dressing, paths or litter; no Scrapopedia; no achievement
+table (the condition language it needs is ported and tested, but the 388-line table and its
+permanent `platformKey`s are not); and no settings screen. There is no audio in the original either
+— no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not
 

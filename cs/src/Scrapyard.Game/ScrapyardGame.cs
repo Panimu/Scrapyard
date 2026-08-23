@@ -85,6 +85,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>How much of this run's credit tally has already reached the save.</summary>
     private long _creditsBanked;
 
+    /// <summary>Where the app is. A menu is OUTSIDE a run, not on top of one.</summary>
+    private Screen _screen = Screen.Title;
+
+    /// <summary>The cursor each menu remembers, so backing out and in again does not lose it.</summary>
+    private int _heroCursor;
+
+    private int _levelCursor;
+    private int _shopCursor;
+
+
     /// <summary>Guards the end-of-run banking pass so it runs once rather than every frame.</summary>
     private bool _bankedEnd;
 
@@ -150,7 +160,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             _heroId = 0;
         }
         if (!_save.UnlockedLevels.Contains(_levelId)) _levelId = "scrapyard";
-        NewRun(_seed, _heroId, _levelId);
+
+        _heroCursor = _heroId;
+        _levelCursor = System.Math.Max(0, Array.FindIndex(HeroUnlocks.Levels, l => l.Id == _levelId));
+
+        // THE TITLE, not a run. A game that starts mid-fight gives the player no moment to choose a
+        // chassis, spend credits, or find out what they unlocked last time.
+        _screen = Screen.Title;
         _camera.Resize(GraphicsDevice.PresentationParameters.BackBufferWidth,
                        GraphicsDevice.PresentationParameters.BackBufferHeight);
         base.LoadContent();
@@ -192,22 +208,112 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         var keys = Keyboard.GetState();
         var pad = GamePad.GetState(PlayerIndex.One);
+        double dt = gameTime.ElapsedGameTime.TotalMilliseconds / 1000.0;
 
-        if (keys.IsKeyDown(Keys.Escape) || pad.Buttons.Back == ButtonState.Pressed) Exit();
+        switch (_screen)
+        {
+            case Screen.Title: UpdateTitle(keys); break;
+            case Screen.HeroSelect: UpdateHeroSelect(keys); break;
+            case Screen.LevelSelect: UpdateLevelSelect(keys); break;
+            case Screen.Workshop: UpdateWorkshop(keys); break;
+            case Screen.Paused: UpdatePaused(keys); break;
+            case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
+        }
+
+        if (_toastLeft > 0) _toastLeft -= dt;
+        _prevKeys = keys;
+        base.Update(gameTime);
+    }
+
+    private void UpdateTitle(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) Exit();
+        if (Pressed(keys, Keys.Enter)) StartRun();
+        if (Pressed(keys, Keys.C)) _screen = Screen.HeroSelect;
+        if (Pressed(keys, Keys.Y) && _save.UnlockedLevels.Count > 1) _screen = Screen.LevelSelect;
+        if (Pressed(keys, Keys.W)) _screen = Screen.Workshop;
+    }
+
+    private void UpdateHeroSelect(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+
+        const int cols = 8;
+        int n = HeroUnlocks.Heroes.Length;
+        if (Pressed(keys, Keys.Left)) _heroCursor = (_heroCursor + n - 1) % n;
+        if (Pressed(keys, Keys.Right)) _heroCursor = (_heroCursor + 1) % n;
+        if (Pressed(keys, Keys.Up)) _heroCursor = (_heroCursor + n - cols) % n;
+        if (Pressed(keys, Keys.Down)) _heroCursor = (_heroCursor + cols) % n;
+
+        if (!Pressed(keys, Keys.Enter)) return;
+        // A LOCKED CHASSIS IS NOT SELECTABLE. The cursor may rest on it - the silhouette is worth
+        // seeing - but pressing enter does nothing rather than starting a run as somebody else.
+        if (!_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[_heroCursor].Id)) return;
+        _heroId = _heroCursor;
+        _save.LastHeroId = _heroId;
+        _save.Save();
+        StartRun();
+    }
+
+    private void UpdateLevelSelect(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) _screen = Screen.Title;
+
+        int n = HeroUnlocks.Levels.Length;
+        if (Pressed(keys, Keys.Up)) _levelCursor = (_levelCursor + n - 1) % n;
+        if (Pressed(keys, Keys.Down)) _levelCursor = (_levelCursor + 1) % n;
+
+        if (!Pressed(keys, Keys.Enter)) return;
+        string id = HeroUnlocks.Levels[_levelCursor].Id;
+        if (!_save.UnlockedLevels.Contains(id)) return;
+        _levelId = id;
+        _save.LastLevelId = id;
+        _save.Save();
+        _screen = Screen.Title;
+    }
+
+    private void UpdateWorkshop(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) { _save.Save(); _screen = Screen.Title; }
+
+        int n = WorkshopText.All.Length;
+        if (Pressed(keys, Keys.Up)) _shopCursor = (_shopCursor + n - 1) % n;
+        if (Pressed(keys, Keys.Down)) _shopCursor = (_shopCursor + 1) % n;
+
+        if (Pressed(keys, Keys.Enter) && _save.Buy(_shopCursor)) _save.Save();
+
+        if (Pressed(keys, Keys.R) && _save.RefundAll() > 0) _save.Save();
+    }
+
+    private void UpdatePaused(KeyboardState keys)
+    {
+        if (Pressed(keys, Keys.Escape)) _screen = Screen.Playing;
+        if (Pressed(keys, Keys.F5)) StartRun(unchecked(_seed * 1103515245 + 12345));
+        if (Pressed(keys, Keys.Back))
+        {
+            // ABANDONING BANKS FIRST. Everything the run earned is already in the save by the
+            // banking clock, but the last second of it may not be - and a player who walks away
+            // from a run should not lose the kill that was still counting.
+            Bank();
+            _screen = Screen.Title;
+        }
+    }
+
+    private void UpdatePlaying(KeyboardState keys, GamePadState pad, GameTime gameTime)
+    {
+        if (Pressed(keys, Keys.Escape) || (pad.IsConnected && pad.Buttons.Start == ButtonState.Pressed))
+        {
+            _screen = Screen.Paused;
+            return;
+        }
 
         // THE NUMBER KEYS BELONG TO THE CARD. They are the only input the game asks for that the
-        // player cannot skip, so nothing else may take them - the run switches live on function
-        // keys instead.
+        // player cannot skip, so nothing else may take them.
         ReadChoice(keys, pad);
 
         // F5 restarts on a fresh seed, which is the one thing a playtester wants most and the
         // simulation makes free: a run IS its seed.
-        if (Pressed(keys, Keys.F5)) NewRun(unchecked(_seed * 1103515245 + 12345), _heroId, _levelId);
-        if (Pressed(keys, Keys.F1)) NewRun(_seed, NextOwnedHero(_heroId, -1), _levelId);
-        if (Pressed(keys, Keys.F2)) NewRun(_seed, NextOwnedHero(_heroId, 1), _levelId);
-        if (Pressed(keys, Keys.F6)) TryLevel("scrapyard");
-        if (Pressed(keys, Keys.F7)) TryLevel("mossy-mayhem");
-        if (Pressed(keys, Keys.F8)) TryLevel("city-chaos");
+        if (Pressed(keys, Keys.F5)) { StartRun(unchecked(_seed * 1103515245 + 12345)); return; }
 
         var frame = ReadInput(keys, pad);
 
@@ -251,13 +357,21 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
         if (!over) _bankedEnd = false;
 
-        if (_toastLeft > 0) _toastLeft -= dt;
-
         _alpha = _accumulatorMs / DtMs;
         _walkClock += dt;
-        _prevKeys = keys;
+    }
 
-        base.Update(gameTime);
+    /// <summary>
+    /// Builds a world and starts playing it.
+    /// </summary>
+    /// <remarks>
+    /// THE ONLY ROUTE INTO A RUN, which is what lets the workshop be a menu: its tiers are read once
+    /// when the world is built, so buying one is only meaningful before this is called.
+    /// </remarks>
+    private void StartRun(int? seed = null)
+    {
+        NewRun(seed ?? unchecked((int)DateTime.Now.Ticks), _heroId, _levelId);
+        _screen = Screen.Playing;
     }
 
 
@@ -353,30 +467,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         return id;
     }
 
-    /// <summary>
-    /// The next chassis the save actually owns, in either direction.
-    /// </summary>
-    /// <remarks>
-    /// A LOCKED CHASSIS IS NOT SELECTABLE, which is the whole point of the lock - and cycling past
-    /// it silently is better than stopping on one the player cannot use.
-    /// </remarks>
-    private int NextOwnedHero(int from, int step)
-    {
-        int n = HeroUnlocks.Heroes.Length;
-        for (int k = 1; k <= n; k++)
-        {
-            int at = ((from + step * k) % n + n) % n;
-            if (_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[at].Id)) return at;
-        }
-        return from;
-    }
 
-    /// <summary>Switches level, if the save owns it.</summary>
-    private void TryLevel(string id)
-    {
-        if (!_save.UnlockedLevels.Contains(id)) return;
-        NewRun(_seed, _heroId, id);
-    }
 
     private bool Pressed(KeyboardState now, Keys k) => now.IsKeyDown(k) && !_prevKeys.IsKeyDown(k);
 
@@ -474,6 +565,29 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     protected override void Draw(GameTime gameTime)
     {
+        int mw = GraphicsDevice.PresentationParameters.BackBufferWidth;
+        int mh = GraphicsDevice.PresentationParameters.BackBufferHeight;
+
+        if (_screen is Screen.Title or Screen.HeroSelect or Screen.LevelSelect or Screen.Workshop)
+        {
+            GraphicsDevice.Clear(RenderTables.Outside);
+            _batch.Begin(samplerState: SamplerState.PointClamp);
+            switch (_screen)
+            {
+                case Screen.Title: Screens.DrawTitle(_batch, _sprites, _save, mw, mh); break;
+                case Screen.HeroSelect:
+                    Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh); break;
+                case Screen.LevelSelect:
+                    Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh); break;
+                case Screen.Workshop:
+                    Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh); break;
+            }
+            if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
+            _batch.End();
+            base.Draw(gameTime);
+            return;
+        }
+
         var w = _sim.World;
         var p = w.Player;
 
@@ -507,6 +621,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh); break;
         }
 
+        if (_screen == Screen.Paused) Screens.DrawPause(_batch, _sprites, w, vw, vh);
         if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
 
         _batch.End();
