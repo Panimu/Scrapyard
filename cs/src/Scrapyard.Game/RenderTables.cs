@@ -29,14 +29,52 @@ public static class RenderTables
         "fern", "indigo", "brass", "vermilion", "jade", "rust", "cobalt", "copper",
     };
 
+    /// <summary>
+    /// Which chassis HOVER, by the same index as <see cref="HeroSprite"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A HOVER HAS NO LEGS TO SWING. Its six "walk" frames pulse the lift skirt and flicker the
+    /// nozzles instead, and it is the one chassis type that must keep animating WHILE STANDING
+    /// STILL - see the header of <c>tools/make-mechs.mjs</c>: a hover that goes completely still
+    /// has landed. A walker deliberately does the opposite and parks mid-stride.
+    /// </para>
+    /// <para>
+    /// HERE RATHER THAN IN THE CATALOG because it is a fact about the ART. The simulation does not
+    /// care how a chassis carries itself; the gait table in <c>heroes.ts</c> exists for the
+    /// renderer, and this is the renderer.
+    /// </para>
+    /// </remarks>
+    public static readonly bool[] MechIsHover =
+    {
+        false, false, false, false, false, false, false, false,
+        true,  false, true,  true,  false, false, false, false,
+    };
+
+    /// <summary>
+    /// World units walked per leg frame.
+    /// </summary>
+    /// <remarks>
+    /// THE GAIT IS DRIVEN BY DISTANCE, NOT BY A CLOCK, which is the whole reason a mech standing
+    /// still stops moving its legs without anything having to test whether it is standing still.
+    /// A full cycle is twice the frame count, so a stride is ~184 units against a 195 u/s mech -
+    /// a little over one cycle a second at a flat run. Scale it inversely if the frame count moves
+    /// or the cadence moves with it.
+    /// </remarks>
+    public const double MechStrideUnits = 184.0 / (2 * MechWalkFrames);
+
+    /// <summary>Peak chassis yaw across a gait cycle, radians. Weight shift, not a waddle.</summary>
+    public const double MechGaitYaw = 0.045;
+
+    /// <summary>A hover's idle drift through its own cycle, in equivalent world units per second.</summary>
+    public const double MechHoverIdleSpeed = 34;
+
     /// <summary>Drawn diameter per archetype, world units. Beside the collision radius it answers to.</summary>
     public static readonly double[] DrawSize = { 26, 34, 42, 52, 112 };
 
     /// <summary>Frames in the mech walk cycle.</summary>
     public const int MechWalkFrames = 6;
 
-    /// <summary>Seconds per walk frame. Fast enough to read as a stride at 195 u/s.</summary>
-    public const double MechWalkFrameSec = 0.09;
 
     /// <summary>The mech art faces +x, so its rotation offset is zero. Shell art points UP.</summary>
     public const double ShellRotOffset = System.Math.PI / 2;
@@ -46,6 +84,13 @@ public static class RenderTables
 
     /// <summary>Drawn turret length, world units, from an 80 px canvas.</summary>
     public const double TurretDrawW = 42;
+
+    /// <summary>Where a turret pivots, as a fraction along its own width: the mount ring.</summary>
+    /// <remarks>
+    /// NOT THE MIDDLE OF THE SPRITE. A mount sits just behind the mech's centre and the barrel
+    /// reaches forward from it, so the tube sweeps across the hull rather than orbiting it.
+    /// </remarks>
+    public const double TurretPivotX = 0.2;
 
     /// <summary>Shell and missile drawn lengths, world units.</summary>
     public const double ShellDrawLen = 16;

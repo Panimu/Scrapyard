@@ -189,7 +189,9 @@ const shopRows = META_CATALOG.map((m) => {
     `            "${cs(promise)}", "${cs(fullBare)}"),`;
 }).join('\n');
 
-const shopSrc = `namespace Scrapyard.Meta;
+const shopSrc = `using Scrapyard.Core;
+
+namespace Scrapyard.Meta;
 
 /// <summary>
 /// What a workshop upgrade SAYS and what it COSTS.
@@ -258,14 +260,58 @@ ${shopRows}
             ? All[index]
             : new WorkshopEntry("", "?", "", 0, 0, 0, System.Array.Empty<string>(), "", "");
 
-    /// <summary>Throws if this table and the ported catalog have drifted apart.</summary>
-    public static void Verify(int catalogCount)
+    /// <summary>
+    /// Throws if this table and the ported catalog have drifted apart.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE PAIRING IS POSITIONAL, AND THIS IS WHAT CHECKS IT.</b> Index i here is
+    /// <see cref="MetaCatalog"/> index i - that is the format, and <c>Settings.ToMetaTiers</c>
+    /// relies on it to turn a saved id into the slot <c>World.Meta.Tiers</c> is keyed by. The two
+    /// tables have different authors: this one is GENERATED from <c>META_CATALOG</c>, the ported
+    /// catalog is a HAND-MAINTAINED list of named fields. Nothing but this function makes them
+    /// agree.
+    /// </para>
+    /// <para>
+    /// IT USED TO COMPARE ONLY THE COUNTS, which catches an upgrade being added and nothing else.
+    /// Reordering either table - an ordinary hand edit on the ported side - left the counts equal
+    /// and silently repointed every purchase in every save onto a different upgrade: a player who
+    /// bought Hull Plating would find they owned Mech Insurance instead, at the same tier, with no
+    /// error anywhere.
+    /// </para>
+    /// </remarks>
+    public static void Verify()
     {
-        if (All.Length != catalogCount)
+        if (All.Length != MetaCatalog.All.Length)
         {
             throw new InvalidOperationException(
-                $"WorkshopText holds {All.Length} entries but the catalog has {catalogCount}. " +
-                "Re-run: npx tsx tools/gen_ui_text.ts");
+                $"WorkshopText holds {All.Length} entries but the catalog has " +
+                $"{MetaCatalog.All.Length}. Re-run: npx tsx tools/gen_ui_text.ts");
+        }
+
+        for (int i = 0; i < All.Length; i++)
+        {
+            // THE PORTED CATALOG'S OWN SELF-CONSISTENCY FIRST. Every MetaDef carries the index it
+            // is supposed to sit at, so a reordered \`MetaCatalog.All\` is detectable without
+            // reference to anything else - and it has to be, because everything else here is
+            // checked against it.
+            if (MetaCatalog.All[i].Id != i)
+            {
+                throw new InvalidOperationException(
+                    $"MetaCatalog.All[{i}] carries id {MetaCatalog.All[i].Id}. The array has been " +
+                    "reordered away from MetaIds, and World.Meta.Tiers is keyed by position.");
+            }
+
+            // THEN ACROSS THE TWO TABLES. Tier counts are independent per upgrade and authored on
+            // both sides, which makes them a free checksum on the pairing: almost any slip lands a
+            // row beside a catalog entry that can be bought a different number of times.
+            if (All[i].Tiers != MetaCatalog.All[i].Tiers)
+            {
+                throw new InvalidOperationException(
+                    $"'{All[i].Id}' sits at index {i} and offers {All[i].Tiers} tiers, but the " +
+                    $"catalog entry there offers {MetaCatalog.All[i].Tiers}. The two tables have " +
+                    "drifted - a saved purchase would be applied to the wrong upgrade.");
+            }
         }
     }
 }
@@ -354,6 +400,28 @@ const cardLockRows = UPGRADE_CATALOG
   })
   .join('\n');
 
+/**
+ * EVERY upgrade id, in catalog order, and the ones that carry a tier 8.
+ *
+ * Emitted into `Scrapyard.Meta` because that is where the SAVE lives, and the save's ids have to be
+ * filterable against the catalog without reaching into the drawing layer - which `Scrapyard.Meta`
+ * cannot see and must not. `CardTexts` carries the same ids in `Scrapyard.Game` for the screens;
+ * both come from this one line, so they cannot disagree.
+ *
+ * The ascension list names PARENT ids and is emitted as a bare list of strings rather than as
+ * anything that says how many there are in total, for the reason the whole ascension apparatus is
+ * built the way it is: a count is a leak. It is used to drop a stored id whose tier 8 has been
+ * withdrawn, and nothing reads it before then.
+ */
+const allCardIdRows = UPGRADE_CATALOG
+  .map((u) => `        "${cs(String((u as unknown as Record<string, unknown>).id))}",`)
+  .join('\n');
+
+const ascendedCardIdRows = UPGRADE_CATALOG
+  .filter((u) => (u as unknown as Record<string, unknown>).ascension !== undefined)
+  .map((u) => `        "${cs(String((u as unknown as Record<string, unknown>).id))}",`)
+  .join('\n');
+
 const unlockSrc = `using Scrapyard.Core;
 
 namespace Scrapyard.Meta;
@@ -400,6 +468,37 @@ public readonly record struct LockedThing(
 
 /// <summary>A card lock, which also carries the catalog index the deck is keyed by.</summary>
 public readonly record struct LockedCard(int Index, string Id, string Name, UnlockCond Cond);
+
+/// <summary>
+/// Every upgrade id the save may legitimately hold, so a stored one can be resolved.
+/// </summary>
+/// <remarks>
+/// <para>
+/// HERE RATHER THAN IN THE DRAWING LAYER, because the save is filtered on load and
+/// <see cref="Settings.Reconcile"/> lives in this project. <c>CardTexts</c> in
+/// <c>Scrapyard.Game</c> carries the same ids for the screens; both are generated from the same
+/// catalog line, so the two cannot drift.
+/// </para>
+/// <para>
+/// <c>Ascended</c> NAMES PARENT IDS AND NOTHING ELSE - not how many there are, not what they
+/// become. It exists so a <c>HeldAscensions</c> entry whose tier 8 has since been withdrawn is
+/// dropped rather than left claiming a page nothing can draw, which is the same rule every other
+/// list follows.
+/// </para>
+/// </remarks>
+public static class CardIds
+{
+    public static readonly string[] All =
+    {
+${allCardIdRows}
+    };
+
+    /// <summary>The cards that HAVE a tier 8, by their own id.</summary>
+    public static readonly string[] Ascended =
+    {
+${ascendedCardIdRows}
+    };
+}
 
 public sealed class HeroUnlocks
 {

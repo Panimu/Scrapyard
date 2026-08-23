@@ -54,6 +54,7 @@ public static class Overlay
     {
         var p = w.Player;
         int scale = System.Math.Max(1, vh / 360);
+        int small = System.Math.Max(1, scale - 1);
 
         // TOP-RIGHT, same corner the web build's own `.hud__pause` uses - `top: 10px; right: 12px`
         // scaled up from its 44px CSS tap target.
@@ -61,17 +62,24 @@ public static class Overlay
         pauseRect = new Rectangle(vw - 10 * scale - pauseSize, 10 * scale, pauseSize, pauseSize);
         Screens.CardFace(batch, sprites, pauseRect, 6 * scale, Panel, Edge,
                          System.Math.Max(1, scale / 2));
-        Font.DrawCentred(batch, sprites.Blank, "II", pauseRect.Center.X,
-                         pauseRect.Y + (pauseRect.Height - Font.GlyphH * scale) / 2, scale, Ink);
+        Screens.UiDrawCentred(batch, sprites, "II", pauseRect.Center.X,
+                              pauseRect.Y + (pauseRect.Height - UiFont.GlyphH(scale)) / 2, scale,
+                              Ink);
 
         // Hull. The number is on the bar rather than beside it: at a glance the bar is the answer,
         // and the number is for the moment you want to know exactly how much trouble you are in.
+        //
+        // THE BARS STOP SHORT OF THE PAUSE BUTTON rather than running under it. They were the full
+        // width of the window with the button laid on top, so the right-hand end of the hull bar -
+        // the part that empties last, and the part you look at when it is nearly gone - was behind
+        // a panel.
         double hpFrac = p.Stats.MaxHp > 0 ? System.Math.Clamp(p.Hp / p.Stats.MaxHp, 0, 1) : 0;
-        int barW = vw - 24;
+        int barW = pauseRect.X - 6 * scale - 12;
         Bar(batch, sprites, 12, 12, barW, 8 * scale, hpFrac,
             new Color(0x28, 0x10, 0x10), new Color(0xd6, 0x3c, 0x3c));
-        Font.Draw(batch, sprites.Blank,
-                  $"{System.Math.Ceiling(p.Hp):0} / {p.Stats.MaxHp:0}", 16, 14, scale, Ink);
+        Screens.UiDraw(batch, sprites,
+                       $"{System.Math.Ceiling(p.Hp):0} / {p.Stats.MaxHp:0}", 16,
+                       12 + (8 * scale - UiFont.GlyphH(small)) / 2, small, Ink);
 
         // The Energy Shield's rims, drawn as pips rather than folded into the hull bar: a rim is a
         // discrete thing that blocks one hit whatever its size, and a fraction would say otherwise.
@@ -90,27 +98,182 @@ public static class Overlay
 
         int mins = (int)(w.RunSec / 60);
         int secs = (int)(w.RunSec % 60);
-        Font.Draw(batch, sprites.Blank, $"LV {p.Level}   {mins}:{secs:00}   x{w.Stats.Kills:0}",
-                  12, y, scale, Dim);
+        Screens.UiDraw(batch, sprites, $"LV {p.Level}   {mins}:{secs:00}   x{w.Stats.Kills:0}",
+                       12, y, small, Dim);
 
-        // WHAT IS IN YOUR HANDS, by icon, with the tier under each. The loadout is the run, and a
-        // player who cannot see it cannot plan the next card.
+        DrawLoadout(batch, sprites, w, vw, vh, scale);
+    }
+
+    /// <summary>
+    /// THE LOADOUT ROW - one chip per weapon held, carrying its tier and its LIMITER.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE BAR IS THE WEAPON.</b> The port drew an icon and a tier number and stopped, which
+    /// leaves out the one thing this row exists for: every gun in this game is gated by something,
+    /// and a player who cannot see the gate cannot play the gun. A laser is a duty cycle, a
+    /// magazine gun goes away completely for seconds at a time, and a cooldown weapon is a promise
+    /// about when it comes back. None of that was on screen.
+    /// </para>
+    /// <para>
+    /// ONE BAR, THREE MEANINGS, chosen by what limits the weapon:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>A BEAM shows HEAT rising toward its own cut-out, with a notch at the resume line.
+    /// Heat is hysteretic - it cuts out at capacity and does not come back until it has cooled to
+    /// <c>HeatResume</c> - so a bar showing only "how full" would make a weapon just under its
+    /// ceiling look like one just over its resume line.</item>
+    /// <item>A MAGAZINE shows rounds left, and while reloading shows the magazine REFILLING with a
+    /// countdown. A fifteen-second silence with no bar moving reads as a broken gun.</item>
+    /// <item>EVERYTHING ELSE shows rearm progress, filling to full at the instant it can fire
+    /// again. A gun holding fire for want of a target sits at FULL rather than pretending to rearm
+    /// - cooldown is only spent on a shot actually taken.</item>
+    /// </list>
+    /// <para>
+    /// AND THE BAR IS SCALED TO THE WEAPON, never to 100. Capacity is a per-weapon stat that tiers
+    /// raise, so a capacity upgrade lengthens the burst instead of making the same heat read as a
+    /// smaller fraction - which would look like the upgrade had made the gun cooler.
+    /// </para>
+    /// </remarks>
+    private static void DrawLoadout(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
+                                    int scale)
+    {
+        int small = System.Math.Max(1, scale - 1);
+        int box = 20 * scale;
+        int barH = 4 * scale;
+        int gap = 4 * scale;
+        int rowH = box + 2 * scale + barH + scale + UiFont.GlyphH(small);
         int ix = 12;
-        int iy = vh - 12 - 20 * scale;
+        int iy = vh - 12 - rowH;
+
         for (int i = 0; i < w.WeaponCount; i++)
         {
             var inst = w.Weapons[i];
+            if (inst.DefId < 0 || inst.DefId >= w.WeaponDefs.Length) continue;
+            var def = w.WeaponDefs[inst.DefId];
+            var stats = inst.Stats;
+
             int cardIndex = CardIndexForWeapon(w, inst.DefId);
             var tex = cardIndex >= 0 ? sprites.Get(CardTexts.At(cardIndex).IconKey) : null;
-            int box = 20 * scale;
-            if (tex is not null)
+            if (tex is not null) batch.Draw(tex, new Rectangle(ix, iy, box, box), Color.White);
+
+            bool beam = def.Kind == WeaponKind.Beam;
+            bool mag = stats.AmmoCapacity > 0;
+            bool reloading = mag && inst.ReloadLeft > 0;
+
+            double capacity = stats.HeatCapacity > 0 ? stats.HeatCapacity : 1;
+            double frac;
+            if (reloading)
             {
-                batch.Draw(tex, new Rectangle(ix, iy, box, box), Color.White);
+                double total = stats.ReloadTime > 0 ? stats.ReloadTime : 1;
+                frac = 1 - inst.ReloadLeft / total;
             }
-            Font.Draw(batch, sprites.Blank, $"{inst.Level}", ix + 1, iy + box + 1, scale, Dim);
-            ix += box + 4;
+            else if (mag)
+            {
+                double rounds = inst.Ammo < 0 ? stats.AmmoCapacity : inst.Ammo;
+                frac = rounds / stats.AmmoCapacity;
+            }
+            else if (beam)
+            {
+                double heat = inst.Heat < 0 ? 0 : inst.Heat > capacity ? capacity : inst.Heat;
+                frac = heat / capacity;
+            }
+            else
+            {
+                double total = stats.Cooldown > 0 ? stats.Cooldown : 1;
+                double left = inst.CooldownLeft > 0 ? inst.CooldownLeft : 0;
+                frac = 1 - left / total;
+            }
+
+            frac = System.Math.Clamp(frac, 0, 1);
+
+            // A BEAM'S BAR IS ITS OWN BEAM COLOUR, taken from the catalog rather than restated, so
+            // the chip and the line drawn across the field are one number and cannot drift apart.
+            var fill = beam ? FromPacked(def.BeamColour) : ChipColour(def.Id);
+            // OVERHEATED AND RELOADING LOOK DIFFERENT ON PURPOSE. An overheat is a FAULT and takes
+            // the warning red; a reload is a procedure that is going to finish, and stays calm.
+            if (inst.Overheated) fill = OutColour;
+
+            int by = iy + box + 2 * scale;
+            batch.Draw(sprites.Blank, new Rectangle(ix, by, box, barH), Palette.Sunken);
+            int fw = (int)System.Math.Round(box * frac);
+            if (fw > 0) batch.Draw(sprites.Blank, new Rectangle(ix, by, fw, barH), fill);
+
+            // THE RESUME NOTCH, and only on a beam: it is a property of heat's hysteresis and says
+            // nothing about a magazine or a cooldown.
+            if (beam)
+            {
+                int nx = ix + (int)System.Math.Round(
+                    box * System.Math.Clamp(stats.HeatResume / capacity, 0, 1));
+                batch.Draw(sprites.Blank,
+                           new Rectangle(nx, by - scale, System.Math.Max(1, scale / 2),
+                                         barH + 2 * scale),
+                           Ink);
+            }
+
+            // THE TIER, and the countdown that replaces it while the gun is away - so "when do I
+            // get it back" always has an answer on screen.
+            string label = inst.Level.ToString();
+            var labelTint = Dim;
+            if (inst.Overheated)
+            {
+                label = "OUT";
+                labelTint = OutColour;
+            }
+            else if (reloading)
+            {
+                label = inst.ReloadLeft.ToString("0.0");
+                labelTint = MagColour;
+            }
+
+            Screens.UiDraw(batch, sprites, label, ix, by + barH + scale, small, labelTint);
+            ix += box + gap;
         }
     }
+
+    /// <summary>A cut-out beam. A fault, and the only warning red on this row.</summary>
+    private static readonly Color OutColour = new(0xff, 0x5a, 0x4a);
+
+    /// <summary>
+    /// The magazine's brass.
+    /// </summary>
+    /// <remarks>
+    /// DELIBERATELY NOT ANY OF THE THREE BEAM COLOURS AND NOT THE UI ACCENT: the bar has to say
+    /// "this is the kinetic gun" at a glance in a row that may also be carrying a green, a blue
+    /// and a red laser.
+    /// </remarks>
+    private static readonly Color MagColour = new(0xe0, 0xb3, 0x4a);
+
+    /// <summary>A packed 0xRRGGBB from the weapon catalog, as a colour.</summary>
+    private static Color FromPacked(double packed)
+    {
+        int v = (int)packed;
+        return new Color((v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
+    }
+
+    /// <summary>
+    /// ONE COLOUR PER WEAPON, for everything that is not a beam.
+    /// </summary>
+    /// <remarks>
+    /// A single steel for the whole cooldown family would be truer to the SIMULATION - they share
+    /// a limiter - and the chip is not about the simulation. Four grey bars in a row makes "which
+    /// of these is my Cannon" a matter of reading four labels on a moving background, and the
+    /// answer arrives after the moment it was wanted. A colour is read without being looked at,
+    /// which is the whole job of this row.
+    ///
+    /// BEAMS ARE NOT IN HERE: a laser takes its colour from the catalog, so the bar and the line
+    /// on the field are the same value and adding them here would be a second copy of it.
+    /// </remarks>
+    private static Color ChipColour(int weaponId) => weaponId switch
+    {
+        WeaponIds.Cannon => new Color(0xff, 0xd9, 0x3d),
+        WeaponIds.Drone => new Color(0xee, 0xf3, 0xf8),
+        WeaponIds.MissileShort => new Color(0xff, 0x8a, 0x3c),
+        WeaponIds.MissileLong => new Color(0xc9, 0x8b, 0xff),
+        WeaponIds.Artillery => new Color(0xff, 0x5f, 0x8f),
+        WeaponIds.MachineGun or WeaponIds.FlakCannon => MagColour,
+        _ => new Color(0x8f, 0xa3, 0xbb),
+    };
 
     /// <summary>
     /// The catalog index of the card that grants a weapon def, or -1.
@@ -136,8 +299,9 @@ public static class Overlay
     /// <summary>The level-up card: up to three offers, picked by number key.</summary>
     /// <param name="outRects">
     /// See the parameter of the same name on <see cref="Screens.DrawTitle"/>. Filled with each
-    /// card's rect in offer order, then the reroll button's, as the LAST entry - so index n is
-    /// always reroll whatever n (up to three) actually offered this pick.
+    /// card's rect in offer order, then REROLL, then AUTO LEVEL - so the last two entries are
+    /// always those two buttons whatever n (up to three) actually offered this pick, and anything
+    /// below them is a card.
     /// </param>
     public static void DrawLevelUp(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
                                    System.Collections.Generic.List<Rectangle>? outRects = null)
@@ -211,7 +375,14 @@ public static class Overlay
         //
         // BELOW THE REROLL, which is already below the cards: this is the least-reached control on
         // the screen and the one with the largest consequence, so it sits furthest from the thumb.
-        Screens.UiDrawCentred(batch, sprites, "[A] AUTO LEVEL FROM HERE", vw / 2, y, small, Faint);
+        //
+        // A BUTTON AND NOT A LINE OF TEXT. It was drawn as the hint "[A] AUTO LEVEL FROM HERE",
+        // which names a key and looks like a caption - so on a machine being played with a mouse
+        // it was a control that could be read and not pressed. Everything else on this screen is
+        // clickable; a player has no reason to guess that this one thing is not.
+        var autoRect = new Rectangle(x0, y, width, rerollH);
+        outRects?.Add(autoRect);
+        Screens.OverlayButton(batch, sprites, autoRect, "AUTO LEVEL FROM HERE", "A", scale, true);
     }
 
     /// <summary>What one offer says: its name, its tier line, and what the tier does.</summary>
@@ -613,8 +784,23 @@ public static class Overlay
         float alpha = (float)(t > 0.66 ? (1 - t) / 0.34 : 1);
         int y = py - (int)(t * 34 * scale) - 20 * scale;
 
-        Font.DrawCentred(batch, sprites.Blank, name.ToUpperInvariant(), px, y, scale,
-                         Accent * alpha);
+        // WHITE WITH A BLACK OUTLINE, in the interface's own face rather than the blocky fallback.
+        // This is the ONE piece of text in the game drawn over the moving field rather than over a
+        // panel, so it has no ground of its own to sit on - gold on rust is close to invisible,
+        // and the outline is what makes it readable over whatever happens to be underneath.
+        string label = name.ToUpperInvariant();
+        var shadow = Color.Black * alpha;
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                Screens.UiDrawCentred(batch, sprites, label, px + dx * scale, y + dy * scale,
+                                      scale, shadow);
+            }
+        }
+
+        Screens.UiDrawCentred(batch, sprites, label, px, y, scale, Color.White * alpha);
     }
 
     /// <summary>
@@ -693,7 +879,8 @@ public static class Overlay
     /// hull red for a loss, because both of those already mean that everywhere else on screen.
     /// </para>
     /// </remarks>
-    public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh)
+    public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
+                               List<Rectangle>? outRects = null)
     {
         Scrim(batch, sprites, vw, vh);
         int scale = Screens.MenuScale(vh);
@@ -711,10 +898,27 @@ public static class Overlay
                          won ? Good : Palette.Hp);
         y += UiFont.GlyphH(scale * 2) + 10 * scale;
 
+        // TWO WAYS OUT, AND BOTH ARE CLICKABLE. The end of a run is the one screen a player
+        // reaches by losing, and it used to offer a single button that only answered a function
+        // key - so the mouse that had been playing the game had nothing to press, and there was no
+        // way back to the title at all short of quitting.
         int btnH = 27 * scale;
         int backY = vh - 12 * scale - btnH;
-        Screens.OverlayButton(batch, sprites, new Rectangle(x0, backY, width, btnH), "NEW RUN",
-                              "F5", scale, true);
+        int btnGap = 5 * scale;
+        int titleW = UiFont.Measure("TITLE", scale) + UiFont.Measure("ESC", scale) + 24 * scale;
+        titleW = System.Math.Min(titleW, width - 40 * scale);
+
+        var titleBtn = new Rectangle(x0, backY, titleW, btnH);
+        var againBtn = new Rectangle(x0 + titleW + btnGap, backY, width - titleW - btnGap, btnH);
+        Screens.OverlayButton(batch, sprites, titleBtn, "TITLE", "ESC", scale, true);
+        Screens.OverlayButton(batch, sprites, againBtn, "NEW RUN", "F5", scale, true);
+        if (outRects is not null)
+        {
+            outRects.Clear();
+            outRects.Add(againBtn);
+            outRects.Add(titleBtn);
+        }
+
         int bottom = backY - 8 * scale;
 
         // --- the numbers, two across ------------------------------------------------------------
@@ -871,11 +1075,57 @@ public static class Overlay
         batch.Draw(sprites.Blank, new Rectangle(x + w - 2, y, 2, h), Edge);
     }
 
+    /// <summary>
+    /// One HUD bar: a sunken rounded track, an outline, and a graded fill.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT WAS TWO FLAT RECTANGLES, which is not what the stylesheet the rest of this build follows
+    /// asks for: <c>.bar</c> is a rounded, outlined, sunken track and <c>.bar__fill</c> is a
+    /// horizontal GRADIENT. On a screen where every panel and every button is rounded and outlined,
+    /// two hard-edged slabs across the top were the one thing that read as placeholder.
+    /// </para>
+    /// <para>
+    /// THE GRADIENT IS NOT DECORATION. It runs from a light head to the bar's own colour, so the
+    /// leading edge is the brightest part of the bar - which is the part the eye is actually asked
+    /// to find when the question is "how much is left".
+    /// </para>
+    /// <para>
+    /// DRAWN AS COLUMNS, one pixel wide, because a SpriteBatch has no gradient brush and the bar is
+    /// a few hundred pixels at most once a frame. The alternative is a baked texture, which would
+    /// have to be regenerated whenever a colour moved.
+    /// </para>
+    /// </remarks>
     private static void Bar(SpriteBatch batch, Sprites sprites, int x, int y, int w, int h,
                             double frac, Color back, Color front)
     {
-        batch.Draw(sprites.Blank, new Rectangle(x, y, w, h), back * 0.9f);
-        int fill = (int)(w * frac);
-        if (fill > 0) batch.Draw(sprites.Blank, new Rectangle(x, y, fill, h), front);
+        if (w <= 0 || h <= 0) return;
+
+        int radius = h / 2;
+        int thick = System.Math.Max(1, h / 8);
+        var track = new Rectangle(x, y, w, h);
+        Screens.CardFace(batch, sprites, track, radius, back * 0.9f, Edge, thick);
+
+        int inner = w - thick * 2;
+        int fill = (int)System.Math.Round(inner * System.Math.Clamp(frac, 0, 1));
+        if (fill <= 0) return;
+
+        // THE HEAD IS THE SAME HUE, LIFTED - not a second colour. A fill that changed hue along
+        // its length would be two facts where there is one.
+        var head = new Color(
+            (int)System.Math.Min(255, front.R + 60),
+            (int)System.Math.Min(255, front.G + 60),
+            (int)System.Math.Min(255, front.B + 60));
+
+        int fy = y + thick;
+        int fh = h - thick * 2;
+        for (int i = 0; i < fill; i++)
+        {
+            // Graded across the WHOLE track rather than across the part that is filled, so the
+            // colour at a given point on the bar does not move as the bar drains.
+            float t = inner > 1 ? i / (float)(inner - 1) : 1f;
+            batch.Draw(sprites.Blank, new Rectangle(x + thick + i, fy, 1, fh),
+                       Color.Lerp(head, front, t));
+        }
     }
 }

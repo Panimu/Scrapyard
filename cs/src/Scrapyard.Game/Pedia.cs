@@ -79,8 +79,23 @@ public static class Pedia
     /// disagree about one kind. The row is built once from the entry that knows.
     /// </para>
     /// </param>
+    /// <param name="Desc">
+    /// One line under the name, saying what the thing IS.
+    /// <para>
+    /// EVERY ENTRY CARRIES ONE. An index of forty names in the same typeface asks the player to
+    /// open forty pages to find out which is which - the name alone is a lookup key, not an answer.
+    /// It is drawn dim, truncated to a single line, and it always comes from the SAME string the
+    /// page itself opens with, so the list and the page cannot say different things.
+    /// </para>
+    /// <para>
+    /// A SEALED TROPHY HAS NONE, and that is the one deliberate blank: <c>Achievements.Display</c>
+    /// hands back an empty description for a secret nobody has earned, and printing anything there
+    /// would be the leak the silhouette exists to prevent.
+    /// </para>
+    /// </param>
     public readonly record struct Row(
-        Kind Kind, string Text, string Sub, int Index, string Key, string Icon = "");
+        Kind Kind, string Text, string Sub, int Index, string Key, string Icon = "",
+        string Desc = "");
 
     /// <summary>
     /// Build one section's index against what this save has actually earned.
@@ -114,7 +129,11 @@ public static class Pedia
                     var e = PediaText.All[i];
                     if (e.Kind != kind) continue;
                     total++;
-                    if (save.EarnedCards.Contains(e.Id)) found.Add(new Row(Kind.Card, e.Name, "", i, e.Id, "icon_" + e.Id));
+                    // WHAT HAS BEEN HELD, not what the deck has been unlocked for. `EarnedCards` is
+                    // a different question - "may this card be offered at all" - and only ever
+                    // holds the seven that have to be unlocked, so gating on it hid the fourteen
+                    // you carry every run, the starting laser included.
+                    if (save.UnlockedUpgrades.Contains(e.Id)) found.Add(new Row(Kind.Card, e.Name, "", i, e.Id, "icon_" + e.Id, e.Description));
                 }
                 rows.Add(Heading(kind == "weapon" ? "WEAPONS" : "SYSTEMS", found.Count, total));
                 rows.AddRange(found);
@@ -126,7 +145,8 @@ public static class Pedia
                 var a = PediaText.Ascensions[i];
                 if (save.HeldAscensions.Contains(a.ParentId))
                 {
-                    ascended.Add(new Row(Kind.Ascension, a.Name, "", i, a.ParentId, "icon_" + a.Icon));
+                    ascended.Add(new Row(Kind.Ascension, a.Name, "", i, a.ParentId,
+                                         "icon_" + a.Icon, a.Description));
                 }
             }
             // The heading itself is the leak, not the entries under it.
@@ -144,7 +164,7 @@ public static class Pedia
             for (int i = 0; i < PediaText.Heroes.Length; i++)
             {
                 var h = PediaText.Heroes[i];
-                if (save.UnlockedHeroes.Contains(h.Id)) found.Add(new Row(Kind.Mech, h.Name, "", i, h.Id, "mech_" + h.Id));
+                if (save.UnlockedHeroes.Contains(h.Id)) found.Add(new Row(Kind.Mech, h.Name, "", i, h.Id, "mech_" + h.Id, h.Identity));
             }
             rows.Add(Heading("CHASSIS", found.Count, PediaText.Heroes.Length));
             rows.AddRange(found);
@@ -160,10 +180,21 @@ public static class Pedia
                 var all = Bestiary.For(level, name);
                 var known = all.FindAll(e => save.KilledEnemies.Contains(e.Key));
                 rows.Add(Heading(name.ToUpperInvariant(), known.Count, all.Count));
+                // THE SAME ART THAT DRAWS IT IN THE FIGHT, never a second icon set - see the
+                // remark on Row.Icon above. Without it every row in a 24-entry group is the same
+                // stripe and the same blank gap where a Card's or a Mech's icon would be, and the
+                // escalation from a rung's regular to its boss is unreadable at a glance.
+                var art = CreatureArtTable.ForLevel(level.Id);
                 foreach (var e in known)
                 {
+                    string icon = e.TypeId >= 0 && e.TypeId < art.Length ? art[e.TypeId].Frames[0] : "";
+                    // THE RUNG'S OWN LEAD, which is the line its page opens with - so a rank
+                    // sits under the same sentence as its regular, which is exactly right: they
+                    // are one creature getting worse.
+                    string lead = PediaText.LoreIn(PediaText.Cycles, $"{level.Id}/{e.CycleName}")
+                                  is { } cl ? cl.Lead : "";
                     rows.Add(new Row(Kind.Creature, e.Name.ToUpperInvariant(), "",
-                                     e.Rung * Ranks.Count + e.Rank, e.Key));
+                                     e.Rung * Ranks.Count + e.Rank, e.Key, icon, lead));
                 }
             }
 
@@ -172,8 +203,10 @@ public static class Pedia
             rows.Add(Heading("RANKS", Ranks.Count, Ranks.Count));
             for (int i = 0; i < Ranks.Count; i++)
             {
+                string rlead = PediaText.LoreIn(PediaText.Ranks, Ranks.All[i].Name) is { } rl
+                               ? rl.Lead : "";
                 rows.Add(new Row(Kind.Rank, Ranks.All[i].Name.ToUpperInvariant(), "", i,
-                                 Ranks.All[i].Name));
+                                 Ranks.All[i].Name, "", rlead));
             }
             return rows;
         }
@@ -202,9 +235,12 @@ public static class Pedia
             // to a weapon card already carry their own "icon_" prefix baked in at authoring time
             // ("icon_w-twin-mount"). Adding a second one here was pointing every earned trophy at a
             // sprite key that does not exist, so nothing ever drew.
-            trophies.Add(new Row(Kind.Achievement,
-                                 Achievements.Display(a, got).Name.ToUpperInvariant(),
-                                 got ? "" : "-", i, a.Id, got ? a.Icon : ""));
+            // THE DESCRIPTION COMES THROUGH `Display` TOO, so a secret nobody has earned carries
+            // an empty one and the silhouette stays sealed. A visible trophy states its own
+            // condition in the past tense, earned or not - it is a goal as much as a record.
+            var (shownName, shownDesc) = Achievements.Display(a, got);
+            trophies.Add(new Row(Kind.Achievement, shownName.ToUpperInvariant(),
+                                 got ? "" : "-", i, a.Id, got ? a.Icon : "", shownDesc));
         }
         rows.Add(Heading("TROPHIES", earned, Achievements.All.Length));
         rows.AddRange(trophies);
@@ -341,7 +377,10 @@ public static class Pedia
                         body.Add(r.Lead);
                     }
                 }
-                return new Page(row.Text, "CREATURE", "", body);
+                // THE ROW'S OWN ICON, carried straight through - see the remark on Row.Icon for
+                // why it is resolved once, from the entry that knows, rather than a second time
+                // here.
+                return new Page(row.Text, "CREATURE", row.Icon, body);
             }
 
             default:

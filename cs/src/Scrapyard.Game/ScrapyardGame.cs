@@ -101,15 +101,51 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private double _accumulatorMs;
     private double _alpha;
 
-    /// <summary>Walk-cycle phase, in seconds. Render-only: the simulation has no idea it exists.</summary>
-    private double _walkClock;
+    /// <summary>
+    /// Gait phase, as WORLD UNITS WALKED. Render-only: the simulation has no idea it exists.
+    /// </summary>
+    /// <remarks>
+    /// DISTANCE AND NOT SECONDS, which is the whole mechanism - see <c>DrawPlayer</c>. A mech that
+    /// is not moving does not advance this, so its legs park by themselves and nothing has to test
+    /// for standing still. A hover is the single exception and adds to it on the clock.
+    /// </remarks>
+    private double _stride;
+
+    /// <summary>Where the mech was drawn last frame, to measure the distance it covered.</summary>
+    /// <remarks>
+    /// THE INTERPOLATED DRAW POSITION, not the simulation's - the legs have to keep pace with the
+    /// mech the player can see rather than with the one the fixed step last committed.
+    /// </remarks>
+    private double _prevDrawX;
+
+    private double _prevDrawY;
+
+    /// <summary>False until the mech has been drawn once, so the first frame measures nothing.</summary>
+    private bool _hasPrevDraw;
+
+    /// <summary>Real seconds in the frame being drawn, for the one animation that idles.</summary>
+    private double _frameSec;
+
+    /// <summary>
+    /// The menus' own randomness - the Random chassis button, and nothing that touches a run.
+    /// </summary>
+    /// <remarks>
+    /// AN UNSEEDED <c>Random</c>, DELIBERATELY, AND ONLY LEGAL HERE. Every stream the simulation
+    /// draws from is seeded and lives on <c>World.Rng</c>; this one runs before a run exists and
+    /// decides something no replay has to reproduce. Taking it from a seeded stream would make the
+    /// chassis a function of the seed, which is the opposite of what the button is for.
+    /// </remarks>
+    private readonly System.Random _shuffle = new();
+
+    /// <summary>The end screen's buttons: NEW RUN, then TITLE. See <see cref="Overlay.DrawEnd"/>.</summary>
+    private readonly List<Rectangle> _endRects = new();
 
     /// <summary>
     /// The mech's own damage/heal/insurance tint, as seconds of flash remaining.
     /// </summary>
     /// <remarks>
     /// COSMETIC TIMERS, DECAYED BY REAL SECONDS PER RENDERED FRAME - not by sim ticks, same as
-    /// <see cref="_walkClock"/> - because a flash is about what the eye just saw, which happens at
+    /// the gait above - because a flash is about what the eye just saw, which happens at
     /// the display's rate rather than the simulation's.
     /// </remarks>
     private double _playerFlash;
@@ -160,8 +196,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </remarks>
     private double _bankLeft;
 
-    /// <summary>How much of this run's credit tally has already reached the save.</summary>
-    private long _creditsBanked;
+    /// <summary>What this run has already banked - credits, kills, splash, reloads.</summary>
+    /// <remarks>
+    /// ONE OBJECT FOR ALL FOUR rather than a counter per cumulative stat, so a new one cannot be
+    /// added without a ledger. See <see cref="Progress.RunTally"/> for why banking needs one at all.
+    /// </remarks>
+    private readonly Progress.RunTally _runTally = new();
 
     /// <summary>Where the app is. A menu is OUTSIDE a run, not on top of one.</summary>
     private Screen _screen = Screen.Title;
@@ -375,7 +415,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
         CardTexts.Verify(UpgradeCatalog.All.Length);
-        WorkshopText.Verify(MetaCatalog.All.Length);
+        WorkshopText.Verify();
         HeroUnlocks.Verify(HeroCatalog.All.Length);
 
         _save = Settings.Load();
@@ -440,13 +480,14 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _save.LastHeroId = heroId;
         _save.LastLevelId = levelId;
         _bankLeft = BankEverySec;
-        _creditsBanked = 0;
+        _runTally.Reset();
         _bankedEnd = false;
         _toast.Clear();
         _toastLeft = 0;
         _accumulatorMs = 0;
         _alpha = 0;
-        _walkClock = 0;
+        _stride = 0;
+        _hasPrevDraw = false;
         _playerFlash = 0;
         _healFlash = 0;
         _savedFor = 0;
@@ -1081,7 +1122,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (_mouse.LeftClicked) confirmed = true;
         }
         else if (hover == n && _mouse.LeftClicked) { ToTitle(); return; } // BACK
-        else if (hover == n + 1 && _mouse.LeftClicked) confirmed = true; // NEXT
+        else if (hover == n + 1 && _mouse.LeftClicked) { PickRandomHero(); return; } // RANDOM
+        else if (hover == n + 2 && _mouse.LeftClicked) confirmed = true; // NEXT
+
+        // R FOR THE SAME THING FROM THE KEYBOARD, so the button is not the only way to reach it.
+        if (Pressed(keys, Keys.R)) { PickRandomHero(); return; }
 
         if (!confirmed) return;
         // A LOCKED CHASSIS IS NOT SELECTABLE. The cursor may rest on it - the silhouette is worth
@@ -1098,6 +1143,39 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             HeroUnlocks.Levels, l => l.Id == _save.LastLevelId));
         _menu.Reset();
         _screen = Screen.LevelSelect;
+    }
+
+    /// <summary>
+    /// Moves the cursor to a chassis this save actually owns, chosen at random.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT MOVES THE CURSOR RATHER THAN STARTING THE RUN. The player still sees which mech they
+    /// were handed and still presses NEXT, so "random" is an opinion about the choice rather than
+    /// a way to skip the screen - and a chassis you did not want is one press from being changed.
+    /// </para>
+    /// <para>
+    /// IT ONLY EVER LANDS ON SOMETHING OWNED, by building the candidate list from the save rather
+    /// than by rolling an index and re-rolling if it is locked. There is no roll that can fail and
+    /// no loop that can spin on a save holding one mech.
+    /// </para>
+    /// <para>
+    /// AND IT USES THE APP LAYER'S OWN RANDOM, not a simulation stream. This happens before a run
+    /// exists, changes nothing the golden master vouches for, and drawing it from a seeded stream
+    /// would make the chassis a function of the seed - which is the opposite of what the button
+    /// is for.
+    /// </para>
+    /// </remarks>
+    private void PickRandomHero()
+    {
+        var owned = new List<int>();
+        for (int i = 0; i < HeroUnlocks.Heroes.Length; i++)
+        {
+            if (_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[i].Id)) owned.Add(i);
+        }
+
+        if (owned.Count == 0) return;
+        _heroCursor = owned[_shuffle.Next(owned.Count)];
     }
 
     private void UpdateLevelSelect(KeyboardState keys)
@@ -1218,6 +1296,27 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // simulation makes free: a run IS its seed.
         if (Pressed(keys, Keys.F5)) { StartRun(unchecked(_seed * 1103515245 + 12345)); return; }
 
+        // THE END SCREEN'S OWN BUTTONS. They live here rather than in a screen of their own
+        // because the run is still the thing on show behind them - the overlay is drawn over a
+        // world that has stopped, not a menu the game has moved to.
+        if (_sim.World.Phase is RunPhase.Dead or RunPhase.Victory)
+        {
+            int end = _mouse.Hover(_endRects);
+            if (end == 0 && _mouse.LeftClicked)
+            {
+                StartRun(unchecked(_seed * 1103515245 + 12345));
+                return;
+            }
+            if ((end == 1 && _mouse.LeftClicked) || _menu.Back)
+            {
+                // BANKS ON THE WAY OUT, like abandoning does. Everything the run earned is already
+                // in the save by the banking clock, but the last second of it may not be.
+                Bank();
+                ToTitle();
+                return;
+            }
+        }
+
         var frame = ReadInput(keys, pad);
 
         double frameMs = gameTime.ElapsedGameTime.TotalMilliseconds;
@@ -1324,7 +1423,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (!over) _bankedEnd = false;
 
         _alpha = _accumulatorMs / DtMs;
-        _walkClock += dt;
+        _frameSec = dt;
         if (_playerFlash > 0) _playerFlash -= dt;
         if (_healFlash > 0) _healFlash -= dt;
         if (_savedFor > 0) _savedFor -= dt;
@@ -1408,8 +1507,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void Bank()
     {
-        var earned = Progress.Bank(_save, _sim.World, _sim.Level, _roster, ref _creditsBanked);
-        RecordHeldAscensions();
+        var earned = Progress.Bank(_save, _sim.World, _sim.Level, _roster, _runTally);
+        RecordHeldUpgrades();
         _save.Save();
 
         if (!earned.Any) return;
@@ -1421,21 +1520,41 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     }
 
     /// <summary>
-    /// Remembers any tier 8 the run has reached.
+    /// Remembers every card the run has actually TAKEN, and any tier 8 it reached.
     /// </summary>
     /// <remarks>
-    /// AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, and this is the record of
-    /// having found one - which is what lets auto-level aim for it next time and what the
-    /// Scrapopedia would gate a tier-8 entry on. It is not an unlock: the card is offerable either
-    /// way.
+    /// <para>
+    /// TWO LISTS OFF ONE WALK, because they are answers to two different questions about the same
+    /// tier array. <c>UnlockedUpgrades</c> is "I have held this, so its page is in the manual";
+    /// <c>HeldAscensions</c> is "I have held what this weapon BECOMES". Neither is
+    /// <c>EarnedCards</c>, which is a third question again - "the deck may offer me this at all" -
+    /// and is written by the unlock evaluator rather than from here.
+    /// </para>
+    /// <para>
+    /// <b>THE FIRST HALF WAS NEVER PORTED, and the Scrapopedia read the wrong list to compensate.</b>
+    /// Nothing in the C# wrote <c>UnlockedUpgrades</c> at all, so the manual gated its systems
+    /// section on <c>EarnedCards</c> - the seven cards that have to be unlocked FOR THE DECK. The
+    /// fourteen you hold every single run could never appear in it, however long you played, and
+    /// the Medium Laser that Slate walks in carrying was missing from the manual on a save that had
+    /// held nothing else.
+    /// </para>
+    /// <para>
+    /// AN ASCENSION IS THE ONE THING IN THIS GAME MEANT TO BE FOUND, and its half of this is the
+    /// record of having found one - which is what lets auto-level aim for it next time. It is not
+    /// an unlock: the card is offerable either way.
+    /// </para>
     /// </remarks>
-    private void RecordHeldAscensions()
+    private void RecordHeldUpgrades()
     {
         var stacks = _sim.World.LevelUp.Stacks;
         for (int i = 0; i < stacks.Length && i < CardTexts.All.Length; i++)
         {
-            if (stacks[i] < UpgradeCatalog.WeaponAscendedTier) continue;
+            if (stacks[i] <= 0) continue;
             string id = CardTexts.All[i].Id;
+
+            if (!_save.UnlockedUpgrades.Contains(id)) _save.UnlockedUpgrades.Add(id);
+
+            if (stacks[i] < UpgradeCatalog.WeaponAscendedTier) continue;
             if (!_save.HeldAscensions.Contains(id)) _save.HeldAscensions.Add(id);
         }
     }
@@ -1520,21 +1639,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             else if (_menu.PadFace(3)) _pendingChoice = Constants.ChooseReroll;
         }
 
-        // THE MOUSE ANSWERS THE CARD TOO. _levelUpRects is the offer cards in order, then the
-        // reroll button LAST - see the outRects remark on Overlay.DrawLevelUp - so any index below
-        // the last is a card and the last index is reroll, whatever n happened to be this pick.
+        // THE MOUSE ANSWERS THE CARD TOO. _levelUpRects is the offer cards in order, then REROLL,
+        // then AUTO LEVEL - see the outRects remark on Overlay.DrawLevelUp - so the last two are
+        // always those buttons and anything below them is a card, whatever n was this pick.
         if (_pendingChoice == -1)
         {
             int hover = _mouse.Hover(_levelUpRects);
-            int lastIndex = _levelUpRects.Count - 1;
-            if (hover >= 0 && hover < lastIndex && _mouse.LeftClicked)
+            int autoIndex = _levelUpRects.Count - 1;
+            int rerollIndex = autoIndex - 1;
+            if (hover >= 0 && hover < rerollIndex && _mouse.LeftClicked)
             {
                 _pendingChoice = hover;
             }
-            else if (hover == lastIndex && _mouse.LeftClicked)
+            else if (hover == rerollIndex && _mouse.LeftClicked)
             {
                 bool canReroll = _sim.World.LevelUp.Rerolls > 0 || _sim.World.InfiniteRerolls;
                 if (canReroll) _pendingChoice = Constants.ChooseReroll;
+            }
+            else if (hover == autoIndex && _mouse.LeftClicked)
+            {
+                // ON, AND ONLY ON. The card in front of the player is taken by the auto-picker on
+                // the very next tick, which is the promise the button makes - "from here".
+                _sim.World.AutoLevel = 1;
             }
         }
 
@@ -1694,13 +1820,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         switch (w.Phase)
         {
             case RunPhase.LevelUp:
-                Overlay.DrawLevelUp(_batch, _sprites, w, vw, vh, _levelUpRects); break;
+                // NOT WHILE AUTO-LEVELLING. The simulation still passes through the level-up
+                // phase for exactly one tick - that is what keeps every other system's freeze
+                // contract intact - but the card is resolved before any input is read, so drawing
+                // it puts a full-screen overlay on screen for a single frame. It read as a flash
+                // of cards nobody asked for, which is the one thing auto-level exists to stop.
+                if (w.AutoLevel == 0) Overlay.DrawLevelUp(_batch, _sprites, w, vw, vh, _levelUpRects);
+                else _levelUpRects.Clear();
+                break;
             case RunPhase.Chest:
                 Overlay.DrawChest(_batch, _sprites, w, (_clockSec - _chestOpenedSec) * 1000,
                                   _save.ReducesMotion(), vw, vh);
                 break;
             case RunPhase.Dead:
-            case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh); break;
+            case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh, _endRects); break;
         }
 
         var toastAt = _camera.ToScreen(px, py);
@@ -2140,10 +2273,50 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             tint = Color.Lerp(tint, InsuranceSavedTint, (float)(left * (0.45 + 0.55 * pulse)));
         }
 
+        // --- the gait ------------------------------------------------------------------------
+        //
+        // ADVANCED BY DISTANCE WALKED, NEVER BY A CLOCK. That one choice is what makes a mech
+        // standing still stop moving its legs without anything having to ask whether it is
+        // standing still - and it is why the legs can then be drawn UNCONDITIONALLY. Driving the
+        // frame off a wall clock and hiding the legs below some speed threshold, which is what
+        // this did, gives a chassis that moon-walks on the spot and then loses its legs entirely
+        // the moment it stops: the body sprite is torso, mount, cockpit and thrusters, and the
+        // legs live only in the six frames.
+        int heroIx = p.HeroId >= 0 && p.HeroId < RenderTables.MechIsHover.Length ? p.HeroId : 0;
+        bool hover = RenderTables.MechIsHover[heroIx];
+
+        double moved = System.Math.Sqrt((px - _prevDrawX) * (px - _prevDrawX)
+                                        + (py - _prevDrawY) * (py - _prevDrawY));
+        // Guard the first frame of a run, where the previous position is wherever the last one
+        // ended and the distance between them is the whole map.
+        if (_hasPrevDraw && moved < 400) _stride += moved;
+        // A HOVER IDLES ON THE CLOCK, and it is the only chassis that does: its six frames pulse
+        // the lift skirt rather than swinging a leg, and a hover that goes completely still has
+        // landed.
+        if (hover) _stride += RenderTables.MechHoverIdleSpeed * _frameSec;
+        _prevDrawX = px;
+        _prevDrawY = py;
+        _hasPrevDraw = true;
+
+        // TWELVE POSES OUT OF SIX TEXTURES. A walker at gait phase phi+pi is itself at phi with
+        // left and right legs exchanged, and every chassis is mirrored about its own centreline -
+        // so exchanging the legs IS a vertical flip. The second half of the cycle is the first
+        // half upside down.
+        int cycleSteps = RenderTables.MechWalkFrames * 2;
+        int step = (int)(_stride / RenderTables.MechStrideUnits) % cycleSteps;
+        if (step < 0) step += cycleSteps;
+        bool flipLegs = step >= RenderTables.MechWalkFrames;
+
         // The chassis faces where it is looking, and the art faces +x, so no offset. Shared by the
         // body and the legs below - make-mechs.mjs lays both out on the same canvas specifically so
         // they register exactly when stacked at the same position, size and rotation.
-        double face = System.Math.Atan2(p.FaceY, p.FaceX);
+        //
+        // A WALKER SHIFTS ITS WEIGHT ONTO THE PLANTED FOOT, so the whole machine yaws a little
+        // against the swing. A few degrees, and it is what stops the chassis reading as a sprite
+        // being slid across the floor by something off-screen. A hover has no weight to shift.
+        double phase = _stride / (RenderTables.MechStrideUnits * cycleSteps) * System.Math.PI * 2;
+        double yaw = hover ? 0 : System.Math.Sin(phase) * RenderTables.MechGaitYaw;
+        double face = System.Math.Atan2(p.FaceY, p.FaceX) + yaw;
         double bw = RenderTables.MechDrawW;
 
         // THE BODY - torso, mount, cockpit, thrusters - DRAWS EVERY FRAME, walking or not. See
@@ -2158,18 +2331,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
         }
 
-        // THE LEGS, ADDITIONALLY, ONLY WHILE WALKING - decided by the mech's own speed rather than
-        // by the input: a mech still sliding to a stop after the stick is released is still
-        // walking, and the art should agree with the physics rather than with the thumb.
-        double speed2 = p.Vx * p.Vx + p.Vy * p.Vy;
-        if (speed2 > 25)
+        // THE LEGS, ALWAYS - see the gait above for why this needs no condition. A parked mech
+        // stands on the frame its last step left it in, which is what standing still looks like.
+        var legs = _sprites.Get($"mech_{stem}_w{step % RenderTables.MechWalkFrames}");
+        if (legs is not null)
         {
-            int frame = (int)(_walkClock / RenderTables.MechWalkFrameSec) % RenderTables.MechWalkFrames;
-            var legs = _sprites.Get($"mech_{stem}_w{frame}");
-            if (legs is not null)
-            {
-                Blit(legs, px, py, bw * ((double)legs.Width / legs.Height), bw, face, tint);
-            }
+            BlitRotated(legs, px, py, bw * ((double)legs.Width / legs.Height), bw, face, tint,
+                        flipLegs ? SpriteEffects.FlipVertically : SpriteEffects.None);
         }
 
         // THE TURRETS, aimed independently of the chassis - the difference between where the mech
@@ -2187,11 +2355,25 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 continue;
             }
 
-            var turret = _sprites.Get(TurretFor(w, inst.DefId));
+            string key = TurretFor(w, in inst);
+            if (key == "") continue;
+            var turret = _sprites.Get(key);
             if (turret is null) continue;
+
             double a = System.Math.Atan2(inst.TurretY, inst.TurretX);
+
+            // THE DRAWN LENGTH IS THE SPRITE'S WIDTH, and the height follows from the art's own
+            // aspect. It was the other way round - the 42 units were forced onto the HEIGHT and
+            // the width scaled up to match - which on an 80x44 canvas drew every barrel at 76
+            // units long instead of 42, near enough twice the size the chassis was drawn for.
             double tw = RenderTables.TurretDrawW;
-            Blit(turret, px, py, tw * ((double)turret.Width / turret.Height), tw, a, tint);
+            double th = tw * ((double)turret.Height / turret.Width);
+
+            // PIVOTED ON THE MOUNT RING rather than the middle of the barrel. A turret swings
+            // about a point just behind the mech's centre, so the tube sweeps ACROSS the hull the
+            // way a real mount would; spinning it about its own centre slides the whole barrel
+            // round the chassis like a clock hand.
+            BlitAbout(turret, px, py, tw, th, a, tint, RenderTables.TurretPivotX);
         }
     }
 
@@ -2332,15 +2514,40 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>
     /// Which barrel a gun shows. Four exist; everything else takes the default.
     /// </summary>
-    private static string TurretFor(World w, int defId)
+    /// <summary>
+    /// The turret a mount wears, or "" for a weapon that has no barrel to draw.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>ONLY FOUR WEAPONS HAVE TURRET ART, and the default used to hand a Cannon barrel to
+    /// everything else.</b> A missile rack fires from a box, artillery is a tube that never aims,
+    /// a drone bay is a hatch and a beam leaves from a hardpoint - none of them is a mount that
+    /// swings, and giving each one a cannon meant a mech bristling with barrels it does not have.
+    /// A weapon with no art draws nothing, which is what the chassis sprite already shows.
+    /// </para>
+    /// <para>
+    /// THE FLAK CANNON SHARES THE ROTARY SNOUT with the Machine Gun rather than wearing the twin
+    /// mount - the two bolt onto one piece of hardware, and <c>WeaponDef.Excludes</c> guarantees a
+    /// loadout can never hold both, so the row is never owed two barrels at once. It was pointed
+    /// at <c>turret_twin</c>, which is the CANNON'S ASCENSION and belongs to nothing else.
+    /// </para>
+    /// <para>
+    /// AND THE TWIN MOUNT IS WORN BY THE CANNON ITSELF, from its tier 8 on: the single tube for
+    /// tiers 1-7 and the twin art once it has ascended. Asked per frame off the mount's own level,
+    /// because a chest can land mid-run.
+    /// </para>
+    /// </remarks>
+    private static string TurretFor(World w, in WeaponInstance inst)
     {
-        if (defId < 0 || defId >= w.WeaponDefs.Length) return "turret";
+        int defId = inst.DefId;
+        if (defId < 0 || defId >= w.WeaponDefs.Length) return "";
         return w.WeaponDefs[defId].Id switch
         {
-            WeaponIds.MachineGun => "turret_mg",
+            WeaponIds.Cannon => inst.Level >= UpgradeCatalog.WeaponAscendedTier
+                                ? "turret_twin" : "turret",
             WeaponIds.PhaseCannon => "turret_phase",
-            WeaponIds.FlakCannon => "turret_twin",
-            _ => "turret",
+            WeaponIds.MachineGun or WeaponIds.FlakCannon => "turret_mg",
+            _ => "",
         };
     }
 
@@ -2419,5 +2626,46 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             (float)(wh * _camera.Scale / tex.Height));
         var origin = originCentre ? new Vector2(tex.Width / 2f, tex.Height / 2f) : Vector2.Zero;
         _batch.Draw(tex, screen, null, tint, (float)angle, origin, scale, SpriteEffects.None, 0f);
+    }
+
+    /// <summary>
+    /// <see cref="Blit"/>, mirrored.
+    /// </summary>
+    /// <remarks>
+    /// THE MIRROR IS APPLIED BEFORE THE ROTATION, which is what the walk cycle needs: a leg frame
+    /// is flipped about the CHASSIS' own centreline to swap left and right legs, and only then
+    /// turned to face where the mech is looking. SpriteEffects works in the sprite's own space,
+    /// so this is what it already does - the note is here because "flip then rotate" and "rotate
+    /// then flip" differ by twice the facing angle and the difference is invisible until the mech
+    /// turns round.
+    /// </remarks>
+    /// <summary>
+    /// <see cref="Blit"/> about a pivot given as a fraction along the sprite's own width.
+    /// </summary>
+    /// <remarks>
+    /// The world position is where the PIVOT lands, not where the sprite's centre lands - which is
+    /// the whole point: a turret is positioned by its mount ring and the barrel hangs off it.
+    /// </remarks>
+    private void BlitAbout(Texture2D tex, double wx, double wy, double ww, double wh,
+                           double angle, Color tint, double pivotX)
+    {
+        var screen = _camera.ToScreen(wx, wy);
+        var scale = new Vector2(
+            (float)(ww * _camera.Scale / tex.Width),
+            (float)(wh * _camera.Scale / tex.Height));
+        _batch.Draw(tex, screen, null, tint, (float)angle,
+                    new Vector2((float)(tex.Width * pivotX), tex.Height / 2f), scale,
+                    SpriteEffects.None, 0f);
+    }
+
+    private void BlitRotated(Texture2D tex, double wx, double wy, double ww, double wh,
+                             double angle, Color tint, SpriteEffects flip)
+    {
+        var screen = _camera.ToScreen(wx, wy);
+        var scale = new Vector2(
+            (float)(ww * _camera.Scale / tex.Width),
+            (float)(wh * _camera.Scale / tex.Height));
+        _batch.Draw(tex, screen, null, tint, (float)angle,
+                    new Vector2(tex.Width / 2f, tex.Height / 2f), scale, flip, 0f);
     }
 }

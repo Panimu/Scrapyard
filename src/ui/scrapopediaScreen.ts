@@ -1256,6 +1256,63 @@ const CYCLE_MANUAL: Readonly<Record<string, EnemyEntry>> = {
       'THE BIG ONE LOSES A HEAD EVERY TIME YOU TAKE A FIFTH OF IT DOWN. It is the only health bar in the game you can read from across the field without looking at the bar.',
     ],
   },
+
+  'city-chaos/Junkbots': {
+    lead: 'The first machine this street sends, and there is only ever one of it at a time.',
+    notes: [
+      'It wanders more than it hunts, and for the first two minutes on this map that is the whole horde - the same courtesy the Scrapyard opened with, so what you learn first here is the grid, not your own guns again.',
+      'ITS BOSS DOES NOT STAY DOWN. Beat it here, alone, and it is back next cycle walking in pairs beside something new - the promotion is what this map is built around, and it starts on the very first rung.',
+    ],
+  },
+  'city-chaos/Sentries': {
+    lead: 'Unarmed, and faster for it. A security bot that runs rather than fights.',
+    notes: [
+      'It carries nothing that can hurt you, so the only cost it charges is your attention - every one that slips past is one you chose not to shoot rather than one that beat you.',
+      'The elite here is a face already put down once: the boss from last cycle, walking again at the same size it fell at.',
+    ],
+  },
+  'city-chaos/Drones': {
+    lead: 'The fastest thing this street fields, and it comes from above.',
+    notes: [
+      'Nothing on the ground outruns one. What saves you is that it is as fragile as everything else this early - the danger is entirely in how many of them are suddenly in the air at once.',
+      'The boss from last cycle is promoted into the elite slot again here, still built the same size it went down at.',
+    ],
+  },
+  'city-chaos/Rovers': {
+    lead: 'Six wheels, no hurry, and no reason to be anywhere but where you already are.',
+    notes: [
+      'The first body on this map that outlasts your attention. It is not fast enough to catch you and does not need to be - the wave behind it is what you are actually racing.',
+      'The body class steps up here, so the elite beside it is not the old boss shrunk down to fit - it is the same machine, built up to full weight for the rung it now stands on.',
+    ],
+  },
+  'city-chaos/Gun Sentries': {
+    lead: 'The sentry from three streets back, and now it is armed.',
+    notes: [
+      'Slams the brakes and very nearly doubles the bite - the first machine on this map you cannot walk through by accident and shrug off.',
+      'It does not chase well. Being hit by one this early is a decision made a second before it happened, not something done to you.',
+    ],
+  },
+  'city-chaos/Gun Drones': {
+    lead: 'The drone from two cycles back, armed and quick again.',
+    notes: [
+      'Pace and payload arrive together this time, which is the combination the Gun Sentries let you off - it hits harder than anything so far and is fast enough to reach you doing it.',
+      'The rung where standing under an empty sky stops being safe by default.',
+    ],
+  },
+  'city-chaos/Fighters': {
+    lead: 'Strafing aircraft, and unhurried about it.',
+    notes: [
+      'It does not need to close in - it already owns the air above you, and by this point in a run the sky is never empty either.',
+      'Bites less than the Gun Drones did. It wears you down over a pass rather than threatening you with one.',
+    ],
+  },
+  'city-chaos/Armour': {
+    lead: 'A wall of dozer-yellow tanks, and the slowest thing this street fields.',
+    notes: [
+      'The endgame here is the same as everywhere else: numbers, not pace. It closes in slowly and there is no gap anywhere in the column behind it.',
+      'The last promotion on the ladder: the boss from two cycles back is built up to full weight now, standing beside armour that never learned to hurry.',
+    ],
+  },
 };
 
 /**

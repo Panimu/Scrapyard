@@ -304,7 +304,8 @@ public static class Screens
         if (outRects is not null)
         {
             outRects.Clear();
-            for (int i = 0; i < HeroUnlocks.Heroes.Length + 2; i++) outRects.Add(Rectangle.Empty);
+            // The roster, then BACK, RANDOM and NEXT - see the action row below.
+            for (int i = 0; i < HeroUnlocks.Heroes.Length + 3; i++) outRects.Add(Rectangle.Empty);
         }
 
         int y = Head(batch, sprites, "NEW GAME", "PICK A MECH", vw, 8 * scale, scale);
@@ -313,11 +314,15 @@ public static class Screens
                          Palette.Faint);
         y += UiFont.LineHeight(small) + 6 * scale;
 
-        var (actionsY, backBtn, nextBtn) =
-            Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "NEXT", "ENTER");
+        // A THIRD OPTION FOR THE PLAYER WHO DOES NOT CARE WHICH CHASSIS. It lands only on one
+        // that is actually owned, and goes through the same selection a tap would - not a separate
+        // path that could hand out a locked mech.
+        var (actionsY, backBtn, randomBtn, nextBtn) =
+            Actions3(batch, sprites, vw, vh, scale, "BACK", "ESC", "RANDOM", "R", "NEXT", "ENTER");
         if (outRects is not null)
         {
-            outRects[^2] = backBtn;
+            outRects[^3] = backBtn;
+            outRects[^2] = randomBtn;
             outRects[^1] = nextBtn;
         }
 
@@ -875,6 +880,51 @@ public static class Screens
         return (y, left, right);
     }
 
+    /// <summary>
+    /// Three buttons on the action row: two sized to their words, the last taking what is left.
+    /// </summary>
+    /// <remarks>
+    /// THE SAME SHAPE AS THE TWO-BUTTON ROW, because it is the same stylesheet rule doing it -
+    /// `.btn` is `flex: 0 0 auto` and the primary is `flex: 1 1 auto`, so adding a third button
+    /// takes width from the primary and from nothing else.
+    /// </remarks>
+    private static (int Y, Rectangle Left, Rectangle Mid, Rectangle Right) Actions3(
+        SpriteBatch batch, Sprites sprites, int vw, int vh, int scale,
+        string leftLabel, string leftKey, string midLabel, string midKey,
+        string rightLabel, string rightKey)
+    {
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
+        int h = 27 * scale;
+        int gap = 5 * scale;
+        int y = vh - 12 * scale - h;
+
+        int leftW = UiFont.Measure(leftLabel, scale) + UiFont.Measure(leftKey, scale) + 24 * scale;
+        int midW = UiFont.Measure(midLabel, scale) + UiFont.Measure(midKey, scale) + 24 * scale;
+
+        // The primary keeps a floor so a narrow window shrinks the other two instead of leaving
+        // the one that starts the run as a sliver of gold.
+        int minRight = 40 * scale;
+        int over = leftW + midW + gap * 2 + minRight - w;
+        if (over > 0)
+        {
+            leftW -= over / 2;
+            midW -= over - over / 2;
+            leftW = System.Math.Max(12 * scale, leftW);
+            midW = System.Math.Max(12 * scale, midW);
+        }
+
+        var left = new Rectangle(x0, y, leftW, h);
+        var mid = new Rectangle(x0 + leftW + gap, y, midW, h);
+        int rightX = mid.Right + gap;
+        var right = new Rectangle(rightX, y, System.Math.Max(minRight, x0 + w - rightX), h);
+
+        ActionButton(batch, sprites, left, leftLabel, leftKey, scale, false);
+        ActionButton(batch, sprites, mid, midLabel, midKey, scale, false);
+        ActionButton(batch, sprites, right, rightLabel, rightKey, scale, true);
+        return (y, left, mid, right);
+    }
+
     private static void ActionButton(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
                                      string key, int scale, bool primary)
     {
@@ -1230,7 +1280,11 @@ public static class Screens
             // text. The row was sized to its own contents and came out at 34: the icon fitted, the
             // name fitted, and the left stripe had six pixels of straight edge between two fourteen
             // pixel corners - so the one mark saying what KIND of entry it is was a dot.
-            int entryH = System.Math.Max(26 * scale, icon + 8 * scale);
+            // TALL ENOUGH FOR THE NAME AND THE LINE UNDER IT. Every entry carries a description
+            // (see Pedia.Row.Desc), so the height is uniform rather than per-row - which is what
+            // keeps the scroll window below a matter of counting rows instead of measuring them.
+            int entryH = System.Math.Max(26 * scale, icon + 8 * scale)
+                         + UiFont.LineHeight(small);
             int headH = UiFont.LineHeight(small) + 5 * scale;
 
             // The window keeps the cursor in view a row at a time. Headings are rows too, so this
@@ -1310,9 +1364,24 @@ public static class Screens
                                      Palette.Faint);
                 }
 
-                UiDraw(batch, sprites, row.Text.ToUpperInvariant(), ix + icon + 5 * scale,
-                          r.Y + (entryH - UiFont.GlyphH(small)) / 2, small,
+                int tx = ix + icon + 5 * scale;
+                int tw = r.X + w - 4 * scale - tx;
+
+                // THE NAME AND ITS LINE SIT AS A PAIR, centred together rather than the name being
+                // centred and the description hung off it - a row whose description is empty (a
+                // sealed trophy) must not leave the name floating high.
+                string desc = row.Desc == "" ? "" : Ellipsize(row.Desc, tw, small);
+                int nameH = UiFont.GlyphH(small);
+                int blockH = desc == "" ? nameH : nameH + UiFont.LineHeight(small);
+                int ty = r.Y + (entryH - blockH) / 2;
+
+                UiDraw(batch, sprites, row.Text.ToUpperInvariant(), tx, ty, small,
                           sealedRow ? Palette.Faint : Palette.Ink);
+                if (desc != "")
+                {
+                    UiDraw(batch, sprites, desc, tx, ty + UiFont.LineHeight(small), small,
+                              Palette.Faint);
+                }
 
                 y += entryH + 4 * scale;
             }
@@ -1338,6 +1407,35 @@ public static class Screens
     /// rather than the weapon accent. A chassis is neither pool and takes the ink. A creature takes
     /// hull red, because that is what it is here to take off you.
     /// </remarks>
+    /// <summary>
+    /// One line of text cut to fit, with an ellipsis where it was cut.
+    /// </summary>
+    /// <remarks>
+    /// A BINARY SEARCH RATHER THAN A CHARACTER WALK, because this runs for every visible row of
+    /// every frame the manual is open and the font measures by summing per-glyph advances. It cuts
+    /// at a character rather than at a word: a description is a fragment either way, and hunting
+    /// back to a space can drop a third of a short line to save one letter.
+    /// </remarks>
+    private static string Ellipsize(string s, int widthPx, int scale)
+    {
+        if (widthPx <= 0) return "";
+        if (UiFont.Measure(s, scale) <= widthPx) return s;
+
+        const string cut = "...";
+        int room = widthPx - UiFont.Measure(cut, scale);
+        if (room <= 0) return "";
+
+        int lo = 0;
+        int hi = s.Length;
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) / 2;
+            if (UiFont.Measure(s[..mid], scale) <= room) lo = mid; else hi = mid - 1;
+        }
+
+        return lo <= 0 ? "" : s[..lo].TrimEnd() + cut;
+    }
+
     private static Color StripeOf(Pedia.Row row, bool sealedRow) => row.Kind switch
     {
         Pedia.Kind.Ascension => Palette.Ascension,
@@ -2001,18 +2099,36 @@ public static class Screens
         return phase < 0.5 ? -1 + 2 * eased : 1 - 2 * eased;
     }
 
-    /// <summary>A solid rectangle, filled and rotated about its own centre.</summary>
+    /// <summary>
+    /// A filled rounded rectangle, rotated about its own centre, with SMOOTH EDGES.
+    /// </summary>
     /// <remarks>
-    /// NOT ROUNDED. <c>RoundRect</c>'s corner algorithm walks rows in SCREEN SPACE and has nothing
-    /// to rotate; redoing it for an arbitrary angle is a lot of code to spend on 4px of corner
-    /// radius on a badge the size of a fingertip that is also constantly moving. The eye is on the
-    /// wobble, not the corner.
+    /// <para>
+    /// IT USED TO STRETCH <c>Sprites.Blank</c>, which is one white texel. Square to the screen that
+    /// is exactly right and every panel in the game does it - the edges land on pixel boundaries
+    /// and there is nothing to smooth. At an angle it is a staircase, and no sampler state helps: a
+    /// 1x1 texture has no neighbouring texels for a linear filter to interpolate between. The badge
+    /// is the only thing on the title screen drawn at an angle, and it was the only thing with
+    /// visibly ragged edges.
+    /// </para>
+    /// <para>
+    /// <see cref="Sprites.SoftRect"/> carries the coverage instead, and it is drawn through
+    /// <c>LinearClamp</c> - which is also why this ends and restarts the batch, exactly as the text
+    /// helpers above do. The rounded corners come free with it, which the old note here gave up on
+    /// for good reason: the screen-space corner walk had nothing to rotate.
+    /// </para>
     /// </remarks>
     private static void RotatedRect(SpriteBatch batch, Sprites sprites, Vector2 centre, int w,
                                     int h, float rotation, Color colour)
     {
-        batch.Draw(sprites.Blank, centre, null, colour, rotation, new Vector2(0.5f, 0.5f),
-                   new Vector2(w, h), SpriteEffects.None, 0f);
+        batch.End();
+        batch.Begin(samplerState: SamplerState.LinearClamp);
+        batch.Draw(sprites.SoftRect, centre, null, colour, rotation,
+                   new Vector2(Sprites.SoftRectSize / 2f, Sprites.SoftRectSize / 2f),
+                   new Vector2(w / (float)Sprites.SoftRectSize, h / (float)Sprites.SoftRectSize),
+                   SpriteEffects.None, 0f);
+        batch.End();
+        batch.Begin(samplerState: SamplerState.PointClamp);
     }
 
     /// <summary>One menu button: a fill, an outline, and a centred label.</summary>

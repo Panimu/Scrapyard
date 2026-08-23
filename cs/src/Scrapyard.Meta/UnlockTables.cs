@@ -45,6 +45,61 @@ public readonly record struct LockedThing(
 /// <summary>A card lock, which also carries the catalog index the deck is keyed by.</summary>
 public readonly record struct LockedCard(int Index, string Id, string Name, UnlockCond Cond);
 
+/// <summary>
+/// Every upgrade id the save may legitimately hold, so a stored one can be resolved.
+/// </summary>
+/// <remarks>
+/// <para>
+/// HERE RATHER THAN IN THE DRAWING LAYER, because the save is filtered on load and
+/// <see cref="Settings.Reconcile"/> lives in this project. <c>CardTexts</c> in
+/// <c>Scrapyard.Game</c> carries the same ids for the screens; both are generated from the same
+/// catalog line, so the two cannot drift.
+/// </para>
+/// <para>
+/// <c>Ascended</c> NAMES PARENT IDS AND NOTHING ELSE - not how many there are, not what they
+/// become. It exists so a <c>HeldAscensions</c> entry whose tier 8 has since been withdrawn is
+/// dropped rather than left claiming a page nothing can draw, which is the same rule every other
+/// list follows.
+/// </para>
+/// </remarks>
+public static class CardIds
+{
+    public static readonly string[] All =
+    {
+        "w-cannon",
+        "w-missile-short",
+        "w-missile-long",
+        "w-machine-gun",
+        "w-flak-cannon",
+        "w-artillery",
+        "w-drone",
+        "w-phase-cannon",
+        "w-laser-short",
+        "w-laser-medium",
+        "w-laser-long",
+        "p-range",
+        "p-damage",
+        "p-rate",
+        "p-speed",
+        "p-armour",
+        "p-repair",
+        "p-shield",
+        "p-radiator",
+        "p-blast",
+        "p-ammo",
+    };
+
+    /// <summary>The cards that HAVE a tier 8, by their own id.</summary>
+    public static readonly string[] Ascended =
+    {
+        "w-cannon",
+        "w-missile-long",
+        "w-laser-short",
+        "w-laser-medium",
+        "w-laser-long",
+    };
+}
+
 public sealed class HeroUnlocks
 {
     public static readonly LockedThing[] Heroes =

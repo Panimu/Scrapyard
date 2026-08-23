@@ -27,12 +27,94 @@ public sealed class Sprites
     /// <summary>A 1x1 white pixel, for solid fills - the letterbox, bars, flat colour.</summary>
     public Texture2D Blank { get; }
 
+    /// <summary>
+    /// A white rounded rectangle with ANTIALIASED edges, for the things drawn at an angle.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="Blank"/> IS ONE PIXEL, AND A ROTATED PIXEL HAS NOTHING TO SMOOTH.</b> Every
+    /// square-to-the-screen panel in this game is drawn by stretching that one texel, which is
+    /// exactly right: its edges land on pixel boundaries and there is nothing to antialias. Rotate
+    /// it and the same draw produces a hard staircase down every diagonal, and no sampler state
+    /// fixes it - linear filtering interpolates between texels, and a 1x1 texture has no
+    /// neighbours to interpolate with.
+    /// </para>
+    /// <para>
+    /// So the coverage is baked in here instead: a texture big enough that the badge MINIFIES onto
+    /// it, with each edge pixel carrying the fraction of itself the shape covers. Drawn through
+    /// <c>LinearClamp</c> that reads as a clean edge at any angle. It is generated rather than
+    /// shipped as a PNG because it is four numbers and a loop, and a file would be one more thing
+    /// that can go missing.
+    /// </para>
+    /// </remarks>
+    public Texture2D SoftRect { get; }
+
+    /// <summary>The corner radius <see cref="SoftRect"/> was baked with, in its own texels.</summary>
+    /// <remarks>
+    /// A caller scaling the texture to a badge scales this with it, which is why the number is
+    /// published rather than left as a constant inside the generator.
+    /// </remarks>
+    public const int SoftRectRadius = 10;
+
+    /// <summary>The size of <see cref="SoftRect"/>, in texels.</summary>
+    public const int SoftRectSize = 128;
+
     public Sprites(GraphicsDevice device, string root)
     {
         _device = device;
         _root = root;
         Blank = new Texture2D(device, 1, 1);
         Blank.SetData(new[] { Microsoft.Xna.Framework.Color.White });
+        SoftRect = MakeSoftRect(device);
+    }
+
+    /// <summary>
+    /// Bakes <see cref="SoftRect"/>: a rounded rectangle whose edge pixels carry partial coverage.
+    /// </summary>
+    /// <remarks>
+    /// COVERAGE BY SUPERSAMPLING, four by four inside each texel, which is enough for an edge that
+    /// is going to be minified anyway and is a great deal less code than an analytic solve for the
+    /// area of a pixel clipped by a circle. It runs once at startup on a 128x128 grid.
+    ///
+    /// PREMULTIPLIED, because that is the blend state a SpriteBatch defaults to: colour scaled by
+    /// its own alpha. Leaving it straight puts a white fringe around every rotated shape - the
+    /// thing this texture exists to remove.
+    /// </remarks>
+    private static Texture2D MakeSoftRect(GraphicsDevice device)
+    {
+        const int n = SoftRectSize;
+        const int r = SoftRectRadius;
+        const int sub = 4;
+
+        var data = new Microsoft.Xna.Framework.Color[n * n];
+        for (int y = 0; y < n; y++)
+        {
+            for (int x = 0; x < n; x++)
+            {
+                int hits = 0;
+                for (int sy = 0; sy < sub; sy++)
+                {
+                    for (int sx = 0; sx < sub; sx++)
+                    {
+                        double px = x + (sx + 0.5) / sub;
+                        double py = y + (sy + 0.5) / sub;
+
+                        // Distance outside the rounded rect, measured from the inset core the
+                        // corners are arcs of - the standard rounded-box test.
+                        double dx = System.Math.Max(System.Math.Max(r - px, px - (n - r)), 0);
+                        double dy = System.Math.Max(System.Math.Max(r - py, py - (n - r)), 0);
+                        if (dx * dx + dy * dy <= (double)r * r) hits++;
+                    }
+                }
+
+                float a = hits / (float)(sub * sub);
+                data[y * n + x] = new Microsoft.Xna.Framework.Color(a, a, a, a);
+            }
+        }
+
+        var tex = new Texture2D(device, n, n);
+        tex.SetData(data);
+        return tex;
     }
 
     /// <summary>

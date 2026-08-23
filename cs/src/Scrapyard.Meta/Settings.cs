@@ -51,6 +51,25 @@ public sealed class Settings
     /// <summary>Ceiling for the banked total. Comfortably past any real play and exactly representable.</summary>
     public const int MaxBankedCredits = 9_999_999;
 
+    /// <summary>
+    /// Ceiling for a career tally - kills with one weapon, splash kills, reloads.
+    /// </summary>
+    /// <remarks>
+    /// The web build's own figure. These accumulate across every run forever and are read by
+    /// conditions that compare against thresholds in the thousands, so the ceiling is not a game
+    /// rule - it is what stops a corrupted or hand-edited file carrying an infinity into a
+    /// comparison. Exactly representable as a double, like every other bound in this file.
+    /// </remarks>
+    public const double MaxCareerTally = 1_000_000_000;
+
+    /// <summary>The card every save has held: the Medium Laser Slate opens with.</summary>
+    /// <remarks>
+    /// Slate is to <see cref="UnlockedHeroes"/> what this is to <see cref="UnlockedUpgrades"/> -
+    /// forced in on every load, so the manual's opening state is the two things a player who has
+    /// done nothing has nonetheless already got.
+    /// </remarks>
+    public const string SeedUpgrade = "w-laser-medium";
+
     public int LastHeroId { get; set; }
     public string LastLevelId { get; set; } = "scrapyard";
     public long Credits { get; set; }
@@ -399,23 +418,88 @@ public sealed class Settings
         if (!UnlockedHeroes.Contains(HeroIdNames.Slate)) UnlockedHeroes.Add(HeroIdNames.Slate);
         if (!UnlockedLevels.Contains("scrapyard")) UnlockedLevels.Add("scrapyard");
 
-        Dedupe(UnlockedHeroes);
-        Dedupe(UnlockedLevels);
-        Dedupe(UnlockedUpgrades);
-        Dedupe(EarnedCards);
-        Dedupe(HeldAscensions);
-        Dedupe(UnlockedAchievements);
-        Dedupe(KilledEnemies);
+        // AND THE CARD SLATE WALKS IN HOLDING, which is a seed for the same reason the other two
+        // are: an empty save has held it by the time anyone can open the manual to look. Without
+        // it the Scrapopedia's opening state is one entry rather than the two it is written to be.
+        if (!UnlockedUpgrades.Contains(SeedUpgrade)) UnlockedUpgrades.Add(SeedUpgrade);
+
+        // FILTERED AGAINST THE CURRENT CATALOG, which is the rule this file's own remarks state and
+        // which the port did not implement: every list was deduped and then believed, whatever was
+        // in it. It matters least where it looks like it should matter most - six of these are only
+        // ever asked `Contains` while walking a catalog, so an id nothing resolves is invisible
+        // rather than harmful. It matters where something COUNTS a list, and one thing does:
+        // `HeroesOwned` is `UnlockedHeroes.Count`, and it decides `ChassisOwned`. Two junk strings
+        // in that list are two chassis the save did not earn.
+        //
+        // THE COST IS THE ONE ALREADY ACCEPTED EVERYWHERE ELSE: rename a chassis and everyone who
+        // unlocked it loses it. That beats a collection quietly accumulating ghosts, and there is
+        // no way to tell a typo from a rename after the fact.
+        Keep(UnlockedHeroes, id => Array.Exists(HeroUnlocks.Heroes, h => h.Id == id));
+        Keep(UnlockedLevels, id => Array.Exists(HeroUnlocks.Levels, l => l.Id == id));
+        Keep(UnlockedUpgrades, id => Array.IndexOf(CardIds.All, id) >= 0);
+        Keep(EarnedCards, id => Array.IndexOf(CardIds.All, id) >= 0);
+        // ON THE ID AND ON THE CARD STILL HAVING ONE. A weapon whose tier 8 is withdrawn stops
+        // claiming a page rather than leaving one nothing can render.
+        Keep(HeldAscensions, id => Array.IndexOf(CardIds.Ascended, id) >= 0);
+        Keep(UnlockedAchievements, id => Array.Exists(Achievements.All, a => a.Id == id));
+        Keep(KilledEnemies, BestiaryKeys().Contains);
 
         LastHeroId = System.Math.Clamp(LastHeroId, 0, HeroCatalog.All.Length - 1);
-        CareerSplashKills = System.Math.Max(0, CareerSplashKills);
-        CareerReloads = System.Math.Max(0, CareerReloads);
+
+        // CLAMPED AT BOTH ENDS, and NaN is dealt with by the comparison rather than by a special
+        // case: every comparison against a NaN is false, so `Clamp` cannot be trusted with one.
+        // These are read by conditions that compare against a threshold, and a NaN career would
+        // make every such comparison quietly false forever.
+        CareerSplashKills = Tally(CareerSplashKills);
+        CareerReloads = Tally(CareerReloads);
+        foreach (string key in CareerKills.Keys.ToList()) CareerKills[key] = Tally(CareerKills[key]);
     }
 
-    private static void Dedupe(List<string> list)
+    /// <summary>One career tally, made safe to compare: never negative, never past the ceiling,
+    /// never NaN.</summary>
+    private static double Tally(double v) =>
+        double.IsNaN(v) ? 0 : v < 0 ? 0 : v > MaxCareerTally ? MaxCareerTally : v;
+
+    /// <summary>Drops blanks, duplicates, and anything the current catalog cannot resolve.</summary>
+    private static void Keep(List<string> list, Func<string, bool> resolves)
     {
         var seen = new HashSet<string>();
-        list.RemoveAll(x => string.IsNullOrEmpty(x) || !seen.Add(x));
+        list.RemoveAll(x => string.IsNullOrEmpty(x) || !seen.Add(x) || !resolves(x));
+    }
+
+    /// <summary>
+    /// Every string <see cref="KilledEnemies"/> may legitimately hold.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THREE NAMESPACES SHARE THAT ONE ARRAY</b> - a bestiary key per rung and rank, a rank's
+    /// own name, and a variant's. Filtering it against the bestiary keys alone would silently
+    /// delete the other two on every load, which is a bug the web build has already shipped once
+    /// and fixed; its note on the line is what this paragraph is repeating.
+    /// </para>
+    /// <para>
+    /// THE RANK AND VARIANT NAMES ARE INCLUDED EVEN THOUGH NOTHING HERE WRITES THEM YET. The C#
+    /// Scrapopedia has no variants section, so today only the keys are recorded - but a filter
+    /// written to today's writers is a filter that deletes tomorrow's data on the load after it is
+    /// first saved, and that failure is silent and total.
+    /// </para>
+    /// <para>
+    /// BUILT ON DEMAND rather than cached: this runs once per load, and a static set would have to
+    /// be invalidated by nothing in particular.
+    /// </para>
+    /// </remarks>
+    private static HashSet<string> BestiaryKeys()
+    {
+        var keys = new HashSet<string>();
+        foreach (var r in Ranks.All) keys.Add(r.Name);
+        foreach (var f in Flavours.All) keys.Add(f.Name);
+        foreach (var l in HeroUnlocks.Levels)
+        {
+            var level = Simulation.LevelById(l.Id);
+            foreach (var e in Bestiary.For(level, l.Name)) keys.Add(e.Key);
+        }
+
+        return keys;
     }
 }
 

@@ -40,7 +40,21 @@ public class PediaTests
         return outv;
     }
 
-    private static Settings Fresh() => new();
+    /// <summary>
+    /// A save as the game would actually hand it over - which means RECONCILED.
+    /// </summary>
+    /// <remarks>
+    /// A bare <c>new Settings()</c> is not a state the game can be in: <c>Load</c> always
+    /// reconciles, and that is what forces in the things every save owns before it has done
+    /// anything - Slate, the Scrapyard, and the Medium Laser Slate walks in holding. Testing
+    /// against the unreconciled object was quietly testing a save that cannot exist.
+    /// </remarks>
+    private static Settings Fresh()
+    {
+        var save = new Settings();
+        save.Reconcile();
+        return save;
+    }
 
     [Fact]
     public void TheGeneratedTextIsUpToDateWithTheCatalogs()
@@ -96,6 +110,13 @@ public class PediaTests
         Assert.True(entries <= 2,
             $"a fresh save opens the manual on {entries} entries - it should be a record of what " +
             "has been held, not a catalogue");
+
+        // AND IT IS TWO RATHER THAN NOTHING, which is the other half of the claim and the half
+        // that was silently false: the systems section gated on the wrong list, so the Medium
+        // Laser every save walks in holding had no page and the opening state was Slate alone.
+        Assert.Equal(2, entries);
+        Assert.Contains(Pedia.Index(Pedia.SectionSystems, save, levels),
+                        r => r.Kind == Pedia.Kind.Card && r.Key == Settings.SeedUpgrade);
     }
 
     /// <summary>
@@ -184,7 +205,7 @@ public class PediaTests
         var save = Fresh();
         // Give the player everything EXCEPT an ascension, which is the state that leaks: a player
         // deep into a run with every card taken must still see no hint of a tier 8.
-        foreach (var e in PediaText.All) save.EarnedCards.Add(e.Id);
+        foreach (var e in PediaText.All) save.UnlockedUpgrades.Add(e.Id);
         foreach (var h in PediaText.Heroes) save.UnlockedHeroes.Add(h.Id);
 
         // THE SECRET ACHIEVEMENTS STAY UNEARNED, because they cannot be earned in this state -
@@ -290,7 +311,7 @@ public class PediaTests
     public void EveryCardPageCarriesItsOwnLadderAndTargeting()
     {
         var save = Fresh();
-        foreach (var e in PediaText.All) save.EarnedCards.Add(e.Id);
+        foreach (var e in PediaText.All) save.UnlockedUpgrades.Add(e.Id);
         var levels = Levels();
 
         int pages = 0;
@@ -323,6 +344,48 @@ public class PediaTests
         }
 
         Assert.True(pages >= 14, $"only {pages} card pages were built");
+    }
+
+    /// <summary>
+    /// EVERY ROW THAT OPENS A PAGE OPENS A PAGE WITH SOMETHING ON IT.
+    /// </summary>
+    /// <remarks>
+    /// A creature or rank page is built from a conditional lore lookup (<see cref="PediaText.LoreIn"/>)
+    /// that silently hands back an empty body when the key it is asked for is not in the table -
+    /// which is exactly what happened when City Chaos shipped its own ladder without anyone writing
+    /// its bestiary lore: every regular-rank page on that map opened to a title and nothing under
+    /// it, and nothing caught it because the only existing check was "at least one page has lore",
+    /// which the other two maps alone already satisfied. This asks the stronger question, of every
+    /// page a fully-played save can open.
+    /// </remarks>
+    [Fact]
+    public void EveryOpenablePageHasSomethingToRead()
+    {
+        var save = Fresh();
+        var levels = Levels();
+        foreach (var e in PediaText.All) save.UnlockedUpgrades.Add(e.Id);
+        foreach (var a in PediaText.Ascensions) save.HeldAscensions.Add(a.ParentId);
+        foreach (var h in PediaText.Heroes) save.UnlockedHeroes.Add(h.Id);
+        foreach (var a in Meta.Achievements.All) save.UnlockedAchievements.Add(a.Id);
+        foreach (var (level, name) in levels)
+        {
+            foreach (var e in Bestiary.For(level, name)) save.KilledEnemies.Add(e.Key);
+        }
+
+        int pages = 0;
+        for (int s = 0; s < Pedia.Sections.Length; s++)
+        {
+            foreach (var row in Pedia.Index(s, save, levels))
+            {
+                if (row.Kind == Pedia.Kind.Heading) continue;
+                var page = Pedia.Build(row, levels);
+                Assert.True(page.Body.Exists(line => line.Trim().Length > 0),
+                    $"{row.Kind} '{row.Text}' (key '{row.Key}') opens to a page with nothing on it");
+                pages++;
+            }
+        }
+
+        Assert.True(pages > 60, $"only {pages} pages were checked");
     }
 
     /// <summary>
@@ -453,7 +516,7 @@ public class PediaTests
     public void BackWalksOneStepAndSaysWhenItCannot()
     {
         var save = Fresh();
-        save.EarnedCards.Add(PediaText.All[0].Id);
+        save.UnlockedUpgrades.Add(PediaText.All[0].Id);
         var st = new PediaState(save, Levels());
 
         st.Open();
@@ -508,7 +571,7 @@ public class PediaTests
     public void PagesWrapWithoutLosingTheirParagraphs()
     {
         var save = Fresh();
-        foreach (var e in PediaText.All) save.EarnedCards.Add(e.Id);
+        foreach (var e in PediaText.All) save.UnlockedUpgrades.Add(e.Id);
         var st = new PediaState(save, Levels());
 
         st.EnterSection(Pedia.SectionSystems);

@@ -31,9 +31,71 @@ public class MetaTests
     {
         // The three Verify calls the game makes at startup, made here too so a stale table is a red
         // test rather than a red window.
-        WorkshopText.Verify(MetaCatalog.All.Length);
+        WorkshopText.Verify();
         HeroUnlocks.Verify(HeroCatalog.All.Length);
         Assert.Equal(3, HeroUnlocks.Levels.Length);
+    }
+
+    /// <summary>
+    /// THE WORKSHOP'S TWO TABLES ARE PAIRED BY POSITION, AND THE ORDER IS PINNED HERE.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>Settings.ToMetaTiers</c> reads a saved purchase's id out of <c>WorkshopText.All[i]</c> and
+    /// applies it to <c>MetaCatalog.All[i]</c>. That is the one place this codebase turns an id back
+    /// into an index, and it is only correct while the two tables are in the same order - one
+    /// generated from <c>META_CATALOG</c>, the other a hand-maintained list of named fields.
+    /// </para>
+    /// <para>
+    /// <c>Verify</c> checks the counts and the tier counts, which catches almost everything. This
+    /// pins the remaining hole: two upgrades that offer the same number of tiers can be swapped
+    /// without either check firing, and the result is every save applying one purchase to the other
+    /// upgrade. Writing the order out is what makes that a red test instead of a silent recolour of
+    /// sixteen players' workshops.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheWorkshopTablesArePairedInThisExactOrder()
+    {
+        string[] order =
+        {
+            "m-passives", "m-mounts", "m-damage", "m-blast", "m-range", "m-speed", "m-rate",
+            "m-magnet", "m-hp", "m-armour", "m-insurance", "m-drone", "m-laser", "m-heatcap",
+            "m-rerolls", "m-repair",
+        };
+
+        Assert.Equal(order.Length, WorkshopText.All.Length);
+        for (int i = 0; i < order.Length; i++)
+        {
+            Assert.Equal(order[i], WorkshopText.All[i].Id);
+
+            // And the slot it pairs with really is the one that number names.
+            Assert.Equal(i, MetaCatalog.All[i].Id);
+        }
+    }
+
+    /// <summary>
+    /// A PURCHASE REACHES THE UPGRADE IT WAS MADE AGAINST, by id and not by luck.
+    /// </summary>
+    /// <remarks>
+    /// The property <c>ToMetaTiers</c> exists to provide, asserted end to end: buy one row, and the
+    /// tier lands in that row's catalog slot and in no other.
+    /// </remarks>
+    [Fact]
+    public void ABoughtTierLandsInItsOwnCatalogSlot()
+    {
+        for (int i = 0; i < WorkshopText.All.Length; i++)
+        {
+            var save = new Settings { Credits = Settings.MaxBankedCredits };
+            save.Reconcile();
+            Assert.True(save.Buy(i), $"could not buy {WorkshopText.All[i].Id}");
+
+            var tiers = save.ToMetaTiers();
+            for (int j = 0; j < tiers.Length; j++)
+            {
+                Assert.Equal(j == i ? 1 : 0, tiers[j]);
+            }
+        }
     }
 
     /// <summary>
@@ -291,9 +353,9 @@ public class MetaTests
         sim.World.Director.CycleIndex = 2;
         sim.World.Stats.Credits = 500;
 
-        long banked = 0;
-        var first = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
-        var second = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
+        var banked = new Progress.RunTally();
+        var first = Progress.Bank(save, sim.World, sim.Level, roster, banked);
+        var second = Progress.Bank(save, sim.World, sim.Level, roster, banked);
 
         Assert.Contains("moss", first.Heroes);
         Assert.Empty(second.Heroes);
@@ -435,10 +497,10 @@ public class MetaTests
         var roster = new HeroUnlocks();
 
         sim.World.Director.CycleIndex = 2;   // reached wave 3
-        long banked = 0;
+        var banked = new Progress.RunTally();
 
-        var first = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
-        var second = Progress.Bank(save, sim.World, sim.Level, roster, ref banked);
+        var first = Progress.Bank(save, sim.World, sim.Level, roster, banked);
+        var second = Progress.Bank(save, sim.World, sim.Level, roster, banked);
 
         Assert.NotEmpty(first.Achievements);
         Assert.Empty(second.Achievements);
@@ -554,15 +616,15 @@ public class MetaTests
 
         var first = new Simulation(1, 0, "scrapyard");
         first.World.Stats.Credits = 300;
-        long banked = 0;
-        Progress.Bank(save, first.World, first.Level, roster, ref banked);
+        var banked = new Progress.RunTally();
+        Progress.Bank(save, first.World, first.Level, roster, banked);
         Assert.Equal(300, save.Credits);
 
         // A SECOND RUN, with its own counter starting from zero.
         var second = new Simulation(2, 0, "scrapyard");
         second.World.Stats.Credits = 200;
-        banked = 0;
-        var earned = Progress.Bank(save, second.World, second.Level, roster, ref banked);
+        banked.Reset();
+        var earned = Progress.Bank(save, second.World, second.Level, roster, banked);
 
         Assert.Equal(200, earned.Credits);
         Assert.Equal(500, save.Credits);
@@ -646,5 +708,313 @@ public class MetaTests
 
         // A fresh save moves. The one setting that silences the machine has to be asked for.
         Assert.False(new Settings().ReducesMotion());
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // THE CAREER
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>The artillery's slot in the weapon catalog, so a test can credit kills to it.</summary>
+    private static int SlotOf(int weaponId)
+    {
+        var probe = new Simulation(1, 0, "scrapyard");
+        for (int i = 0; i < probe.World.WeaponDefs.Length; i++)
+        {
+            if (probe.World.WeaponDefs[i].Id == weaponId) return i;
+        }
+
+        throw new Xunit.Sdk.XunitException($"weapon {weaponId} is not in the catalog");
+    }
+
+    /// <summary>
+    /// THE CAREER IS A TOTAL ACROSS EVERY RUN, which is what the conditions reading it say.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT USED TO BE <c>Max(career, thisRun)</c> - a different quantity entirely, the best SINGLE
+    /// run. Three runs of four hundred artillery kills left the career reading four hundred, so
+    /// Indigo's <c>killsWithTotal(999)</c> wanted 999 in one sitting and would not have been earned
+    /// by a player who did it four times over.
+    /// </para>
+    /// <para>
+    /// THREE RUNS RATHER THAN TWO, because two cannot tell an accumulator from a max when the
+    /// second run is the larger one. The counts here descend for that reason.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void CareerKillsAddUpAcrossRuns()
+    {
+        var save = new Settings();
+        save.Reconcile();
+        var roster = new HeroUnlocks();
+        int slot = SlotOf(WeaponIds.Artillery);
+
+        double[] each = { 400, 300, 200 };
+        double running = 0;
+        for (int i = 0; i < each.Length; i++)
+        {
+            var sim = new Simulation(1 + i, 0, "scrapyard");
+            sim.World.Stats.KillsByWeapon[slot] = (uint)each[i];
+
+            // EACH RUN BRINGS ITS OWN LEDGER, exactly as StartRun does.
+            var tally = new Progress.RunTally();
+            Progress.Bank(save, sim.World, sim.Level, roster, tally);
+
+            running += each[i];
+            Assert.Equal(running, save.CareerKills["artillery"]);
+        }
+
+        Assert.Equal(900, save.CareerKills["artillery"]);
+    }
+
+    /// <summary>
+    /// AND POLLING WITHIN ONE RUN BANKS THE GROWTH, NOT THE WHOLE TALLY AGAIN.
+    /// </summary>
+    /// <remarks>
+    /// The other half of the ledger, and the mistake in the opposite direction: banking once a
+    /// second while re-adding the run's whole count would multiply every kill by the number of
+    /// polls. This is what makes "call it often" free.
+    /// </remarks>
+    [Fact]
+    public void PollingWithinARunBanksEachKillOnce()
+    {
+        var save = new Settings();
+        save.Reconcile();
+        var roster = new HeroUnlocks();
+        int slot = SlotOf(WeaponIds.Artillery);
+
+        var sim = new Simulation(7, 0, "scrapyard");
+        var tally = new Progress.RunTally();
+
+        // The run's own counter only grows; the career must follow it exactly.
+        foreach (uint sofar in new uint[] { 10, 10, 25, 25, 60 })
+        {
+            sim.World.Stats.KillsByWeapon[slot] = sofar;
+            sim.World.Stats.SplashKills = sofar * 2;
+            sim.World.Stats.Reloads = sofar * 3;
+            Progress.Bank(save, sim.World, sim.Level, roster, tally);
+
+            Assert.Equal(sofar, save.CareerKills["artillery"]);
+            Assert.Equal(sofar * 2, save.CareerSplashKills);
+            Assert.Equal(sofar * 3, save.CareerReloads);
+        }
+    }
+
+    /// <summary>
+    /// SPLASH KILLS AND RELOADS REACH THE SAVE AT ALL.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// They were never banked - not by a max, not by anything. Nothing outside <c>Settings</c> so
+    /// much as named the two fields, so both sat at zero for the life of a save.
+    /// </para>
+    /// <para>
+    /// THAT MADE TWO CARDS UNREACHABLE RATHER THAN MERELY SLOW, and the mechanism is worth pinning
+    /// because it is not obvious: <c>Meets</c> reads the CAREER for a <c>*Total</c> kind and only
+    /// falls back to the run's own number when no career is supplied - and the banking path always
+    /// supplies one. So a frozen career did not just fail to accumulate, it SHADOWED a run that had
+    /// already earned the thing outright.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SplashKillsAndReloadsUnlockTheirCards()
+    {
+        var save = new Settings();
+        save.Reconcile();
+        var roster = new HeroUnlocks();
+
+        var sim = new Simulation(11, 0, "scrapyard");
+        sim.World.Stats.SplashKills = 2000;
+        sim.World.Stats.Reloads = 1911;
+
+        var tally = new Progress.RunTally();
+        var earned = Progress.Bank(save, sim.World, sim.Level, roster, tally);
+
+        Assert.Equal(2000, save.CareerSplashKills);
+        Assert.Equal(1911, save.CareerReloads);
+        Assert.Contains("p-blast", save.EarnedCards);
+        Assert.Contains("p-ammo", save.EarnedCards);
+        Assert.Contains("Shaped Charges", earned.Cards);
+        Assert.Contains("Ammo Drums", earned.Cards);
+    }
+
+    /// <summary>
+    /// A CAREER TALLY IS CAPPED, AND A NONSENSE ONE DEGRADES RATHER THAN POISONING A COMPARISON.
+    /// </summary>
+    /// <remarks>
+    /// NaN is the one that matters and the one <c>Clamp</c> cannot handle: every comparison against
+    /// it is false, so a NaN career would make every <c>*Total</c> condition quietly unsatisfiable
+    /// forever - the same symptom as the frozen zero, from a hand-edited file instead of a bug.
+    /// </remarks>
+    [Fact]
+    public void CareerTalliesDegradeToSomethingComparable()
+    {
+        var save = new Settings
+        {
+            CareerSplashKills = double.NaN,
+            CareerReloads = double.PositiveInfinity,
+        };
+        save.CareerKills["artillery"] = -5;
+        save.CareerKills["drone"] = double.NaN;
+        save.Reconcile();
+
+        Assert.Equal(0, save.CareerSplashKills);
+        Assert.Equal(Settings.MaxCareerTally, save.CareerReloads);
+        Assert.Equal(0, save.CareerKills["artillery"]);
+        Assert.Equal(0, save.CareerKills["drone"]);
+    }
+
+    /// <summary>
+    /// A RUN RECORD IS A SNAPSHOT, not a window onto a world that keeps moving.
+    /// </summary>
+    /// <remarks>
+    /// <c>Tiers</c> was handed out as the live array while every other collection on the record was
+    /// built fresh. Nothing held a record long enough to be bitten, which is precisely the kind of
+    /// thing that stays true until it does not.
+    /// </remarks>
+    [Fact]
+    public void ARunRecordDoesNotChangeUnderneathItsHolder()
+    {
+        var sim = new Simulation(3, 0, "scrapyard");
+        var before = Progress.Record(sim.World, sim.Level);
+
+        sim.World.LevelUp.Stacks[0] = 7;
+
+        Assert.NotEqual(7, before.Tiers[0]);
+        Assert.Equal(7, Progress.Record(sim.World, sim.Level).Tiers[0]);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // FILTERING ON LOAD
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// AN ID NOTHING RESOLVES IS DROPPED, which this file's remarks claimed and did not do.
+    /// </summary>
+    /// <remarks>
+    /// Every list was deduped and then believed. It went unnoticed because six of the seven are
+    /// only ever asked <c>Contains</c> while walking a catalog, so a ghost is inert - but
+    /// <c>HeroesOwned</c> COUNTS one of them, and <c>ChassisOwned</c> reads that.
+    /// </remarks>
+    [Fact]
+    public void GhostIdsAreDroppedOnLoad()
+    {
+        var save = new Settings();
+        save.UnlockedHeroes.Add("slate");
+        save.UnlockedHeroes.Add("a-chassis-that-was-renamed");
+        save.UnlockedLevels.Add("a-level-that-was-cut");
+        save.UnlockedUpgrades.Add("w-cannon");
+        save.UnlockedUpgrades.Add("w-a-card-that-no-longer-exists");
+        save.EarnedCards.Add("p-blast");
+        save.EarnedCards.Add("w-not-a-card");
+        save.HeldAscensions.Add("w-cannon");
+        save.HeldAscensions.Add("p-range");            // real card, but it has no tier 8
+        save.UnlockedAchievements.Add("a-trophy-that-was-renamed");
+        save.KilledEnemies.Add("scrapyard/Rustling/regular");
+        save.KilledEnemies.Add("some-level/Some Rung/regular");
+
+        save.Reconcile();
+
+        Assert.Equal(new[] { "slate" }, save.UnlockedHeroes);
+        Assert.Equal(new[] { "scrapyard" }, save.UnlockedLevels);
+        // The seed is forced in beside it - see Settings.SeedUpgrade.
+        Assert.Equal(new[] { "w-cannon", Settings.SeedUpgrade }, save.UnlockedUpgrades);
+        Assert.Equal(new[] { "p-blast" }, save.EarnedCards);
+        Assert.Equal(new[] { "w-cannon" }, save.HeldAscensions);
+        Assert.Empty(save.UnlockedAchievements);
+        Assert.Equal(new[] { "scrapyard/Rustling/regular" }, save.KilledEnemies);
+
+        // The one that actually decided something.
+        Assert.Equal(1, save.HeroesOwned);
+    }
+
+    /// <summary>
+    /// A GHOST CHASSIS CANNOT UNLOCK THE ONE THAT COUNTS CHASSIS.
+    /// </summary>
+    /// <remarks>
+    /// Vermilion asks for six others in the bay. <c>HeroesOwned</c> is a raw list count, so two
+    /// junk strings used to be two chassis - and a renamed id inflated it permanently, because
+    /// nothing ever removed the old one.
+    /// </remarks>
+    [Fact]
+    public void JunkInTheBayDoesNotEarnVermilion()
+    {
+        var save = new Settings();
+        save.UnlockedHeroes.Add("slate");
+        for (int i = 0; i < 8; i++) save.UnlockedHeroes.Add($"ghost-{i}");
+        save.Reconcile();
+
+        var career = save.Career(_ => -1);
+        Assert.False(Unlocks.Meets(UnlockCond.ChassisOwned(6), EmptyRun(), career));
+
+        // And six real ones still do.
+        var real = new Settings();
+        for (int i = 0; i < 6; i++) real.UnlockedHeroes.Add(HeroUnlocks.Heroes[i].Id);
+        real.Reconcile();
+        Assert.True(Unlocks.Meets(UnlockCond.ChassisOwned(6), EmptyRun(), real.Career(_ => -1)));
+    }
+
+    /// <summary>
+    /// THE BESTIARY LIST HOLDS THREE NAMESPACES, and the filter keeps all three.
+    /// </summary>
+    /// <remarks>
+    /// A rank's name and a variant's name share the array with the per-rung keys. Filtering against
+    /// the keys alone would delete the other two on every load - a bug the web build shipped once
+    /// already - and it would do it silently, on data that nothing in the C# writes YET.
+    /// </remarks>
+    [Fact]
+    public void TheBestiaryFilterKeepsRanksAndVariantsToo()
+    {
+        var save = new Settings();
+        foreach (var r in Ranks.All) save.KilledEnemies.Add(r.Name);
+        foreach (var f in Flavours.All) save.KilledEnemies.Add(f.Name);
+        save.KilledEnemies.Add("mossy-mayhem/Sporeling/boss");
+        save.KilledEnemies.Add("not-a-thing");
+
+        save.Reconcile();
+
+        foreach (var r in Ranks.All) Assert.Contains(r.Name, save.KilledEnemies);
+        foreach (var f in Flavours.All) Assert.Contains(f.Name, save.KilledEnemies);
+        Assert.Contains("mossy-mayhem/Sporeling/boss", save.KilledEnemies);
+        Assert.DoesNotContain("not-a-thing", save.KilledEnemies);
+    }
+
+    /// <summary>Filtering never costs a save what it legitimately holds.</summary>
+    /// <remarks>
+    /// The other half of the claim, and the one worth checking by construction: a save holding
+    /// EVERYTHING the catalogs offer must come back through <c>Reconcile</c> holding all of it.
+    /// </remarks>
+    [Fact]
+    public void AFullSaveSurvivesReconcileIntact()
+    {
+        var save = new Settings();
+        foreach (var h in HeroUnlocks.Heroes) save.UnlockedHeroes.Add(h.Id);
+        foreach (var l in HeroUnlocks.Levels) save.UnlockedLevels.Add(l.Id);
+        foreach (string id in CardIds.All) save.UnlockedUpgrades.Add(id);
+        foreach (var c in HeroUnlocks.Cards) save.EarnedCards.Add(c.Id);
+        foreach (string id in CardIds.Ascended) save.HeldAscensions.Add(id);
+        foreach (var a in Achievements.All) save.UnlockedAchievements.Add(a.Id);
+        foreach (var l in HeroUnlocks.Levels)
+        {
+            foreach (var e in Bestiary.For(Simulation.LevelById(l.Id), l.Name))
+            {
+                save.KilledEnemies.Add(e.Key);
+            }
+        }
+
+        int heroes = save.UnlockedHeroes.Count, levels = save.UnlockedLevels.Count;
+        int upgrades = save.UnlockedUpgrades.Count, cards = save.EarnedCards.Count;
+        int asc = save.HeldAscensions.Count, trophies = save.UnlockedAchievements.Count;
+        int beasts = save.KilledEnemies.Count;
+
+        save.Reconcile();
+
+        Assert.Equal(heroes, save.UnlockedHeroes.Count);
+        Assert.Equal(levels, save.UnlockedLevels.Count);
+        Assert.Equal(upgrades, save.UnlockedUpgrades.Count);
+        Assert.Equal(cards, save.EarnedCards.Count);
+        Assert.Equal(asc, save.HeldAscensions.Count);
+        Assert.Equal(trophies, save.UnlockedAchievements.Count);
+        Assert.Equal(beasts, save.KilledEnemies.Count);
     }
 }

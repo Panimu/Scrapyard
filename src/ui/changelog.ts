@@ -46,6 +46,83 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-23T21:16Z',
+    title: 'THE LOADOUT ROW SHOWS WHAT EACH GUN IS WAITING ON',
+    notes: [
+      'Every weapon you hold now carries its own bar. A laser shows heat climbing toward its cut-out, with a notch at the point it comes back; a Machine Gun or Flak Cannon shows rounds left, and while it reloads the bar refills with the seconds counting down; everything else fills as it rearms and sits full when it is ready and simply has nothing to shoot.',
+      'Each bar is the weapon’s own colour, so a row carrying a green, a blue and a red laser is readable without stopping to read it. A cut-out beam goes red and says OUT.',
+      'Before this the row was an icon and a tier number, which left out the one thing it is for: every gun in this game is waiting on something, and none of it was on screen.',
+    ],
+  },
+  {
+    at: '2026-08-23T21:16Z',
+    title: 'HUD AND MENU POLISH',
+    notes: [
+      'The hull and XP bars are rounded, outlined and graded now, instead of two flat slabs, and they stop short of the pause button rather than running underneath it — the right-hand end of the hull bar, which is the part you look at when it is nearly gone, was behind a panel.',
+      'The HUD uses the interface font throughout.',
+      'Mech select has a Random button, for when you do not want to pick. It only ever lands on a chassis you own, and it moves the cursor rather than starting the run, so you can still change your mind.',
+      'The end-of-run screen has a Title button beside New Run, and both can be clicked — the one screen you reach by losing used to answer nothing but a function key.',
+      'Auto-level is a button on the level-up card now rather than a line of text naming a key, and taking it no longer flashes the card up for a frame on every level. The pick it makes is announced in white with an outline, so it is readable over whatever you happen to be standing on.',
+      'The NEW sticker on the title screen has smooth edges instead of a staircase.',
+    ],
+  },
+  {
+    at: '2026-08-23T20:59Z',
+    title: 'FIXED: MECHS STANDING ON NOTHING',
+    notes: [
+      'A mech that stopped walking lost its legs — the body is drawn separately from them, and the legs were only being drawn while it moved. They are now always there, and the gait runs off the distance walked rather than a clock, so a parked mech stands on the step it finished instead of marching on the spot.',
+      'The walk cycle plays its full twelve poses again instead of six, and the chassis leans into its stride the way it used to. Hovers keep their skirt pulsing while standing, because a hover holding perfectly still has landed.',
+    ],
+  },
+  {
+    at: '2026-08-23T20:59Z',
+    title: 'FIXED: BARRELS ON GUNS THAT DO NOT HAVE ONE',
+    notes: [
+      'Every weapon was bolting a cannon barrel onto the chassis. Only four guns have a turret — the Cannon, the Phase Cannon, and the rotary snout the Machine Gun and Flak Cannon share — and a missile rack, an artillery tube or a drone bay now shows what it actually is.',
+      'Turrets were also drawn at nearly twice their intended size, and swung about their own middle instead of their mount, so a barrel orbited the mech like a clock hand. Both fixed: they sit on the hull at the right length and sweep across it.',
+      'The Cannon wears its twin barrels once it has ascended, which it was never doing — that art had been misassigned to the Flak Cannon.',
+    ],
+  },
+  {
+    at: '2026-08-23T20:53Z',
+    title: 'THE SCRAPOPEDIA SAYS WHAT THINGS ARE',
+    notes: [
+      'Every entry in the manual now carries a line under its name saying what it is — guns, systems, ascensions, chassis, creatures, ranks and trophies alike. The list used to be names only, so finding the right page meant opening pages until you got there.',
+      'A trophy you have not earned still shows nothing but its shape, as before.',
+    ],
+  },
+  {
+    at: '2026-08-23T20:49Z',
+    title: 'FIXED: MOST GUNS NEVER GOT A SCRAPOPEDIA PAGE',
+    notes: [
+      'The manual was listing the wrong thing. A gun earned itself a page only if it was one of the seven that have to be unlocked before the deck will offer them — so the fourteen you carry every single run, the Cannon and the Machine Gun and all three lasers among them, never appeared however long you played. The Medium Laser you start holding was missing from an otherwise untouched save.',
+      'It now lists what you have actually held, which is what it always said it did. Anything you carry in your next run turns up in it.',
+    ],
+  },
+  {
+    at: '2026-08-23T20:37Z',
+    title: 'FIXED: CAREER TOTALS THAT NEVER ADDED UP',
+    notes: [
+      'Everything counted "across every run" was only ever counting your BEST run. Four hundred kills with the artillery in each of three runs left the tally reading four hundred, so Indigo wanted all 999 of them in a single sitting — and the same went for the Flak Cannon, the Drones and the Phase Cannon.',
+      'Blast kills and magazine reloads were not being counted at all, which meant Shaped Charges and Ammo Drums could not be earned however you played.',
+      'All six now accumulate the way they always said they did. Whatever your save had already banked is kept and counts toward the total — nothing you have earned is lost, and several things you had already done enough for will land the next time you finish a run.',
+    ],
+  },
+  {
+    at: '2026-08-23T19:52Z',
+    title: 'FIXED: CITY CHAOS HAD NO SCRAPOPEDIA ENTRIES',
+    notes: [
+      'Every machine on City Chaos opened onto a title and nothing else - the whole map shipped without a manual entry for anything in it. Killing one now opens onto the same kind of write-up the Scrapyard and Mossy Mayhem have always had.',
+    ],
+  },
+  {
+    at: '2026-08-23T19:52Z',
+    title: "THE SCRAPOPEDIA'S ENEMY LIST SHOWS WHAT YOU FOUGHT",
+    notes: [
+      'Every creature entry now carries its own icon - the same art it fights under - instead of every rung and rank in the list looking identical.',
+    ],
+  },
+  {
     at: '2026-08-22T08:50Z',
     title: 'THE CHEST REELS SPIN AGAIN ON WINDOWS',
     notes: [
@@ -324,16 +401,16 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-19T11:58Z',
     title: 'SOMETHING IS BEING BUILT',
     notes: [
-      'A third yard now sits on the level select \u2014 City Chaos \u2014 greyed out and not enterable. It is a placeholder for work that has not been done rather than a promise about when it will be, and it is there so you can see it coming.',
+      'A third yard now sits on the level select — City Chaos — greyed out and not enterable. It is a placeholder for work that has not been done rather than a promise about when it will be, and it is there so you can see it coming.',
     ],
   },
   {
     at: '2026-08-19T11:47Z',
     title: 'AUTO LEVEL',
     notes: [
-      'A new option: let the game pick your upgrades. Turn it on from the pause menu, or straight off a level-up card when you have had enough of choosing \u2014 that card gets picked too.',
+      'A new option: let the game pick your upgrades. Turn it on from the pause menu, or straight off a level-up card when you have had enough of choosing — that card gets picked too.',
       'It picks with a plan rather than at random. It will complete an ascension you already know how to build; failing that it takes a gun you do not have, then deepens a gun you do, then a passive you do. It will never hand you an ascension you have not found for yourself.',
-      'Each pick floats its name over the mech for a moment so the build never changes behind your back \u2014 and if Mech Insurance fires, the label holds for the whole pause instead of dissolving over a stopped world.',
+      'Each pick floats its name over the mech for a moment so the build never changes behind your back — and if Mech Insurance fires, the label holds for the whole pause instead of dissolving over a stopped world.',
     ],
   },
   {
@@ -341,7 +418,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     title: 'THE GIGA LASER LOOKS LIKE A LASER',
     notes: [
       'The swath is 20% narrower. Area is what that number buys, so a fifth off the width is a fifth off the ground it covers, and its damage, burst and reach are untouched.',
-      'It is drawn properly now. It was a flat slab of red with a wash around it and a square end bolted to the hull; it is now a hot thread running down a channel of light, with an edge you can actually see, and it leaves the mech through a lit emitter instead of starting in mid-air. The bright band is the part that burns \u2014 what you see is what it hits.',
+      'It is drawn properly now. It was a flat slab of red with a wash around it and a square end bolted to the hull; it is now a hot thread running down a channel of light, with an edge you can actually see, and it leaves the mech through a lit emitter instead of starting in mid-air. The bright band is the part that burns — what you see is what it hits.',
       'The three ordinary lasers are drawn exactly as before, to the pixel.',
     ],
   },
@@ -350,7 +427,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     title: 'FOUR GUNS, AND A FIFTH TO BUY',
     notes: [
       'A mech now carries FOUR weapons out of the yard rather than five. The choice of what to leave behind is the run, and at five it had stopped being much of a choice.',
-      'The workshop sells the fifth slot back \u2014 Reinforced Mounts, one purchase, and not a cheap one. It is the same five guns you had; it is just yours now rather than assumed.',
+      'The workshop sells the fifth slot back — Reinforced Mounts, one purchase, and not a cheap one. It is the same five guns you had; it is just yours now rather than assumed.',
       'Also new in the workshop: Scrap Magnetics pulls cores in from further off, so the ground you cannot safely cross still pays you.',
     ],
   },
@@ -358,23 +435,23 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-19T11:02Z',
     title: 'A LONGER BREATH, AND A STEADIER SCREEN',
     notes: [
-      'When Mech Insurance saves you, the world now holds still for four seconds instead of just over one. You come back from a save standing in the crowd that nearly killed you \u2014 that pause is for picking a way out, not for reading three words.',
+      'When Mech Insurance saves you, the world now holds still for four seconds instead of just over one. You come back from a save standing in the crowd that nearly killed you — that pause is for picking a way out, not for reading three words.',
       'The Machine Gun and the Flak Cannon no longer shake the screen. Their barrels still kick; the camera does not. Eleven to twenty-three shots a second was not weight, it was a vibration you could not aim through.',
-      'The Flak Cannon\u2019s mount comes round 10% slower than the belt gun\u2019s. A degree of lag disappears inside a sixty-degree cone, and what you feel instead is the weight of the thing swinging onto a new crowd.',
+      'The Flak Cannon’s mount comes round 10% slower than the belt gun’s. A degree of lag disappears inside a sixty-degree cone, and what you feel instead is the weight of the thing swinging onto a new crowd.',
     ],
   },
   {
     at: '2026-08-19T10:59Z',
     title: 'MOSSY MAYHEM HAS A FACE',
     notes: [
-      'The level select shows Mossy Mayhem\u2019s own art now \u2014 its moss and one of its trees \u2014 instead of the blank plate it has been wearing since it opened. Both yards now tell you where they are taking you before you press them.',
+      'The level select shows Mossy Mayhem’s own art now — its moss and one of its trees — instead of the blank plate it has been wearing since it opened. Both yards now tell you where they are taking you before you press them.',
     ],
   },
   {
     at: '2026-08-19T10:47Z',
     title: 'A FIFTH ASCENSION EXISTS',
     notes: [
-      'One more of the weapons you know can become something else \u2014 and this one does not change the gun at all. What it takes and what it becomes is yours to find; the Scrapopedia counts one more silhouette.',
+      'One more of the weapons you know can become something else — and this one does not change the gun at all. What it takes and what it becomes is yours to find; the Scrapopedia counts one more silhouette.',
       'Your lasers now have somewhere to go: the chassis carries five mounts rather than three, with a pair added at the back. Nothing fires from them yet unless you find the reason.',
     ],
   },
@@ -382,16 +459,16 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-19T10:38Z',
     title: 'VERMILION ROLLS OUT, AND IT BRINGS A FOURTH SHELL',
     notes: [
-      'Vermilion now opens with the Flak Cannon and throws an extra shell every burst \u2014 four instead of three, out of the same magazine, which empties that much sooner for it. Those rotary drums were always more flak than missile rack.',
+      'Vermilion now opens with the Flak Cannon and throws an extra shell every burst — four instead of three, out of the same magazine, which empties that much sooner for it. Those rotary drums were always more flak than missile rack.',
       'It is earned by having six other chassis in the bay: the first thing in the game unlocked by what your save has collected rather than by what one run did.',
-      'The Flak Cannon card is sealed until you have put down a great many enemies with the gun itself \u2014 which is what Vermilion is for. Its achievement will tell you the number when you get there.',
+      'The Flak Cannon card is sealed until you have put down a great many enemies with the gun itself — which is what Vermilion is for. Its achievement will tell you the number when you get there.',
     ],
   },
   {
     at: '2026-08-19T09:09Z',
     title: 'THE GIGA LASER COOLS SLOWER',
     notes: [
-      'The Giga Laser sheds heat 10% slower than the beam it ascends from. The burst is exactly as long and exactly as wide \u2014 the wait between bursts is what got longer. It was carrying more of a run than any other ascension by a wide margin, and a beam that bills a whole crowd every tick should pay for it in silence rather than in a smaller shot.',
+      'The Giga Laser sheds heat 10% slower than the beam it ascends from. The burst is exactly as long and exactly as wide — the wait between bursts is what got longer. It was carrying more of a run than any other ascension by a wide margin, and a beam that bills a whole crowd every tick should pay for it in silence rather than in a smaller shot.',
     ],
   },
   {
@@ -405,7 +482,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-19T08:47Z',
     title: 'THE SUMMARY SAYS WHAT YOU ACTUALLY WON',
     notes: [
-      'The run summary\u2019s unlock banner was headed \u201cChassis earned\u201d and announced everything that way \u2014 so a run that earned a new CARD was told it had earned a chassis. It now just says \u201cUnlocked\u201d, and each line tells you whether it was a chassis, a card or a yard.',
+      'The run summary’s unlock banner was headed \u201cChassis earned\u201d and announced everything that way — so a run that earned a new CARD was told it had earned a chassis. It now just says \u201cUnlocked\u201d, and each line tells you whether it was a chassis, a card or a yard.',
       'Siege Heavies hold their mark for 50 seconds now rather than 90. The knot still forms; you no longer wait a minute and a half for it to turn on you.',
     ],
   },
@@ -413,16 +490,16 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     at: '2026-08-19T08:36Z',
     title: 'NEW WEAPON: THE FLAK CANNON',
     notes: [
-      'Three shells a burst, thrown into a wide random spray at the nearest enemy. It reaches further than any other shell in the game and it cannot be aimed \u2014 no two bursts are the same shape, and nothing you can take will tighten it. Fire it at a loner and most of the belt goes into the dirt; fire it into a wave and almost every shell finds something.',
-      'It bolts onto the Machine Gun\u2019s mount, so the deck will never offer you both. A run picks the stream or the spray.',
-      'Copper now rolls out with the Flak Cannon \u2014 those rotary drums were always more flak than machine gun. Bone still opens with the belt gun and still hits 30% harder with it.',
+      'Three shells a burst, thrown into a wide random spray at the nearest enemy. It reaches further than any other shell in the game and it cannot be aimed — no two bursts are the same shape, and nothing you can take will tighten it. Fire it at a loner and most of the belt goes into the dirt; fire it into a wave and almost every shell finds something.',
+      'It bolts onto the Machine Gun’s mount, so the deck will never offer you both. A run picks the stream or the spray.',
+      'Copper now rolls out with the Flak Cannon — those rotary drums were always more flak than machine gun. Bone still opens with the belt gun and still hits 30% harder with it.',
     ],
   },
   {
     at: '2026-08-19T08:19Z',
     title: 'HOT EMITTERS SIT WHERE THE GUNS ARE',
     notes: [
-      'A laser\u2019s heat glow and the sputter it makes when it cuts out now sit on the emitter that is actually straining \u2014 the shoulder or nose mount the beam leaves from \u2014 instead of floating out in front of the chassis. Second and third lasers were the worst offenders: theirs could end up hanging in open ground nowhere near the mech.',
+      'A laser’s heat glow and the sputter it makes when it cuts out now sit on the emitter that is actually straining — the shoulder or nose mount the beam leaves from — instead of floating out in front of the chassis. Second and third lasers were the worst offenders: theirs could end up hanging in open ground nowhere near the mech.',
     ],
   },
   {
