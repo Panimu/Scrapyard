@@ -29,7 +29,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { UPGRADE_CATALOG } from '../src/core/data/upgrades.js';
-import { META_CATALOG } from '../src/core/data/meta.js';
+import { META_CATALOG, metaEffectText } from '../src/core/data/meta.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
 import { ACHIEVEMENT_CATALOG } from '../src/core/data/achievements.js';
 import { LEVEL_CATALOG } from '../src/core/content/levels.js';
@@ -114,10 +114,42 @@ ${cardRows}
 // Workshop text and prices
 // ---------------------------------------------------------------------------------------------
 
+/*
+ * THE EFFECT SUMMARIES ARE EMITTED AS STRINGS, one per tier the player could be holding, rather
+ * than as the arithmetic that produces them.
+ *
+ * `metaEffectText` is small, and porting it would mean porting `metaEffectValue`, the per-upgrade
+ * `display` metadata, the pluralisation and `oneDecimal` - and then MATCHING JavaScript's number
+ * formatting from C#, which is a different rounding rule and a different trailing-zero rule.
+ * "+12.9% damage" against "+12.90% damage" is not a bug either language would report; it is a
+ * screen quietly disagreeing with the other build about what the player bought.
+ *
+ * There are 16 upgrades and at most 7 tiers each, so the whole table is under a hundred short
+ * strings. Generating them is cheaper than the port and cannot drift.
+ */
 const shopRows = META_CATALOG.map((m) => {
   const r = m as unknown as Record<string, string | number>;
+  const def = m as Parameters<typeof metaEffectText>[0];
+  const tiers = Number(r.tiers);
+
+  // Index t is what the row says when t tiers are held. Index 0 is empty by `metaEffectText`'s own
+  // contract, and the screen shows `Promise` there instead.
+  const summaries: string[] = [];
+  for (let t = 0; t <= tiers; t++) summaries.push(metaEffectText(def, t));
+
+  // What the row promises when nothing is owned: the FULL effect, and "at full" after it whenever
+  // there is more than one tier to reach.
+  const promise = `${metaEffectText(def, tiers)}${tiers > 1 ? ' at full' : ''}`;
+
+  // The tail on a part-bought row drops the noun the head just said - "+12.9% damage : +30% at
+  // full" rather than saying "damage" twice in nine words.
+  const fullBare = metaEffectText(def, tiers, true);
+
+  const list = summaries.map((t) => `"${cs(t)}"`).join(', ');
   return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", "${cs(String(r.blurb))}", ` +
-    `${r.tiers}, ${r.cost}, ${r.version}),`;
+    `${r.tiers}, ${r.cost}, ${r.version},\n` +
+    `            new[] { ${list} },\n` +
+    `            "${cs(promise)}", "${cs(fullBare)}"),`;
 }).join('\n');
 
 const shopSrc = `namespace Scrapyard.Meta;
@@ -142,8 +174,40 @@ const shopSrc = `namespace Scrapyard.Meta;
 /// <c>MetaCatalog.All</c> index i, which is also what <c>World.Meta.Tiers</c> is keyed by.
 /// </para>
 /// </remarks>
+/// <param name="Id">The upgrade's id on disk, which is what a save records.</param>
+/// <param name="Name">What the row is called.</param>
+/// <param name="Blurb">One or two sentences on what buying it does to a run.</param>
+/// <param name="Tiers">How many times it can be bought.</param>
+/// <param name="Cost">The price of one tier. Flat: the seventh costs what the first did.</param>
+/// <param name="Version">
+/// Bumped when the upgrade's effect changes, so a save holding the old one is refunded rather than
+/// silently handed something else.
+/// </param>
+/// <param name="Summary">
+/// What the row says the mech HAS, indexed by tiers held. Index 0 is empty - a row with nothing
+/// bought has no current effect to state, and shows <paramref name="Promise"/> instead.
+/// </param>
+/// <param name="Promise">The full effect, worded for a row that owns none of it.</param>
+/// <param name="FullBare">
+/// The full effect with its noun stripped, for the "+30% at full" tail on a part-bought row.
+/// </param>
 public readonly record struct WorkshopEntry(
-    string Id, string Name, string Blurb, int Tiers, int Cost, int Version);
+    string Id, string Name, string Blurb, int Tiers, int Cost, int Version,
+    string[] Summary, string Promise, string FullBare)
+{
+    /// <summary>What this row says about a mech holding <paramref name="tiers"/> of it.</summary>
+    /// <remarks>
+    /// CLAMPED rather than trusted. A save can hold more tiers than the catalog now offers - the
+    /// ceiling came down between versions - and the shop still has to draw that row today. The
+    /// refund path deals with the overpayment; this only has to say something true.
+    /// </remarks>
+    public string SummaryAt(int tiers)
+    {
+        if (Summary.Length == 0) return "";
+        int t = tiers < 0 ? 0 : tiers;
+        return Summary[t >= Summary.Length ? Summary.Length - 1 : t];
+    }
+}
 
 public static class WorkshopText
 {
@@ -153,7 +217,9 @@ ${shopRows}
     };
 
     public static WorkshopEntry At(int index) =>
-        index >= 0 && index < All.Length ? All[index] : new WorkshopEntry("", "?", "", 0, 0, 0);
+        index >= 0 && index < All.Length
+            ? All[index]
+            : new WorkshopEntry("", "?", "", 0, 0, 0, System.Array.Empty<string>(), "", "");
 
     /// <summary>Throws if this table and the ported catalog have drifted apart.</summary>
     public static void Verify(int catalogCount)
@@ -219,14 +285,27 @@ function csEnum(id: string): string {
   return id.split('-').map((p) => p[0].toUpperCase() + p.slice(1)).join('');
 }
 
+/*
+ * THE ONE LINE UNDER THE NAME comes along too. A chassis's `identity` and a yard's `blurb` are the
+ * only thing either pick screen says about what you are choosing - "Sixteen chassis, eight carry a
+ * bonus to one weapon" is the whole difference between them - and a port that drew the name alone
+ * would be asking a player to pick blind.
+ *
+ * `playable` is NOT the same fact as the unlock condition and both are carried. A level can be
+ * unfinished (nobody may enter), finished but unearned (locked on this save), or open; the pick
+ * screen flags the first "TBD" and the second "LOCKED", and collapsing them would tell a player to
+ * go and win something that does not exist yet.
+ */
 const heroRows = HERO_CATALOG.map((h) => {
   const r = h as unknown as Record<string, unknown>;
-  return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", ${condOf(r.unlock)}),`;
+  return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", ${condOf(r.unlock)}, ` +
+    `"${cs(String(r.identity))}", true, "${cs(String(r.sprite))}"),`;
 }).join('\n');
 
 const levelRows = LEVEL_CATALOG.map((l) => {
   const r = l as unknown as Record<string, unknown>;
-  return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", ${condOf(r.unlock)}),`;
+  return `        new("${cs(String(r.id))}", "${cs(String(r.name))}", ${condOf(r.unlock)}, ` +
+    `"${cs(String(r.blurb))}", ${r.playable === true}, "${cs(String(r.art))}"),`;
 }).join('\n');
 
 const cardLockRows = UPGRADE_CATALOG
@@ -263,7 +342,24 @@ namespace Scrapyard.Meta;
 /// by accident, and once shipped it is something players have already played around.
 /// </para>
 /// </remarks>
-public readonly record struct LockedThing(string Id, string Name, UnlockCond Cond);
+/// <param name="Id">What a save records, and what a condition names.</param>
+/// <param name="Name">What the pick screen calls it.</param>
+/// <param name="Cond">What has to have happened for it to be pickable.</param>
+/// <param name="Line">
+/// The one line under the name: a chassis's identity, a yard's blurb. It is the only thing either
+/// pick screen says about what is being chosen.
+/// </param>
+/// <param name="Playable">
+/// Whether the CONTENT exists, which is a different question from whether this save has earned it.
+/// A level can be unfinished, or finished and unearned, or open - and a screen that told a player to
+/// go and win something not built yet would be worse than one that said nothing.
+/// </param>
+/// <param name="Art">
+/// The sprite the pick screen shows. NAMED HERE rather than derived from the index, because the
+/// index is a fact about a catalog's current order and the art is a fact about the thing.
+/// </param>
+public readonly record struct LockedThing(
+    string Id, string Name, UnlockCond Cond, string Line, bool Playable, string Art);
 
 /// <summary>A card lock, which also carries the catalog index the deck is keyed by.</summary>
 public readonly record struct LockedCard(int Index, string Id, string Name, UnlockCond Cond);

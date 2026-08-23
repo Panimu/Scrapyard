@@ -188,85 +188,239 @@ public static class Screens
                          vh - 10 * scale - Font.GlyphH * verScale, verScale, Palette.Faint);
     }
 
+    /// <summary>
+    /// The chassis roster: sixteen tiles, two across, most of them silhouettes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A LOCKED CHASSIS IS A SHAPE YOU DO NOT HAVE YET, not an empty box. It is the same art drawn
+    /// as a shadow, with a question mark ON it - so the roster reads as sixteen mechs, fourteen of
+    /// them out of reach, rather than as two mechs and fourteen holes. That is the whole reason the
+    /// screen shows every chassis from the first run instead of growing.
+    /// </para>
+    /// <para>
+    /// AND THE CRITERIA ARE PUBLISHED NOWHERE. A silhouette and a question mark is all a locked tile
+    /// ever says; the achievement that fires on earning it states the condition afterwards, in the
+    /// past tense. There is deliberately no imperative version of that text anywhere in the game.
+    /// </para>
+    /// </remarks>
     public static void DrawHeroSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                       int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 340);
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "CHASSIS", vw / 2, (int)(vh * 0.08), scale * 2, Accent);
+        int y = Head(batch, sprites, "NEW GAME", "PICK A MECH", vw, 8 * scale, scale);
         Font.DrawCentred(batch, sprites.Blank,
-                         $"{save.UnlockedHeroes.Count} OF {HeroUnlocks.Heroes.Length}", vw / 2,
-                         (int)(vh * 0.08) + 22 * scale, scale, Dim);
+                         "SIXTEEN CHASSIS. EIGHT CARRY A BONUS TO ONE WEAPON.", vw / 2, y, small,
+                         Palette.Faint);
+        y += Font.LineHeight * small + 6 * scale;
 
-        const int cols = 8;
-        int cell = System.Math.Min((vw - 40) / cols, 56 * scale);
-        int x0 = (vw - cell * cols) / 2;
-        int y0 = (int)(vh * 0.24);
+        int actionsY = Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "NEXT", "ENTER");
 
-        for (int i = 0; i < HeroUnlocks.Heroes.Length; i++)
+        // --- the grid -------------------------------------------------------------------------
+        var roster = HeroUnlocks.Heroes;
+        int gap = 4 * scale;
+        int cols = 2;
+        int tileW = (w - gap * (cols - 1)) / cols;
+        int radius = 7 * scale;
+        int thick = System.Math.Max(1, scale / 2);
+
+        // EACH GRID ROW IS AS TALL AS THE TALLER OF ITS TWO TILES, and no taller. That is what
+        // `grid-auto-rows: max-content` gives the web build, and the rule matters in both
+        // directions: sizing every row to the LONGEST identity in the roster wastes a third of the
+        // screen on the short ones, and letting a row squeeze to its minimum lets the identity text
+        // overflow the border - invisible at eight chassis, obvious at sixteen.
+        int art = 37 * scale;
+        int nRows = (roster.Length + cols - 1) / cols;
+        var rowH = new int[nRows];
+        for (int i = 0; i < roster.Length; i++)
         {
-            var h = HeroUnlocks.Heroes[i];
+            // A LOCKED TILE IS ONE CHILD, not three: no name and no identity, just the silhouette.
+            // Sizing it as though it carried them is what `.hero--locked { justify-content: center }`
+            // is there to stop - a row whose height comes from an unlocked neighbour's full stat
+            // block leaves the silhouette hanging off the top edge with a tile of nothing under it.
+            int h0 = 5 * scale + art + 6 * scale;
+            if (save.UnlockedHeroes.Contains(roster[i].Id))
+            {
+                int n = Font.Wrap(roster[i].Line.ToUpperInvariant(), tileW - 6 * scale, small).Count;
+                h0 += 4 * scale + Font.GlyphH * small + 3 * scale + Font.LineHeight * small * n;
+            }
+            if (h0 > rowH[i / cols]) rowH[i / cols] = h0;
+        }
+
+        // The window follows the cursor a ROW at a time - a grid that scrolled by tiles would put
+        // the two halves of a row on different pages. It scrolls only far enough to bring the
+        // cursor's row on screen, so moving back up walks the list back rather than jumping.
+        int bottom = actionsY - 8 * scale - Font.GlyphH * small;
+        int cursorRow = cursor / cols;
+        int firstRow = 0;
+        while (firstRow < cursorRow)
+        {
+            int sum = 0;
+            for (int rr = firstRow; rr <= cursorRow; rr++) sum += rowH[rr] + gap;
+            if (sum <= bottom - y) break;
+            firstRow++;
+        }
+
+        int rowTop = y;
+        for (int i = firstRow * cols; i < roster.Length; i++)
+        {
+            int row = i / cols;
+            int ry = rowTop;
+            for (int rr = firstRow; rr < row; rr++) ry += rowH[rr] + gap;
+            // A ROW THAT DOES NOT FIT WHOLE IS NOT DRAWN AT ALL. There is no scissor rectangle
+            // here, so half a tile would be half a tile with its text running off the bottom of the
+            // screen - and a chassis whose identity is cut in two is worse than one you scroll to.
+            if (ry + rowH[row] > bottom) break;
+
+            var h = roster[i];
             bool owned = save.UnlockedHeroes.Contains(h.Id);
-            int cx = x0 + (i % cols) * cell;
-            int cy = y0 + (i / cols) * cell;
+            var r = new Rectangle(x0 + (i % cols) * (tileW + gap), ry, tileW, rowH[row]);
 
-            if (i == cursor) Frame(batch, sprites, cx, cy, cell, cell);
+            if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
+            Card(batch, sprites, r, radius,
+                 i == cursor ? Palette.Button : Palette.Panel, Palette.Edge, thick);
 
-            var tex = sprites.Get($"mech_{RenderTables.HeroSprite[i]}");
+            var tex = owned ? sprites.Get(h.Art) : sprites.Silhouette(h.Art);
             if (tex is not null)
             {
-                int pad = cell / 6;
-                // THE SILHOUETTE: the same art, drawn as a shadow. A locked chassis is a shape you
-                // do not have yet, not an empty box.
-                batch.Draw(tex, new Rectangle(cx + pad, cy + pad, cell - pad * 2, cell - pad * 2),
-                           owned ? Color.White : new Color(0, 0, 0, 190));
+                // THE ART FACES +X and nose-up reads better in a grid than nose-right, which is what
+                // `transform: rotate(-90deg)` is doing on the web tile. A quarter turn about the
+                // sprite's own centre - the rectangle stays square, so the two are interchangeable.
+                var box = new Rectangle(r.X + (tileW - art) / 2 + art / 2, r.Y + 5 * scale + art / 2,
+                                        art, art);
+                batch.Draw(tex, box, null, Color.White,
+                           -MathHelper.PiOver2, new Vector2(tex.Width / 2f, tex.Height / 2f),
+                           SpriteEffects.None, 0f);
             }
-            if (!owned)
+
+            int ty = r.Y + 5 * scale + art + 4 * scale;
+            if (owned)
             {
-                Font.DrawCentred(batch, sprites.Blank, "?", cx + cell / 2, cy + cell / 2 - 4 * scale,
-                                 scale * 2, Locked);
+                Font.DrawCentred(batch, sprites.Blank, h.Name.ToUpperInvariant(), r.Center.X, ty,
+                                 small, Palette.Ink);
+                ty += Font.GlyphH * small + 3 * scale;
+                foreach (string line in Font.Wrap(h.Line.ToUpperInvariant(), tileW - 6 * scale, small))
+                {
+                    Font.DrawCentred(batch, sprites.Blank, line, r.Center.X, ty, small,
+                                     Palette.Faint);
+                    ty += Font.LineHeight * small;
+                }
+            }
+            else
+            {
+                // FULL-STRENGTH INK ON THE SILHOUETTE, and a dark halo under it. A grey mark on a
+                // grey shape is the one place on this screen where contrast has to be deliberate -
+                // without the halo the question mark reads as a hole in the mech.
+                int qx = r.X + tileW / 2;
+                int qy = r.Y + 5 * scale + (art - Font.GlyphH * scale * 2) / 2;
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        if (dx == 0 && dy == 0) continue;
+                        Font.DrawCentred(batch, sprites.Blank, "?", qx + dx * scale, qy + dy * scale,
+                                         scale * 2, Color.Black * 0.9f);
+                    }
+                }
+                Font.DrawCentred(batch, sprites.Blank, "?", qx, qy, scale * 2, Palette.Ink);
             }
         }
 
-        var sel = HeroUnlocks.Heroes[cursor];
-        bool selOwned = save.UnlockedHeroes.Contains(sel.Id);
-        int ty = y0 + cell * 2 + 16 * scale;
-        Font.DrawCentred(batch, sprites.Blank,
-                         (selOwned ? sel.Name : "LOCKED").ToUpperInvariant(), vw / 2, ty, scale * 2,
-                         selOwned ? Ink : Locked);
-
-        Font.DrawCentred(batch, sprites.Blank,
-                         selOwned ? "[ENTER] TAKE IT OUT" : "NOT YET EARNED",
-                         vw / 2, ty + 24 * scale, scale, selOwned ? Good : Dim);
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ESC] BACK", vw / 2, vh - 24 * scale,
-                         scale, Dim);
+        // THE ONE NUMBER THAT PERSISTS, said here as well as on the title because this is the screen
+        // a player reaches on the way into a run - and the workshop is one button back.
+        Font.DrawCentred(batch, sprites.Blank, save.Credits + " CREDITS BANKED", vw / 2,
+                         actionsY - 6 * scale - Font.GlyphH * small, small, Palette.Dim);
     }
 
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The yards: three of them, and two locked behind winning the one before.
+    /// </summary>
+    /// <remarks>
+    /// A LOCKED YARD KEEPS ITS NAME AND LOSES ITS BLURB, which is the opposite of the chassis
+    /// roster and deliberate. There are three of these and they are a sequence: knowing that Mossy
+    /// Mayhem is next is the reason to finish the Scrapyard, and hiding it would hide the ladder.
+    /// What it is LIKE is the reward.
+    /// </remarks>
     public static void DrawLevelSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                        int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 340);
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "YARD", vw / 2, (int)(vh * 0.12), scale * 2, Accent);
+        int y = Head(batch, sprites, "NEW GAME", "CHOOSE A YARD", vw, 12 * scale, scale);
+        Actions(batch, sprites, vw, vh, scale, "BACK", "ESC", "DEPLOY", "ENTER");
 
-        int y = (int)(vh * 0.30);
+        int pad = 7 * scale;
+        int radius = 8 * scale;
+        int thick = System.Math.Max(1, scale / 2);
+        int art = 42 * scale;
+
         for (int i = 0; i < HeroUnlocks.Levels.Length; i++)
         {
             var l = HeroUnlocks.Levels[i];
-            bool owned = save.UnlockedLevels.Contains(l.Id);
-            var colour = !owned ? Locked : i == cursor ? Accent : Ink;
-            string label = owned ? l.Name.ToUpperInvariant() : "? ? ?";
-            Font.DrawCentred(batch, sprites.Blank, (i == cursor ? "> " : "  ") + label, vw / 2, y,
-                             scale * 2, colour);
-            y += 30 * scale;
-        }
+            bool open = save.UnlockedLevels.Contains(l.Id) && l.Playable;
+            int textW = w - pad * 3 - art;
 
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] MOVE   [ENTER] TAKE IT   [ESC] BACK",
-                         vw / 2, vh - 24 * scale, scale, Dim);
+            var blurb = open ? Font.Wrap(l.Line.ToUpperInvariant(), textW, small)
+                             : (IReadOnlyList<string>)System.Array.Empty<string>();
+            int h = System.Math.Max(art, Font.GlyphH * scale + 4 * scale
+                                         + Font.LineHeight * small * blurb.Count) + pad * 2;
+            var r = new Rectangle(x0, y, w, h);
+
+            if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
+            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+
+            // The art sits in a well rather than on the card - a darker box the picture is inside,
+            // which is what `.level__art { background: #0a0d12 }` is for.
+            var well = new Rectangle(r.X + pad, r.Y + (h - art) / 2, art, art);
+            RoundRect(batch, sprites, well, 6 * scale, Palette.Sunken);
+            var tex = open ? sprites.Get(l.Art) : sprites.Silhouette(l.Art);
+            if (tex is not null)
+            {
+                int inner = art * 78 / 100;
+                batch.Draw(tex,
+                           new Rectangle(well.X + (art - inner) / 2, well.Y + (art - inner) / 2,
+                                         inner, inner), Color.White);
+            }
+
+            int tx = well.Right + pad;
+            int ty = r.Y + (h - (Font.GlyphH * scale + 4 * scale
+                                 + Font.LineHeight * small * blurb.Count)) / 2;
+            Font.Draw(batch, sprites.Blank, l.Name.ToUpperInvariant(), tx, ty, scale,
+                      open ? Palette.Ink : Palette.Locked);
+            ty += Font.GlyphH * scale + 4 * scale;
+            foreach (string line in blurb)
+            {
+                Font.Draw(batch, sprites.Blank, line, tx, ty, small, Palette.Faint);
+                ty += Font.LineHeight * small;
+            }
+
+            // TBD AND LOCKED ARE DIFFERENT ANSWERS. One says the yard is not built; the other says
+            // it is built and you have not earned it. Telling a player to go and win something that
+            // does not exist yet is worse than saying nothing.
+            if (!open)
+            {
+                string flag = !l.Playable ? "TBD" : "LOCKED";
+                int fw = Font.Measure(flag, small) + 5 * scale;
+                var box = new Rectangle(r.Right - pad - fw, r.Y + pad,
+                                        fw, Font.GlyphH * small + 4 * scale);
+                Card(batch, sprites, box, 3 * scale, Palette.Sunken, Palette.Edge, thick);
+                Font.DrawCentred(batch, sprites.Blank, flag, box.Center.X, box.Y + 2 * scale, small,
+                                 Palette.Faint);
+            }
+
+            y += h + 6 * scale;
+        }
     }
 
     // -----------------------------------------------------------------------------------------
@@ -275,122 +429,353 @@ public static class Screens
     /// The workshop: sixteen upgrades, a flat price per tier, and one purse.
     /// </summary>
     /// <remarks>
-    /// EVERY TIER IS SHOWN AS PIPS rather than as "3/7". A workshop upgrade is a track you are part
-    /// way along, and a fraction reads as a score - the pips are the same information as a shape you
-    /// can see filling up.
+    /// <para>
+    /// EVERY TIER IS SHOWN AS PIPS rather than as "3 of 7". A ladder's length is the thing worth
+    /// seeing at a glance - how much is left is a shape, not a fraction - and it is the same reading
+    /// whether the ladder is one tier long or seven.
+    /// </para>
+    /// <para>
+    /// AND THE ROW SAYS WHAT IT DOES TO YOUR MECH, in numbers. This is the one screen in the game
+    /// where magnitudes belong: an upgrade card is read in four seconds with a horde closing in, and
+    /// this is read between runs with nothing chasing you, deciding where fifty credits go. The
+    /// figure IS the question here, and a card would be worse for carrying it.
+    /// </para>
+    /// <para>
+    /// THE WORKSHOP IS BLUE, not gold. Gold means "a decision, now" everywhere else in the game -
+    /// the level-up card, the primary button, the thing under the cursor. Money already earned being
+    /// spent between runs is a different kind of decision and gets a different colour.
+    /// </para>
     /// </remarks>
     public static void DrawWorkshop(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                     int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
 
-        Font.DrawCentred(batch, sprites.Blank, "WORKSHOP", vw / 2, 10 * scale, scale * 2, Accent);
-        Font.DrawCentred(batch, sprites.Blank, $"{save.Credits} CREDITS", vw / 2, 32 * scale, scale,
-                         Ink);
+        int y = Head(batch, sprites, "BETWEEN RUNS", "WORKSHOP", vw, 10 * scale, scale);
 
-        int rowH = 16 * scale;
-        int top = 50 * scale;
-        int listW = System.Math.Min(vw - 40, 260 * scale);
-        int x0 = (vw - listW) / 2;
+        // THE TOTAL IS THE BIGGEST THING ON THE SCREEN, because it is what every one of the sixteen
+        // decisions below is measured against - and it stays put while the list scrolls, so a player
+        // at the bottom of the list does not have to come back up to find out what they can afford.
+        string credits = save.Credits.ToString();
+        Font.DrawCentred(batch, sprites.Blank, credits, vw / 2, y, scale * 3, Palette.Shop);
+        y += Font.GlyphH * scale * 3 + 4 * scale;
+        Font.DrawCentred(batch, sprites.Blank, Spaced("CREDITS BANKED"), vw / 2, y, small,
+                         Palette.Faint);
+        y += Font.LineHeight * small + 6 * scale;
 
-        for (int i = 0; i < WorkshopText.All.Length; i++)
+        // The buttons first: the list is what gives up room, not the way out of the screen.
+        long spent = save.TotalSpent();
+        int btnH = 27 * scale;
+        int refundH = 23 * scale;
+        int backY = vh - 12 * scale - btnH;
+        int refundY = backY - 5 * scale - refundH;
+
+        ActionButton(batch, sprites, new Rectangle(x0, refundY, w, refundH),
+                     spent > 0 ? "REFUND ALL (" + spent + " CR)" : "NOTHING TO REFUND", "R", scale,
+                     false);
+        ActionButton(batch, sprites, new Rectangle(x0, backY, w, btnH), "BACK", "ESC", scale, true);
+
+        // --- the list -------------------------------------------------------------------------
+        int pad = 6 * scale;
+        int radius = 7 * scale;
+        int thick = System.Math.Max(1, scale / 2);
+        int stripe = 2 * scale;
+        int buyW = 42 * scale;
+        int gap = 5 * scale;
+        int bottom = refundY - 6 * scale;
+        int avail = bottom - y;
+
+        var heights = new int[WorkshopText.All.Length];
+        for (int i = 0; i < heights.Length; i++)
         {
+            heights[i] = RowHeight(WorkshopText.All[i], save.TierOf(i), w, buyW, pad, stripe, scale,
+                                   small);
+        }
+
+        // WHERE THE WINDOW STARTS IS RECOMPUTED, not remembered. The rows are different heights - a
+        // four-line blurb beside a one-liner - so a scroll offset in pixels would have to be kept in
+        // step with the cursor anyway, and the cursor is the only thing that actually HAS to be on
+        // screen. The smallest start that shows it is the answer, and it costs sixteen additions.
+        int first = 0;
+        while (first < cursor)
+        {
+            int sum = 0;
+            for (int i = first; i <= cursor; i++) sum += heights[i] + gap;
+            if (sum <= avail) break;
+            first++;
+        }
+
+        for (int i = first; i < WorkshopText.All.Length; i++)
+        {
+            if (y + heights[i] > bottom) break;
             var def = WorkshopText.All[i];
             int owned = save.TierOf(i);
-            bool maxed = owned >= def.Tiers;
-            bool afford = save.CanBuy(i);
-            int y = top + i * rowH;
+            bool full = owned >= def.Tiers;
+            var r = new Rectangle(x0, y, w, heights[i]);
 
-            if (i == cursor)
+            if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
+            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+
+            // MAXED READS AS DONE RATHER THAN AS DISABLED: the row keeps its text and loses its
+            // colour, which is what `.upgrades__row--full` does by swapping the stripe to faint ink.
+            batch.Draw(sprites.Blank,
+                       new Rectangle(r.X, r.Y + radius, stripe, r.Height - radius * 2),
+                       full ? Palette.Faint : Palette.Shop);
+
+            int tx = r.X + stripe + pad;
+            int textW = r.Width - stripe - pad * 3 - buyW;
+            int ty = r.Y + pad;
+
+            Font.Draw(batch, sprites.Blank, def.Name.ToUpperInvariant(), tx, ty, scale, Palette.Ink);
+            ty += Font.GlyphH * scale + 3 * scale;
+
+            foreach (string line in Font.Wrap(def.Blurb.ToUpperInvariant(), textW, small))
             {
-                batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 2, listW + 8, rowH), Panel);
+                Font.Draw(batch, sprites.Blank, line, tx, ty, small, Palette.Dim);
+                ty += Font.LineHeight * small;
             }
+            ty += 2 * scale;
 
-            var colour = maxed ? Good : afford ? Ink : Dim;
-            Font.Draw(batch, sprites.Blank, def.Name.ToUpperInvariant(), x0, y, scale, colour);
+            // A row that owns none of it has no current effect to state, so the PROMISE is the whole
+            // line - and it is faint, because it is the one row state where this text is not
+            // describing your mech.
+            foreach (string line in Font.Wrap(SummaryOf(def, owned), textW, small))
+            {
+                Font.Draw(batch, sprites.Blank, line, tx, ty, small,
+                          owned <= 0 ? Palette.Faint : Palette.Shop);
+                ty += Font.LineHeight * small;
+            }
+            ty += 3 * scale;
 
-            // The tiers, as pips.
-            int px = x0 + listW - def.Tiers * (5 * scale) - 50 * scale;
             for (int t = 0; t < def.Tiers; t++)
             {
-                batch.Draw(sprites.Blank,
-                           new Rectangle(px + t * 5 * scale, y + 2 * scale, 3 * scale, 6 * scale),
-                           t < owned ? Accent : Locked);
+                RoundRect(batch, sprites,
+                          new Rectangle(tx + t * 9 * scale, ty, 7 * scale, 3 * scale), scale,
+                          t < owned ? Palette.Shop : Palette.Edge);
             }
 
-            string price = maxed ? "MAX" : $"{def.Cost}";
-            Font.Draw(batch, sprites.Blank, price, x0 + listW - 40 * scale, y, scale,
-                      maxed ? Good : afford ? Accent : Locked);
-        }
+            BuyButton(batch, sprites,
+                      new Rectangle(r.Right - pad - buyW, r.Y + (r.Height - 22 * scale) / 2, buyW,
+                                    22 * scale),
+                      def, full, save.CanBuy(i), i == cursor, scale, small);
 
-        // The selected upgrade's blurb, which is the only place it is explained.
-        var sel = WorkshopText.At(cursor);
-        int by = top + WorkshopText.All.Length * rowH + 10 * scale;
-        foreach (string line in Font.Wrap(sel.Blurb, listW, scale))
+            y += heights[i] + gap;
+        }
+    }
+
+    /// <summary>What a workshop row says about the mech, given what is owned of it.</summary>
+    /// <remarks>
+    /// THE TAIL DROPS THE NOUN THE HEAD JUST SAID - a part-bought row reads "+12.9% DAMAGE / +30% AT
+    /// FULL" rather than saying "damage" twice in nine words. It is one line on a phone either way,
+    /// and the repetition read as a stutter.
+    /// </remarks>
+    private static string SummaryOf(WorkshopEntry def, int owned)
+    {
+        if (owned <= 0) return def.Promise.ToUpperInvariant();
+        string now = def.SummaryAt(owned).ToUpperInvariant();
+        if (owned >= def.Tiers) return now;
+        return now + "  " + def.FullBare.ToUpperInvariant() + " AT FULL";
+    }
+
+    /// <summary>How tall one workshop row has to be to hold what is in it.</summary>
+    /// <remarks>
+    /// MEASURED TWICE - here, and again while drawing - rather than measured once and cached. The
+    /// scroll window has to know every row's height BEFORE it can decide which rows to draw, and a
+    /// cache would be a field on a static drawing class outliving the save it was computed from.
+    /// Wrapping sixteen short strings is not the expensive thing on this screen.
+    /// </remarks>
+    private static int RowHeight(WorkshopEntry def, int owned, int w, int buyW, int pad, int stripe,
+                                 int scale, int small)
+    {
+        int textW = w - stripe - pad * 3 - buyW;
+        int h = pad + Font.GlyphH * scale + 3 * scale;
+        h += Font.Wrap(def.Blurb.ToUpperInvariant(), textW, small).Count * Font.LineHeight * small;
+        h += 2 * scale;
+        h += Font.Wrap(SummaryOf(def, owned), textW, small).Count * Font.LineHeight * small;
+        h += 3 * scale + 3 * scale + pad;
+
+        return System.Math.Max(h, 22 * scale + pad * 2);
+    }
+
+    /// <summary>The price, as a button.</summary>
+    /// <remarks>
+    /// A PRICE YOU CANNOT MEET STAYS LEGIBLE rather than fading out. The number is the information -
+    /// a greyed-out button whose text cannot be read tells you nothing about what to save for - so
+    /// `.upgrades__buy:disabled` sets `opacity: 1` and dims the ink instead.
+    ///
+    /// THE ACCENT FILL IS THE PORT'S, and only under the cursor. The web build's buy button is
+    /// pressed with a thumb already on it; a pad needs to know which of sixteen rows ENTER is about
+    /// to spend fifty credits on, and gold is what that means everywhere else here.
+    /// </remarks>
+    private static void BuyButton(SpriteBatch batch, Sprites sprites, Rectangle r, WorkshopEntry def,
+                                  bool full, bool afford, bool cursor, int scale, int small)
+    {
+        bool lit = afford && cursor;
+        Card(batch, sprites, r, 6 * scale, lit ? Palette.Accent : Palette.Button,
+             lit ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
+
+        if (full)
         {
-            Font.Draw(batch, sprites.Blank, line, x0, by, scale, Dim);
-            by += Font.LineHeight * scale;
+            Font.DrawCentred(batch, sprites.Blank, "MAXED", r.Center.X,
+                             r.Y + (r.Height - Font.GlyphH * small) / 2, small, Palette.Faint);
+            return;
         }
 
-        Font.DrawCentred(batch, sprites.Blank,
-                         "[ARROWS] MOVE   [ENTER] BUY   [R] SELL ALL BACK   [ESC] DONE",
-                         vw / 2, vh - 16 * scale, scale, Dim);
+        var ink = lit ? Palette.OnAccent : afford ? Palette.Ink : Palette.Faint;
+        int block = Font.GlyphH * scale + Font.LineHeight * small;
+        int top = r.Y + (r.Height - block) / 2;
+        Font.DrawCentred(batch, sprites.Blank, def.Cost.ToString(), r.Center.X, top, scale, ink);
+        Font.DrawCentred(batch, sprites.Blank, lit ? "ENTER" : "CR", r.Center.X,
+                         top + Font.GlyphH * scale + 2 * scale, small,
+                         lit ? Palette.OnAccent : Palette.Faint);
     }
 
     // -----------------------------------------------------------------------------------------
 
-    // -----------------------------------------------------------------------------------------
+    /// <summary>
+    /// The width every menu lays its content out in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A PHONE'S COLUMN, on whatever screen this is. The web build's overlays are full-width with
+    /// twelve pixels of padding and no cap, so on a desktop browser a settings row is seventeen
+    /// hundred pixels of hairline with a switch marooned at the far end. That is not what the screen
+    /// was DESIGNED against: every number in the stylesheet - a 340-wide button, a 74-pixel chassis
+    /// portrait, a 52-pixel switch - was chosen for a ~366px column on a handset, and the layout
+    /// only reads as intended at that proportion.
+    /// </para>
+    /// <para>
+    /// So the port caps it and centres it. Copying the desktop behaviour faithfully would reproduce
+    /// a shortcoming of the original rather than the original.
+    /// </para>
+    /// </remarks>
+    private static int Column(int vw, int scale) =>
+        System.Math.Min(vw - 24 * scale, 190 * scale);
 
+    /// <summary>Two buttons across the bottom of a menu, the right one primary.</summary>
+    /// <returns>The y they start at, so a list above can stop there.</returns>
+    /// <remarks>
+    /// THE KEY IS PRINTED ON THESE and is not printed on the title's. The title's buttons are rows
+    /// the cursor walks through and pressing a key is one way of many; these sit outside the list,
+    /// cannot be walked to, and a button nothing says how to reach is a button that does not exist.
+    /// It is set faint and right-aligned so the label still reads as the label.
+    /// </remarks>
+    private static int Actions(SpriteBatch batch, Sprites sprites, int vw, int vh, int scale,
+                               string leftLabel, string leftKey, string rightLabel, string rightKey)
+    {
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
+        int h = 27 * scale;
+        int gap = 5 * scale;
+        int y = vh - 12 * scale - h;
 
+        // The left button is sized to its own words plus the padding `.btn:first-child` asks for;
+        // the right one takes what is left, which is what `flex: 1 1 auto` beside `flex: 0 0 auto`
+        // comes to.
+        int leftW = Font.Measure(leftLabel, scale) + Font.Measure(leftKey, scale) + 24 * scale;
+        leftW = System.Math.Min(leftW, w - 40 * scale);
+
+        ActionButton(batch, sprites, new Rectangle(x0, y, leftW, h), leftLabel, leftKey, scale, false);
+        ActionButton(batch, sprites, new Rectangle(x0 + leftW + gap, y, w - leftW - gap, h),
+                     rightLabel, rightKey, scale, true);
+        return y;
+    }
+
+    private static void ActionButton(SpriteBatch batch, Sprites sprites, Rectangle r, string label,
+                                     string key, int scale, bool primary)
+    {
+        int radius = 7 * scale;
+        Card(batch, sprites, r, radius, primary ? Palette.Accent : Palette.Button,
+             primary ? Palette.Accent : Palette.Edge, System.Math.Max(1, scale / 2));
+
+        int small = System.Math.Max(1, scale - 1);
+        int keyW = Font.Measure(key, small);
+        Font.DrawCentred(batch, sprites.Blank, label, r.Center.X - keyW / 2,
+                         r.Y + (r.Height - Font.GlyphH * scale) / 2, scale,
+                         primary ? Palette.OnAccent : Palette.Ink);
+        Font.Draw(batch, sprites.Blank, key, r.Right - keyW - 7 * scale,
+                  r.Y + (r.Height - Font.GlyphH * small) / 2, small,
+                  primary ? Palette.OnAccent * 0.65f : Palette.Faint);
+    }
+
+    /// <summary>
+    /// Settings: three rows, each a card with its own control.
+    /// </summary>
+    /// <remarks>
+    /// THE NOTE IS THE POINT OF THE ROW. Two of these three settings are about a device rather than
+    /// about the game - half resolution "takes effect next launch", and Auto follows a system
+    /// preference that on Windows is really about window animations - and a switch with a name and
+    /// no explanation invites a player to flip it and wonder why nothing happened. The web build
+    /// gives every row a `.setting__note`, and it is not decoration.
+    /// </remarks>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
                                     int vw, int vh)
     {
         Backdrop(batch, sprites, vw, vh);
-        int scale = System.Math.Max(1, vh / 400);
+        int scale = System.Math.Max(1, vh / 300);
+        int small = System.Math.Max(1, scale - 1);
 
-        Font.DrawCentred(batch, sprites.Blank, "SETTINGS", vw / 2, 14 * scale, scale * 2, Accent);
+        int y = Head(batch, sprites, "OPTIONS", "SETTINGS", vw, 12 * scale, scale);
+        Actions(batch, sprites, vw, vh, scale, "CHANGELOG", "C", "BACK", "ESC");
 
-        int listW = System.Math.Min(vw - 40, 320 * scale);
-        int x0 = (vw - listW) / 2;
-        int y = 48 * scale;
-        int rowH = 34 * scale;
+        int w = Column(vw, scale);
+        int x0 = (vw - w) / 2;
+        int pad = 7 * scale;
+        int radius = 8 * scale;
+        int thick = System.Math.Max(1, scale / 2);
 
         for (int i = 0; i < MenuRows.Settings.Length; i++)
         {
-            if (i == cursor)
+            // The control comes first because it sets the row's height and the width the words get
+            // to wrap in - the card is sized around its contents, not the other way about.
+            bool segmented = i == 1;
+            int ctrlW = segmented ? 42 * scale : 26 * scale;
+            int ctrlH = segmented ? 22 * scale : 16 * scale;
+
+            int textW = w - pad * 2 - ctrlW - pad;
+            var note = Font.Wrap(SettingNote(i), textW, small);
+            int textH = Font.GlyphH * scale + 4 * scale + Font.LineHeight * small * note.Count;
+            int rowH = System.Math.Max(textH, ctrlH) + pad * 2;
+
+            var r = new Rectangle(x0, y, w, rowH);
+            if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
+            Card(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
+
+            Font.Draw(batch, sprites.Blank, MenuRows.Settings[i], r.X + pad, r.Y + pad, scale,
+                      Palette.Ink);
+            int ny = r.Y + pad + Font.GlyphH * scale + 4 * scale;
+            foreach (string line in note)
             {
-                batch.Draw(sprites.Blank, new Rectangle(x0 - 4, y - 3, listW + 8, rowH - 4), Panel);
+                Font.Draw(batch, sprites.Blank, line, r.X + pad, ny, small, Palette.Faint);
+                ny += Font.LineHeight * small;
             }
 
-            Font.Draw(batch, sprites.Blank, MenuRows.Settings[i], x0, y, scale,
-                      i == cursor ? Ink : Dim);
-
-            string value = i switch
+            var ctrl = new Rectangle(r.Right - pad - ctrlW, r.Y + (rowH - ctrlH) / 2, ctrlW, ctrlH);
+            if (segmented)
             {
-                0 => save.DprCap == 1 ? "ON" : "OFF",
-                1 => save.Animations.ToUpperInvariant(),
-                _ => save.Debug ? "ON" : "OFF",
-            };
-            // Right-aligned off the measured width rather than a glyph count: the value strings are
-            // different lengths and a fixed advance would leave them ragged against the edge.
-            Font.Draw(batch, sprites.Blank, value, x0 + listW - Font.Measure(value, scale), y,
-                      scale, i == cursor ? Accent : Dim);
-
-            string note = i switch
+                int chosen = save.Animations switch { "on" => 1, "off" => 2, _ => 0 };
+                Segmented(batch, sprites, ctrl, new[] { "A", "ON", "OFF" }, chosen, small);
+            }
+            else
             {
-                0 => "HALF RESOLUTION. TAKES EFFECT NEXT LAUNCH.",
-                // The note names the platform quirk that forced three choices rather than a switch.
-                1 => "CHEST REELS AND SCREEN EFFECTS. AUTO FOLLOWS THE SYSTEM.",
-                _ => "FRAME TIME AND COUNTS, OVER THE HUD.",
-            };
-            Font.Draw(batch, sprites.Blank, note, x0, y + Font.LineHeight * scale, scale, Locked);
-            y += rowH;
+                Pill(batch, sprites, ctrl, i == 0 ? save.DprCap == 1 : save.Debug);
+            }
+
+            y += rowH + 5 * scale;
         }
-
-        Font.DrawCentred(batch, sprites.Blank, "[ARROWS] CHANGE   [C] CHANGELOG   [ESC] BACK",
-                         vw / 2, vh - 16 * scale, scale, Dim);
     }
+
+    private static string SettingNote(int i) => i switch
+    {
+        0 => "RENDERS AT HALF RESOLUTION. TAKES EFFECT NEXT TIME THE GAME LOADS.",
+        1 => "SPINNING CHEST REELS, BAR FILLS AND SCREEN EFFECTS. AUTO FOLLOWS YOUR DEVICE'S " +
+             "REDUCE-MOTION SETTING, WHICH SOME SYSTEMS TURN ON FOR REASONS UNRELATED TO GAMES.",
+        _ => "FRAME TIME, ENTITY COUNTS AND DROPPED EVENTS, OVER THE HUD.",
+    };
 
     /// <summary>Rows the index shows at once, and lines a page shows at once.</summary>
     public const int PediaRows = 11;
@@ -772,6 +1157,132 @@ public static class Screens
             batch.Draw(sprites.Blank, new Rectangle(r.X + inset, r.Y + i, w, 1), colour);
             batch.Draw(sprites.Blank,
                        new Rectangle(r.X + inset, r.Y + r.Height - 1 - i, w, 1), colour);
+        }
+    }
+
+    /// <summary>A panel card: a fill inside a hairline outline, both rounded.</summary>
+    /// <remarks>
+    /// <para>
+    /// THE BORDER IS DRAWN AS THE LAYER UNDER THE FILL, which is what `box-sizing: border-box`
+    /// amounts to and is the only way to get a rounded outline out of a rounded rectangle without a
+    /// stencil. The fill is inset by the border width and its radius shrinks with it, or the corners
+    /// bulge through.
+    /// </para>
+    /// <para>
+    /// EVERY LIST ROW ON EVERY MENU IS ONE OF THESE. The port drew bare text on the ground - which
+    /// is legible, and is not what the game looks like. A settings row, a workshop row, a level and
+    /// a chassis are all the same object in the original: `background: var(--panel)`, a
+    /// `var(--line)` hairline, sixteen pixels of radius.
+    /// </para>
+    /// </remarks>
+    private static void Card(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
+                             Color fill, Color line, int thick)
+    {
+        RoundRect(batch, sprites, r, radius, line);
+        RoundRect(batch, sprites,
+                  new Rectangle(r.X + thick, r.Y + thick, r.Width - thick * 2, r.Height - thick * 2),
+                  radius - thick, fill);
+    }
+
+    /// <summary>Mark the row the cursor is on.</summary>
+    /// <remarks>
+    /// A RING, NOT A REPAINT. The web build has no cursor - it is a touch screen, and the thing you
+    /// are about to press is the thing under your thumb. A pad needs somewhere to be, and the
+    /// cheapest way to say so without inventing a second appearance for every row is to put the
+    /// accent round the outside of the one it is on.
+    /// </remarks>
+    private static void Cursor(SpriteBatch batch, Sprites sprites, Rectangle r, int radius,
+                               int thick)
+    {
+        RoundRect(batch, sprites,
+                  new Rectangle(r.X - thick, r.Y - thick, r.Width + thick * 2, r.Height + thick * 2),
+                  radius + thick, Palette.Accent);
+    }
+
+    /// <summary>A screen's heading: a faint eyebrow over a heavy title.</summary>
+    /// <returns>The y the content below it starts at.</returns>
+    /// <remarks>
+    /// THE EYEBROW SAYS WHAT KIND OF PLACE THIS IS and the title says which one. Two words where
+    /// one would do, and it is worth it on a screen a player arrives at from a menu: "OPTIONS /
+    /// SETTINGS" tells you instantly that you have not left the shell for the game.
+    /// </remarks>
+    private static int Head(SpriteBatch batch, Sprites sprites, string eyebrow, string title,
+                            int vw, int y, int scale)
+    {
+        int small = System.Math.Max(1, scale - 1);
+        Font.DrawCentred(batch, sprites.Blank, Spaced(eyebrow), vw / 2, y, small, Palette.Faint);
+        y += Font.LineHeight * small + 3 * scale;
+        Font.DrawCentred(batch, sprites.Blank, title, vw / 2, y, scale * 2, Palette.Ink);
+        return y + Font.GlyphH * scale * 2 + 8 * scale;
+    }
+
+    /// <summary>Put a space between every letter.</summary>
+    /// <remarks>
+    /// THE BITMAP FONT HAS ONE TRACKING VALUE, so the wide `letter-spacing: 0.18em` an eyebrow is
+    /// set in cannot be asked for - it has to be spelled. At this size a space IS 0.18em to within
+    /// a pixel, which is why it looks right rather than merely different.
+    /// </remarks>
+    private static string Spaced(string text)
+    {
+        var sb = new System.Text.StringBuilder(text.Length * 2);
+        foreach (char c in text)
+        {
+            if (sb.Length > 0) sb.Append(' ');
+            sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>The two-state pill an on/off setting is worked with.</summary>
+    /// <remarks>
+    /// 52x32 WITH A 26-WIDE KNOB, from `.switch`. The knob is faint ink when off and the accent's
+    /// own near-black when on, so the control says which it is by COLOUR as well as by position -
+    /// a switch read at a glance is read by where the bright part is.
+    /// </remarks>
+    private static void Pill(SpriteBatch batch, Sprites sprites, Rectangle r, bool on)
+    {
+        Card(batch, sprites, r, r.Height / 2, on ? Palette.Accent : Palette.Sunken,
+             on ? Palette.Accent : Palette.Edge, System.Math.Max(1, r.Height / 16));
+
+        int knob = r.Height - 4;
+        int kx = on ? r.Right - knob - 2 : r.X + 2;
+        RoundRect(batch, sprites, new Rectangle(kx, r.Y + 2, knob, knob), knob / 2,
+                  on ? Palette.OnAccent : Palette.Faint);
+    }
+
+    /// <summary>A row of mutually exclusive options, one of them lit.</summary>
+    /// <remarks>
+    /// THREE CHOICES RATHER THAN A SWITCH for Animations, and the reason is in `settingsScreen.ts`:
+    /// on Windows the device's reduce-motion answer comes from a setting about window minimise
+    /// animations and means nothing about this game, so "Auto" has to be a third option a player can
+    /// decline rather than the only behaviour.
+    /// </remarks>
+    private static void Segmented(SpriteBatch batch, Sprites sprites, Rectangle r,
+                                  string[] options, int chosen, int scale)
+    {
+        Card(batch, sprites, r, 6 * scale, Palette.Sunken, Palette.Edge, System.Math.Max(1, scale / 2));
+
+        int seg = r.Width / options.Length;
+        for (int i = 0; i < options.Length; i++)
+        {
+            var cell = new Rectangle(r.X + i * seg, r.Y, seg, r.Height);
+            if (i == chosen)
+            {
+                RoundRect(batch, sprites, cell, i == 0 || i == options.Length - 1 ? 6 * scale : 0,
+                          Palette.Accent);
+            }
+            else if (i > 0)
+            {
+                // The hairline between two unlit segments, which `box-shadow: inset 1px 0 0` puts
+                // there. It is what stops three words reading as one.
+                batch.Draw(sprites.Blank,
+                           new Rectangle(cell.X, cell.Y + 2, System.Math.Max(1, scale / 2),
+                                         cell.Height - 4), Palette.Edge);
+            }
+
+            Font.DrawCentred(batch, sprites.Blank, options[i], cell.Center.X,
+                             cell.Y + (cell.Height - Font.GlyphH * scale) / 2, scale,
+                             i == chosen ? Palette.OnAccent : Palette.Dim);
         }
     }
 

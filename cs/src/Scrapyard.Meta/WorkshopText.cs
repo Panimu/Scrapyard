@@ -20,33 +20,99 @@ namespace Scrapyard.Meta;
 /// <c>MetaCatalog.All</c> index i, which is also what <c>World.Meta.Tiers</c> is keyed by.
 /// </para>
 /// </remarks>
+/// <param name="Id">The upgrade's id on disk, which is what a save records.</param>
+/// <param name="Name">What the row is called.</param>
+/// <param name="Blurb">One or two sentences on what buying it does to a run.</param>
+/// <param name="Tiers">How many times it can be bought.</param>
+/// <param name="Cost">The price of one tier. Flat: the seventh costs what the first did.</param>
+/// <param name="Version">
+/// Bumped when the upgrade's effect changes, so a save holding the old one is refunded rather than
+/// silently handed something else.
+/// </param>
+/// <param name="Summary">
+/// What the row says the mech HAS, indexed by tiers held. Index 0 is empty - a row with nothing
+/// bought has no current effect to state, and shows <paramref name="Promise"/> instead.
+/// </param>
+/// <param name="Promise">The full effect, worded for a row that owns none of it.</param>
+/// <param name="FullBare">
+/// The full effect with its noun stripped, for the "+30% at full" tail on a part-bought row.
+/// </param>
 public readonly record struct WorkshopEntry(
-    string Id, string Name, string Blurb, int Tiers, int Cost, int Version);
+    string Id, string Name, string Blurb, int Tiers, int Cost, int Version,
+    string[] Summary, string Promise, string FullBare)
+{
+    /// <summary>What this row says about a mech holding <paramref name="tiers"/> of it.</summary>
+    /// <remarks>
+    /// CLAMPED rather than trusted. A save can hold more tiers than the catalog now offers - the
+    /// ceiling came down between versions - and the shop still has to draw that row today. The
+    /// refund path deals with the overpayment; this only has to say something true.
+    /// </remarks>
+    public string SummaryAt(int tiers)
+    {
+        if (Summary.Length == 0) return "";
+        int t = tiers < 0 ? 0 : tiers;
+        return Summary[t >= Summary.Length ? Summary.Length - 1 : t];
+    }
+}
 
 public static class WorkshopText
 {
     public static readonly WorkshopEntry[] All =
     {
-        new("m-passives", "Auxiliary Bay", "The chassis carries another passive mount. Every run, whichever mech you take out.", 2, 400, 1),
-        new("m-mounts", "Reinforced Mounts", "The chassis carries another gun mount. Every run, whichever mech you take out.", 2, 200, 2),
-        new("m-damage", "Ordnance Stores", "Every gun the yard hands you hits harder, from the first second of the run. A hotter-running laser burns through its heat faster.", 7, 50, 1),
-        new("m-blast", "Bursting Charges", "Everything that explodes, explodes wider - the artillery barrage and a spent drone alike.", 3, 70, 1),
-        new("m-range", "Optical Array", "Everything reaches further, so the horde is dying before it arrives.", 5, 30, 1),
-        new("m-speed", "Servo Tuning", "The chassis walks quicker, whichever chassis it is.", 3, 45, 1),
-        new("m-rate", "Autoloaders", "Shorter gaps between shots on everything that has a gap.", 3, 40, 1),
-        new("m-magnet", "Scrap Magnetics", "Cores come to you from further off, so the ground you cannot safely cross still pays.", 3, 35, 1),
-        new("m-hp", "Hull Reserves", "The chassis carries more hull to start with. Nothing about it stops the horde reaching you - it just takes more to end the run.", 4, 40, 1),
-        new("m-armour", "Hull Plating", "Takes a little off every hit you take, for the whole run.", 2, 50, 1),
-        new("m-insurance", "Mech Insurance", "The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.", 1, 100, 1),
-        new("m-drone", "Fabricator Feed", "The drone bay turns a new drone around sooner.", 2, 80, 1),
-        new("m-laser", "Coolant Baffles", "The beams shed heat faster, so they cut out for less of the fight.", 1, 100, 1),
-        new("m-heatcap", "Heat Sinks", "Every beam runs a bigger heat buffer before it has to cut out.", 1, 80, 1),
-        new("m-rerolls", "Rerolls", "Walk into every run holding more second opinions. A reroll deals a fresh three cards and still owes you the pick.", 3, 30, 1),
-        new("m-repair", "Repair Bay", "A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.", 3, 30, 1),
+        new("m-passives", "Auxiliary Bay", "The chassis carries another passive mount. Every run, whichever mech you take out.", 2, 400, 1,
+            new[] { "", "1 extra passive slot", "2 extra passive slots" },
+            "2 extra passive slots at full", "2"),
+        new("m-mounts", "Reinforced Mounts", "The chassis carries another gun mount. Every run, whichever mech you take out.", 2, 200, 2,
+            new[] { "", "1 extra mount", "2 extra mounts" },
+            "2 extra mounts at full", "2"),
+        new("m-damage", "Ordnance Stores", "Every gun the yard hands you hits harder, from the first second of the run. A hotter-running laser burns through its heat faster.", 7, 50, 1,
+            new[] { "", "+4.3% damage", "+8.6% damage", "+12.9% damage", "+17.1% damage", "+21.4% damage", "+25.7% damage", "+30% damage" },
+            "+30% damage at full", "+30%"),
+        new("m-blast", "Bursting Charges", "Everything that explodes, explodes wider - the artillery barrage and a spent drone alike.", 3, 70, 1,
+            new[] { "", "+10% blast radius", "+20% blast radius", "+30% blast radius" },
+            "+30% blast radius at full", "+30%"),
+        new("m-range", "Optical Array", "Everything reaches further, so the horde is dying before it arrives.", 5, 30, 1,
+            new[] { "", "+3% range", "+6% range", "+9% range", "+12% range", "+15% range" },
+            "+15% range at full", "+15%"),
+        new("m-speed", "Servo Tuning", "The chassis walks quicker, whichever chassis it is.", 3, 45, 1,
+            new[] { "", "+5% movement speed", "+10% movement speed", "+15% movement speed" },
+            "+15% movement speed at full", "+15%"),
+        new("m-rate", "Autoloaders", "Shorter gaps between shots on everything that has a gap.", 3, 40, 1,
+            new[] { "", "+3.3% rate of fire", "+6.7% rate of fire", "+10% rate of fire" },
+            "+10% rate of fire at full", "+10%"),
+        new("m-magnet", "Scrap Magnetics", "Cores come to you from further off, so the ground you cannot safely cross still pays.", 3, 35, 1,
+            new[] { "", "+15% pickup range", "+30% pickup range", "+45% pickup range" },
+            "+45% pickup range at full", "+45%"),
+        new("m-hp", "Hull Reserves", "The chassis carries more hull to start with. Nothing about it stops the horde reaching you - it just takes more to end the run.", 4, 40, 1,
+            new[] { "", "5 max hull", "10 max hull", "15 max hull", "20 max hull" },
+            "20 max hull at full", "20"),
+        new("m-armour", "Hull Plating", "Takes a little off every hit you take, for the whole run.", 2, 50, 1,
+            new[] { "", "1 armour", "2 armour" },
+            "2 armour at full", "2"),
+        new("m-insurance", "Mech Insurance", "The first hit that would end a run does not. The hull comes back whole and nothing can touch you for a few seconds while you get clear.", 1, 100, 1,
+            new[] { "", "Survives your first death" },
+            "Survives your first death", "Survives your first death"),
+        new("m-drone", "Fabricator Feed", "The drone bay turns a new drone around sooner.", 2, 80, 1,
+            new[] { "", "Drones build 1s faster", "Drones build 2s faster" },
+            "Drones build 2s faster at full", "2s"),
+        new("m-laser", "Coolant Baffles", "The beams shed heat faster, so they cut out for less of the fight.", 1, 100, 1,
+            new[] { "", "+10% heat dispersion" },
+            "+10% heat dispersion", "+10%"),
+        new("m-heatcap", "Heat Sinks", "Every beam runs a bigger heat buffer before it has to cut out.", 1, 80, 1,
+            new[] { "", "+8% heat capacity" },
+            "+8% heat capacity", "+8%"),
+        new("m-rerolls", "Rerolls", "Walk into every run holding more second opinions. A reroll deals a fresh three cards and still owes you the pick.", 3, 30, 1,
+            new[] { "", "2 rerolls", "4 rerolls", "6 rerolls" },
+            "6 rerolls at full", "6"),
+        new("m-repair", "Repair Bay", "A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.", 3, 30, 1,
+            new[] { "", "1 hp per tick", "2 hp per tick", "3 hp per tick" },
+            "3 hp per tick at full", "3"),
     };
 
     public static WorkshopEntry At(int index) =>
-        index >= 0 && index < All.Length ? All[index] : new WorkshopEntry("", "?", "", 0, 0, 0);
+        index >= 0 && index < All.Length
+            ? All[index]
+            : new WorkshopEntry("", "?", "", 0, 0, 0, System.Array.Empty<string>(), "", "");
 
     /// <summary>Throws if this table and the ported catalog have drifted apart.</summary>
     public static void Verify(int catalogCount)

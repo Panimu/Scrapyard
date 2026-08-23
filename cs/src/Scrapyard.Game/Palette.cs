@@ -55,8 +55,38 @@ public static class Palette
     /// <summary>Text ON the accent. Near-black and warm, so gold does not glare through it.</summary>
     public static readonly Color OnAccent = new(0x20, 0x1a, 0x00);
 
-    /// <summary>Good news: a heal, an unlock, an affordable price.</summary>
-    public static readonly Color Good = new(0x6f, 0xe3, 0x6f);
+    /// <summary>A sunken well: the ground inside a switch, a segment group, a level's art box.</summary>
+    /// <remarks>
+    /// DARKER THAN THE PAGE, which is the point - a control that things sit IN rather than on. It is
+    /// #0a0d12 in the stylesheet and appears there as a literal rather than a token, so it is one
+    /// here too.
+    /// </remarks>
+    public static readonly Color Sunken = new(0x0a, 0x0d, 0x12);
+
+    /// <summary>Good news: a run won, an unlock earned. <c>--good</c>.</summary>
+    /// <remarks>
+    /// #8bd450, NOT #6fe36f. The port had the latter, which is a GEM TINT out of
+    /// `render/assets.ts` - the green xp gem - picked up because it was the nearest green to hand.
+    /// The two are close enough to look deliberate and far enough apart to be wrong.
+    /// </remarks>
+    public static readonly Color Good = new(0x8b, 0xd4, 0x50);
+
+    /// <summary>What the workshop is coloured in.</summary>
+    /// <remarks>
+    /// <para>
+    /// #4fb8ff, and it is NOT <c>--accent-sys</c> (#4fa8ff) even though the two are a hair apart.
+    /// The stylesheet writes this one out by hand in every workshop rule; the token is the blue the
+    /// SIMULATION uses - shield rims, boss outlines, cockpit glass. Folding them together would be
+    /// a defensible tidy-up of the web build and a silent recolour of this one, so they stay as the
+    /// original has them and this note is why.
+    /// </para>
+    /// <para>
+    /// Gold means "a decision, now" - the accent is the level-up card, the primary button, the
+    /// thing under the cursor. The workshop is money already earned being spent between runs, so it
+    /// gets its own colour and leaves gold to mean what it means everywhere else.
+    /// </para>
+    /// </remarks>
+    public static readonly Color Shop = new(0x4f, 0xb8, 0xff);
 
     /// <summary>
     /// The scrim a menu lays over the world. <c>rgba(6, 9, 13, 0.86)</c>.

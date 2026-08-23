@@ -58,6 +58,51 @@ public sealed class Sprites
         return tex;
     }
 
+    /// <summary>The same sprite as a flat silhouette, for a thing that has not been earned.</summary>
+    /// <remarks>
+    /// <para>
+    /// A SEPARATE TEXTURE, not a tint. Drawing the art with a dark tint MULTIPLIES it, so a red
+    /// torso stays red and a dark chassis all but disappears - the roster ends up showing which
+    /// locked mech is which, and showing it badly. The web build says
+    /// <c>filter: brightness(0) invert(0.26)</c>: crush everything to black, then lift the whole
+    /// thing to one flat grey. That is a per-pixel operation on the COLOUR while the ALPHA is left
+    /// alone, which is exactly a silhouette and is not something a sprite tint can express.
+    /// </para>
+    /// <para>
+    /// BUILT ONCE AND CACHED beside the sprite it came from. There are sixteen chassis and three
+    /// yards; the whole set is a few hundred kilobytes and it is built the first time a locked tile
+    /// is drawn rather than at startup, because a save with the full roster never needs one.
+    /// </para>
+    /// </remarks>
+    public Texture2D? Silhouette(string key)
+    {
+        string id = key + "\u0000silhouette";
+        if (_cache.TryGetValue(id, out var cached)) return cached;
+
+        var src = Get(key);
+        if (src is null)
+        {
+            _cache[id] = null;
+            return null;
+        }
+
+        var pixels = new Microsoft.Xna.Framework.Color[src.Width * src.Height];
+        src.GetData(pixels);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            // The alpha is carried through untouched - premultiplied, so the grey is scaled by it
+            // and a half-transparent edge pixel stays a half-transparent edge pixel.
+            byte a = pixels[i].A;
+            pixels[i] = new Microsoft.Xna.Framework.Color(
+                (byte)(66 * a / 255), (byte)(66 * a / 255), (byte)(66 * a / 255), a);
+        }
+
+        var tex = new Texture2D(_device, src.Width, src.Height);
+        tex.SetData(pixels);
+        _cache[id] = tex;
+        return tex;
+    }
+
     /// <summary>Where the sprites live, found by walking up from the binary to the repository.</summary>
     public static string FindRoot()
     {

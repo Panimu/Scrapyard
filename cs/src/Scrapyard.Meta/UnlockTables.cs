@@ -23,7 +23,24 @@ namespace Scrapyard.Meta;
 /// by accident, and once shipped it is something players have already played around.
 /// </para>
 /// </remarks>
-public readonly record struct LockedThing(string Id, string Name, UnlockCond Cond);
+/// <param name="Id">What a save records, and what a condition names.</param>
+/// <param name="Name">What the pick screen calls it.</param>
+/// <param name="Cond">What has to have happened for it to be pickable.</param>
+/// <param name="Line">
+/// The one line under the name: a chassis's identity, a yard's blurb. It is the only thing either
+/// pick screen says about what is being chosen.
+/// </param>
+/// <param name="Playable">
+/// Whether the CONTENT exists, which is a different question from whether this save has earned it.
+/// A level can be unfinished, or finished and unearned, or open - and a screen that told a player to
+/// go and win something not built yet would be worse than one that said nothing.
+/// </param>
+/// <param name="Art">
+/// The sprite the pick screen shows. NAMED HERE rather than derived from the index, because the
+/// index is a fact about a catalog's current order and the art is a fact about the thing.
+/// </param>
+public readonly record struct LockedThing(
+    string Id, string Name, UnlockCond Cond, string Line, bool Playable, string Art);
 
 /// <summary>A card lock, which also carries the catalog index the deck is keyed by.</summary>
 public readonly record struct LockedCard(int Index, string Id, string Name, UnlockCond Cond);
@@ -32,29 +49,29 @@ public sealed class HeroUnlocks
 {
     public static readonly LockedThing[] Heroes =
     {
-        new("slate", "Slate", UnlockCond.Always()),
-        new("moss", "Moss", UnlockCond.Wave(3)),
-        new("ember", "Ember", UnlockCond.BossKillHolding(WeaponIds.LaserLong)),
-        new("amber", "Amber", UnlockCond.DiedTo("boss")),
-        new("onyx", "Onyx", UnlockCond.KillsWith(100, WeaponIds.MissileShort, WeaponIds.MissileLong)),
-        new("ash", "Ash", UnlockCond.BossKillBy(WeaponIds.MissileShort, WeaponIds.MissileLong)),
-        new("bone", "Bone", UnlockCond.ContactHits(20)),
-        new("plum", "Plum", UnlockCond.Tier(17, 7)),
-        new("fern", "Fern", UnlockCond.WinLevel("scrapyard")),
-        new("indigo", "Indigo", UnlockCond.KillsWithTotal(999, WeaponIds.Artillery)),
-        new("brass", "Brass", UnlockCond.WinLevel("mossy-mayhem")),
-        new("vermilion", "Vermilion", UnlockCond.ChassisOwned(6)),
-        new("jade", "Jade", UnlockCond.Never()),
-        new("rust", "Rust", UnlockCond.Never()),
-        new("cobalt", "Cobalt", UnlockCond.Never()),
-        new("copper", "Copper", UnlockCond.Never()),
+        new("slate", "Slate", UnlockCond.Always(), "Light biped, twin gun pods. Opens with the Medium Laser, and vents its heat 50% faster.", true, "mech_slate"),
+        new("moss", "Moss", UnlockCond.Wave(3), "Light strider, rotary drums. Opens with the Short Laser at double reach.", true, "mech_moss"),
+        new("ember", "Ember", UnlockCond.BossKillHolding(WeaponIds.LaserLong), "Light strider, one heavy cannon. Opens with the Long Laser, 30% hotter-hitting.", true, "mech_ember"),
+        new("amber", "Amber", UnlockCond.DiedTo("boss"), "Heavy biped, one heavy cannon. Opens with the Cannon, and its shells punch through.", true, "mech_amber"),
+        new("onyx", "Onyx", UnlockCond.KillsWith(100, WeaponIds.MissileShort, WeaponIds.MissileLong), "Heavy quad, boxed missile racks. Opens with the Long Missiles, and fires one more.", true, "mech_onyx"),
+        new("ash", "Ash", UnlockCond.BossKillBy(WeaponIds.MissileShort, WeaponIds.MissileLong), "Light biped, boxed missile racks. Opens with the Short Missiles, rearmed 20% faster.", true, "mech_ash"),
+        new("bone", "Bone", UnlockCond.ContactHits(20), "Light strider, twin gun pods. Opens with the Machine Gun, 30% harder-hitting.", true, "mech_bone"),
+        new("plum", "Plum", UnlockCond.Tier(17, 7), "Heavy biped, no gun at all. Nothing but an Energy Shield, recharging 60% faster. Kill with it.", true, "mech_plum"),
+        new("fern", "Fern", UnlockCond.WinLevel("scrapyard"), "Light hover, forward claw arms. Opens with Drones, and builds them 10% faster.", true, "mech_fern"),
+        new("indigo", "Indigo", UnlockCond.KillsWithTotal(999, WeaponIds.Artillery), "Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery, blasting 15% wider.", true, "mech_indigo"),
+        new("brass", "Brass", UnlockCond.WinLevel("mossy-mayhem"), "Light hover, one heavy tube. Opens with the Phase Cannon, 10% harder-hitting.", true, "mech_brass"),
+        new("vermilion", "Vermilion", UnlockCond.ChassisOwned(6), "Light hover, rotary drums. Opens with the Flak Cannon, and throws an extra shell every burst.", true, "mech_vermilion"),
+        new("jade", "Jade", UnlockCond.Never(), "Heavy biped, forward claw arms. Opens with the Short Laser.", true, "mech_jade"),
+        new("rust", "Rust", UnlockCond.Never(), "Heavy quad, spine-slung artillery tube. Opens with the Long Laser.", true, "mech_rust"),
+        new("cobalt", "Cobalt", UnlockCond.Never(), "Heavy quad, twin gun pods. Opens with the Medium Laser.", true, "mech_cobalt"),
+        new("copper", "Copper", UnlockCond.Never(), "Heavy quad, rotary drums. Opens with the Flak Cannon.", true, "mech_copper"),
     };
 
     public static readonly LockedThing[] Levels =
     {
-        new("scrapyard", "Scrapyard", UnlockCond.Always()),
-        new("mossy-mayhem", "Mossy Mayhem", UnlockCond.WinLevel("scrapyard")),
-        new("city-chaos", "City Chaos", UnlockCond.WinLevel("mossy-mayhem")),
+        new("scrapyard", "Scrapyard", UnlockCond.Always(), "A fenced yard of rust and wrecks. 16 minutes, 8 bosses, then the last Scraplord.", true, "scrap_0"),
+        new("mossy-mayhem", "Mossy Mayhem", UnlockCond.WinLevel("scrapyard"), "Open moss and turf, running out further than you can walk. No fence, no corners.", true, "level_mossy"),
+        new("city-chaos", "City Chaos", UnlockCond.WinLevel("mossy-mayhem"), "Streets on a grid, blocks to fight around, and the machines that own them now.", true, "level_city"),
     };
 
     /// <summary>The cards that must be EARNED. Everything not listed is offerable from the start.</summary>
