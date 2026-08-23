@@ -36,6 +36,7 @@
     "golden:ticks": "tsx tools/golden_ticks.ts",
     "uitext": "tsx tools/gen_ui_text.ts",
     "golden:cover": "tsx tools/ground_cover_fixture.ts",
+    "golden:paths": "tsx tools/ground_paths_fixture.ts",
     "golden:wallsMossy": "tsx tools/walls_mossy_fixture.ts",
     "golden:wallsCity": "tsx tools/walls_city_fixture.ts",
     "golden:rng": "tsx tools/rng_fixture.ts",

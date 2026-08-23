@@ -45,6 +45,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private Terrain _terrain = null!;
     private Effects _fx = null!;
     private GroundCover _cover = null!;
+    private GroundPaths _paths = null!;
 
     private Simulation _sim = null!;
     private string _levelId;
@@ -143,6 +144,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _terrain = new Terrain(_sprites);
         _fx = new Effects(_sprites);
         _cover = new GroundCover(_sprites);
+        _paths = new GroundPaths(_sprites);
 
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
@@ -201,6 +203,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // SEEDED FROM THE RUN, so the same seed lays the same gravel on every machine - without a
         // byte of it reaching the world.
         _cover?.Begin(seed);
+        _paths?.Begin(seed);
         _camera.SnapTo(_sim.World.Player.X, _sim.World.Player.Y);
         // DROP WHAT THE LAST RUN LEFT IN THE RING, or its explosions play over this one's first
         // second. The read cursor belongs to the renderer, which is exactly why it can be moved
@@ -630,6 +633,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         DrawFloor(w);
         // OVER THE FLOOR AND UNDER THE TERRAIN: a rock is on the ground, and a scrap pile is on
         // top of the rock.
+        // A road is painted ON the ground, and a rock sits ON the road.
+        _paths.Draw(_batch, _camera);
         _cover.Draw(_batch, _camera);
         _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf);
         DrawPickups(w);

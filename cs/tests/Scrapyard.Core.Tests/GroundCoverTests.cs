@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using Scrapyard.Game;
+
 using Xunit;
 
 namespace Scrapyard.Core.Tests;
@@ -16,81 +18,27 @@ namespace Scrapyard.Core.Tests;
 /// </para>
 /// <para>
 /// ANY AVALANCHE FUNCTION SCATTERS ROCKS; ONLY THIS ONE SCATTERS THE SAME ROCKS. It is exactly the
-/// kind of code a port gets subtly wrong, and this fixture caught it doing so: the first mix is a
-/// PLAIN JavaScript multiply - float64, precision lost past 2^53, THEN coerced to int32 - while the
-/// two after it are <c>Math.imul</c> and genuinely wrap. Treating all three as imul gave a
-/// perfectly plausible yard that was quietly a different one. Large seeds are in the fixture
-/// because that is where the two disagree; negative coordinates because that is where a
-/// sign-extending shift would.
+/// kind of code a port gets subtly wrong, and this fixture caught it doing so twice. First the
+/// hash's opening mix was treated as <c>Math.imul</c> when it is a PLAIN JavaScript multiply -
+/// float64, precision lost past 2^53, THEN coerced to int32 - while only the two after it wrap.
+/// Then the fix rewrote the hex constants as decimals and got two of the three wrong. Both versions
+/// drew a perfectly plausible yard that was quietly a different one.
 /// </para>
 /// <para>
-/// THE HASH ITSELF IS DUPLICATED HERE rather than reaching into the game project, because the test
-/// project deliberately does not reference MonoGame. The duplication is the point of the fixture:
-/// two transcriptions of one function, compared against a third.
+/// Large seeds are in the fixture because that is where a float64 multiply and an imul disagree at
+/// all; negative coordinates because that is where a sign-extending shift would.
+/// </para>
+/// <para>
+/// THIS COMPILES <see cref="GroundCoverLayout"/> ITSELF, linked in by the csproj rather than
+/// referenced, because the test project does not pull in MonoGame. An earlier version transcribed
+/// the hash a second time into this file and compared the two - which proves only that two things
+/// somebody wrote agree, and leaves the copy the game actually draws with free to drift.
 /// </para>
 /// </remarks>
 public class GroundCoverTests
 {
     private static readonly JsonDocument Doc = Fixture.Load("ground-cover-fixture.json");
     private static JsonElement Root => Doc.RootElement;
-
-    /// <summary>Transcribed from <c>groundCover.ts</c>, exactly as the game project transcribes it.</summary>
-    private static uint Hash(int x, int y, int seed)
-    {
-        // THE FIRST LINE IS A PLAIN JAVASCRIPT MULTIPLY, NOT Math.imul, AND THE DIFFERENCE IS REAL.
-        //
-        // `seed * 0xd8163841` in JavaScript is a FLOAT64 multiply; for a realistic seed the product
-        // is about 5.6e18, which is past 2^53, so low bits are lost BEFORE `^` coerces the result to
-        // int32. A 32-bit wrapping multiply keeps those bits and lands somewhere else - 1229317817
-        // against 1229318100 for one cell of one seed, which is a different rock in a different
-        // place.
-        //
-        // The porting guide's rule is `Math.imul(a, b)` -> `unchecked((int)(a * b))`, and applying
-        // it to a multiplication that is NOT imul is exactly how this was got wrong the first time.
-        // The two lines below ARE imul and do wrap.
-        //
-        // AND THE CONSTANTS STAY IN HEX. Rewriting them as decimals to make the `double` cast read
-        // more naturally got BOTH of them wrong on the first attempt - 0x8da6b343 is 2376512323,
-        // not 2376431427 - which is a transcription error wearing the costume of a porting
-        // decision, and it produced a yard that was wrong for a completely different reason than
-        // the one this comment is about. `u` keeps them positive, the way JavaScript reads them.
-        int h = JsToInt32((double)x * 0x1f1f1f1fu)
-              ^ JsToInt32((double)y * 0x8da6b343u)
-              ^ JsToInt32((double)seed * 0xd8163841u);
-
-        unchecked
-        {
-            h = (int)((uint)h ^ ((uint)h >> 15)) * 0x2c1b3c6d;
-            h = (int)((uint)h ^ ((uint)h >> 12)) * 0x297a2d39;
-            h = (int)((uint)h ^ ((uint)h >> 15));
-            return (uint)h;
-        }
-    }
-
-    /// <summary>
-    /// ECMAScript <c>ToInt32</c>: truncate, take modulo 2^32, then read as signed.
-    /// </summary>
-    /// <remarks>
-    /// This is what every bitwise operator in JavaScript does to its operands, and it is the step
-    /// that turns an imprecise float product into a specific integer. Reproducing the imprecision
-    /// is the point: the goal is the same rocks, not better ones.
-    /// </remarks>
-    private static int JsToInt32(double v)
-    {
-        if (double.IsNaN(v) || double.IsInfinity(v)) return 0;
-        double m = System.Math.Truncate(v) % 4294967296.0;
-        if (m < 0) m += 4294967296.0;
-        return m >= 2147483648.0 ? (int)(m - 4294967296.0) : (int)m;
-    }
-
-    private static double Unit(uint h, int k)
-    {
-        unchecked
-        {
-            uint v = (h >> (k * 5)) ^ (h << (k * 3));
-            return (v >> 8) / (double)0x1000000;
-        }
-    }
 
     [Fact]
     public void EveryCellPlacesIdentically()
@@ -100,7 +48,16 @@ public class GroundCoverTests
         double occupancy = Root.GetProperty("occupancy").F64();
         double minSize = Root.GetProperty("minSize").F64();
         double maxSize = Root.GetProperty("maxSize").F64();
-        uint variants = (uint)Root.GetProperty("variants").GetInt32();
+        int variants = Root.GetProperty("variants").GetInt32();
+
+        // The fixture carries the constants too, so a port that silently retuned one is caught here
+        // rather than as a mysterious position mismatch two hundred cells later.
+        Assert.Equal(cell, GroundCoverLayout.Cell);
+        Assert.Equal(clearCells, GroundCoverLayout.ClearCells);
+        Assert.Equal(occupancy, GroundCoverLayout.Occupancy);
+        Assert.Equal(minSize, GroundCoverLayout.MinSize);
+        Assert.Equal(maxSize, GroundCoverLayout.MaxSize);
+        Assert.Equal(variants, GroundCoverLayout.Variants);
 
         int checkedCells = 0;
         int drawn = 0;
@@ -112,23 +69,24 @@ public class GroundCoverTests
             int seed = c.GetProperty("seed").GetInt32();
             string where = $"seed {seed} cell ({cx}, {cy})";
 
-            uint h = Hash(cx, cy, seed);
+            uint h = GroundCoverLayout.Hash(cx, cy, seed);
             Assert.True(c.GetProperty("hash").GetUInt32() == h, $"{where}: hash differs");
 
-            bool cleared = System.Math.Abs(cx) <= clearCells && System.Math.Abs(cy) <= clearCells;
+            bool cleared = GroundCoverLayout.Cleared(cx, cy);
             Assert.Equal(c.GetProperty("cleared").GetBoolean(), cleared);
 
-            bool empty = Unit(h, 0) >= occupancy;
+            bool empty = GroundCoverLayout.Empty(h);
             Assert.True(c.GetProperty("empty").GetBoolean() == empty, $"{where}: occupancy differs");
 
-            AssertF64(c, "x", cx * cell + Unit(h, 1) * cell, where);
-            AssertF64(c, "y", cy * cell + Unit(h, 2) * cell, where);
-            AssertF64(c, "size", minSize + Unit(h, 3) * (maxSize - minSize), where);
+            AssertF64(c, "x", GroundCoverLayout.X(cx, h), where);
+            AssertF64(c, "y", GroundCoverLayout.Y(cy, h), where);
+            AssertF64(c, "size", GroundCoverLayout.Size(h), where);
 
-            Assert.True(c.GetProperty("variant").GetUInt32() == h % variants, $"{where}: variant");
-            Assert.True(c.GetProperty("quarterTurns").GetInt32() ==
-                        (int)System.Math.Floor(Unit(h, 4) * 4), $"{where}: rotation");
-            Assert.True(c.GetProperty("mirrored").GetBoolean() == Unit(h, 5) < 0.5,
+            Assert.True(c.GetProperty("variant").GetInt32() == GroundCoverLayout.Variant(h),
+                        $"{where}: variant");
+            Assert.True(c.GetProperty("quarterTurns").GetInt32() == GroundCoverLayout.QuarterTurns(h),
+                        $"{where}: rotation");
+            Assert.True(c.GetProperty("mirrored").GetBoolean() == GroundCoverLayout.Mirrored(h),
                         $"{where}: mirror");
 
             checkedCells++;
@@ -140,11 +98,33 @@ public class GroundCoverTests
     }
 
     /// <summary>
+    /// The seed reaches every cell, so no two runs share a yard.
+    /// </summary>
+    /// <remarks>
+    /// A hash that dropped its seed term would pass every assertion above for seed 0 and still hand
+    /// every run in the game the identical scatter. The fixture covers several seeds and would
+    /// catch that implicitly; this says it outright.
+    /// </remarks>
+    [Fact]
+    public void ADifferentSeedIsADifferentYard()
+    {
+        int differing = 0;
+        for (int cy = -8; cy <= 8; cy++)
+        {
+            for (int cx = -8; cx <= 8; cx++)
+            {
+                if (GroundCoverLayout.Hash(cx, cy, 1) != GroundCoverLayout.Hash(cx, cy, 2)) differing++;
+            }
+        }
+        Assert.Equal(17 * 17, differing);
+    }
+
+    /// <summary>
     /// THE OCCUPANCY TEST NEVER REJECTS ANYTHING, AND THAT IS FAITHFUL RATHER THAN BROKEN.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <c>unit(h, 0)</c> shifts by <c>k * 5</c> and <c>k * 3</c>, which at <c>k = 0</c> are both
+    /// <c>Unit(h, 0)</c> shifts by <c>k * 5</c> and <c>k * 3</c>, which at <c>k = 0</c> are both
     /// zero - so the expression is <c>h ^ h</c>, which is always 0. The guard is therefore
     /// <c>0 &gt;= 0.62</c>, never true, and every cell outside the cleared centre gets a rock. The
     /// <c>OCCUPANCY</c> constant is dead in the original.
@@ -153,7 +133,8 @@ public class GroundCoverTests
     /// THE PORT REPRODUCES IT ON PURPOSE. A port that "fixed" this would thin every yard by about
     /// 38% and stop matching the web build's screenshots - which is a worse outcome than a denser
     /// yard, and not a decision a translation gets to make. This test exists so the behaviour is
-    /// recorded as intentional rather than rediscovered as a bug in the C#.
+    /// recorded as intentional rather than rediscovered as a bug in the C#, and so that the day the
+    /// TypeScript IS corrected the port is told to follow rather than left quietly denser.
     /// </para>
     /// </remarks>
     [Fact]
@@ -161,7 +142,8 @@ public class GroundCoverTests
     {
         foreach (uint h in new uint[] { 0, 1, 7, 12345, 0xdeadbeef, 0xffffffff, 1027473907 })
         {
-            Assert.Equal(0, Unit(h, 0));
+            Assert.Equal(0, GroundCoverLayout.Unit(h, 0));
+            Assert.False(GroundCoverLayout.Empty(h));
         }
 
         // And the fixture agrees: nothing outside the cleared centre is ever empty.

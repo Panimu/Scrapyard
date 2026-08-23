@@ -25,4 +25,23 @@
     <ProjectReference Include="..\..\src\Scrapyard.Meta\Scrapyard.Meta.csproj" />
   </ItemGroup>
 
+  <!--
+    THE DECORATION LAYOUTS ARE COMPILED IN, NOT REFERENCED, AND NOT COPIED.
+
+    Scrapyard.Game is a MonoGame project: referencing it would drag SDL into a headless test run to
+    check a hash. The alternative that was tried first - transcribing each hash a second time into
+    the test file - is worse than it sounds, because it only proves that two things somebody wrote
+    agree, and the one the game actually draws with is only one of them. A copy that drifts is a
+    green test over a wrong yard.
+
+    So the test compiles the SAME SOURCE FILES. They are deliberately free of MonoGame types for
+    exactly this reason; anything in them that reaches for Microsoft.Xna will fail to build here
+    first, which is the seam doing its job.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Scrapyard.Game\JsMath.cs" Link="Linked\JsMath.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\GroundCoverLayout.cs" Link="Linked\GroundCoverLayout.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\GroundPathsLayout.cs" Link="Linked\GroundPathsLayout.cs" />
+  </ItemGroup>
+
 </Project>

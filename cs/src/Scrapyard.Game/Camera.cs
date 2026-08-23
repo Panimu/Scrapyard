@@ -189,4 +189,22 @@ public sealed class Camera
     /// </summary>
     public (double X0, double Y0, double X1, double Y1) VisibleBounds(double pad) =>
         (X - HalfW - pad, Y - HalfH - pad, X + HalfW + pad, Y + HalfH + pad);
+
+    /// <summary>Cull margin, in world units. Port of <c>CULL_MARGIN</c> in <c>camera.ts</c>.</summary>
+    private const double CullMargin = 80;
+
+    /// <summary>
+    /// Whether a sprite of the given radius, centred here, is worth submitting.
+    /// </summary>
+    /// <remarks>
+    /// THE MARGIN IS ON TOP OF THE RADIUS, not instead of it. Culling on the centre alone pops a
+    /// wide sprite out of existence while half of it is still on screen; the extra 80 units cover
+    /// the shake and kick offsets, which move the picture without moving <see cref="X"/>.
+    /// </remarks>
+    public bool IsVisible(double x, double y, double radius)
+    {
+        double m = radius + CullMargin;
+        return x > X - HalfW - m && x < X + HalfW + m
+            && y > Y - HalfH - m && y < Y + HalfH + m;
+    }
 }

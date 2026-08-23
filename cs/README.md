@@ -469,7 +469,37 @@ the failure mode is not a broken build, it is a screenshot of a bug that nobody 
 Large seeds are in that fixture deliberately — at small seeds a float64 multiply and an imul agree,
 so a fixture of tidy little numbers would have passed against the broken port.
 
-What is not done yet, plainly: no ground paths or litter; no Scrapopedia; and no settings screen.
+**The roads are the same roads, and the fixture had to be argued into being able to prove it.** The
+service roads wind: a road's column is two octaves of value noise sampled at its row, so the layout
+is an arbitrary walk that is still a pure function of a coordinate. Nothing is stored, and
+`GroundPathsTests` compares 5,766 cells across six seeds — one hex mask digit each, which is TOTAL
+rather than sampled, because a fixture listing only the road cells would be passed by a port that
+paved the whole yard.
+
+The generator lays the same window under each mistranslation the port could plausibly make and
+**refuses to write a fixture where they agree**. Two things came out of that which an ordinary
+golden would have hidden:
+
+- Rounding halves up (JavaScript) rather than to even (C#) is a real trap that is **unreachable
+  here** — interpolated noise never lands exactly on a half. The generator was written expecting to
+  prove three traps and would not run until the claim about the third was corrected to the truth.
+  The fixture records how close the arithmetic ever comes (0.00013) and fails if it ever arrives.
+- A mis-scaled threshold (`* 1000` instead of `* 1024`) **passed the entire 5,766-cell comparison**,
+  because it only flips a band whose hash lands in the five values between 200 and 205, and none
+  did. A window of cells is not a test of a threshold. The fixture now searches for hashes sitting
+  ON each boundary — and the first version of that test still missed the fault, because it compared
+  the fixture against a cutoff written out again in the test file instead of asking the layout.
+
+Ten injected faults, each confirmed to turn the suite red before it was trusted.
+
+**The layouts are compiled into the test project, not copied into it.** `Scrapyard.Game` is a
+MonoGame project, and a headless test run has no business loading SDL to check a hash — so the first
+version of the cover fixture transcribed the hash a second time into the test file. That is weaker
+than it sounds: it proves that two things somebody wrote agree, while the copy the game actually
+draws with stays free to drift. `GroundCoverLayout`, `GroundPathsLayout` and `JsMath` hold every
+decision and no MonoGame types, and the test csproj `<Compile Include>`s those exact files.
+
+What is not done yet, plainly: no ground litter; no Scrapopedia; and no settings screen.
 There is no audio in the original either — no `AudioContext`, no sound files — so its absence here is not a gap.
 
 ## What the corpus caught that 183 unit tests did not
