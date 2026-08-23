@@ -488,6 +488,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _graphics.PreferredBackBufferWidth = _save.ResolutionWidth;
         _graphics.PreferredBackBufferHeight = _save.ResolutionHeight;
         _graphics.ApplyChanges();
+
+        // CALLED DIRECTLY, NOT LEFT TO Window.ClientSizeChanged. That event is reliable for an
+        // actual OS-driven drag of the window edge, which is the only resize this game used to
+        // have - but a PROGRAMMATIC backbuffer change made here through ApplyChanges() while
+        // staying windowed does not reliably raise it on every platform this runs on. Skipping
+        // this left the camera resized against whatever the window was BEFORE a live Settings
+        // change - the mech drawn off-centre, and near the edge of what the camera still thought
+        // was a smaller viewport, entities culled as though the screen were still that size. The
+        // event handler stays for the manual-drag case; this call is what makes a menu-driven
+        // change work regardless of whether the platform also fires it.
+        RebuildSurface();
     }
 
     /// <summary>
