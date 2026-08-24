@@ -62,6 +62,35 @@ public sealed class MouseInput
     /// </remarks>
     public int WheelNotches { get; private set; }
 
+    /// <summary>
+    /// The pointer actually moved this frame.
+    /// </summary>
+    /// <remarks>
+    /// DIFFERENT FROM <see cref="EverUsed"/>, WHICH NEVER CLEARS. That one answers "is there a
+    /// human on this mouse at all"; this answers "did they just do something with it", and the
+    /// difference is what stops a resting pointer from owning the cursor - see <see cref="Steers"/>.
+    /// </remarks>
+    public bool Moved { get; private set; }
+
+    /// <summary>
+    /// Should the pointer take the list cursor this frame?
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A STATIONARY POINTER MUST NOT PIN THE CURSOR.</b> Every menu here adopts the row under
+    /// the mouse so that hovering highlights it, and every one of them did so UNCONDITIONALLY, on
+    /// every frame. Reaching a screen by clicking the button that opens it leaves the pointer
+    /// sitting over whatever now occupies that spot - which on a list screen is a row - so the
+    /// cursor was reassigned to that row every frame and the arrow keys appeared dead. They were
+    /// working; the mouse was overwriting them sixty times a second.
+    /// </para>
+    /// <para>
+    /// A CLICK COUNTS TOO, so clicking a row still selects it even if the pointer has not moved
+    /// since it landed there.
+    /// </para>
+    /// </remarks>
+    public bool Steers => Moved || LeftClicked;
+
     /// <summary>Whether the pointer has moved or clicked at all since the game started.</summary>
     /// <remarks>
     /// A CONTROLLER USER'S THUMB NEVER TOUCHES THE MOUSE, but the OS still reports one sitting
@@ -78,6 +107,7 @@ public sealed class MouseInput
         var next = new Vector2(state.X / (float)surfaceDivisor, state.Y / (float)surfaceDivisor);
         if (next != Position || state.LeftButton == ButtonState.Pressed) EverUsed = true;
 
+        Moved = EverUsed && next != Position;
         Position = next;
         LeftClicked = state.LeftButton == ButtonState.Pressed && _prevLeft == ButtonState.Released;
         _prevLeft = state.LeftButton;

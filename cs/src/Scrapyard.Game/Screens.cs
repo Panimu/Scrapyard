@@ -611,14 +611,43 @@ public static class Screens
 
         int y = Head(batch, sprites, "BETWEEN RUNS", "WORKSHOP", vw, 10 * scale, scale);
 
-        // THE TOTAL IS THE BIGGEST THING ON THE SCREEN, because it is what every one of the sixteen
-        // decisions below is measured against - and it stays put while the list scrolls, so a player
-        // at the bottom of the list does not have to come back up to find out what they can afford.
+        // THE TOTAL IS STILL THE BIGGEST THING ON THE SCREEN, because it is what every one of the
+        // sixteen decisions below is measured against - and it stays put while the list scrolls, so
+        // a player at the bottom does not have to come back up to find out what they can afford.
+        //
+        // ITS LABEL SITS BESIDE IT RATHER THAN UNDER IT. Stacked, the two cost a third line and
+        // pushed the list down far enough to lose a whole row, which on a screen that could only
+        // ever show four was an expensive way to write two words. On one baseline the number is
+        // exactly as large and the header is a line shorter.
         string credits = save.Credits.ToString();
-        UiDrawCentred(batch, sprites, credits, vw / 2, y, scale * 3, Palette.Shop);
-        y += UiFont.GlyphH(scale * 3) + 4 * scale;
-        UiDrawCentred(batch, sprites, Spaced("CREDITS BANKED"), vw / 2, y, small,
-                         Palette.Faint);
+        const string banked = "CREDITS BANKED";
+        int figureW = UiFont.Measure(credits, scale * 3);
+        int labelW = UiFont.Measure(Spaced(banked), small);
+        int headW = figureW + 9 * scale + labelW;
+        int hx = (vw - headW) / 2;
+
+        UiDraw(batch, sprites, credits, hx, y, scale * 3, Palette.Shop);
+        // Sat on the figure's own baseline, not its box: a small label centred against a very tall
+        // number floats in the middle of it and reads as unrelated.
+        UiDraw(batch, sprites, Spaced(banked), hx + figureW + 9 * scale,
+               y + UiFont.GlyphH(scale * 3) - UiFont.GlyphH(small) - scale, small, Palette.Faint);
+        y += UiFont.GlyphH(scale * 3) + 5 * scale;
+
+        // WHAT THE LIST HOLDS, because the list itself can only ever show a handful of sixteen.
+        // The rail says there is more below; this says how much more, and how much of it is done.
+        int ownedRows = 0;
+        int fullRows = 0;
+        for (int i = 0; i < WorkshopText.All.Length; i++)
+        {
+            int t = save.TierOf(i);
+            if (t > 0) ownedRows++;
+            if (t >= WorkshopText.All[i].Tiers) fullRows++;
+        }
+
+        UiDrawCentred(batch, sprites,
+                      Spaced($"{ownedRows} OF {WorkshopText.All.Length} STARTED"
+                             + (fullRows > 0 ? $"   {fullRows} MAXED" : "")),
+                      vw / 2, y, small, Palette.Faint);
         y += UiFont.LineHeight(small) + 6 * scale;
 
         // The buttons first: the list is what gives up room, not the way out of the screen.
@@ -711,28 +740,33 @@ public static class Screens
             UiDraw(batch, sprites, def.Name.ToUpperInvariant(), tx, ty, scale, Palette.Ink);
             ty += UiFont.GlyphH(scale) + 2 * scale;
 
-            foreach (string line in UiFont.Wrap(def.Blurb.ToUpperInvariant(), textW, small))
-            {
-                UiDraw(batch, sprites, line, tx, ty, small, Palette.Dim);
-                ty += UiFont.LineHeight(small);
-            }
-            ty += 2 * scale;
+            UiDraw(batch, sprites, Ellipsize(def.Blurb.ToUpperInvariant(), textW, small), tx, ty,
+                   small, Palette.Dim);
+            ty += UiFont.LineHeight(small) + 2 * scale;
+
+            // THE PIPS SIT AT THE END OF THE SUMMARY'S LINE rather than on one of their own. They
+            // are the same fact the summary states in words - how much of this is bought - so a
+            // whole row of vertical space to repeat it was the least earned line on the screen.
+            int pipsW = PipsWidth(def, scale);
+            int sumW = textW - pipsW - 4 * scale;
 
             // A row that owns none of it has no current effect to state, so the PROMISE is the whole
             // line - and it is faint, because it is the one row state where this text is not
             // describing your mech.
-            foreach (string line in UiFont.Wrap(SummaryOf(def, owned), textW, small))
+            int sumTop = ty;
+            foreach (string line in UiFont.Wrap(SummaryOf(def, owned), sumW, small))
             {
                 UiDraw(batch, sprites, line, tx, ty, small,
                       owned <= 0 ? Palette.Faint : Palette.Shop);
                 ty += UiFont.LineHeight(small);
             }
-            ty += 2 * scale;
 
+            int pipY = sumTop + (UiFont.GlyphH(small) - 3 * scale) / 2;
             for (int t = 0; t < def.Tiers; t++)
             {
                 RoundRect(batch, sprites,
-                          new Rectangle(tx + t * 9 * scale, ty, 7 * scale, 3 * scale), scale,
+                          new Rectangle(tx + textW - pipsW + t * 9 * scale, pipY, 7 * scale,
+                                        3 * scale), scale,
                           t < owned ? Palette.Shop : Palette.Edge);
             }
 
@@ -766,6 +800,10 @@ public static class Screens
     /// cache would be a field on a static drawing class outliving the save it was computed from.
     /// Wrapping sixteen short strings is not the expensive thing on this screen.
     /// </remarks>
+    /// <summary>How wide a row's tier pips are. Shared, so the measure and the draw agree.</summary>
+    private static int PipsWidth(WorkshopEntry def, int scale) =>
+        def.Tiers <= 0 ? 0 : (def.Tiers - 1) * 9 * scale + 7 * scale;
+
     private static int RowHeight(WorkshopEntry def, int owned, int w, int buyW, int pad, int stripe,
                                  int scale, int small)
     {
@@ -776,11 +814,18 @@ public static class Screens
         // faces are already fairly UNIFORM in width, which is exactly the case a proportional font
         // has the least advantage over a monospaced one. Sixteen rows at four visible on screen
         // needed the gaps trimmed as well as the font swapped to actually show a fifth.
+        // ONE LINE OF BLURB, CUT TO FIT, and the pips share the summary's line.
+        //
+        // The blurb wrapped to two or three lines on most rows, which on a list of sixteen that can
+        // show four was a third of the visible screen spent on prose nobody reads twice. The
+        // SUMMARY is the line that matters - it says what the mech has and what it would have - so
+        // the blurb keeps one line to say what the thing IS and gets out of the way.
         int h = pad + UiFont.GlyphH(scale) + 2 * scale;
-        h += UiFont.Wrap(def.Blurb.ToUpperInvariant(), textW, small).Count * UiFont.LineHeight(small);
+        h += UiFont.LineHeight(small);
         h += 2 * scale;
-        h += UiFont.Wrap(SummaryOf(def, owned), textW, small).Count * UiFont.LineHeight(small);
-        h += 2 * scale + 2 * scale + pad;
+        h += UiFont.Wrap(SummaryOf(def, owned), textW - PipsWidth(def, scale) - 4 * scale,
+                         small).Count * UiFont.LineHeight(small);
+        h += pad;
 
         return System.Math.Max(h, 22 * scale + pad * 2);
     }

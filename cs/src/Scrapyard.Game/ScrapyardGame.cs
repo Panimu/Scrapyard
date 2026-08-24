@@ -850,7 +850,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     {
         int hover = _mouse.Hover(rects);
         if (hover < 0 || hover >= rows.Length || !rows[hover].Enabled) return false;
-        cursor = hover;
+        // ONLY ON A REAL MOVE - see MouseInput.Steers. A pointer left resting on a row by the
+        // click that opened the screen used to retake the cursor every frame.
+        if (_mouse.Steers) cursor = hover;
         return _mouse.LeftClicked;
     }
 
@@ -934,7 +936,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (down) _pedia.SectionCursor = (_pedia.SectionCursor + 1) % n;
             if (hover >= 0 && hover < n)
             {
-                _pedia.SectionCursor = hover;
+                if (_mouse.Steers) _pedia.SectionCursor = hover;
                 if (_mouse.LeftClicked) enter = true;
             }
             if (enter) _pedia.EnterSection(_pedia.SectionCursor);
@@ -957,7 +959,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // lands on one is simply never reported here, the same way it can never be clicked.
             if (hover >= 0 && hover < _pedia.Rows.Count)
             {
-                _pedia.RowCursor = hover;
+                if (_mouse.Steers) _pedia.RowCursor = hover;
                 if (_mouse.LeftClicked) enter = true;
             }
             if (enter) _pedia.OpenRow();
@@ -1005,7 +1007,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int hover = _mouse.Hover(_settingsRects);
         if (hover >= 0 && hover < n)
         {
-            _settingsCursor = hover;
+            if (_mouse.Steers) _settingsCursor = hover;
             if (_mouse.LeftClicked) rowClicked = true;
         }
         else if (hover == n && _mouse.LeftClicked) openChangelog = true; // CHANGELOG
@@ -1090,7 +1092,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         bool picked = _menu.Confirm;
         if (hover >= 0 && hover < n)
         {
-            _resolutionCursor = hover;
+            if (_mouse.Steers) _resolutionCursor = hover;
             if (_mouse.LeftClicked) picked = true;
         }
         else if (_mouse.LeftClicked)
@@ -1133,7 +1135,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int hover = _mouse.Hover(_heroSelectRects);
         if (hover >= 0 && hover < n)
         {
-            _heroCursor = hover;
+            if (_mouse.Steers) _heroCursor = hover;
             if (_mouse.LeftClicked) confirmed = true;
         }
         else if (hover == n && _mouse.LeftClicked) { ToTitle(); return; } // BACK
@@ -1236,7 +1238,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int hover = _mouse.Hover(_levelSelectRects);
         if (hover >= 0 && hover < n)
         {
-            _levelCursor = hover;
+            if (_mouse.Steers) _levelCursor = hover;
             if (_mouse.LeftClicked) confirmed = true;
         }
         else if (hover == n && _mouse.LeftClicked)
@@ -1269,7 +1271,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int hover = _mouse.Hover(_workshopRects);
         if (hover >= 0 && hover < n)
         {
-            _shopCursor = hover;
+            if (_mouse.Steers) _shopCursor = hover;
             if (_mouse.LeftClicked) buyClicked = true;
         }
         else if (hover == n && _mouse.LeftClicked) // REFUND

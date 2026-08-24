@@ -46,6 +46,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T08:46Z',
+    title: 'FIXED: THE ARROW KEYS DOING NOTHING UNTIL YOU CLICKED',
+    notes: [
+      'On every menu, the row under the mouse pointer took the highlight — sixty times a second, whether the pointer had moved or not. Since you arrive at a screen by clicking the button that opens it, the pointer was left sitting over a row and kept snatching the highlight back, so the arrow keys looked dead until you clicked somewhere. They were working the whole time; the mouse was overwriting them. The pointer now only takes the highlight when it actually moves.',
+    ],
+  },
+  {
+    at: '2026-08-24T08:46Z',
+    title: 'THE WORKSHOP FITS MORE IN AND SAYS WHERE YOU ARE',
+    notes: [
+      'It shows five upgrades at a time instead of four, and the rows are tighter: each one keeps a single line saying what the thing is, and the tier pips have moved up beside the line that says what you own rather than taking a row of their own.',
+      'The banked total sits on one line with its label instead of two, which is where the extra row came from.',
+      'A line under the total says how many of the sixteen you have started and how many are maxed — the list can only ever show a handful, so it now tells you the size of what you are scrolling through.',
+    ],
+  },
+  {
     at: '2026-08-24T04:38Z',
     title: 'THE LONG MENUS SAY THAT THEY SCROLL, AND THE WHEEL WORKS',
     notes: [
