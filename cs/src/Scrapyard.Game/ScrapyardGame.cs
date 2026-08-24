@@ -1181,11 +1181,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (_mouse.LeftClicked) confirmed = true;
         }
         else if (hover == n && _mouse.LeftClicked) { ToTitle(); return; } // BACK
-        else if (hover == n + 1 && _mouse.LeftClicked) { PickRandomHero(); return; } // RANDOM
+        else if (hover == n + 1 && _mouse.LeftClicked) confirmed = PickRandomHero(); // RANDOM
         else if (hover == n + 2 && _mouse.LeftClicked) confirmed = true; // NEXT
 
         // R FOR THE SAME THING FROM THE KEYBOARD, so the button is not the only way to reach it.
-        if (Pressed(keys, Keys.R)) { PickRandomHero(); return; }
+        if (Pressed(keys, Keys.R) && PickRandomHero()) confirmed = true;
 
         if (!confirmed) return;
         // A LOCKED CHASSIS IS NOT SELECTABLE. The cursor may rest on it - the silhouette is worth
@@ -1205,13 +1205,21 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     }
 
     /// <summary>
-    /// Moves the cursor to a chassis this save actually owns, chosen at random.
+    /// Picks a chassis this save actually owns, at random, and reports whether it found one.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// IT MOVES THE CURSOR RATHER THAN STARTING THE RUN. The player still sees which mech they
-    /// were handed and still presses NEXT, so "random" is an opinion about the choice rather than
-    /// a way to skip the screen - and a chassis you did not want is one press from being changed.
+    /// IT TAKES THE CHOICE RATHER THAN OFFERING IT. Returning true drops the caller into the same
+    /// confirm path a click on NEXT uses, so Random picks the mech AND moves on to the yard - one
+    /// press instead of two. It was a cursor move, on the reasoning that a player should see what
+    /// they were handed before committing; the button is for the player who does not want to
+    /// choose, and making them confirm the choice they asked not to make is the one thing it
+    /// should not do.
+    /// </para>
+    /// <para>
+    /// IT GOES THROUGH THE ORDINARY CONFIRM, not a path of its own - so the owned-chassis guard,
+    /// the saved LastHeroId and the step to the level picker are all the same code a click is,
+    /// and none of them can drift from it.
     /// </para>
     /// <para>
     /// IT ONLY EVER LANDS ON SOMETHING OWNED, by building the candidate list from the save rather
@@ -1260,7 +1268,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                && scroll.BeginDrag((int)_mouse.Position.X, (int)_mouse.Position.Y);
     }
 
-    private void PickRandomHero()
+    private bool PickRandomHero()
     {
         var owned = new List<int>();
         for (int i = 0; i < HeroUnlocks.Heroes.Length; i++)
@@ -1268,8 +1276,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (_save.UnlockedHeroes.Contains(HeroUnlocks.Heroes[i].Id)) owned.Add(i);
         }
 
-        if (owned.Count == 0) return;
+        if (owned.Count == 0) return false;
         _heroCursor = owned[_shuffle.Next(owned.Count)];
+        return true;
     }
 
     private void UpdateLevelSelect(KeyboardState keys)

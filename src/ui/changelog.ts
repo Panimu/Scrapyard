@@ -46,6 +46,13 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T13:28Z',
+    title: 'RANDOM PICKS THE MECH AND GETS ON WITH IT',
+    notes: [
+      'The Random button on mech select now takes the chassis it rolled and moves straight to the yard, instead of moving the highlight and waiting for you to press Next. It is the button for people who do not want to choose, so asking them to confirm the choice was the one thing it should not have done.',
+    ],
+  },
+  {
     at: '2026-08-24T10:36Z',
     title: 'A LOCKED CHASSIS IS JUST A SILHOUETTE NOW',
     notes: [
