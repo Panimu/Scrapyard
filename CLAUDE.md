@@ -91,9 +91,10 @@ A condition that cannot be expressed yet is a new `kind` here, not a bespoke che
 - **`platformKey` is permanent once shipped.** Game Center and Steam both treat their identifier as
   un-renameable; the internal `id` is a union member we rename freely. Never make them the same
   string.
-- **The criteria are published nowhere.** A locked chassis is a silhouette and a question mark; the
-  achievement that fires on earning it is the only place a condition is ever stated, in the past
-  tense. `describeUnlockDone` exists for that and there is deliberately no imperative version.
+- **The criteria are published nowhere.** A locked chassis is a grey silhouette and nothing else —
+  no name, no identity line, no mark over the art; the shape is the whole message. The achievement
+  that fires on earning it is the only place a condition is ever stated, in the past tense.
+  `describeUnlockDone` exists for that and there is deliberately no imperative version.
 - If a condition needs something the run does not already count, add the tally to `RunStats` at the
   moment it happens. "Held it at the end" is not the same fact as "held it when the boss died", and
   the difference always favours the player by accident.

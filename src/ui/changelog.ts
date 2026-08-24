@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T10:36Z',
+    title: 'A LOCKED CHASSIS IS JUST A SILHOUETTE NOW',
+    notes: [
+      'The question mark is gone from the tiles of mechs you have not earned. They are the chassis’ own outline in flat grey and nothing else — sixteen machines look different enough from each other that the shape says everything the mark was saying, without putting a symbol on the one thing the tile exists to show.',
+      'It still gives nothing away about how to earn them. That was the question mark’s job and it has not changed hands: what unlocked a chassis is only ever stated by the trophy that fires when you do it.',
+    ],
+  },
+  {
     at: '2026-08-24T10:28Z',
     title: 'FIXED: THE MOUSE WHEEL GIVING UP AFTER THE FIRST SCROLL DOWN',
     notes: [

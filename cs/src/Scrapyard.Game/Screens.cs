@@ -359,10 +359,11 @@ public static class Screens
                 int n = UiFont.Wrap(roster[i].Line.ToUpperInvariant(), tileW - 6 * scale, small).Count;
                 h0 += UiFont.GlyphH(small) + 2 * scale + UiFont.LineHeight(small) * n + 2 * scale;
             }
-            else
-            {
-                h0 += 2 * scale;
-            }
+
+
+            // NOTHING RESERVED FOR A LOCKED TILE beyond its art. It used to keep a couple of scale
+            // units for the question mark's descender; there is no mark now, and the tile is the
+            // silhouette's own height.
             if (h0 > rowH[i / cols]) rowH[i / cols] = h0;
         }
 
@@ -447,24 +448,16 @@ public static class Screens
                     ty += UiFont.LineHeight(small);
                 }
             }
-            else
-            {
-                // FULL-STRENGTH INK ON THE SILHOUETTE, and a dark halo under it. A grey mark on a
-                // grey shape is the one place on this screen where contrast has to be deliberate -
-                // without the halo the question mark reads as a hole in the mech.
-                int qx = r.X + tileW / 2;
-                int qy = r.Y + 5 * scale + (art - UiFont.GlyphH(scale * 2)) / 2;
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        if (dx == 0 && dy == 0) continue;
-                        UiDrawCentred(batch, sprites, "?", qx + dx * scale, qy + dy * scale,
-                                         scale * 2, Color.Black * 0.9f);
-                    }
-                }
-                UiDrawCentred(batch, sprites, "?", qx, qy, scale * 2, Palette.Ink);
-            }
+
+            // A LOCKED TILE IS THE SILHOUETTE AND NOTHING ELSE - no name, no identity line, and no
+            // question mark over the art. The shape is already the whole message: sixteen chassis
+            // are visibly different from each other, so a grey one reads as a mech you have not got
+            // rather than as an empty slot, and it does it without putting a mark on the one thing
+            // the tile is there to show.
+            //
+            // IT STILL PUBLISHES NOTHING. That was the question mark's job and it is unchanged -
+            // the criteria live in the achievement that fires on earning the chassis, in the past
+            // tense, and nowhere on this screen. Showing LESS cannot leak more.
         }
 
         PopClip(batch);
