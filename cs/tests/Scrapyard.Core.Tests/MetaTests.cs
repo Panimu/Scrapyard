@@ -856,12 +856,19 @@ public class MetaTests
         };
         save.CareerKills["artillery"] = -5;
         save.CareerKills["drone"] = double.NaN;
+        save.CareerKills["cannon"] = double.PositiveInfinity;
         save.Reconcile();
 
         Assert.Equal(0, save.CareerSplashKills);
         Assert.Equal(Settings.MaxCareerTally, save.CareerReloads);
-        Assert.Equal(0, save.CareerKills["artillery"]);
-        Assert.Equal(0, save.CareerKills["drone"]);
+
+        // A TALLY THAT DEGRADES TO NOTHING IS DROPPED, not written back as a zero - see
+        // CareerKillsDropUnknownWeaponsAndEmptyTallies. A count of none is the absence of a count.
+        Assert.DoesNotContain("artillery", save.CareerKills.Keys);
+        Assert.DoesNotContain("drone", save.CareerKills.Keys);
+
+        // And one that degrades to something real keeps it.
+        Assert.Equal(Settings.MaxCareerTally, save.CareerKills["cannon"]);
     }
 
     /// <summary>
@@ -926,6 +933,28 @@ public class MetaTests
 
         // The one that actually decided something.
         Assert.Equal(1, save.HeroesOwned);
+    }
+
+    /// <summary>
+    /// THE PER-WEAPON CAREER TALLIES ARE FILTERED LIKE EVERY OTHER STORED ID.
+    /// </summary>
+    /// <remarks>
+    /// The one field the filtering pass missed. It could never be READ wrongly - <c>Career</c>
+    /// drops ids it cannot resolve on the way to the evaluator - which is exactly why it went
+    /// unnoticed, and exactly why keeping it in the file was worth nothing.
+    /// </remarks>
+    [Fact]
+    public void CareerKillsDropUnknownWeaponsAndEmptyTallies()
+    {
+        var save = new Settings();
+        save.CareerKills["artillery"] = 120;
+        save.CareerKills["a-gun-that-was-renamed"] = 900;
+        save.CareerKills["drone"] = 0;
+        save.CareerKills["cannon"] = -4;
+        save.Reconcile();
+
+        Assert.Equal(new[] { "artillery" }, save.CareerKills.Keys);
+        Assert.Equal(120, save.CareerKills["artillery"]);
     }
 
     /// <summary>

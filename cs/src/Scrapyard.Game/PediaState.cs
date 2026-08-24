@@ -30,6 +30,17 @@ public sealed class PediaState
     public int RowCursor;
     public int PageScroll;
 
+    /// <summary>
+    /// How tall one line of an open page is, in pixels, as last drawn.
+    /// </summary>
+    /// <remarks>
+    /// MEASURED BY THE DRAW AND USED BY THE UPDATE, the same way <see cref="Scroll.Viewport"/> is.
+    /// A page scrolls in LINES while every list scrolls in PIXELS, and a wheel notch has to cover
+    /// the same distance on both or the gesture means two things one keypress apart. Zero until
+    /// the first page has been drawn, which is the one frame nothing can have scrolled yet.
+    /// </remarks>
+    public int PageLineH;
+
     /// <summary>Where the section's index is scrolled to, in pixels.</summary>
     /// <remarks>
     /// ON THE STATE RATHER THAN THE FRONT-END, unlike the other lists', because the pedia already

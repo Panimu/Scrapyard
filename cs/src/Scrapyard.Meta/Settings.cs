@@ -452,7 +452,25 @@ public sealed class Settings
         // make every such comparison quietly false forever.
         CareerSplashKills = Tally(CareerSplashKills);
         CareerReloads = Tally(CareerReloads);
-        foreach (string key in CareerKills.Keys.ToList()) CareerKills[key] = Tally(CareerKills[key]);
+
+        // AND THE PER-WEAPON TALLIES ARE FILTERED LIKE EVERY OTHER STORED ID. This was the one
+        // field the filtering pass missed: a tally under a weapon id nothing resolves was clamped
+        // and then kept forever. It could never be READ - `Career` drops unresolvable ids on the
+        // way to the evaluator - which is exactly why it went unnoticed, and exactly why leaving
+        // it in the file is worth nothing.
+        //
+        // A ZERO IS DROPPED TOO, the way the web build's own reader drops it: a tally of none is
+        // the absence of a tally, and writing it down makes a save file that grows by a key every
+        // time a weapon is picked up and not used.
+        var keptKills = new Dictionary<string, double>();
+        foreach (var (key, value) in CareerKills)
+        {
+            if (!Progress.KnowsWeaponKey(key)) continue;
+            double n = Tally(value);
+            if (n > 0) keptKills[key] = n;
+        }
+
+        CareerKills = keptKills;
     }
 
     /// <summary>One career tally, made safe to compare: never negative, never past the ceiling,

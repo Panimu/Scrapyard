@@ -982,8 +982,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (up) _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - 1);
         if (down) _pedia.PageScroll++;
-        // A PAGE HAS A REAL SCROLL OFFSET, unlike the indexes, so the wheel moves it directly.
-        _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - _mouse.WheelNotches);
+        // THE SAME DISTANCE A LIST TRAVELS, converted into this page's own lines - see
+        // PediaState.PageLineH. A page and the index it opened from are one keypress apart, and a
+        // notch that moved four lines on one and one line on the other reads as a broken wheel.
+        if (_mouse.WheelNotches != 0 && _pedia.PageLineH > 0)
+        {
+            int step = Screens.WheelStep(Screens.MenuScale(Surface.H)) / _pedia.PageLineH;
+            if (step < 1) step = 1;
+            _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - _mouse.WheelNotches * step);
+        }
         if (_menu.PageUp)
         {
             _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - Screens.PediaRows);

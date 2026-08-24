@@ -74,7 +74,11 @@ public sealed class Scroll
     /// </remarks>
     public void Reveal(int top, int height)
     {
-        if (top < Px) Px = top;
+        // A ROW TALLER THAN THE WINDOW IS SHOWN FROM ITS TOP. The rule below would scroll to put
+        // its BOTTOM edge in view, which for a row that cannot fit means landing on its last line
+        // with its name off the top - the one part of it you needed to read.
+        if (height >= Viewport) Px = top;
+        else if (top < Px) Px = top;
         else if (top + height > Px + Viewport) Px = top + height - Viewport;
         ClampToContent();
     }

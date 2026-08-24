@@ -293,6 +293,14 @@ public static class Progress
     /// directions and there are eleven of them. The strings are what goes to disk - the save stores
     /// ids, never indices - and the integers are what <c>WeaponDef.Id</c> carries.
     /// </remarks>
+    /// <summary>Is this a weapon id the save may legitimately carry a tally for?</summary>
+    /// <remarks>
+    /// FOR <see cref="Settings.Reconcile"/>, which filters every stored id against the catalog that
+    /// produced it and had no way to ask about this one - the mapping lives here beside the ids it
+    /// maps, and exposing the question rather than the table keeps it that way.
+    /// </remarks>
+    public static bool KnowsWeaponKey(string key) => System.Array.IndexOf(WeaponIdNames, key) >= 0;
+
     private static readonly string[] WeaponIdNames =
     {
         "cannon", "laser-short", "laser-medium", "laser-long", "missile-short", "missile-long",

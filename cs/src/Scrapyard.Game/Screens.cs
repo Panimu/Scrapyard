@@ -1531,8 +1531,12 @@ public static class Screens
             // broken - a heading with no rows under it is what "none yet" looks like here.
             if (rows.Count <= Pedia.Sections.Length)
             {
-                UiDrawCentred(batch, sprites, "NOTHING FOUND YET", vw / 2, y + 8 * scale,
-                                 small, Palette.Locked);
+                // OFF THE END OF THE CONTENT rather than off `y`, which the draw loop above now
+                // reuses as its per-row cursor - so after it ran, `y` is the last row's top and
+                // not the bottom of the list.
+                UiDrawCentred(batch, sprites, "NOTHING FOUND YET", vw / 2,
+                                 listTop + content - st.Scroll.Px + 8 * scale, small,
+                                 Palette.Locked);
             }
             outRects?.Add(backBtn);
             return;
@@ -1654,7 +1658,23 @@ public static class Screens
         var lines = st.Wrapped(w, small);
         int lineH = UiFont.LineHeight(small) + 2 * scale;
         int shown = System.Math.Max(1, (bottom - y) / lineH);
-        int first = System.Math.Clamp(st.PageScroll, 0, System.Math.Max(0, lines.Count - shown));
+
+        // CLAMPED BACK ONTO THE STATE, not just into a local.
+        //
+        // It used to clamp only what it drew, which left `PageScroll` free to run away: a held
+        // Down key or a spun wheel on a page with three lines to spare pushed it to forty, and the
+        // next thirty-seven presses of Up moved nothing at all, because every one of them was
+        // still above the ceiling. The scroll looked dead in one direction, which is the same
+        // complaint the arrow keys drew - an input doing nothing while the code is "working".
+        st.PageScroll = System.Math.Clamp(st.PageScroll, 0,
+                                          System.Math.Max(0, lines.Count - shown));
+        int first = st.PageScroll;
+
+        // STAMPED FOR THE WHEEL. The update moves this page in LINES and every list in PIXELS, so
+        // without the line's height in hand a notch would travel a different distance here than it
+        // does one keypress away in the index. Measured rather than assumed, because the line
+        // height follows the window.
+        st.PageLineH = lineH;
 
         for (int i = 0; i < shown && first + i < lines.Count; i++)
         {

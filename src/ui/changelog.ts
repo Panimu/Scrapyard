@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T09:42Z',
+    title: 'FIXED: SCRAPOPEDIA PAGES GETTING STUCK WHEN SCROLLED BACK UP',
+    notes: [
+      'Scrolling past the bottom of a page kept counting even though the page had stopped moving, so coming back up did nothing until you had undone every step of the overshoot. On a short page a second of held Down could cost you a dozen presses of Up.',
+      'The wheel also moves a page by the same distance it moves a list now, instead of one line at a time.',
+    ],
+  },
+  {
     at: '2026-08-24T09:15Z',
     title: 'THE MENUS SCROLL SMOOTHLY INSTEAD OF A ROW AT A TIME',
     notes: [
