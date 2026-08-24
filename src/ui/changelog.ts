@@ -46,6 +46,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T14:58Z',
+    title: 'A NEW GUN: THE MORTAR',
+    notes: [
+      'It lobs one heavy shell into the thickest part of the crowd — the artillery’s blast, but thrown AT something rather than onto open ground.',
+      'It looks straight ahead first. There is a narrow cone off the barrel, and if there is a crowd in it that crowd gets the shell, whatever is happening elsewhere; only when the cone is empty does it widen its search. So it is a gun you aim with the whole mech — point the chassis at the horde and it hammers the horde.',
+      'It bolts onto the Cannon’s mount, so a run carries one or the other and never both. Rust opens with it, and lobs 30% harder.',
+      'The card stays locked until you have finished 1812 enemies with one.',
+    ],
+  },
+  {
     at: '2026-08-24T13:28Z',
     title: 'RANDOM PICKS THE MECH AND GETS ON WITH IT',
     notes: [
