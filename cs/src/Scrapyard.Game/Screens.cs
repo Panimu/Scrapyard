@@ -670,6 +670,22 @@ public static class Screens
             first++;
         }
 
+        // How many actually fit from here, for the rail below. Counted with the same test the draw
+        // loop uses, so the rail can never disagree with what is on screen.
+        int shown = 0;
+        {
+            int probe = y;
+            for (int i = first; i < WorkshopText.All.Length; i++)
+            {
+                if (probe + heights[i] > bottom) break;
+                probe += heights[i] + gap;
+                shown++;
+            }
+        }
+
+        ScrollRail(batch, sprites, x0 + w + 3 * scale, y, bottom - y, first, shown,
+                   WorkshopText.All.Length, scale);
+
         for (int i = first; i < WorkshopText.All.Length; i++)
         {
             if (y + heights[i] > bottom) break;
@@ -1046,6 +1062,19 @@ public static class Screens
             for (int i = 0; i < n; i++) outRects.Add(Rectangle.Empty);
         }
 
+        {
+            int probe = y0;
+            int shown = 0;
+            for (int i = first; i < n; i++)
+            {
+                if (probe + headH[i] + rowH[i] > bottom) break;
+                probe += headH[i] + rowH[i] + gap;
+                shown++;
+            }
+
+            ScrollRail(batch, sprites, x0 + w + 3 * scale, y0, bottom - y0, first, shown, n, scale);
+        }
+
         Rectangle resolutionRow = Rectangle.Empty;
         int y = y0;
         for (int i = first; i < n; i++)
@@ -1308,6 +1337,21 @@ public static class Screens
                 }
                 if (y + sum > bottom) break;
                 first--;
+            }
+
+            {
+                int probe = y;
+                int shown = 0;
+                for (int i = first; i < rows.Count; i++)
+                {
+                    int h = rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+                    if (probe + h > bottom) break;
+                    probe += h;
+                    shown++;
+                }
+
+                ScrollRail(batch, sprites, x0 + w + 3 * scale, y, bottom - y, first, shown,
+                           rows.Count, scale);
             }
 
             for (int i = first; i < rows.Count; i++)
@@ -2097,6 +2141,53 @@ public static class Screens
         double u = phase < 0.5 ? phase * 2 : (phase - 0.5) * 2;
         double eased = u * u * u * (u * (u * 6 - 15) + 10);
         return phase < 0.5 ? -1 + 2 * eased : 1 - 2 * eased;
+    }
+
+    /// <summary>
+    /// The rail beside a list that is taller than its window, saying how much more there is.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE WEB BUILD GETS THIS FREE AND THE PORT GOT NOTHING.</b> Every scrolling list here is
+    /// an `overflow-y: auto` element over there, so the browser draws a scrollbar and the player
+    /// can see at a glance that sixteen things exist and four are showing. Reimplementing the
+    /// scroll window without reimplementing its one visible affordance left a Workshop that looked
+    /// like a four-item menu with an unexplained gap under it - and the twelve rows below were
+    /// reachable the whole time, which is the worst version of the bug: nothing is broken, so
+    /// nothing looks broken.
+    /// </para>
+    /// <para>
+    /// DRAWN ONLY WHEN IT MEANS SOMETHING. A rail beside a list that already fits is furniture
+    /// claiming there is more to see.
+    /// </para>
+    /// <para>
+    /// THE THUMB IS SIZED BY COUNT, NOT BY PIXELS. Rows here are different heights - a four-line
+    /// blurb beside a one-liner - and the window start is recomputed from the cursor rather than
+    /// tracked as an offset (see DrawWorkshop), so there is no pixel scroll position to represent.
+    /// Proportion-of-items is the honest reading of what this list actually knows, and it is the
+    /// question the player is asking anyway: how much of this have I seen.
+    /// </para>
+    /// </remarks>
+    /// <param name="first">Index of the first row drawn.</param>
+    /// <param name="shown">How many rows fitted.</param>
+    /// <param name="total">How many there are altogether.</param>
+    public static void ScrollRail(SpriteBatch batch, Sprites sprites, int x, int top, int height,
+                                  int first, int shown, int total, int scale)
+    {
+        if (total <= 0 || shown >= total || height <= 0) return;
+
+        int wide = System.Math.Max(2, 2 * scale);
+        batch.Draw(sprites.Blank, new Rectangle(x, top, wide, height), Palette.Edge);
+
+        // A FLOOR ON THE THUMB, so a very long list still shows something grabbable rather than a
+        // dot that reads as a speck of dust on the screen.
+        int thumbH = System.Math.Max(8 * scale, height * shown / total);
+        if (thumbH > height) thumbH = height;
+
+        int span = height - thumbH;
+        int last = total - shown;
+        int at = last > 0 ? span * System.Math.Clamp(first, 0, last) / last : 0;
+        batch.Draw(sprites.Blank, new Rectangle(x, top + at, wide, thumbH), Palette.Shop);
     }
 
     /// <summary>

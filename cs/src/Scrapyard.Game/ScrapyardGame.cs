@@ -947,6 +947,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (down) _pedia.MoveRow(1);
             if (_menu.PageUp) _pedia.MoveRow(-Screens.PediaRows);
             if (_menu.PageDown) _pedia.MoveRow(Screens.PediaRows);
+            // THROUGH MoveRow, so the wheel steps over group headings exactly as the arrow keys
+            // do rather than parking the cursor somewhere it cannot open anything.
+            for (int k = System.Math.Abs(_mouse.WheelNotches); k > 0; k--)
+            {
+                _pedia.MoveRow(_mouse.WheelNotches > 0 ? -1 : 1);
+            }
             // A HEADING NEVER GETS A HIT RECT - see DrawPedia's outRects remark - so a hover that
             // lands on one is simply never reported here, the same way it can never be clicked.
             if (hover >= 0 && hover < _pedia.Rows.Count)
@@ -960,6 +966,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (up) _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - 1);
         if (down) _pedia.PageScroll++;
+        // A PAGE HAS A REAL SCROLL OFFSET, unlike the indexes, so the wheel moves it directly.
+        _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - _mouse.WheelNotches);
         if (_menu.PageUp)
         {
             _pedia.PageScroll = System.Math.Max(0, _pedia.PageScroll - Screens.PediaRows);
@@ -987,6 +995,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int n = MenuRows.SettingsRows.Length;
         if (_menu.Vertical < 0) _settingsCursor = (_settingsCursor + n - 1) % n;
         if (_menu.Vertical > 0) _settingsCursor = (_settingsCursor + 1) % n;
+        WheelMove(ref _settingsCursor, n);
 
         // THE ROW SAID [C] CHANGELOG BEFORE THERE WAS ONE, which is the exact failure this screen's
         // own notes condemn: a control that is advertised and does nothing. It shipped that way for
@@ -1113,6 +1122,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Horizontal > 0) _heroCursor = (_heroCursor + 1) % n;
         if (_menu.Vertical < 0) _heroCursor = (_heroCursor + n - cols) % n;
         if (_menu.Vertical > 0) _heroCursor = (_heroCursor + cols) % n;
+        // A ROW AT A TIME on a grid, which is what a wheel notch means on a two-column list.
+        for (int k = System.Math.Abs(_mouse.WheelNotches); k > 0; k--)
+        {
+            int step = _mouse.WheelNotches > 0 ? -cols : cols;
+            _heroCursor = System.Math.Clamp(_heroCursor + step, 0, n - 1);
+        }
 
         bool confirmed = _menu.Confirm;
         int hover = _mouse.Hover(_heroSelectRects);
@@ -1166,6 +1181,35 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// is for.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Moves a list cursor by the wheel, and says whether it moved.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE WHEEL MOVES THE CURSOR, NOT A SCROLL OFFSET, because these lists have no scroll offset
+    /// to move: every one of them recomputes where its window starts from where the cursor is (see
+    /// <c>Screens.DrawWorkshop</c>). Scrolling the view independently would mean inventing a second
+    /// piece of state and then keeping the two in step, which is the thing that design deliberately
+    /// avoids.
+    /// </para>
+    /// <para>
+    /// IT CLAMPS RATHER THAN WRAPPING, unlike the arrow keys. A wheel is a continuous gesture and
+    /// nobody spinning one expects to arrive back at the top; the keyboard's wrap is a discrete
+    /// press doing something deliberate, which is a different act.
+    /// </para>
+    /// </remarks>
+    private bool WheelMove(ref int cursor, int count)
+    {
+        int notches = _mouse.WheelNotches;
+        if (notches == 0 || count <= 0) return false;
+
+        // Wheel forward is positive and means "toward the top of the list", which is a lower index.
+        int next = System.Math.Clamp(cursor - notches, 0, count - 1);
+        if (next == cursor) return false;
+        cursor = next;
+        return true;
+    }
+
     private void PickRandomHero()
     {
         var owned = new List<int>();
@@ -1219,6 +1263,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int n = WorkshopText.All.Length;
         if (_menu.Vertical < 0) _shopCursor = (_shopCursor + n - 1) % n;
         if (_menu.Vertical > 0) _shopCursor = (_shopCursor + 1) % n;
+        WheelMove(ref _shopCursor, n);
 
         bool buyClicked = false;
         int hover = _mouse.Hover(_workshopRects);

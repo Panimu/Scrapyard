@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T04:38Z',
+    title: 'THE LONG MENUS SAY THAT THEY SCROLL, AND THE WHEEL WORKS',
+    notes: [
+      'The Workshop lists sixteen upgrades and only four fit on screen at once. It has always scrolled, but nothing said so — there was no bar, no counter, just four rows and a gap underneath — so the other twelve may as well not have existed. Every list that is taller than its window now shows a rail down its right-hand side saying how much more there is, and lists that already fit do not show one.',
+      'The mouse wheel scrolls them: the Workshop, Settings, Mech select, the Scrapopedia index and its pages.',
+    ],
+  },
+  {
     at: '2026-08-23T22:01Z',
     title: 'THE LOADOUT ROW IS BACK WHERE IT BELONGS',
     notes: [
