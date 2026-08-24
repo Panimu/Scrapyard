@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T10:28Z',
+    title: 'FIXED: THE MOUSE WHEEL GIVING UP AFTER THE FIRST SCROLL DOWN',
+    notes: [
+      'The wheel worked, then stopped, then sometimes started again. Windows reports the wheel as a running total that counts DOWNWARDS when you scroll toward yourself, and the game was treating any negative total as "nothing has happened yet" — so the first notch downward switched the wheel off, and only scrolling back up past the starting point brought it back.',
+      'You can also drag the scroll bar now, or click anywhere on its track to jump there. The bar is easier to hit than it is to see: the grab area is wider than the line drawn, because four pixels is not something anyone can aim at.',
+    ],
+  },
+  {
     at: '2026-08-24T09:42Z',
     title: 'FIXED: SCRAPOPEDIA PAGES GETTING STUCK WHEN SCROLLED BACK UP',
     notes: [

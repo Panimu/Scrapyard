@@ -958,6 +958,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         if (_pedia.Page is null)
         {
+            // ONLY THE INDEX HAS A RAIL - the sections pane always fits and a page scrolls by its
+            // own line counter, so neither has geometry to grab.
+            if (ScrollDrag(_pedia.Scroll)) return;
+
             if (up) _pedia.MoveRow(-1);
             if (down) _pedia.MoveRow(1);
             if (_menu.PageUp) _pedia.MoveRow(-Screens.PediaRows);
@@ -1033,6 +1037,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // own notes condemn: a control that is advertised and does nothing. It shipped that way for
         // two commits.
         bool openChangelog = Pressed(keys, Keys.C);
+        if (ScrollDrag(_settingsScroll)) return;
+
         bool rowClicked = false;
         int hover = _mouse.Hover(_settingsRects);
         if (hover >= 0 && hover < n)
@@ -1165,6 +1171,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // BY GRID ROW, because that is the unit the tiles move in - see DrawHeroSelect.
         if (_heroCursor != wasHero) _heroScroll.RevealRow = _heroCursor / cols;
 
+        if (ScrollDrag(_heroScroll)) return;
+
         bool confirmed = _menu.Confirm;
         int hover = _mouse.Hover(_heroSelectRects);
         if (hover >= 0 && hover < n)
@@ -1217,6 +1225,41 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// is for.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Works the scroll rail, and says whether the pointer belongs to it this frame.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT RETURNS TRUE TO CLAIM THE POINTER. A drag that started on the rail routinely travels
+    /// sideways over the rows - that is what dragging a scrollbar looks like - and without a claim
+    /// every row it crossed would take the highlight and the release would land on one as a click.
+    /// The caller skips its own hover and click handling while this is true.
+    /// </para>
+    /// <para>
+    /// THE RELEASE IS CHECKED BEFORE THE GRAB, so a drag ending this frame ends cleanly rather
+    /// than being re-grabbed by the same button state.
+    /// </para>
+    /// </remarks>
+    private bool ScrollDrag(Scroll scroll)
+    {
+        if (scroll.Dragging)
+        {
+            if (!_mouse.LeftDown)
+            {
+                scroll.EndDrag();
+                // STILL CLAIMED FOR THIS FRAME. The button came up over whatever the drag happened
+                // to finish on, and that release is the end of a drag rather than a click on a row.
+                return true;
+            }
+
+            scroll.DragTo((int)_mouse.Position.Y);
+            return true;
+        }
+
+        return _mouse.LeftClicked
+               && scroll.BeginDrag((int)_mouse.Position.X, (int)_mouse.Position.Y);
+    }
+
     private void PickRandomHero()
     {
         var owned = new List<int>();
@@ -1284,6 +1327,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // AND THE VIEW FOLLOWS THE CURSOR ONLY WHEN THE CURSOR MOVED. Asking for it every frame
         // would undo the wheel on the next one.
         if (_shopCursor != wasCursor) _shopScroll.RevealRow = _shopCursor;
+
+        if (ScrollDrag(_shopScroll)) return;
 
         bool buyClicked = false;
         int hover = _mouse.Hover(_workshopRects);

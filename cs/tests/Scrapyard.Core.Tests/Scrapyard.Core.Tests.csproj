@@ -59,6 +59,7 @@
     <Compile Include="..\..\src\Scrapyard.Game\PediaText.cs" Link="Linked\PediaText.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\Pedia.cs" Link="Linked\Pedia.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\ScrollState.cs" Link="Linked\ScrollState.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\WheelCounter.cs" Link="Linked\WheelCounter.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\PediaState.cs" Link="Linked\PediaState.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CreatureArtTable.cs" Link="Linked\CreatureArtTable.cs" />
   </ItemGroup>

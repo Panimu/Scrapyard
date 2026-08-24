@@ -396,8 +396,7 @@ public static class Screens
         scroll.ClampToContent();
 
         var view = new Rectangle(x0, listTop, w, avail);
-        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, listTop, avail, scroll.Px, content, avail,
-                     scale);
+        ScrollRailPx(batch, sprites, scroll, x0 + w + 3 * scale, listTop, avail, scale);
 
         // A HALF-SEEN TILE IS FINE NOW, and this comment used to say the opposite - "a row that
         // does not fit whole is not drawn at all", on the grounds that there was no scissor
@@ -736,7 +735,7 @@ public static class Screens
         // offset to the next one.
         int listTop = y;
         var view = new Rectangle(x0, y, w, avail);
-        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, y, avail, scroll.Px, content, avail, scale);
+        ScrollRailPx(batch, sprites, scroll, x0 + w + 3 * scale, y, avail, scale);
 
         // CLIPPED, which is the half of pixel scrolling that is not arithmetic: a row straddling
         // the top or bottom of the window has to be CUT rather than either drawn whole over the
@@ -1156,8 +1155,7 @@ public static class Screens
         scroll.ClampToContent();
 
         var view = new Rectangle(x0, y0, w, availPx);
-        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, y0, availPx, scroll.Px, content, availPx,
-                     scale);
+        ScrollRailPx(batch, sprites, scroll, x0 + w + 3 * scale, y0, availPx, scale);
 
         Rectangle resolutionRow = Rectangle.Empty;
         int y = y0;
@@ -1444,8 +1442,7 @@ public static class Screens
             st.Scroll.ClampToContent();
 
             var view = new Rectangle(x0, listTop, w, availPx);
-            ScrollRailPx(batch, sprites, x0 + w + 3 * scale, listTop, availPx, st.Scroll.Px,
-                         content, availPx, scale);
+            ScrollRailPx(batch, sprites, st.Scroll, x0 + w + 3 * scale, listTop, availPx, scale);
 
             PushClip(batch, view);
             for (int i = 0; i < rows.Count; i++)
@@ -2362,20 +2359,28 @@ public static class Screens
     /// show. Once there is a real offset the rail can say the true thing instead - how far down the
     /// content the window is, and how much of it the window covers.
     /// </remarks>
-    public static void ScrollRailPx(SpriteBatch batch, Sprites sprites, int x, int top, int height,
-                                    int px, int content, int viewport, int scale)
+    public static void ScrollRailPx(SpriteBatch batch, Sprites sprites, Scroll scroll, int x,
+                                    int top, int height, int scale)
     {
-        if (content <= viewport || height <= 0) return;
+        // STAMPED WHETHER OR NOT IT DRAWS, so a list that has just shrunk below its window reports
+        // a rail with no thumb rather than the geometry it had while it was still long enough to
+        // have one - which is a rail the mouse could still grab.
+        scroll.RailX = x;
+        scroll.RailTop = top;
+        scroll.RailW = System.Math.Max(2, 2 * scale);
+        scroll.RailH = height;
+        scroll.MinThumb = 8 * scale;
 
-        int wide = System.Math.Max(2, 2 * scale);
-        batch.Draw(sprites.Blank, new Rectangle(x, top, wide, height), Palette.Edge);
+        int thumbH = scroll.ThumbH;
+        if (thumbH <= 0 || height <= 0) return;
 
-        int thumbH = System.Math.Max(8 * scale, (int)((long)height * viewport / content));
-        if (thumbH > height) thumbH = height;
+        batch.Draw(sprites.Blank, new Rectangle(x, top, scroll.RailW, height), Palette.Edge);
 
-        int max = content - viewport;
-        int at = max > 0 ? (int)((long)(height - thumbH) * System.Math.Clamp(px, 0, max) / max) : 0;
-        batch.Draw(sprites.Blank, new Rectangle(x, top + at, wide, thumbH), Palette.Shop);
+        // BRIGHTER WHILE HELD, which is the only feedback saying the grab landed - the thumb is
+        // under the pointer and the pointer is not drawn over it.
+        batch.Draw(sprites.Blank,
+                   new Rectangle(x, top + scroll.ThumbOffset, scroll.RailW, thumbH),
+                   scroll.Dragging ? Palette.Ink : Palette.Shop);
     }
 
     /// <summary>

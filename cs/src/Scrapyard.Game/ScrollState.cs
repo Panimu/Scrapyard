@@ -53,7 +53,106 @@ public sealed class Scroll
     /// </remarks>
     public int RevealRow = -1;
 
+    // ---------------------------------------------------------------------------------------
+    // THE RAIL, AND DRAGGING IT
+    // ---------------------------------------------------------------------------------------
+    //
+    // THE GEOMETRY IS STAMPED BY THE DRAW because the draw is what decides it, and the thumb's
+    // size and position are computed HERE so the bar you see and the bar you grab are the same
+    // arithmetic. Two copies of it would be a thumb that renders in one place and answers the
+    // mouse in another - close enough to look right and wrong exactly where it matters.
+
+    /// <summary>Where the rail was drawn. Stamped each frame; meaningless before the first.</summary>
+    public int RailX;
+
+    public int RailTop;
+    public int RailW;
+    public int RailH;
+
+    /// <summary>The shortest the thumb may be drawn, in pixels. Stamped with the geometry.</summary>
+    /// <remarks>
+    /// A very long list would otherwise compute a thumb one or two pixels tall, which reads as a
+    /// speck of dust rather than something you can take hold of.
+    /// </remarks>
+    public int MinThumb = 8;
+
+    /// <summary>True while the player has hold of the thumb.</summary>
+    public bool Dragging { get; private set; }
+
+    /// <summary>Where in the thumb it was grabbed, so it does not jump under the pointer.</summary>
+    private int _grab;
+
     public int Max => System.Math.Max(0, Content - Viewport);
+
+    /// <summary>How tall the thumb is, or 0 when there is nothing to scroll.</summary>
+    public int ThumbH
+    {
+        get
+        {
+            if (Content <= Viewport || RailH <= 0) return 0;
+            int h = (int)((long)RailH * Viewport / Content);
+            return System.Math.Min(RailH, System.Math.Max(MinThumb, h));
+        }
+    }
+
+    /// <summary>How far down the rail the thumb sits, in pixels from <see cref="RailTop"/>.</summary>
+    public int ThumbOffset
+    {
+        get
+        {
+            int span = RailH - ThumbH;
+            if (span <= 0 || Max <= 0) return 0;
+            return (int)((long)span * System.Math.Clamp(Px, 0, Max) / Max);
+        }
+    }
+
+    /// <summary>
+    /// Takes hold of the rail at a point, if there is a rail there to take hold of.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE HIT AREA IS WIDER THAN THE BAR IS DRAWN. The rail is a few pixels across - it is meant
+    /// to be read, not aimed at - and asking anyone to land a click on four pixels is asking them
+    /// to miss. A fat invisible target over a thin visible mark is what every scrollbar does.
+    /// </para>
+    /// <para>
+    /// A CLICK ON THE TRACK JUMPS THERE AND KEEPS THE DRAG, rather than paging. The thumb comes to
+    /// the pointer, and because the button is still down the player is already dragging it - which
+    /// is what a click on a track usually turns out to have meant.
+    /// </para>
+    /// </remarks>
+    public bool BeginDrag(int x, int y)
+    {
+        if (ThumbH <= 0) return false;
+
+        int grabW = System.Math.Max(RailW * 4, 12);
+        int left = RailX + RailW / 2 - grabW / 2;
+        if (x < left || x > left + grabW) return false;
+        if (y < RailTop || y > RailTop + RailH) return false;
+
+        int top = RailTop + ThumbOffset;
+        _grab = y >= top && y <= top + ThumbH ? y - top : ThumbH / 2;
+        Dragging = true;
+        DragTo(y);
+        return true;
+    }
+
+    /// <summary>Moves the view so the thumb follows the pointer.</summary>
+    public void DragTo(int y)
+    {
+        int span = RailH - ThumbH;
+        if (span <= 0)
+        {
+            Px = 0;
+            return;
+        }
+
+        int want = System.Math.Clamp(y - _grab - RailTop, 0, span);
+        Px = (int)((long)want * Max / span);
+        ClampToContent();
+    }
+
+    public void EndDrag() => Dragging = false;
 
     public void ClampToContent() => Px = System.Math.Clamp(Px, 0, Max);
 
@@ -62,6 +161,7 @@ public sealed class Scroll
     {
         Px = 0;
         RevealRow = -1;
+        Dragging = false;
     }
 
     /// <summary>
