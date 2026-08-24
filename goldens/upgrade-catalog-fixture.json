@@ -2,7 +2,7 @@
  "note": "The upgrade catalog: which weapon a card grants, its stacking ceiling, its ascension, its weapon-held gate, and its effects. Card text, icons and the unlock condition are excluded - no reader in stepWorld touches them. Every field compared as an exact 64-bit pattern.",
  "weaponMaxTier": 7,
  "weaponAscendedTier": 8,
- "weaponCardCount": 11,
+ "weaponCardCount": 12,
  "passiveCardCount": 10,
  "catalog": [
   {
@@ -910,6 +910,7 @@
     "artillery",
     "drone",
     "phase-cannon",
+    "mortar",
     "laser-long"
    ],
    "effects": [],
@@ -1043,6 +1044,18 @@
      }
     ]
    ],
+   "ascension": null
+  },
+  {
+   "index": 21,
+   "id": "w-mortar",
+   "kind": "weapon",
+   "grantsWeapon": "mortar",
+   "maxStacks": 7,
+   "weight": "4024000000000000",
+   "requiresWeaponHeld": null,
+   "effects": [],
+   "tierEffects": null,
    "ascension": null
   }
  ]

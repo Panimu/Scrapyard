@@ -230,7 +230,8 @@ public static class WeaponIds
     public const int Artillery = 8;
     public const int Drone = 9;
     public const int PhaseCannon = 10;
-    public const int Count = 11;
+    public const int Mortar = 11;
+    public const int Count = 12;
 }
 
 public static class WeaponCatalog
@@ -346,7 +347,67 @@ public static class WeaponCatalog
             new WeaponStatDelta { Pierce = 1 },      // T7  punches through one body
             new WeaponStatDelta(),                    // T8  the Twin Mount - see TwinFrom
         },
+        // ONE BARREL, TWO GUNS THAT COULD BOLT TO IT. Declared here and nowhere else - the check
+        // runs both directions. See the TypeScript's own note on WeaponDef.excludes.
+        Excludes = new[] { WeaponIds.Mortar },
         TwinFrom = WeaponAscendedTier, ReengageMul = 0.55, VisualId = VisualId.Shell,
+        MuzzleOffset = 30, ShellRadius = 9,
+        FireAlongFacing = false, DetonateOnExpiry = false,
+    };
+
+    /// <summary>
+    /// THE MORTAR - the Cannon's mount, asking the opposite question.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The Cannon commits to the BIGGEST body in range and pays for it by ignoring everything
+    /// else; the Mortar lobs one heavy shell into the THICKEST PART OF THE CROWD and does not care
+    /// what is standing there.
+    /// </para>
+    /// <para>
+    /// AND IT IS LAZY ABOUT TURNING, which is its character rather than a limitation. It looks in
+    /// a narrow cone off the barrel first and widens only when that cone is empty - so it shoots
+    /// what is already in front of it, and a player who wants it pointed somewhere turns the mech.
+    /// </para>
+    /// <para>
+    /// Damage and blast are the Heavy Artillery's, COPIED AND NOT REFERENCED, for the reason the
+    /// three cycle ladders each carry their own copy of one measured curve: retuning the barrage
+    /// must not be able to reach this, and the guarantee is that there is no shared symbol.
+    /// </para>
+    /// </remarks>
+    public static readonly WeaponDef Mortar = new()
+    {
+        Id = WeaponIds.Mortar, Name = "Mortar", Kind = Scrapyard.Core.WeaponKind.Projectile,
+        Targeting = Core.Targeting.Rule.ConeDensest, Pattern = Core.FirePattern.Battery,
+        Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
+        Base = new WeaponStatBlock
+        {
+            Damage = 55.1,
+            Cooldown = 2.0,
+            Range = 330, // further than the Cannon: it reaches the crowd forming, not the one on you
+            ProjectileSpeed = 300, // slow enough to see, and slow enough to walk out from under
+            ProjectileCount = 1,
+            Knockback = 120,
+            // THE DAMAGE IS THE BLAST. There is no direct hit worth the name on a shell aimed at a
+            // gap between bodies rather than at a body.
+            SplashRadius = 75,
+            SplashFrac = 1,
+            TurretTraverse = 0.9424777960769379, // degToRad(54) - slower than the Cannon's, on purpose
+            FireArc = 0.20943951023931956,       // degToRad(12)
+            HeatCapacity = HeatCapacityBase,
+        },
+        PerLevel = new[]
+        {
+            new WeaponStatDelta { SplashRadius = 12 },   // T2  75 -> 87
+            new WeaponStatDelta { Cooldown = -0.3 },     // T3  2.0 -> 1.7 s  (-15% of base)
+            new WeaponStatDelta { Damage = 20 },         // T4  55.1 -> 75.1
+            new WeaponStatDelta { SplashRadius = 12 },   // T5  87 -> 99
+            new WeaponStatDelta { Cooldown = -0.3 },     // T6  1.7 -> 1.4 s
+            new WeaponStatDelta { ProjectileCount = 1 }, // T7  a second shell
+            new WeaponStatDelta(),                       // T8  no ascension - the twin barrels are
+                                                         //     the Cannon's announcement alone
+        },
+        ReengageMul = 0.55, VisualId = VisualId.Shell,
         MuzzleOffset = 30, ShellRadius = 9,
         FireAlongFacing = false, DetonateOnExpiry = false,
     };
@@ -609,6 +670,9 @@ public static class WeaponCatalog
     {
         Cannon, LaserShort, LaserMedium, LaserLong, MissileShort, MissileLong,
         MachineGun, FlakCannon, Artillery, Drone, PhaseCannon,
+        // APPENDED. `LevelUp.Stacks` and every tier unlock condition are keyed by catalog index -
+        // see the TypeScript's own note where this card is declared.
+        Mortar,
     };
 
     /// <summary>Catalog index for a weapon id. The array position already IS the id in this port.</summary>

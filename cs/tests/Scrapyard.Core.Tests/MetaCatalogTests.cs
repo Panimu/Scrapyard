@@ -252,6 +252,7 @@ public class MetaCatalogTests
         "artillery" => WeaponIds.Artillery,
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
+        "mortar" => WeaponIds.Mortar,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 

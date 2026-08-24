@@ -75,7 +75,8 @@ export type UpgradeId =
   | 'p-repair'
   | 'p-radiator'
   | 'p-blast'
-  | 'p-ammo';
+  | 'p-ammo'
+  | 'w-mortar';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -1005,8 +1006,10 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * mechanic. Its whole effect is `splashRadius`, so it is a guaranteed no-op on anything that
      * does not blast (a share of zero is zero) - hence `requiresWeaponHeld` keeps it out of the
      * deck for a loadout with nothing that explodes, exactly the dead-pick rule the radiator
-     * established. The three ids listed are the three carriers of a splashRadius today: the
-     * artillery's barrage, the drone's death detonation, the Phase Cannon's burst.
+     * established. The ids listed are every carrier of a splashRadius today: the artillery's
+     * barrage, the drone's death detonation, the Phase Cannon's burst and the Mortar's shell.
+     * `tests/cardGating.test.ts` walks the catalog and fails if one is missing, which is how the
+     * Mortar got here rather than by anybody remembering.
      *
      * Area grows with the SQUARE of the radius, so the finished card's +50% radius is ~+125%
      * ground covered - which is why the ramp key is the radius and not some invented "area" stat:
@@ -1031,7 +1034,13 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     // beam's own width tier. The one loadout this offers a genuinely dead pick to is a Long
     // Laser run that never finds the ascension - which is the same bet every `requires` passive
     // purchase makes.
-    requiresWeaponHeld: Object.freeze(['artillery', 'drone', 'phase-cannon', 'laser-long']),
+    requiresWeaponHeld: Object.freeze([
+      'artillery',
+      'drone',
+      'phase-cannon',
+      'mortar',
+      'laser-long',
+    ]),
     /**
      * BEHIND TWO THOUSAND BLAST KILLS, ACROSS EVERY RUN - the mechanic's own career condition:
      * a save that has finished two thousand bodies with splash has spent real time under its own
@@ -1082,6 +1091,51 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * have been racking ever since. See UnlockCond `reloadsTotal` and RunStats.reloads.
      */
     unlock: Object.freeze({ kind: 'reloadsTotal' as const, count: 1911 }),
+  },
+  {
+    id: 'w-mortar',
+    kind: 'weapon',
+    grantsWeapon: 'mortar',
+    name: 'Mortar',
+    /**
+     * APPENDED RATHER THAN FILED WITH THE OTHER GUNS, and that is load-bearing rather than lazy.
+     * `levelUp.stacks` is keyed by CATALOG INDEX, and so is every `tier` unlock condition - Plum
+     * asks for index 17 at tier 7, and four ascension trophies name indices 0, 2, 8, 9 and 10.
+     * Inserting this card beside the Cannon would renumber all of them at once and silently
+     * repoint every one at a different card. The order of this array is a format, not a
+     * presentation: the Scrapopedia groups by `kind`, so nothing a player sees is out of place.
+     */
+    description:
+      'Lobs a heavy shell into the thickest part of the crowd. Prefers whatever is already in front of the barrel.',
+    // Order matches the weapon's own perLevel ladder exactly: blast, rate, damage, twice around,
+    // then the second shell.
+    tiers: Object.freeze([
+      'Unlock.',
+      'A wider blast.',
+      'Lobs more often.',
+      'A heavier shell.',
+      'A wider blast again.',
+      'Lobs more often again.',
+      'A second shell every volley.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    /**
+     * EIGHTEEN HUNDRED AND TWELVE KILLING BLOWS, ACROSS EVERY RUN - `killsWithTotal`, the career
+     * condition, for the reason the Phase Cannon's thousand and one is: a tally this size is a
+     * body of work rather than one heroic run, and a weapon grind that reset on death would be
+     * the genre's worst homework.
+     *
+     * 1812 is the joke and the reference at once, the same shape as the Flak Cannon's 9001, the
+     * Drones' 1984 and Ammo Drums' 1911 - Tchaikovsky's overture, the one piece of orchestral
+     * music scored for live artillery, and the only year in this catalog you can hear.
+     *
+     * The bootstrap is the usual one: the card cannot come up in the deck until it is earned, and
+     * the chassis that OPENS with it (Rust) is the way in - a held card keeps offering its tiers
+     * whatever the lock says, so Rust levels it while everyone else is still earning it.
+     */
+    unlock: Object.freeze({ kind: 'killsWithTotal' as const, weapons: ['mortar'], count: 1812 }),
+    effects: [],
   },
 ] as const) as readonly UpgradeDef[];
 

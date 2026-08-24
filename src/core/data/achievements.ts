@@ -57,6 +57,7 @@ export type AchievementId =
   | 'hydra'
   | 'radiator-bank'
   | 'phase-cannon'
+  | 'mortar'
   | 'shaped-charges'
   | 'flak-cannon'
   | 'drones'
@@ -134,6 +135,7 @@ function cardUnlock(id: UpgradeId): UnlockCond {
 }
 const RADIATOR_UNLOCK = cardUnlock('p-radiator');
 const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
+const MORTAR_UNLOCK = cardUnlock('w-mortar');
 const BLAST_UNLOCK = cardUnlock('p-blast');
 const FLAK_UNLOCK = cardUnlock('w-flak-cannon');
 const DRONE_UNLOCK = cardUnlock('w-drone');
@@ -359,6 +361,21 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // the entry the Scrapopedia's UNLABELED progress bar hangs off - `unlockProgress` reads this
     // same object, so the bar, the trophy and the card all move on the identical count.
     cond: PHASE_CANNON_UNLOCK,
+  },
+  {
+    id: 'mortar',
+    platformKey: 'scrapyard_mortar',
+    // 1812 is the overture, and the overture is scored for live artillery - the only year in this
+    // catalog you can hear. It sits in the same register as the Flak Cannon's 9001, the Drones'
+    // 1984 and Ammo Drums' 1911: a number that is a reference before it is a threshold.
+    name: 'Overture',
+    icon: 'icon_w-mortar',
+    description: describeUnlockDone(MORTAR_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like every other card unlock here - the trophy and the deck unlock cannot
+    // disagree about what eighteen hundred and twelve means, and the Scrapopedia's unlabeled
+    // progress bar reads this same object.
+    cond: MORTAR_UNLOCK,
   },
   {
     id: 'shaped-charges',

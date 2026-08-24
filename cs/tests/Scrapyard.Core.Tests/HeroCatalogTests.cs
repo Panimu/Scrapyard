@@ -132,9 +132,10 @@ public class HeroCatalogTests
             }
         }
 
-        // Eight heroes carry a mul bonus, three an add bonus, one a player multiplier (Plum) - a
+        // Nine heroes carry a mul bonus, three an add bonus, one a player multiplier (Plum) - a
         // fixture where these were all zero would pass against a port that dropped every bonus.
-        Assert.True(weaponMulCount == 8, $"expected 8 weapon mul bonuses, found {weaponMulCount}");
+        // Rust is the ninth: it opens with the Mortar and lobs 30% harder.
+        Assert.True(weaponMulCount == 9, $"expected 9 weapon mul bonuses, found {weaponMulCount}");
         Assert.True(weaponAddCount == 3, $"expected 3 weapon add bonuses, found {weaponAddCount}");
         Assert.True(playerMulCount == 1, $"expected 1 player multiplier (Plum), found {playerMulCount}");
     }
@@ -204,6 +205,7 @@ public class HeroCatalogTests
         "artillery" => WeaponIds.Artillery,
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
+        "mortar" => WeaponIds.Mortar,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 
@@ -217,6 +219,7 @@ public class HeroCatalogTests
         "w-artillery" => UpgradeIds.WArtillery,
         "w-drone" => UpgradeIds.WDrone,
         "w-phase-cannon" => UpgradeIds.WPhaseCannon,
+        "w-mortar" => UpgradeIds.WMortar,
         "w-laser-short" => UpgradeIds.WLaserShort,
         "w-laser-medium" => UpgradeIds.WLaserMedium,
         "w-laser-long" => UpgradeIds.WLaserLong,

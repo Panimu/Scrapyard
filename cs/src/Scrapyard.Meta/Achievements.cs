@@ -61,6 +61,7 @@ public static class Achievements
         new("gtm-hornet", "scrapyard_gtm_hornet", "Hornet's Nest", "Fed the Short Missiles to the Long ones and made the GTM Hornet.", "icon_w-gtm-hornet", true, UnlockCond.Tier(2, 8)),
         new("radiator-bank", "scrapyard_radiator_bank", "Red Line", "Ran all three lasers red-hot at once.", "icon_p-radiator", true, UnlockCond.LasersOverheated()),
         new("phase-cannon", "scrapyard_phase_cannon", "Through and Through", "Destroyed 1001 with the Phase Cannon, across every run.", "icon_w-phase-cannon", true, UnlockCond.KillsWithTotal(1001, WeaponIds.PhaseCannon)),
+        new("mortar", "scrapyard_mortar", "Overture", "Destroyed 1812 with the Mortar, across every run.", "icon_w-mortar", true, UnlockCond.KillsWithTotal(1812, WeaponIds.Mortar)),
         new("shaped-charges", "scrapyard_shaped_charges", "Collateral", "Destroyed 2000 with blast damage, across every run.", "icon_p-blast", true, UnlockCond.SplashKillsTotal(2000)),
         new("ammo-drums", "scrapyard_ammo_drums", "Old Reliable", "Reloaded a magazine 1911 times, across every run.", "icon_p-ammo", true, UnlockCond.ReloadsTotal(1911)),
     };

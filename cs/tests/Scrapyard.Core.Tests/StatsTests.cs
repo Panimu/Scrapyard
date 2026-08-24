@@ -261,6 +261,7 @@ public class StatsTests
         "artillery" => WeaponIds.Artillery,
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
+        "mortar" => WeaponIds.Mortar,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 
@@ -274,6 +275,7 @@ public class StatsTests
         "w-artillery" => UpgradeIds.WArtillery,
         "w-drone" => UpgradeIds.WDrone,
         "w-phase-cannon" => UpgradeIds.WPhaseCannon,
+        "w-mortar" => UpgradeIds.WMortar,
         "w-laser-short" => UpgradeIds.WLaserShort,
         "w-laser-medium" => UpgradeIds.WLaserMedium,
         "w-laser-long" => UpgradeIds.WLaserLong,

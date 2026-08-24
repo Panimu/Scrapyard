@@ -225,6 +225,7 @@ public class WeaponCatalogTests
         "artillery" => WeaponIds.Artillery,
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
+        "mortar" => WeaponIds.Mortar,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 
@@ -247,6 +248,7 @@ public class WeaponCatalogTests
             "nearest" => Targeting.Rule.Nearest,
             "lowest-hp" => Targeting.Rule.LowestHp,
             "densest" => Targeting.Rule.Densest,
+            "cone-densest" => Targeting.Rule.ConeDensest,
             _ => throw new System.ArgumentOutOfRangeException(nameof(name), name, "unknown targeting rule"),
         };
         Assert.True(want == got, $"{where}: targeting");

@@ -338,22 +338,23 @@ export const targetLowestHp: TargetingFn = (
  * frets about, that is well under the 100k/s line that motivated the spatial hash - and typical
  * fields are a tenth of the worst case.
  */
-export const targetDensest: TargetingFn = (
-  world,
-  originX,
-  originY,
-  rangeSq,
-  wantCount,
-  out,
-): number => {
-  const k = wantCount < out.length ? wantCount : out.length;
-  if (k <= 0) return 0;
-
+/**
+ * Gather: live, in range, deduped, into `world.scratch.candidates`. NO line-of-sight ray - see
+ * the header.
+ *
+ * SHARED BY THE TWO CLUSTER RULES rather than written twice. It was inline in `targetDensest`
+ * until the Mortar needed the same set to filter a cone out of, and two copies of a dedupe that
+ * feeds a determinism-critical argmax is two places for the corpus to start disagreeing with
+ * itself.
+ */
+function gatherInRange(
+  world: World,
+  originX: number,
+  originY: number,
+  rangeSq: number,
+): number {
   const enemies = world.enemies;
   const candidates = world.scratch.candidates;
-  const counts = world.scratch.neighbourCounts;
-
-  // Gather: live, in range, deduped. NO line-of-sight ray - see the header.
   const raw = queryCircleLiveInto(
     world.spatial,
     enemies,
@@ -380,7 +381,29 @@ export const targetDensest: TargetingFn = (
     if (duplicate) continue;
     candidates[n++] = d;
   }
-  if (n === 0) return 0;
+  return n;
+}
+
+/**
+ * Score `n` already-gathered candidates by how crowded each one is, and take the top `k`.
+ *
+ * EXTRACTED VERBATIM from `targetDensest`, and the corpus is what says so: this arithmetic
+ * decides which body a Phase Cannon bolt lands on, so a refactor of it that changed one comparison
+ * would move nine recorded runs. It did not.
+ */
+function scoreDensest(
+  world: World,
+  originX: number,
+  originY: number,
+  n: number,
+  k: number,
+  out: Int32Array,
+): number {
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+  const counts = world.scratch.neighbourCounts;
+  const ex = enemies.x;
+  const ey = enemies.y;
 
   // Tally neighbours among the candidates themselves, each pair once. A body's own cluster can
   // extend past the weapon's range; those outliers are not counted, which is the honest reading -
@@ -441,6 +464,128 @@ export const targetDensest: TargetingFn = (
     out[filled++] = best;
   }
   return filled;
+}
+
+/**
+ * THE THICKEST KNOT IN RANGE, wherever it is. The Phase Cannon's rule.
+ */
+export const targetDensest: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+): number => {
+  const k = wantCount < out.length ? wantCount : out.length;
+  if (k <= 0) return 0;
+
+  const n = gatherInRange(world, originX, originY, rangeSq);
+  if (n === 0) return 0;
+  return scoreDensest(world, originX, originY, n, k, out);
+};
+
+/**
+ * THE COSINES OF THE CONE THIS RULE WIDENS THROUGH, in fifteen-degree steps out to a full circle.
+ *
+ * A COSINE TABLE AND NOT A TRIG CALL, because core may not have one: `Math.cos` is
+ * implementation-approximated and a target chosen by an ULP is a different run on somebody else's
+ * machine. `dot(d, aim) >= cos(t) * |d|` is the same test with the transcendental hoisted out to
+ * a literal, and a literal is the same double in both languages by construction.
+ *
+ * THE LAST ENTRY IS EXACTLY -1, which accepts everything: `dot >= -|d|` cannot be false. That is
+ * what guarantees the widening loop terminates with a target whenever anything is in range at
+ * all, rather than falling off the end of the table having found nothing.
+ */
+const CONE_COS: readonly number[] = Object.freeze([
+  0.9659258262890683, // 15 degrees
+  0.8660254037844387, // 30
+  0.7071067811865476, // 45
+  0.5, // 60
+  0.25881904510252074, // 75
+  0, // 90
+  -0.25881904510252074, // 105
+  -0.5, // 120
+  -0.7071067811865476, // 135
+  -0.8660254037844387, // 150
+  -0.9659258262890683, // 165
+  -1, // 180 - the whole field
+]);
+
+/**
+ * THE THICKEST KNOT INSIDE A CONE IN FRONT OF THE BARREL, widening until it finds one.
+ *
+ * The Mortar's rule, and the reason `TargetingFn` carries the turret's facing at all. It is the
+ * densest rule with a filter in front of it: look in a narrow cone first, and only if nothing is
+ * there open the cone by another fifteen degrees and look again.
+ *
+ * THAT IS THE WEAPON'S CHARACTER AND NOT A COST. A gun that prefers what is already in front of
+ * its barrel shoots without slewing, keeps shooting while the crowd it is working stays put, and
+ * swings across the yard only when the front has nothing left to offer - so where the mech is
+ * pointing is a decision the player makes with the whole machine.
+ *
+ * THE WIDENING IS ALL-OR-NOTHING PER STEP, not a preference. The first cone with anything in it
+ * wins outright, and the densest knot INSIDE it is chosen - a bigger crowd one degree outside the
+ * cone does not pull the shot. Scoring across the whole field with a distance-from-aim penalty
+ * was the alternative and it is a different weapon: it would always shoot the biggest crowd and
+ * merely lean toward the front.
+ */
+export const targetConeDensest: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+  aimX,
+  aimY,
+): number => {
+  const k = wantCount < out.length ? wantCount : out.length;
+  if (k <= 0) return 0;
+
+  const n = gatherInRange(world, originX, originY, rangeSq);
+  if (n === 0) return 0;
+
+  // NORMALISED HERE rather than trusted. The turret's facing is a unit vector everywhere it is
+  // maintained, and this rule is wrong in a way nobody would see - a slightly long aim vector
+  // silently narrows every cone - if it ever stops being one.
+  const aimLen = Math.sqrt(aimX * aimX + aimY * aimY);
+  if (aimLen <= 0) return scoreDensest(world, originX, originY, n, k, out);
+  const ax = aimX / aimLen;
+  const ay = aimY / aimLen;
+
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+  const ex = enemies.x;
+  const ey = enemies.y;
+
+  for (let step = 0; step < CONE_COS.length; step++) {
+    const minCos = CONE_COS[step];
+    let kept = 0;
+    for (let i = 0; i < n; i++) {
+      const d = candidates[i];
+      const dx = ex[d] - originX;
+      const dy = ey[d] - originY;
+      // dot >= cos(t) * |d|, which is "the angle between them is at most t" without an acos.
+      // Compared against the LENGTH rather than the square so the sign of the dot still means
+      // what it should past ninety degrees.
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (dx * ax + dy * ay >= minCos * len) {
+        // Compacted in place. `candidates` is scratch and the order of what survives is the order
+        // it arrived in, so the argmax below still breaks ties the same way it always did.
+        candidates[kept++] = d;
+      }
+    }
+
+    if (kept > 0) return scoreDensest(world, originX, originY, kept, k, out);
+
+    // NOTHING SURVIVED, so the next cone has to start from the full set again - the compaction
+    // above has already overwritten the front of the buffer with a shorter list.
+    const refill = gatherInRange(world, originX, originY, rangeSq);
+    if (refill === 0) return 0;
+  }
+
+  return 0;
 };
 
 /**
@@ -452,4 +597,5 @@ export const TARGETING: Readonly<Record<TargetingId, TargetingFn>> = Object.free
   nearest: targetNearest,
   'lowest-hp': targetLowestHp,
   densest: targetDensest,
+  'cone-densest': targetConeDensest,
 });

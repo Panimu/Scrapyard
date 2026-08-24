@@ -96,6 +96,8 @@ public static class CardTexts
             new[] { "Every blast reaches a little wider.", "Every blast reaches a little wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches much wider.", "Every blast reaches much wider." }),
         new("p-ammo", "Ammo Drums", "Every magazine on the chassis carries more rounds.", false,
             new[] { "A little more in every drum.", "A little more in every drum.", "More in every drum.", "More in every drum.", "More in every drum.", "Much more in every drum.", "Much more in every drum." }),
+        new("w-mortar", "Mortar", "Lobs a heavy shell into the thickest part of the crowd. Prefers whatever is already in front of the barrel.", true,
+            new[] { "Unlock.", "A wider blast.", "Lobs more often.", "A heavier shell.", "A wider blast again.", "Lobs more often again.", "A second shell every volley." }),
     };
 
     /// <summary>The text for a catalog index, or a placeholder if the table has gone stale.</summary>

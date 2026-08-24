@@ -201,11 +201,18 @@
   {
    "index": 13,
    "id": "rust",
-   "startingWeapon": "laser-long",
+   "startingWeapon": "mortar",
    "startingUpgrade": null,
    "player": {},
    "weapon": {},
-   "weaponBonus": null
+   "weaponBonus": {
+    "mortar": {
+     "mul": {
+      "damage": "3ff4cccccccccccd"
+     },
+     "add": null
+    }
+   }
   },
   {
    "index": 14,

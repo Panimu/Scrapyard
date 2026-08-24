@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 
 using Xunit;
@@ -43,16 +44,23 @@ public class UpgradeCatalogTests
     [Fact]
     public void WeaponAndPassiveCountsMatch()
     {
-        Assert.Equal(Root.GetProperty("weaponCardCount").GetInt32(), UpgradeCatalog.WeaponCards.Length);
-        Assert.Equal(Root.GetProperty("passiveCardCount").GetInt32(), UpgradeCatalog.PassiveCards.Length);
+        // COUNTED BY KIND ACROSS THE WHOLE CATALOG, not by which array a card was declared in.
+        // `WeaponCards` stopped meaning "every weapon card" the moment one had to be appended
+        // after the passives to keep the catalog indices stable - see UpgradeIds.WMortar. The
+        // arrays are an ordering device; `Kind` is the fact, and the fixture counts kinds.
+        var weapons = UpgradeCatalog.All.Where(d => d.Kind == UpgradeKind.Weapon).ToArray();
+        var passives = UpgradeCatalog.All.Where(d => d.Kind == UpgradeKind.Passive).ToArray();
 
-        foreach (var d in UpgradeCatalog.WeaponCards)
+        Assert.Equal(Root.GetProperty("weaponCardCount").GetInt32(), weapons.Length);
+        Assert.Equal(Root.GetProperty("passiveCardCount").GetInt32(), passives.Length);
+
+        foreach (var d in weapons)
         {
             Assert.True(d.TierEffects is null, $"{d.Id}: a weapon card must have no TierEffects");
             Assert.True(d.Effects.Length == 0, $"{d.Id}: a weapon card's Effects must be empty");
         }
 
-        foreach (var d in UpgradeCatalog.PassiveCards)
+        foreach (var d in passives)
         {
             Assert.True(d.TierEffects is not null && d.TierEffects.Length == UpgradeCatalog.WeaponMaxTier,
                 $"{d.Id}: a passive must carry exactly {UpgradeCatalog.WeaponMaxTier} tiers");
@@ -275,6 +283,7 @@ public class UpgradeCatalogTests
         "artillery" => WeaponIds.Artillery,
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
+        "mortar" => WeaponIds.Mortar,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 
@@ -288,6 +297,7 @@ public class UpgradeCatalogTests
         "w-artillery" => UpgradeIds.WArtillery,
         "w-drone" => UpgradeIds.WDrone,
         "w-phase-cannon" => UpgradeIds.WPhaseCannon,
+        "w-mortar" => UpgradeIds.WMortar,
         "w-laser-short" => UpgradeIds.WLaserShort,
         "w-laser-medium" => UpgradeIds.WLaserMedium,
         "w-laser-long" => UpgradeIds.WLaserLong,

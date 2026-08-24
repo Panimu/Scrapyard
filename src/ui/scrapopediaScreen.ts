@@ -141,6 +141,15 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'One heavy shell at a time, and it shoves what it hits. Nothing else in the yard moves a body the way this does.',
     ],
   },
+  'w-mortar': {
+    aims: 'The THICKEST KNOT of enemies inside a cone in front of the barrel.',
+    notes: [
+      'It looks straight ahead first. A narrow cone off the barrel, and if there is a crowd in it that crowd is the target - whatever is happening elsewhere on the field. Only when the cone is empty does it open up, fifteen degrees at a time, until it finds something.',
+      'So it is a gun you AIM WITH THE WHOLE MECH. Point the chassis at the horde and it hammers the horde; turn away and it hunts for the next thing worth a shell. Nothing else in the yard cares which way you are facing except the missile racks, and they only care where you were MOVING.',
+      'The shell is the Heavy Artillery’s: the damage is the blast and there is no direct hit worth the name. The difference is that this one is thrown AT something. The barrage does not care where the enemies are, and this does nothing else.',
+      'It shares the Cannon’s mount, and the two can never be carried together. A run picks the biggest body or the biggest crowd.',
+    ],
+  },
   'w-laser-short': {
     aims: 'The WEAKEST enemy in range - it finishes rather than starts.',
     notes: [

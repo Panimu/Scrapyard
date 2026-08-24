@@ -43,6 +43,9 @@ public static class Targeting
         Nearest,
         LowestHp,
         Densest,
+
+        /// <summary>The thickest knot inside a cone in front of the barrel - the Mortar's.</summary>
+        ConeDensest,
     }
 
     /// <summary>
@@ -168,6 +171,11 @@ public static class Targeting
             return SelectDensest(w, originX, originY, rangeSq, wantCount, outv);
         }
 
+        if (rule == Rule.ConeDensest)
+        {
+            return SelectConeDensest(w, originX, originY, rangeSq, wantCount, outv, aimX, aimY);
+        }
+
         int k = wantCount < outv.Length ? wantCount : outv.Length;
         if (k <= 0) return 0;
 
@@ -239,9 +247,24 @@ public static class Targeting
         int k = wantCount < outv.Length ? wantCount : outv.Length;
         if (k <= 0) return 0;
 
+        int n = GatherInRange(w, originX, originY, rangeSq);
+        if (n == 0) return 0;
+        return ScoreDensest(w, originX, originY, n, k, outv);
+    }
+
+    /// <summary>
+    /// Gather: live, in range, deduped, into <c>Scratch.Candidates</c>. No line-of-sight ray.
+    /// </summary>
+    /// <remarks>
+    /// SHARED BY THE TWO CLUSTER RULES rather than written twice. It was inline in
+    /// <c>SelectDensest</c> until the Mortar needed the same set to filter a cone out of, and two
+    /// copies of a dedupe feeding a determinism-critical argmax is two places for the corpus to
+    /// start disagreeing with itself.
+    /// </remarks>
+    private static int GatherInRange(World w, double originX, double originY, double rangeSq)
+    {
         var enemies = w.Enemies;
         var candidates = w.Scratch.Candidates;
-        var counts = w.Scratch.NeighbourCounts;
 
         int raw = w.Spatial.QueryCircleLiveInto(enemies, originX, originY, System.Math.Sqrt(rangeSq), candidates);
 
@@ -266,7 +289,115 @@ public static class Targeting
             candidates[n++] = (ushort)d;
         }
 
+        return n;
+    }
+
+    /// <summary>
+    /// THE COSINES OF THE CONE THE MORTAR WIDENS THROUGH, in fifteen-degree steps to a full circle.
+    /// </summary>
+    /// <remarks>
+    /// A COSINE TABLE AND NOT A TRIG CALL, because core may not have one: <c>Math.Cos</c> is
+    /// implementation-approximated and a target chosen by an ULP is a different run on another
+    /// machine. <c>dot(d, aim) >= cos(t) * |d|</c> is the same test with the transcendental
+    /// hoisted into a literal, and a literal is the same double in both languages by construction
+    /// - these are byte-for-byte the TypeScript's own.
+    ///
+    /// THE LAST ENTRY IS EXACTLY -1, which accepts everything: <c>dot >= -|d|</c> cannot be false.
+    /// That is what guarantees the widening terminates with a target whenever anything is in range.
+    /// </remarks>
+    private static readonly double[] ConeCos =
+    {
+        0.9659258262890683, // 15 degrees
+        0.8660254037844387, // 30
+        0.7071067811865476, // 45
+        0.5,                // 60
+        0.25881904510252074, // 75
+        0,                  // 90
+        -0.25881904510252074, // 105
+        -0.5,               // 120
+        -0.7071067811865476, // 135
+        -0.8660254037844387, // 150
+        -0.9659258262890683, // 165
+        -1,                 // 180 - the whole field
+    };
+
+    /// <summary>
+    /// The thickest knot inside a cone in front of the barrel, widening until it finds one.
+    /// </summary>
+    /// <remarks>
+    /// THE WIDENING IS ALL-OR-NOTHING PER STEP, not a preference. The first cone with anything in
+    /// it wins outright and the densest knot INSIDE it is chosen - a bigger crowd one degree
+    /// outside does not pull the shot. Scoring the whole field with a distance-from-aim penalty
+    /// would be a different weapon: it would always shoot the biggest crowd and merely lean.
+    /// </remarks>
+    private static int SelectConeDensest(World w, double originX, double originY, double rangeSq,
+                                         int wantCount, int[] outv, double aimX, double aimY)
+    {
+        int k = wantCount < outv.Length ? wantCount : outv.Length;
+        if (k <= 0) return 0;
+
+        int n = GatherInRange(w, originX, originY, rangeSq);
         if (n == 0) return 0;
+
+        // NORMALISED HERE rather than trusted - a slightly long aim vector silently narrows every
+        // cone, which is a bug nobody would see.
+        double aimLen = System.Math.Sqrt(aimX * aimX + aimY * aimY);
+        if (aimLen <= 0) return ScoreDensest(w, originX, originY, n, k, outv);
+        double ax = aimX / aimLen;
+        double ay = aimY / aimLen;
+
+        var enemies = w.Enemies;
+        var candidates = w.Scratch.Candidates;
+        var ex = enemies.X;
+        var ey = enemies.Y;
+
+        for (int step = 0; step < ConeCos.Length; step++)
+        {
+            double minCos = ConeCos[step];
+            int kept = 0;
+            for (int i = 0; i < n; i++)
+            {
+                int d = candidates[i];
+                double dx = ex[d] - originX;
+                double dy = ey[d] - originY;
+                // dot >= cos(t) * |d| - "the angle is at most t" without an acos. Against the
+                // LENGTH rather than its square, so the dot's sign still means what it should
+                // past ninety degrees.
+                double len = System.Math.Sqrt(dx * dx + dy * dy);
+                if (dx * ax + dy * ay >= minCos * len)
+                {
+                    // Compacted in place. The order of what survives is the order it arrived in,
+                    // so the argmax still breaks ties exactly as it always did.
+                    candidates[kept++] = (ushort)d;
+                }
+            }
+
+            if (kept > 0) return ScoreDensest(w, originX, originY, kept, k, outv);
+
+            // NOTHING SURVIVED, so the next cone starts from the full set again - the compaction
+            // above has overwritten the front of the buffer with a shorter list.
+            n = GatherInRange(w, originX, originY, rangeSq);
+            if (n == 0) return 0;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Score <paramref name="n"/> gathered candidates by how crowded each is, and take the top k.
+    /// </summary>
+    /// <remarks>
+    /// EXTRACTED VERBATIM from <c>SelectDensest</c>, and the corpus is what says so: this decides
+    /// which body a Phase Cannon bolt lands on.
+    /// </remarks>
+    private static int ScoreDensest(World w, double originX, double originY, int n, int k,
+                                    int[] outv)
+    {
+        var enemies = w.Enemies;
+        var candidates = w.Scratch.Candidates;
+        var counts = w.Scratch.NeighbourCounts;
+        var ex = enemies.X;
+        var ey = enemies.Y;
 
         // Tally neighbours among the candidates themselves, each pair once. A body's cluster can
         // extend past the weapon's range; those outliers are not counted, which is the honest

@@ -245,7 +245,10 @@ public static class HeroCatalog
 
     public static readonly HeroDef Rust = new()
     {
-        Id = HeroIds.Rust, StartingWeapon = WeaponIds.LaserLong, Player = NoPlayer, Weapon = NoWeapon, WeaponBonus = null,
+        Id = HeroIds.Rust, StartingWeapon = WeaponIds.Mortar, Player = NoPlayer, Weapon = NoWeapon,
+        // Damage only, the same clean shape Ember's is: the blast, the rate and the cone are all
+        // untouched, so this is a heavier shell into exactly the same crowd.
+        WeaponBonus = new() { [WeaponIds.Mortar] = Mul(WeaponStat.Damage, 1.3) },
     };
 
     public static readonly HeroDef Cobalt = new()

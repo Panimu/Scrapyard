@@ -1923,7 +1923,10 @@ const TURRET_ART: readonly {
    */
   readonly shake: boolean;
 }[] = [
-  { weapons: ['cannon'], tex: 'turret', shake: true },
+  // TWO GUNS, ONE BARREL. `WeaponDef.excludes` guarantees a loadout can never hold both, so the
+  // row shows whichever of them is held and is never owed two barrels at once - the same
+  // arrangement the rotary snout has carried for the Machine Gun and the Flak Cannon.
+  { weapons: ['cannon', 'mortar'], tex: 'turret', shake: true },
   { weapons: ['phase-cannon'], tex: 'turretPhase', shake: true },
   // The rotary mount, and the one row that does not shake - see `shake` above. Both guns on it
   // are high rate of fire, and both lost the kick for the same reason.

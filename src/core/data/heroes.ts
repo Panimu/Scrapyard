@@ -483,15 +483,31 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'rust',
-    unlock: { kind: 'never' }, // criteria to be defined
+    /**
+     * OPEN TO EVERYONE, AS A PLACEHOLDER, and it is not a design decision made by accident - it
+     * is the absence of one, held somewhere visible until the real condition is written.
+     *
+     * `never` MEANS "THE CRITERIA HAVE NOT BEEN WRITTEN" and is the honest state for a chassis
+     * nobody has decided how to earn. But Rust is the only way into the Mortar - the card is
+     * locked behind 1812 kills with a gun no other chassis carries - so leaving it `never` would
+     * lock the weapon behind itself. `always` until the condition exists is the smaller wrong: it
+     * gives away a chassis rather than sealing a gun.
+     *
+     * THE COST IS A TROPHY. Chassis achievements are DERIVED from this field by reference, so
+     * Rust's fires for everyone on their next run and stops firing when the real lock lands.
+     */
+    unlock: { kind: 'always' }, // PLACEHOLDER - real criteria to be defined
     name: 'Rust',
     identity:
-      'Heavy quad, spine-slung artillery tube. Opens with the Long Laser.',
+      'Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder.',
     sprite: 'mech_rust',
     gait: 'walk',
-    startingWeapon: 'laser-long',
+    startingWeapon: 'mortar',
     player: {},
     weapon: {},
+    // Damage only, the same clean shape Ember's is: the blast, the rate and the cone are all
+    // untouched, so this is a heavier shell into exactly the same crowd.
+    weaponBonus: { mortar: { mul: { damage: 1.3 } } },
   },
   {
     id: 'cobalt',

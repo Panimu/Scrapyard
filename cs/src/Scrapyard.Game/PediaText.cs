@@ -103,6 +103,9 @@ public static class PediaText
         new("p-ammo", "Ammo Drums", "passive", "Every magazine on the chassis carries more rounds.",
             new[] { "A little more in every drum.", "A little more in every drum.", "More in every drum.", "More in every drum.", "More in every drum.", "Much more in every drum.", "Much more in every drum." },
             "Does nothing at all unless you are holding a magazine gun.", new[] { "Deeper drums on the belt guns - the Machine Gun and the Flak Cannon, the only two that ever run dry. Everything else in the loadout never notices it, which is why the deck will not offer it until you hold one.", "It never touches the reload itself - that is Feed Systems, and the two stack. This is purely how much fires before the belt runs out at all.", "Locked until proven. It stays out of the deck entirely until a save has spent a long time listening to its own guns click empty and reload." }),
+        new("w-mortar", "Mortar", "weapon", "Lobs a heavy shell into the thickest part of the crowd. Prefers whatever is already in front of the barrel.",
+            new[] { "Unlock.", "A wider blast.", "Lobs more often.", "A heavier shell.", "A wider blast again.", "Lobs more often again.", "A second shell every volley." },
+            "The THICKEST KNOT of enemies inside a cone in front of the barrel.", new[] { "It looks straight ahead first. A narrow cone off the barrel, and if there is a crowd in it that crowd is the target - whatever is happening elsewhere on the field. Only when the cone is empty does it open up, fifteen degrees at a time, until it finds something.", "So it is a gun you AIM WITH THE WHOLE MECH. Point the chassis at the horde and it hammers the horde; turn away and it hunts for the next thing worth a shell. Nothing else in the yard cares which way you are facing except the missile racks, and they only care where you were MOVING.", "The shell is the Heavy Artillery's: the damage is the blast and there is no direct hit worth the name. The difference is that this one is thrown AT something. The barrage does not care where the enemies are, and this does nothing else.", "It shares the Cannon's mount, and the two can never be carried together. A run picks the biggest body or the biggest crowd." }),
     };
 
     public static readonly Ascension[] Ascensions =
@@ -136,7 +139,7 @@ public static class PediaText
         ("brass", "Brass", "Light hover, one heavy tube. Opens with the Phase Cannon, 10% harder-hitting."),
         ("vermilion", "Vermilion", "Light hover, rotary drums. Opens with the Flak Cannon, and throws an extra shell every burst."),
         ("jade", "Jade", "Heavy biped, forward claw arms. Opens with the Short Laser."),
-        ("rust", "Rust", "Heavy quad, spine-slung artillery tube. Opens with the Long Laser."),
+        ("rust", "Rust", "Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder."),
         ("cobalt", "Cobalt", "Heavy quad, twin gun pods. Opens with the Medium Laser."),
         ("copper", "Copper", "Heavy quad, rotary drums. Opens with the Flak Cannon."),
     };
@@ -223,5 +226,5 @@ public static class PediaText
     }
 
     /// <summary>The catalogs' fingerprint when this file was emitted. See the tests.</summary>
-    public const uint CatalogDigest = 0xfb74def5u;
+    public const uint CatalogDigest = 0x159f2d5du;
 }

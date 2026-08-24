@@ -152,7 +152,20 @@ public static class UpgradeIds
     public const int PRadiator = 18;
     public const int PBlast = 19;
     public const int PAmmo = 20;
-    public const int Count = 21;
+
+    /// <summary>
+    /// THE MORTAR CARD, AFTER THE PASSIVES, and that is the format rather than a filing mistake.
+    /// </summary>
+    /// <remarks>
+    /// Every other weapon card sits in the 0-10 block. This one does not, because the block was
+    /// full when it arrived and the numbers below it are load-bearing: <c>LevelUp.Stacks</c> is
+    /// keyed by catalog index, Plum's unlock asks for index 17 at tier 7, and five ascension
+    /// trophies name 0, 2, 8, 9 and 10. Inserting at 11 would renumber every passive and silently
+    /// repoint all of them. The TypeScript appends for the same reason and carries the same note.
+    /// </remarks>
+    public const int WMortar = 21;
+
+    public const int Count = 22;
 }
 
 public static class UpgradeCatalog
@@ -284,6 +297,15 @@ public static class UpgradeCatalog
         // THE GIGA LASER. Gated on Shaped Charges: the swath's half-width rides SplashRadius, so
         // the passive that widens every blast is the one that widens this beam.
         Ascension = new Ascension { Requires = UpgradeIds.PBlast, RequiresTier = 1 },
+    };
+
+    /// <summary>
+    /// The Mortar. Shares the Cannon's mount, which <c>WeaponDef.Excludes</c> enforces.
+    /// </summary>
+    public static readonly UpgradeDef WMortar = new()
+    {
+        Id = UpgradeIds.WMortar, Kind = UpgradeKind.Weapon, GrantsWeapon = WeaponIds.Mortar,
+        MaxStacks = WeaponMaxTier, Weight = 10, Effects = System.Array.Empty<UpgradeEffect>(),
     };
 
     /// <summary>Catalog order for the eleven weapon cards. Positions 0-10.</summary>
@@ -418,7 +440,13 @@ public static class UpgradeCatalog
     {
         Id = UpgradeIds.PBlast, Kind = UpgradeKind.Passive, MaxStacks = WeaponMaxTier, Weight = 9,
         Effects = System.Array.Empty<UpgradeEffect>(),
-        RequiresWeaponHeld = new[] { WeaponIds.Artillery, WeaponIds.Drone, WeaponIds.PhaseCannon, WeaponIds.LaserLong },
+        // Every carrier of a SplashRadius, the Mortar's shell included. `tests/cardGating.test.ts`
+        // walks the catalog and fails if one is missing.
+        RequiresWeaponHeld = new[]
+        {
+            WeaponIds.Artillery, WeaponIds.Drone, WeaponIds.PhaseCannon, WeaponIds.Mortar,
+            WeaponIds.LaserLong,
+        },
         TierEffects = RampEffectsWeapon(WeaponStat.SplashRadius),
     };
 
@@ -440,5 +468,19 @@ public static class UpgradeCatalog
     /// Full catalog, index == <see cref="UpgradeIds"/>. Port of <c>UPGRADE_CATALOG</c>. Index in
     /// this array indexes <c>LevelUpState.Stacks</c> and appears in every replay. APPEND ONLY.
     /// </summary>
-    public static readonly UpgradeDef[] All = WeaponCards.Concat(PassiveCards).ToArray();
+    /// <summary>
+    /// Cards added after the index format was fixed, in the order they arrived.
+    /// </summary>
+    /// <remarks>
+    /// A THIRD BLOCK RATHER THAN A LONGER FIRST ONE. Weapon cards belong with weapon cards by
+    /// subject and at the end of the array by necessity - see <see cref="UpgradeIds.WMortar"/>.
+    /// Naming that tension is better than hiding it inside <c>WeaponCards</c>, where the next
+    /// reader would reasonably assume the block was ordered by kind and put the following gun
+    /// somewhere that renumbers the catalog.
+    /// </remarks>
+    public static readonly UpgradeDef[] LateCards = { WMortar };
+
+    public static readonly UpgradeDef[] All =
+        WeaponCards.Concat(PassiveCards).Concat(LateCards).ToArray();
+
 }

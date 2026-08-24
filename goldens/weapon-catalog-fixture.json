@@ -75,7 +75,9 @@
    "twinFrom": 8,
    "gigaFrom": null,
    "fillsMountsFrom": null,
-   "excludes": null,
+   "excludes": [
+    "mortar"
+   ],
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -734,6 +736,71 @@
    "excludes": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": true
+  },
+  {
+   "id": "mortar",
+   "name": "Mortar",
+   "kind": "projectile",
+   "targeting": "cone-densest",
+   "pattern": "battery",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "404b8ccccccccccd",
+    "cooldown": "4000000000000000",
+    "range": "4074a00000000000",
+    "projectileSpeed": "4072c00000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "405e000000000000",
+    "splashRadius": "4052c00000000000",
+    "splashFrac": "3ff0000000000000",
+    "turretTraverse": "3fee28c731eb6950",
+    "fireArc": "3fcacee9f37bebd6",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "splashRadius": "4028000000000000"
+    },
+    {
+     "cooldown": "bfd3333333333333"
+    },
+    {
+     "damage": "4034000000000000"
+    },
+    {
+     "splashRadius": "4028000000000000"
+    },
+    {
+     "cooldown": "bfd3333333333333"
+    },
+    {
+     "projectileCount": "3ff0000000000000"
+    },
+    {}
+   ],
+   "reengageMul": "3fe199999999999a",
+   "visualId": 0,
+   "muzzleOffset": "403e000000000000",
+   "shellRadius": "4022000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
   }
  ],
  "laserHardpoints": [

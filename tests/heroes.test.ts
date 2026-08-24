@@ -100,6 +100,7 @@ describe('the roster', () => {
       drone: 'Drones',
       artillery: 'Heavy Artillery',
       'phase-cannon': 'Phase Cannon',
+      mortar: 'Mortar',
     };
     for (const h of HERO_CATALOG) {
       if (h.startingWeapon === null) continue;
@@ -122,12 +123,22 @@ describe('the missile racks', () => {
 
   it('keeps Indigo directly behind Fern, and every placeholder in one tail', () => {
     // Earning a real unlock is what moves a chassis up: the roster reads earnable-first, and the
-    // `never` placeholders form one contiguous tail rather than being scattered through the list.
+    // chassis nobody has written criteria for form one contiguous tail rather than being scattered
+    // through the list.
     expect(heroIndex('indigo')).toBe(heroIndex('fern') + 1);
+
+    // "NO CRITERIA" IS NOT ONLY `never` ANY MORE. A chassis that opens with a weapon nothing else
+    // carries cannot be left `never` without sealing that weapon behind itself, so Rust is
+    // temporarily `always` while the Mortar's real lock is written - a placeholder, and the
+    // comment on its def says so. What the roster still guarantees is the thing worth
+    // guaranteeing: NOTHING WITH A REAL CONDITION SITS BEHIND SOMETHING WITH NONE.
+    //
+    // Slate is `always` at index 0 and legitimately so - it is before any of this.
+    const unwritten = (k: string): boolean => k === 'never' || k === 'always';
     const firstNever = HERO_CATALOG.findIndex((h) => h.unlock.kind === 'never');
     expect(firstNever).toBeGreaterThan(0);
     for (let i = firstNever; i < HERO_CATALOG.length; i++) {
-      expect(HERO_CATALOG[i].unlock.kind, HERO_CATALOG[i].id).toBe('never');
+      expect(unwritten(HERO_CATALOG[i].unlock.kind), HERO_CATALOG[i].id).toBe(true);
     }
   });
 

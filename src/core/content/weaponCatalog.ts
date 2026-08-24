@@ -41,7 +41,8 @@ export type WeaponId =
   | 'flak-cannon'
   | 'artillery'
   | 'drone'
-  | 'phase-cannon';
+  | 'phase-cannon'
+  | 'mortar';
 
 /**
  * WHAT A PROJECTILE LOOKS LIKE. Named rather than numbered at the use site, because a bare `3` in
@@ -79,7 +80,12 @@ export const VIS_PLASMA = 6;
  * and, uniquely, it does NOT filter for line of sight, because its round phases through
  * whatever is in the way. See `targetDensest` in systems/targeting.ts.
  */
-export type TargetingId = 'highest-hp' | 'nearest' | 'lowest-hp' | 'densest';
+export type TargetingId =
+  | 'highest-hp'
+  | 'nearest'
+  | 'lowest-hp'
+  | 'densest'
+  | 'cone-densest';
 
 export type FirePatternId =
   | 'battery'
@@ -494,6 +500,14 @@ export const CANNON: WeaponDef = Object.freeze({
     // read as a bonus stapled to a stat card.
     {}, // T8
   ]),
+  // ONE BARREL, TWO GUNS THAT COULD BOLT TO IT. Declared HERE and nowhere else - the check runs
+  // both directions, so naming the Mortar from this side is the whole fact. See the Flak Cannon's
+  // own note, and WeaponDef.excludes.
+  //
+  // They are also the same IDEA aimed differently: one heavy shell from a long barrel, at the
+  // biggest thing in range or at the thickest part of the crowd. A deck that offered both would
+  // routinely spend two of five weapon slots on that one idea.
+  excludes: Object.freeze(['mortar'] as const),
   // The second barrel comes back at tier 8 - see WeaponDef.twinFrom and TWIN_HALF_GAP.
   twinFrom: WEAPON_ASCENDED_TIER,
   reengageMul: 0.55,
@@ -1627,6 +1641,96 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
   detonateOnExpiry: true,
 });
 
+// ---------------------------------------------------------------------------------------------
+// THE MORTAR
+//
+// The Cannon's mount, asking the opposite question. The Cannon commits to the BIGGEST body in
+// range and pays for it by ignoring everything else; the Mortar lobs one heavy shell into the
+// THICKEST PART OF THE CROWD and does not care what is standing there.
+//
+// AND IT IS LAZY ABOUT TURNING, which is the whole character of the gun rather than a limitation
+// of it. It looks for a clump inside a narrow cone in front of the barrel first, and only widens
+// its search when that cone is empty - so it shoots what is already in front of it and swings
+// across the yard only when the front has nothing to offer. A player who wants it pointed
+// somewhere turns the mech.
+//
+// Damage and blast are the Heavy Artillery's, COPIED AND NOT REFERENCED. The two are different
+// weapons that happen to start from one number, exactly the way the three cycle ladders start
+// from one measured curve: retuning the barrage must not be able to reach this, and the guarantee
+// is that there is no shared symbol to retune.
+// ---------------------------------------------------------------------------------------------
+
+/** The lob's rhythm, and its rate tiers as a fraction of it - see CANNON_COOLDOWN for why. */
+const MORTAR_COOLDOWN = 2.0;
+const MORTAR_RATE_TIER_FRAC = 0.15;
+const MORTAR_RATE_TIER = -MORTAR_COOLDOWN * MORTAR_RATE_TIER_FRAC;
+
+export const MORTAR: WeaponDef = Object.freeze({
+  id: 'mortar',
+  name: 'Mortar',
+  kind: 'projectile',
+  targeting: 'cone-densest',
+  pattern: 'battery',
+  behaviour: 'straight',
+  requiresTarget: true,
+  base: Object.freeze({
+    damage: 55.1,
+    cooldown: MORTAR_COOLDOWN,
+    // Further than the Cannon, because a mortar's whole claim is that it reaches the crowd
+    // forming rather than the one already on you.
+    range: 330,
+    // SLOW ENOUGH TO SEE. A lobbed shell that crossed the field as fast as the Cannon's would
+    // read as a flat trajectory with a bigger bang, and the time in the air is what lets a clump
+    // walk out from under it.
+    projectileSpeed: 300,
+    projectileCount: 1,
+    pierce: 0,
+    knockback: 120,
+    // THE DAMAGE IS THE BLAST. There is no direct hit worth the name on a shell aimed at a gap
+    // between bodies rather than at a body.
+    splashRadius: 75,
+    splashFrac: 1,
+    // SLOWER THAN THE CANNON'S on the same mount, and the cone rule is why: a gun that hunts for
+    // work near the barrel should be visibly reluctant to leave it.
+    turretTraverse: degToRad(54),
+    fireArc: CANNON_FIRE_ARC,
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: 0,
+    flightTime: 0, // it travels; reach is range / speed, not a fuse
+    ammoCapacity: 0,
+    reloadTime: 0,
+  }),
+  /**
+   * TIERS 2-7. Index i applies at tier i+2, cumulatively. Deltas are ADDITIVE.
+   *
+   *   2 blast   3 rate of fire   4 damage   5 blast   6 rate of fire   7 a second shell
+   *
+   * Blast first because it is the tier that widens what a shell is FOR without asking the player
+   * to aim differently, and the second shell last because it changes what the gun is - two lobs a
+   * volley is a different relationship with a crowd than one bigger one.
+   */
+  perLevel: Object.freeze([
+    { splashRadius: 12 }, // T2  75 -> 87
+    { cooldown: MORTAR_RATE_TIER }, // T3  2.0 -> 1.7 s
+    { damage: 20 }, // T4  55.1 -> 75.1
+    { splashRadius: 12 }, // T5  87 -> 99
+    { cooldown: MORTAR_RATE_TIER }, // T6  1.7 -> 1.4 s
+    { projectileCount: 1 }, // T7  a second shell
+    {}, // T8 - no ascension: the twin barrels are the Cannon's announcement and nothing else's
+  ]),
+  reengageMul: 0.55,
+  visualId: VIS_SHELL,
+  muzzleOffset: 30,
+  shellRadius: 9,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: false,
+  detonateOnExpiry: false,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -1639,6 +1743,10 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   ARTILLERY,
   DRONE,
   PHASE_CANNON,
+  // APPENDED, and that is deliberate rather than tidy: `levelUp.stacks` and every `tier` unlock
+  // condition are keyed by catalog index, so inserting beside the other shell guns would renumber
+  // half the table and silently repoint six conditions at the wrong cards.
+  MORTAR,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */
