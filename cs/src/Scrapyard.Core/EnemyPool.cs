@@ -98,6 +98,24 @@ public sealed class EnemyPool
     public readonly float[] PushY;
     public readonly float[] Hp;
     public readonly float[] MaxHp;
+
+    /// <summary>
+    /// Seconds of fire left on this body, and 0 for a body that is not burning.
+    /// </summary>
+    /// <remarks>
+    /// THREE FIELDS RATHER THAN A FLAG, because a burn has to remember what lit it. The rate is
+    /// captured AT IGNITION (<see cref="BurnDps"/>) so a gun that levels mid-burn does not
+    /// retroactively change a fire it already started, and <see cref="BurnBy"/> credits the kill -
+    /// a body that falls over to a fire nobody is aiming at still has to count for the weapon that
+    /// lit it, or the career tallies quietly lose every burn kill.
+    /// </remarks>
+    public readonly float[] BurnLeft;
+
+    /// <summary>Damage per second while burning, as it was when the fire started.</summary>
+    public readonly float[] BurnDps;
+
+    /// <summary>The weapon def index that lit this body, for crediting the kill. 255 is nobody.</summary>
+    public readonly byte[] BurnBy;
     public readonly float[] Radius;
     public readonly float[] Speed;
     public readonly float[] Mass;
@@ -193,6 +211,9 @@ public sealed class EnemyPool
         PushY = new float[capacity];
         Hp = new float[capacity];
         MaxHp = new float[capacity];
+        BurnLeft = new float[capacity];
+        BurnDps = new float[capacity];
+        BurnBy = new byte[capacity];
         Radius = new float[capacity];
         Speed = new float[capacity];
         Mass = new float[capacity];
@@ -278,6 +299,11 @@ public sealed class EnemyPool
         FixateLeft[d] = 0;
         ContactDamage[d] = 0;
         ContactTimer[d] = 0;
+        BurnLeft[d] = 0;
+        BurnDps[d] = 0;
+        // 255 IS NOBODY, not weapon zero - a slot that somehow burned without an igniter must not
+        // credit its kill to the Cannon.
+        BurnBy[d] = 255;
         XpValue[d] = 0;
         TypeId[d] = (byte)typeId;
         FlavourId[d] = (byte)flavourId;
@@ -346,6 +372,12 @@ public sealed class EnemyPool
                 FixateLeft[d] = FixateLeft[last];
                 ContactDamage[d] = ContactDamage[last];
                 ContactTimer[d] = ContactTimer[last];
+                // THE FIRE TRAVELS WITH THE BODY. A field left out here leaves the previous
+                // occupant's burn attached to a different enemy - which reads as a body catching
+                // fire for no reason, several ticks after the shot.
+                BurnLeft[d] = BurnLeft[last];
+                BurnDps[d] = BurnDps[last];
+                BurnBy[d] = BurnBy[last];
                 XpValue[d] = XpValue[last];
                 TypeId[d] = TypeId[last];
                 FlavourId[d] = FlavourId[last];
@@ -443,6 +475,13 @@ public sealed class EnemyPool
         acc = Hash.MixBytes(acc, CycleIndex.AsSpan(0, n));
         acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<uint>(SpawnId.AsSpan(0, n)));
         acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<uint>(Slot.AsSpan(0, n)));
+
+        // APPENDED, matching `denseViews` in the TypeScript. This order IS the hash format, so
+        // inserting beside MaxHp where the fields logically belong would move every field after
+        // it - a bigger corpus diff saying nothing.
+        acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(BurnLeft.AsSpan(0, n)));
+        acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(BurnDps.AsSpan(0, n)));
+        acc = Hash.MixBytes(acc, BurnBy.AsSpan(0, n));
 
         return acc;
     }

@@ -62,6 +62,25 @@ export interface EnemyPool {
   readonly pushY: Float32Array;
   readonly hp: Float32Array;
   readonly maxHp: Float32Array;
+  /**
+   * SECONDS OF FIRE LEFT ON THIS BODY, and 0 for a body that is not burning.
+   *
+   * THREE FIELDS RATHER THAN A FLAG, because a burn has to remember what lit it. The rate is
+   * captured AT IGNITION (`burnDps`) so a gun that levels up mid-burn does not retroactively
+   * change a fire it already started, and the source (`burnBy`) is what credits the kill - a
+   * body that falls over to a fire nobody is aiming at still has to count for the weapon that
+   * lit it, or the career tallies quietly lose every burn kill.
+   *
+   * ZEROED ON ALLOCATION like every other field here, which is what stops a recycled slot
+   * inheriting the last occupant's fire.
+   */
+  readonly burnLeft: Float32Array;
+
+  /** Damage per second while burning, as it was when the fire started. */
+  readonly burnDps: Float32Array;
+
+  /** The weapon DEF INDEX that lit this body, for crediting the kill. 255 is nobody. */
+  readonly burnBy: Uint8Array;
   readonly radius: Float32Array;
   readonly speed: Float32Array;
   readonly mass: Float32Array;
@@ -154,6 +173,8 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oPushY = L.f32(capacity);
   const oHp = L.f32(capacity);
   const oMaxHp = L.f32(capacity);
+  const oBurnLeft = L.f32(capacity);
+  const oBurnDps = L.f32(capacity);
   const oRadius = L.f32(capacity);
   const oSpeed = L.f32(capacity);
   const oMass = L.f32(capacity);
@@ -178,6 +199,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oArchetype = L.u8(capacity);
   const oFlags = L.u8(capacity);
   const oCycleIndex = L.u8(capacity);
+  const oBurnBy = L.u8(capacity);
 
   const buffer = new ArrayBuffer(L.byteLength);
   const f32 = (o: number): Float32Array => new Float32Array(buffer, o, capacity);
@@ -196,6 +218,10 @@ export function createEnemyPool(capacity: number): EnemyPool {
 
     x: f32(oX),
     y: f32(oY),
+    burnLeft: f32(oBurnLeft),
+    burnDps: f32(oBurnDps),
+    burnBy: u8(oBurnBy),
+
     prevX: f32(oPrevX),
     prevY: f32(oPrevY),
     vx: f32(oVx),
@@ -245,6 +271,9 @@ export function createEnemyPool(capacity: number): EnemyPool {
     p.contactDamage, p.contactTimer,
     p.xpValue, p.typeId, p.flavourId, p.archetype, p.flags, p.cycleIndex,
     p.spawnId, p.slot,
+    // APPENDED. This list IS the hash format, and inserting beside `hp` where the fields
+    // logically belong would move every field after it - a bigger corpus diff saying nothing.
+    p.burnLeft, p.burnDps, p.burnBy,
   );
 
   resetEnemyPool(p);
@@ -310,6 +339,11 @@ export function allocEnemy(
   p.fixateLeft[d] = 0;
   p.contactDamage[d] = 0;
   p.contactTimer[d] = 0;
+  p.burnLeft[d] = 0;
+  p.burnDps[d] = 0;
+  // 255 IS NOBODY, not weapon zero - a slot that somehow burned without an igniter must not
+  // credit its kill to the Cannon.
+  p.burnBy[d] = 255;
   p.xpValue[d] = 0;
   p.typeId[d] = typeId;
   p.flavourId[d] = flavourId;
@@ -371,6 +405,12 @@ export function reapEnemies(p: EnemyPool): void {
       p.fixateLeft[d] = p.fixateLeft[last];
       p.contactDamage[d] = p.contactDamage[last];
       p.contactTimer[d] = p.contactTimer[last];
+      // THE FIRE TRAVELS WITH THE BODY. A swap-remove moves the tail into this hole, and a field
+      // left out here would leave the previous occupant's burn attached to a different enemy -
+      // which reads as a body catching fire for no reason, several ticks after the shot.
+      p.burnLeft[d] = p.burnLeft[last];
+      p.burnDps[d] = p.burnDps[last];
+      p.burnBy[d] = p.burnBy[last];
       p.xpValue[d] = p.xpValue[last];
       p.typeId[d] = p.typeId[last];
       p.flavourId[d] = p.flavourId[last];
