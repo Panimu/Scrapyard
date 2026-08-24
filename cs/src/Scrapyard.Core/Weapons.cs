@@ -212,7 +212,8 @@ public static class Weapons
             var targeting = def.GigaFrom is int gf && inst.Level >= gf
                 ? Targeting.Rule.Densest
                 : def.Targeting;
-            int n = Targeting.SelectTopK(world, scenery, player.X, player.Y, stats.RangeSq, ask, targets, targeting);
+            int n = Targeting.SelectTopK(world, scenery, player.X, player.Y, stats.RangeSq, ask,
+                                         targets, inst.TurretX, inst.TurretY, targeting);
             if (beam && claimCount > 0)
             {
                 n = DropClaimed(targets, n, claims, claimCount);

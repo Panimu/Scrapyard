@@ -392,6 +392,11 @@ export function updateDrones(world: World, dt: number): void {
         acquireSq,
         DRONE_TARGETS.length,
         DRONE_TARGETS,
+        // A DRONE BAY HAS NO TURRET, so there is no facing to hand over and `nearest` does not
+        // read one. Facing +x, the art's own default, rather than a zero vector nothing can
+        // normalise if a future rule ever tries.
+        1,
+        0,
       );
       let bestSq = Infinity;
       for (let k = 0; k < n; k++) {

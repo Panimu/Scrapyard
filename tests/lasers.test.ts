@@ -208,7 +208,7 @@ describe('targeting: the WEAKEST enemy in range', () => {
     addEnemy(w, 120, 0, 40);
     sync(w);
 
-    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets);
+    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(weak);
   });
@@ -223,7 +223,7 @@ describe('targeting: the WEAKEST enemy in range', () => {
     addEnemy(w, range + 10, 0, 1); // weaker, and just too far
     sync(w);
 
-    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets);
+    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(inRange);
   });
@@ -830,7 +830,7 @@ describe('the Cannon is untouched by any of this', () => {
     const strong = addEnemy(w, 200, 0, 900);
     sync(w);
 
-    const n = TARGETING['highest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets);
+    const n = TARGETING['highest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(strong);
   });

@@ -309,7 +309,16 @@ export function updateWeapons(world: World, dt: number): void {
     // the Long Laser picking off the weakest thing in range.
     const targeting =
       def.gigaFrom !== undefined && inst.level >= def.gigaFrom ? 'densest' : def.targeting;
-    let n = TARGETING[targeting](world, player.x, player.y, stats.rangeSq, ask, targets);
+    let n = TARGETING[targeting](
+      world,
+      player.x,
+      player.y,
+      stats.rangeSq,
+      ask,
+      targets,
+      inst.turretX,
+      inst.turretY,
+    );
     if (beam && claimCount > 0) {
       n = dropClaimed(targets, n, claims, claimCount);
       // Back to what this weapon actually fires. `fireBeam` reads only `targets[0]` today, so the

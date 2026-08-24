@@ -172,7 +172,9 @@ function build(
     const picks: Record<string, number[]> = {};
     for (const [id, fn] of RULES) {
       out.fill(-1);
-      const n = fn(w, p.ox, p.oy, rangeSq, p.k, out);
+      // FACING +X, the art's own default. No rule in the table reads the aim, so the fixture is
+      // byte-identical with it - which is the point: the argument arrived without moving anything.
+      const n = fn(w, p.ox, p.oy, rangeSq, p.k, out, 1, 0);
       picks[id] = Array.from(out.subarray(0, n));
     }
 

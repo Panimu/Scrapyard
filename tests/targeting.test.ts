@@ -132,7 +132,7 @@ describe('the specced rule: highest CURRENT hp within range', () => {
     // A LITERAL RADIUS, like every other case in this file. It used to read CANNON.base.range,
     // which quietly coupled a targeting test to a balance number: trimming the Cannon's reach put
     // the 250 u body outside the radius and failed a test that is not about the Cannon at all.
-    const n = targetHighestHp(w, 0, 0, 260 * 260, 1, out);
+    const n = targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0);
 
     expect(n).toBe(1);
     expect(out[0]).toBe(far90);
@@ -147,18 +147,18 @@ describe('the specced rule: highest CURRENT hp within range', () => {
     const rangeSq = 260 * 260;
 
     sync(w);
-    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(far90);
 
     // 300 u > 260 u range.
     w.enemies.x[far90] = 300;
     sync(w);
-    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(mid50);
 
     w.enemies.x[far90] = 250;
     sync(w);
-    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(far90);
   });
 
@@ -169,12 +169,12 @@ describe('the specced rule: highest CURRENT hp within range', () => {
     const rangeSq = 260 * 260;
 
     sync(w);
-    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(e);
 
     w.enemies.x[e] = 260.5;
     sync(w);
-    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out)).toBe(0);
+    expect(targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0)).toBe(0);
   });
 
   it('returns nothing when the only enemies are out of range', () => {
@@ -184,7 +184,7 @@ describe('the specced rule: highest CURRENT hp within range', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(0);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(0);
   });
 });
 
@@ -196,7 +196,7 @@ describe('tie-breaks - a strict total order, so hash visit order cannot matter',
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(near);
     expect(betterHighestHp(w.enemies, near, far, 0, 0)).toBe(true);
     expect(betterHighestHp(w.enemies, far, near, 0, 0)).toBe(false);
@@ -211,7 +211,7 @@ describe('tie-breaks - a strict total order, so hash visit order cannot matter',
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(first);
     expect(betterHighestHp(w.enemies, first, second, 0, 0)).toBe(true);
     expect(betterHighestHp(w.enemies, second, first, 0, 0)).toBe(false);
@@ -238,7 +238,7 @@ describe('deferred reaping - a corpse must never absorb a 1.2 s cooldown', () =>
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(big);
 
     // Killed by an earlier stage this tick: still in the pool AND still in the hash until S12.
@@ -246,7 +246,7 @@ describe('deferred reaping - a corpse must never absorb a 1.2 s cooldown', () =>
     expect(w.enemies.flags[big] & ENEMY_FLAG_DEAD).toBe(ENEMY_FLAG_DEAD);
     expect(w.enemies.count).toBe(2);
 
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(small);
   });
 
@@ -276,7 +276,7 @@ describe('top-K selection', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    const n = targetHighestHp(w, 0, 0, 260 * 260, 4, out);
+    const n = targetHighestHp(w, 0, 0, 260 * 260, 4, out, 1, 0);
 
     expect(n).toBe(4);
     expect(Array.from(out.slice(0, 4))).toEqual([a, b, c, d]);
@@ -290,7 +290,7 @@ describe('top-K selection', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 5, out)).toBe(2);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 5, out, 1, 0)).toBe(2);
     expect(out[0]).toBe(a);
     expect(out[1]).toBe(b);
   });
@@ -301,7 +301,7 @@ describe('top-K selection', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 99, out)).toBe(MAX_TARGETS);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 99, out, 1, 0)).toBe(MAX_TARGETS);
   });
 
   it('returns 0 for a wantCount of 0 without touching the buffer', () => {
@@ -310,7 +310,7 @@ describe('top-K selection', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS).fill(-7);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 0, out)).toBe(0);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 0, out, 1, 0)).toBe(0);
     expect(out[0]).toBe(-7);
   });
 });
@@ -329,9 +329,9 @@ describe('the strategy seam - weapons 2..12 need no firing-loop edits', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetHighestHp(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(far);
-    expect(targetNearest(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetNearest(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(near);
   });
 
@@ -342,12 +342,12 @@ describe('the strategy seam - weapons 2..12 need no firing-loop edits', () => {
     sync(w);
 
     const out = new Int32Array(MAX_TARGETS);
-    expect(targetNearest(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetNearest(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(strong);
 
     w.enemies.hp[strong] = 20; // now identical on both keys 1 and 2
     sync(w);
-    expect(targetNearest(w, 0, 0, 260 * 260, 1, out)).toBe(1);
+    expect(targetNearest(w, 0, 0, 260 * 260, 1, out, 1, 0)).toBe(1);
     expect(out[0]).toBe(weak); // lower spawnId
   });
 });
@@ -382,7 +382,7 @@ describe('the broad phase - hash query, never a pool scan', () => {
         if (best === -1 || betterHighestHp(e, d, best, 0, 0)) best = d;
       }
 
-      const n = targetHighestHp(w, 0, 0, rangeSq, 1, out);
+      const n = targetHighestHp(w, 0, 0, rangeSq, 1, out, 1, 0);
       if (best === -1) {
         expect(n).toBe(0);
       } else {
@@ -442,7 +442,7 @@ describe('the broad phase - hash query, never a pool scan', () => {
       const dense = relative.map((r) => addEnemy(w, origin.x + r.x, origin.y + r.y, r.hp));
       sync(w);
 
-      const n = targetHighestHp(w, origin.x, origin.y, 260 * 260, 1, out);
+      const n = targetHighestHp(w, origin.x, origin.y, 260 * 260, 1, out, 1, 0);
       expect(n).toBe(1);
       expect(out[0]).toBe(dense[1]);
     }

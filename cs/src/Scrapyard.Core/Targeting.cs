@@ -151,8 +151,17 @@ public static class Targeting
     /// slots and silently turn a battery into a focus-fire weapon. It costs at most K integer
     /// compares per ACCEPTED candidate.
     /// </remarks>
+    /// <remarks>
+    /// <c>aimX</c>/<c>aimY</c> ARE THE TURRET'S OWN FACING, as a unit vector - not the player's,
+    /// and not the direction of travel. Ignored by every rule today; they are here for the ones
+    /// that cannot be written without them, where a cone in front of the barrel is a question
+    /// about where the barrel is pointing. The TypeScript carries the same two arguments in the
+    /// same place, and a weapon with no turret passes its own idle facing rather than a zero
+    /// vector nothing could normalise.
+    /// </remarks>
     public static int SelectTopK(World w, IScenery scenery, double originX, double originY,
-                                 double rangeSq, int wantCount, int[] outv, Rule rule)
+                                 double rangeSq, int wantCount, int[] outv, double aimX,
+                                 double aimY, Rule rule)
     {
         if (rule == Rule.Densest)
         {

@@ -308,8 +308,12 @@ public static class Drones
             {
                 // Queried from the PLAYER - see the acquisition-circle note above. The drone's own
                 // position decides only WHICH of the legal bodies it takes, never which are legal.
+                // A DRONE BAY HAS NO TURRET, so there is no facing to hand over and `Nearest` does
+                // not read one. Facing +x, the art's own default, rather than a zero vector nothing
+                // could normalise if a future rule ever tried.
                 int n = Targeting.SelectTopK(world, scenery, player.X, player.Y, acquireSq,
-                                             droneTargets.Length, droneTargets, Targeting.Rule.Nearest);
+                                             droneTargets.Length, droneTargets, 1, 0,
+                                             Targeting.Rule.Nearest);
                 double bestSq = double.PositiveInfinity;
                 for (int k = 0; k < n; k++)
                 {

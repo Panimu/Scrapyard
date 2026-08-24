@@ -95,7 +95,7 @@ describe('densest targeting', () => {
     rebuildSpatialHash(w.spatial, w.enemies);
 
     const rangeSq = PHASE_CANNON.base.range * PHASE_CANNON.base.range;
-    const n = TARGETING.densest(w, 0, 0, rangeSq, 1, w.scratch.targets);
+    const n = TARGETING.densest(w, 0, 0, rangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(centre);
   });
@@ -110,7 +110,7 @@ describe('densest targeting', () => {
     rebuildSpatialHash(w.spatial, w.enemies);
 
     const rangeSq = PHASE_CANNON.base.range * PHASE_CANNON.base.range;
-    expect(TARGETING.densest(w, 0, 0, rangeSq, 1, w.scratch.targets)).toBe(1);
+    expect(TARGETING.densest(w, 0, 0, rangeSq, 1, w.scratch.targets, 1, 0)).toBe(1);
     expect(w.scratch.targets[0]).toBe(near);
   });
 

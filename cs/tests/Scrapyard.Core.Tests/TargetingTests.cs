@@ -128,7 +128,9 @@ public class TargetingTests
                 foreach (var (id, rule) in Rules)
                 {
                     System.Array.Fill(outv, -1);
-                    int cn = Targeting.SelectTopK(w, scenery, ox, oy, rangeSq, k, outv, rule);
+                    // FACING +X, matching the fixture generator's own default - no rule reads the aim, so
+                    // the C# answer stays byte-identical to the TypeScript's.
+                    int cn = Targeting.SelectTopK(w, scenery, ox, oy, rangeSq, k, outv, 1, 0, rule);
                     var wantPick = picks.GetProperty(id).EnumerateArray().Select(v => v.GetInt32()).ToArray();
 
                     Assert.True(wantPick.Length == cn,

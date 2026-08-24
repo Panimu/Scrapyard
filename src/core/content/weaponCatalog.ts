@@ -317,6 +317,21 @@ export type TargetingFn = (
   rangeSq: number,
   wantCount: number,
   out: Int32Array,
+  /**
+   * THE TURRET'S OWN FACING, as a unit vector - not the player's, and not the direction of
+   * travel.
+   *
+   * Every rule in the table today ignores it, and TypeScript lets them: a function declaring
+   * fewer parameters satisfies a type declaring more, so none of the four needed editing to
+   * accept this. It is here for the rules that CANNOT be written without it - a cone in front of
+   * the barrel is a question about where the barrel is pointing, and the only alternative is
+   * handing every rule the whole weapon instance and letting each decide what it may read.
+   *
+   * A weapon with no turret passes its own idle facing; nothing is ever asked to aim from a
+   * direction that does not exist.
+   */
+  aimX: number,
+  aimY: number,
 ) => number;
 
 /** Spawns the shells for one volley. The ONLY projectile allocation site in the game. */
