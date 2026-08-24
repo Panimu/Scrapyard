@@ -134,5 +134,23 @@ export default defineConfig({
     // Determinism suites compare hashes across runs; parallel workers are fine but a stable
     // reporter ordering makes CI logs diffable.
     sequence: { shuffle: false },
+    /**
+     * THIRTY SECONDS, BECAUSE THESE ARE SIMULATIONS AND NOT UNIT TESTS.
+     *
+     * Vitest defaults to five, which suits a suite of assertions about pure functions. A good part
+     * of this one steps a real world for thousands of ticks - `sheep`, `spawning`, `progression`
+     * and the determinism suites all do - and the whole run spends over a minute inside test bodies
+     * on an idle machine. On a loaded one, or a shared CI runner, the slowest of them cross five
+     * seconds and fail for taking a while rather than for being wrong.
+     *
+     * That is the worst failure a suite can have: it is indistinguishable from a real break at a
+     * glance, it lands on a DIFFERENT test each run, and it blocks the deploy - `npm test` guards
+     * the publish step, so a flake is a site that silently does not update.
+     *
+     * It is a CEILING, not a budget. Nothing here takes anything like thirty seconds; the number
+     * is set far enough clear of the real times that a genuine hang still fails, and a slow machine
+     * does not.
+     */
+    testTimeout: 30_000,
   },
 });
