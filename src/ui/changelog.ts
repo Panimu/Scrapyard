@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-24T09:15Z',
+    title: 'THE MENUS SCROLL SMOOTHLY INSTEAD OF A ROW AT A TIME',
+    notes: [
+      'Upgrades, Mech select, Settings and the Scrapopedia now scroll by the pixel. They used to jump a whole row, which meant the thing you were reading moved out from under you — and a row that did not fit was simply not drawn, so every one of those lists ended in a band of dead space that no amount of scrolling could reach.',
+      'A row can be half-seen now, the way it can in any list anywhere. The wheel moves the view and leaves your selection where you put it; the arrow keys move the selection and the view follows only as far as it has to.',
+    ],
+  },
+  {
     at: '2026-08-24T08:46Z',
     title: 'FIXED: THE ARROW KEYS DOING NOTHING UNTIL YOU CLICKED',
     notes: [

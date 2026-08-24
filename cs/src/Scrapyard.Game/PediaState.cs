@@ -30,6 +30,14 @@ public sealed class PediaState
     public int RowCursor;
     public int PageScroll;
 
+    /// <summary>Where the section's index is scrolled to, in pixels.</summary>
+    /// <remarks>
+    /// ON THE STATE RATHER THAN THE FRONT-END, unlike the other lists', because the pedia already
+    /// keeps its own place here - the cursor, the section and the page are all on this object, and
+    /// the scroll is the fourth thing describing "where am I in the manual".
+    /// </remarks>
+    public readonly Scroll Scroll = new();
+
     public List<Pedia.Row> Rows = new();
     public Pedia.Page? Page;
 
@@ -74,6 +82,9 @@ public sealed class PediaState
         Rows = Pedia.Index(section, _save, _levels);
         RowCursor = FirstEntry(0, 1);
         Page = null;
+        // A SECTION OPENS AT ITS TOP. It is a different list from the one just left, so carrying a
+        // scroll position across would drop the player into the middle of it.
+        Scroll.Top();
     }
 
     /// <summary>
@@ -112,6 +123,7 @@ public sealed class PediaState
     {
         if (Rows.Count == 0) return;
         RowCursor = FirstEntry(RowCursor + step, step);
+        Scroll.RevealRow = RowCursor;
     }
 
     private int FirstEntry(int from, int step)

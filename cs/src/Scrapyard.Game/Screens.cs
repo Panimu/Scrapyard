@@ -162,7 +162,7 @@ public static class Screens
         if (wordTex is not null)
         {
             batch.End();
-            batch.Begin(samplerState: SamplerState.LinearClamp);
+            Restart(batch, SamplerState.LinearClamp);
             batch.Draw(wordTex, new Rectangle((vw - wordW) / 2, y, wordW, wordH), Ink);
             if (subTex is not null)
             {
@@ -171,7 +171,7 @@ public static class Screens
                            Accent);
             }
             batch.End();
-            batch.Begin(samplerState: SamplerState.PointClamp);
+            Restart(batch, SamplerState.PointClamp);
         }
         else
         {
@@ -292,7 +292,7 @@ public static class Screens
     /// on "whichever tile happened to be added to the list first".
     /// </param>
     public static void DrawHeroSelect(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                      int vw, int vh,
+                                      Scroll scroll, int vw, int vh,
                                       System.Collections.Generic.List<Rectangle>? outRects = null)
     {
         Backdrop(batch, sprites, vw, vh);
@@ -370,31 +370,53 @@ public static class Screens
         // the two halves of a row on different pages. It scrolls only far enough to bring the
         // cursor's row on screen, so moving back up walks the list back rather than jumping.
         int bottom = actionsY - 8 * scale - UiFont.GlyphH(small);
-        int cursorRow = cursor / cols;
-        int firstRow = 0;
-        while (firstRow < cursorRow)
+        int listTop = y;
+        int avail = bottom - listTop;
+
+        // THE GRID SCROLLS BY PIXELS, measured a ROW at a time - the two tiles on a row are the
+        // same height and always move together, which is the whole reason the heights above are
+        // per-row rather than per-tile.
+        var rowTops = new int[nRows];
+        int content = 0;
+        for (int rr = 0; rr < nRows; rr++)
         {
-            int sum = 0;
-            for (int rr = firstRow; rr <= cursorRow; rr++) sum += rowH[rr] + gap;
-            if (sum <= bottom - y) break;
-            firstRow++;
+            rowTops[rr] = content;
+            content += rowH[rr] + gap;
         }
 
-        int rowTop = y;
-        for (int i = firstRow * cols; i < roster.Length; i++)
+        if (content > 0) content -= gap;
+        scroll.Content = content;
+        scroll.Viewport = avail;
+        if (scroll.RevealRow >= 0 && scroll.RevealRow < nRows)
+        {
+            scroll.Reveal(rowTops[scroll.RevealRow], rowH[scroll.RevealRow]);
+            scroll.RevealRow = -1;
+        }
+
+        scroll.ClampToContent();
+
+        var view = new Rectangle(x0, listTop, w, avail);
+        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, listTop, avail, scroll.Px, content, avail,
+                     scale);
+
+        // A HALF-SEEN TILE IS FINE NOW, and this comment used to say the opposite - "a row that
+        // does not fit whole is not drawn at all", on the grounds that there was no scissor
+        // rectangle and half a tile meant text running off the screen. There is one now, so the
+        // list can end mid-row the way any scrolling list does instead of stopping short and
+        // leaving a band nothing can reach.
+        PushClip(batch, view);
+        for (int i = 0; i < roster.Length; i++)
         {
             int row = i / cols;
-            int ry = rowTop;
-            for (int rr = firstRow; rr < row; rr++) ry += rowH[rr] + gap;
-            // A ROW THAT DOES NOT FIT WHOLE IS NOT DRAWN AT ALL. There is no scissor rectangle
-            // here, so half a tile would be half a tile with its text running off the bottom of the
-            // screen - and a chassis whose identity is cut in two is worse than one you scroll to.
-            if (ry + rowH[row] > bottom) break;
+            int ry = listTop + rowTops[row] - scroll.Px;
+            if (ry + rowH[row] < listTop) continue;
+            if (ry > bottom) break;
 
             var h = roster[i];
             bool owned = save.UnlockedHeroes.Contains(h.Id);
             var r = new Rectangle(x0 + (i % cols) * (tileW + gap), ry, tileW, rowH[row]);
-            if (outRects is not null) outRects[i] = r;
+            // Hit only where it is seen - see the same note in DrawWorkshop.
+            if (outRects is not null) outRects[i] = Rectangle.Intersect(r, view);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius,
@@ -445,6 +467,8 @@ public static class Screens
                 UiDrawCentred(batch, sprites, "?", qx, qy, scale * 2, Palette.Ink);
             }
         }
+
+        PopClip(batch);
 
         // THE ONE NUMBER THAT PERSISTS, said here as well as on the title because this is the screen
         // a player reaches on the way into a run - and the workshop is one button back.
@@ -595,7 +619,7 @@ public static class Screens
     /// last two entries.
     /// </param>
     public static void DrawWorkshop(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                    int vw, int vh,
+                                    Scroll scroll, int vw, int vh,
                                     System.Collections.Generic.List<Rectangle>? outRects = null)
     {
         if (outRects is not null)
@@ -686,43 +710,51 @@ public static class Screens
                                    small);
         }
 
-        // WHERE THE WINDOW STARTS IS RECOMPUTED, not remembered. The rows are different heights - a
-        // four-line blurb beside a one-liner - so a scroll offset in pixels would have to be kept in
-        // step with the cursor anyway, and the cursor is the only thing that actually HAS to be on
-        // screen. The smallest start that shows it is the answer, and it costs sixteen additions.
-        int first = 0;
-        while (first < cursor)
+        // THE VIEW IS A PIXEL OFFSET, and the row tops are measured against the content rather than
+        // against the screen. See Scroll for why this is not a first-visible-row index any more.
+        var tops = new int[heights.Length];
+        int content = 0;
+        for (int i = 0; i < heights.Length; i++)
         {
-            int sum = 0;
-            for (int i = first; i <= cursor; i++) sum += heights[i] + gap;
-            if (sum <= avail) break;
-            first++;
+            tops[i] = content;
+            content += heights[i] + gap;
         }
 
-        // How many actually fit from here, for the rail below. Counted with the same test the draw
-        // loop uses, so the rail can never disagree with what is on screen.
-        int shown = 0;
+        if (content > 0) content -= gap;
+        scroll.Content = content;
+        scroll.Viewport = avail;
+        if (scroll.RevealRow >= 0 && scroll.RevealRow < heights.Length)
         {
-            int probe = y;
-            for (int i = first; i < WorkshopText.All.Length; i++)
-            {
-                if (probe + heights[i] > bottom) break;
-                probe += heights[i] + gap;
-                shown++;
-            }
+            scroll.Reveal(tops[scroll.RevealRow], heights[scroll.RevealRow]);
+            scroll.RevealRow = -1;
         }
 
-        ScrollRail(batch, sprites, x0 + w + 3 * scale, y, bottom - y, first, shown,
-                   WorkshopText.All.Length, scale);
+        scroll.ClampToContent();
 
-        for (int i = first; i < WorkshopText.All.Length; i++)
+        // THE LIST TOP, CAPTURED. The loop below uses `y` as its per-row cursor, so reading the
+        // list's own origin back out of it after the first row would add every previous row's
+        // offset to the next one.
+        int listTop = y;
+        var view = new Rectangle(x0, y, w, avail);
+        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, y, avail, scroll.Px, content, avail, scale);
+
+        // CLIPPED, which is the half of pixel scrolling that is not arithmetic: a row straddling
+        // the top or bottom of the window has to be CUT rather than either drawn whole over the
+        // header or dropped entirely, and dropping it is what the old row-at-a-time window did.
+        PushClip(batch, view);
+        for (int i = 0; i < WorkshopText.All.Length; i++)
         {
-            if (y + heights[i] > bottom) break;
+            int rowY = listTop + tops[i] - scroll.Px;
+            if (rowY + heights[i] < listTop) continue;
+            if (rowY > bottom) break;
+            y = rowY;
             var def = WorkshopText.All[i];
             int owned = save.TierOf(i);
             bool full = owned >= def.Tiers;
             var r = new Rectangle(x0, y, w, heights[i]);
-            if (outRects is not null) outRects[i] = r;
+            // HIT ONLY WHERE IT IS SEEN. A row half under the header is half a button, and a click
+            // on the part that is not on screen must not reach it.
+            if (outRects is not null) outRects[i] = Rectangle.Intersect(r, view);
 
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
@@ -774,9 +806,9 @@ public static class Screens
                       new Rectangle(r.Right - pad - buyW, r.Y + (r.Height - 22 * scale) / 2, buyW,
                                     22 * scale),
                       def, full, save.CanBuy(i), i == cursor, scale, small);
-
-            y += heights[i] + gap;
         }
+
+        PopClip(batch);
     }
 
     /// <summary>What a workshop row says about the mech, given what is owned of it.</summary>
@@ -1033,7 +1065,7 @@ public static class Screens
     /// <see cref="Rectangle.Empty"/> gives every other list in this game.
     /// </param>
     public static void DrawSettings(SpriteBatch batch, Sprites sprites, Settings save, int cursor,
-                                    int vw, int vh,
+                                    Scroll scroll, int vw, int vh,
                                     System.Collections.Generic.List<Rectangle>? outRects = null,
                                     (int W, int H)[]? resolutions = null,
                                     bool resolutionOpen = false, int resolutionCursor = 0,
@@ -1092,39 +1124,50 @@ public static class Screens
         // but a screen that can silently draw its own exit buttons underneath a card the moment a
         // player's resolution makes the content a little taller is worse than one with a scroll
         // window it will almost never actually need to use.
-        int first = 0;
-        while (first < cursor)
-        {
-            int sum = 0;
-            for (int i = first; i <= cursor; i++) sum += headH[i] + rowH[i] + gap;
-            if (sum <= bottom - y0) break;
-            first++;
-        }
-
         if (outRects is not null)
         {
             outRects.Clear();
             for (int i = 0; i < n; i++) outRects.Add(Rectangle.Empty);
         }
 
+        // BY PIXELS, like every other list here. This one fits whole at any ordinary window size
+        // and so never actually scrolls - but a small enough window makes it overflow, and a
+        // screen that scrolled a row at a time while the rest moved smoothly would be the one
+        // place the game felt different for no reason a player could name.
+        int availPx = bottom - y0;
+        var tops = new int[n];
+        int content = 0;
+        for (int i = 0; i < n; i++)
         {
-            int probe = y0;
-            int shown = 0;
-            for (int i = first; i < n; i++)
-            {
-                if (probe + headH[i] + rowH[i] > bottom) break;
-                probe += headH[i] + rowH[i] + gap;
-                shown++;
-            }
-
-            ScrollRail(batch, sprites, x0 + w + 3 * scale, y0, bottom - y0, first, shown, n, scale);
+            tops[i] = content;
+            content += headH[i] + rowH[i] + gap;
         }
+
+        if (content > 0) content -= gap;
+        scroll.Content = content;
+        scroll.Viewport = availPx;
+        if (scroll.RevealRow >= 0 && scroll.RevealRow < n)
+        {
+            int rr = scroll.RevealRow;
+            scroll.Reveal(tops[rr], headH[rr] + rowH[rr]);
+            scroll.RevealRow = -1;
+        }
+
+        scroll.ClampToContent();
+
+        var view = new Rectangle(x0, y0, w, availPx);
+        ScrollRailPx(batch, sprites, x0 + w + 3 * scale, y0, availPx, scroll.Px, content, availPx,
+                     scale);
 
         Rectangle resolutionRow = Rectangle.Empty;
         int y = y0;
-        for (int i = first; i < n; i++)
+        PushClip(batch, view);
+        for (int i = 0; i < n; i++)
         {
-            if (y + headH[i] + rowH[i] > bottom) break;
+            int rowTop = y0 + tops[i] - scroll.Px;
+            if (rowTop + headH[i] + rowH[i] < y0) continue;
+            if (rowTop > bottom) break;
+            y = rowTop;
             var row = MenuRows.SettingsRows[i];
 
             if (headH[i] > 0)
@@ -1143,7 +1186,7 @@ public static class Screens
             var note = UiFont.Wrap(SettingNote(row.Kind), textW, small);
 
             var r = new Rectangle(x0, y, w, rowH[i]);
-            if (outRects is not null) outRects[i] = r;
+            if (outRects is not null) outRects[i] = Rectangle.Intersect(r, view);
             if (dropdown) resolutionRow = r;
             if (i == cursor) Cursor(batch, sprites, r, radius, thick * 2);
             CardFace(batch, sprites, r, radius, Palette.Panel, Palette.Edge, thick);
@@ -1178,8 +1221,10 @@ public static class Screens
                     break;
             }
 
-            y += rowH[i] + gap;
         }
+
+        // BEFORE THE DROPDOWN, which floats over everything and must not be cut to the list.
+        PopClip(batch);
 
         outRects?.Add(changelogBtn);
         outRects?.Add(backBtn);
@@ -1361,52 +1406,60 @@ public static class Screens
                          + UiFont.LineHeight(small);
             int headH = UiFont.LineHeight(small) + 5 * scale;
 
-            // The window keeps the cursor in view a row at a time. Headings are rows too, so this
-            // counts them - which is why the index is one array and one integer in the first place.
-            int fit = 0;
-            int used = 0;
-            for (int i = st.RowCursor; i < rows.Count; i++)
+            // BY PIXELS, headings included - they are rows here for the same reason the cursor is
+            // one integer, and a scroll position that skipped them would put a group's label and
+            // its first entry on different sides of the window edge.
+            int listTop = y;
+            int availPx = bottom - listTop;
+            var tops = new int[rows.Count];
+            int content = 0;
+            for (int i = 0; i < rows.Count; i++)
             {
-                used += rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
-                if (y + used > bottom) break;
-                fit++;
+                tops[i] = content;
+                content += rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
             }
 
-            int first = st.RowCursor;
-            while (first > 0)
+            st.Scroll.Content = content;
+            st.Scroll.Viewport = availPx;
+            if (st.Scroll.RevealRow >= 0 && st.Scroll.RevealRow < rows.Count)
             {
-                int sum = 0;
-                for (int i = first - 1; i < st.RowCursor + fit && i < rows.Count; i++)
+                int rr = st.Scroll.RevealRow;
+                int hh = rows[rr].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+
+                // A HEADING COMES WITH ITS ENTRY. Landing on the first row of a group with the
+                // label that names it just off the top is the one place this list can be read
+                // wrongly, so revealing an entry reveals the heading above it too.
+                if (rr > 0 && rows[rr - 1].Kind == Pedia.Kind.Heading)
                 {
-                    sum += rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+                    st.Scroll.Reveal(tops[rr - 1], headH + hh);
                 }
-                if (y + sum > bottom) break;
-                first--;
-            }
-
-            {
-                int probe = y;
-                int shown = 0;
-                for (int i = first; i < rows.Count; i++)
+                else
                 {
-                    int h = rows[i].Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
-                    if (probe + h > bottom) break;
-                    probe += h;
-                    shown++;
+                    st.Scroll.Reveal(tops[rr], hh);
                 }
 
-                ScrollRail(batch, sprites, x0 + w + 3 * scale, y, bottom - y, first, shown,
-                           rows.Count, scale);
+                st.Scroll.RevealRow = -1;
             }
 
-            for (int i = first; i < rows.Count; i++)
+            st.Scroll.ClampToContent();
+
+            var view = new Rectangle(x0, listTop, w, availPx);
+            ScrollRailPx(batch, sprites, x0 + w + 3 * scale, listTop, availPx, st.Scroll.Px,
+                         content, availPx, scale);
+
+            PushClip(batch, view);
+            for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
                 bool on = i == st.RowCursor;
+                int rowH = row.Kind == Pedia.Kind.Heading ? headH : entryH + 4 * scale;
+                int ry = listTop + tops[i] - st.Scroll.Px;
+                if (ry + rowH < listTop) continue;
+                if (ry > bottom) break;
+                y = ry;
 
                 if (row.Kind == Pedia.Kind.Heading)
                 {
-                    if (y + headH > bottom) break;
                     // A GROUP HEADING IS NOT A CARD. It is the label above a run of them - eleven
                     // pixels, letterspaced, with the tally down the right edge so the three groups
                     // line up.
@@ -1419,9 +1472,8 @@ public static class Screens
                     continue;
                 }
 
-                if (y + entryH > bottom) break;
                 var r = new Rectangle(x0, y, w, entryH);
-                if (outRects is not null) outRects[i] = r;
+                if (outRects is not null) outRects[i] = Rectangle.Intersect(r, view);
                 bool sealedRow = row.Kind == Pedia.Kind.Achievement && row.Sub != "";
 
                 if (on) Cursor(batch, sprites, r, radius, thick * 2);
@@ -1471,9 +1523,9 @@ public static class Screens
                     UiDraw(batch, sprites, desc, tx, ty + UiFont.LineHeight(small), small,
                               Palette.Faint);
                 }
-
-                y += entryH + 4 * scale;
             }
+
+            PopClip(batch);
 
             // A GROUP WITH NOTHING IN IT IS STILL A GROUP, and it says so rather than looking
             // broken - a heading with no rows under it is what "none yet" looks like here.
@@ -2052,16 +2104,82 @@ public static class Screens
     /// stays point-sampled on purpose; this one and the wordmark are baked art rather than pixel
     /// art, which is the same distinction the wordmark's own remarks already draw.
     /// </remarks>
+    // ---------------------------------------------------------------------------------------
+    // CLIPPING, AND WHY IT HAS TO BE CENTRAL
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>Scissor-enabled rasterizer, or null while nothing is clipped.</summary>
+    /// <remarks>
+    /// <b>STATIC BECAUSE EVERY <c>Begin</c> HAS TO KNOW ABOUT IT.</b> A <c>SpriteBatch.Begin</c>
+    /// resets the whole pipeline state, and the text helpers below end and restart the batch twice
+    /// per string to swap the sampler - so a clip set once and left to the caller would be silently
+    /// dropped the first time a row drew its own name, and the text would escape the box the
+    /// rectangle behind it was clipped to. Routing every Begin through <see cref="Restart"/> is
+    /// what makes clipping survive that.
+    /// </remarks>
+    private static RasterizerState? _clip;
+
+    /// <summary>The scissor state itself. One instance: it is immutable and reused every frame.</summary>
+    private static readonly RasterizerState Scissor = new()
+    {
+        CullMode = CullMode.CullCounterClockwiseFace,
+        ScissorTestEnable = true,
+    };
+
+    /// <summary>Restarts the batch, keeping whatever clip is in force.</summary>
+    private static void Restart(SpriteBatch batch, SamplerState sampler) =>
+        batch.Begin(samplerState: sampler, rasterizerState: _clip);
+
+    /// <summary>
+    /// Clips everything drawn until <see cref="PopClip"/> to <paramref name="r"/>.
+    /// </summary>
+    /// <remarks>
+    /// NOT NESTABLE, deliberately: one list is being clipped at a time and a stack would be state
+    /// nobody needs. The rectangle is in the same space the screens draw in, which is the surface
+    /// the frame is composed into - the same space every button rect already uses - so a caller
+    /// hands it the viewport it just measured and needs to know nothing about performance mode.
+    /// </remarks>
+    public static void PushClip(SpriteBatch batch, Rectangle r)
+    {
+        batch.End();
+        _clip = Scissor;
+        // Intersected with the target, because a scissor rectangle reaching outside it is invalid
+        // on some drivers rather than merely ignored.
+        var bounds = batch.GraphicsDevice.Viewport.Bounds;
+        batch.GraphicsDevice.ScissorRectangle = Rectangle.Intersect(r, bounds);
+        Restart(batch, SamplerState.PointClamp);
+    }
+
+    /// <summary>Ends the clip started by <see cref="PushClip"/>.</summary>
+    public static void PopClip(SpriteBatch batch)
+    {
+        batch.End();
+        _clip = null;
+        Restart(batch, SamplerState.PointClamp);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // SCROLLING
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>How far one wheel notch moves a pixel-scrolled list.</summary>
+    /// <remarks>
+    /// A FIXED DISTANCE RATHER THAN A ROW, because rows here are different heights and a notch that
+    /// travelled further on one part of a list than another is a wheel that feels broken. Three
+    /// notches clear roughly one tall row, which is about what a mouse wheel does elsewhere.
+    /// </remarks>
+    public static int WheelStep(int scale) => 26 * scale;
+
     internal static void UiDraw(SpriteBatch batch, Sprites sprites, string s, int x, int y,
                                int scale, Color colour)
     {
         var tex = UiTex(sprites);
         if (tex is null) return;
         batch.End();
-        batch.Begin(samplerState: SamplerState.LinearClamp);
+        Restart(batch, SamplerState.LinearClamp);
         UiFont.Draw(batch, tex, s, x, y, scale, colour);
         batch.End();
-        batch.Begin(samplerState: SamplerState.PointClamp);
+        Restart(batch, SamplerState.PointClamp);
     }
 
     /// <inheritdoc cref="UiDraw"/>
@@ -2071,10 +2189,10 @@ public static class Screens
         var tex = UiTex(sprites);
         if (tex is null) return;
         batch.End();
-        batch.Begin(samplerState: SamplerState.LinearClamp);
+        Restart(batch, SamplerState.LinearClamp);
         UiFont.DrawCentred(batch, tex, s, cx, y, scale, colour);
         batch.End();
-        batch.Begin(samplerState: SamplerState.PointClamp);
+        Restart(batch, SamplerState.PointClamp);
     }
 
     /// <summary>Put a space between every letter.</summary>
@@ -2216,22 +2334,27 @@ public static class Screens
     /// <param name="first">Index of the first row drawn.</param>
     /// <param name="shown">How many rows fitted.</param>
     /// <param name="total">How many there are altogether.</param>
-    public static void ScrollRail(SpriteBatch batch, Sprites sprites, int x, int top, int height,
-                                  int first, int shown, int total, int scale)
+    /// <summary>
+    /// The rail for a list that scrolls by PIXELS: thumb sized and placed by distance.
+    /// </summary>
+    /// <remarks>
+    /// The count-based <see cref="ScrollRail"/> below is what a row-at-a-time list can honestly
+    /// show. Once there is a real offset the rail can say the true thing instead - how far down the
+    /// content the window is, and how much of it the window covers.
+    /// </remarks>
+    public static void ScrollRailPx(SpriteBatch batch, Sprites sprites, int x, int top, int height,
+                                    int px, int content, int viewport, int scale)
     {
-        if (total <= 0 || shown >= total || height <= 0) return;
+        if (content <= viewport || height <= 0) return;
 
         int wide = System.Math.Max(2, 2 * scale);
         batch.Draw(sprites.Blank, new Rectangle(x, top, wide, height), Palette.Edge);
 
-        // A FLOOR ON THE THUMB, so a very long list still shows something grabbable rather than a
-        // dot that reads as a speck of dust on the screen.
-        int thumbH = System.Math.Max(8 * scale, height * shown / total);
+        int thumbH = System.Math.Max(8 * scale, (int)((long)height * viewport / content));
         if (thumbH > height) thumbH = height;
 
-        int span = height - thumbH;
-        int last = total - shown;
-        int at = last > 0 ? span * System.Math.Clamp(first, 0, last) / last : 0;
+        int max = content - viewport;
+        int at = max > 0 ? (int)((long)(height - thumbH) * System.Math.Clamp(px, 0, max) / max) : 0;
         batch.Draw(sprites.Blank, new Rectangle(x, top + at, wide, thumbH), Palette.Shop);
     }
 
@@ -2258,13 +2381,13 @@ public static class Screens
                                     int h, float rotation, Color colour)
     {
         batch.End();
-        batch.Begin(samplerState: SamplerState.LinearClamp);
+        Restart(batch, SamplerState.LinearClamp);
         batch.Draw(sprites.SoftRect, centre, null, colour, rotation,
                    new Vector2(Sprites.SoftRectSize / 2f, Sprites.SoftRectSize / 2f),
                    new Vector2(w / (float)Sprites.SoftRectSize, h / (float)Sprites.SoftRectSize),
                    SpriteEffects.None, 0f);
         batch.End();
-        batch.Begin(samplerState: SamplerState.PointClamp);
+        Restart(batch, SamplerState.PointClamp);
     }
 
     /// <summary>One menu button: a fill, an outline, and a centred label.</summary>

@@ -140,6 +140,19 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>The end screen's buttons: NEW RUN, then TITLE. See <see cref="Overlay.DrawEnd"/>.</summary>
     private readonly List<Rectangle> _endRects = new();
 
+    /// <summary>Where each long list is scrolled to, in pixels. See <see cref="Scroll"/>.</summary>
+    /// <remarks>
+    /// ONE PER SCREEN AND KEPT ACROSS VISITS, deliberately. Coming back to the Workshop having gone
+    /// off to look at something should leave the list where it was, the same way a browser leaves
+    /// a page where you left it - the only thing that resets it is arriving from somewhere the list
+    /// itself did not lead.
+    /// </remarks>
+    private readonly Scroll _shopScroll = new();
+
+    private readonly Scroll _heroScroll = new();
+
+    private readonly Scroll _settingsScroll = new();
+
     /// <summary>
     /// The mech's own damage/heal/insurance tint, as seconds of flash remaining.
     /// </summary>
@@ -949,11 +962,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if (down) _pedia.MoveRow(1);
             if (_menu.PageUp) _pedia.MoveRow(-Screens.PediaRows);
             if (_menu.PageDown) _pedia.MoveRow(Screens.PediaRows);
-            // THROUGH MoveRow, so the wheel steps over group headings exactly as the arrow keys
-            // do rather than parking the cursor somewhere it cannot open anything.
-            for (int k = System.Math.Abs(_mouse.WheelNotches); k > 0; k--)
+            // THE WHEEL MOVES THE VIEW AND LEAVES THE CURSOR, like every other list here now.
+            if (_mouse.WheelNotches != 0)
             {
-                _pedia.MoveRow(_mouse.WheelNotches > 0 ? -1 : 1);
+                _pedia.Scroll.Px -= _mouse.WheelNotches
+                                    * Screens.WheelStep(Screens.MenuScale(Surface.H));
+                _pedia.Scroll.ClampToContent();
             }
             // A HEADING NEVER GETS A HIT RECT - see DrawPedia's outRects remark - so a hover that
             // lands on one is simply never reported here, the same way it can never be clicked.
@@ -995,9 +1009,18 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Back) { ToTitle(); return; }
 
         int n = MenuRows.SettingsRows.Length;
+        int wasSetting = _settingsCursor;
         if (_menu.Vertical < 0) _settingsCursor = (_settingsCursor + n - 1) % n;
         if (_menu.Vertical > 0) _settingsCursor = (_settingsCursor + 1) % n;
-        WheelMove(ref _settingsCursor, n);
+
+        if (_mouse.WheelNotches != 0)
+        {
+            _settingsScroll.Px -= _mouse.WheelNotches
+                                  * Screens.WheelStep(Screens.MenuScale(Surface.H));
+            _settingsScroll.ClampToContent();
+        }
+
+        if (_settingsCursor != wasSetting) _settingsScroll.RevealRow = _settingsCursor;
 
         // THE ROW SAID [C] CHANGELOG BEFORE THERE WAS ONE, which is the exact failure this screen's
         // own notes condemn: a control that is advertised and does nothing. It shipped that way for
@@ -1120,16 +1143,20 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // two-wide grid - landing on roughly the right ROW by luck at best.
         const int cols = 2;
         int n = HeroUnlocks.Heroes.Length;
+        int wasHero = _heroCursor;
         if (_menu.Horizontal < 0) _heroCursor = (_heroCursor + n - 1) % n;
         if (_menu.Horizontal > 0) _heroCursor = (_heroCursor + 1) % n;
         if (_menu.Vertical < 0) _heroCursor = (_heroCursor + n - cols) % n;
         if (_menu.Vertical > 0) _heroCursor = (_heroCursor + cols) % n;
-        // A ROW AT A TIME on a grid, which is what a wheel notch means on a two-column list.
-        for (int k = System.Math.Abs(_mouse.WheelNotches); k > 0; k--)
+
+        if (_mouse.WheelNotches != 0)
         {
-            int step = _mouse.WheelNotches > 0 ? -cols : cols;
-            _heroCursor = System.Math.Clamp(_heroCursor + step, 0, n - 1);
+            _heroScroll.Px -= _mouse.WheelNotches * Screens.WheelStep(Screens.MenuScale(Surface.H));
+            _heroScroll.ClampToContent();
         }
+
+        // BY GRID ROW, because that is the unit the tiles move in - see DrawHeroSelect.
+        if (_heroCursor != wasHero) _heroScroll.RevealRow = _heroCursor / cols;
 
         bool confirmed = _menu.Confirm;
         int hover = _mouse.Hover(_heroSelectRects);
@@ -1183,35 +1210,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// is for.
     /// </para>
     /// </remarks>
-    /// <summary>
-    /// Moves a list cursor by the wheel, and says whether it moved.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// THE WHEEL MOVES THE CURSOR, NOT A SCROLL OFFSET, because these lists have no scroll offset
-    /// to move: every one of them recomputes where its window starts from where the cursor is (see
-    /// <c>Screens.DrawWorkshop</c>). Scrolling the view independently would mean inventing a second
-    /// piece of state and then keeping the two in step, which is the thing that design deliberately
-    /// avoids.
-    /// </para>
-    /// <para>
-    /// IT CLAMPS RATHER THAN WRAPPING, unlike the arrow keys. A wheel is a continuous gesture and
-    /// nobody spinning one expects to arrive back at the top; the keyboard's wrap is a discrete
-    /// press doing something deliberate, which is a different act.
-    /// </para>
-    /// </remarks>
-    private bool WheelMove(ref int cursor, int count)
-    {
-        int notches = _mouse.WheelNotches;
-        if (notches == 0 || count <= 0) return false;
-
-        // Wheel forward is positive and means "toward the top of the list", which is a lower index.
-        int next = System.Math.Clamp(cursor - notches, 0, count - 1);
-        if (next == cursor) return false;
-        cursor = next;
-        return true;
-    }
-
     private void PickRandomHero()
     {
         var owned = new List<int>();
@@ -1263,9 +1261,22 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Back) { _save.Save(); ToTitle(); }
 
         int n = WorkshopText.All.Length;
+        int wasCursor = _shopCursor;
         if (_menu.Vertical < 0) _shopCursor = (_shopCursor + n - 1) % n;
         if (_menu.Vertical > 0) _shopCursor = (_shopCursor + 1) % n;
-        WheelMove(ref _shopCursor, n);
+
+        // THE WHEEL MOVES THE VIEW, NOT THE CURSOR - which is what a pixel-scrolled list means and
+        // what every other program does. The cursor stays where it was put and can scroll out of
+        // sight; the next arrow press brings it back, because that press is what asks for it.
+        if (_mouse.WheelNotches != 0)
+        {
+            _shopScroll.Px -= _mouse.WheelNotches * Screens.WheelStep(Screens.MenuScale(Surface.H));
+            _shopScroll.ClampToContent();
+        }
+
+        // AND THE VIEW FOLLOWS THE CURSOR ONLY WHEN THE CURSOR MOVED. Asking for it every frame
+        // would undo the wheel on the next one.
+        if (_shopCursor != wasCursor) _shopScroll.RevealRow = _shopCursor;
 
         bool buyClicked = false;
         int hover = _mouse.Hover(_workshopRects);
@@ -1786,16 +1797,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                                       gameTime.TotalGameTime.TotalSeconds, _titleRects);
                     break;
                 case Screen.HeroSelect:
-                    Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, mw, mh,
+                    Screens.DrawHeroSelect(_batch, _sprites, _save, _heroCursor, _heroScroll, mw, mh,
                                            _heroSelectRects); break;
                 case Screen.LevelSelect:
                     Screens.DrawLevelSelect(_batch, _sprites, _save, _levelCursor, mw, mh,
                                             _levelSelectRects); break;
                 case Screen.Workshop:
-                    Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, mw, mh,
+                    Screens.DrawWorkshop(_batch, _sprites, _save, _shopCursor, _shopScroll, mw, mh,
                                          _workshopRects); break;
                 case Screen.Settings:
-                    Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, mw, mh,
+                    Screens.DrawSettings(_batch, _sprites, _save, _settingsCursor, _settingsScroll, mw, mh,
                                          _settingsRects, _resolutions, _resolutionOpen,
                                          _resolutionCursor, _resolutionRects); break;
                 case Screen.Pedia:
