@@ -487,7 +487,7 @@
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "400e666666666666",
+    "damage": "400ccccccccccccd",
     "cooldown": "3fc0a3d70a3d70a4",
     "range": "4079000000000000",
     "projectileSpeed": "4083600000000000",
@@ -748,7 +748,7 @@
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "404b8ccccccccccd",
+    "damage": "4048cb851eb851ec",
     "cooldown": "4000000000000000",
     "range": "4074a00000000000",
     "projectileSpeed": "4072c00000000000",
@@ -776,7 +776,7 @@
      "cooldown": "bfd3333333333333"
     },
     {
-     "damage": "4034000000000000"
+     "damage": "4032000000000000"
     },
     {
      "splashRadius": "4023333333333333"

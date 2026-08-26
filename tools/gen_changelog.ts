@@ -34,6 +34,8 @@ const SRC = readFileSync(SRC_PATH, 'utf8');
 
 interface Entry {
   at: string;
+  /** The build it shipped in, or '' for an entry written before the field existed. */
+  version: string;
   title: string;
   notes: string[];
 }
@@ -75,6 +77,15 @@ const entries: Entry[] = [];
     if (titleKey < 0) break;
     const [title, afterTitle] = readString(SRC, SRC.indexOf("'", titleKey));
 
+    // OPTIONAL, AND BOUNDED BY THE TITLE. `version` is written between `at` and `title` when it is
+    // written at all, so anything found past the title belongs to a later entry - which is the
+    // same rule `notes` is read under, and for the same reason.
+    let version = '';
+    const versionKey = SRC.indexOf("version: '", afterAt);
+    if (versionKey >= 0 && versionKey < titleKey) {
+      version = readString(SRC, versionKey + 9)[0];
+    }
+
     const notes: string[] = [];
     const notesKey = SRC.indexOf('notes:', afterTitle);
     let next = afterTitle;
@@ -100,7 +111,7 @@ const entries: Entry[] = [];
       next = p;
     }
 
-    entries.push({ at, title, notes });
+    entries.push({ at, version, title, notes });
     i = next;
   }
 }
@@ -193,13 +204,14 @@ out.push('/// </remarks>');
 out.push('public static class Changelog');
 out.push('{');
 out.push('    /// <summary>One entry: when, what it was called, and one line per thing that changed.</summary>');
-out.push('    public readonly record struct Entry(string At, string Title, string[] Notes);');
+out.push('    /// <summary>The build it shipped in ("v388"), or "" for an entry written before the field.</summary>');
+out.push('    public readonly record struct Entry(string At, string Version, string Title, string[] Notes);');
 out.push('');
 out.push('    /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>');
 out.push('    public static readonly Entry[] All =');
 out.push('    {');
 for (const e of entries) {
-  out.push(`        new(${cs(e.at)}, ${cs(e.title)},`);
+  out.push(`        new(${cs(e.at)}, ${cs(e.version)}, ${cs(e.title)},`);
   if (e.notes.length === 0) {
     out.push('            System.Array.Empty<string>()),');
   } else {

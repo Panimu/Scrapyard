@@ -41,7 +41,11 @@ public sealed class ChangelogPage
         var outv = new List<string>();
         foreach (var e in Changelog.All)
         {
-            outv.Add("@" + Changelog.FormatTime(e.At).ToUpperInvariant());
+            // THE BUILD, WHEN THE ENTRY KNOWS IT - same line as the stamp, because it is the
+            // same fact said the other way, and it is the half a player can check against the
+            // number on their own title screen. Entries older than the field just show the date.
+            outv.Add("@" + Changelog.FormatTime(e.At).ToUpperInvariant()
+                     + (e.Version.Length > 0 ? "  " + e.Version.ToUpperInvariant() : ""));
             Wrap(e.Title.ToUpperInvariant(), width, scale, outv, "#", "#");
             // HANGING INDENT: the bullet sits on the first line and the rest line up under the
             // text. Treating "-" as an ordinary word - which it was - lets it be orphaned onto a

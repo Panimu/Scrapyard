@@ -435,7 +435,8 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            Damage = 55.1,
+            // A tenth off, 55.1 -> 49.59, with the tier 4 step scaled to match. See the TypeScript.
+            Damage = 49.59,
             Cooldown = 2.0,
             Range = 330, // further than the Cannon: it reaches the crowd forming, not the one on you
             ProjectileSpeed = 300, // slow enough to see, and slow enough to walk out from under
@@ -454,7 +455,7 @@ public static class WeaponCatalog
         {
             new WeaponStatDelta { SplashRadius = 9.6 },  // T2  60 -> 69.6
             new WeaponStatDelta { Cooldown = -0.3 },     // T3  2.0 -> 1.7 s  (-15% of base)
-            new WeaponStatDelta { Damage = 20 },         // T4  55.1 -> 75.1
+            new WeaponStatDelta { Damage = 18 },         // T4  49.59 -> 67.59
             new WeaponStatDelta { SplashRadius = 9.6 },  // T5  69.6 -> 79.2
             new WeaponStatDelta { Cooldown = -0.3 },     // T6  1.7 -> 1.4 s
             new WeaponStatDelta { ProjectileCount = 1 }, // T7  a second shell
@@ -755,7 +756,7 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            Damage = 3.8, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
+            Damage = 3.6, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
             Knockback = 18,
             TurretTraverse = 12.723450247038663, // degToRad(729) - trimmed 10% off the Cannon's 810
             FireArc = LaserFireArc,               // degToRad(30)

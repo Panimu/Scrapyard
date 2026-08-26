@@ -38,6 +38,25 @@
 export interface ChangelogEntry {
   /** ISO 8601, UTC, minute precision: `YYYY-MM-DDTHH:MMZ`. Straight from the commit. */
   readonly at: string;
+  /**
+   * THE BUILD THIS FIRST SHIPPED IN - `v388` - or absent for everything written before the field
+   * existed.
+   *
+   * IT IS THE COMMIT COUNT, the same number `vite.config.ts` puts on the title screen, so a player
+   * reading `v391` off the corner of their screen can find the line in here that arrived in it.
+   * That is the entire job: turning "is the thing I am looking at the thing I read about" from a
+   * guess into a comparison of two numbers.
+   *
+   * WRITTEN AS `git rev-list --count HEAD` PLUS ONE, because an entry is authored in the commit
+   * that makes the change and that commit does not exist yet when the line is typed. Get it from
+   * the shell rather than counting by hand.
+   *
+   * OPTIONAL, AND DELIBERATELY NOT BACKFILLED. Guessing which of 280-odd historical entries
+   * belongs to which build would be inventing data that reads exactly like the real thing, and a
+   * version number that is wrong is worse than one that is absent - the absent one at least
+   * admits it. Everything from here forward carries one.
+   */
+  readonly version?: string;
   readonly title: string;
   /** One line per thing that changed. Player-facing: what it does, not how it was done. */
   readonly notes: readonly string[];
@@ -46,32 +65,57 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T18:54Z',
+    version: 'v388',
+    title: 'THE MORTAR HITS FOR LESS',
+    notes: [
+      'A tenth off the damage of every shell, at every tier, on top of the smaller blast it took a moment ago. It has been the loudest gun on the field for a while and it can afford to be quieter.',
+    ],
+  },
+  {
+    at: '2026-08-26T18:54Z',
+    version: 'v388',
+    title: 'FLAK SHELLS, SOFTER AGAIN',
+    notes: [
+      'Another small trim to each shell, on top of the last one. Still three of them into a wide cone, twenty-three times a second.',
+    ],
+  },
+  {
+    at: '2026-08-26T18:54Z',
+    version: 'v388',
+    title: 'ENTRIES SAY WHICH BUILD THEY ARRIVED IN',
+    notes: [
+      'Every note from here on carries the build number it shipped in, beside its date — the same number shown on the title screen. If you are wondering whether the game in front of you has a change in it, the two numbers now answer that between them.',
+      'Older entries do not have one, and are not getting one invented for them.',
+    ],
+  },
+  {
     at: '2026-08-26T18:41Z',
     title: 'TOXIC SLUDGE IS ONLY ITS POOLS NOW',
     notes: [
-      'The globs pass straight through everything and do no damage at all on the way. All of the gun\u2019s damage is in the acid it leaves on the floor \u2014 which is what it was mostly doing anyway, and now it says so.',
+      'The globs pass straight through everything and do no damage at all on the way. All of the gun’s damage is in the acid it leaves on the floor — which is what it was mostly doing anyway, and now it says so.',
       'It throws more slowly, and a rack takes a second longer to reload. Three pools down at once is the weapon; how quickly you can get them there is the cost.',
     ],
   },
   {
     at: '2026-08-26T18:41Z',
-    title: 'THE MORTAR\u2019S BLAST IS SMALLER',
+    title: 'THE MORTAR’S BLAST IS SMALLER',
     notes: [
       'A fifth off the radius, at every tier, which is about a third off the ground each shell actually covers. It was reaching between bodies it had no business reaching between.',
     ],
   },
   {
     at: '2026-08-26T18:41Z',
-    title: 'HEAVY ARTILLERY\u2019S BLAST IS SMALLER',
+    title: 'HEAVY ARTILLERY’S BLAST IS SMALLER',
     notes: [
-      'A tenth off the radius, at every tier. A lighter hand than the Mortar gets \u2014 the shells still have to be walked onto a crowd, and that is the part that was already fair.',
+      'A tenth off the radius, at every tier. A lighter hand than the Mortar gets — the shells still have to be walked onto a crowd, and that is the part that was already fair.',
     ],
   },
   {
     at: '2026-08-26T18:41Z',
     title: 'FLAK SHELLS HIT A SHADE SOFTER',
     notes: [
-      'A small trim to each individual shell. The gun is still three of them into a wide cone, twenty-three times a second \u2014 nothing about how it plays has moved.',
+      'A small trim to each individual shell. The gun is still three of them into a wide cone, twenty-three times a second — nothing about how it plays has moved.',
     ],
   },
   {
@@ -2515,6 +2559,17 @@ export function buildChangelogOverlay(onBack: () => void): ChangelogOverlay {
     const when = document.createElement('div');
     when.className = 'change__when';
     when.textContent = formatChangelogTime(entry.at);
+
+    // THE BUILD, WHEN THE ENTRY KNOWS IT. Beside the stamp rather than on a line of its own: it is
+    // the same fact - WHEN - said the other way, and the version is the half a player can actually
+    // check against their own title screen. Entries older than the field simply show the date, and
+    // an absent span is nothing at all rather than an empty one taking up the gap.
+    if (entry.version !== undefined) {
+      const build = document.createElement('span');
+      build.className = 'change__build';
+      build.textContent = entry.version;
+      when.append(' ', build);
+    }
 
     const name = document.createElement('div');
     name.className = 'change__name';

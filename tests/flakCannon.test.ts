@@ -104,13 +104,17 @@ describe('the catalog numbers', () => {
     // Ordered against the Machine Gun rather than pinned to literals - these are balance dials,
     // and what has to stay true is the RELATIONSHIP that makes them two different weapons.
     expect(s.range).toBeGreaterThan(MACHINE_GUN.base.range * 2);
-    // NOT per-shell any more - the cut that brought the Flak Cannon's DPS under the Machine
-    // Gun's left its own shell a shade CHEAPER than a belt round (see weaponCatalog.ts's header
-    // for the numbers). What still has to hold is the trade the cone is actually selling: more
-    // total damage per pull of the trigger, spread across three shells that can each miss.
-    expect(s.damage * s.projectileCount).toBeGreaterThan(
-      MACHINE_GUN.base.damage * MACHINE_GUN.base.projectileCount,
-    );
+    // NO ORDERING AGAINST THE MACHINE GUN'S BURST, DELIBERATELY. This used to assert that a flak
+    // pull of the trigger out-damaged a belt-gun one - `damage * projectileCount` against the same
+    // pair - on the grounds that more-total-damage-spread-across-missable-shells was the trade the
+    // cone sells. It is a fair description of the weapon and it was a bad test: it turned a
+    // three-shell burst into a FLOOR under a per-shell dial, so a routine trim to the shell failed
+    // as though the weapon had lost its identity, and the only ways out were to leave the balance
+    // alone or to edit the assertion. A test that has to be renegotiated every time the number it
+    // guards moves is not guarding anything.
+    //
+    // What is left below is the part that is genuinely structural: reach, magazine and burst rate
+    // are what make this a different gun from the belt gun, and none of them is a damage dial.
     expect(s.ammoCapacity).toBeGreaterThan(MACHINE_GUN.base.ammoCapacity);
     // Rapid: a burst cycle well under a fifth of a second.
     expect(s.cooldown).toBeLessThan(0.2);

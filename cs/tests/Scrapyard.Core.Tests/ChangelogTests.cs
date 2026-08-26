@@ -189,8 +189,14 @@ public class ChangelogTests
         int stamps = lines.FindAll(l => l.StartsWith('@')).Count;
         Assert.Equal(Changelog.All.Length, stamps);
 
-        // The first thing on the page is the newest entry's stamp.
-        Assert.Equal("@" + Changelog.FormatTime(Changelog.All[0].At).ToUpperInvariant(), lines[0]);
+        // The first thing on the page is the newest entry's stamp - and its BUILD, when it has
+        // one. The version rides the stamp line rather than taking a line of its own, so this is
+        // the assertion that has to know about it; an entry written before the field existed has
+        // an empty Version and the line is the stamp alone.
+        var newest = Changelog.All[0];
+        string wantStamp = "@" + Changelog.FormatTime(newest.At).ToUpperInvariant();
+        if (newest.Version.Length > 0) wantStamp += "  " + newest.Version.ToUpperInvariant();
+        Assert.Equal(wantStamp, lines[0]);
 
         int titles = lines.FindAll(l => l.StartsWith('#')).Count;
         Assert.True(titles >= Changelog.All.Length,

@@ -2150,6 +2150,22 @@ body {
   color: var(--accent);
 }
 
+.change__build {
+  /* A CHIP, NOT MORE ACCENT TEXT. The stamp beside it is already the accent colour, so a version
+     in the same weight and hue would read as one long run-on label; the box is what makes it a
+     separate fact the eye can land on. */
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2, transparent);
+  color: var(--ink-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: 1px;
+}
+
 .change__name {
   margin-top: 2px;
   font-size: 16px;

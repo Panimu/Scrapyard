@@ -1291,7 +1291,12 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    damage: 3.8, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
+    // TRIMMED TWICE, 4 -> 3.8 -> 3.6, and a burst now comes to 10.8 against the belt gun's 11.
+    // That inequality used to be asserted - see tests/flakCannon.test.ts - and the assertion is
+    // gone rather than the number: a three-shell burst standing as a FLOOR under a per-shell dial
+    // made every routine trim look like the weapon losing its identity. What separates these two
+    // guns is reach, magazine and burst rate, none of which is a damage number.
+    damage: 3.6, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
     cooldown: 0.13, // 7.7 bursts/s = 23 rounds/s
     range: 400, // the longest projectile reach in the game - and the least accurate
     projectileSpeed: 620, // 0.65 s to maximum range: the spread is VISIBLE opening in flight
@@ -1718,7 +1723,9 @@ export const MORTAR: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    damage: 55.1,
+    // A TENTH OFF, 55.1 -> 49.59, and the tier 4 step scaled with it for the reason the blast
+    // ladder was scaled: a base-only cut is a gun that catches up by the tier that matters.
+    damage: 49.59,
     cooldown: MORTAR_COOLDOWN,
     // Further than the Cannon, because a mortar's whole claim is that it reaches the crowd
     // forming rather than the one already on you.
@@ -1768,7 +1775,7 @@ export const MORTAR: WeaponDef = Object.freeze({
   perLevel: Object.freeze([
     { splashRadius: 9.6 }, // T2  60 -> 69.6
     { cooldown: MORTAR_RATE_TIER }, // T3  2.0 -> 1.7 s
-    { damage: 20 }, // T4  55.1 -> 75.1
+    { damage: 18 }, // T4  49.59 -> 67.59
     { splashRadius: 9.6 }, // T5  69.6 -> 79.2
     { cooldown: MORTAR_RATE_TIER }, // T6  1.7 -> 1.4 s
     { projectileCount: 1 }, // T7  a second shell
