@@ -52,7 +52,7 @@ import { LevelSelect } from './ui/levelSelect.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
 import { ScrapopediaScreen } from './ui/scrapopediaScreen.js';
 import { UpgradesScreen } from './ui/upgradesScreen.js';
-import { AchievementToast } from './ui/achievementToast.js';
+import { AchievementToast, achievementItem } from './ui/achievementToast.js';
 import { SAVE_PAUSE_SEC, SavedOverlay } from './ui/savedOverlay.js';
 import { PickToast } from './ui/pickToast.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
@@ -525,23 +525,54 @@ async function boot(): Promise<void> {
     // must already include this poll's kills, or the card completing on this very poll would
     // not be seen until the next one.
     state.recordCareerKills(record);
-    toast.push(state.recordAchievements(record));
+    toast.push(state.recordAchievements(record).map(achievementItem));
     state.recordKills(
       world.stats.killsByFlavour,
       world.stats.killsByRank,
       world.level,
       world.stats.killsByCycleRank,
     );
+    // ANNOUNCED WHEN IT HAPPENS, not only in the summary - and in the SAME BANNER an achievement
+    // uses, because it is the same kind of news: something the next run can do that this one could
+    // not. A chassis coming open at wave 3 and being mentioned nowhere until the run ended was the
+    // game keeping its best moment to itself.
     for (const id of state.recordRun(record)) {
-      earnedThisRun.push({ name: HERO_CATALOG.find((h) => h.id === id)?.name ?? id, kind: 'chassis' });
+      const hero = HERO_CATALOG.find((h) => h.id === id);
+      const name = hero?.name ?? id;
+      earnedThisRun.push({ name, kind: 'chassis' });
+      toast.push([
+        {
+          icon: hero?.sprite ?? 'mech_slate',
+          eyebrow: 'Chassis unlocked',
+          name,
+          // ITS IDENTITY LINE, which is what the picker will say - so the banner is a preview of
+          // the thing rather than a second description written for the banner alone.
+          description: hero?.identity ?? '',
+        },
+      ]);
     }
     // A card earned by this run joins the same list the summary announces. It is not a chassis, but
     // it is the same kind of news - something the next run can do that this one could not.
-    for (const def of state.recordCards(record)) earnedThisRun.push({ name: def.name, kind: 'card' });
+    for (const def of state.recordCards(record)) {
+      earnedThisRun.push({ name: def.name, kind: 'card' });
+      toast.push([
+        {
+          icon: `icon_${def.id}`,
+          eyebrow: 'Card unlocked',
+          name: def.name,
+          description: def.description,
+        },
+      ]);
+    }
     // A YARD, on the same list, and it is the biggest thing on it: finishing the Scrapyard opens
     // Mossy Mayhem. Banked through the same poll as everything else, so a win that ends in a tab
     // reload still leaves the map open.
-    for (const def of state.recordLevels(record)) earnedThisRun.push({ name: def.name, kind: 'yard' });
+    for (const def of state.recordLevels(record)) {
+      earnedThisRun.push({ name: def.name, kind: 'yard' });
+      toast.push([
+        { icon: def.art, eyebrow: 'Yard unlocked', name: def.name, description: def.blurb },
+      ]);
+    }
   }
 
   function startRun(heroId: number, seed: number): void {

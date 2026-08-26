@@ -1124,20 +1124,116 @@ public static class Overlay
     /// clock rather than at the end, so the news arrives at the moment it becomes true. Telling the
     /// player on the summary screen instead would make an unlock feel like a reward for stopping.
     /// </remarks>
-    public static void DrawToast(SpriteBatch batch, Sprites sprites, List<string> lines, int vw,
-                                 int vh)
+    /// <summary>One thing that has just come open, waiting to be announced.</summary>
+    /// <param name="Icon">A sprite key - the mech, the card's icon, the yard's plate.</param>
+    /// <param name="Eyebrow">What KIND of thing it is. The only part that differs between kinds.</param>
+    public readonly record struct Toast(string Icon, string Eyebrow, string Name, string Desc);
+
+    /// <summary>Seconds a banner stays up.</summary>
+    /// <remarks>
+    /// SIX, NOT FOUR. Four is long enough to read a line you are already looking at; this arrives
+    /// while the player is looking somewhere else entirely, and the first second is spent noticing
+    /// it at all.
+    /// </remarks>
+    public const double ToastShowSec = 6;
+
+    /// <summary>Dead time between two banners, so the second reads as a new thing.</summary>
+    public const double ToastGapSec = 0.35;
+
+    /// <summary>
+    /// The unlock banner: a panel in the bottom corner with the thing's own face on it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT WAS CENTRED CAPITALS OVER THE FIGHT - "UNLOCKED" and then "CHASSIS: COPPER", stacked one
+    /// per unlock in the middle of the screen. Centre-screen text is the register of a SYSTEM
+    /// MESSAGE: "connection lost", "update available", the PWA update prompt. An unlock is the
+    /// opposite of that. It is a REWARD, and the visual language every player already knows for one
+    /// is a corner panel with a picture of the thing in it.
+    /// </para>
+    /// <para>
+    /// THE PICTURE IS MOST OF THE WORK. The old version had none, so a chassis unlock and a card
+    /// unlock were the same two lines of text with a different noun - and the icon is the half that
+    /// says WHAT you got without being read.
+    /// </para>
+    /// <para>
+    /// IT SLIDES IN, and the slide is where the six seconds start. `t` is the fraction of the
+    /// banner's life still to run, so the last stretch fades rather than vanishing - a banner that
+    /// disappears between frames reads as a glitch.
+    /// </para>
+    /// <para>
+    /// IT DOES NOT STOP THE GAME. The first achievement in the game lands on the frame a Cyber
+    /// Chest pays out an ascension - in the middle of a fight the player has been building toward
+    /// for ten minutes. Taking the input away to acknowledge a trophy would be a punishment for
+    /// earning it.
+    /// </para>
+    /// </remarks>
+    public static void DrawToast(SpriteBatch batch, Sprites sprites, List<Toast> queue, double left,
+                                 int vw, int vh)
     {
-        if (lines.Count == 0) return;
+        if (queue.Count == 0 || left <= 0) return;
+        var item = queue[0];
+
         int scale = System.Math.Max(1, vh / 400);
-        int y = vh / 3;
-        foreach (string line in lines)
+        int small = Screens.SmallScale(vh);
+        int pad = 9 * scale;
+        int icon = 34 * scale;
+
+        // MEASURED, NOT ASSUMED. The three lines are different lengths and different sizes, and the
+        // panel is as wide as the longest of them - a fixed width would either clip a long chassis
+        // identity or leave a card's one-word name floating in a wide box.
+        int wEyebrow = UiFont.Measure(item.Eyebrow, small);
+        int wName = UiFont.Measure(item.Name, scale);
+        string desc = Fit(item.Desc, small, 46 * scale);
+        int wDesc = UiFont.Measure(desc, small);
+        int words = System.Math.Max(wEyebrow, System.Math.Max(wName, wDesc));
+
+        int w = pad + icon + pad + words + pad;
+        int h = System.Math.Max(icon + pad * 2,
+                                UiFont.LineHeight(small) * 2 + UiFont.LineHeight(scale) + pad * 2);
+
+        // THE SLIDE, and the fade at the end. Both come off the same clock, so a banner cut short
+        // by a run ending does not jump.
+        double life = left / ToastShowSec;
+        double inT = System.Math.Min(1, (1 - life) / 0.06);
+        float fade = (float)System.Math.Min(1, life / 0.14);
+        int rise = (int)((1 - inT) * 26 * scale);
+
+        int x = vw - w - 12 * scale;
+        int y = vh - h - 12 * scale + rise;
+
+        Screens.CardFace(batch, sprites, new Rectangle(x, y, w, h), 5 * scale,
+                         Panel * fade, Accent * (0.9f * fade), System.Math.Max(1, scale / 2));
+
+        var tex = sprites.Get(item.Icon);
+        if (tex is not null)
         {
-            Screens.UiDrawCentred(batch, sprites, Screens.Spaced("UNLOCKED"), vw / 2, y, scale,
-                                  Dim);
-            Screens.UiDrawCentred(batch, sprites, line.ToUpperInvariant(), vw / 2,
-                                  y + UiFont.LineHeight(scale), scale * 2, Accent);
-            y += UiFont.LineHeight(scale) + UiFont.LineHeight(scale * 2) + 8 * scale;
+            batch.Draw(tex, new Rectangle(x + pad, y + (h - icon) / 2, icon, icon),
+                       Color.White * fade);
         }
+
+        int tx = x + pad + icon + pad;
+        int ty = y + (h - (UiFont.LineHeight(small) * 2 + UiFont.LineHeight(scale))) / 2;
+
+        Screens.UiDraw(batch, sprites, item.Eyebrow, tx, ty, small, Accent * fade);
+        ty += UiFont.LineHeight(small);
+        Screens.UiDraw(batch, sprites, item.Name.ToUpperInvariant(), tx, ty, scale, Ink * fade);
+        ty += UiFont.LineHeight(scale);
+        Screens.UiDraw(batch, sprites, desc, tx, ty, small, Dim * fade);
+    }
+
+    /// <summary><paramref name="text"/>, cut to fit, with a trailing dot. See Screens.Fit.</summary>
+    private static string Fit(string text, int scale, int room)
+    {
+        if (room <= 0) return "";
+        if (UiFont.Measure(text, scale) <= room) return text;
+        for (int n = text.Length - 1; n > 0; n--)
+        {
+            string cut = text.Substring(0, n) + ".";
+            if (UiFont.Measure(cut, scale) <= room) return cut;
+        }
+
+        return "";
     }
 
     /// <summary>The dimming an overlay lays over the fight.</summary>

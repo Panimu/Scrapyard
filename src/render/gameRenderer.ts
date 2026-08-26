@@ -513,6 +513,16 @@ const PATCH_ROUGH = 0.16;
 
 /** Fraction of a bubble's cycle spent swelling. The rest is the pop. */
 const PUDDLE_SWELL_FRAC = 0.78;
+
+/**
+ * Cycles a second, per bubble: the slowest one, and how much faster the fastest can be.
+ *
+ * THE SAME PAIR THE DESKTOP USES. They had drifted to different values - nothing catches that,
+ * because a renderer's numbers are not in the world hash and no test compares two front-ends'
+ * bubbles.
+ */
+const PUDDLE_RATE_MIN = 0.38;
+const PUDDLE_RATE_SPAN = 0.82;
 const STRIKE_RING_WIDTH = 2;
 const STRIKE_FILL_ALPHA = 0.1;
 const STRIKE_RING_ALPHA = 0.75;
@@ -2528,7 +2538,11 @@ export class GameRenderer {
         // SQUARE-ROOTED so they scatter EVENLY over the disc: area grows with the square of the
         // radius, and a plain uniform draw bunches them in the middle.
         const at = Math.sqrt(rand()) * rr * 0.76;
-        const rate = 0.5 + rand() * 1.1;
+        // SLOWED, AND ALIGNED WITH THE DESKTOP. It was 0.5 + 1.1 here and 0.55 + 1.0 there - two
+        // renderers bubbling at measurably different rates, which nothing catches because neither
+        // number is in the hash. They are one number now, and a slower one: the pops were arriving
+        // fast enough to read as static rather than as something coming to the boil.
+        const rate = PUDDLE_RATE_MIN + rand() * PUDDLE_RATE_SPAN;
         const offset = rand();
         // A RANGE OF SIZES, not a range around one size. A field where every bubble is roughly as
         // big as its neighbour reads as a texture; a few large ones among many small ones reads as

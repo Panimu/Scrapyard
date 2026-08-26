@@ -46,6 +46,21 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T17:19Z',
+    title: 'UNLOCKS ANNOUNCE THEMSELVES PROPERLY',
+    notes: [
+      'A chassis, card or yard coming open now slides up a panel in the corner with the thing’s own picture on it, the same way an achievement does. On the web it was said nowhere at all until the run ended; on desktop it was two lines of centred capitals over the fight, which is the register of a system message rather than of a reward.',
+      'They queue, one at a time, so a poll that opens two things does not print both on top of each other.',
+    ],
+  },
+  {
+    at: '2026-08-26T17:19Z',
+    title: 'SLUDGE POOLS BUBBLE MORE SLOWLY',
+    notes: [
+      'The pops were arriving fast enough to read as static rather than as something coming to the boil.',
+    ],
+  },
+  {
     at: '2026-08-26T15:50Z',
     title: 'FIRE THAT LOOKS LIKE FIRE',
     notes: [

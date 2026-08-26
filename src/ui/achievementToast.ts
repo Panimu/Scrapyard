@@ -35,6 +35,19 @@
  * change to one of them a change to the other.
  *
  * ---------------------------------------------------------------------------------------------
+ * IT IS NOT ONLY FOR ACHIEVEMENTS ANY MORE
+ * ---------------------------------------------------------------------------------------------
+ * A CHASSIS, A CARD OR A YARD coming open mid-run is the same KIND of news as a trophy - something
+ * the next run can do that this one could not - and it was being announced in a completely
+ * different register: nothing at all here, and a line of centred capitals over the fight on the
+ * desktop front-end. Centred text in the middle of the screen is the register of a SYSTEM MESSAGE
+ * ("connection lost", "update available"), which is the opposite of what an unlock is.
+ *
+ * So the banner takes a `ToastItem` rather than an `AchievementDef`, and the only thing that
+ * changes between kinds is the EYEBROW - "Achievement unlocked" or "Chassis unlocked". One shape,
+ * one queue, one place to change when Steam's own overlay takes this job over.
+ *
+ * ---------------------------------------------------------------------------------------------
  * IT QUEUES
  * ---------------------------------------------------------------------------------------------
  * Two achievements can land on the same frame - the run-end check evaluates every condition at
@@ -44,6 +57,31 @@
 
 import type { AchievementDef } from '../core/index.js';
 import { spriteUrl } from '../render/assets.js';
+
+/**
+ * One banner's worth of news.
+ *
+ * `icon` is a sprite KEY, not a URL - the toast resolves it, so a caller does not have to know how
+ * sprites are addressed or that the resolution differs between the split build and the single-file
+ * one.
+ */
+export interface ToastItem {
+  readonly icon: string;
+  /** The small line above the name: what KIND of thing just happened. */
+  readonly eyebrow: string;
+  readonly name: string;
+  readonly description: string;
+}
+
+/** An achievement, as a banner. The one mapping the toast knows about by name. */
+export function achievementItem(def: AchievementDef): ToastItem {
+  return {
+    icon: def.icon,
+    eyebrow: 'Achievement unlocked',
+    name: def.name,
+    description: def.description,
+  };
+}
 
 /**
  * Seconds a banner stays up.
@@ -60,9 +98,10 @@ export class AchievementToast {
   readonly element: HTMLDivElement;
 
   private readonly iconEl: HTMLImageElement;
+  private readonly eyebrowEl: HTMLDivElement;
   private readonly nameEl: HTMLDivElement;
   private readonly descEl: HTMLDivElement;
-  private readonly queue: AchievementDef[] = [];
+  private readonly queue: ToastItem[] = [];
   /** Seconds left of whatever is on screen, or of the gap before the next one. */
   private left = 0;
   private showing = false;
@@ -81,9 +120,8 @@ export class AchievementToast {
     this.iconEl.alt = '';
     this.iconEl.decoding = 'async';
 
-    const eyebrow = document.createElement('div');
-    eyebrow.className = 'achv__eyebrow';
-    eyebrow.textContent = 'Achievement unlocked';
+    this.eyebrowEl = document.createElement('div');
+    this.eyebrowEl.className = 'achv__eyebrow';
 
     this.nameEl = document.createElement('div');
     this.nameEl.className = 'achv__name';
@@ -93,14 +131,14 @@ export class AchievementToast {
 
     const words = document.createElement('div');
     words.className = 'achv__words';
-    words.append(eyebrow, this.nameEl, this.descEl);
+    words.append(this.eyebrowEl, this.nameEl, this.descEl);
 
     el.append(this.iconEl, words);
     this.element = el;
   }
 
-  push(defs: readonly AchievementDef[]): void {
-    for (const d of defs) this.queue.push(d);
+  push(items: readonly ToastItem[]): void {
+    for (const it of items) this.queue.push(it);
   }
 
   /**
@@ -126,6 +164,7 @@ export class AchievementToast {
     const next = this.queue.shift();
     if (next === undefined) return;
     this.iconEl.src = spriteUrl(next.icon);
+    this.eyebrowEl.textContent = next.eyebrow;
     this.nameEl.textContent = next.name;
     this.descEl.textContent = next.description;
     this.element.hidden = false;

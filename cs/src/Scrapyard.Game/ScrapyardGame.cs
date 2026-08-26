@@ -317,6 +317,17 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>How wide a glob is drawn, in world units. Square: it is a blob, not a round.</summary>
     private const double SludgeGlobSize = 11;
 
+    /// <summary>
+    /// Cycles a second, per bubble: the slowest one, and how much faster the fastest can be.
+    /// </summary>
+    /// <remarks>
+    /// THE SAME PAIR THE WEB BUILD USES. They had drifted apart - nothing catches that, because a
+    /// renderer's numbers are not in the world hash and no test compares two front-ends' bubbles.
+    /// </remarks>
+    private const double PuddleRateMin = 0.38;
+
+    private const double PuddleRateSpan = 0.82;
+
     /// <summary>The bubbles' caps, and the rings they leave when they pop.</summary>
     private static readonly Color SludgeLightTint = new(0xea, 0xff, 0xb4);
 
@@ -526,9 +537,21 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const double BankEverySec = 1;
 
     /// <summary>What the last banking pass newly earned, and how long it stays on screen.</summary>
-    private readonly List<string> _toast = new();
+    /// <summary>
+    /// What is queued to be announced, in the order it happened. See <see cref="Overlay.Toast"/>.
+    /// </summary>
+    /// <remarks>
+    /// ONE AT A TIME, not all at once. This used to be a list of strings drawn as a STACK of
+    /// centred capitals across the middle of the screen - so a run that opened a chassis and a card
+    /// on the same poll printed both over the fight at once, and neither got read.
+    /// </remarks>
+    private readonly List<Overlay.Toast> _toast = new();
 
+    /// <summary>Seconds left of the banner on screen, or of the gap before the next one.</summary>
     private double _toastLeft;
+
+    /// <summary>Whether <see cref="_toastLeft"/> is counting down a banner or the gap after one.</summary>
+    private bool _toastShowing;
 
     public ScrapyardGame(int seed, int heroId, string levelId)
     {
@@ -638,6 +661,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _bankedEnd = false;
         _toast.Clear();
         _toastLeft = 0;
+        _toastShowing = false;
         _accumulatorMs = 0;
         _alpha = 0;
         _stride = 0;
@@ -924,7 +948,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
 
-        if (_toastLeft > 0) _toastLeft -= dt;
+        // THE BANNER'S OWN CLOCK. It runs down, then spends a beat empty before the next one, so
+        // two unlocks read as two events rather than as one banner whose text changed.
+        if (_toastLeft > 0)
+        {
+            _toastLeft -= dt;
+            if (_toastLeft <= 0 && _toastShowing)
+            {
+                _toastShowing = false;
+                if (_toast.Count > 0) _toast.RemoveAt(0);
+                _toastLeft = _toast.Count > 0 ? Overlay.ToastGapSec : 0;
+            }
+        }
+        else if (_toast.Count > 0)
+        {
+            _toastShowing = true;
+            _toastLeft = Overlay.ToastShowSec;
+        }
         _prevKeys = keys;
         base.Update(gameTime);
     }
@@ -1831,11 +1871,50 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _save.Save();
 
         if (!earned.Any) return;
-        foreach (string h in earned.Heroes) _toast.Add($"CHASSIS: {NameOfHero(h)}");
-        foreach (string l in earned.Levels) _toast.Add($"YARD: {NameOfLevel(l)}");
-        foreach (string c in earned.Cards) _toast.Add($"CARD: {c}");
-        foreach (string a in earned.Achievements) _toast.Add(a);
-        if (_toast.Count > 0) _toastLeft = 5;
+        // EACH ONE WEARS ITS OWN FACE. A chassis unlock showing the mech, a card showing its icon
+        // - the picture is most of what makes this read as a REWARD rather than as a status line,
+        // and it is the half the old centred-capitals version had none of.
+        foreach (string h in earned.Heroes)
+        {
+            foreach (var hero in HeroUnlocks.Heroes)
+            {
+                if (hero.Id != h) continue;
+                _toast.Add(new Overlay.Toast(hero.Art, "CHASSIS UNLOCKED", hero.Name, hero.Line));
+                break;
+            }
+        }
+
+        foreach (string l in earned.Levels)
+        {
+            foreach (var lvl in HeroUnlocks.Levels)
+            {
+                if (lvl.Id != l) continue;
+                _toast.Add(new Overlay.Toast(lvl.Art, "YARD UNLOCKED", lvl.Name, lvl.Line));
+                break;
+            }
+        }
+
+        foreach (string c in earned.Cards)
+        {
+            foreach (var card in CardTexts.All)
+            {
+                if (card.Id != c) continue;
+                _toast.Add(new Overlay.Toast(card.IconKey, "CARD UNLOCKED", card.Name,
+                                             card.Description));
+                break;
+            }
+        }
+
+        foreach (string a in earned.Achievements)
+        {
+            foreach (var achv in Achievements.All)
+            {
+                if (achv.Id != a) continue;
+                _toast.Add(new Overlay.Toast(achv.Icon, "ACHIEVEMENT UNLOCKED", achv.Name,
+                                             achv.Description));
+                break;
+            }
+        }
     }
 
     /// <summary>
@@ -2087,7 +2166,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                                        Screens.SmallScale(mh)),
                         _changes.Scroll, mw, mh, _changelogRects); break;
             }
-            if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, mw, mh);
+            if (_toastShowing) Overlay.DrawToast(_batch, _sprites, _toast, _toastLeft, mw, mh);
             _batch.End();
             Present();
             SaveShot();
@@ -2185,7 +2264,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             Screens.DrawPause(_batch, _sprites, w, _pauseCursor, vw, vh, _pauseRects);
         }
-        if (_toastLeft > 0) Overlay.DrawToast(_batch, _sprites, _toast, vw, vh);
+        if (_toastShowing) Overlay.DrawToast(_batch, _sprites, _toast, _toastLeft, vw, vh);
 
         _batch.End();
         Present();
@@ -2859,7 +2938,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 // square of the radius, and a plain uniform draw bunches them in the middle.
                 double at = System.Math.Sqrt((seed >> 8) / (double)(1 << 24)) * rr * 0.74;
                 seed = unchecked(seed * 1664525 + 1013904223);
-                double rate = 0.55 + (seed >> 8) / (double)(1 << 24) * 1.0;
+                // SLOWED, AND ALIGNED WITH THE WEB. It was 0.55 + 1.0 here and 0.5 + 1.1 there -
+                // two renderers bubbling at measurably different rates, which nothing catches
+                // because neither number is in the hash. One number now, and a slower one.
+                double rate = PuddleRateMin + (seed >> 8) / (double)(1 << 24) * PuddleRateSpan;
                 seed = unchecked(seed * 1664525 + 1013904223);
                 double offset = (seed >> 8) / (double)(1 << 24);
                 seed = unchecked(seed * 1664525 + 1013904223);
