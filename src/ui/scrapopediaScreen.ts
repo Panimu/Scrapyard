@@ -161,9 +161,10 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
     ],
   },
   'w-sludge': {
-    aims: 'NOTHING. It throws behind the mech, and only checks that something is back there.',
+    aims: 'The BIGGEST enemy in a wide cone BEHIND the mech - roughly.',
     notes: [
-      'It is the only weapon in the yard that shoots at where you have BEEN. A fan of acid leaves the mech’s back, lands a short way behind, and stays on the ground for a few seconds eating anything that walks through it.',
+      'It is the only weapon in the yard that shoots at where you have BEEN. A glob of acid leaves the mech’s back toward whatever is chasing hardest, lands a short way along, and stays on the ground for a few seconds eating anything that walks through it.',
+      'It throws WIDE on purpose. The glob lands within twenty degrees or so of the thing it picked, never exactly on it — which is the difference between area denial and a slow shotgun. You are laying ground between you and the trouble, not hitting the trouble.',
       'So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.',
       'It will not fire into an empty yard. There has to be something in a wide cone behind you or it holds - which matters, because the magazine is three throws and the reload is long.',
       'It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that.',

@@ -1875,10 +1875,13 @@ export const PLASMA: WeaponDef = Object.freeze({
 // composes with everything: any chassis can carry it beside whatever it already has, and the
 // large-turret and medium-turret pairs stay the only exclusive choices in the game.
 //
-// IT DOES NOT AIM. There is no turret to slew and nothing it tracks - the spread always leaves
-// from the mech's back, in a wide fan, at a very short throw. What `targeting` does here is
-// purely a GATE: `rear-cone` answers "is anything behind me worth the shot" and the volley
-// ignores which body it was (see targeting 'rear-cone' and fireSludge).
+// IT AIMS, AND IT AIMS BADLY. `rear-cone` picks the BIGGEST thing in a wide cone behind the mech,
+// and the throw goes at that bearing with up to 20 degrees of error either side. There is still no
+// turret to slew and nothing is tracked between shots - the choice is made fresh at the trigger.
+//
+// AIM AND ERROR ARE BOTH LOAD-BEARING. Aim with no error is a slow shotgun that happens to leave a
+// puddle; error with no aim is weather, and weather does not reward looking behind you. Together
+// they answer "something big is following me" with "then there is now acid roughly between us".
 //
 // SO IT IS A WEAPON ABOUT RETREATING, and that is the whole design. Every other gun rewards
 // facing the horde; this one pays for turning your back on it and walking, laying ground behind
@@ -1891,7 +1894,10 @@ export const PLASMA: WeaponDef = Object.freeze({
 // packed right behind the mech takes a small hit as the spread goes through it - and then the
 // pools do the work, for four seconds each, to anything standing in them.
 const SLUDGE_RELOAD = 6;
-const SLUDGE_SPREAD = degToRad(90);
+// THE AIM ERROR, END TO END - so a throw lands within 20 degrees either side of the bearing to
+// whatever it picked. It is NOT a fan: one glob leaves per throw, and this is how wrong that throw
+// is allowed to be. See fireSludge.
+const SLUDGE_SPREAD = degToRad(40);
 // The DETECTION reach, not the throw: how far behind the mech something has to be before this is
 // worth a shot at all. The throw itself is `flightTime` x `projectileSpeed`, about 68 units.
 const SLUDGE_DETECT_RANGE = 340;
@@ -1910,7 +1916,7 @@ export const SLUDGE: WeaponDef = Object.freeze({
     // The glob's own hit. Small on purpose: `puddle.dpsFrac` multiplies it into what the ground
     // does, so this number is really the weapon's damage dial wearing its smallest hat.
     damage: 8,
-    cooldown: 0.9,
+    cooldown: 1.15,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,
     // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a volley - see

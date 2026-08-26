@@ -1623,24 +1623,23 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
  * mount at all - the fan comes off the back of the hull, so where the player is WALKING is the
  * only thing that decides where the ground gets laid.
  *
- * THE SPREAD IS FIXED, NOT DRAWN. The Flak Cannon rolls each shell's heading from `rng.weapon`
- * because it is a volume rather than an aim; this lays its globs at even offsets across the arc,
- * which is what makes the pools a readable WALL behind you rather than a scatter. It also means
- * this pattern touches no RNG stream at all.
+ * IT AIMS, AND IT AIMS BADLY. The heading is the bearing of whatever `rear-cone` picked - the
+ * BIGGEST thing behind you - with a random error of up to `spreadAngle / 2` either side rolled
+ * fresh for every glob. So the ground goes roughly where the trouble is and never exactly there.
  *
- * THE FAN IS LAID ACROSS THE MAGAZINE, NOT ACROSS A VOLLEY, and that is the part worth reading
- * twice. One glob leaves per throw, and WHICH WAY it goes is decided by how many rounds are left:
- * a full rack throws to one edge of the cone, the next throw a step further round, and the last
- * round in the rack reaches the far edge. Emptying a magazine therefore paints the whole arc - the
- * same wall a three-at-once volley made - except that it arrives as three separate decisions the
- * player can walk between rather than as one event.
+ * THAT PAIR IS THE WHOLE WEAPON. Aim with no error is a gun, and a gun that lays area denial
+ * precisely on one body is just a slow shotgun; error with no aim is weather, and weather does not
+ * reward looking behind you. Together they make a weapon that answers "something big is following
+ * me" with "then there is now acid roughly between us", which is a different sentence from either.
  *
- * IT COSTS NO STATE. The magazine is already a counter that runs down and refills, and it is
- * already in the hash; deriving the angle from it means the pattern needs no field of its own and
- * a reload cannot leave the fan halfway round the cone.
+ * IT USED TO IGNORE THE TARGET ENTIRELY and walk the fan across the magazine instead - a full rack
+ * threw to one edge of the cone and emptied toward the other. That laid a tidier wall and it was
+ * the wrong tidiness: the wall went where the MECH was pointing rather than where the horde was,
+ * so a player who had correctly put the biggest thing behind them was rewarded with acid beside it.
  *
- * AND A CAPACITY TIER MAKES THE WALL FINER rather than making each throw bigger, which is the
- * right shape for a tier on this gun: more pools, more closely spaced, over the same arc.
+ * FROM `rng.weapon`, WHICH IS WHY THE STREAM EXISTS. One draw per glob, from the weapon stream and
+ * no other, so a run's spawns and loot are identical whether or not this gun was ever taken. See
+ * the same note on `cone`.
  */
 export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
   const def = world.weaponCatalog[inst.defId] as WeaponDef;
@@ -1648,44 +1647,49 @@ export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const projectiles = world.projectiles;
   const player = world.player;
 
-  // READ BEFORE THE DECREMENT, because the angle is derived from what the rack held when the
-  // trigger was pulled. Reading it after would make a full rack's first throw land on the second
-  // position and the last throw fire from an empty one.
-  const cap = stats.ammoCapacity;
-  const held = inst.ammo;
-  if (cap > 0) {
+  if (stats.ammoCapacity > 0) {
     if (inst.ammo <= 0) return;
     inst.ammo--;
   }
 
-  // The mech's back. A zero facing is possible on the very first tick of a run, before the player
-  // has moved; throwing along a zero vector would pile three globs on the mech's own feet.
-  const fx = player.faceX;
-  const fy = player.faceY;
-  const flen = Math.sqrt(fx * fx + fy * fy);
-  if (flen <= 0) return;
-  const baseX = -fx / flen;
-  const baseY = -fy / flen;
+  // THE BEARING OF WHAT `rear-cone` PICKED, and the mech's own back as the fallback. A target can
+  // go missing between selection and firing - it can be killed by something else in the same
+  // tick - and a throw at nothing should still land behind the player rather than not happen: the
+  // magazine round is already spent.
+  //
+  // A zero facing is possible on the very first tick of a run, before the player has moved.
+  // Throwing along a zero vector would pile the glob on the mech's own feet.
+  const enemies = world.enemies;
+  const target = inst.targetDense;
+  let baseX: number;
+  let baseY: number;
+  if (target >= 0 && target < enemies.count) {
+    const dx = enemies.x[target] - player.x;
+    const dy = enemies.y[target] - player.y;
+    const dlen = Math.sqrt(dx * dx + dy * dy);
+    if (dlen > 0) {
+      baseX = dx / dlen;
+      baseY = dy / dlen;
+    } else {
+      return;
+    }
+  } else {
+    const fx = player.faceX;
+    const fy = player.faceY;
+    const flen = Math.sqrt(fx * fx + fy * fy);
+    if (flen <= 0) return;
+    baseX = -fx / flen;
+    baseY = -fy / flen;
+  }
 
   const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
   const behaviour = BEHAVIOUR_ID[def.behaviour];
   const half = stats.spreadAngle * 0.5;
 
-  // WHERE IN THE ARC THIS THROW GOES, from the rack. `cap - held` counts UP from 0 as the magazine
-  // empties, so a full rack starts at one edge and the last round reaches the other.
-  //
-  // A gun with no magazine at all throws straight back - it has no rack to walk across, and the
-  // alternative would be dividing by zero.
-  const shot = cap > 1 ? (cap - held) / (cap - 1) : 0.5;
-  const aimAt = cap > 1 ? -half + stats.spreadAngle * shot : 0;
-
-  // Any glob beyond the first fans about that heading rather than about the mech's back, so a
-  // future tier that threw two at once would throw them as a PAIR either side of where this shot
-  // was going. Today `projectileCount` is 1 and this is the identity.
-  const step = count > 1 ? stats.spreadAngle * 0.25 / (count - 1) : 0;
-
   for (let i = 0; i < count; i++) {
-    const a = aimAt + (count > 1 ? -stats.spreadAngle * 0.125 + step * i : 0);
+    // ROLLED PER GLOB, not per volley, so a tier that ever threw two would scatter them
+    // independently rather than throwing a rigid pair slightly off line.
+    const a = (world.rng.weapon.nextFloat() * 2 - 1) * half;
     const c = dcos(a);
     const sn = dsin(a);
     const dirX = baseX * c - baseY * sn;

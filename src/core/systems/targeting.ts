@@ -707,13 +707,16 @@ export const targetConeColdest: TargetingFn = (
 };
 
 /**
- * TOXIC SLUDGE'S GATE: is there anything behind me worth throwing at?
+ * TOXIC SLUDGE'S RULE: the BIGGEST thing in a fixed cone behind the mech.
  *
- * IT IS A YES/NO QUESTION WEARING A TARGETING RULE'S CLOTHES, and that is the honest description.
- * `fireSludge` never looks at what this returns - the fan leaves from the mech's back in the same
- * shape whatever is standing there. What the strategy seam buys is the ONE thing this weapon does
- * need from targeting: `requiresTarget` makes updateWeapons skip a weapon whose rule found
- * nothing, which is exactly "do not spend a third of a three-shot magazine on empty yard".
+ * IT IS BOTH A GATE AND AN AIM. `requiresTarget` makes updateWeapons skip a weapon whose rule
+ * found nothing - which is exactly "do not spend a third of a three-shot magazine on empty yard" -
+ * and `fireSludge` then throws at the bearing of whatever came back, with up to twenty degrees of
+ * error either side.
+ *
+ * IT WAS ONLY THE GATE for a while, and the fan was laid across the magazine instead. The wall
+ * that produced went where the MECH was pointing rather than where the horde was, so a player who
+ * had correctly put the biggest thing behind them was rewarded with acid beside it.
  *
  * OFF THE CHASSIS FACING, NOT THE TURRET, which is why this one rule ignores the `aimX`/`aimY` it
  * is handed. Toxic Sludge has no mount and no turret to slew; where its shot goes is decided by

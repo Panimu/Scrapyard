@@ -921,23 +921,26 @@ public static class Weapons
     /// the only thing that decides where the ground gets laid.
     /// </para>
     /// <para>
-    /// THE SPREAD IS FIXED, NOT DRAWN. The Flak Cannon rolls each shell's heading from the weapon
-    /// stream because it is a volume rather than an aim; this lays its globs at even offsets across
-    /// the arc, which is what makes the pools a readable WALL behind you rather than a scatter. It
-    /// also means this pattern touches no RNG stream at all.
+    /// IT AIMS, AND IT AIMS BADLY. The heading is the bearing of whatever <c>RearCone</c> picked -
+    /// the BIGGEST thing behind you - with a random error of up to half <c>SpreadAngle</c> either
+    /// side, rolled fresh for every glob. So the ground goes roughly where the trouble is and never
+    /// exactly there.
     /// </para>
     /// <para>
-    /// THE FAN IS LAID ACROSS THE MAGAZINE, NOT ACROSS A VOLLEY. One glob leaves per throw, and
-    /// WHICH WAY it goes is decided by how many rounds are left: a full rack throws to one edge of
-    /// the cone, the next throw a step further round, and the last round reaches the far edge.
-    /// Emptying a magazine paints the whole arc - the same wall a three-at-once volley made -
-    /// except that it arrives as three separate decisions the player can walk between.
+    /// THAT PAIR IS THE WHOLE WEAPON. Aim with no error is a gun, and a gun that lays area denial
+    /// precisely on one body is just a slow shotgun; error with no aim is weather, and weather does
+    /// not reward looking behind you.
     /// </para>
     /// <para>
-    /// IT COSTS NO STATE. The magazine is already a counter that runs down and refills and is
-    /// already in the hash, so the pattern needs no field of its own and a reload cannot leave the
-    /// fan halfway round the cone. A capacity tier makes the wall FINER rather than each throw
-    /// bigger, which is the right shape for a tier on this gun.
+    /// IT USED TO IGNORE THE TARGET ENTIRELY and walk a fan across the magazine instead - a full
+    /// rack threw to one edge of the cone and emptied toward the other. That laid a tidier wall and
+    /// it was the wrong tidiness: the wall went where the MECH was pointing rather than where the
+    /// horde was, so a player who had correctly put the biggest thing behind them was rewarded with
+    /// acid beside it.
+    /// </para>
+    /// <para>
+    /// FROM THE WEAPON STREAM, WHICH IS WHY IT EXISTS. One draw per glob, from that stream and no
+    /// other, so a run's spawns and loot are identical whether or not this gun was ever taken.
     /// </para>
     /// </remarks>
     private static void FireSludge(World world, int weaponIdx, WeaponInstance inst)
@@ -947,43 +950,50 @@ public static class Weapons
         var projectiles = world.Projectiles;
         var player = world.Player;
 
-        // READ BEFORE THE DECREMENT, because the angle comes off what the rack held when the
-        // trigger was pulled. Reading it after would put a full rack's first throw on the second
-        // position and fire the last throw from an empty one.
-        double cap = stats.AmmoCapacity;
-        double heldRounds = inst.Ammo;
-        if (cap > 0)
+        if (stats.AmmoCapacity > 0)
         {
             if (inst.Ammo <= 0) return;
             inst.Ammo--;
         }
 
-        // The mech's back. A zero facing is possible on the very first tick of a run, before the
-        // player has moved; throwing along a zero vector would pile three globs on its own feet.
-        double fx = player.FaceX;
-        double fy = player.FaceY;
-        double flen = System.Math.Sqrt(fx * fx + fy * fy);
-        if (flen <= 0) return;
-        double baseX = -fx / flen;
-        double baseY = -fy / flen;
+        // THE BEARING OF WHAT RearCone PICKED, and the mech's own back as the fallback. A target
+        // can go missing between selection and firing - killed by something else in the same tick -
+        // and a throw at nothing should still land behind the player rather than not happen: the
+        // magazine round is already spent.
+        //
+        // A zero facing is possible on the very first tick of a run, before the player has moved.
+        // Throwing along a zero vector would pile the glob on the mech's own feet.
+        var enemies = world.Enemies;
+        int target = inst.TargetDense;
+        double baseX;
+        double baseY;
+        if (target >= 0 && target < enemies.Count)
+        {
+            double dx = enemies.X[target] - player.X;
+            double dy = enemies.Y[target] - player.Y;
+            double dlen = System.Math.Sqrt(dx * dx + dy * dy);
+            if (dlen <= 0) return;
+            baseX = dx / dlen;
+            baseY = dy / dlen;
+        }
+        else
+        {
+            double fx = player.FaceX;
+            double fy = player.FaceY;
+            double flen = System.Math.Sqrt(fx * fx + fy * fy);
+            if (flen <= 0) return;
+            baseX = -fx / flen;
+            baseY = -fy / flen;
+        }
 
         int count = stats.ProjectileCount >= 1 ? (int)stats.ProjectileCount : 1;
         double half = stats.SpreadAngle * 0.5;
 
-        // WHERE IN THE ARC THIS THROW GOES, from the rack. cap - held counts UP from 0 as the
-        // magazine empties, so a full rack starts at one edge and the last round reaches the other.
-        // A gun with no magazine throws straight back - it has no rack to walk across.
-        double shot = cap > 1 ? (cap - heldRounds) / (cap - 1) : 0.5;
-        double aimAt = cap > 1 ? -half + stats.SpreadAngle * shot : 0;
-
-        // Any glob beyond the first fans about THAT heading rather than about the mech's back, so a
-        // future tier throwing two at once would throw them as a pair either side of where this
-        // shot was going. Today ProjectileCount is 1 and this is the identity.
-        double step = count > 1 ? stats.SpreadAngle * 0.25 / (count - 1) : 0;
-
         for (int i = 0; i < count; i++)
         {
-            double a = aimAt + (count > 1 ? -stats.SpreadAngle * 0.125 + step * i : 0);
+            // ROLLED PER GLOB, not per volley, so a tier that ever threw two would scatter them
+            // independently rather than throwing a rigid pair slightly off line.
+            double a = (world.Rng.Weapon.NextDouble() * 2 - 1) * half;
             double c = Trig.Cos(a);
             double sn = Trig.Sin(a);
             double dirX = baseX * c - baseY * sn;

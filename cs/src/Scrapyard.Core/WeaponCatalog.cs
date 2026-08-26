@@ -539,9 +539,16 @@ public static class WeaponCatalog
     /// everything and why the two turret pairs stay the only exclusive choices in the game.
     /// </para>
     /// <para>
-    /// IT DOES NOT AIM. Nothing is tracked and no turret slews; the spread always leaves from the
-    /// mech's back. <see cref="Core.Targeting.Rule.RearCone"/> is purely a GATE - "is anything back
-    /// there worth the shot" - and the volley ignores which body it found.
+    /// IT AIMS, AND IT AIMS BADLY. <see cref="Core.Targeting.Rule.RearCone"/> picks the BIGGEST
+    /// thing in a wide cone behind the mech, and the throw goes at that bearing with up to 20
+    /// degrees of error either side. There is still no turret to slew and nothing is tracked
+    /// between shots - the choice is made fresh at the trigger.
+    /// </para>
+    /// <para>
+    /// AIM AND ERROR ARE BOTH LOAD-BEARING. Aim with no error is a slow shotgun that happens to
+    /// leave a puddle; error with no aim is weather, and weather does not reward looking behind
+    /// you. Together they answer "something big is following me" with "then there is now acid
+    /// roughly between us".
     /// </para>
     /// <para>
     /// SO IT IS A WEAPON ABOUT RETREATING. Every other gun rewards facing the horde; this one pays
@@ -559,7 +566,7 @@ public static class WeaponCatalog
             // The glob's own hit. Small on purpose: Puddle.DpsFrac multiplies it into what the
             // ground does, so this is the weapon's damage dial wearing its smallest hat.
             Damage = 8,
-            Cooldown = 0.9,
+            Cooldown = 1.15,
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
             // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a
@@ -577,7 +584,10 @@ public static class WeaponCatalog
             TurretTraverse = 3.141592653589793, // degToRad(180) - nothing to slew, nothing to hold
             FireArc = 3.141592653589793,
             HeatCapacity = HeatCapacityBase,
-            SpreadAngle = 1.5707963267948966,   // degToRad(90)
+            // THE AIM ERROR, END TO END - a throw lands within 20 degrees either side of the
+            // bearing to whatever it picked. NOT a fan: one glob leaves per throw and this is how
+            // wrong that throw is allowed to be. See FireSludge.
+            SpreadAngle = 0.6981317007977318,   // degToRad(40)
             FlightTime = 0.45,                  // the THROW: about 68 units
             AmmoCapacity = 3,
             ReloadTime = 6,

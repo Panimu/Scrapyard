@@ -289,8 +289,15 @@ public sealed class Sprites
     /// <summary>Sine terms in a rough disc's edge. Three reads as organic; one is an egg.</summary>
     private const int Lobes = 3;
 
-    /// <summary>How far the radius wanders, as a fraction of it. "Poured", not "splattered".</summary>
-    private const double Rough = 0.09;
+    /// <summary>
+    /// How far the radius wanders, as a fraction of it. "Poured", not "splattered".
+    /// </summary>
+    /// <remarks>
+    /// IT HAS COME DOWN ONCE. 0.09 read as a spill with lobes, where the shape wanted to be a pool
+    /// that simply is not a circle. At 0.055 the outline still breaks the eye's hunt for a true
+    /// radius - the whole of what it needs to do - and stops competing with the bubbles.
+    /// </remarks>
+    private const double Rough = 0.055;
 
     /// <summary>
     /// Bakes <see cref="Pointer"/>.

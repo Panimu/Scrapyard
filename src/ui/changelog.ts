@@ -46,6 +46,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T13:23Z',
+    title: 'TOXIC SLUDGE AIMS AT WHAT IS CHASING YOU',
+    notes: [
+      'It throws at the BIGGEST thing in the cone behind you rather than wherever the mech happened to be pointing. Put the worst thing behind you and the ground goes between you and it.',
+      'But it throws WIDE — up to twenty degrees off either side, rolled fresh every time. You are laying ground near the trouble, never exactly on it, which is the difference between area denial and a slow shotgun.',
+      'It throws a little slower.',
+      'The pools are rounder than they were, and the bubbles have been redone: they sit on the surface with a shadow under them and a highlight on top, they come in a real range of sizes, and a burst leaves two rings instead of one.',
+    ],
+  },
+  {
     at: '2026-08-26T12:45Z',
     title: 'DESKTOP: ARROWS TO THE BOSS AND THE CHEST',
     notes: [

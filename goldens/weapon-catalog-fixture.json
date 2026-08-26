@@ -879,7 +879,7 @@
    "requiresTarget": true,
    "base": {
     "damage": "4020000000000000",
-    "cooldown": "3feccccccccccccd",
+    "cooldown": "3ff2666666666666",
     "range": "4075400000000000",
     "projectileSpeed": "4062c00000000000",
     "projectileCount": "3ff0000000000000",
@@ -893,7 +893,7 @@
     "heatCapacity": "4059000000000000",
     "heatDispersion": "0000000000000000",
     "turnRate": "0000000000000000",
-    "spreadAngle": "3ff921fb54442d18",
+    "spreadAngle": "3fe657184ae74487",
     "flightTime": "3fdccccccccccccd",
     "ammoCapacity": "4008000000000000",
     "reloadTime": "4018000000000000"

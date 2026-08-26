@@ -356,10 +356,12 @@ const PUDDLE_LOBES = 3;
 /**
  * How far the radius wanders, as a fraction of it.
  *
- * SMALL ON PURPOSE. This is the difference between "poured" and "splattered": at 0.09 the pool is
- * still obviously a pool and obviously not a circle, which is the whole of what it needs to be.
+ * SMALL ON PURPOSE. This is the difference between "poured" and "splattered", and it has come down
+ * once: 0.09 read as a spill with lobes, where the shape wanted to be a pool that simply is not a
+ * circle. At 0.055 the outline still breaks the eye's hunt for a true radius - which is the whole
+ * of what it needs to do - and stops competing with the bubbles for attention.
  */
-const PUDDLE_ROUGH = 0.09;
+const PUDDLE_ROUGH = 0.055;
 
 /** Fraction of a bubble's cycle spent swelling. The rest is the pop. */
 const PUDDLE_SWELL_FRAC = 0.78;
@@ -2180,17 +2182,21 @@ export class GameRenderer {
           .fill({ color: SLUDGE_DEEP, alpha: 0.42 * t });
       }
 
-      let bubbles = 5 + Math.floor(rr / 7);
+      let bubbles = 6 + Math.floor(rr / 5);
       if (bubbles > PUDDLE_MAX_BUBBLES) bubbles = PUDDLE_MAX_BUBBLES;
 
       for (let b = 0; b < bubbles; b++) {
         const ang = rand() * Math.PI * 2;
         // SQUARE-ROOTED so they scatter EVENLY over the disc: area grows with the square of the
         // radius, and a plain uniform draw bunches them in the middle.
-        const at = Math.sqrt(rand()) * rr * 0.74;
-        const rate = 0.55 + rand() * 1.0;
+        const at = Math.sqrt(rand()) * rr * 0.76;
+        const rate = 0.5 + rand() * 1.1;
         const offset = rand();
-        const big = rr * (0.09 + rand() * 0.11);
+        // A RANGE OF SIZES, not a range around one size. A field where every bubble is roughly as
+        // big as its neighbour reads as a texture; a few large ones among many small ones reads as
+        // something actually boiling. The cube pushes most of the draws to the small end.
+        const spread = rand();
+        const big = rr * (0.05 + spread * spread * spread * 0.17);
 
         const phase = (this.clock * rate + offset) % 1;
         const bx = cx + Math.cos(ang) * at;
@@ -2201,20 +2207,48 @@ export class GameRenderer {
           // what makes the field read as boiling rather than as blinking.
           const k = phase / PUDDLE_SWELL_FRAC;
           const br = big * k * k * k;
-          // A DOME, NOT A DOT: a dark ring under a pale cap. A flat disc of one colour at this size
-          // is a bullet hole; the two-tone is what gives it a curved top.
-          g.circle(bx, by, br).fill({ color: SLUDGE_DEEP, alpha: 0.55 * t });
-          g.circle(bx - br * 0.16, by - br * 0.18, br * 0.72)
-            .fill({ color: SLUDGE_LIGHT, alpha: 0.85 * t });
+          if (br < 0.4) continue;
+
+          // FOUR PARTS TO A BUBBLE, and each one is doing a job:
+          //
+          //   the SHADOW it casts on the surface, offset down-right, which is what lifts it OFF
+          //   the pool instead of leaving it painted on;
+          //   the DARK RING, the wall of the dome seen edge-on;
+          //   the SKIN, pale and offset up-left toward the light;
+          //   the HIGHLIGHT, a small bright spot where that light actually lands.
+          //
+          // One flat disc of one colour at this size is a bullet hole. Three of these are two
+          // draws each at most and the pool is at most fourteen bubbles, so the whole field is
+          // still well under a hundred fills.
+          g.circle(bx + br * 0.2, by + br * 0.24, br * 0.98)
+            .fill({ color: SLUDGE_DEEP, alpha: 0.34 * t });
+          g.circle(bx, by, br).fill({ color: SLUDGE_DEEP, alpha: 0.6 * t });
+          g.circle(bx - br * 0.14, by - br * 0.16, br * 0.74)
+            .fill({ color: SLUDGE_LIGHT, alpha: 0.8 * t });
+          // Only on the ones big enough to carry it - a highlight on a three-pixel bubble is a
+          // stray pixel.
+          if (br > 2.2) {
+            g.circle(bx - br * 0.3, by - br * 0.34, br * 0.26)
+              .fill({ color: 0xffffff, alpha: 0.55 * t });
+          }
         } else {
           // Popped: a ring opening outward and fading, which is what says it BURST rather than
-          // that it was switched off.
+          // that it was switched off. TWO rings, the second lagging - a single expanding circle
+          // reads as a ripple, and a pair reads as something that came apart.
           const k = (phase - PUDDLE_SWELL_FRAC) / (1 - PUDDLE_SWELL_FRAC);
-          g.circle(bx, by, big * (1 + k * 1.6)).stroke({
+          g.circle(bx, by, big * (1 + k * 1.7)).stroke({
             width: 2,
             color: SLUDGE_LIGHT,
-            alpha: 0.7 * (1 - k) * t,
+            alpha: 0.75 * (1 - k) * t,
           });
+          if (k > 0.25) {
+            const k2 = (k - 0.25) / 0.75;
+            g.circle(bx, by, big * (1 + k2 * 1.1)).stroke({
+              width: 1.5,
+              color: SLUDGE_LIGHT,
+              alpha: 0.4 * (1 - k2) * t,
+            });
+          }
         }
       }
     }

@@ -2664,7 +2664,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // both come out of the seed. What makes it read as boiling rather than as blinking is
             // that a bubble spends most of its cycle small and only briefly large - hence the
             // cubed phase below - and that the pop leaves a ring behind for a moment.
-            int bubbles = 5 + (int)(rr / 7);
+            int bubbles = 6 + (int)(rr / 5);
             if (bubbles > 14) bubbles = 14;
 
             for (int b = 0; b < bubbles; b++)
@@ -2680,7 +2680,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 seed = unchecked(seed * 1664525 + 1013904223);
                 double offset = (seed >> 8) / (double)(1 << 24);
                 seed = unchecked(seed * 1664525 + 1013904223);
-                double big = rr * (0.09 + (seed >> 8) / (double)(1 << 24) * 0.11);
+                // A RANGE OF SIZES, not a range around one size. A field where every bubble is
+                // roughly its neighbour's size reads as a texture; a few large ones among many
+                // small ones reads as something actually boiling. The cube pushes most of the
+                // draws to the small end.
+                double spread = (seed >> 8) / (double)(1 << 24);
+                double big = rr * (0.05 + spread * spread * spread * 0.17);
 
                 double phase = (_clockSec * rate + offset) % 1.0;
                 double bx = cx + System.Math.Cos(ang) * at;
@@ -2691,17 +2696,41 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     // Swelling. Cubed, so it is small for most of the cycle and only briefly full.
                     double k = phase / 0.78;
                     double br = big * k * k * k;
-                    // A DOME, NOT A DOT: a dark ring under a pale cap. A flat disc of one colour at
-                    // this size is a bullet hole; the two-tone is what gives it a curved top.
-                    Disc(bx, by, br, SludgeFloorTint * (0.55f * t));
-                    Disc(bx - br * 0.16, by - br * 0.18, br * 0.72, SludgeLightTint * (0.85f * t));
+                    if (br < 0.4) continue;
+
+                    // FOUR PARTS TO A BUBBLE, and each one is doing a job:
+                    //
+                    //   the SHADOW it casts on the surface, offset down-right, which is what lifts
+                    //   it OFF the pool instead of leaving it painted on;
+                    //   the DARK RING, the wall of the dome seen edge-on;
+                    //   the SKIN, pale and offset up-left toward the light;
+                    //   the HIGHLIGHT, a small bright spot where that light actually lands.
+                    //
+                    // One flat disc of one colour at this size is a bullet hole.
+                    Disc(bx + br * 0.2, by + br * 0.24, br * 0.98, SludgeFloorTint * (0.34f * t));
+                    Disc(bx, by, br, SludgeFloorTint * (0.6f * t));
+                    Disc(bx - br * 0.14, by - br * 0.16, br * 0.74, SludgeLightTint * (0.8f * t));
+                    // Only on the ones big enough to carry it - a highlight on a three-pixel
+                    // bubble is a stray pixel.
+                    if (br > 2.2)
+                    {
+                        Disc(bx - br * 0.3, by - br * 0.34, br * 0.26, Color.White * (0.55f * t));
+                    }
                 }
                 else
                 {
                     // Popped: a ring opening outward and fading, which is what says it BURST
-                    // rather than that it was switched off.
+                    // rather than that it was switched off. TWO rings, the second lagging - a
+                    // single expanding circle reads as a ripple, a pair reads as something that
+                    // came apart.
                     double k = (phase - 0.78) / 0.22;
-                    Ring(bx, by, big * (1 + k * 1.6), 2, SludgeLightTint * (float)(0.7 * (1 - k) * t));
+                    Ring(bx, by, big * (1 + k * 1.7), 2, SludgeLightTint * (float)(0.75 * (1 - k) * t));
+                    if (k > 0.25)
+                    {
+                        double k2 = (k - 0.25) / 0.75;
+                        Ring(bx, by, big * (1 + k2 * 1.1), 1.5,
+                             SludgeLightTint * (float)(0.4 * (1 - k2) * t));
+                    }
                 }
             }
         }
