@@ -499,20 +499,20 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     const card = 0; // solo catalog: the Cannon card is the only one in this world's pool
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
-    expect(s().range).toBe(CANNON.base.range); // 247
+    expect(s().range).toBe(CANNON.base.range); // 197.6
     expect(s().cooldown).toBe(CANNON.base.cooldown); // 1.2
     expect(s().damage).toBe(CANNON.base.damage); // 44
     expect(s().pierce).toBe(0);
 
     expect(takeTier(w, card)).toBe(2); // RANGE
-    expect(s().range).toBe(309);
-    expect(s().rangeSq).toBe(309 * 309); // the derived form moved with it
+    expect(s().range).toBe(247.2);
+    expect(s().rangeSq).toBe(247.2 * 247.2); // the derived form moved with it
     expect(s().cooldown).toBe(CANNON.base.cooldown);
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(3); // FIRE RATE
     expect(s().cooldown).toBeCloseTo(1.07355, 9);
-    expect(s().range).toBe(309); // and nothing else moved
+    expect(s().range).toBe(247.2); // and nothing else moved
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(4); // DAMAGE
@@ -520,7 +520,7 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(s().cooldown).toBeCloseTo(1.07355, 9);
 
     expect(takeTier(w, card)).toBe(5); // RANGE again
-    expect(s().range).toBe(371);
+    expect(s().range).toBe(296.8);
 
     expect(takeTier(w, card)).toBe(6); // FIRE RATE again
     expect(s().cooldown).toBeCloseTo(0.8841, 9);
@@ -528,7 +528,7 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(takeTier(w, card)).toBe(7); // PIERCE
     expect(s().pierce).toBe(1);
     // The last tier changes what the gun IS; everything below it is intact.
-    expect(s().range).toBe(371);
+    expect(s().range).toBe(296.8);
     expect(s().damage).toBe(62);
     expect(s().cooldown).toBeCloseTo(0.8841, 9);
   });

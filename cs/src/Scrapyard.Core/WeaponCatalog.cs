@@ -380,7 +380,9 @@ public static class WeaponCatalog
         {
             Damage = 44, // no variance, no crit
             Cooldown = 1.263, // 0.792 shots/s - the whole pace of the game is this number
-            Range = 247, // 56% of the visible width at VIEW_MINOR_UNITS 440
+            // A fifth off, 247 -> 197.6, with both range rungs scaled to match. 45% of the
+            // visible width at VIEW_MINOR_UNITS 440, down from 56%. See the TypeScript.
+            Range = 197.6,
             ProjectileSpeed = 520, // 0.5 s to max range: plainly visible, leadable by enemies
             ProjectileCount = 1,
             Knockback = 190, // impulse/mass: runt 380 u/s, elite 27, boss immune
@@ -392,10 +394,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Range = 62 },      // T2  247 -> 309
+            new WeaponStatDelta { Range = 49.6 },    // T2  197.6 -> 247.2
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T3  -15% of base
             new WeaponStatDelta { Damage = 18 },     // T4  44 -> 62
-            new WeaponStatDelta { Range = 62 },      // T5  309 -> 371
+            new WeaponStatDelta { Range = 49.6 },    // T5  247.2 -> 296.8
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T6
             new WeaponStatDelta { Pierce = 1 },      // T7  punches through one body
             new WeaponStatDelta(),                    // T8  the Twin Mount - see TwinFrom

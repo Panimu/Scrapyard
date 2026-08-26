@@ -487,7 +487,15 @@ export const CANNON: WeaponDef = Object.freeze({
   base: Object.freeze({
     damage: 44, // no variance, no crit
     cooldown: CANNON_COOLDOWN, // 0.792 shots/s - the whole pace of the game is this number
-    range: 247, // 56% of the visible width at VIEW_MINOR_UNITS 440
+    // A FIFTH OFF, 247 -> 197.6, with both range rungs scaled to match (62 -> 49.6) for the
+    // reason the Mortar's two ladders were scaled: cutting only the base makes a gun that starts
+    // shorter and catches up by the tier that matters.
+    //
+    // 45% OF THE VISIBLE WIDTH at VIEW_MINOR_UNITS 440, down from 56%. That is the number worth
+    // watching rather than the raw units - this gun's whole feel is that it commits to ONE body
+    // and cannot answer anything else while the shell is out, and the shorter the reach the more
+    // often the thing it committed to is the thing that actually matters.
+    range: 197.6,
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
     pierce: 0,
@@ -523,10 +531,10 @@ export const CANNON: WeaponDef = Object.freeze({
    * relationship with the swarm it otherwise ignores.
    */
   perLevel: Object.freeze([
-    { range: 62 }, // T2  247 -> 309
+    { range: 49.6 }, // T2  197.6 -> 247.2
     { cooldown: CANNON_RATE_TIER }, // T3  1.263 -> 1.0736 s  (-15% of base)
     { damage: 18 }, // T4  44 -> 62
-    { range: 62 }, // T5  309 -> 371
+    { range: 49.6 }, // T5  247.2 -> 296.8
     { cooldown: CANNON_RATE_TIER }, // T6  1.0736 -> 0.8841 s  (0.70x base, as always)
     { pierce: 1 }, // T7  punches through one body
     // T8 - THE TWIN MOUNT, and it carries no stats at all, exactly like the Chain Laser's rung:

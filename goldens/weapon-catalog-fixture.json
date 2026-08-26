@@ -25,7 +25,7 @@
    "base": {
     "damage": "4046000000000000",
     "cooldown": "3ff4353f7ced9168",
-    "range": "406ee00000000000",
+    "range": "4068b33333333333",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -45,7 +45,7 @@
    },
    "perLevel": [
     {
-     "range": "404f000000000000"
+     "range": "4048cccccccccccd"
     },
     {
      "cooldown": "bfc83fe5c91d14e3"
@@ -54,7 +54,7 @@
      "damage": "4032000000000000"
     },
     {
-     "range": "404f000000000000"
+     "range": "4048cccccccccccd"
     },
     {
      "cooldown": "bfc83fe5c91d14e3"

@@ -827,7 +827,10 @@ describe('the Cannon is untouched by any of this', () => {
   it('still shoots the STRONGEST enemy while a laser shoots the weakest', () => {
     const w = makeWorld('cannon');
     addEnemy(w, 100, 0, 5);
-    const strong = addEnemy(w, 200, 0, 900);
+    // BOTH INSIDE THE CANNON'S REACH, which is the only thing these distances are for: the test
+    // is about picking the STRONGEST over the nearest, and a body outside range is not picked over
+    // anything. 180 rather than 200 because the base reach is now 197.6.
+    const strong = addEnemy(w, 180, 0, 900);
     sync(w);
 
     const n = TARGETING['highest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);

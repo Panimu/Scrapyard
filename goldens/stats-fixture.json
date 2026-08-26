@@ -214,7 +214,7 @@
    "result": {
     "damage": "4046000000000000",
     "cooldown": "3ff4353f7ced9168",
-    "range": "406ee00000000000",
+    "range": "4068b33333333333",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -234,8 +234,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fe06a7ef9db22d1",
-    "rangeSq": "40edca2000000000",
+    "projectileLifetime": "3fda43fe5c91d14f",
+    "rangeSq": "40e310b851eb851e",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"
@@ -251,7 +251,7 @@
    "result": {
     "damage": "4046000000000000",
     "cooldown": "3ff4353f7ced9168",
-    "range": "406ee00000000000",
+    "range": "4068b33333333333",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "3ff0000000000000",
@@ -271,8 +271,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fe06a7ef9db22d1",
-    "rangeSq": "40edca2000000000",
+    "projectileLifetime": "3fda43fe5c91d14f",
+    "rangeSq": "40e310b851eb851e",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"
@@ -290,7 +290,7 @@
    "result": {
     "damage": "404f000000000000",
     "cooldown": "3fec4a8c154c985f",
-    "range": "4077300000000000",
+    "range": "40728ccccccccccd",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "4000000000000000",
@@ -310,8 +310,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fe8a8404693c566",
-    "rangeSq": "4100cd4800000000",
+    "projectileLifetime": "3fe3b9cd05430452",
+    "rangeSq": "40f581a3d70a3d71",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"

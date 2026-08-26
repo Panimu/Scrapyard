@@ -453,7 +453,10 @@ describe('the rule, end to end through updateWeapons', () => {
   it('aims the turret at the highest-HP enemy and re-evaluates every tick', () => {
     const w = makeWorld();
     const weak = addEnemy(w, 0, 100, 40);
-    const strong = addEnemy(w, 0, -220, 200);
+    // BOTH INSIDE THE CANNON'S REACH. The distances are scaffolding - this is about the rule
+    // re-evaluating on CURRENT hp - and a body out of range is not a candidate at all. 180 rather
+    // than 220 because the base reach is now 197.6.
+    const strong = addEnemy(w, 0, -180, 200);
 
     tick(w);
     expect(w.weapons[0].targetDense).toBe(strong);
@@ -507,8 +510,8 @@ describe('the rule, end to end through updateWeapons', () => {
     it('does not target a body hidden behind scenery', () => {
       const w = makeWorld();
       putPile(w, 120, 0, 60);
-      // Directly behind the pile, well inside the Cannon's range.
-      const hidden = addEnemy(w, 240, 0, 900);
+      // Directly behind the pile (which spans x 60..180) and inside the Cannon's 197.6 reach.
+      const hidden = addEnemy(w, 190, 0, 900);
       // `sync` FIRST. gather reads the spatial hash, so without a rebuild it returns 0 for an
       // enemy that is simply not in the hash yet - and the assertion would pass on a build with
       // no occlusion test at all.
@@ -527,8 +530,8 @@ describe('the rule, end to end through updateWeapons', () => {
       putPile(w, 120, 0, 60);
       // The Cannon wants the HIGHEST hp. The hidden body wins that comparison outright, so if it
       // is still a candidate it will be chosen and this test fails on the value of targetDense.
-      addEnemy(w, 240, 0, 5000);
-      const visible = addEnemy(w, 0, 200, 100);
+      addEnemy(w, 190, 0, 5000);
+      const visible = addEnemy(w, 0, 150, 100);
 
       for (let i = 0; i < 30; i++) tick(w);
       // The CHOICE is the contract here, not the shot: the visible body is at 90 degrees, and the
@@ -540,7 +543,7 @@ describe('the rule, end to end through updateWeapons', () => {
       const w = makeWorld();
       // Off to one side, so the line to the enemy misses it entirely.
       putPile(w, 120, 200, 60);
-      const seen = addEnemy(w, 240, 0, 900);
+      const seen = addEnemy(w, 190, 0, 900);
 
       for (let i = 0; i < 30; i++) tick(w);
       expect(w.weapons[0].targetDense).toBe(seen);
