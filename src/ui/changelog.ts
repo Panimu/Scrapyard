@@ -46,6 +46,29 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T12:32Z',
+    title: 'THE HEAVIES TURN FIVE SECONDS SOONER',
+    notes: [
+      'A siege ring now stops marching on the mark it was given and comes for you while it is still closing, rather than just after. You get less of a perfect circle standing on empty ground and more of a wall that has clearly changed its mind about you.',
+    ],
+  },
+  {
+    at: '2026-08-26T12:32Z',
+    title: 'TOXIC SLUDGE THROWS FROM UNDER THE MECH',
+    notes: [
+      'The glob leaves from behind the hull and over the legs, so it reads as lobbed out from under the machine instead of skating across the top of it. It is also round now rather than a bullet wearing green.',
+      'The pools are no longer perfect circles — each one has its own uneven coastline, because acid poured on the ground does not find a radius.',
+    ],
+  },
+  {
+    at: '2026-08-26T12:32Z',
+    title: 'DESKTOP: THE ARTILLERY RING, AND LEGS THAT GO UNDER THE HULL',
+    notes: [
+      'The barrage draws its proper target marker again: a wash over the ground it is about to take, a ring, a second ring closing on the fuse, and four crosshair ticks. It had been reduced to a dotted outline, which said a circle was there but not when it mattered.',
+      'A mech’s legs sit under its hull instead of on top of it, so the hip joints stop showing through the plating.',
+    ],
+  },
+  {
     at: '2026-08-26T08:05Z',
     title: 'BURNING ENEMIES ARE ON FIRE NOW',
     notes: [

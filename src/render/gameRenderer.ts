@@ -133,6 +133,16 @@ const GLOW_SPRITES = 96;
  */
 const FLAME_SPRITES = 320;
 
+/**
+ * Toxic Sludge's globs in flight. One per throw, a 0.45 s flight and a 0.9 s clock, so a single
+ * rack can have at most a couple airborne - this is generous even for a future tier that throws
+ * more than one.
+ */
+const SLUDGE_SHELLS = 32;
+
+/** How wide a glob is drawn, in world units. Square: it is a blob, not a round. */
+const SLUDGE_GLOB_SIZE = 11;
+
 /** Frames in the burn loop. See tools/make-burn.mjs. */
 const BURN_FRAMES = 3;
 
@@ -337,6 +347,20 @@ const PUDDLE_SPREAD_SEC = 0.22;
 /** Ceiling on bubbles per pool. The count scales with radius up to this. */
 const PUDDLE_MAX_BUBBLES = 14;
 
+/** Points around a pool's outline. Enough that the polygon reads as a curve, not a shape. */
+const PUDDLE_POINTS = 40;
+
+/** Sine terms in the coastline. Three reads as organic; one is an egg and six is a gear. */
+const PUDDLE_LOBES = 3;
+
+/**
+ * How far the radius wanders, as a fraction of it.
+ *
+ * SMALL ON PURPOSE. This is the difference between "poured" and "splattered": at 0.09 the pool is
+ * still obviously a pool and obviously not a circle, which is the whole of what it needs to be.
+ */
+const PUDDLE_ROUGH = 0.09;
+
 /** Fraction of a bubble's cycle spent swelling. The rest is the pop. */
 const PUDDLE_SWELL_FRAC = 0.78;
 const STRIKE_RING_WIDTH = 2;
@@ -451,6 +475,45 @@ const STEP_LIFT = 1.7;
 /** How far it shifts over the foot it is standing on, in world units. Mirrored with facing. */
 const STEP_SHIFT = 1.5;
 
+/**
+ * The per-pool shape of a puddle's coastline: `PUDDLE_LOBES` sine terms, each with its own
+ * frequency, amplitude and phase.
+ *
+ * DRAWN ONCE PER POOL and reused for all three of its layers, so the lip, the shadow and the
+ * surface follow the same coast. Frequencies are small integers because the radius has to close
+ * exactly at 2pi - a non-integer frequency leaves a step where the polygon meets itself, which is
+ * a visible notch in the outline.
+ */
+function puddleWobble(rand: () => number): readonly { f: number; a: number; p: number }[] {
+  const out: { f: number; a: number; p: number }[] = [];
+  for (let i = 0; i < PUDDLE_LOBES; i++) {
+    out.push({
+      // 2..5 lobes around the rim. One would just make it an egg; six or more is a gear.
+      f: 2 + Math.floor(rand() * 4),
+      a: PUDDLE_ROUGH * (0.45 + rand() * 0.55),
+      p: rand() * Math.PI * 2,
+    });
+  }
+  return out;
+}
+
+/** The polygon for one layer of a pool, as a flat [x, y, x, y, ...] list. */
+function puddleOutline(
+  cx: number,
+  cy: number,
+  r: number,
+  lobes: readonly { f: number; a: number; p: number }[],
+): number[] {
+  const pts: number[] = [];
+  for (let i = 0; i < PUDDLE_POINTS; i++) {
+    const th = (i / PUDDLE_POINTS) * Math.PI * 2;
+    let k = 1;
+    for (const l of lobes) k += Math.sin(th * l.f + l.p) * l.a;
+    pts.push(cx + Math.cos(th) * r * k, cy + Math.sin(th) * r * k);
+  }
+  return pts;
+}
+
 export class GameRenderer {
   readonly camera = new Camera();
   readonly stats: RenderStats = {
@@ -527,6 +590,12 @@ export class GameRenderer {
   private readonly glows: SpritePool;
   /** The flames on burning bodies. See BURN_* and drawEnemies. */
   private readonly flames: SpritePool;
+  /**
+   * TOXIC SLUDGE'S GLOBS, AND ONLY THOSE. A pool of its own because it lives at a different DEPTH
+   * from every other round in the game - inside the player layer, between the legs and the hull.
+   * See where it is added for why.
+   */
+  private readonly sludgeShells: SpritePool;
   private readonly beams: BeamLayer;
   private readonly effects: Effects;
 
@@ -632,7 +701,31 @@ export class GameRenderer {
     this.shieldRim = new Graphics({ label: 'shield-rim' });
     // Turret ON TOP of the chassis: the mech walks one way and shoots another, and the turret is
     // the only thing on screen that says where the shot is going before it arrives.
-    this.playerLayer.addChild(this.shadow, this.legs, this.mech, ...this.barrels, this.shieldRim);
+    this.sludgeShells = new SpritePool({
+      capacity: SLUDGE_SHELLS,
+      texture: tex.slug,
+      label: 'sludge-shells',
+    });
+
+    // BETWEEN THE LEGS AND THE HULL, which is the one place a thrown glob looks thrown.
+    //
+    // Every other round in the game is drawn ABOVE the mech, and that is right for every other
+    // round: they leave a barrel that is itself drawn on top of the hull, and they leave it
+    // pointing away. Toxic Sludge throws from the mech's BACK, so its glob spends its first
+    // moments crossing the chassis - and drawn on top it read as a blob skating over the machine
+    // rather than being lobbed out from under it.
+    //
+    // OVER THE LEGS, THOUGH. Under them the glob disappears entirely for those same moments, which
+    // is the same wrongness the other way round: it has left the mech, and a thing that has left
+    // should not be behind the feet.
+    this.playerLayer.addChild(
+      this.shadow,
+      this.legs,
+      this.sludgeShells.container,
+      this.mech,
+      ...this.barrels,
+      this.shieldRim,
+    );
 
     this.drones = new SpritePool({
       capacity: DRONE_SPRITES,
@@ -1869,9 +1962,11 @@ export class GameRenderer {
     const p = world.projectiles;
     const shells = this.projectiles;
     const trails = this.trails;
+    const globs = this.sludgeShells;
 
     shells.begin();
     trails.begin();
+    globs.begin();
     this.strikeMarkers.clear();
     this.drawPuddles(world);
 
@@ -1897,20 +1992,37 @@ export class GameRenderer {
       // plasma-blue, not tracer-amber.
       const vis = p.visualId[d];
 
+      // TOXIC SLUDGE LEAVES THE LOOP EARLY, into its own pool at its own depth - see where
+      // `sludgeShells` is added to the player layer.
+      //
+      // AND IT GETS NO TRAIL. A tracer ribbon says "fired at speed down a line"; this is lobbed
+      // over a shoulder and lands two body-lengths away, and a streak behind it made the arc read
+      // as a shot rather than as a throw.
+      if (vis === VIS_SLUDGE) {
+        const gl = globs.acquire();
+        if (gl !== undefined) {
+          gl.position.set(x, y);
+          // NO ROTATION AND SQUARED OFF. The slug texture is a long capsule because a machine gun
+          // round is a long capsule; scaled uniformly it drew a green pill standing on end, which
+          // is a bullet wearing the wrong colour. Scaling each axis to the same world size makes
+          // it a blob, and a blob does not need to point anywhere.
+          gl.rotation = 0;
+          const w = gl.texture.width;
+          const h = gl.texture.height;
+          gl.scale.set(SLUDGE_GLOB_SIZE / w, SLUDGE_GLOB_SIZE / h);
+          gl.tint = SLUDGE_TINT;
+          gl.alpha = 1;
+        }
+        continue;
+      }
+
       const t = trails.acquire();
       if (t !== undefined) {
         // Anchor (0.5, 0) puts the streak's tip on the shell so the ribbon trails behind it.
         t.position.set(x, y);
         t.rotation = angle + ROT_OFFSET.trail;
         t.scale.set(9 / PARTICLE_SRC, 34 / PARTICLE_SRC);
-        t.tint =
-          vis === VIS_PLASMA
-            ? PLASMA_TINT
-            : vis === VIS_FLAME
-              ? FLAME_TINT
-              : vis === VIS_SLUDGE
-                ? SLUDGE_TINT
-                : 0xffc890;
+        t.tint = vis === VIS_PLASMA ? PLASMA_TINT : vis === VIS_FLAME ? FLAME_TINT : 0xffc890;
         t.alpha = 0.5;
       }
 
@@ -1946,11 +2058,6 @@ export class GameRenderer {
           halo.tint = FLAME_TINT;
           halo.alpha = 0.35;
         }
-      } else if (vis === VIS_SLUDGE) {
-        // A GLOB, not a round: no elongation and no rotation that reads, because it is falling
-        // rather than flying. The pool it becomes is the same green.
-        s.texture = this.tex.slug;
-        s.scale.set(SLUG_SCALE * 1.5);
       } else if (vis === VIS_PLASMA) {
         // THE PHASE BOLT: the machine-gun tracer run big and blue-hot, under a soft halo of
         // itself. Two sprites from the same pool rather than new art - at this scale the
@@ -1972,18 +2079,12 @@ export class GameRenderer {
         s.scale.set(SHELL_SCALE);
       }
       s.alpha = 1;
-      s.tint =
-        vis === VIS_PLASMA
-          ? PLASMA_TINT
-          : vis === VIS_FLAME
-            ? FLAME_TINT
-            : vis === VIS_SLUDGE
-              ? SLUDGE_TINT
-              : 0xffffff;
+      s.tint = vis === VIS_PLASMA ? PLASMA_TINT : vis === VIS_FLAME ? FLAME_TINT : 0xffffff;
     }
 
     shells.end();
     trails.end();
+    globs.end();
   }
 
   /**
@@ -2030,19 +2131,12 @@ export class GameRenderer {
       const grow = age < PUDDLE_SPREAD_SEC ? 0.55 + 0.45 * (age / PUDDLE_SPREAD_SEC) : 1;
       const rr = r * grow;
 
-      // A LIP, A BODY AND A FLOOR. Three concentric fills read as depth where one fill and an
-      // outline read as a sticker: the outer ring is the raised edge the acid has eaten, the dark
-      // band under it is the shadow that edge casts inward, and the inner fill is the surface.
-      g.circle(cx, cy, rr).fill({ color: SLUDGE_RIM, alpha: 0.5 * t });
-      g.circle(cx, cy, rr * 0.94).fill({ color: SLUDGE_DARK, alpha: 0.62 * t });
-      g.circle(cx, cy, rr * 0.86).fill({ color: SLUDGE_TINT, alpha: 0.55 * t });
-
-      // ---- the bubbles ------------------------------------------------------------------------
-      //
-      // A SEED PER POOL, off the position it landed at. It has to be stable across frames or the
-      // bubbles would jump every time this runs, and it has to DIFFER between pools or sixteen
-      // puddles would boil in lockstep. The landing position is already unique per pool and fixed
-      // for its whole life, so it IS the seed - no field, no RNG, nothing stored between frames.
+      // A SEED PER POOL, off the position it landed at. Everything below that varies between
+      // pools - the coastline, the deep patches, the bubbles - comes out of it. It has to be
+      // stable across frames or the pool would boil differently every time this runs, and it has
+      // to DIFFER between pools or sixteen puddles would boil in lockstep. The landing position is
+      // already unique per pool and already fixed for its whole life, so it IS the seed: no field,
+      // no RNG, nothing stored between frames.
       //
       // NOT FROM `world.rng`. The renderer must never touch the simulation's randomness: drawing a
       // frame twice would then change the run.
@@ -2052,6 +2146,27 @@ export class GameRenderer {
         return (seed >>> 8) / 0x1000000;
       };
 
+      // NOT A CIRCLE. Acid poured on the ground does not find a perfect radius, and a pool that
+      // has one reads as a UI element dropped into the yard - the eye picks a true circle out of a
+      // hand-drawn scene instantly. The outline is a closed polygon whose radius wanders, and the
+      // wander is drawn from THIS POOL'S seed so it is fixed for the pool's whole life and
+      // different from its neighbour's.
+      //
+      // ONE SHAPE PER LAYER, NOT OVERLAPPING BLOBS. A rough edge assembled from several
+      // translucent circles double-darkens everywhere they overlap, which is worse than the
+      // perfect circle it replaced.
+      const lobes = puddleWobble(rand);
+
+      // A LIP, A BODY AND A FLOOR. Three concentric fills read as depth where one fill and an
+      // outline read as a sticker: the outer ring is the raised edge the acid has eaten, the dark
+      // band under it is the shadow that edge casts inward, and the inner fill is the surface.
+      // All three share `lobes`, so the roughness is CONCENTRIC - the lip follows the same coast
+      // the surface does, which is what stops the layers reading as three separate spills.
+      g.poly(puddleOutline(cx, cy, rr, lobes)).fill({ color: SLUDGE_RIM, alpha: 0.5 * t });
+      g.poly(puddleOutline(cx, cy, rr * 0.94, lobes)).fill({ color: SLUDGE_DARK, alpha: 0.62 * t });
+      g.poly(puddleOutline(cx, cy, rr * 0.86, lobes)).fill({ color: SLUDGE_TINT, alpha: 0.55 * t });
+
+      // ---- the bubbles ------------------------------------------------------------------------
       // DEEP PATCHES, which do not move. Every bubble in this pool is on a timer, and a surface
       // where the ONLY detail is animated reads as a screensaver - the eye needs something fixed
       // to measure the movement against. Three or four dark blotches, placed by the seed and never

@@ -217,6 +217,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>The bottom: deep patches, and the shaded underside of every bubble.</summary>
     private static readonly Color SludgeFloorTint = new(0x2c, 0x5c, 0x10);
 
+    /// <summary>How wide a glob is drawn, in world units. Square: it is a blob, not a round.</summary>
+    private const double SludgeGlobSize = 11;
+
     /// <summary>The bubbles' caps, and the rings they leave when they pop.</summary>
     private static readonly Color SludgeLightTint = new(0xea, 0xff, 0xb4);
 
@@ -2482,9 +2485,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
             if (vis == VisualId.StrikeMarker)
             {
-                DrawStrikeMarker(x, y, p.SplashRadius[d]);
+                DrawStrikeMarker(w, d, x, y, p.SplashRadius[d]);
                 continue;
             }
+
+            // NOT HERE. Toxic Sludge's globs are drawn inside the mech's own stack - see DrawGlobs.
+            if (vis == VisualId.Sludge) continue;
 
             // The shell points where it is going. The art points UP, hence the offset.
             double angle = System.Math.Atan2(p.Vy[d], p.Vx[d]) + RenderTables.ShellRotOffset;
@@ -2514,6 +2520,39 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 _ => Color.White,
             };
             Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide, len, angle, tint);
+        }
+    }
+
+    /// <summary>
+    /// Toxic Sludge's globs in flight, drawn from inside <see cref="DrawPlayer"/>.
+    /// </summary>
+    /// <remarks>
+    /// A SECOND PASS OVER THE PROJECTILE POOL, which is the price of the depth. The pool is small,
+    /// the flight is under half a second and only one glob leaves per throw, so this walks a few
+    /// dozen entries and draws at most two - measurably nothing, and the alternative is a separate
+    /// pool in the simulation for a fact that is purely about what order things are painted in.
+    ///
+    /// NO TRAIL, unlike every other round. A tracer ribbon says "fired at speed down a line"; this
+    /// is lobbed over a shoulder and lands two body-lengths away.
+    /// </remarks>
+    private void DrawGlobs(World w)
+    {
+        var p = w.Projectiles;
+        for (int d = 0; d < p.Count; d++)
+        {
+            if ((p.Flags[d] & ProjectilePool.FlagDead) != 0) continue;
+            if (p.VisualId[d] != VisualId.Sludge) continue;
+
+            var tex = _sprites.Get("slug");
+            if (tex is null) return;
+
+            double x = Lerp(p.PrevX[d], p.X[d]);
+            double y = Lerp(p.PrevY[d], p.Y[d]);
+            // SQUARED OFF, not drawn at the texture's aspect. The slug art is a long capsule
+            // because a machine gun round is one; at its own proportions it draws a green pill
+            // standing on end, which is a bullet wearing the wrong colour. A blob does not need to
+            // point anywhere.
+            Blit(tex, x, y, SludgeGlobSize, SludgeGlobSize, 0, SludgeTint);
         }
     }
 
@@ -2576,13 +2615,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             double grow = age < 0.22 ? 0.55 + 0.45 * (age / 0.22) : 1;
             double rr = r * grow;
 
+            // NOT A CIRCLE. Acid poured on the ground does not find a perfect radius, and a pool
+            // that has one reads as a UI element dropped into the yard. One of several baked rough
+            // discs (see Sprites.RoughDisc), turned to its own angle so four shapes do not read as
+            // four shapes.
+            seed = unchecked(seed * 1664525 + 1013904223);
+            int shape = (int)((seed >> 8) % Sprites.RoughDiscCount);
+            seed = unchecked(seed * 1664525 + 1013904223);
+            float spin = (float)((seed >> 8) / (double)(1 << 24) * System.Math.PI * 2);
+
             // A LIP, A BODY AND A FLOOR. Three concentric fills read as depth where one fill and an
             // outline read as a sticker: the outer ring is the raised edge the acid has eaten, the
             // dark band under it is the shadow that edge casts inward, and the inner fill is the
-            // surface. Drawn largest first, so each sits ON the one before.
-            Disc(cx, cy, rr, SludgeRimTint * (0.5f * t));
-            Disc(cx, cy, rr * 0.94, SludgeDeepTint * (0.62f * t));
-            Disc(cx, cy, rr * 0.86, SludgeTint * (0.55f * t));
+            // surface. Drawn largest first, so each sits ON the one before - and all three share
+            // one shape and one angle, so the roughness is CONCENTRIC rather than three spills.
+            Blob(cx, cy, rr, shape, spin, SludgeRimTint * (0.5f * t));
+            Blob(cx, cy, rr * 0.94, shape, spin, SludgeDeepTint * (0.62f * t));
+            Blob(cx, cy, rr * 0.86, shape, spin, SludgeTint * (0.55f * t));
 
             // DEEP PATCHES, WHICH DO NOT MOVE. Every bubble below is on a timer, and a surface
             // whose only detail is animated reads as a screensaver - the eye needs something fixed
@@ -2652,6 +2701,33 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
     }
 
+    /// <summary>
+    /// A rough filled disc, from one of the baked variants, turned to <paramref name="spin"/>.
+    /// </summary>
+    /// <remarks>
+    /// The rotation is what makes four baked shapes enough: the same outline at a different angle
+    /// is a different outline as far as the eye is concerned, and it costs nothing here because a
+    /// SpriteBatch draw takes an angle anyway.
+    /// </remarks>
+    private void Blob(double cx, double cy, double radius, int shape, float spin, Color tint)
+    {
+        if (radius <= 0) return;
+        float px = (float)(radius * 2 * _camera.Scale);
+        if (px < 1) return;
+        var tex = _sprites.RoughDisc[shape % Sprites.RoughDiscCount];
+        var at = _camera.ToScreen(cx, cy);
+        float k = px / Sprites.SoftDiscSize;
+        _batch.Draw(tex,
+                    new Vector2(at.X, at.Y),
+                    null,
+                    tint,
+                    spin,
+                    new Vector2(Sprites.SoftDiscSize / 2f, Sprites.SoftDiscSize / 2f),
+                    new Vector2(k, k),
+                    SpriteEffects.None,
+                    0f);
+    }
+
     /// <summary>A filled circle, from the baked disc texture. See <see cref="Sprites.SoftDisc"/>.</summary>
     private void Disc(double cx, double cy, double radius, Color tint)
     {
@@ -2671,24 +2747,73 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                     0f);
     }
 
-    private void DrawStrikeMarker(double x, double y, double radius)
+    private void DrawStrikeMarker(World w, int d, double x, double y, double radius)
     {
         if (radius <= 0) return;
-        var tint = new Color(0xff, 0xc8, 0x90) * 0.5f;
-        const int segments = 24;
-        double step = System.Math.PI * 2 / segments;
-        for (int i = 0; i < segments; i++)
+        var p = w.Projectiles;
+
+        // FRACTION OF THE FUSE STILL TO BURN, 1 at launch down to 0 on impact. Guarded rather than
+        // trusted: a weapon slot that has since been overwritten gives a 0 flight time, and the
+        // marker degrades to a full ring instead of dividing by zero.
+        var owner = w.Weapons[p.OwnerWeapon[d]];
+        double fuse = owner?.Stats.FlightTime ?? 0;
+        double left = fuse > 0 ? p.LifeSec[d] / fuse : 1;
+        double t = left < 0 ? 0 : left > 1 ? 1 : left;
+
+        // A WASH, A RING, A CLOSING RING AND FOUR TICKS - the web build's marker, which this front
+        // end had replaced with twenty-four dots on a circle. The dots were what a SpriteBatch
+        // could draw before there was a baked disc to fill with, and they cost the marker most of
+        // what it was for: the wash is what claims the GROUND, and the closing ring is the only
+        // thing on screen that says WHEN. A dashed outline says "a circle is here" and leaves the
+        // player to guess both.
+        Blob(x, y, radius, 0, 0f, StrikeTint * StrikeFillAlpha);
+        Ring(x, y, radius, StrikeRingWidth, StrikeTint * StrikeRingAlpha);
+
+        // The closing ring. It stops short of zero because a ring that shrinks to a point spends
+        // its last frames as a dot, which reads as a rendering artefact rather than as an impact.
+        double inner = radius * (StrikeMinFrac + (1 - StrikeMinFrac) * t);
+        Ring(x, y, inner, StrikeRingWidth, StrikeTint * 0.95f);
+
+        // Crosshair ticks, outward from the ring. Four short strokes are the whole difference
+        // between "a red circle" and "something is aimed here".
+        double tick = radius * StrikeTickFrac;
+        WorldLine(x - radius - tick, y, x - radius + tick, y);
+        WorldLine(x + radius - tick, y, x + radius + tick, y);
+        WorldLine(x, y - radius - tick, x, y - radius + tick);
+        WorldLine(x, y + radius - tick, x, y + radius + tick);
+
+        void WorldLine(double ax, double ay, double bx, double by)
         {
-            double a = i * step;
-            double bx = x + System.Math.Cos(a) * radius;
-            double by = y + System.Math.Sin(a) * radius;
-            var screen = _camera.ToScreen(bx, by);
-            float dot = (float)System.Math.Max(2, 3 * _camera.Scale);
+            var a = _camera.ToScreen(ax, ay);
+            var b = _camera.ToScreen(bx, by);
+            double dx = b.X - a.X;
+            double dy = b.Y - a.Y;
+            float len = (float)System.Math.Sqrt(dx * dx + dy * dy);
+            if (len < 1) return;
             _batch.Draw(_sprites.Blank,
-                        new Rectangle((int)(screen.X - dot / 2), (int)(screen.Y - dot / 2),
-                                      (int)dot, (int)dot), tint);
+                        new Vector2(a.X, a.Y),
+                        null,
+                        StrikeTint * StrikeRingAlpha,
+                        (float)System.Math.Atan2(dy, dx),
+                        new Vector2(0f, 0.5f),
+                        new Vector2(len, (float)System.Math.Max(1, StrikeRingWidth * _camera.Scale)),
+                        SpriteEffects.None,
+                        0f);
         }
     }
+
+    /// <summary>The artillery marker's red. The web build's own value.</summary>
+    private static readonly Color StrikeTint = new(0xff, 0x3b, 0x30);
+
+    private const float StrikeFillAlpha = 0.1f;
+    private const float StrikeRingAlpha = 0.75f;
+    private const double StrikeRingWidth = 2;
+
+    /// <summary>Tick length either side of the ring, as a fraction of the radius.</summary>
+    private const double StrikeTickFrac = 0.22;
+
+    /// <summary>How small the closing ring gets before impact. Never zero - see the remarks.</summary>
+    private const double StrikeMinFrac = 0.12;
 
     private void DrawPlayer(World w, double px, double py)
     {
@@ -2769,25 +2894,39 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         double face = System.Math.Atan2(p.FaceY, p.FaceX) + yaw;
         double bw = RenderTables.MechDrawW;
 
-        // THE BODY - torso, mount, cockpit, thrusters - DRAWS EVERY FRAME, walking or not. See
-        // make-mechs.mjs's own remark: a chassis is THREE layers (body, shadow, six leg frames),
-        // and "the renderer stacks them and swaps only the leg texture" - the paint and the guns
-        // are stored once rather than baked into all six walk frames. Picking body OR the current
-        // leg frame, instead of drawing both, is exactly why a moving mech had no torso: the leg
-        // frames are legs only by design, not a fallback that happened to be missing one.
-        var body = _sprites.Get($"mech_{stem}");
-        if (body is not null)
-        {
-            Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
-        }
-
-        // THE LEGS, ALWAYS - see the gait above for why this needs no condition. A parked mech
-        // stands on the frame its last step left it in, which is what standing still looks like.
+        // THE LEGS FIRST, AND ALWAYS - see the gait above for why this needs no condition. A parked
+        // mech stands on the frame its last step left it in, which is what standing still looks
+        // like.
+        //
+        // FIRST, i.e. UNDER THE HULL, and this used to be the other way round. `make-mechs.mjs`
+        // emits the body as "torso, mount, cockpit, thrusters" and the six frames as "limbs only":
+        // limbs radiate out from beneath a torso, so a leg drawn OVER the body puts the hip joints
+        // on top of the plating they are supposed to disappear behind. The web build has always
+        // stacked them this way; this front-end had them swapped, which is why the two never quite
+        // looked like the same machine.
         var legs = _sprites.Get($"mech_{stem}_w{step % RenderTables.MechWalkFrames}");
         if (legs is not null)
         {
             BlitRotated(legs, px, py, bw * ((double)legs.Width / legs.Height), bw, face, tint,
                         flipLegs ? SpriteEffects.FlipVertically : SpriteEffects.None);
+        }
+
+        // TOXIC SLUDGE'S GLOBS, between the legs and the hull, and nothing else in the game is
+        // drawn here. Every other round leaves a barrel that is itself on top of the hull, pointing
+        // away; this one is thrown from the mech's BACK and spends its first moments crossing the
+        // chassis. Over the hull it read as a blob skating across the machine; under the legs it
+        // vanishes for those same moments, which is as wrong the other way. See DrawGlobs.
+        DrawGlobs(w);
+
+        // THE BODY - torso, mount, cockpit, thrusters - DRAWS EVERY FRAME, walking or not. A
+        // chassis is THREE layers (body, shadow, six leg frames) and the renderer stacks them,
+        // swapping only the leg texture, so the paint and the guns are stored once rather than
+        // baked into all six walk frames. Picking body OR the current leg frame, instead of drawing
+        // both, is exactly why a moving mech once had no torso.
+        var body = _sprites.Get($"mech_{stem}");
+        if (body is not null)
+        {
+            Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
         }
 
         // THE TURRETS, aimed independently of the chassis - the difference between where the mech

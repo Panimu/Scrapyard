@@ -72,7 +72,7 @@ public static class Flavours
         new() { Name = "swift",   Hp = 0.85, Speed = 1.18,     Dmg = 0.9,  Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
         new() { Name = "tough",   Hp = 1.3,  Speed = 0.88,     Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
         new() { Name = "spiky",   Hp = 0.95, Speed = 1,        Dmg = 1.35, Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "heavy",   Hp = 10,   Speed = 0.143748, Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 0.25, Relocate = 4, FixateSec = 50 },
+        new() { Name = "heavy",   Hp = 10,   Speed = 0.143748, Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 0.25, Relocate = 4, FixateSec = 45 },
         new() { Name = "swarmer", Hp = 0.6,  Speed = 2,        Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
         new() { Name = "chest dropper", Hp = 3, Speed = 1.05,  Dmg = 1,    Xp = 0.5, DropsChest = true,  Knockback = 1,    Relocate = 1, FixateSec = 0 },
     };

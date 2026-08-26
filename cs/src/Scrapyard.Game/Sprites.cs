@@ -71,6 +71,29 @@ public sealed class Sprites
     /// <summary>The size of <see cref="SoftDisc"/>, in texels.</summary>
     public const int SoftDiscSize = 128;
 
+    /// <summary>
+    /// ROUGH DISCS: the same shape with a wandering edge, in <see cref="RoughDiscCount"/> variants.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A TRUE CIRCLE READS AS A UI ELEMENT dropped into the yard - the eye picks one out of a
+    /// hand-drawn scene instantly - so Toxic Sludge's pools use these instead. The web build gets
+    /// the same effect from a polygon with a wobbling radius; there is no polygon fill in a
+    /// SpriteBatch, and a rough edge assembled from several overlapping translucent circles
+    /// double-darkens everywhere they overlap. Baking the wobble into the texture is one draw call
+    /// and no overlap at all.
+    /// </para>
+    /// <para>
+    /// SEVERAL VARIANTS, chosen per pool, because one shape used everywhere is a logo. Four is
+    /// enough with the per-pool ROTATION the caller also applies: four outlines at any angle do
+    /// not read as a repeat.
+    /// </para>
+    /// </remarks>
+    public Texture2D[] RoughDisc { get; }
+
+    /// <summary>How many rough variants are baked. See <see cref="RoughDisc"/>.</summary>
+    public const int RoughDiscCount = 4;
+
     public Sprites(GraphicsDevice device, string root)
     {
         _device = device;
@@ -79,6 +102,8 @@ public sealed class Sprites
         Blank.SetData(new[] { Microsoft.Xna.Framework.Color.White });
         SoftRect = MakeSoftRect(device);
         SoftDisc = MakeSoftDisc(device);
+        RoughDisc = new Texture2D[RoughDiscCount];
+        for (int i = 0; i < RoughDiscCount; i++) RoughDisc[i] = MakeRoughDisc(device, i);
     }
 
     /// <summary>
@@ -171,6 +196,81 @@ public sealed class Sprites
         tex.SetData(data);
         return tex;
     }
+
+    /// <summary>
+    /// Bakes one variant of <see cref="RoughDisc"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE RADIUS IS A SUM OF SINES IN THE ANGLE, exactly as the web build's polygon is, so the two
+    /// front-ends describe the same kind of shape even though neither can use the other's method.
+    /// Frequencies are whole numbers because the radius has to close at 2pi - a fractional one
+    /// leaves a step where the outline meets itself.
+    /// </para>
+    /// <para>
+    /// The seed is the variant index run through a cheap mix, which is enough: these are four
+    /// blobs, not a noise field, and the only requirement is that they differ.
+    /// </para>
+    /// </remarks>
+    private static Texture2D MakeRoughDisc(GraphicsDevice device, int variant)
+    {
+        const int n = SoftDiscSize;
+        const int sub = 4;
+        const double c = n / 2.0;
+        // The base radius leaves room for the wobble to push OUTWARD without clipping on the
+        // texture bounds, which would flatten one side of the blob.
+        const double baseR = n / 2.0 / (1 + Rough) - 0.5;
+
+        uint seed = unchecked((uint)(variant * 2654435761u + 1013904223u));
+        System.Span<double> freq = stackalloc double[Lobes];
+        System.Span<double> amp = stackalloc double[Lobes];
+        System.Span<double> phase = stackalloc double[Lobes];
+        for (int i = 0; i < Lobes; i++)
+        {
+            seed = unchecked(seed * 1664525 + 1013904223);
+            freq[i] = 2 + (seed >> 8) % 4;
+            seed = unchecked(seed * 1664525 + 1013904223);
+            amp[i] = Rough * (0.45 + (seed >> 8) / (double)(1 << 24) * 0.55);
+            seed = unchecked(seed * 1664525 + 1013904223);
+            phase[i] = (seed >> 8) / (double)(1 << 24) * System.Math.PI * 2;
+        }
+
+        var data = new Microsoft.Xna.Framework.Color[n * n];
+        for (int y = 0; y < n; y++)
+        {
+            for (int x = 0; x < n; x++)
+            {
+                int hits = 0;
+                for (int sy = 0; sy < sub; sy++)
+                {
+                    for (int sx = 0; sx < sub; sx++)
+                    {
+                        double px = x + (sx + 0.5) / sub - c;
+                        double py = y + (sy + 0.5) / sub - c;
+                        double dist = System.Math.Sqrt(px * px + py * py);
+                        double th = System.Math.Atan2(py, px);
+
+                        double k = 1;
+                        for (int i = 0; i < Lobes; i++) k += System.Math.Sin(th * freq[i] + phase[i]) * amp[i];
+                        if (dist <= baseR * k) hits++;
+                    }
+                }
+
+                float a = hits / (float)(sub * sub);
+                data[y * n + x] = new Microsoft.Xna.Framework.Color(a, a, a, a);
+            }
+        }
+
+        var tex = new Texture2D(device, n, n);
+        tex.SetData(data);
+        return tex;
+    }
+
+    /// <summary>Sine terms in a rough disc's edge. Three reads as organic; one is an egg.</summary>
+    private const int Lobes = 3;
+
+    /// <summary>How far the radius wanders, as a fraction of it. "Poured", not "splattered".</summary>
+    private const double Rough = 0.09;
 
     /// <summary>
     /// The texture for a sprite key, or null if there is no such file.
