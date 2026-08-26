@@ -303,6 +303,27 @@ const SHIELD_ALPHA_MAX = 0.8;
 /** Breaths per second. Slow: this is ambient state, not an alarm. */
 const SHIELD_PULSE_HZ = 0.7;
 
+/** The haze filling the field. Faint: it must not hide what the mech is standing on. */
+const SHIELD_HAZE_ALPHA = 0.09;
+
+/** Arcs in the innermost layer. Each layer out gets one more, so they never line up. */
+const SHIELD_ARCS = 5;
+
+/** How much of each arc's slot is gap. Below about a fifth the ring stops reading as broken. */
+const SHIELD_GAP_FRAC = 0.32;
+
+/** Radians a second the innermost layer turns. Outer layers are slower - see the caller. */
+const SHIELD_SPIN_RATE = 0.55;
+
+/** The sweep: faster than any layer, and always the same way round. */
+const SHIELD_SWEEP_RATE = 2.1;
+
+/** How long the sweep is, in radians. Short - it is a highlight, not a fifth ring. */
+const SHIELD_SWEEP_ARC = 0.55;
+
+/** The sweep's own colour: the rim's blue run almost to white, so it reads as the brightest part. */
+const SHIELD_SWEEP_TINT = 0xcfe8ff;
+
 /**
  * ARTILLERY STRIKE MARKERS.
  *
@@ -363,13 +384,38 @@ const PUDDLE_LOBES = 3;
  */
 const PUDDLE_ROUGH = 0.055;
 
+/**
+ * The same, for the dark patches on the pool's floor.
+ *
+ * DEEPER THAN THE POOL'S, and it can afford to be: a patch is a fifth of the pool's radius, so
+ * roughness that would read as a splatter on the outline is barely a ripple on one of these. They
+ * also want to look eaten out rather than poured.
+ */
+const PATCH_ROUGH = 0.16;
+
 /** Fraction of a bubble's cycle spent swelling. The rest is the pop. */
 const PUDDLE_SWELL_FRAC = 0.78;
 const STRIKE_RING_WIDTH = 2;
 const STRIKE_FILL_ALPHA = 0.1;
 const STRIKE_RING_ALPHA = 0.75;
 /** Length of the four crosshair ticks, as a fraction of the blast radius. */
-const STRIKE_TICK_FRAC = 0.22;
+/** The bound's own weight. Thinner than the marks on it - it is the edge, not the subject. */
+const STRIKE_HAIRLINE = 1;
+
+/** Graduations round the bound. Every third is long, so the quarters read without a full cross. */
+const STRIKE_TICKS = 12;
+const STRIKE_TICK_LONG = 0.2;
+const STRIKE_TICK_SHORT = 0.1;
+
+/** How far outside the bound the brackets start, as a fraction of it, at launch. */
+const STRIKE_BRACKET_OUT = 0.34;
+
+/** Bracket arm length, as a fraction of the bound. */
+const STRIKE_BRACKET_ARM = 0.26;
+
+/** The cross's hole and reach, as fractions of the bound. */
+const STRIKE_CROSS_GAP = 0.16;
+const STRIKE_CROSS_REACH = 0.42;
 /** The closing ring stops here rather than at zero - a dot that vanishes reads as a glitch. */
 const STRIKE_MIN_FRAC = 0.12;
 
@@ -486,13 +532,16 @@ const STEP_SHIFT = 1.5;
  * exactly at 2pi - a non-integer frequency leaves a step where the polygon meets itself, which is
  * a visible notch in the outline.
  */
-function puddleWobble(rand: () => number): readonly { f: number; a: number; p: number }[] {
+function puddleWobble(
+  rand: () => number,
+  rough: number = PUDDLE_ROUGH,
+): readonly { f: number; a: number; p: number }[] {
   const out: { f: number; a: number; p: number }[] = [];
   for (let i = 0; i < PUDDLE_LOBES; i++) {
     out.push({
       // 2..5 lobes around the rim. One would just make it an egg; six or more is a gear.
       f: 2 + Math.floor(rand() * 4),
-      a: PUDDLE_ROUGH * (0.45 + rand() * 0.55),
+      a: rough * (0.45 + rand() * 0.55),
       p: rand() * Math.PI * 2,
     });
   }
@@ -570,8 +619,6 @@ export class GameRenderer {
   /** The ground shadow. Positioned with the chassis but NEVER rotated with it - see drawPlayer. */
   private readonly shadow: Sprite;
   private readonly shieldRim: Graphics;
-  /** Layer count currently DRAWN into `shieldRim`. -1 forces a redraw on the first frame. */
-  private shieldRimDrawn = -1;
   /**
    * Artillery markers, all of them in ONE Graphics. Unlike the shield rim this genuinely is
    * redrawn every frame - the closing ring is an animation - but there are at most four markers
@@ -887,9 +934,11 @@ export class GameRenderer {
     this.savedFor = 0;
     this.savedTotal = 0;
     this.saveEncoreLeft = -1;
-    // -1, not 0: the new run may start with the same layer count the last one ended on, and a
-    // cleared Graphics that believes it is already drawn would leave the rim missing all run.
-    this.shieldRimDrawn = -1;
+    // NO CACHED LAYER COUNT TO RESET ANY MORE. The field is rebuilt every frame now (its geometry
+    // depends on the clock, not only on how many rims are standing), so the stale-cache bug this
+    // used to guard against - a new run opening on the same count and never redrawing - cannot
+    // happen. Clearing is still worth it: a run that ends with the field up should not leave it
+    // hanging on the first frame of the next one.
     this.shieldRim.clear();
     this.strikeMarkers.clear();
     this.puddles.clear();
@@ -1925,39 +1974,93 @@ export class GameRenderer {
   }
 
   /**
-   * The Energy Shield's rims: one blue ring per layer still standing.
+   * The Energy Shield: a field, drawn as counter-rotating arc segments with a haze inside them.
    *
-   * THE GEOMETRY IS REDRAWN ONLY WHEN THE COUNT CHANGES. A Graphics rebuilt every frame throws
-   * away its geometry and re-tessellates two circles sixty times a second for a shape that changes
-   * perhaps twice a minute; position and alpha are transform and tint, which cost nothing.
+   * WHY IT IS NOT CONCENTRIC RINGS ANY MORE. It was, and the problem with two blue circles that
+   * pulse together is that nothing about them says ENERGY - a ring is the most inert shape there
+   * is, and two of them read as a target painted on the mech's own feet. Worse, the whole thing
+   * moved as ONE object: both rings brightened and dimmed on the same clock, so the field had a
+   * single heartbeat and no internal life at all.
    *
-   * It does NOT rotate with the chassis and does NOT yaw with the gait - it is a field, not a part
-   * of the machine, and a ring that walked with the legs would read as painted on.
+   * FOUR THINGS FIX THAT, and each one is doing a different job:
+   *
+   *   THE HAZE. A faint disc filling the innermost rim, so the field is a VOLUME the mech is
+   *   standing inside rather than an outline drawn round it. This is the single biggest change:
+   *   an outline says "boundary", a fill says "inside here is different".
+   *
+   *   BROKEN RINGS. Each layer is arcs with gaps rather than a closed circle. A closed ring is a
+   *   solid object; a ring with holes in it is something being HELD together.
+   *
+   *   COUNTER-ROTATION. Layer n turns the opposite way to layer n-1, at a different rate. Two
+   *   rings turning against each other is the oldest trick there is for saying "powered", and it
+   *   costs one angle per layer.
+   *
+   *   A SWEEP. One brighter, faster arc running round the outermost rim - the bit of motion the
+   *   eye actually catches, and the reason the field reads as scanning rather than idling.
+   *
+   * REBUILT EVERY FRAME, unlike the old version, and that is the price of all of the above: the
+   * geometry now depends on the clock rather than only on the layer count. It is a handful of arcs
+   * for a shape that is on screen for at most a few seconds at a time.
+   *
+   * IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait - it is a field, not a part
+   * of the machine, and something that walked with the legs would read as painted on.
    */
   private drawShieldRim(layers: number, px: number, py: number): void {
+    const g = this.shieldRim;
     if (layers <= 0) {
-      // `visible` rather than `clear()`: the geometry is worth keeping for the next recharge, and
-      // shieldRimDrawn is left alone so coming back to the same count is free.
-      this.shieldRim.visible = false;
+      g.visible = false;
       return;
     }
 
-    if (layers !== this.shieldRimDrawn) {
-      this.shieldRim.clear();
-      for (let i = 0; i < layers; i++) {
-        this.shieldRim
-          .circle(0, 0, SHIELD_RIM_RADIUS + i * SHIELD_RIM_STEP)
-          .stroke({ width: SHIELD_RIM_WIDTH, color: SHIELD_RIM_TINT, alpha: 1 });
+    g.visible = true;
+    g.clear();
+    g.position.set(px, py);
+
+    // Cosmetic clock, not sim time: the field must keep breathing through a level-up freeze, when
+    // the whole simulation is stopped and this is one of the few things still moving.
+    const clock = this.clock;
+    const pulse = (Math.sin(clock * SHIELD_PULSE_HZ * Math.PI * 2) + 1) * 0.5;
+    g.alpha = SHIELD_ALPHA_MIN + (SHIELD_ALPHA_MAX - SHIELD_ALPHA_MIN) * pulse;
+
+    const inner = SHIELD_RIM_RADIUS;
+    const outer = SHIELD_RIM_RADIUS + (layers - 1) * SHIELD_RIM_STEP;
+
+    // The haze. Two fills rather than one, the inner brighter, so it falls off toward the rim
+    // instead of ending at a hard edge the way a single flat disc would.
+    g.circle(0, 0, inner).fill({ color: SHIELD_RIM_TINT, alpha: SHIELD_HAZE_ALPHA });
+    g.circle(0, 0, inner * 0.62).fill({ color: SHIELD_RIM_TINT, alpha: SHIELD_HAZE_ALPHA * 0.8 });
+
+    for (let i = 0; i < layers; i++) {
+      const r = SHIELD_RIM_RADIUS + i * SHIELD_RIM_STEP;
+      // Opposite way each layer out, and slower the further out it is - a big ring turning as fast
+      // as a small one looks like the whole thing is spinning rather than the parts of it.
+      const dir = i % 2 === 0 ? 1 : -1;
+      const spin = clock * SHIELD_SPIN_RATE * dir * (1 - i * 0.22);
+      const arcs = SHIELD_ARCS + i;
+      const step = (Math.PI * 2) / arcs;
+      // The gap is a FRACTION of the step, so a layer with more arcs gets proportionally smaller
+      // gaps rather than dissolving into dashes.
+      const sweep = step * (1 - SHIELD_GAP_FRAC);
+
+      for (let a = 0; a < arcs; a++) {
+        const from = spin + a * step;
+        g.arc(0, 0, r, from, from + sweep).stroke({
+          width: SHIELD_RIM_WIDTH,
+          color: SHIELD_RIM_TINT,
+          alpha: 0.55 + 0.45 * (i / Math.max(1, layers - 1)),
+        });
       }
-      this.shieldRimDrawn = layers;
     }
 
-    this.shieldRim.visible = true;
-    this.shieldRim.position.set(px, py);
-    // Cosmetic clock, not sim time: the pulse must keep breathing through a level-up freeze, when
-    // the whole simulation is stopped and the rim is one of the few things still moving.
-    const pulse = (Math.sin(this.clock * SHIELD_PULSE_HZ * Math.PI * 2) + 1) * 0.5;
-    this.shieldRim.alpha = SHIELD_ALPHA_MIN + (SHIELD_ALPHA_MAX - SHIELD_ALPHA_MIN) * pulse;
+    // THE SWEEP: one bright short arc running the outermost rim, faster than any layer and always
+    // the same way round. It is the piece of motion the eye actually catches, and the reason the
+    // field reads as scanning rather than idling.
+    const sweepFrom = clock * SHIELD_SWEEP_RATE;
+    g.arc(0, 0, outer, sweepFrom, sweepFrom + SHIELD_SWEEP_ARC).stroke({
+      width: SHIELD_RIM_WIDTH * 1.6,
+      color: SHIELD_SWEEP_TINT,
+      alpha: 0.9,
+    });
   }
 
   private drawProjectiles(world: World, alpha: number): void {
@@ -2173,12 +2276,19 @@ export class GameRenderer {
       // where the ONLY detail is animated reads as a screensaver - the eye needs something fixed
       // to measure the movement against. Three or four dark blotches, placed by the seed and never
       // touched again, are what make it a puddle with a bottom rather than a disc with sparkles.
+      //
+      // AND THEY ARE NOT CIRCLES EITHER. The pool's own outline stopped being one for a reason -
+      // the eye finds a true radius instantly - and three perfect discs sitting inside it put the
+      // shape right back. Each patch gets a wobble of its own, rolled from the same seed, and a
+      // DEEPER one than the pool's: an outline eight units across can carry roughness that would
+      // look like a splatter at fifty.
       const patches = 3 + Math.floor(rand() * 2);
       for (let q = 0; q < patches; q++) {
         const ang = rand() * Math.PI * 2;
         const at = Math.sqrt(rand()) * rr * 0.55;
         const size = rr * (0.16 + rand() * 0.16);
-        g.circle(cx + Math.cos(ang) * at, cy + Math.sin(ang) * at, size)
+        const shape = puddleWobble(rand, PATCH_ROUGH);
+        g.poly(puddleOutline(cx + Math.cos(ang) * at, cy + Math.sin(ang) * at, size, shape))
           .fill({ color: SLUDGE_DEEP, alpha: 0.42 * t });
       }
 
@@ -2266,25 +2376,78 @@ export class GameRenderer {
     const left = fuse > 0 ? p.lifeSec[d] / fuse : 1;
     const t = left < 0 ? 0 : left > 1 ? 1 : left;
 
+    // ---- the wash --------------------------------------------------------------------------
+    //
+    // What claims the GROUND. Everything else here is line work and line work does not say "this
+    // area"; the fill is the only part that tells the player the whole disc is about to be a bad
+    // place to stand.
     g.circle(x, y, radius).fill({ color: STRIKE_TINT, alpha: STRIKE_FILL_ALPHA });
-    g.circle(x, y, radius).stroke({
-      width: STRIKE_RING_WIDTH,
+
+    // ---- the instrument --------------------------------------------------------------------
+    //
+    // A RETICLE, NOT A CIRCLE. It was a ring, a second ring and four ticks, which reads as "a red
+    // circle with some marks on it" - a shape, when what it needs to read as is a machine aiming.
+    // What makes the difference is that the parts are DIFFERENT KINDS of mark rather than more of
+    // one: a hairline outer bound, a graduated scale, brackets that frame, and a cross that fixes
+    // a point. Any two of those together already say "sighted".
+    const outer = radius;
+
+    // The bound. Thin, and thinner than everything else - it is the edge of the blast, not the
+    // subject of the drawing.
+    g.circle(x, y, outer).stroke({
+      width: STRIKE_HAIRLINE,
       color: STRIKE_TINT,
-      alpha: STRIKE_RING_ALPHA,
+      alpha: STRIKE_RING_ALPHA * 0.7,
     });
 
-    // The closing ring. It stops short of zero because a ring that shrinks to a point spends its
+    // THE SCALE: twelve graduations round the bound, every third one long. A ring with marks on it
+    // is an instrument; a plain ring is a shape. The long ones fall on the quarters, which is what
+    // makes the four axes readable without drawing a full crosshair over the ground.
+    for (let i = 0; i < STRIKE_TICKS; i++) {
+      const a = (i / STRIKE_TICKS) * Math.PI * 2;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      const long = i % 3 === 0;
+      const inLen = outer * (long ? STRIKE_TICK_LONG : STRIKE_TICK_SHORT);
+      g.moveTo(x + ca * outer, y + sa * outer).lineTo(
+        x + ca * (outer - inLen),
+        y + sa * (outer - inLen),
+      );
+    }
+    g.stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: STRIKE_RING_ALPHA });
+
+    // THE BRACKETS, and they are the part that closes. Four corner pieces outside the bound,
+    // walking inward as the fuse burns - so the marker says WHEN twice, once with the ring below
+    // and once with something that reads even at the edge of vision, where a thin ring does not.
+    //
+    // They stop at the bound rather than crossing it: brackets that pass through the circle they
+    // are framing stop framing anything.
+    const spread = outer * (1 + STRIKE_BRACKET_OUT * t);
+    const arm = outer * STRIKE_BRACKET_ARM;
+    for (let qx = -1; qx <= 1; qx += 2) {
+      for (let qy = -1; qy <= 1; qy += 2) {
+        const bx = x + qx * spread;
+        const by = y + qy * spread;
+        g.moveTo(bx, by).lineTo(bx - qx * arm, by);
+        g.moveTo(bx, by).lineTo(bx, by - qy * arm);
+      }
+    }
+    g.stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: STRIKE_RING_ALPHA });
+
+    // THE CLOSING RING. It stops short of zero because a ring that shrinks to a point spends its
     // last frames as a dot, which reads as a rendering artefact rather than as an impact.
     const inner = radius * (STRIKE_MIN_FRAC + (1 - STRIKE_MIN_FRAC) * t);
     g.circle(x, y, inner).stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: 0.95 });
 
-    // Crosshair ticks, outward from the ring. Four short strokes are the whole difference between
-    // "a red circle" and "something is aimed here".
-    const tick = radius * STRIKE_TICK_FRAC;
-    g.moveTo(x - radius - tick, y).lineTo(x - radius + tick, y);
-    g.moveTo(x + radius - tick, y).lineTo(x + radius + tick, y);
-    g.moveTo(x, y - radius - tick).lineTo(x, y - radius + tick);
-    g.moveTo(x, y + radius - tick).lineTo(x, y + radius + tick);
+    // THE CROSS, WITH A HOLE IN THE MIDDLE. Four stubs pointing at the centre and stopping short
+    // of it: the gap is what makes it a sight rather than a plus sign, and it leaves the one spot
+    // the shell is actually going to hit unpainted so the player can see what is standing on it.
+    const gap = outer * STRIKE_CROSS_GAP;
+    const reach = outer * STRIKE_CROSS_REACH;
+    g.moveTo(x - gap, y).lineTo(x - reach, y);
+    g.moveTo(x + gap, y).lineTo(x + reach, y);
+    g.moveTo(x, y - gap).lineTo(x, y - reach);
+    g.moveTo(x, y + gap).lineTo(x, y + reach);
     g.stroke({ width: STRIKE_RING_WIDTH, color: STRIKE_TINT, alpha: STRIKE_RING_ALPHA });
   }
 }

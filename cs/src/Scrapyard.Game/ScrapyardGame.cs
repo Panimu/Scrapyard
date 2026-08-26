@@ -196,6 +196,27 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const int ShieldRimSegments = 56;
 
     private const double ShieldPulseHz = 0.7;
+
+    /// <summary>The haze filling the field. Faint: it must not hide what the mech is standing on.</summary>
+    private const float ShieldHazeAlpha = 0.09f;
+
+    /// <summary>Arcs in the innermost layer. Each layer out gets one more, so they never line up.</summary>
+    private const int ShieldArcs = 5;
+
+    /// <summary>How much of each arc's slot is gap. Below about a fifth it stops reading as broken.</summary>
+    private const double ShieldGapFrac = 0.32;
+
+    /// <summary>Radians a second the innermost layer turns. Outer layers are slower.</summary>
+    private const double ShieldSpinRate = 0.55;
+
+    /// <summary>The sweep: faster than any layer, and always the same way round.</summary>
+    private const double ShieldSweepRate = 2.1;
+
+    /// <summary>How long the sweep is, in radians. Short - it is a highlight, not another ring.</summary>
+    private const double ShieldSweepArc = 0.55;
+
+    /// <summary>The sweep's colour: the rim's blue run almost to white, so it reads as brightest.</summary>
+    private static readonly Color ShieldSweepTint = new(0xcf, 0xe8, 0xff);
     private const double ShieldAlphaMin = 0.45;
     private const double ShieldAlphaMax = 0.8;
 
@@ -2654,8 +2675,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 double pat = System.Math.Sqrt((seed >> 8) / (double)(1 << 24)) * rr * 0.55;
                 seed = unchecked(seed * 1664525 + 1013904223);
                 double psize = rr * (0.16 + (seed >> 8) / (double)(1 << 24) * 0.16);
-                Disc(cx + System.Math.Cos(pang) * pat, cy + System.Math.Sin(pang) * pat, psize,
-                     SludgeFloorTint * (0.42f * t));
+                // AND NOT CIRCLES EITHER. The pool's own outline stopped being one for a reason -
+                // the eye finds a true radius instantly - and three perfect discs sitting inside
+                // it put the shape right back. Each patch takes a rough variant and an angle of
+                // its own, so no two are the same blot.
+                seed = unchecked(seed * 1664525 + 1013904223);
+                int pshape = (int)((seed >> 8) % Sprites.RoughDiscCount);
+                seed = unchecked(seed * 1664525 + 1013904223);
+                float pspin = (float)((seed >> 8) / (double)(1 << 24) * System.Math.PI * 2);
+                Blob(cx + System.Math.Cos(pang) * pat, cy + System.Math.Sin(pang) * pat, psize,
+                     pshape, pspin, SludgeFloorTint * (0.42f * t));
             }
 
             // ---- the bubbles ----------------------------------------------------------------
@@ -2795,27 +2824,73 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         double left = fuse > 0 ? p.LifeSec[d] / fuse : 1;
         double t = left < 0 ? 0 : left > 1 ? 1 : left;
 
-        // A WASH, A RING, A CLOSING RING AND FOUR TICKS - the web build's marker, which this front
-        // end had replaced with twenty-four dots on a circle. The dots were what a SpriteBatch
-        // could draw before there was a baked disc to fill with, and they cost the marker most of
-        // what it was for: the wash is what claims the GROUND, and the closing ring is the only
-        // thing on screen that says WHEN. A dashed outline says "a circle is here" and leaves the
-        // player to guess both.
+        // ---- the wash ------------------------------------------------------------------------
+        //
+        // What claims the GROUND. Everything else here is line work and line work does not say
+        // "this area"; the fill is the only part that tells the player the whole disc is about to
+        // be a bad place to stand.
         Blob(x, y, radius, 0, 0f, StrikeTint * StrikeFillAlpha);
-        Ring(x, y, radius, StrikeRingWidth, StrikeTint * StrikeRingAlpha);
 
-        // The closing ring. It stops short of zero because a ring that shrinks to a point spends
+        // ---- the instrument ------------------------------------------------------------------
+        //
+        // A RETICLE, NOT A CIRCLE. It was a ring, a second ring and four ticks, which reads as "a
+        // red circle with some marks on it" - a shape, when what it needs to read as is a machine
+        // aiming. The difference is that the parts are DIFFERENT KINDS of mark rather than more of
+        // one: a hairline bound, a graduated scale, brackets that frame, and a cross that fixes a
+        // point. Any two of those together already say "sighted".
+        double outer = radius;
+
+        // The bound. Thinner than everything else - it is the edge of the blast, not the subject.
+        Ring(x, y, outer, StrikeHairline, StrikeTint * (StrikeRingAlpha * 0.7f));
+
+        // THE SCALE: twelve graduations round the bound, every third one long. A ring with marks
+        // on it is an instrument; a plain ring is a shape. The long ones fall on the quarters,
+        // which makes the four axes readable without drawing a full crosshair over the ground.
+        for (int i = 0; i < StrikeTicks; i++)
+        {
+            double a = i / (double)StrikeTicks * System.Math.PI * 2;
+            double ca = System.Math.Cos(a);
+            double sa = System.Math.Sin(a);
+            double inLen = outer * (i % 3 == 0 ? StrikeTickLong : StrikeTickShort);
+            WorldLine(x + ca * outer, y + sa * outer,
+                      x + ca * (outer - inLen), y + sa * (outer - inLen));
+        }
+
+        // THE BRACKETS, and they are the part that closes. Four corner pieces outside the bound,
+        // walking inward as the fuse burns - so the marker says WHEN twice, once with the ring
+        // below and once with something that reads even at the edge of vision, where a thin ring
+        // does not.
+        //
+        // They stop AT the bound rather than crossing it: brackets that pass through the circle
+        // they are framing stop framing anything.
+        double spread = outer * (1 + StrikeBracketOut * t);
+        double arm = outer * StrikeBracketArm;
+        for (int qx = -1; qx <= 1; qx += 2)
+        {
+            for (int qy = -1; qy <= 1; qy += 2)
+            {
+                double bx = x + qx * spread;
+                double by = y + qy * spread;
+                WorldLine(bx, by, bx - qx * arm, by);
+                WorldLine(bx, by, bx, by - qy * arm);
+            }
+        }
+
+        // THE CLOSING RING. It stops short of zero because a ring that shrinks to a point spends
         // its last frames as a dot, which reads as a rendering artefact rather than as an impact.
         double inner = radius * (StrikeMinFrac + (1 - StrikeMinFrac) * t);
         Ring(x, y, inner, StrikeRingWidth, StrikeTint * 0.95f);
 
-        // Crosshair ticks, outward from the ring. Four short strokes are the whole difference
-        // between "a red circle" and "something is aimed here".
-        double tick = radius * StrikeTickFrac;
-        WorldLine(x - radius - tick, y, x - radius + tick, y);
-        WorldLine(x + radius - tick, y, x + radius + tick, y);
-        WorldLine(x, y - radius - tick, x, y - radius + tick);
-        WorldLine(x, y + radius - tick, x, y + radius + tick);
+        // THE CROSS, WITH A HOLE IN THE MIDDLE. Four stubs pointing at the centre and stopping
+        // short of it: the gap is what makes it a sight rather than a plus sign, and it leaves the
+        // one spot the shell is going to hit unpainted, so the player can see what is standing on
+        // it.
+        double gap = outer * StrikeCrossGap;
+        double reach = outer * StrikeCrossReach;
+        WorldLine(x - gap, y, x - reach, y);
+        WorldLine(x + gap, y, x + reach, y);
+        WorldLine(x, y - gap, x, y - reach);
+        WorldLine(x, y + gap, x, y + reach);
 
         void WorldLine(double ax, double ay, double bx, double by)
         {
@@ -2844,8 +2919,25 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const float StrikeRingAlpha = 0.75f;
     private const double StrikeRingWidth = 2;
 
-    /// <summary>Tick length either side of the ring, as a fraction of the radius.</summary>
-    private const double StrikeTickFrac = 0.22;
+    /// <summary>The bound's weight. Thinner than the marks on it - it is the edge, not the subject.</summary>
+    private const double StrikeHairline = 1;
+
+    /// <summary>Graduations round the bound. Every third is long, so the quarters read.</summary>
+    private const int StrikeTicks = 12;
+
+    private const double StrikeTickLong = 0.2;
+    private const double StrikeTickShort = 0.1;
+
+    /// <summary>How far outside the bound the brackets start, as a fraction of it, at launch.</summary>
+    private const double StrikeBracketOut = 0.34;
+
+    /// <summary>Bracket arm length, as a fraction of the bound.</summary>
+    private const double StrikeBracketArm = 0.26;
+
+    /// <summary>The cross's hole and reach, as fractions of the bound.</summary>
+    private const double StrikeCrossGap = 0.16;
+
+    private const double StrikeCrossReach = 0.42;
 
     /// <summary>How small the closing ring gets before impact. Never zero - see the remarks.</summary>
     private const double StrikeMinFrac = 0.12;
@@ -3142,24 +3234,38 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     }
 
     /// <summary>
-    /// The Energy Shield's rims: one blue ring per layer still standing.
+    /// The Energy Shield: a field, drawn as counter-rotating arc segments with a haze inside them.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// THE SHIELD HAD NO PRESENCE IN THE WORLD AT ALL on this front-end. The HUD drew a pip per
-    /// layer and that was the whole of it, so the one chassis built entirely around the shield
-    /// (Plum, which carries no gun) played as a mech with an invisible mechanic - and every other
-    /// build holding the card had no way to see the rim it was about to lose. The web build has
-    /// drawn these rings since the card shipped; this is that, ported.
+    /// THE SHIELD HAD NO PRESENCE IN THE WORLD AT ALL on this front-end until recently - the HUD
+    /// drew a pip per layer and that was the whole of it, so the one chassis built entirely around
+    /// it (Plum, which carries no gun) played as a mech with an invisible mechanic.
+    /// </para>
+    /// <para>
+    /// WHY IT IS NOT CONCENTRIC RINGS. It was, and the problem with two blue circles pulsing
+    /// together is that nothing about them says ENERGY - a ring is the most inert shape there is,
+    /// and two of them read as a target painted on the mech's own feet. Worse, the whole thing
+    /// moved as ONE object: both rings brightened and dimmed on the same clock, so the field had a
+    /// single heartbeat and no internal life at all.
+    /// </para>
+    /// <para>
+    /// FOUR THINGS FIX THAT, each doing a different job. THE HAZE, a faint disc filling the
+    /// innermost rim, so the field is a VOLUME the mech stands inside rather than an outline drawn
+    /// round it - an outline says "boundary", a fill says "inside here is different". BROKEN
+    /// RINGS: arcs with gaps, because a closed ring is a solid object and a ring with holes in it
+    /// is something being HELD together. COUNTER-ROTATION, layer against layer, which is the
+    /// oldest trick there is for saying "powered". And A SWEEP - one brighter, faster arc on the
+    /// outermost rim, the bit of motion the eye actually catches.
     /// </para>
     /// <para>
     /// IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait. It is a field, not a
-    /// part of the machine, and a ring that walked with the legs would read as painted on.
+    /// part of the machine, and something that walked with the legs would read as painted on.
     /// </para>
     /// <para>
-    /// THE PULSE RUNS ON THE COSMETIC CLOCK rather than on sim time, so it keeps breathing through
-    /// a level-up freeze - when the simulation is stopped and the rim is one of the few things on
-    /// screen still moving.
+    /// EVERYTHING RUNS ON THE COSMETIC CLOCK rather than on sim time, so the field keeps moving
+    /// through a level-up freeze - when the simulation is stopped and this is one of the few
+    /// things on screen still alive.
     /// </para>
     /// </remarks>
     private void DrawShieldRim(World w, double px, double py)
@@ -3168,12 +3274,41 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (layers <= 0) return;
 
         double pulse = (System.Math.Sin(_clockSec * ShieldPulseHz * System.Math.PI * 2) + 1) * 0.5;
-        var tint = ShieldRimTint * (float)(ShieldAlphaMin + (ShieldAlphaMax - ShieldAlphaMin) * pulse);
+        float alpha = (float)(ShieldAlphaMin + (ShieldAlphaMax - ShieldAlphaMin) * pulse);
+
+        double inner = ShieldRimRadius;
+        double outer = ShieldRimRadius + (layers - 1) * ShieldRimStep;
+
+        // The haze. Two fills rather than one, the inner brighter, so it falls off toward the rim
+        // instead of ending at the hard edge a single flat disc would.
+        Disc(px, py, inner, ShieldRimTint * (ShieldHazeAlpha * alpha));
+        Disc(px, py, inner * 0.62, ShieldRimTint * (ShieldHazeAlpha * 0.8f * alpha));
 
         for (int i = 0; i < layers; i++)
         {
-            Ring(px, py, ShieldRimRadius + i * ShieldRimStep, ShieldRimWidth, tint);
+            double r = ShieldRimRadius + i * ShieldRimStep;
+            // Opposite way each layer out, and slower the further out it is - a big ring turning as
+            // fast as a small one looks like the whole thing is spinning rather than its parts.
+            double dir = i % 2 == 0 ? 1 : -1;
+            double spin = _clockSec * ShieldSpinRate * dir * (1 - i * 0.22);
+            int arcs = ShieldArcs + i;
+            double step = System.Math.PI * 2 / arcs;
+            // The gap is a FRACTION of the slot, so a layer with more arcs gets proportionally
+            // smaller gaps rather than dissolving into dashes.
+            double sweep = step * (1 - ShieldGapFrac);
+            float layerAlpha = alpha * (0.55f + 0.45f * (layers > 1 ? i / (float)(layers - 1) : 1f));
+
+            for (int a = 0; a < arcs; a++)
+            {
+                Arc(px, py, r, ShieldRimWidth, ShieldRimTint * layerAlpha, spin + a * step, sweep);
+            }
         }
+
+        // THE SWEEP: one bright short arc running the outermost rim, faster than any layer and
+        // always the same way round. It is the piece of motion the eye actually catches, and the
+        // reason the field reads as scanning rather than idling.
+        Arc(px, py, outer, ShieldRimWidth * 1.6, ShieldSweepTint * (0.9f * alpha),
+            _clockSec * ShieldSweepRate, ShieldSweepArc);
     }
 
     /// <summary>
@@ -3185,17 +3320,32 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// radius the gaps between squares are wider than the squares. A quad as long as the arc it
     /// covers closes them, and one extra sine and cosine per segment is nothing at 56 of them.
     /// </remarks>
-    private void Ring(double cx, double cy, double radius, double thickness, Color tint)
+    private void Ring(double cx, double cy, double radius, double thickness, Color tint) =>
+        Arc(cx, cy, radius, thickness, tint, 0, System.Math.PI * 2);
+
+    /// <summary>
+    /// Part of a circle: <paramref name="sweep"/> radians of it, starting at
+    /// <paramref name="from"/>.
+    /// </summary>
+    /// <remarks>
+    /// SEGMENT COUNT SCALES WITH THE SWEEP, so a short arc is not tessellated as finely as a whole
+    /// ring would be and a whole ring is not made coarser to pay for it. Rounded UP and floored at
+    /// two, because an arc drawn as one quad is a straight line.
+    /// </remarks>
+    private void Arc(double cx, double cy, double radius, double thickness, Color tint,
+                     double from, double sweep)
     {
-        double step = System.Math.PI * 2 / ShieldRimSegments;
+        int segments = (int)System.Math.Ceiling(ShieldRimSegments * (sweep / (System.Math.PI * 2)));
+        if (segments < 2) segments = 2;
+        double step = sweep / segments;
         // A shade over the exact arc length, so consecutive segments overlap rather than leaving a
         // hairline of background between them.
         float len = (float)(radius * step * 1.15 * _camera.Scale);
         float thick = (float)System.Math.Max(1, thickness * _camera.Scale);
 
-        for (int i = 0; i < ShieldRimSegments; i++)
+        for (int i = 0; i < segments; i++)
         {
-            double a = i * step;
+            double a = from + i * step;
             var at = _camera.ToScreen(cx + System.Math.Cos(a) * radius,
                                       cy + System.Math.Sin(a) * radius);
             _batch.Draw(_sprites.Blank,

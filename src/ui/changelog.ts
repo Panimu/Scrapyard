@@ -46,6 +46,27 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T13:45Z',
+    title: 'THE ENERGY SHIELD IS A FIELD NOW, NOT TWO RINGS',
+    notes: [
+      'It was concentric blue circles pulsing on one clock, which is the most inert shape there is drawn twice. It is now a haze you are standing inside, broken rings that counter-rotate layer against layer, and a bright arc sweeping the outer rim — so it reads as something being held together and powered rather than as a target painted on your own feet.',
+    ],
+  },
+  {
+    at: '2026-08-26T13:45Z',
+    title: 'THE BARRAGE PAINTS A PROPER RETICLE',
+    notes: [
+      'The artillery’s marker is an instrument instead of a red circle: a hairline bound with twelve graduations round it, four corner brackets that close inward as the fuse burns, and a crosshair with a hole in the middle — so the spot the shell is actually going to hit stays unpainted and you can see what is standing on it.',
+    ],
+  },
+  {
+    at: '2026-08-26T13:45Z',
+    title: 'SLUDGE POOLS HAVE RAGGED BOTTOMS',
+    notes: [
+      'The dark patches on a pool’s floor were perfect circles sitting inside an outline that deliberately is not one. They wander now, and harder than the outline does — they should look eaten out rather than poured.',
+    ],
+  },
+  {
     at: '2026-08-26T13:23Z',
     title: 'TOXIC SLUDGE AIMS AT WHAT IS CHASING YOU',
     notes: [
