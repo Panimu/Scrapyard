@@ -204,6 +204,18 @@ export function hashWorld(world: World): number {
   h = mixF32Array(h, sh.timer, sh.count);
   h = mixIntArrayN(h, sh.spawnId, sh.count);
 
+  // The puddle pool, field by field, for the reason the drone and sheep pools are done here:
+  // `mixPool` reaches the ArrayBuffer-backed pools and this is not one.
+  const pu = world.puddles;
+  h = mixU32(h, pu.count);
+  h = mixF32Array(h, pu.x, pu.count);
+  h = mixF32Array(h, pu.y, pu.count);
+  h = mixF32Array(h, pu.radius, pu.count);
+  h = mixF32Array(h, pu.dps, pu.count);
+  h = mixF32Array(h, pu.left, pu.count);
+  h = mixF32Array(h, pu.life, pu.count);
+  h = mixU8ArrayN(h, pu.by, pu.count);
+
   const pl = world.player;
   h = mixF64(h, pl.x);
   h = mixF64(h, pl.y);
@@ -381,6 +393,7 @@ export function hashRunStats(world: World): number {
   h = mixF64(h, s.shotsFired);
   h = mixF64(h, s.shotsHit);
   h = mixF64(h, s.peakEnemies);
+  h = mixF64(h, s.peakBurning);
   h = mixF64(h, s.endTick);
 
   return h >>> 0;

@@ -76,7 +76,9 @@ export type UpgradeId =
   | 'p-radiator'
   | 'p-blast'
   | 'p-ammo'
-  | 'w-mortar';
+  | 'w-mortar'
+  | 'w-plasma'
+  | 'w-sludge';
 
 /** Tiers per weapon, including the unlock. The ceiling a LEVEL-UP can ever reach. */
 export const WEAPON_MAX_TIER = 7;
@@ -968,7 +970,7 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * maxed is owed before treating the ramp as final.
      */
     name: 'Radiator Bank',
-    description: 'Every beam runs a bigger heat buffer and sheds it faster between bursts.',
+    description: 'Anything that runs hot carries a bigger heat buffer and sheds it faster between bursts.',
     tiers: Object.freeze([
       'Sheds heat a little faster between bursts.',
       'Carries a bigger heat buffer.',
@@ -990,7 +992,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
-    requiresWeaponHeld: Object.freeze(['laser-short', 'laser-medium', 'laser-long']),
+    // THE PLASMA THROWER IS NOT A BEAM AND IT BELONGS HERE ANYWAY. This card's gate is about
+    // what the effect can reach, and the effect is heat: the thrower runs the laser economy
+    // exactly (see `hot` in weapons.ts), so both dials move it as much as they move a beam. The
+    // card's own text says "beam" no longer for the same reason.
+    requiresWeaponHeld: Object.freeze(['laser-short', 'laser-medium', 'laser-long', 'plasma']),
     /**
      * BEHIND HAVING RUN ALL THREE LASERS RED-HOT AT ONCE - a run that has already committed hard
      * enough to lasers to feel the exact problem this card solves. See UnlockCond
@@ -1082,7 +1088,9 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
     maxStacks: WEAPON_MAX_TIER,
     weight: 9,
     effects: [],
-    requiresWeaponHeld: Object.freeze(['machine-gun', 'flak-cannon']),
+    // TOXIC SLUDGE HAS THE SHALLOWEST MAGAZINE IN THE GAME and the longest reload, so this card
+    // is worth more to it than to either gun it was written for.
+    requiresWeaponHeld: Object.freeze(['machine-gun', 'flak-cannon', 'sludge']),
     /**
      * LOCKED BEHIND THE MAGAZINE ITSELF - not a kill total, a RELOAD total, across every run ever
      * played: the one career mechanic in this catalog that is not about what a gun killed. 1911 is
@@ -1135,6 +1143,82 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
      * whatever the lock says, so Rust levels it while everyone else is still earning it.
      */
     unlock: Object.freeze({ kind: 'killsWithTotal' as const, weapons: ['mortar'], count: 1812 }),
+    effects: [],
+  },
+  {
+    id: 'w-plasma',
+    kind: 'weapon',
+    grantsWeapon: 'plasma',
+    name: 'Plasma Thrower',
+    // Appended, for the reason w-mortar above gives at length: this array's order is a format.
+    description:
+      'Throws slow gouts of fire and leaves what they touch burning. Picks the biggest thing in front of it that is not already alight.',
+    // Order matches the weapon's own perLevel ladder exactly: buffer, damage, reach, buffer,
+    // dispersion, damage. NO MAGNITUDES - see CLAUDE.md. "Burns hotter" is the honest reading of a
+    // damage tier on this gun, because the fire is a fraction of the hit that started it.
+    tiers: Object.freeze([
+      'Unlock.',
+      'Carries a bigger heat buffer.',
+      'Burns hotter.',
+      'Throws a little further.',
+      'Carries a bigger heat buffer again.',
+      'Sheds heat faster between bursts.',
+      'Burns hotter again.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    /**
+     * THIRTY BODIES ALIGHT AT THE SAME MOMENT, IN ONE RUN - `burningAtOnce`, and the only
+     * condition in the vocabulary that asks about a STATE rather than a tally.
+     *
+     * IT IS THE GUN'S OWN THESIS AS A CONDITION. Fire refreshes rather than stacks and the
+     * targeting skips whatever is already burning, so the way to thirty is to let the thrower
+     * walk itself down a crowd - never re-lighting, never hosing one bruiser. A player who has
+     * done that once has understood the weapon, which is what an unlock ought to be asking.
+     *
+     * NOT A CAREER TOTAL, unlike the Mortar's 1812 and the Phase Cannon's 1001: "at once" cannot
+     * be accumulated across runs without quietly turning into a different sentence.
+     *
+     * The bootstrap is the usual one - the chassis that OPENS with it (Copper) is the way in.
+     */
+    unlock: Object.freeze({ kind: 'burningAtOnce' as const, count: 30 }),
+    effects: [],
+  },
+  {
+    id: 'w-sludge',
+    kind: 'weapon',
+    grantsWeapon: 'sludge',
+    name: 'Toxic Sludge',
+    // Appended, for the reason w-mortar above gives at length: this array's order is a format.
+    description:
+      'Throws acid out behind the mech, leaving pools that eat whatever walks through them. Only fires when something is back there.',
+    // Order matches the weapon's own perLevel ladder exactly: damage, magazine, pools, damage,
+    // reload, pools. NO MAGNITUDES - see CLAUDE.md. A magazine round IS a count of things
+    // happening, which is why tier 3 gets to say a number and nothing else here does.
+    tiers: Object.freeze([
+      'Unlock.',
+      'The acid bites harder.',
+      'Two more throws before the reload.',
+      'Wider pools.',
+      'The acid bites harder again.',
+      'Reloads faster.',
+      'Wider pools again.',
+    ]),
+    maxStacks: WEAPON_MAX_TIER,
+    weight: 10,
+    /**
+     * THIRTY ELITES, ACROSS EVERY RUN - `eliteKillsWithTotal`, and the only condition in the game
+     * that asks about the RANK of what a weapon finished.
+     *
+     * IT IS THE HARD HALF OF WHAT THIS GUN DOES. Sludge clears chaff by standing still and being
+     * unpleasant; an elite has the hit points to walk through a pool and keep coming, so thirty of
+     * them is thirty times the player chose to keep retreating instead of turning to fight. Thirty
+     * rather than the four-figure numbers the other guns ask for, because an elite is rare and a
+     * chaff kill is not - see UnlockCond `eliteKillsWithTotal`.
+     *
+     * The bootstrap is the usual one: the chassis that OPENS with it (Jade) is the way in.
+     */
+    unlock: Object.freeze({ kind: 'eliteKillsWithTotal' as const, weapons: ['sludge'], count: 30 }),
     effects: [],
   },
 ] as const) as readonly UpgradeDef[];

@@ -63,7 +63,9 @@ import {
   SCENERY_COLS,
   VIS_MISSILE_LONG,
   VIS_MISSILE_SHORT,
+  VIS_FLAME,
   VIS_PLASMA,
+  VIS_SLUDGE,
   VIS_SLUG,
   VIS_STRIKE_MARKER,
   WEAPON_ASCENDED_TIER,
@@ -277,6 +279,10 @@ const STRIKE_TINT = 0xff3b30;
 /** The Phase Cannon's bolt, streak and halo. Cooler than the shield's blue so the two never read
  *  as one system: the shield is the mech's own colour, this is the thing it fires. */
 const PLASMA_TINT = 0x55c8ff;
+/** The Plasma Thrower: hot orange, deliberately far from the phase bolt it shares a mount with. */
+const FLAME_TINT = 0xff8a3c;
+/** Toxic Sludge, glob and pool alike - one colour so the two read as the same substance. */
+const SLUDGE_TINT = 0x8ce03a;
 const STRIKE_RING_WIDTH = 2;
 const STRIKE_FILL_ALPHA = 0.1;
 const STRIKE_RING_ALPHA = 0.75;
@@ -452,6 +458,13 @@ export class GameRenderer {
    * are inside it.
    */
   private readonly strikeMarkers: Graphics;
+  /**
+   * Toxic Sludge's pools, all of them in ONE Graphics, redrawn every frame because each one fades
+   * as it dries. Under the strike markers for the same reason the markers are under the horde:
+   * two things painted on the ground, and the one the player has to make a decision about goes on
+   * top.
+   */
+  private readonly puddles: Graphics;
   private readonly trails: SpritePool;
   private readonly projectiles: SpritePool;
   private readonly drones: SpritePool;
@@ -595,6 +608,7 @@ export class GameRenderer {
     this.letterbox = new Graphics({ label: 'letterbox' });
     this.bossArrows = new Graphics({ label: 'boss-arrows' });
     this.strikeMarkers = new Graphics({ label: 'strike-markers' });
+    this.puddles = new Graphics({ label: 'puddles' });
     this.dressingSlot = new Container({ label: 'dressing' });
     // No texture: each pile picks its own variant, exactly as the enemy pool does. Small capacity
     // because the yard is deliberately sparse - the camera reaches 500 u and piles sit a cell
@@ -609,6 +623,7 @@ export class GameRenderer {
       this.dressingSlot,
       // Then the strike markers: paint on that floor, and a marker drawn over the crowd would
       // hide the bodies the player is deciding about.
+      this.puddles,
       this.strikeMarkers,
       // Scrap sits above the markers (a barrage lands ON the ground, including the ground a wreck
       // is standing on) and below every moving thing. It never needs y-sorting against the horde:
@@ -715,6 +730,7 @@ export class GameRenderer {
     this.shieldRimDrawn = -1;
     this.shieldRim.clear();
     this.strikeMarkers.clear();
+    this.puddles.clear();
     this.bossArrows.clear();
     this.mech.texture = this.tex.mechs[world.player.heroId] ?? this.tex.mechs[0];
     this.camera.snapTo(world.player.x, world.player.y);
@@ -1760,6 +1776,7 @@ export class GameRenderer {
     shells.begin();
     trails.begin();
     this.strikeMarkers.clear();
+    this.drawPuddles(world);
 
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
@@ -1789,7 +1806,14 @@ export class GameRenderer {
         t.position.set(x, y);
         t.rotation = angle + ROT_OFFSET.trail;
         t.scale.set(9 / PARTICLE_SRC, 34 / PARTICLE_SRC);
-        t.tint = vis === VIS_PLASMA ? PLASMA_TINT : 0xffc890;
+        t.tint =
+          vis === VIS_PLASMA
+            ? PLASMA_TINT
+            : vis === VIS_FLAME
+              ? FLAME_TINT
+              : vis === VIS_SLUDGE
+                ? SLUDGE_TINT
+                : 0xffc890;
         t.alpha = 0.5;
       }
 
@@ -1809,6 +1833,27 @@ export class GameRenderer {
       } else if (vis === VIS_SLUG) {
         s.texture = this.tex.slug;
         s.scale.set(SLUG_SCALE);
+      } else if (vis === VIS_FLAME) {
+        // A GOUT OF FIRE: the tracer's rounded head run hot, with a wider soft halo over it - the
+        // same two-sprite trick the phase bolt uses, warmed and made rounder. New art would buy
+        // very little at eight pixels across, and this keeps the thrower reading as the same
+        // FAMILY of thing as the bolt it shares a mount with.
+        s.texture = this.tex.slug;
+        s.scale.set(SLUG_SCALE * 1.6);
+        const halo = shells.acquire();
+        if (halo !== undefined) {
+          halo.texture = this.tex.slug;
+          halo.position.set(x, y);
+          halo.rotation = s.rotation;
+          halo.scale.set(SLUG_SCALE * 3);
+          halo.tint = FLAME_TINT;
+          halo.alpha = 0.35;
+        }
+      } else if (vis === VIS_SLUDGE) {
+        // A GLOB, not a round: no elongation and no rotation that reads, because it is falling
+        // rather than flying. The pool it becomes is the same green.
+        s.texture = this.tex.slug;
+        s.scale.set(SLUG_SCALE * 1.5);
       } else if (vis === VIS_PLASMA) {
         // THE PHASE BOLT: the machine-gun tracer run big and blue-hot, under a soft halo of
         // itself. Two sprites from the same pool rather than new art - at this scale the
@@ -1830,7 +1875,14 @@ export class GameRenderer {
         s.scale.set(SHELL_SCALE);
       }
       s.alpha = 1;
-      s.tint = vis === VIS_PLASMA ? PLASMA_TINT : 0xffffff;
+      s.tint =
+        vis === VIS_PLASMA
+          ? PLASMA_TINT
+          : vis === VIS_FLAME
+            ? FLAME_TINT
+            : vis === VIS_SLUDGE
+              ? SLUDGE_TINT
+              : 0xffffff;
     }
 
     shells.end();
@@ -1846,6 +1898,35 @@ export class GameRenderer {
    * the closing ring is that it reaches the centre exactly when the shell lands, and a hardcoded
    * 0.7 would silently desynchronise the instant a tier or a tuning sweep moved the fuse.
    */
+  /**
+   * Toxic Sludge's pools: a filled disc and a slightly brighter rim, fading out as the acid dries.
+   *
+   * THE FADE IS THE TIMER, and it is the only thing on screen that says how long a pool has left.
+   * `life` is stored beside `left` in the pool for exactly this - the alternative was hard-coding
+   * the weapon's four seconds here, which would have gone quietly wrong the first time a tier
+   * changed it.
+   *
+   * NO INTERPOLATION. A puddle is at the same place on both ticks forever, which is the same fact
+   * that keeps `prevX/prevY` out of its pool - see entity/puddlePool.ts.
+   */
+  private drawPuddles(world: World): void {
+    const g = this.puddles;
+    g.clear();
+    const p = world.puddles;
+    for (let d = 0; d < p.count; d++) {
+      const r = p.radius[d];
+      if (r <= 0) continue;
+      const life = p.life[d];
+      const frac = life > 0 ? p.left[d] / life : 1;
+      // Held near full for most of the pool's life and dropped over the last quarter, so a puddle
+      // reads as WET until it is nearly gone rather than as a slow dissolve from the moment it
+      // lands - which would make every pool look like it was already expiring.
+      const t = frac > 0.25 ? 1 : frac / 0.25;
+      g.circle(p.x[d], p.y[d], r).fill({ color: SLUDGE_TINT, alpha: 0.3 * t });
+      g.circle(p.x[d], p.y[d], r).stroke({ width: 2, color: SLUDGE_TINT, alpha: 0.55 * t });
+    }
+  }
+
   private drawStrikeMarker(world: World, d: number, x: number, y: number, radius: number): void {
     if (radius <= 0) return;
     const g = this.strikeMarkers;
@@ -1927,7 +2008,10 @@ const TURRET_ART: readonly {
   // row shows whichever of them is held and is never owed two barrels at once - the same
   // arrangement the rotary snout has carried for the Machine Gun and the Flak Cannon.
   { weapons: ['cannon', 'mortar'], tex: 'turret', shake: true },
+  // The medium turret, and the second pair sharing one barrel - see the note above the row for
+  // the large one. The thrower does not kick: it is a stream of small bolts, not a shot.
   { weapons: ['phase-cannon'], tex: 'turretPhase', shake: true },
+  { weapons: ['plasma'], tex: 'turretPhase', shake: false },
   // The rotary mount, and the one row that does not shake - see `shake` above. Both guns on it
   // are high rate of fire, and both lost the kick for the same reason.
   { weapons: ['machine-gun', 'flak-cannon'], tex: 'turretMg', shake: false },

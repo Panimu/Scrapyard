@@ -25,6 +25,7 @@ import type { LevelDef } from './content/levels.js';
 import type { MetaSource, PlayerStats, WeaponStats } from './data/stats.js';
 import type { DronePool } from './entity/dronePool.js';
 import type { SheepPool } from './entity/sheepPool.js';
+import type { PuddlePool } from './entity/puddlePool.js';
 import type { HeroDef } from './data/heroes.js';
 import type { WeaponDef } from './data/weapons.js';
 import type { UpgradeDef } from './data/upgrades.js';
@@ -546,6 +547,15 @@ export interface RunStats {
   shotsFired: number;
   shotsHit: number;
   peakEnemies: number;
+  /**
+   * THE MOST BODIES ALIGHT AT ONCE, ever, this run - a HIGH-WATER MARK and not a total.
+   *
+   * Every other tally here is cumulative, which is why this one needs saying: "thirty enemies on
+   * fire at the same moment" is a state the run passed through, and a running total of ignitions
+   * would be satisfied by thirty fires lit one after another over sixteen minutes. Sampled once a
+   * tick by the burn pass, which is the only place that knows how many are alight.
+   */
+  peakBurning: number;
   endTick: number;
 }
 
@@ -706,6 +716,8 @@ export interface World {
   readonly drones: DronePool;
   /** The flock, on levels that keep one. See entity/sheepPool.ts and systems/sheep.ts. */
   readonly sheep: SheepPool;
+  /** Toxic Sludge's ground. See entity/puddlePool.ts and systems/puddles.ts. */
+  readonly puddles: PuddlePool;
   /**
    * The drone gun's resolved stats - the Machine Gun at the drone bay's tier. Re-resolved once per
    * tick by updateDrones and read by every drone, rather than stored per drone: they all share one

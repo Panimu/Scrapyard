@@ -238,9 +238,19 @@ public static class HeroCatalog
         WeaponBonus = new() { [WeaponIds.FlakCannon] = Add(WeaponStat.ProjectileCount, 1) },
     };
 
+    /// <summary>
+    /// TOXIC SLUDGE'S OPENER, and free to become one: Moss already opens with the Short Laser, so
+    /// this frame was a duplicate rather than the only way to meet a gun.
+    /// </summary>
+    /// <remarks>
+    /// BIGGER POOLS, NOT MORE DAMAGE - the one bonus in the roster that changes a weapon's SHAPE
+    /// rather than its output. Sludge's damage is time-on-ground: a wider pool is more of the yard
+    /// the horde has to cross, so the bonus reads on screen as territory rather than as a number.
+    /// </remarks>
     public static readonly HeroDef Jade = new()
     {
-        Id = HeroIds.Jade, StartingWeapon = WeaponIds.LaserShort, Player = NoPlayer, Weapon = NoWeapon, WeaponBonus = null,
+        Id = HeroIds.Jade, StartingWeapon = WeaponIds.Sludge, Player = NoPlayer, Weapon = NoWeapon,
+        WeaponBonus = new() { [WeaponIds.Sludge] = Mul(WeaponStat.SplashRadius, 1.2) },
     };
 
     public static readonly HeroDef Rust = new()
@@ -256,9 +266,28 @@ public static class HeroCatalog
         Id = HeroIds.Cobalt, StartingWeapon = WeaponIds.LaserMedium, Player = NoPlayer, Weapon = NoWeapon, WeaponBonus = null,
     };
 
+    /// <summary>
+    /// THE PLASMA THROWER'S OPENER, and free to become one for the reason Jade was: Vermilion
+    /// already opens with the Flak Cannon and carries a bonus for it, so this frame was a
+    /// duplicate opener rather than the only way to meet a weapon.
+    /// </summary>
+    /// <remarks>
+    /// THE BONUS IS RANGE AND DAMAGE TOGETHER, which on this gun is the same dial twice: the fire
+    /// it starts is a fraction of the hit that started it, so the damage half raises the burn as
+    /// well as the bolt, and the reach half decides how much of the crowd is inside the cone to be
+    /// walked down at all. Neither touches heat, so the uptime learned on any other chassis still
+    /// reads true here.
+    /// </remarks>
     public static readonly HeroDef Copper = new()
     {
-        Id = HeroIds.Copper, StartingWeapon = WeaponIds.FlakCannon, Player = NoPlayer, Weapon = NoWeapon, WeaponBonus = null,
+        Id = HeroIds.Copper, StartingWeapon = WeaponIds.Plasma, Player = NoPlayer, Weapon = NoWeapon,
+        WeaponBonus = new()
+        {
+            [WeaponIds.Plasma] = new HeroWeaponBonus
+            {
+                Mul = new[] { (WeaponStat.Damage, 1.1), (WeaponStat.Range, 1.1) },
+            },
+        },
     };
 
     /// <summary>Catalog order == select-screen order == <see cref="HeroIds"/>. APPEND ONLY.</summary>

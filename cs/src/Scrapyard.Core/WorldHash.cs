@@ -39,6 +39,7 @@ public static partial class Hash
 
         h = w.Drones.MixInto(h);
         h = w.Sheep.MixInto(h);
+        h = w.Puddles.MixInto(h);
 
         var pl = w.Player;
         h = MixF64(h, pl.X);
@@ -187,6 +188,7 @@ public static partial class Hash
         h = MixF64(h, s.ShotsFired);
         h = MixF64(h, s.ShotsHit);
         h = MixF64(h, s.PeakEnemies);
+        h = MixF64(h, s.PeakBurning);
         h = MixF64(h, s.EndTick);
 
         return h;

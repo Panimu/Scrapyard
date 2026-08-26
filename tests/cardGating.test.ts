@@ -64,6 +64,11 @@ function surveyOffers(w: World, rounds: number): Set<number> {
 
 /** Does any tier of this weapon put a blast on the ground? Base or any per-level rung. */
 function carriesSplash(def: WeaponDef): boolean {
+  // A RADIUS IS NOT A BLAST WITHOUT A FRACTION TO GO WITH IT, and Toxic Sludge is why this now
+  // says so. It carries a `splashRadius` that is the size of the PUDDLE it leaves, with
+  // `splashFrac` at zero so nothing in the damage path ever reads the pair as splash - and a
+  // weapon that never blasts has no business gating a card whose whole subject is the blast.
+  if (def.base.splashFrac <= 0) return false;
   if (def.base.splashRadius > 0) return true;
   return def.perLevel.some((rung) => (rung.splashRadius ?? 0) > 0);
 }
@@ -115,14 +120,20 @@ describe('Shaped Charges is only offered to a loadout that blasts', () => {
 });
 
 describe('Radiator Bank is only offered to a loadout with a laser', () => {
-  it('lists every beam weapon and nothing else', () => {
+  // THE GATE IS HEAT, NOT BEAMS, and it used to be written the other way round because for a
+  // long time those were the same set. The Plasma Thrower is a projectile weapon on the laser
+  // economy (`hot` in weapons.ts), and a card whose entire effect is capacity and dispersion is
+  // worth exactly as much to it as to a beam - so the property worth pinning is that the list is
+  // every weapon that generates heat and nothing else.
+  it('lists every weapon that runs hot, and nothing else', () => {
     const carriers = UPGRADE_CATALOG[cardIndex('p-radiator')].requiresWeaponHeld ?? [];
     for (const def of WEAPON_CATALOG) {
-      if (def.kind !== 'beam') continue;
-      expect(carriers, `${def.id} is a beam and must be on the list`).toContain(def.id);
+      if (def.base.heatPerSec <= 0) continue;
+      expect(carriers, `${def.id} runs hot and must be on the list`).toContain(def.id);
     }
     for (const id of carriers) {
-      expect(WEAPON_CATALOG.find((d) => d.id === id)?.kind, `${id} is not a beam`).toBe('beam');
+      const def = WEAPON_CATALOG.find((d) => d.id === id);
+      expect(def?.base.heatPerSec ?? 0, `${id} does not run hot`).toBeGreaterThan(0);
     }
   });
 });

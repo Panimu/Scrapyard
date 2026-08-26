@@ -284,6 +284,8 @@ public class UpgradeCatalogTests
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
         "mortar" => WeaponIds.Mortar,
+        "plasma" => WeaponIds.Plasma,
+        "sludge" => WeaponIds.Sludge,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 

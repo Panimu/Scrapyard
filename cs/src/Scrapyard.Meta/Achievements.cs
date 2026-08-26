@@ -62,6 +62,8 @@ public static class Achievements
         new("radiator-bank", "scrapyard_radiator_bank", "Red Line", "Ran all three lasers red-hot at once.", "icon_p-radiator", true, UnlockCond.LasersOverheated()),
         new("phase-cannon", "scrapyard_phase_cannon", "Through and Through", "Destroyed 1001 with the Phase Cannon, across every run.", "icon_w-phase-cannon", true, UnlockCond.KillsWithTotal(1001, WeaponIds.PhaseCannon)),
         new("mortar", "scrapyard_mortar", "Overture", "Destroyed 1812 with the Mortar, across every run.", "icon_w-mortar", true, UnlockCond.KillsWithTotal(1812, WeaponIds.Mortar)),
+        new("plasma", "scrapyard_plasma", "Everything Is Fine", "Had 30 enemies burning at once.", "icon_w-plasma", true, UnlockCond.BurningAtOnce(30)),
+        new("sludge", "scrapyard_sludge", "Scorched Earth", "Destroyed 30 elites with the Toxic Sludge, across every run.", "icon_w-sludge", true, UnlockCond.EliteKillsWithTotal(30, WeaponIds.Sludge)),
         new("shaped-charges", "scrapyard_shaped_charges", "Collateral", "Destroyed 2000 with blast damage, across every run.", "icon_p-blast", true, UnlockCond.SplashKillsTotal(2000)),
         new("ammo-drums", "scrapyard_ammo_drums", "Old Reliable", "Reloaded a magazine 1911 times, across every run.", "icon_p-ammo", true, UnlockCond.ReloadsTotal(1911)),
     };

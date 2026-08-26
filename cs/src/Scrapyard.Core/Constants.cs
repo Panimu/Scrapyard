@@ -196,7 +196,7 @@ public static class Constants
     /// </summary>
     public const double ThreatRadius = 900;
 
-    public const int WeaponSlots = 12;
+    public const int WeaponSlots = 14;
 
     /// <summary>
     /// GUN slots and PASSIVE slots the deck may fill, before the workshop widens either.

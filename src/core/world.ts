@@ -39,6 +39,7 @@ import { FLAVOURS } from './content/enemyCatalog.js';
 import { levelOrDefault } from './content/levels.js';
 import { createDronePool } from './entity/dronePool.js';
 import { createSheepPool } from './entity/sheepPool.js';
+import { createPuddlePool } from './entity/puddlePool.js';
 import { createEnemyPool } from './entity/enemyPool.js';
 import { NULL_HANDLE } from './entity/handle.js';
 import { createPickupPool } from './entity/pickupPool.js';
@@ -87,6 +88,7 @@ import { updateWeapons } from './systems/weapons.js';
 import { updateProjectiles } from './systems/projectiles.js';
 import { updateDrones } from './systems/drones.js';
 import { updateSheep } from './systems/sheep.js';
+import { updatePuddles } from './systems/puddles.js';
 import { updateCollision } from './systems/collision.js';
 import { updateDamage } from './systems/damage.js';
 import { updatePickups } from './systems/pickups.js';
@@ -351,10 +353,12 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       shotsFired: 0,
       shotsHit: 0,
       peakEnemies: 0,
+      peakBurning: 0,
       endTick: 0,
     },
     drones: createDronePool(),
     sheep: createSheepPool(),
+    puddles: createPuddlePool(),
     droneGun: createWeaponStats(),
     splitStats: createWeaponStats(),
     droneStacks: new Uint8Array(catalogs.upgrades.length),
@@ -568,6 +572,10 @@ export function stepWorld(world: World, input: Readonly<InputFrame>): void {
   // S9 application: reads hits/contacts, writes killFeed, may set phase = DEAD. Split from S8
   // so damage order is explicit and both halves are independently testable.
   updateDamage(world, DT);
+
+  // S9b after S9: sludge on the ground bills whatever is standing in it, through the same kill
+  // path a shell uses - so the gem it earns still lands in this tick's S10. See systems/puddles.ts.
+  updatePuddles(world, DT);
 
   // S10 after S9: drops read KillFeed, so a kill's XP lands the SAME tick - no artificial lag.
   // ONLY pickup allocation site.

@@ -42,7 +42,9 @@ export type WeaponId =
   | 'artillery'
   | 'drone'
   | 'phase-cannon'
-  | 'mortar';
+  | 'mortar'
+  | 'plasma'
+  | 'sludge';
 
 /**
  * WHAT A PROJECTILE LOOKS LIKE. Named rather than numbered at the use site, because a bare `3` in
@@ -69,6 +71,10 @@ export const VIS_MISSILE_LONG = 4;
 // visualId lands in the replay, and 5 has already been written into recorded runs.
 /** The Phase Cannon's bolt: a blue plasma ball. 6, because 5 is retired - see above. */
 export const VIS_PLASMA = 6;
+/** The Plasma Thrower's bolt: a slow gout of fire. */
+export const VIS_FLAME = 7;
+/** Toxic Sludge's glob, and the pool it leaves. */
+export const VIS_SLUDGE = 8;
 
 /**
  * Target-selection strategies.
@@ -85,9 +91,12 @@ export type TargetingId =
   | 'nearest'
   | 'lowest-hp'
   | 'densest'
-  | 'cone-densest';
+  | 'cone-densest'
+  | 'cone-coldest'
+  | 'rear-cone';
 
 export type FirePatternId =
+  | 'sludge'
   | 'battery'
   | 'beam'
   | 'spread'
@@ -276,6 +285,32 @@ export interface WeaponDef {
    * the card is how you get the gun, not what the gun is bolted to.
    */
   readonly excludes?: readonly WeaponId[];
+
+  /**
+   * WHAT THIS GUN SETS ALIGHT, or absent for the ten guns that set nothing alight.
+   *
+   * OPTIONAL, LIKE `excludes`, AND FOR THE SAME REASON: burning is one weapon's mechanic, and two
+   * more fields on `base` would have meant writing `burnDps: 0` into every def in the file to say
+   * nothing. A `burn` that is present IS the "this ignites" flag; there is no separate boolean to
+   * fall out of step with it.
+   *
+   * `dpsFrac` IS A FRACTION OF THE HIT, NOT A NUMBER OF ITS OWN. A damage tier therefore raises
+   * the fire it starts, and so does a chassis bonus, without either of them naming fire - which
+   * is what the card means by "raise damage" on a gun whose damage is mostly the burn. An
+   * absolute burn rate here would have made every damage tier a smaller and smaller share of the
+   * gun's output until tier 7 barely moved it.
+   */
+  readonly burn?: Readonly<{ dpsFrac: number; seconds: number }>;
+
+  /**
+   * WHAT THIS GUN LEAVES ON THE FLOOR, or absent for the twelve guns that leave nothing.
+   *
+   * Optional for the reason `burn` is, and shaped the same on purpose: `dpsFrac` is a fraction of
+   * the round's own damage, so one damage dial moves the gun and the ground together. The pool's
+   * SIZE is not here - it is `splashRadius`, which the tier ladder and a chassis bonus already
+   * know how to move.
+   */
+  readonly puddle?: Readonly<{ dpsFrac: number; seconds: number }>;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -1586,6 +1621,9 @@ const PHASE_RATE_TIER = -PHASE_COOLDOWN * 0.15;
 
 export const PHASE_CANNON: WeaponDef = Object.freeze({
   id: 'phase-cannon',
+  // ONE MEDIUM TURRET, TWO GUNS THAT WANT IT. Declared here and nowhere else - the check runs
+  // both directions. See WeaponDef.excludes.
+  excludes: Object.freeze(['plasma'] as const),
   name: 'Phase Cannon',
   kind: 'projectile',
   targeting: 'densest',
@@ -1731,6 +1769,207 @@ export const MORTAR: WeaponDef = Object.freeze({
   detonateOnExpiry: false,
 });
 
+// ---------------------------------------------------------------------------------------------
+// THE PLASMA THROWER - low damage, and almost none of it is the bolt
+// ---------------------------------------------------------------------------------------------
+//
+// IT SHARES THE MEDIUM TURRET WITH THE PHASE CANNON, so a run carries one or the other and never
+// both (WeaponDef.excludes, declared on the Phase Cannon). The pair is a real choice rather than
+// two versions of the same gun: the Phase Cannon is one enormous bolt through the thickest part
+// of the crowd on a 1.6 s clock, and this is a stream of small ones that leaves the crowd on
+// fire.
+//
+// IT RUNS ON HEAT AND IT IS NOT A LASER, which is a combination nothing else in the file has.
+// `kind` is 'projectile' - there is a bolt, it flies, it can miss, it stops in the first body it
+// reaches - and the limiter is the laser economy rather than a cooldown: heat while engaged,
+// dispersion while idle, a latched cut-out at capacity. updateWeapons calls that pair `hot`, and
+// the heat numbers are the SHORT LASER'S EXACTLY (7.5 gain, 8.5 shed) so the two guns share an
+// uptime the player can already read off a bar they know.
+//
+// THE DAMAGE IS THE FIRE. The bolt itself is 9, which is deliberately not worth aiming; what it
+// does is light the body, and a body alight pays `dpsFrac` of that hit every second for three
+// seconds. That is why the burn is a FRACTION - see WeaponDef.burn - and it is why the two damage
+// tiers on the ladder below are the whole gun rather than a small top-up.
+//
+// TARGETING IS THE POINT OF IT: highest health in a cone off the barrel that is NOT already
+// burning (see targeting 'cone-coldest'). A gun that re-lit the same bruiser every tick would be
+// a bad Phase Cannon; one that walks itself down the crowd, biggest first, skipping everything
+// already alight, is the only weapon here that ASKS the player to hold the line and let it work.
+// The cone starts at 30 degrees and widens by 30 until it finds one, so it is aimed with the
+// whole mech exactly as the Mortar is.
+const PLASMA_COOLDOWN = 0.18;
+const PLASMA_HEAT_PER_SEC = 7.5;
+const PLASMA_HEAT_DISPERSION = 8.5;
+// Between the Short Laser's 165 and the Medium's 302.5, and nearer the short end: a stream of
+// slow bolts that outranged what the player can see coming would be aimed on faith.
+const PLASMA_RANGE = 230;
+const PLASMA_TURRET_TRAVERSE = degToRad(75);
+const PLASMA_FIRE_ARC = degToRad(20);
+
+export const PLASMA: WeaponDef = Object.freeze({
+  id: 'plasma',
+  name: 'Plasma Thrower',
+  kind: 'projectile',
+  targeting: 'cone-coldest',
+  pattern: 'battery',
+  behaviour: 'straight',
+  requiresTarget: true,
+  base: Object.freeze({
+    damage: 9,
+    cooldown: PLASMA_COOLDOWN,
+    range: PLASMA_RANGE,
+    // SLOW, AND VISIBLY SO. A gout of fire that crossed the gap instantly would be a laser with
+    // extra steps; at 260 the player can watch it travel, which is what sells it as a thrower and
+    // what makes leading a runner an actual skill.
+    projectileSpeed: 260,
+    projectileCount: 1,
+    // STOPS IN THE FIRST BODY IT REACHES, as specced. Piercing would light a whole file of
+    // enemies from one bolt and make the "not already burning" rule pointless.
+    pierce: 0,
+    knockback: 0,
+    splashRadius: 0,
+    splashFrac: 0,
+    turretTraverse: PLASMA_TURRET_TRAVERSE,
+    fireArc: PLASMA_FIRE_ARC,
+    heatPerSec: PLASMA_HEAT_PER_SEC,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: PLASMA_HEAT_DISPERSION,
+    turnRate: 0,
+    spreadAngle: 0,
+    flightTime: 0,
+    ammoCapacity: 0,
+    reloadTime: 0,
+  }),
+  // THE SPECCED LADDER, rung for rung: capacity, damage, a little more reach, capacity, better
+  // dispersion, damage. Every rung buys either SECONDS OF FIRE or the size of the fire - which is
+  // the same shape as the laser ladder and for the same reason (weapons.ts header).
+  perLevel: Object.freeze([
+    { heatCapacity: 40 },
+    { damage: 4 },
+    { range: 25 },
+    { heatCapacity: 40 },
+    { heatDispersion: PLASMA_HEAT_DISPERSION * 0.35 },
+    { damage: 5 },
+    {},
+  ]),
+  // A BODY BURNS FOR THREE SECONDS AT 90% OF THE HIT THAT LIT IT, so a single bolt is worth
+  // roughly 2.7x its own damage if nothing tops it up - and topping it up is free, because
+  // `ignite` refreshes rather than stacks. That asymmetry is the gun: spreading fire across the
+  // crowd pays, hosing one body does not.
+  burn: Object.freeze({ dpsFrac: 0.9, seconds: 3 }),
+  reengageMul: 1,
+  visualId: VIS_FLAME,
+  muzzleOffset: 24,
+  shellRadius: 6,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: false,
+  detonateOnExpiry: false,
+});
+
+// ---------------------------------------------------------------------------------------------
+// TOXIC SLUDGE - the only gun in the yard that shoots at where you have BEEN
+// ---------------------------------------------------------------------------------------------
+//
+// NO MOUNT. It is the first weapon in the catalog that occupies neither turret, which is why it
+// composes with everything: any chassis can carry it beside whatever it already has, and the
+// large-turret and medium-turret pairs stay the only exclusive choices in the game.
+//
+// IT DOES NOT AIM. There is no turret to slew and nothing it tracks - the spread always leaves
+// from the mech's back, in a wide fan, at a very short throw. What `targeting` does here is
+// purely a GATE: `rear-cone` answers "is anything behind me worth the shot" and the volley
+// ignores which body it was (see targeting 'rear-cone' and fireSludge).
+//
+// SO IT IS A WEAPON ABOUT RETREATING, and that is the whole design. Every other gun rewards
+// facing the horde; this one pays for turning your back on it and walking, laying ground behind
+// you that the crowd has to cross. The rear cone is what stops it firing into empty yard: the
+// magazine is three shots and a six-second reload, and a shot thrown at nobody is a third of the
+// weapon spent on nothing.
+//
+// THE DAMAGE IS THE GROUND, not the glob. The glob does a little on the way past - it carries
+// enough pierce to reach where it is going rather than stopping in the first body, so a crowd
+// packed right behind the mech takes a small hit as the spread goes through it - and then the
+// pools do the work, for four seconds each, to anything standing in them.
+const SLUDGE_RELOAD = 6;
+const SLUDGE_SPREAD = degToRad(90);
+// The DETECTION reach, not the throw: how far behind the mech something has to be before this is
+// worth a shot at all. The throw itself is `flightTime` x `projectileSpeed`, about 68 units.
+const SLUDGE_DETECT_RANGE = 340;
+
+export const SLUDGE: WeaponDef = Object.freeze({
+  id: 'sludge',
+  name: 'Toxic Sludge',
+  kind: 'projectile',
+  targeting: 'rear-cone',
+  pattern: 'sludge',
+  behaviour: 'straight',
+  // A GATE RATHER THAN A TARGET - but still required, because "no target" is exactly the answer
+  // that must stop the volley. See the header.
+  requiresTarget: true,
+  base: Object.freeze({
+    // The glob's own hit. Small on purpose: `puddle.dpsFrac` multiplies it into what the ground
+    // does, so this number is really the weapon's damage dial wearing its smallest hat.
+    damage: 8,
+    cooldown: 0.9,
+    range: SLUDGE_DETECT_RANGE,
+    projectileSpeed: 150,
+    // THREE GLOBS PER SHOT, one magazine round for all three - see fireSludge. Three is what
+    // makes a fan read as a fan, and it is what lets the tier ladder widen the pools rather than
+    // add more of them.
+    projectileCount: 3,
+    // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The hook that drops a puddle hangs off the
+    // glob's EXPIRY (systems/projectiles.ts), so a glob stopped by a body would leave its pool at
+    // the mech's feet instead of behind it. Over a 68-unit throw nothing can absorb this many
+    // passes, which makes expiry the only way this round ever ends.
+    pierce: 250,
+    knockback: 0,
+    // THE PUDDLE'S RADIUS, NOT A BLAST. `splashFrac` is 0, so nothing in the damage path ever
+    // treats this as splash; it is read once, by the puddle hook, as the size of the pool.
+    splashRadius: 42,
+    splashFrac: 0,
+    // 180 degrees of both, so the "laid on target" gate in updateWeapons can never hold fire on a
+    // weapon whose target is behind it by definition.
+    turretTraverse: degToRad(180),
+    fireArc: degToRad(180),
+    heatPerSec: 0,
+    heatCapacity: HEAT_CAPACITY_BASE,
+    heatDispersion: 0,
+    turnRate: 0,
+    spreadAngle: SLUDGE_SPREAD,
+    // THE THROW, and the one number that makes this a short-ranged weapon on a long-ranged
+    // trigger. An authored flight time wins over range/speed - see resolveWeaponStats.
+    flightTime: 0.45,
+    // THREE SHOTS AND A LONG WAIT. The shallowest magazine in the game by some distance, which is
+    // what keeps a weapon that needs no aiming from simply being free.
+    ammoCapacity: 3,
+    reloadTime: SLUDGE_RELOAD,
+  }),
+  // The specced ladder, rung for rung: damage, magazine, pools, damage, reload, pools.
+  perLevel: Object.freeze([
+    { damage: 3 },
+    { ammoCapacity: 2 },
+    { splashRadius: 12 },
+    { damage: 4 },
+    { reloadTime: -1 },
+    { splashRadius: 14 },
+    {},
+  ]),
+  // FOUR SECONDS OF GROUND AT 2.4x THE GLOB. A fraction rather than a rate of its own, exactly as
+  // WeaponDef.burn is and for the same reason: the two damage tiers and Jade's chassis bonus all
+  // raise what the pool does without any of them naming a pool.
+  puddle: Object.freeze({ dpsFrac: 2.4, seconds: 4 }),
+  reengageMul: 1,
+  visualId: VIS_SLUDGE,
+  // BEHIND THE MECH. Every other muzzle offset pushes a round out in front of the barrel; this
+  // one is negated by fireSludge, which throws along the mech's back.
+  muzzleOffset: 18,
+  shellRadius: 5,
+  beamColour: 0,
+  beamWidth: 0,
+  fireAlongFacing: true,
+  detonateOnExpiry: false,
+});
+
 export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   CANNON,
   LASER_SHORT,
@@ -1747,6 +1986,8 @@ export const WEAPON_CATALOG: readonly WeaponDef[] = Object.freeze([
   // condition are keyed by catalog index, so inserting beside the other shell guns would renumber
   // half the table and silently repoint six conditions at the wrong cards.
   MORTAR,
+  PLASMA,
+  SLUDGE,
 ]);
 
 /** Catalog index for a weapon id, or -1. Used at run start to install the hero's starting weapon. */

@@ -265,3 +265,122 @@ public sealed class SheepPool
         return acc;
     }
 }
+
+/// <summary>
+/// PUDDLES - Toxic Sludge's ground, and the first thing in this game that damages by STANDING ON IT.
+/// </summary>
+/// <remarks>
+/// <para>
+/// WHY THIS IS A POOL AND NOT A PROJECTILE THAT FORGOT TO DIE. A projectile bills ONE body once
+/// and is spent, moves every tick, carries pierce, knockback and splash it would never use, and is
+/// reaped by a collision system whose whole contract is "the first thing I touch ends me". A
+/// puddle is the opposite of every one of those - it never moves, it bills EVERY body standing in
+/// it, every tick, for as long as it lasts, and nothing it damages removes it.
+/// </para>
+/// <para>
+/// NO PrevX/PrevY, AND THAT IS THE ONE DEPARTURE FROM EVERY OTHER POOL HERE. The others carry them
+/// because the renderer interpolates and the pools swap-remove. A puddle is at the same place on
+/// both ticks forever, so there is nothing to interpolate and a prev pair would be two arrays of
+/// duplicated numbers - and, worse, two more fields in the hash format saying the same thing twice.
+/// </para>
+/// <para>
+/// WHAT IT DOES CARRY: <c>Radius</c> and <c>Dps</c> are captured AT THE MOMENT IT LANDS, so a rack
+/// that levels up cannot retroactively resize sludge already on the floor; <c>By</c> credits the
+/// kill exactly as <c>EnemyPool.BurnBy</c> does.
+/// </para>
+/// </remarks>
+public sealed class PuddlePool
+{
+    /// <summary>
+    /// Hard ceiling. Toxic Sludge throws a small spread off a shallow magazine and each pool lives
+    /// a few seconds, so a couple of dozen is already the worst case with the reload discounted.
+    /// </summary>
+    public const int Cap = 64;
+
+    public int Capacity { get; }
+    public int Count;
+
+    public readonly float[] X;
+    public readonly float[] Y;
+
+    /// <summary>Radius on the ground. Captured when it lands.</summary>
+    public readonly float[] Radius;
+
+    /// <summary>Damage per second to anything standing in it, as it was when it landed.</summary>
+    public readonly float[] Dps;
+
+    /// <summary>Seconds left before it dries up.</summary>
+    public readonly float[] Left;
+
+    /// <summary>Total seconds it started with, so the renderer can fade it without a second field.</summary>
+    public readonly float[] Life;
+
+    /// <summary>The weapon SLOT that threw it, for crediting the kill. 255 is nobody.</summary>
+    public readonly byte[] By;
+
+    public PuddlePool(int capacity = Cap)
+    {
+        Capacity = capacity;
+        X = new float[capacity];
+        Y = new float[capacity];
+        Radius = new float[capacity];
+        Dps = new float[capacity];
+        Left = new float[capacity];
+        Life = new float[capacity];
+        By = new byte[capacity];
+    }
+
+    /// <summary>
+    /// Returns the new puddle's dense index, or -1 if the pool is full.
+    /// </summary>
+    /// <remarks>
+    /// FULL MEANS DROPPED, SILENTLY, and that is the right failure. Evicting the oldest would let a
+    /// burst of fire delete ground the player is currently relying on.
+    /// </remarks>
+    public int Alloc(double x, double y, double radius, double dps, double seconds, int by)
+    {
+        if (Count >= Capacity) return -1;
+        int d = Count++;
+        X[d] = (float)x;
+        Y[d] = (float)y;
+        Radius[d] = (float)radius;
+        Dps[d] = (float)dps;
+        Left[d] = (float)seconds;
+        Life[d] = (float)seconds;
+        By[d] = (byte)by;
+        return d;
+    }
+
+    /// <summary>SWAP-REMOVE. Callers must iterate DOWNWARD when removing inside a loop.</summary>
+    public void Free(int d)
+    {
+        int last = --Count;
+        if (d != last)
+        {
+            X[d] = X[last];
+            Y[d] = Y[last];
+            Radius[d] = Radius[last];
+            Dps[d] = Dps[last];
+            Left[d] = Left[last];
+            Life[d] = Life[last];
+            By[d] = By[last];
+        }
+    }
+
+    public void Reset() => Count = 0;
+
+    /// <summary>Field order matching <c>hashWorld</c>. See <see cref="DronePool.MixInto"/>.</summary>
+    public uint MixInto(uint h)
+    {
+        int n = Count;
+        uint acc = Hash.MixU32(h, (uint)n);
+        acc = Hash.MixF32Array(acc, X, n);
+        acc = Hash.MixF32Array(acc, Y, n);
+        acc = Hash.MixF32Array(acc, Radius, n);
+        acc = Hash.MixF32Array(acc, Dps, n);
+        acc = Hash.MixF32Array(acc, Left, n);
+        acc = Hash.MixF32Array(acc, Life, n);
+        acc = Hash.MixBytes(acc, By.AsSpan(0, n));
+        return acc;
+    }
+}

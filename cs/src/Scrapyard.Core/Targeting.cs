@@ -46,6 +46,12 @@ public static class Targeting
 
         /// <summary>The thickest knot inside a cone in front of the barrel - the Mortar's.</summary>
         ConeDensest,
+
+        /// <summary>The Plasma Thrower's: biggest thing in a widening cone that is not on fire.</summary>
+        ConeColdest,
+
+        /// <summary>Toxic Sludge's GATE: is anything at all in a fixed cone behind the mech.</summary>
+        RearCone,
     }
 
     /// <summary>
@@ -174,6 +180,16 @@ public static class Targeting
         if (rule == Rule.ConeDensest)
         {
             return SelectConeDensest(w, originX, originY, rangeSq, wantCount, outv, aimX, aimY);
+        }
+
+        if (rule == Rule.ConeColdest)
+        {
+            return SelectConeColdest(w, originX, originY, rangeSq, wantCount, outv, aimX, aimY);
+        }
+
+        if (rule == Rule.RearCone)
+        {
+            return SelectRearCone(w, originX, originY, rangeSq, wantCount, outv);
         }
 
         int k = wantCount < outv.Length ? wantCount : outv.Length;
@@ -381,6 +397,179 @@ public static class Targeting
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Take the top k of n already-gathered candidates by the highest-HP order.
+    /// </summary>
+    /// <remarks>
+    /// The SAME comparator the Cannon uses (hp desc, then nearest, then lowest spawnId - strict
+    /// and total), applied to a list somebody else filtered. <c>SelectTopK</c> cannot be reused
+    /// because it gathers its own candidates, and the whole point of the cone rules is that the
+    /// gather has already happened and been cut down.
+    /// </remarks>
+    private static int ScoreHighestHp(World w, double originX, double originY, int n, int k,
+                                      int[] outv)
+    {
+        var enemies = w.Enemies;
+        var candidates = w.Scratch.Candidates;
+
+        int filled = 0;
+        while (filled < k)
+        {
+            int best = -1;
+            for (int i = 0; i < n; i++)
+            {
+                int d = candidates[i];
+                bool taken = false;
+                for (int j = 0; j < filled; j++)
+                {
+                    if (outv[j] == d) { taken = true; break; }
+                }
+
+                if (taken) continue;
+                if (best < 0 || Better(enemies, Rule.HighestHp, d, best, originX, originY)) best = d;
+            }
+
+            if (best < 0) break;
+            outv[filled++] = best;
+        }
+
+        return filled;
+    }
+
+    /// <summary>
+    /// THE PLASMA THROWER'S RULE: the biggest thing in front of the barrel that is NOT already
+    /// alight, widening the cone by thirty degrees at a time until it finds one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It is the Mortar's widening loop with a different predicate and a different score, which is
+    /// exactly what the rule table is for. Two departures from <see cref="Rule.ConeDensest"/>, and
+    /// both are the weapon.
+    /// </para>
+    /// <para>
+    /// THIRTY DEGREES PER STEP, NOT FIFTEEN. The Mortar is choosing where one heavy shell lands
+    /// and a narrow first look is what makes it obedient to the chassis. This gun fires four bolts
+    /// a second and wants to be walking down the crowd, so a wider first look keeps it working the
+    /// front instead of stepping through six cones every time the nearest body dies.
+    /// </para>
+    /// <para>
+    /// ALREADY BURNING IS SKIPPED, and that is why this rule exists at all. Igniting refreshes
+    /// rather than stacks, so a second bolt into a burning bruiser is worth almost nothing; a gun
+    /// that kept picking the biggest body would spend a fight re-lighting one enemy.
+    /// </para>
+    /// <para>
+    /// WHEN EVERYTHING IS ALIGHT IT SHOOTS THE BIGGEST ANYWAY rather than holding fire - the bolt
+    /// still does its damage and a fire about to expire gets refreshed. That fallback ignores the
+    /// cone, because by then the rule has already searched the whole field for a cold body.
+    /// </para>
+    /// </remarks>
+    private static int SelectConeColdest(World w, double originX, double originY, double rangeSq,
+                                         int wantCount, int[] outv, double aimX, double aimY)
+    {
+        int k = wantCount < outv.Length ? wantCount : outv.Length;
+        if (k <= 0) return 0;
+
+        int n = GatherInRange(w, originX, originY, rangeSq);
+        if (n == 0) return 0;
+
+        double aimLen = System.Math.Sqrt(aimX * aimX + aimY * aimY);
+        if (aimLen <= 0) return ScoreHighestHp(w, originX, originY, n, k, outv);
+        double ax = aimX / aimLen;
+        double ay = aimY / aimLen;
+
+        var enemies = w.Enemies;
+        var candidates = w.Scratch.Candidates;
+        var ex = enemies.X;
+        var ey = enemies.Y;
+        var burn = enemies.BurnLeft;
+
+        // EVERY SECOND ENTRY, so the cone opens 30 / 60 / 90 ... and the last step is still exactly
+        // 180 - the whole field - which is what guarantees this terminates. Indexing the shared
+        // table rather than authoring a second one keeps both guns' cosines in one place.
+        for (int step = 1; step < ConeCos.Length; step += 2)
+        {
+            double minCos = ConeCos[step];
+            int kept = 0;
+            for (int i = 0; i < n; i++)
+            {
+                int d = candidates[i];
+                if (burn[d] > 0) continue;
+                double dx = ex[d] - originX;
+                double dy = ey[d] - originY;
+                double len = System.Math.Sqrt(dx * dx + dy * dy);
+                if (dx * ax + dy * ay >= minCos * len) candidates[kept++] = (ushort)d;
+            }
+
+            if (kept > 0) return ScoreHighestHp(w, originX, originY, kept, k, outv);
+
+            n = GatherInRange(w, originX, originY, rangeSq);
+            if (n == 0) return 0;
+        }
+
+        // Nothing cold anywhere in range. See the remarks: it shoots the biggest thing it can reach.
+        return ScoreHighestHp(w, originX, originY, n, k, outv);
+    }
+
+    /// <summary>
+    /// TOXIC SLUDGE'S GATE: is there anything behind me worth throwing at?
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT IS A YES/NO QUESTION WEARING A TARGETING RULE'S CLOTHES. The sludge pattern never looks
+    /// at what this returns - the fan leaves from the mech's back in the same shape whatever is
+    /// standing there. What the seam buys is the one thing the weapon does need:
+    /// <c>RequiresTarget</c> makes Weapons skip a gun whose rule found nothing, which is exactly
+    /// "do not spend a third of a three-shot magazine on empty yard".
+    /// </para>
+    /// <para>
+    /// OFF THE CHASSIS FACING, NOT THE TURRET, which is why this one rule ignores the aim vector
+    /// it is handed. Toxic Sludge has no mount; where its shot goes is decided by which way the
+    /// mech is walking, so the cone is measured against the same vector the hull is drawn at.
+    /// </para>
+    /// <para>
+    /// A HUNDRED AND TWENTY DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone
+    /// rules above. Those widen because they must eventually find SOMETHING; this one must be able
+    /// to answer no, because "no" is the whole point of it.
+    /// </para>
+    /// </remarks>
+    private static int SelectRearCone(World w, double originX, double originY, double rangeSq,
+                                      int wantCount, int[] outv)
+    {
+        int k = wantCount < outv.Length ? wantCount : outv.Length;
+        if (k <= 0) return 0;
+
+        int n = GatherInRange(w, originX, originY, rangeSq);
+        if (n == 0) return 0;
+
+        double fx = w.Player.FaceX;
+        double fy = w.Player.FaceY;
+        double len0 = System.Math.Sqrt(fx * fx + fy * fy);
+        if (len0 <= 0) return 0;
+        double ax = -fx / len0;
+        double ay = -fy / len0;
+
+        var enemies = w.Enemies;
+        var candidates = w.Scratch.Candidates;
+        var ex = enemies.X;
+        var ey = enemies.Y;
+        // ConeCos[7] is exactly cos(120 degrees) - see the table and its note on why these are
+        // literals rather than a call to Math.Cos.
+        double minCos = ConeCos[7];
+
+        int kept = 0;
+        for (int i = 0; i < n; i++)
+        {
+            int d = candidates[i];
+            double dx = ex[d] - originX;
+            double dy = ey[d] - originY;
+            double dist = System.Math.Sqrt(dx * dx + dy * dy);
+            if (dx * ax + dy * ay >= minCos * dist) candidates[kept++] = (ushort)d;
+        }
+
+        if (kept == 0) return 0;
+        return ScoreHighestHp(w, originX, originY, kept, k, outv);
     }
 
     /// <summary>

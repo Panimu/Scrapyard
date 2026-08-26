@@ -115,14 +115,18 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // roll and its RNG draws completely unexercised. A port could delete the whole system and the
   // golden master would still pass.
   //
-  // This seed was found by accident and kept on purpose: the bot happens to wander over the chest
-  // it earned. That is a fragile reason for a test to work, so if a future change to spawning or
-  // to the bot makes this run stop opening a chest, the fix is to find another seed that does -
-  // not to shrug. `npm run golden -- record` prints the chest count of every run for exactly that
-  // reason.
+  // The seed is found by SEARCH rather than by accident: the bot happens to wander over the chest
+  // it earned, which is a fragile reason for a test to work, so when a change to the content makes
+  // this run stop opening one the fix is to find another seed that does - not to shrug.
+  // `npm run golden -- record` prints the chest count of every run for exactly that reason.
+  //
+  // 0x1d140a77 was the first such seed and stopped opening a chest when the Plasma Thrower and
+  // Toxic Sludge entered the deck (the bot takes weapon cards greedily, so two new ones change
+  // every loadout it builds and therefore where it ends up standing). 0x65c9ecb3 is the
+  // replacement: 402 kills, one chest, dies at tick 12935.
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x1d140a77,
+    seed: 0x65c9ecb3,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

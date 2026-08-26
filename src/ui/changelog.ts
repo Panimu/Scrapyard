@@ -46,6 +46,35 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T05:31Z',
+    title: 'A NEW GUN: THE PLASMA THROWER',
+    notes: [
+      'It throws slow gouts of fire, and whatever they touch CATCHES FIRE. The bolt itself is almost nothing — a burning enemy keeps taking damage for three seconds afterwards, so most of this weapon’s damage is never fired.',
+      'It picks the biggest thing in front of it that is NOT already alight, and looks straight ahead first the way the Mortar does. Fire does not stack, so re-lighting the same body is wasted — left alone, the thrower walks itself down a crowd, biggest first. If absolutely everything in reach is already burning it shoots the biggest anyway.',
+      'It runs on HEAT rather than a cooldown, and it is not a laser. Held on a target it heats; slewing between them it cools; hold it too long and the breaker trips. A Radiator Bank helps it exactly as much as it helps a beam, and now gets offered to a run carrying one.',
+      'It bolts onto the Phase Cannon’s mount, so a run carries one or the other and never both. Copper opens with it, throwing 10% further and 10% hotter.',
+      'The card stays locked until you have had 30 enemies burning at the same moment.',
+    ],
+  },
+  {
+    at: '2026-08-26T05:31Z',
+    title: 'A NEW GUN: TOXIC SLUDGE',
+    notes: [
+      'It is the only weapon in the yard that shoots at where you have BEEN. A fan of acid leaves the mech’s back, lands a short way behind, and stays on the ground for a few seconds eating anything that walks through it.',
+      'So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.',
+      'It will not fire into an empty yard — there has to be something in a wide cone behind you or it holds. Which matters, because the magazine is three throws and the reload is long. Ammo Drums is now offered to a run carrying it.',
+      'It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that. Jade opens with it, laying pools 20% wider.',
+      'The card stays locked until you have finished 30 elites with it.',
+    ],
+  },
+  {
+    at: '2026-08-26T05:31Z',
+    title: 'THE MORTAR’S UNLOCK WAS UNREACHABLE ON DESKTOP',
+    notes: [
+      'Mortar kills were never being added to the career total on the desktop build, so its 1812 could never arrive however long you played. They count now. Kills banked before this were not recorded and are not recoverable.',
+    ],
+  },
+  {
     at: '2026-08-24T14:58Z',
     title: 'A NEW GUN: THE MORTAR',
     notes: [

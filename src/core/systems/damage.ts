@@ -76,6 +76,7 @@
  */
 
 import { ARCHETYPES } from '../content/enemyCatalog.js';
+import { WEAPON_CATALOG } from '../content/weaponCatalog.js';
 import { RANKS, RANK_BOSS, RANK_ELITE, RANK_REGULAR } from '../content/cycles.js';
 import {
   ENEMY_FLAG_ANCHORED,
@@ -142,6 +143,106 @@ export function updateDamage(world: World, dt: number): void {
   applyBeams(world);
   applyHits(world);
   applyContacts(world);
+  advanceBurning(world, dt);
+}
+
+/**
+ * FIRE, TICKING. Bodies the Plasma Thrower has lit take their damage here and nowhere else.
+ *
+ * IN THIS FILE BECAUSE BURNING IS DAMAGE. It needs `killEnemy` and `creditWeapon`, which are the
+ * two things that make a burn kill indistinguishable from a shell kill - a gem drops, the
+ * archetype tally moves, the weapon gets its damage credited. A burn pass written beside the
+ * contact timers in collision.ts would have had to reimplement both, and the second copy of a
+ * kill path is how a weapon quietly stops earning its own unlock.
+ *
+ * LAST IN THE TICK, after the shots have landed. A body lit this tick starts burning on the next
+ * one rather than taking its first fire damage in the same instant as the bolt - which is both
+ * easier to reason about and what stops a single hit reading as double damage.
+ *
+ * THE COUNT IS TAKEN BEFORE THE DECREMENT, so a body with a sliver of fire left still counts as
+ * alight this tick. `peakBurning` is what the Plasma Thrower's own unlock reads, and it is a
+ * high-water mark rather than a total - see RunStats.
+ *
+ * CLAMPED AT ZERO, never negative, for the reason `advanceContactTimers` clamps: a field that
+ * drifts below zero changes the world hash for every enemy that ever caught fire.
+ */
+function advanceBurning(world: World, dt: number): void {
+  const enemies = world.enemies;
+  const left = enemies.burnLeft;
+  const n = enemies.count;
+  let alight = 0;
+
+  for (let d = 0; d < n; d++) {
+    const t = left[d];
+    if (t <= 0) continue;
+    if ((enemies.flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
+
+    alight++;
+
+    const next = t - dt;
+    left[d] = next > 0 ? next : 0;
+
+    const dmg = enemies.burnDps[d] * dt;
+    if (dmg <= 0) continue;
+
+    // THE SLOT THAT LIT IT, which is what `damageEnemy` passes on to `killEnemy` and
+    // `creditWeapon`. 255 is nobody and resolves to no weapon, so an unattributed fire still
+    // damages and simply credits nothing rather than crediting slot 0.
+    damageEnemy(world, d, dmg, enemies.burnBy[d]);
+  }
+
+  if (alight > world.stats.peakBurning) world.stats.peakBurning = alight;
+}
+
+/**
+ * HIT POINTS OFF, DAMAGE CREDITED, AND THE KILL PATH TAKEN IF IT FALLS - the smallest complete
+ * way to hurt something, with no geometry and no projectile behind it.
+ *
+ * THE TWO CALLERS ARE THE TWO SOURCES OF DAMAGE-OVER-TIME: fire on a body (`advanceBurning`) and
+ * sludge on the ground (systems/puddles.ts). Both share exactly one problem - they bill a body
+ * that no shot is currently touching - and the thing they must not do is invent a second kill
+ * path. A burn kill and a puddle kill drop a gem, move the archetype tally, feed the kill list
+ * and credit the weapon precisely as a shell kill does, and this is the one line that guarantees
+ * it.
+ *
+ * NO EV_ENEMY_DAMAGED, deliberately, and it is the same argument `applyBeams` makes for a beam:
+ * the event exists to make the renderer flash a body that has just been HIT, and a source that
+ * bills sixty times a second would hold every victim permanently white.
+ */
+export function damageEnemy(world: World, ed: number, amount: number, bySlot: number): void {
+  if (amount <= 0) return;
+  const enemies = world.enemies;
+  const hp = enemies.hp[ed] - amount;
+  enemies.hp[ed] = hp;
+  creditWeapon(world, bySlot, amount);
+  if (hp <= 0) killEnemy(world, ed, bySlot);
+}
+
+/**
+ * Sets a body alight, or refreshes a fire already on it.
+ *
+ * THE STRONGER FIRE WINS AND THE LONGER ONE LASTS, judged separately. A second bolt into a body
+ * already burning should never make it burn WEAKER, and should never cut the fire short - so the
+ * rate takes the max and the duration takes the max, and the igniter is whoever owns the stronger
+ * rate. Refreshing both blindly would let a grazing hit downgrade a fire a moment after a solid
+ * one lit it.
+ */
+export function ignite(
+  world: World,
+  ed: number,
+  dps: number,
+  seconds: number,
+  bySlot: number,
+): void {
+  if (dps <= 0 || seconds <= 0) return;
+  const enemies = world.enemies;
+  if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) return;
+
+  if (dps >= enemies.burnDps[ed]) {
+    enemies.burnDps[ed] = dps;
+    enemies.burnBy[ed] = bySlot;
+  }
+  if (seconds > enemies.burnLeft[ed]) enemies.burnLeft[ed] = seconds;
 }
 
 // -------------------------------------------------------------------------------------------
@@ -275,6 +376,19 @@ function applyHits(world: World): void {
     );
 
     applyKnockback(world, ed, proj.vx[pd], proj.vy[pd], proj.knockback[pd]);
+
+    // FIRE, IF THE GUN THAT FIRED THIS SETS FIRES. Read off the weapon def at IMPACT rather than
+    // carried on the projectile, which would have been two more fields in the pool and therefore
+    // two more entries in the hash format - for a fact that has not changed since the bolt left
+    // the muzzle. The rate is a fraction of the hit that lit it (WeaponDef.burn), so a damage
+    // tier and a chassis bonus both raise the fire without either of them naming fire.
+    const owner = world.weapons[proj.ownerWeapon[pd]];
+    if (owner !== undefined) {
+      const burn = WEAPON_CATALOG[owner.defId].burn;
+      if (burn !== undefined) {
+        ignite(world, ed, raw * burn.dpsFrac, burn.seconds, proj.ownerWeapon[pd]);
+      }
+    }
 
     if (enemies.hp[ed] <= 0) killEnemy(world, ed, proj.ownerWeapon[pd]);
 

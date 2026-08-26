@@ -347,6 +347,9 @@ function condOf(c: unknown): string {
     case 'fullRepair': return 'UnlockCond.FullRepair()';
     case 'lasersOverheated': return 'UnlockCond.LasersOverheated()';
     case 'contactHits': return `UnlockCond.ContactHits(${u.count})`;
+    case 'burningAtOnce': return `UnlockCond.BurningAtOnce(${u.count})`;
+    case 'eliteKillsWithTotal':
+      return `UnlockCond.EliteKillsWithTotal(${u.count}, ${ws(u.weapons)})`;
     case 'diedTo': return `UnlockCond.DiedTo("${u.rank}")`;
     case 'bossKillHolding': return `UnlockCond.BossKillHolding(${w(u.weapon)})`;
     case 'bossKillBy': return `UnlockCond.BossKillBy(${ws(u.weapons)})`;

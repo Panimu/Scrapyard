@@ -33,6 +33,7 @@ import {
   markProjectileDead,
   projectileRecordHit,
 } from '../entity/projectilePool.js';
+import { allocPuddle } from '../entity/puddlePool.js';
 import { enemyIndex } from '../entity/enemyPool.js';
 import { type EnemyHandle } from '../entity/handle.js';
 import { MISSILE_SHORT, SPLIT_COS, SPLIT_SIN } from '../content/weaponCatalog.js';
@@ -155,6 +156,31 @@ function expireProjectile(world: World, d: number): void {
   if (def?.detonateOnExpiry === true && p.splashRadius[d] > 0) {
     // Splash only - there is no struck body. updateDamage applies it, so S7 never touches hp.
     pushHit(world.hits, d, NO_DIRECT_HIT, p.x[d], p.y[d]);
+  }
+
+  // TOXIC SLUDGE'S GROUND, AND THE WHOLE POINT OF THE SHOT.
+  //
+  // HOOKED ON EXPIRY AND NOWHERE ELSE, which works because the glob is authored to carry enough
+  // pierce that nothing stops it early - it flies its very short flight and runs out of fuse
+  // where the puddle belongs. The alternative was a hook at each of the three places a round can
+  // die, two of which would drop the pool short of where the player was aiming.
+  //
+  // THE NUMBERS COME OFF THE ROUND, not off the weapon. `splashRadius` is the pool's size and its
+  // rate is a fraction of the glob's own damage - both captured when it was fired, so a rack that
+  // levels mid-flight cannot resize sludge already on its way down. `dpsFrac` is the same device
+  // WeaponDef.burn uses and for the same reason: a damage tier and a chassis bonus both raise
+  // what the ground does without either of them naming the ground.
+  const puddle = def?.puddle;
+  if (puddle !== undefined) {
+    allocPuddle(
+      world.puddles,
+      p.x[d],
+      p.y[d],
+      p.splashRadius[d],
+      p.damage[d] * puddle.dpsFrac,
+      puddle.seconds,
+      p.ownerWeapon[d],
+    );
   }
   pushEvent(world.events, EV_PROJECTILE_EXPIRED, world.tick, p.x[d], p.y[d], 0, d);
 }

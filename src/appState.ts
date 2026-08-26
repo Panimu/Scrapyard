@@ -196,6 +196,17 @@ export interface Settings {
    */
   careerKills: Partial<Record<WeaponId, number>>;
   /**
+   * KILLING BLOWS EVER LANDED ON ELITES, by weapon id, every run ever played - the rank-split
+   * twin of `careerKills`, behind `eliteKillsWithTotal` conditions.
+   *
+   * A SECOND MAP RATHER THAN A NESTED ONE. `careerKills[id][rank]` would have been the general
+   * answer and it is the wrong shape for storage that is assumed to vanish: every field here has
+   * to degrade to a default on its own, and a nested object is a second level for a hostile save
+   * to be malformed at. One condition asks about one rank; when a second rank is wanted it gets
+   * its own line, exactly like this one.
+   */
+  careerEliteKills: Partial<Record<WeaponId, number>>;
+  /**
    * KILLING BLOWS EVER LANDED BY SPLASH, every run ever played - the blast-damage career total
    * behind `splashKillsTotal` conditions. Banked beside `careerKills` by the same delta ledger.
    */
@@ -270,6 +281,7 @@ const DEFAULTS: Settings = {
   heldAscensions: [],
   unlockedLevels: [],
   careerKills: {},
+  careerEliteKills: {},
   careerSplashKills: 0,
   careerReloads: 0,
   metaTiers: {},
@@ -330,6 +342,7 @@ function freshDefaults(): Settings {
     heldAscensions: [...DEFAULTS.heldAscensions],
     unlockedLevels: [...DEFAULTS.unlockedLevels],
     careerKills: { ...DEFAULTS.careerKills },
+    careerEliteKills: { ...DEFAULTS.careerEliteKills },
     metaTiers: { ...DEFAULTS.metaTiers },
   };
 }
@@ -401,6 +414,7 @@ function loadSettings(): Settings {
       // Career kill tallies: unknown weapon ids dropped, counts clamped to sane integers - the
       // same hostile-storage stance as everything else in this function.
       careerKills: readCareerKills(parsed.careerKills),
+      careerEliteKills: readCareerKills(parsed.careerEliteKills),
       careerSplashKills: clampInt(parsed.careerSplashKills, 0, 1_000_000_000, 0),
       careerReloads: clampInt(parsed.careerReloads, 0, 1_000_000_000, 0),
       metaTiers: meta.owned,
@@ -727,6 +741,8 @@ export class AppState {
    * polls before the reload had banked. There is no run-resume for it to be wrong about.
    */
   private bankedRunKills: Partial<Record<WeaponId, number>> = {};
+  /** Elite killing blows already banked from the run in progress - the same ledger, by weapon. */
+  private bankedRunEliteKills: Partial<Record<WeaponId, number>> = {};
   /** Splash kills already banked from the run in progress - the same ledger, one number wide. */
   private bankedRunSplash = 0;
   /** Reloads already banked from the run in progress - the same ledger again. */
@@ -735,6 +751,7 @@ export class AppState {
   /** Called at run start: the new run has banked nothing yet. */
   beginRunTally(): void {
     this.bankedRunKills = {};
+    this.bankedRunEliteKills = {};
     this.bankedRunSplash = 0;
     this.bankedRunReloads = 0;
   }
@@ -760,6 +777,20 @@ export class AppState {
       this.bankedRunKills[def.id] = now;
       dirty = true;
     }
+    // The same ledger again, one column over. Separate loop rather than a second body in the one
+    // above, because `continue` there is per-weapon and would skip this half whenever a weapon's
+    // total had not moved since the last poll - which is most polls, for most weapons.
+    for (const def of WEAPON_CATALOG) {
+      const now = run.eliteKillsWith[def.id] ?? 0;
+      const banked = this.bankedRunEliteKills[def.id] ?? 0;
+      if (now <= banked) continue;
+      this.settings.careerEliteKills[def.id] = Math.min(
+        1_000_000_000,
+        (this.settings.careerEliteKills[def.id] ?? 0) + (now - banked),
+      );
+      this.bankedRunEliteKills[def.id] = now;
+      dirty = true;
+    }
     if (run.splashKills > this.bankedRunSplash) {
       this.settings.careerSplashKills = Math.min(
         1_000_000_000,
@@ -783,6 +814,7 @@ export class AppState {
   career(): CareerRecord {
     return {
       killsWith: this.settings.careerKills,
+      eliteKillsWith: this.settings.careerEliteKills,
       splashKills: this.settings.careerSplashKills,
       reloads: this.settings.careerReloads,
       // READ LIVE, so a pass that unlocks the sixth chassis can unlock the one that wanted six in

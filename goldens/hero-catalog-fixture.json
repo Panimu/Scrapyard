@@ -192,11 +192,18 @@
   {
    "index": 12,
    "id": "jade",
-   "startingWeapon": "laser-short",
+   "startingWeapon": "sludge",
    "startingUpgrade": null,
    "player": {},
    "weapon": {},
-   "weaponBonus": null
+   "weaponBonus": {
+    "sludge": {
+     "mul": {
+      "splashRadius": "3ff3333333333333"
+     },
+     "add": null
+    }
+   }
   },
   {
    "index": 13,
@@ -226,11 +233,19 @@
   {
    "index": 15,
    "id": "copper",
-   "startingWeapon": "flak-cannon",
+   "startingWeapon": "plasma",
    "startingUpgrade": null,
    "player": {},
    "weapon": {},
-   "weaponBonus": null
+   "weaponBonus": {
+    "plasma": {
+     "mul": {
+      "damage": "3ff199999999999a",
+      "range": "3ff199999999999a"
+     },
+     "add": null
+    }
+   }
   }
  ]
 }

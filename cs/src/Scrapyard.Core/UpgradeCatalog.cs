@@ -164,8 +164,10 @@ public static class UpgradeIds
     /// repoint all of them. The TypeScript appends for the same reason and carries the same note.
     /// </remarks>
     public const int WMortar = 21;
+    public const int WPlasma = 22;
+    public const int WSludge = 23;
 
-    public const int Count = 22;
+    public const int Count = 24;
 }
 
 public static class UpgradeCatalog
@@ -308,6 +310,23 @@ public static class UpgradeCatalog
         MaxStacks = WeaponMaxTier, Weight = 10, Effects = System.Array.Empty<UpgradeEffect>(),
     };
 
+    /// <summary>
+    /// The Plasma Thrower. Shares the Phase Cannon's mount, which <c>WeaponDef.Excludes</c>
+    /// enforces.
+    /// </summary>
+    public static readonly UpgradeDef WPlasma = new()
+    {
+        Id = UpgradeIds.WPlasma, Kind = UpgradeKind.Weapon, GrantsWeapon = WeaponIds.Plasma,
+        MaxStacks = WeaponMaxTier, Weight = 10, Effects = System.Array.Empty<UpgradeEffect>(),
+    };
+
+    /// <summary>Toxic Sludge. Uses no mount, so it excludes nothing and nothing excludes it.</summary>
+    public static readonly UpgradeDef WSludge = new()
+    {
+        Id = UpgradeIds.WSludge, Kind = UpgradeKind.Weapon, GrantsWeapon = WeaponIds.Sludge,
+        MaxStacks = WeaponMaxTier, Weight = 10, Effects = System.Array.Empty<UpgradeEffect>(),
+    };
+
     /// <summary>Catalog order for the eleven weapon cards. Positions 0-10.</summary>
     public static readonly UpgradeDef[] WeaponCards =
     {
@@ -420,7 +439,13 @@ public static class UpgradeCatalog
     {
         Id = UpgradeIds.PRadiator, Kind = UpgradeKind.Passive, MaxStacks = WeaponMaxTier, Weight = 9,
         Effects = System.Array.Empty<UpgradeEffect>(),
-        RequiresWeaponHeld = new[] { WeaponIds.LaserShort, WeaponIds.LaserMedium, WeaponIds.LaserLong },
+        // THE PLASMA THROWER IS NOT A BEAM AND IT BELONGS HERE ANYWAY. This card's gate is about
+        // what the effect can reach, and the effect is heat: the thrower runs the laser economy
+        // exactly (see the hot flag in Weapons.cs), so both dials move it as much as a beam.
+        RequiresWeaponHeld = new[]
+        {
+            WeaponIds.LaserShort, WeaponIds.LaserMedium, WeaponIds.LaserLong, WeaponIds.Plasma,
+        },
         // TWO DIALS SPLIT ACROSS TIERS rather than PassiveRamp applied once: dispersion carries
         // the open/close rungs (1,3,5,7), capacity the middle three (2,4,6) - the card never
         // spends two tiers running on the same dial. Own ramp, not PassiveRamp: 0.08 x3, 0.1 x2, 0.12 x2.
@@ -454,7 +479,9 @@ public static class UpgradeCatalog
     {
         Id = UpgradeIds.PAmmo, Kind = UpgradeKind.Passive, MaxStacks = WeaponMaxTier, Weight = 9,
         Effects = System.Array.Empty<UpgradeEffect>(),
-        RequiresWeaponHeld = new[] { WeaponIds.MachineGun, WeaponIds.FlakCannon },
+        // TOXIC SLUDGE HAS THE SHALLOWEST MAGAZINE IN THE GAME and the longest reload, so this
+        // card is worth more to it than to either gun it was written for.
+        RequiresWeaponHeld = new[] { WeaponIds.MachineGun, WeaponIds.FlakCannon, WeaponIds.Sludge },
         TierEffects = RampEffectsWeapon(WeaponStat.AmmoCapacity),
     };
 
@@ -478,7 +505,7 @@ public static class UpgradeCatalog
     /// reader would reasonably assume the block was ordered by kind and put the following gun
     /// somewhere that renumbers the catalog.
     /// </remarks>
-    public static readonly UpgradeDef[] LateCards = { WMortar };
+    public static readonly UpgradeDef[] LateCards = { WMortar, WPlasma, WSludge };
 
     public static readonly UpgradeDef[] All =
         WeaponCards.Concat(PassiveCards).Concat(LateCards).ToArray();

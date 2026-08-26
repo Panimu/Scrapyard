@@ -80,7 +80,7 @@ describe('the card is locked behind the gun', () => {
     // Fern is earned; the card is nowhere close.
     expect(meetsUnlock(fern.unlock, wonScrapyard, ids)).toBe(true);
     expect(
-      meetsUnlock(cardUnlock, wonScrapyard, ids, { killsWith: { drone: 3 }, splashKills: 0, heroesOwned: 1, reloads: 0 }),
+      meetsUnlock(cardUnlock, wonScrapyard, ids, { killsWith: { drone: 3 }, eliteKillsWith: {}, splashKills: 0, heroesOwned: 1, reloads: 0 }),
     ).toBe(false);
   });
 

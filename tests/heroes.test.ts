@@ -101,6 +101,8 @@ describe('the roster', () => {
       artillery: 'Heavy Artillery',
       'phase-cannon': 'Phase Cannon',
       mortar: 'Mortar',
+      plasma: 'Plasma Thrower',
+      sludge: 'Toxic Sludge',
     };
     for (const h of HERO_CATALOG) {
       if (h.startingWeapon === null) continue;

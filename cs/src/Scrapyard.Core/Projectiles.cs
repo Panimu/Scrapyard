@@ -164,6 +164,24 @@ public static class Projectiles
             // Splash only - there is no struck body. S9 applies it, so S7 never touches hp.
             world.Hits.Push(d, HitBuffer.NoDirectHit, p.X[d], p.Y[d]);
         }
+
+        // TOXIC SLUDGE'S GROUND, AND THE WHOLE POINT OF THE SHOT.
+        //
+        // HOOKED ON EXPIRY AND NOWHERE ELSE, which works because the glob is authored to carry
+        // enough pierce that nothing stops it early - it flies its very short flight and runs out
+        // of fuse where the puddle belongs. The alternative was a hook at each of the three places
+        // a round can die, two of which would drop the pool short of where the player was aiming.
+        //
+        // THE NUMBERS COME OFF THE ROUND, not off the weapon. SplashRadius is the pool's size and
+        // its rate is a fraction of the glob's own damage - both captured when it was fired, so a
+        // rack that levels mid-flight cannot resize sludge already on its way down. DpsFrac is the
+        // same device WeaponDef.Burn uses and for the same reason.
+        var puddle = def?.Puddle;
+        if (puddle != null)
+        {
+            world.Puddles.Alloc(p.X[d], p.Y[d], p.SplashRadius[d],
+                                p.Damage[d] * puddle.DpsFrac, puddle.Seconds, p.OwnerWeapon[d]);
+        }
         world.Events.Push(EventKind.ProjectileExpired, world.Tick, p.X[d], p.Y[d], 0, d);
     }
 

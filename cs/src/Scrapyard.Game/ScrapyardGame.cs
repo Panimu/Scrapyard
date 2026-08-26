@@ -179,6 +179,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const double HealFlashSec = 0.45;
     private const double InsurancePulseHz = 9;
 
+    /// <summary>The Plasma Thrower: hot orange, deliberately far from the phase bolt.</summary>
+    private static readonly Color FlameTint = new(0xff, 0x8a, 0x3c);
+
+    /// <summary>Toxic Sludge, glob and pool alike - one colour so the two read as one substance.</summary>
+    private static readonly Color SludgeTint = new(0x8c, 0xe0, 0x3a);
+
     private static readonly Color PlayerHitTint = new(0xff, 0xb0, 0xa8);
     private static readonly Color PlayerHealTint = new(0xb6, 0xf5, 0xc4);
     private static readonly Color InsuranceSavedTint = new(0xff, 0xd2, 0x57);
@@ -1908,6 +1914,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _paths.Draw(_batch, _camera);
         _cover.Draw(_batch, _camera);
         _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf, w.Tick);
+        // Acid on the ground, under everything that walks through it.
+        DrawPuddles(w);
         DrawPickups(w);
         DrawEnemies(w);
         DrawProjectiles(w);
@@ -2322,12 +2330,24 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 VisualId.MissileLong => ("missile", RenderTables.MissileDrawLen * 1.15, 0.72),
                 VisualId.Slug => ("slug", RenderTables.SlugDrawLen, 1.0),
                 VisualId.Plasma => ("shell", RenderTables.ShellDrawLen * 1.2, 1.2),
+                // A GOUT OF FIRE: the slug run hot and a little fat. New art buys very little at
+                // eight pixels across, and this keeps the thrower reading as the same FAMILY of
+                // thing as the phase bolt it shares a mount with.
+                VisualId.Flame => ("slug", RenderTables.SlugDrawLen * 1.5, 1.2),
+                // A GLOB, not a round: no elongation, because it is falling rather than flying.
+                VisualId.Sludge => ("slug", RenderTables.SlugDrawLen * 1.3, 1.0),
                 _ => ("shell", RenderTables.ShellDrawLen, 1.0),
             };
 
             var tex = _sprites.Get(key);
             if (tex is null) continue;
-            var tint = vis == VisualId.Plasma ? new Color(0xc7, 0x7b, 0xff) : Color.White;
+            var tint = vis switch
+            {
+                VisualId.Plasma => new Color(0xc7, 0x7b, 0xff),
+                VisualId.Flame => FlameTint,
+                VisualId.Sludge => SludgeTint,
+                _ => Color.White,
+            };
             Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide, len, angle, tint);
         }
     }
@@ -2340,6 +2360,48 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// a fuse rather than on contact, so a player who cannot see the circle is a player being hit
     /// by nothing.
     /// </remarks>
+    /// <summary>
+    /// Toxic Sludge's pools: a disc of acid on the ground, fading out as it dries.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE FADE IS THE TIMER, and it is the only thing on screen that says how long a pool has
+    /// left. <c>Life</c> is stored beside <c>Left</c> in the pool for exactly this - the
+    /// alternative was hard-coding the weapon's four seconds here, which would have gone quietly
+    /// wrong the first time a tier changed it.
+    /// </para>
+    /// <para>
+    /// NO INTERPOLATION. A puddle is at the same place on both ticks forever, which is the same
+    /// fact that keeps PrevX/PrevY out of its pool.
+    /// </para>
+    /// <para>
+    /// UNDER EVERYTHING THAT MOVES, painted straight after the terrain. A pool that covered the
+    /// bodies standing in it would hide the decision the player is making.
+    /// </para>
+    /// </remarks>
+    private void DrawPuddles(World w)
+    {
+        var p = w.Puddles;
+        for (int d = 0; d < p.Count; d++)
+        {
+            double r = p.Radius[d];
+            if (r <= 0) continue;
+
+            double life = p.Life[d];
+            double frac = life > 0 ? p.Left[d] / life : 1;
+            // Held near full for most of the pool's life and dropped over the last quarter, so a
+            // puddle reads as WET until it is nearly gone rather than as a slow dissolve from the
+            // moment it lands.
+            float t = (float)(frac > 0.25 ? 1 : frac / 0.25);
+
+            var screen = _camera.ToScreen(p.X[d] - r, p.Y[d] - r);
+            int size = (int)System.Math.Max(2, r * 2 * _camera.Scale);
+            _batch.Draw(_sprites.Blank,
+                        new Rectangle((int)screen.X, (int)screen.Y, size, size),
+                        SludgeTint * (0.28f * t));
+        }
+    }
+
     private void DrawStrikeMarker(double x, double y, double radius)
     {
         if (radius <= 0) return;

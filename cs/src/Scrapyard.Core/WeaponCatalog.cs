@@ -20,6 +20,12 @@ public static class VisualId
 
     /// <summary>The Phase Cannon's bolt. 6, because 5 is retired.</summary>
     public const int Plasma = 6;
+
+    /// <summary>The Plasma Thrower's bolt: a slow gout of fire.</summary>
+    public const int Flame = 7;
+
+    /// <summary>Toxic Sludge's glob, and the pool it leaves.</summary>
+    public const int Sludge = 8;
 }
 
 /// <summary>
@@ -44,6 +50,7 @@ public static class FirePattern
     public const int Factory = 4;
     public const int Phase = 5;
     public const int Cone = 6;
+    public const int Sludge = 7;
 }
 
 /// <summary>
@@ -208,6 +215,30 @@ public sealed class WeaponDef
     /// <summary>Weapons that cannot share the chassis with this one - a fact about the hardware.</summary>
     public int[]? Excludes { get; init; }
 
+    /// <summary>
+    /// What this gun sets alight, or null for the twelve guns that set nothing alight.
+    /// </summary>
+    /// <remarks>
+    /// NULLABLE, LIKE <see cref="Excludes"/>, AND FOR THE SAME REASON: burning is one weapon's
+    /// mechanic, and two more fields on <see cref="Base"/> would have meant writing zeroes into
+    /// every def in the file to say nothing. A <c>Burn</c> that is present IS the "this ignites"
+    /// flag; there is no separate boolean to fall out of step with it.
+    /// <para>
+    /// <c>DpsFrac</c> is a fraction of the HIT, not a rate of its own, so a damage tier and a
+    /// chassis bonus both raise the fire without either naming fire.
+    /// </para>
+    /// </remarks>
+    public BurnSpec? Burn { get; init; }
+
+    /// <summary>
+    /// What this gun leaves on the floor, or null for the thirteen guns that leave nothing.
+    /// </summary>
+    /// <remarks>
+    /// Shaped like <see cref="Burn"/> on purpose. The pool's SIZE is not here - it is
+    /// <c>SplashRadius</c>, which the tier ladder and a chassis bonus already know how to move.
+    /// </remarks>
+    public PuddleSpec? Puddle { get; init; }
+
     // ---- fused weapons (missiles) ----
     /// <summary>Fires along the player's last movement direction rather than at a target.</summary>
     public required bool FireAlongFacing { get; init; }
@@ -217,6 +248,26 @@ public sealed class WeaponDef
 }
 
 /// <summary>Catalog index for each weapon id. The index IS the id everywhere else in the sim.</summary>
+/// <summary>Fire a weapon starts on a body it hits. See <c>WeaponDef.Burn</c>.</summary>
+public sealed class BurnSpec
+{
+    /// <summary>Damage per second, as a fraction of the hit that lit the body.</summary>
+    public required double DpsFrac { get; init; }
+
+    /// <summary>How long it burns.</summary>
+    public required double Seconds { get; init; }
+}
+
+/// <summary>Ground a weapon leaves where its round stops. See <c>WeaponDef.Puddle</c>.</summary>
+public sealed class PuddleSpec
+{
+    /// <summary>Damage per second, as a fraction of the round's own damage.</summary>
+    public required double DpsFrac { get; init; }
+
+    /// <summary>How long the pool lasts before it dries.</summary>
+    public required double Seconds { get; init; }
+}
+
 public static class WeaponIds
 {
     public const int Cannon = 0;
@@ -231,7 +282,9 @@ public static class WeaponIds
     public const int Drone = 9;
     public const int PhaseCannon = 10;
     public const int Mortar = 11;
-    public const int Count = 12;
+    public const int Plasma = 12;
+    public const int Sludge = 13;
+    public const int Count = 14;
 }
 
 public static class WeaponCatalog
@@ -410,6 +463,137 @@ public static class WeaponCatalog
         ReengageMul = 0.55, VisualId = VisualId.Shell,
         MuzzleOffset = 30, ShellRadius = 9,
         FireAlongFacing = false, DetonateOnExpiry = false,
+    };
+
+    /// <summary>
+    /// THE PLASMA THROWER - low damage, and almost none of it is the bolt.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It shares the medium turret with the Phase Cannon, so a run carries one or the other and
+    /// never both (declared on the Phase Cannon's <c>Excludes</c>). The pair is a real choice: one
+    /// enormous bolt into the thickest part of the crowd on a 1.6 s clock, or a stream of small
+    /// ones that leaves the crowd on fire.
+    /// </para>
+    /// <para>
+    /// IT RUNS ON HEAT AND IT IS NOT A BEAM, which nothing else in the catalog is. There is a
+    /// bolt, it flies, it can miss - and the limiter is the laser economy rather than a cooldown.
+    /// See the hot flag in Weapons.cs. The heat numbers are the Short Laser's exactly, so the two
+    /// share an uptime the player can already read off a bar they know.
+    /// </para>
+    /// <para>
+    /// THE DAMAGE IS THE FIRE. The bolt is 9 and is not worth aiming; what it does is light the
+    /// body, and a body alight pays <c>Burn.DpsFrac</c> of that hit every second for three seconds.
+    /// That is why the burn is a FRACTION - the two damage tiers below are the whole gun.
+    /// </para>
+    /// </remarks>
+    public static readonly WeaponDef Plasma = new()
+    {
+        Id = WeaponIds.Plasma, Name = "Plasma Thrower", Kind = Scrapyard.Core.WeaponKind.Projectile,
+        Targeting = Core.Targeting.Rule.ConeColdest, Pattern = Core.FirePattern.Battery,
+        Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
+        Base = new WeaponStatBlock
+        {
+            Damage = 9,
+            Cooldown = 0.18,
+            Range = 230, // between the Short Laser's 165 and the Medium's 302.5, nearer the short end
+            ProjectileSpeed = 260, // slow, and visibly so - it is a thrower, not a beam
+            ProjectileCount = 1,
+            Pierce = 0, // stops in the first body: piercing would make "not already burning" moot
+            SplashRadius = 0,
+            SplashFrac = 0,
+            TurretTraverse = 1.3089969389957472, // degToRad(75)
+            FireArc = 0.3490658503988659,        // degToRad(20)
+            HeatPerSec = 7.5,
+            HeatCapacity = HeatCapacityBase,
+            HeatDispersion = 8.5,
+        },
+        PerLevel = new[]
+        {
+            new WeaponStatDelta { HeatCapacity = 40 },        // T2
+            new WeaponStatDelta { Damage = 4 },               // T3
+            new WeaponStatDelta { Range = 25 },               // T4
+            new WeaponStatDelta { HeatCapacity = 40 },        // T5
+            // DERIVED, NOT WRITTEN OUT. The TypeScript computes 8.5 * 0.35 and a decimal literal
+            // of the result is one ULP away - which the catalog fixture caught, exactly as it is
+            // meant to. Same expression, same bits.
+            new WeaponStatDelta { HeatDispersion = 8.5 * 0.35 }, // T6
+            new WeaponStatDelta { Damage = 5 },               // T7
+            new WeaponStatDelta(),                            // T8  no ascension
+        },
+        // Three seconds at 90% of the hit that lit it, so one bolt is worth ~2.7x its own damage
+        // if nothing tops it up - and topping up is free, because Ignite refreshes rather than
+        // stacks. Spreading fire pays; hosing one body does not.
+        Burn = new BurnSpec { DpsFrac = 0.9, Seconds = 3 },
+        ReengageMul = 1, VisualId = VisualId.Flame,
+        MuzzleOffset = 24, ShellRadius = 6,
+        FireAlongFacing = false, DetonateOnExpiry = false,
+    };
+
+    /// <summary>
+    /// TOXIC SLUDGE - the only gun in the yard that shoots at where you have BEEN.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NO MOUNT. The first weapon that occupies neither turret, which is why it composes with
+    /// everything and why the two turret pairs stay the only exclusive choices in the game.
+    /// </para>
+    /// <para>
+    /// IT DOES NOT AIM. Nothing is tracked and no turret slews; the spread always leaves from the
+    /// mech's back. <see cref="Core.Targeting.Rule.RearCone"/> is purely a GATE - "is anything back
+    /// there worth the shot" - and the volley ignores which body it found.
+    /// </para>
+    /// <para>
+    /// SO IT IS A WEAPON ABOUT RETREATING. Every other gun rewards facing the horde; this one pays
+    /// for turning your back and walking, laying ground the crowd has to cross. The rear cone is
+    /// what stops it firing into empty yard, which matters on a three-shot magazine.
+    /// </para>
+    /// </remarks>
+    public static readonly WeaponDef Sludge = new()
+    {
+        Id = WeaponIds.Sludge, Name = "Toxic Sludge", Kind = Scrapyard.Core.WeaponKind.Projectile,
+        Targeting = Core.Targeting.Rule.RearCone, Pattern = Core.FirePattern.Sludge,
+        Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
+        Base = new WeaponStatBlock
+        {
+            // The glob's own hit. Small on purpose: Puddle.DpsFrac multiplies it into what the
+            // ground does, so this is the weapon's damage dial wearing its smallest hat.
+            Damage = 8,
+            Cooldown = 0.9,
+            Range = 340, // the DETECTION reach, not the throw - see FlightTime
+            ProjectileSpeed = 150,
+            ProjectileCount = 3, // three globs per shot, one magazine round for all three
+            // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The puddle hook hangs off the glob's
+            // EXPIRY, so a glob stopped by a body would pool at the mech's feet instead.
+            Pierce = 250,
+            Knockback = 0,
+            // THE PUDDLE'S RADIUS, NOT A BLAST: SplashFrac is 0, so nothing in the damage path
+            // ever reads this as splash. It is read once, by the puddle hook.
+            SplashRadius = 42,
+            SplashFrac = 0,
+            TurretTraverse = 3.141592653589793, // degToRad(180) - nothing to slew, nothing to hold
+            FireArc = 3.141592653589793,
+            HeatCapacity = HeatCapacityBase,
+            SpreadAngle = 1.5707963267948966,   // degToRad(90)
+            FlightTime = 0.45,                  // the THROW: about 68 units
+            AmmoCapacity = 3,
+            ReloadTime = 6,
+        },
+        PerLevel = new[]
+        {
+            new WeaponStatDelta { Damage = 3 },        // T2
+            new WeaponStatDelta { AmmoCapacity = 2 },  // T3
+            new WeaponStatDelta { SplashRadius = 12 }, // T4
+            new WeaponStatDelta { Damage = 4 },        // T5
+            new WeaponStatDelta { ReloadTime = -1 },   // T6
+            new WeaponStatDelta { SplashRadius = 14 }, // T7
+            new WeaponStatDelta(),                     // T8  no ascension
+        },
+        // Four seconds of ground at 2.4x the glob - a fraction for the reason Burn is one.
+        Puddle = new PuddleSpec { DpsFrac = 2.4, Seconds = 4 },
+        ReengageMul = 1, VisualId = VisualId.Sludge,
+        MuzzleOffset = 18, ShellRadius = 5,
+        FireAlongFacing = true, DetonateOnExpiry = false,
     };
 
     // Range / damage-per-second / heat-per-second / heat-dispersion / colour(0xRRGGBB) / half-width,
@@ -641,6 +825,9 @@ public static class WeaponCatalog
     public static readonly WeaponDef PhaseCannon = new()
     {
         Id = WeaponIds.PhaseCannon, Name = "Phase Cannon", Kind = Scrapyard.Core.WeaponKind.Projectile,
+        // ONE MEDIUM TURRET, TWO GUNS THAT WANT IT. Declared here and nowhere else - the check
+        // runs both directions. See WeaponDef.Excludes.
+        Excludes = new[] { WeaponIds.Plasma },
         Targeting = Core.Targeting.Rule.Densest, Pattern = Core.FirePattern.Phase,
         Behaviour = Core.Behaviour.Phase, RequiresTarget = true,
         Base = new WeaponStatBlock
@@ -673,6 +860,8 @@ public static class WeaponCatalog
         // APPENDED. `LevelUp.Stacks` and every tier unlock condition are keyed by catalog index -
         // see the TypeScript's own note where this card is declared.
         Mortar,
+        Plasma,
+        Sludge,
     };
 
     /// <summary>Catalog index for a weapon id. The array position already IS the id in this port.</summary>

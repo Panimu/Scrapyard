@@ -21,6 +21,7 @@ public class MetaTests
         Tiers = new byte[UpgradeCatalog.All.Length],
         BossKillsHolding = new HashSet<int>(),
         KillsWith = new Dictionary<int, double>(),
+        EliteKillsWith = new Dictionary<int, double>(),
         BossKillsBy = new HashSet<int>(),
     };
 
@@ -110,6 +111,7 @@ public class MetaTests
         var career = new CareerRecord
         {
             KillsWith = new Dictionary<int, double>(),
+            EliteKillsWith = new Dictionary<int, double>(),
             SplashKills = double.MaxValue,
             Reloads = double.MaxValue,
             HeroesOwned = 999,
@@ -164,6 +166,7 @@ public class MetaTests
             Tiers = new byte[UpgradeCatalog.All.Length],
             BossKillsHolding = new HashSet<int>(),
             KillsWith = new Dictionary<int, double>(),
+            EliteKillsWith = new Dictionary<int, double>(),
             BossKillsBy = new HashSet<int>(),
         };
         Assert.True(Unlocks.Meets(UnlockCond.Wave(3), reached));
@@ -193,6 +196,7 @@ public class MetaTests
         var career = new CareerRecord
         {
             KillsWith = new Dictionary<int, double> { [WeaponIds.Artillery] = 1200 },
+            EliteKillsWith = new Dictionary<int, double>(),
             HeroesOwned = 1,
         };
         Assert.True(Unlocks.Meets(cond, run, career));
@@ -204,6 +208,7 @@ public class MetaTests
         var career = new CareerRecord
         {
             KillsWith = new Dictionary<int, double> { [WeaponIds.Artillery] = 500 },
+            EliteKillsWith = new Dictionary<int, double>(),
             SplashKills = 25,
             Reloads = 0,
             HeroesOwned = 1,

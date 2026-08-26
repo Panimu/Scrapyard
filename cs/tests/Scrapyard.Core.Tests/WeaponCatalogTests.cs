@@ -226,6 +226,8 @@ public class WeaponCatalogTests
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
         "mortar" => WeaponIds.Mortar,
+        "plasma" => WeaponIds.Plasma,
+        "sludge" => WeaponIds.Sludge,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 
@@ -249,6 +251,8 @@ public class WeaponCatalogTests
             "lowest-hp" => Targeting.Rule.LowestHp,
             "densest" => Targeting.Rule.Densest,
             "cone-densest" => Targeting.Rule.ConeDensest,
+            "cone-coldest" => Targeting.Rule.ConeColdest,
+            "rear-cone" => Targeting.Rule.RearCone,
             _ => throw new System.ArgumentOutOfRangeException(nameof(name), name, "unknown targeting rule"),
         };
         Assert.True(want == got, $"{where}: targeting");
@@ -265,6 +269,7 @@ public class WeaponCatalogTests
             "factory" => Core.FirePattern.Factory,
             "phase" => Core.FirePattern.Phase,
             "cone" => Core.FirePattern.Cone,
+            "sludge" => Core.FirePattern.Sludge,
             _ => throw new System.ArgumentOutOfRangeException(nameof(name), name, "unknown pattern"),
         };
         Assert.True(want == got, $"{where}: pattern");

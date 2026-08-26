@@ -35,6 +35,7 @@ import {
   upgradeNameAt,
   RANKS,
   RANK_BOSS,
+  RANK_ELITE,
   quantiseAxis,
   type InputFrame,
   type RunRecord,
@@ -477,7 +478,15 @@ async function boot(): Promise<void> {
       bossKillsBy: world.weaponCatalog
         .filter((_, i) => world.stats.killsByWeaponRank[i * RANKS.length + RANK_BOSS] > 0)
         .map((w) => w.id),
+      // The ELITE column of the same table, beside the boss column above - see
+      // UnlockCond `eliteKillsWithTotal`, which is the only thing that reads it.
+      eliteKillsWith: Object.fromEntries(
+        world.weaponCatalog
+          .map((w, i) => [w.id, world.stats.killsByWeaponRank[i * RANKS.length + RANK_ELITE]] as const)
+          .filter(([, n]) => n > 0),
+      ),
       contactHits: world.stats.contactHits,
+      peakBurning: world.stats.peakBurning,
       fullRepairs: world.stats.fullRepairs,
       lasersOverheated: world.stats.lasersOverheated > 0,
       splashKills: world.stats.splashKills,

@@ -101,9 +101,11 @@ export const MAX_PASSIVES = 5;
  * that was simply wrong, and the ninth weapon (Drones) arrived and broke `npm run loadout` on the
  * missing slot. tests/loadout.test.ts now asserts the relationship rather than trusting a comment.
  */
-// 12 with the Phase Cannon making ten weapons: two slots of headroom this time, so the eleventh
-// and twelfth weapons need no edit here - and the test still guards the day the thirteenth does.
-export const WEAPON_SLOTS = 12;
+// 14 with the Mortar, the Plasma Thrower and Toxic Sludge making fourteen weapons. The twelve
+// this said before was two slots of headroom that three guns then spent; the test is what caught
+// it, exactly as intended. No headroom is left deliberately - it buys nothing but a stale comment,
+// and the failure it prevents is one assertion away and reads plainly when it fires.
+export const WEAPON_SLOTS = 14;
 
 /**
  * HEAT - the lasers' limiter, in place of a cooldown.

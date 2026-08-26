@@ -38,6 +38,7 @@ public static class Progress
 
         var holding = new HashSet<int>();
         var killsWith = new Dictionary<int, double>();
+        var eliteKillsWith = new Dictionary<int, double>();
         var bossBy = new HashSet<int>();
 
         for (int i = 0; i < weapons.Length; i++)
@@ -54,6 +55,14 @@ public static class Progress
             if (at < s.KillsByWeaponRank.Length && s.KillsByWeaponRank[at] > 0)
             {
                 bossBy.Add(weapons[i].Id);
+            }
+
+            // The ELITE column of the same table, beside the boss column above - see UnlockKind
+            // EliteKillsWithTotal, which is the only thing that reads it.
+            int elite = i * Ranks.Count + Ranks.Elite;
+            if (elite < s.KillsByWeaponRank.Length && s.KillsByWeaponRank[elite] > 0)
+            {
+                eliteKillsWith[weapons[i].Id] = s.KillsByWeaponRank[elite];
             }
         }
 
@@ -76,8 +85,10 @@ public static class Progress
             Tiers = (byte[])world.LevelUp.Stacks.Clone(),
             BossKillsHolding = holding,
             KillsWith = killsWith,
+            EliteKillsWith = eliteKillsWith,
             BossKillsBy = bossBy,
             ContactHits = s.ContactHits,
+            PeakBurning = s.PeakBurning,
             DiedTo = diedTo,
             FullRepairs = s.FullRepairs,
             LasersOverheated = s.LasersOverheated > 0,
@@ -114,6 +125,9 @@ public static class Progress
         /// <summary>Banked so far this run, by the weapon id the SAVE spells - see WeaponIdNames.</summary>
         public readonly Dictionary<string, double> KillsWith = new();
 
+        /// <summary>The same ledger again, for elite killing blows only.</summary>
+        public readonly Dictionary<string, double> EliteKillsWith = new();
+
         /// <summary>Called at run start: the new run has banked nothing yet.</summary>
         public void Reset()
         {
@@ -121,6 +135,7 @@ public static class Progress
             SplashKills = 0;
             Reloads = 0;
             KillsWith.Clear();
+            EliteKillsWith.Clear();
         }
     }
 
@@ -188,6 +203,20 @@ public static class Progress
             double had = save.CareerKills.TryGetValue(key, out double v) ? v : 0;
             save.CareerKills[key] = System.Math.Min(Settings.MaxCareerTally, had + (n - banked));
             tally.KillsWith[key] = n;
+        }
+
+        // THE SAME LEDGER AGAIN, one column over. A separate loop rather than a second body in the
+        // one above, because the `continue` there is per-weapon and would skip this half whenever a
+        // weapon's total had not moved since the last poll - which is most polls, for most weapons.
+        foreach (var (weaponId, n) in run.EliteKillsWith)
+        {
+            string key = WeaponIdName(weaponId);
+            if (key == "") continue;
+            double banked = tally.EliteKillsWith.TryGetValue(key, out double b) ? b : 0;
+            if (n <= banked) continue;
+            double had = save.CareerEliteKills.TryGetValue(key, out double v) ? v : 0;
+            save.CareerEliteKills[key] = System.Math.Min(Settings.MaxCareerTally, had + (n - banked));
+            tally.EliteKillsWith[key] = n;
         }
 
         // THE SAME LEDGER, ONE NUMBER WIDE, for the two counters that were never banked at all.
@@ -301,16 +330,33 @@ public static class Progress
     /// </remarks>
     public static bool KnowsWeaponKey(string key) => System.Array.IndexOf(WeaponIdNames, key) >= 0;
 
+    /// <summary>
+    /// The id the SAVE spells for each weapon, in step with <see cref="WeaponIdValues"/>.
+    /// </summary>
+    /// <remarks>
+    /// EVERY WEAPON IN THE CATALOG HAS TO BE HERE. This pair is the only bridge between the
+    /// simulation's integer ids and the strings the save file and the web build both use, and a
+    /// weapon missing from it is silently un-bankable: <c>Bank</c> skips a kill whose id does not
+    /// resolve, so the career total never moves and the card can never be earned.
+    /// <para>
+    /// THAT IS NOT HYPOTHETICAL - the Mortar shipped missing from this table and its 1812 was
+    /// unreachable in the desktop build for exactly that reason. The web build does not have the
+    /// bug because it reads <c>def.id</c> straight off the catalog; this is the copy, and a copy
+    /// is a thing that goes stale. <c>WeaponAndSaveKeysMatch</c> in the tests now pins the length.
+    /// </para>
+    /// </remarks>
     private static readonly string[] WeaponIdNames =
     {
         "cannon", "laser-short", "laser-medium", "laser-long", "missile-short", "missile-long",
-        "machine-gun", "flak-cannon", "artillery", "drone", "phase-cannon",
+        "machine-gun", "flak-cannon", "artillery", "drone", "phase-cannon", "mortar", "plasma",
+        "sludge",
     };
 
     private static readonly int[] WeaponIdValues =
     {
         WeaponIds.Cannon, WeaponIds.LaserShort, WeaponIds.LaserMedium, WeaponIds.LaserLong,
         WeaponIds.MissileShort, WeaponIds.MissileLong, WeaponIds.MachineGun, WeaponIds.FlakCannon,
-        WeaponIds.Artillery, WeaponIds.Drone, WeaponIds.PhaseCannon,
+        WeaponIds.Artillery, WeaponIds.Drone, WeaponIds.PhaseCannon, WeaponIds.Mortar,
+        WeaponIds.Plasma, WeaponIds.Sludge,
     };
 }

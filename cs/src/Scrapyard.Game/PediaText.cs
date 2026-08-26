@@ -94,7 +94,7 @@ public static class PediaText
         new("p-shield", "Energy Shield", "passive", "A blue rim absorbs one hit outright and burns whatever broke it. A moment of immunity with it, and then it comes back.",
             new[] { "Unlock.", "Comes back sooner.", "A longer moment of immunity when it breaks.", "Comes back sooner again.", "A longer moment still.", "Comes back much sooner.", "A second rim. Each recharges in turn." },
             "A rim that eats one hit outright, whatever the size of it.", new[] { "The opposite shape to plating. Plating shaves a little off everything; a rim stops one hit dead - so it is worth almost nothing against a nibble and everything against the thing that would have killed you.", "Breaking one burns whatever broke it, and buys a moment where nothing can touch you at all. In a crowd that window absorbs the whole simultaneous pile-on rather than the single bite that broke the rim.", "They come back on their own, and a finished shield carries a second rim that recharges in its turn." }),
-        new("p-radiator", "Radiator Bank", "passive", "Every beam runs a bigger heat buffer and sheds it faster between bursts.",
+        new("p-radiator", "Radiator Bank", "passive", "Anything that runs hot carries a bigger heat buffer and sheds it faster between bursts.",
             new[] { "Sheds heat a little faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a much bigger heat buffer.", "Sheds heat much faster between bursts." },
             "Does nothing at all unless you are holding a laser.", new[] { "A bigger heat buffer and faster shedding between bursts, on every beam you hold. It has no opinion on anything that is not a laser, which is why the deck will not offer it until you already have one.", "Half the ladder buys a longer burst before the cut-out, half buys a shorter wait once it does - which are different things: more buffer is worth having mid-burn, faster shedding is worth having while you wait for it to come back.", "It never touches how hard a beam hits, only how long it can keep hitting. Ordnance is the card for the first half of that trade; this is the card for the second." }),
         new("p-blast", "Shaped Charges", "passive", "Every blast reaches wider.",
@@ -106,6 +106,12 @@ public static class PediaText
         new("w-mortar", "Mortar", "weapon", "Lobs a heavy shell into the thickest part of the crowd. Prefers whatever is already in front of the barrel.",
             new[] { "Unlock.", "A wider blast.", "Lobs more often.", "A heavier shell.", "A wider blast again.", "Lobs more often again.", "A second shell every volley." },
             "The THICKEST KNOT of enemies inside a cone in front of the barrel.", new[] { "It looks straight ahead first. A narrow cone off the barrel, and if there is a crowd in it that crowd is the target - whatever is happening elsewhere on the field. Only when the cone is empty does it open up, fifteen degrees at a time, until it finds something.", "So it is a gun you AIM WITH THE WHOLE MECH. Point the chassis at the horde and it hammers the horde; turn away and it hunts for the next thing worth a shell. Nothing else in the yard cares which way you are facing except the missile racks, and they only care where you were MOVING.", "The shell is the Heavy Artillery's: the damage is the blast and there is no direct hit worth the name. The difference is that this one is thrown AT something. The barrage does not care where the enemies are, and this does nothing else.", "It shares the Cannon's mount, and the two can never be carried together. A run picks the biggest body or the biggest crowd." }),
+        new("w-plasma", "Plasma Thrower", "weapon", "Throws slow gouts of fire and leaves what they touch burning. Picks the biggest thing in front of it that is not already alight.",
+            new[] { "Unlock.", "Carries a bigger heat buffer.", "Burns hotter.", "Throws a little further.", "Carries a bigger heat buffer again.", "Sheds heat faster between bursts.", "Burns hotter again." },
+            "The BIGGEST enemy in a cone in front of the barrel that is NOT already on fire.", new[] { "It looks straight ahead first, the way the Mortar does - a cone off the barrel, opened thirty degrees at a time until it finds something. So this is the second gun in the yard you aim with the whole mech.", "The bolt is almost nothing. What matters is that whatever it touches CATCHES FIRE, and a burning enemy keeps taking damage for three seconds afterwards. Most of this weapon's damage is never fired.", "Fire does not stack. A second gout into a body already alight only tops the timer back up, which is exactly why the targeting refuses to pick one - left alone the thrower walks itself down a crowd, biggest first, lighting each in turn. If absolutely everything in reach is already burning it shoots the biggest anyway rather than falling silent.", "It runs on HEAT, not a cooldown, and it is not a beam. Held on a target it heats; slewing between them it cools; hold it too long and the breaker trips. A Radiator Bank helps it exactly as much as it helps a laser.", "It shares the Phase Cannon's mount, and the two can never be carried together. A run picks one enormous bolt or a great many small burning ones." }),
+        new("w-sludge", "Toxic Sludge", "weapon", "Throws acid out behind the mech, leaving pools that eat whatever walks through them. Only fires when something is back there.",
+            new[] { "Unlock.", "The acid bites harder.", "Two more throws before the reload.", "Wider pools.", "The acid bites harder again.", "Reloads faster.", "Wider pools again." },
+            "NOTHING. It throws behind the mech, and only checks that something is back there.", new[] { "It is the only weapon in the yard that shoots at where you have BEEN. A fan of acid leaves the mech's back, lands a short way behind, and stays on the ground for a few seconds eating anything that walks through it.", "So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.", "It will not fire into an empty yard. There has to be something in a wide cone behind you or it holds - which matters, because the magazine is three throws and the reload is long.", "It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that." }),
     };
 
     public static readonly Ascension[] Ascensions =
@@ -138,10 +144,10 @@ public static class PediaText
         ("indigo", "Indigo", "Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery, blasting 15% wider."),
         ("brass", "Brass", "Light hover, one heavy tube. Opens with the Phase Cannon, 10% harder-hitting."),
         ("vermilion", "Vermilion", "Light hover, rotary drums. Opens with the Flak Cannon, and throws an extra shell every burst."),
-        ("jade", "Jade", "Heavy biped, forward claw arms. Opens with the Short Laser."),
+        ("jade", "Jade", "Heavy biped, forward claw arms. Opens with Toxic Sludge, laying pools 20% wider."),
         ("rust", "Rust", "Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder."),
         ("cobalt", "Cobalt", "Heavy quad, twin gun pods. Opens with the Medium Laser."),
-        ("copper", "Copper", "Heavy quad, rotary drums. Opens with the Flak Cannon."),
+        ("copper", "Copper", "Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter."),
     };
 
     /// <summary>A lead paragraph and the notes under it - the shape every bestiary page uses.</summary>
@@ -226,5 +232,5 @@ public static class PediaText
     }
 
     /// <summary>The catalogs' fingerprint when this file was emitted. See the tests.</summary>
-    public const uint CatalogDigest = 0x159f2d5du;
+    public const uint CatalogDigest = 0xd5dbef74u;
 }

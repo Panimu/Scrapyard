@@ -85,6 +85,19 @@ public sealed class Settings
     /// <summary>Career kills per weapon id, for the cumulative unlock conditions.</summary>
     public Dictionary<string, double> CareerKills { get; set; } = new();
 
+    /// <summary>
+    /// Career killing blows on ELITES per weapon id - the rank-split twin of
+    /// <see cref="CareerKills"/>, behind <c>eliteKillsWithTotal</c> conditions.
+    /// </summary>
+    /// <remarks>
+    /// A SECOND MAP RATHER THAN A NESTED ONE. <c>CareerKills[id][rank]</c> would have been the
+    /// general answer and it is the wrong shape for storage that is assumed to vanish: every field
+    /// here has to degrade to a default on its own, and a nested object is a second level for a
+    /// hostile save to be malformed at. One condition asks about one rank; when a second rank is
+    /// wanted it gets its own line, exactly like this one.
+    /// </remarks>
+    public Dictionary<string, double> CareerEliteKills { get; set; } = new();
+
     public double CareerSplashKills { get; set; }
     public double CareerReloads { get; set; }
 
@@ -288,6 +301,10 @@ public sealed class Settings
             .Select(kv => (Id: weaponIdOf(kv.Key), kv.Value))
             .Where(x => x.Id >= 0)
             .ToDictionary(x => x.Id, x => x.Value),
+        EliteKillsWith = CareerEliteKills
+            .Select(kv => (Id: weaponIdOf(kv.Key), kv.Value))
+            .Where(x => x.Id >= 0)
+            .ToDictionary(x => x.Id, x => x.Value),
         SplashKills = CareerSplashKills,
         Reloads = CareerReloads,
         HeroesOwned = HeroesOwned,
@@ -471,6 +488,17 @@ public sealed class Settings
         }
 
         CareerKills = keptKills;
+
+        // The same filter again, one column over.
+        var keptElites = new Dictionary<string, double>();
+        foreach (var (key, value) in CareerEliteKills)
+        {
+            if (!Progress.KnowsWeaponKey(key)) continue;
+            double n = Tally(value);
+            if (n > 0) keptElites[key] = n;
+        }
+
+        CareerEliteKills = keptElites;
     }
 
     /// <summary>One career tally, made safe to compare: never negative, never past the ceiling,

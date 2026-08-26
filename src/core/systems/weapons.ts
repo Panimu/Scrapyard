@@ -279,11 +279,28 @@ export function updateWeapons(world: World, dt: number): void {
       }
     }
 
+    // A GUN THAT RUNS HOT WITHOUT BEING A BEAM. The Plasma Thrower is a projectile weapon - a
+    // bolt that flies, that can miss, that stops in the first body it reaches - limited by the
+    // LASER's economy rather than by a cooldown: heat while engaged, dispersion while idle, a
+    // latched cut-out at capacity.
+    //
+    // DERIVED FROM `heatPerSec` RATHER THAN FLAGGED. Every other weapon in the catalog authors 0
+    // there, so "generates heat and is not a beam" is already a fact the def states once, and a
+    // second field saying the same thing is a second thing to forget.
+    //
+    // ENGAGED, NOT FIRING, is the difference from a beam and it is the only subtle part. A beam
+    // pays heat on the ticks it is actually burning; this thing fires one tick in eleven and
+    // spends the other ten on its cooldown. Charging only the firing tick would have it shed
+    // dispersion for ten ticks and gain for one - net cooling, and a cut-out that could never
+    // happen. So it pays for every tick it is laid on a target, which makes its sustained
+    // gain exactly `heatPerSec` and its uptime exactly the laser formula in the file header.
+    const hot = !beam && stats.heatPerSec > 0;
+
     // Step 1: a laser that has cut out is not engaging anything. It cools, it holds no target,
     // and it does not traverse - an emitter with the breaker tripped is not tracking you. It also
     // claims nothing, which is the point: an overheated laser must not reserve a body it cannot
     // shoot while the one beside it goes hungry.
-    if (beam && inst.overheated) {
+    if ((beam || hot) && inst.overheated) {
       coolBeam(world, i, inst, dt);
       inst.targetDense = -1;
       continue;
@@ -339,7 +356,7 @@ export function updateWeapons(world: World, dt: number): void {
 
     if (n === 0 && def.requiresTarget) {
       // idle: no shot, and NO cooldown reset
-      if (beam) coolBeam(world, i, inst, dt); // step 2
+      if (beam || hot) coolBeam(world, i, inst, dt); // step 2
       continue;
     }
 
@@ -358,6 +375,20 @@ export function updateWeapons(world: World, dt: number): void {
     );
     inst.turretX = turned.x;
     inst.turretY = turned.y;
+
+    // A HOT PROJECTILE SETTLES ITS HEAT BEFORE THE COOLDOWN GATE, because the cooldown gate
+    // `continue`s and the ten quiet ticks between bolts are most of what this weapon does. Laid
+    // on a target it pays; slewing onto one it cools, exactly as a beam does while it tracks.
+    if (hot) {
+      if (dot(inst.turretX, inst.turretY, aim.x, aim.y) >= stats.cosFireArc) {
+        heatBeam(world, i, inst, stats, dt);
+      } else {
+        coolBeam(world, i, inst, dt);
+      }
+      // The cut-out lands on the tick it is reached rather than the next one: a weapon that has
+      // just latched must not also get its shot away.
+      if (inst.overheated) continue;
+    }
 
     if (!beam && inst.cooldownLeft > 0) continue;
     // Hold fire until laid on. Not a cooldown reset - only a delay.
@@ -1581,8 +1612,101 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
   );
 };
 
+/**
+ * `sludge` - Toxic Sludge. A fixed fan of globs thrown from the mech's BACK, at a very short
+ * throw, each one leaving a pool of acid where it lands.
+ *
+ * THREE THINGS MAKE IT DIFFERENT FROM EVERY OTHER PATTERN HERE, and all three are the weapon:
+ *
+ * IT FIRES ALONG THE CHASSIS, NEGATED. Every other pattern leaves along `inst.turretX/turretY`,
+ * because every other weapon has a mount that has been slewing onto something. This one has no
+ * mount at all - the fan comes off the back of the hull, so where the player is WALKING is the
+ * only thing that decides where the ground gets laid.
+ *
+ * THE SPREAD IS FIXED, NOT DRAWN. The Flak Cannon rolls each shell's heading from `rng.weapon`
+ * because it is a volume rather than an aim; this lays its globs at even offsets across the arc,
+ * which is what makes the pools a readable WALL behind you rather than a scatter. It also means
+ * this pattern touches no RNG stream at all.
+ *
+ * ONE MAGAZINE ROUND FOR THE WHOLE FAN, where `spread` and `cone` both spend one per shell. The
+ * magazine is three deep and takes six seconds to fill, so a fan that cost three rounds would be
+ * a single shot per reload - the fan is the shot, and it is billed as one.
+ */
+export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
+  const def = world.weaponCatalog[inst.defId] as WeaponDef;
+  const stats = inst.stats;
+  const projectiles = world.projectiles;
+  const player = world.player;
+
+  if (stats.ammoCapacity > 0) {
+    if (inst.ammo <= 0) return;
+    inst.ammo--;
+  }
+
+  // The mech's back. A zero facing is possible on the very first tick of a run, before the player
+  // has moved; throwing along a zero vector would pile three globs on the mech's own feet.
+  const fx = player.faceX;
+  const fy = player.faceY;
+  const flen = Math.sqrt(fx * fx + fy * fy);
+  if (flen <= 0) return;
+  const baseX = -fx / flen;
+  const baseY = -fy / flen;
+
+  const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
+  const behaviour = BEHAVIOUR_ID[def.behaviour];
+  const half = stats.spreadAngle * 0.5;
+  // EVEN OFFSETS ACROSS THE FULL ARC, edge to edge: with three globs that is -45, 0, +45. A single
+  // glob goes straight back, which is what the divisor guards.
+  const step = count > 1 ? stats.spreadAngle / (count - 1) : 0;
+
+  for (let i = 0; i < count; i++) {
+    const a = count > 1 ? -half + step * i : 0;
+    const c = dcos(a);
+    const sn = dsin(a);
+    const dirX = baseX * c - baseY * sn;
+    const dirY = baseX * sn + baseY * c;
+
+    const spawnId = ++world.stats.shotsFired;
+    const handle = allocProjectile(
+      projectiles,
+      player.x + dirX * def.muzzleOffset,
+      player.y + dirY * def.muzzleOffset,
+      dirX * stats.projectileSpeed,
+      dirY * stats.projectileSpeed,
+      stats.projectileLifetime,
+      weaponIdx,
+      behaviour,
+      spawnId,
+    );
+    if (handle === NULL_HANDLE) break;
+
+    const d = projectiles.count - 1;
+    projectiles.damage[d] = stats.damage;
+    projectiles.knockback[d] = stats.knockback;
+    // The PUDDLE'S radius travels here, not a blast radius - `splashFrac` is 0 on this weapon, so
+    // nothing in the damage path ever reads the pair as splash. See WeaponDef.puddle.
+    projectiles.splashRadius[d] = stats.splashRadius;
+    projectiles.splashFrac[d] = stats.splashFrac;
+    projectiles.radius[d] = def.shellRadius;
+    projectiles.pierceLeft[d] = stats.pierce;
+    projectiles.visualId[d] = def.visualId;
+
+    pushEvent(
+      world.events,
+      EV_WEAPON_FIRED,
+      world.tick,
+      projectiles.x[d],
+      projectiles.y[d],
+      dirX,
+      dirY,
+      weaponIdx,
+    );
+  }
+};
+
 export const FIRE_PATTERNS: Readonly<Record<FirePatternId, FirePattern>> = Object.freeze({
   battery: fireBattery,
+  sludge: fireSludge,
   spread: fireSpread,
   cone: fireCone,
   barrage: fireBarrage,

@@ -733,7 +733,9 @@
    "twinFrom": null,
    "gigaFrom": null,
    "fillsMountsFrom": null,
-   "excludes": null,
+   "excludes": [
+    "plasma"
+   ],
    "fireAlongFacing": false,
    "detonateOnExpiry": true
   },
@@ -800,6 +802,136 @@
    "fillsMountsFrom": null,
    "excludes": null,
    "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "plasma",
+   "name": "Plasma Thrower",
+   "kind": "projectile",
+   "targeting": "cone-coldest",
+   "pattern": "battery",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4022000000000000",
+    "cooldown": "3fc70a3d70a3d70a",
+    "range": "406cc00000000000",
+    "projectileSpeed": "4070400000000000",
+    "projectileCount": "3ff0000000000000",
+    "pierce": "0000000000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "0000000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "3ff4f1a6c638d03f",
+    "fireArc": "3fd657184ae74487",
+    "heatPerSec": "401e000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "4021000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "0000000000000000",
+    "flightTime": "0000000000000000",
+    "ammoCapacity": "0000000000000000",
+    "reloadTime": "0000000000000000"
+   },
+   "perLevel": [
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "damage": "4010000000000000"
+    },
+    {
+     "range": "4039000000000000"
+    },
+    {
+     "heatCapacity": "4044000000000000"
+    },
+    {
+     "heatDispersion": "4007cccccccccccc"
+    },
+    {
+     "damage": "4014000000000000"
+    },
+    {}
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 7,
+   "muzzleOffset": "4038000000000000",
+   "shellRadius": "4018000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": false,
+   "detonateOnExpiry": false
+  },
+  {
+   "id": "sludge",
+   "name": "Toxic Sludge",
+   "kind": "projectile",
+   "targeting": "rear-cone",
+   "pattern": "sludge",
+   "behaviour": "straight",
+   "requiresTarget": true,
+   "base": {
+    "damage": "4020000000000000",
+    "cooldown": "3feccccccccccccd",
+    "range": "4075400000000000",
+    "projectileSpeed": "4062c00000000000",
+    "projectileCount": "4008000000000000",
+    "pierce": "406f400000000000",
+    "knockback": "0000000000000000",
+    "splashRadius": "4045000000000000",
+    "splashFrac": "0000000000000000",
+    "turretTraverse": "400921fb54442d18",
+    "fireArc": "400921fb54442d18",
+    "heatPerSec": "0000000000000000",
+    "heatCapacity": "4059000000000000",
+    "heatDispersion": "0000000000000000",
+    "turnRate": "0000000000000000",
+    "spreadAngle": "3ff921fb54442d18",
+    "flightTime": "3fdccccccccccccd",
+    "ammoCapacity": "4008000000000000",
+    "reloadTime": "4018000000000000"
+   },
+   "perLevel": [
+    {
+     "damage": "4008000000000000"
+    },
+    {
+     "ammoCapacity": "4000000000000000"
+    },
+    {
+     "splashRadius": "4028000000000000"
+    },
+    {
+     "damage": "4010000000000000"
+    },
+    {
+     "reloadTime": "bff0000000000000"
+    },
+    {
+     "splashRadius": "402c000000000000"
+    },
+    {}
+   ],
+   "reengageMul": "3ff0000000000000",
+   "visualId": 8,
+   "muzzleOffset": "4032000000000000",
+   "shellRadius": "4014000000000000",
+   "beamColour": 0,
+   "beamWidth": "0000000000000000",
+   "chainsFrom": null,
+   "splitsFrom": null,
+   "twinFrom": null,
+   "gigaFrom": null,
+   "fillsMountsFrom": null,
+   "excludes": null,
+   "fireAlongFacing": true,
    "detonateOnExpiry": false
   }
  ],

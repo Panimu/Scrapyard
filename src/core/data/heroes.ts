@@ -471,15 +471,26 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'jade',
-    unlock: { kind: 'never' }, // criteria to be defined
+    unlock: { kind: 'always' }, // PLACEHOLDER - real criteria to be defined
+    /**
+     * TOXIC SLUDGE'S OPENER, and free to become one for the reason Copper was: Moss already opens
+     * with the Short Laser, so this frame was a duplicate rather than the only way to meet a gun.
+     *
+     * BIGGER POOLS, NOT MORE DAMAGE, which is the one bonus in the roster that changes a weapon's
+     * SHAPE rather than its output. Sludge's damage is time-on-ground: a wider pool is more of the
+     * yard the horde has to cross and more seconds it spends crossing, so the bonus reads on
+     * screen as territory rather than as a number - and it compounds with the two tiers that
+     * widen the pools rather than duplicating the two that raise the rate.
+     */
     name: 'Jade',
     identity:
-      'Heavy biped, forward claw arms. Opens with the Short Laser.',
+      'Heavy biped, forward claw arms. Opens with Toxic Sludge, laying pools 20% wider.',
     sprite: 'mech_jade',
     gait: 'walk',
-    startingWeapon: 'laser-short',
+    startingWeapon: 'sludge',
     player: {},
     weapon: {},
+    weaponBonus: { sludge: { mul: { splashRadius: 1.2 } } },
   },
   {
     id: 'rust',
@@ -523,20 +534,30 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
   },
   {
     id: 'copper',
-    unlock: { kind: 'never' }, // criteria to be defined
-    // THE FLAK CANNON'S OPENER. It was a second bare Machine Gun chassis - same gun as Bone, no
-    // bonus, nothing of its own - and every gun in the catalog has to be somebody's opener or it
-    // is content a player only meets by chance (heroes.test.ts pins that). Bone keeps the belt
-    // gun and its +30% round; this frame takes the weapon that was already written on it, since
-    // "rotary drums" describes a flak mount better than it ever described a machine gun.
+    unlock: { kind: 'always' }, // PLACEHOLDER - real criteria to be defined
+    /**
+     * THE PLASMA THROWER'S OPENER, and it was free to become one. Copper was the SECOND Flak
+     * Cannon chassis - Vermilion already opens with that gun and carries a bonus for it, so this
+     * frame was a duplicate opener rather than the only way to meet a weapon. The invariant
+     * heroes.test.ts actually pins is that every gun has SOMEBODY, and the Flak Cannon still
+     * does.
+     *
+     * THE BONUS IS RANGE AND DAMAGE TOGETHER, which is two dials where Ember's and Rust's are
+     * one, and on this gun they are the same dial twice: the fire it starts is a fraction of the
+     * hit that started it, so the damage half raises the burn as well as the bolt, and the reach
+     * half is what decides how much of the crowd is inside the cone to be walked down at all.
+     * Neither touches heat, so the uptime the player learns on any other chassis still reads true
+     * here.
+     */
     name: 'Copper',
     identity:
-      'Heavy quad, rotary drums. Opens with the Flak Cannon.',
+      'Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.',
     sprite: 'mech_copper',
     gait: 'walk',
-    startingWeapon: 'flak-cannon',
+    startingWeapon: 'plasma',
     player: {},
     weapon: {},
+    weaponBonus: { plasma: { mul: { damage: 1.1, range: 1.1 } } },
   },
 ] as const) as readonly HeroDef[];
 

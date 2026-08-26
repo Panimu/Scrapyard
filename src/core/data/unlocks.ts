@@ -150,6 +150,32 @@ export type UnlockCond =
    */
   | { readonly kind: 'contactHits'; readonly count: number }
   /**
+   * Have this many enemies ON FIRE AT THE SAME MOMENT, at any point in one run.
+   *
+   * THE ONLY CONDITION IN THE VOCABULARY THAT ASKS ABOUT A STATE RATHER THAN A TALLY, which is
+   * why it needs its own kind instead of a `killsWith`-shaped count. "Thirty on fire" is a
+   * picture of a fight going well - the Plasma Thrower walking down a crowd, nothing re-lit
+   * twice - and a running total of ignitions would be satisfied by thirty fires lit one at a time
+   * over a quiet quarter of an hour, which is the opposite of what it is meant to describe.
+   *
+   * Read off `RunRecord.peakBurning`, a high-water mark the burn pass samples once a tick.
+   */
+  | { readonly kind: 'burningAtOnce'; readonly count: number }
+  /**
+   * Land this many killing blows ON ELITES with one of these weapons, ACROSS EVERY RUN EVER
+   * PLAYED - the rank-split twin of `killsWithTotal`, and career for the same reason it is.
+   *
+   * WHY RANK IS WORTH ITS OWN KIND. "Thirty kills" is a number a weapon reaches by being carried;
+   * "thirty ELITES" is a number it reaches by being carried into the part of a run that is going
+   * badly. That distinction is the whole condition, and the tally behind it
+   * (`RunStats.killsByWeaponRank`) was already being kept - this only names a column of it.
+   */
+  | {
+      readonly kind: 'eliteKillsWithTotal';
+      readonly weapons: readonly WeaponId[];
+      readonly count: number;
+    }
+  /**
    * Die to an enemy of this RANK - `regular`, `elite` or `boss`, matching `RankDef.name`.
    *
    * A name rather than the numeric constant, so the catalog entry reads as the sentence it is.
@@ -252,6 +278,10 @@ export interface RunRecord {
   readonly bossKillsBy: readonly WeaponId[];
   /** Times the horde's touch actually cost hit points. See `RunStats.contactHits`. */
   readonly contactHits: number;
+  /** The most enemies alight at one moment this run. See `RunStats.peakBurning`. */
+  readonly peakBurning: number;
+  /** Killing blows landed on ELITES this run, by weapon - the elite column of the rank table. */
+  readonly eliteKillsWith: Readonly<Partial<Record<WeaponId, number>>>;
   /** Rank name of whatever killed the player, or '' if the run has not ended in death. */
   readonly diedTo: string;
   /** Times the run went under a tenth of its hull and got all the way back. See RunStats. */
@@ -275,6 +305,8 @@ export interface RunRecord {
 export interface CareerRecord {
   /** Killing blows ever landed, by weapon, every run included. Absent key = none. */
   readonly killsWith: Readonly<Partial<Record<WeaponId, number>>>;
+  /** Killing blows ever landed ON ELITES, by weapon, every run included. */
+  readonly eliteKillsWith: Readonly<Partial<Record<WeaponId, number>>>;
   /** Killing blows ever landed by splash, every run included. */
   readonly splashKills: number;
   /** Magazines ever refilled, every run included. See `RunStats.reloads`. */
@@ -357,6 +389,14 @@ export function meetsUnlock(
       return cond.weapons.some((w) => run.bossKillsBy.includes(w));
     case 'contactHits':
       return run.contactHits >= cond.count;
+    case 'burningAtOnce':
+      return run.peakBurning >= cond.count;
+    case 'eliteKillsWithTotal': {
+      if (career === undefined) return false;
+      let total = 0;
+      for (const w of cond.weapons) total += career.eliteKillsWith[w] ?? 0;
+      return total >= cond.count;
+    }
     case 'diedTo':
       // `diedTo` is '' until the player is killed, so an unfinished run never satisfies this by
       // accident - and neither does a run that ended in victory.
@@ -391,6 +431,12 @@ export function unlockProgress(cond: UnlockCond, career: CareerRecord): number {
   }
   if (cond.kind === 'reloadsTotal') {
     const f = career.reloads / cond.count;
+    return f > 1 ? 1 : f;
+  }
+  if (cond.kind === 'eliteKillsWithTotal') {
+    let n = 0;
+    for (const w of cond.weapons) n += career.eliteKillsWith[w] ?? 0;
+    const f = n / cond.count;
     return f > 1 ? 1 : f;
   }
   if (cond.kind !== 'killsWithTotal') return -1;
@@ -466,6 +512,10 @@ export function describeUnlockDone(
       return 'Ran all three lasers red-hot at once.';
     case 'contactHits':
       return `Took ${cond.count} hits from the horde in one run.`;
+    case 'burningAtOnce':
+      return `Had ${cond.count} enemies burning at once.`;
+    case 'eliteKillsWithTotal':
+      return `Destroyed ${cond.count} elites with ${listNames(cond.weapons, weaponNames)}, across every run.`;
     case 'diedTo':
       return `Died to ${cond.rank === 'elite' ? 'an' : 'a'} ${cond.rank}.`;
     case 'tier': {

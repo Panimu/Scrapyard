@@ -104,13 +104,21 @@ public class HeroCatalogTests
                     }
                     else
                     {
+                        // EVERY KEY, NOT THE FIRST ONE. This used to assert there was exactly one
+                        // and read kv[0], which was true of the catalog on the day it was written
+                        // and stopped being true the moment a chassis wanted two dials (Copper
+                        // buys the Plasma Thrower range AND damage). Checking the count was never
+                        // the point - matching the TypeScript's bonus was - so it now walks them.
                         var kv = mulEl.EnumerateObject().ToArray();
-                        Assert.True(kv.Length == 1, $"{where}.{prop.Name}: expected exactly one mul key in this catalog");
-                        var stat = WeaponKeyFromName(kv[0].Name);
-                        var got = bonus.GetMul(stat);
-                        Assert.True(got is not null, $"{where}.{prop.Name}: mul.{kv[0].Name} missing");
-                        AssertBitsValue(kv[0].Value.GetString()!, got!.Value, $"{where}.{prop.Name}.mul.{kv[0].Name}");
-                        weaponMulCount++;
+                        Assert.True(kv.Length >= 1, $"{where}.{prop.Name}: mul is present but empty");
+                        foreach (var one in kv)
+                        {
+                            var stat = WeaponKeyFromName(one.Name);
+                            var got = bonus.GetMul(stat);
+                            Assert.True(got is not null, $"{where}.{prop.Name}: mul.{one.Name} missing");
+                            AssertBitsValue(one.Value.GetString()!, got!.Value, $"{where}.{prop.Name}.mul.{one.Name}");
+                            weaponMulCount++;
+                        }
                     }
 
                     var addEl = prop.Value.GetProperty("add");
@@ -132,10 +140,13 @@ public class HeroCatalogTests
             }
         }
 
-        // Nine heroes carry a mul bonus, three an add bonus, one a player multiplier (Plum) - a
-        // fixture where these were all zero would pass against a port that dropped every bonus.
-        // Rust is the ninth: it opens with the Mortar and lobs 30% harder.
-        Assert.True(weaponMulCount == 9, $"expected 9 weapon mul bonuses, found {weaponMulCount}");
+        // TWELVE MUL BONUSES ACROSS ELEVEN HEROES, three add bonuses, one player multiplier
+        // (Plum) - a fixture where these were all zero would pass against a port that dropped
+        // every bonus, which is the whole reason these three lines exist.
+        //
+        // TWELVE RATHER THAN ELEVEN because Copper's is two keys on one chassis: it opens with the
+        // Plasma Thrower and buys range AND damage. This counts KEYS, not heroes.
+        Assert.True(weaponMulCount == 12, $"expected 12 weapon mul bonuses, found {weaponMulCount}");
         Assert.True(weaponAddCount == 3, $"expected 3 weapon add bonuses, found {weaponAddCount}");
         Assert.True(playerMulCount == 1, $"expected 1 player multiplier (Plum), found {playerMulCount}");
     }
@@ -206,6 +217,8 @@ public class HeroCatalogTests
         "drone" => WeaponIds.Drone,
         "phase-cannon" => WeaponIds.PhaseCannon,
         "mortar" => WeaponIds.Mortar,
+        "plasma" => WeaponIds.Plasma,
+        "sludge" => WeaponIds.Sludge,
         _ => throw new System.ArgumentOutOfRangeException(nameof(id), id, "unknown weapon id"),
     };
 

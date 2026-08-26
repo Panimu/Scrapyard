@@ -146,6 +146,9 @@ public sealed class World
     public readonly DronePool Drones;
     public readonly SheepPool Sheep;
 
+    /// <summary>Toxic Sludge's ground. See <see cref="PuddlePool"/> and <c>Puddles</c>.</summary>
+    public readonly PuddlePool Puddles;
+
     public readonly PlayerState Player;
 
     public int WeaponCount;
@@ -240,6 +243,7 @@ public sealed class World
         Pickups = new PickupPool(shape.PickupCapacity);
         Drones = new DronePool(shape.DroneCapacity);
         Sheep = new SheepPool(shape.SheepCapacity);
+        Puddles = new PuddlePool();
 
         Player = new PlayerState(shape.TraitScratch);
 
@@ -573,6 +577,18 @@ public sealed class RunStats
     public double ShotsFired;
     public double ShotsHit;
     public double PeakEnemies;
+
+    /// <summary>
+    /// THE MOST BODIES ALIGHT AT ONCE, ever, this run - a HIGH-WATER MARK and not a total.
+    /// </summary>
+    /// <remarks>
+    /// Every other tally here is cumulative, which is why this one needs saying: "thirty enemies
+    /// on fire at the same moment" is a state the run passed through, and a running total of
+    /// ignitions would be satisfied by thirty fires lit one after another over sixteen minutes.
+    /// Sampled once a tick by the burn pass, which is the only place that knows how many are
+    /// alight.
+    /// </remarks>
+    public double PeakBurning;
     public double EndTick;
 
     public RunStats(in WorldShape shape)

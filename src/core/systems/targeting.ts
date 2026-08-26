@@ -589,6 +589,186 @@ export const targetConeDensest: TargetingFn = (
 };
 
 /**
+ * Take the top `k` of `n` already-gathered candidates by the highest-HP order.
+ *
+ * THE SAME COMPARATOR THE CANNON USES (`betterHighestHp`: hp desc, then nearest, then lowest
+ * spawnId - strict and total), applied to a list somebody else filtered. `selectTopK` cannot be
+ * reused here because it gathers its own candidates, and the whole point of the cone rules is
+ * that the gather has already happened and been cut down.
+ */
+function scoreHighestHp(
+  world: World,
+  originX: number,
+  originY: number,
+  n: number,
+  k: number,
+  out: Int32Array,
+): number {
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+
+  let filled = 0;
+  while (filled < k) {
+    let best = -1;
+    for (let i = 0; i < n; i++) {
+      const d = candidates[i];
+      let taken = false;
+      for (let j = 0; j < filled; j++) {
+        if (out[j] === d) {
+          taken = true;
+          break;
+        }
+      }
+      if (taken) continue;
+      if (best < 0 || betterHighestHp(enemies, d, best, originX, originY)) best = d;
+    }
+    if (best < 0) break;
+    out[filled++] = best;
+  }
+  return filled;
+}
+
+/**
+ * THE PLASMA THROWER'S RULE: the biggest thing in front of the barrel that is NOT already alight,
+ * widening the cone by thirty degrees at a time until it finds one.
+ *
+ * IT IS THE MORTAR'S WIDENING LOOP WITH A DIFFERENT PREDICATE AND A DIFFERENT SCORE, which is
+ * exactly what the strategy table is for. Two departures from `cone-densest`, and both are the
+ * weapon:
+ *
+ * THIRTY DEGREES PER STEP, NOT FIFTEEN. The Mortar is choosing where one heavy shell lands and a
+ * narrow first look is what makes it obedient to the chassis. This gun fires four bolts a second
+ * and wants to be walking down the crowd, so a wider first look keeps it working the front
+ * instead of stepping through six cones every time the nearest body dies.
+ *
+ * ALREADY BURNING IS SKIPPED, and that is the whole reason this rule exists. `ignite` refreshes
+ * rather than stacks, so a second bolt into a burning bruiser is worth almost nothing; a gun that
+ * kept picking the biggest body would spend an entire fight re-lighting one enemy. Skipping what
+ * is alight makes it spread fire down the crowd on its own, which is what the player is buying.
+ *
+ * WHEN EVERYTHING IS ALIGHT IT SHOOTS THE BIGGEST ANYWAY, rather than holding fire. Falling
+ * silent would be strictly worse - the bolt still does its damage, and a fire about to expire
+ * gets refreshed. That fallback ignores the cone entirely: at that point the rule has already
+ * searched the whole field for a cold body and found none, so re-narrowing to thirty degrees
+ * would be pretending it had not.
+ */
+export const targetConeColdest: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+  aimX,
+  aimY,
+): number => {
+  const k = wantCount < out.length ? wantCount : out.length;
+  if (k <= 0) return 0;
+
+  const n = gatherInRange(world, originX, originY, rangeSq);
+  if (n === 0) return 0;
+
+  // Normalised here rather than trusted, for the reason `targetConeDensest` gives.
+  const aimLen = Math.sqrt(aimX * aimX + aimY * aimY);
+  if (aimLen <= 0) return scoreHighestHp(world, originX, originY, n, k, out);
+  const ax = aimX / aimLen;
+  const ay = aimY / aimLen;
+
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+  const ex = enemies.x;
+  const ey = enemies.y;
+  const burn = enemies.burnLeft;
+
+  // EVERY SECOND ENTRY, so the cone opens 30 / 60 / 90 ... and the last step is still exactly
+  // 180 - the whole field - which is what guarantees this terminates. Indexing the shared table
+  // rather than authoring a second one keeps both guns' cosines exactly-rounded literals from one
+  // place; see CONE_COS.
+  for (let step = 1; step < CONE_COS.length; step += 2) {
+    const minCos = CONE_COS[step];
+    let kept = 0;
+    for (let i = 0; i < n; i++) {
+      const d = candidates[i];
+      if (burn[d] > 0) continue;
+      const dx = ex[d] - originX;
+      const dy = ey[d] - originY;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (dx * ax + dy * ay >= minCos * len) candidates[kept++] = d;
+    }
+
+    if (kept > 0) return scoreHighestHp(world, originX, originY, kept, k, out);
+
+    const refill = gatherInRange(world, originX, originY, rangeSq);
+    if (refill === 0) return 0;
+  }
+
+  // Nothing cold anywhere in range. See the header: it shoots the biggest thing it can reach.
+  return scoreHighestHp(world, originX, originY, n, k, out);
+};
+
+/**
+ * TOXIC SLUDGE'S GATE: is there anything behind me worth throwing at?
+ *
+ * IT IS A YES/NO QUESTION WEARING A TARGETING RULE'S CLOTHES, and that is the honest description.
+ * `fireSludge` never looks at what this returns - the fan leaves from the mech's back in the same
+ * shape whatever is standing there. What the strategy seam buys is the ONE thing this weapon does
+ * need from targeting: `requiresTarget` makes updateWeapons skip a weapon whose rule found
+ * nothing, which is exactly "do not spend a third of a three-shot magazine on empty yard".
+ *
+ * OFF THE CHASSIS FACING, NOT THE TURRET, which is why this one rule ignores the `aimX`/`aimY` it
+ * is handed. Toxic Sludge has no mount and no turret to slew; where its shot goes is decided by
+ * which way the mech is walking, so the cone has to be measured against the same vector the
+ * renderer draws the hull at. Reading `world.player` here rather than threading a third pair of
+ * arguments through every rule keeps the seam the size it is.
+ *
+ * A HUNDRED AND TWENTY DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone rules
+ * above. Those widen because they must eventually find SOMETHING; this one must be able to answer
+ * no, because "no" is the whole point of it.
+ */
+export const targetRearCone: TargetingFn = (
+  world,
+  originX,
+  originY,
+  rangeSq,
+  wantCount,
+  out,
+): number => {
+  const k = wantCount < out.length ? wantCount : out.length;
+  if (k <= 0) return 0;
+
+  const n = gatherInRange(world, originX, originY, rangeSq);
+  if (n === 0) return 0;
+
+  // The mech's back. `faceX/faceY` is a unit vector everywhere it is maintained; normalising it
+  // again here would be the same guard the cone rules keep, and it is kept for the same reason.
+  const fx = world.player.faceX;
+  const fy = world.player.faceY;
+  const len = Math.sqrt(fx * fx + fy * fy);
+  if (len <= 0) return 0;
+  const ax = -fx / len;
+  const ay = -fy / len;
+
+  const enemies = world.enemies;
+  const candidates = world.scratch.candidates;
+  const ex = enemies.x;
+  const ey = enemies.y;
+  // CONE_COS[7] is exactly cos(120 degrees) - see the table, and the note there about why these
+  // are literals rather than a call to Math.cos.
+  const minCos = CONE_COS[7];
+
+  let kept = 0;
+  for (let i = 0; i < n; i++) {
+    const d = candidates[i];
+    const dx = ex[d] - originX;
+    const dy = ey[d] - originY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dx * ax + dy * ay >= minCos * dist) candidates[kept++] = d;
+  }
+  if (kept === 0) return 0;
+  return scoreHighestHp(world, originX, originY, kept, k, out);
+};
+
+/**
  * THE STRATEGY TABLE. Adding a targeting rule is one entry here plus one pure function above -
  * `updateWeapons` never learns the rule exists.
  */
@@ -598,4 +778,6 @@ export const TARGETING: Readonly<Record<TargetingId, TargetingFn>> = Object.free
   'lowest-hp': targetLowestHp,
   densest: targetDensest,
   'cone-densest': targetConeDensest,
+  'cone-coldest': targetConeColdest,
+  'rear-cone': targetRearCone,
 });

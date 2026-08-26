@@ -333,7 +333,7 @@ describe('Vermilion', () => {
     expect(vermilion.unlock).toEqual({ kind: 'chassisOwned', count: 6 });
 
     const record = testRunRecord({});
-    const career = (heroesOwned: number) => ({ killsWith: {}, splashKills: 0, heroesOwned, reloads: 0 });
+    const career = (heroesOwned: number) => ({ killsWith: {}, eliteKillsWith: {}, splashKills: 0, heroesOwned, reloads: 0 });
     const ids = UPGRADE_CATALOG.map((d) => d.id);
     expect(meetsUnlock(vermilion.unlock, record, ids, career(5))).toBe(false);
     expect(meetsUnlock(vermilion.unlock, record, ids, career(6))).toBe(true);

@@ -150,6 +150,25 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'It shares the Cannon’s mount, and the two can never be carried together. A run picks the biggest body or the biggest crowd.',
     ],
   },
+  'w-plasma': {
+    aims: 'The BIGGEST enemy in a cone in front of the barrel that is NOT already on fire.',
+    notes: [
+      'It looks straight ahead first, the way the Mortar does - a cone off the barrel, opened thirty degrees at a time until it finds something. So this is the second gun in the yard you aim with the whole mech.',
+      'The bolt is almost nothing. What matters is that whatever it touches CATCHES FIRE, and a burning enemy keeps taking damage for three seconds afterwards. Most of this weapon’s damage is never fired.',
+      'Fire does not stack. A second gout into a body already alight only tops the timer back up, which is exactly why the targeting refuses to pick one - left alone the thrower walks itself down a crowd, biggest first, lighting each in turn. If absolutely everything in reach is already burning it shoots the biggest anyway rather than falling silent.',
+      'It runs on HEAT, not a cooldown, and it is not a beam. Held on a target it heats; slewing between them it cools; hold it too long and the breaker trips. A Radiator Bank helps it exactly as much as it helps a laser.',
+      'It shares the Phase Cannon’s mount, and the two can never be carried together. A run picks one enormous bolt or a great many small burning ones.',
+    ],
+  },
+  'w-sludge': {
+    aims: 'NOTHING. It throws behind the mech, and only checks that something is back there.',
+    notes: [
+      'It is the only weapon in the yard that shoots at where you have BEEN. A fan of acid leaves the mech’s back, lands a short way behind, and stays on the ground for a few seconds eating anything that walks through it.',
+      'So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.',
+      'It will not fire into an empty yard. There has to be something in a wide cone behind you or it holds - which matters, because the magazine is three throws and the reload is long.',
+      'It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that.',
+    ],
+  },
   'w-laser-short': {
     aims: 'The WEAKEST enemy in range - it finishes rather than starts.',
     notes: [

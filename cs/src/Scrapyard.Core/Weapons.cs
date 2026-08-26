@@ -181,11 +181,28 @@ public static class Weapons
                 }
             }
 
+            // A GUN THAT RUNS HOT WITHOUT BEING A BEAM. The Plasma Thrower is a projectile
+            // weapon - a bolt that flies, that can miss, that stops in the first body it reaches -
+            // limited by the LASER's economy rather than by a cooldown: heat while engaged,
+            // dispersion while idle, a latched cut-out at capacity.
+            //
+            // DERIVED FROM HeatPerSec RATHER THAN FLAGGED. Every other weapon in the catalog
+            // authors 0 there, so "generates heat and is not a beam" is already a fact the def
+            // states once, and a second field saying the same thing is a second thing to forget.
+            //
+            // ENGAGED, NOT FIRING, is the difference from a beam and the only subtle part. A beam
+            // pays heat on the ticks it is actually burning; this thing fires one tick in eleven
+            // and spends the other ten on its cooldown. Charging only the firing tick would have
+            // it shed dispersion for ten ticks and gain for one - net cooling, and a cut-out that
+            // could never happen. So it pays for every tick it is laid on a target, which makes
+            // its sustained gain exactly HeatPerSec and its uptime exactly the laser formula.
+            bool hot = !beam && stats.HeatPerSec > 0;
+
             // Step 1: a laser that has cut out is not engaging anything. It cools, holds no target,
             // and does not traverse - an emitter with the breaker tripped is not tracking you. It
             // also claims nothing, which is the point: an overheated laser must not reserve a body
             // it cannot shoot while the one beside it goes hungry.
-            if (beam && inst.Overheated)
+            if ((beam || hot) && inst.Overheated)
             {
                 CoolBeam(world, i, inst, dt);
                 inst.TargetDense = -1;
@@ -236,7 +253,7 @@ public static class Weapons
             if (n == 0 && def.RequiresTarget)
             {
                 // idle: no shot, and NO cooldown reset
-                if (beam) CoolBeam(world, i, inst, dt); // step 2
+                if (beam || hot) CoolBeam(world, i, inst, dt); // step 2
                 continue;
             }
 
@@ -250,6 +267,25 @@ public static class Weapons
                                        stats.CosTraverseStep, stats.SinTraverseStep, ref turned);
             inst.TurretX = turned.X;
             inst.TurretY = turned.Y;
+
+            // A HOT PROJECTILE SETTLES ITS HEAT BEFORE THE COOLDOWN GATE, because that gate
+            // continues and the ten quiet ticks between bolts are most of what this weapon does.
+            // Laid on a target it pays; slewing onto one it cools, exactly as a beam does.
+            if (hot)
+            {
+                if (Vec.Dot(inst.TurretX, inst.TurretY, aim.X, aim.Y) >= stats.CosFireArc)
+                {
+                    HeatBeam(world, i, inst, stats, dt);
+                }
+                else
+                {
+                    CoolBeam(world, i, inst, dt);
+                }
+
+                // The cut-out lands on the tick it is reached rather than the next one: a weapon
+                // that has just latched must not also get its shot away.
+                if (inst.Overheated) continue;
+            }
 
             if (!beam && inst.CooldownLeft > 0) continue;
             // Hold fire until laid on. Not a cooldown reset - only a delay.
@@ -290,6 +326,7 @@ public static class Weapons
             case FirePattern.Battery: FireBattery(world, weaponIdx, inst, targets, targetCount, trait); break;
             case FirePattern.Spread: FireSpread(world, weaponIdx, inst); break;
             case FirePattern.Cone: FireCone(world, weaponIdx, inst); break;
+            case FirePattern.Sludge: FireSludge(world, weaponIdx, inst); break;
             case FirePattern.Barrage: FireBarrage(world, weaponIdx, inst); break;
             case FirePattern.Beam: FireBeam(world, scenery, weaponIdx, inst, targets, targetCount, dt); break;
             case FirePattern.Phase: FirePhase(world, weaponIdx, inst, targets, targetCount); break;
@@ -861,6 +898,90 @@ public static class Weapons
             int d = projectiles.Count - 1;
             projectiles.Damage[d] = (float)stats.Damage;
             projectiles.Knockback[d] = (float)stats.Knockback;
+            projectiles.SplashRadius[d] = (float)stats.SplashRadius;
+            projectiles.SplashFrac[d] = (float)stats.SplashFrac;
+            projectiles.Radius[d] = (float)def.ShellRadius;
+            projectiles.PierceLeft[d] = (sbyte)stats.Pierce;
+            projectiles.VisualId[d] = (byte)def.VisualId;
+
+            world.Events.Push(EventKind.WeaponFired, world.Tick,
+                              projectiles.X[d], projectiles.Y[d], dirX, dirY, weaponIdx);
+        }
+    }
+
+    /// <summary>
+    /// <c>sludge</c> - Toxic Sludge. A fixed fan of globs thrown from the mech's BACK, at a very
+    /// short throw, each one leaving a pool of acid where it lands.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT FIRES ALONG THE CHASSIS, NEGATED. Every other pattern leaves along the turret's aim,
+    /// because every other weapon has a mount that has been slewing onto something. This one has
+    /// no mount at all - the fan comes off the back of the hull, so where the player is WALKING is
+    /// the only thing that decides where the ground gets laid.
+    /// </para>
+    /// <para>
+    /// THE SPREAD IS FIXED, NOT DRAWN. The Flak Cannon rolls each shell's heading from the weapon
+    /// stream because it is a volume rather than an aim; this lays its globs at even offsets across
+    /// the arc, which is what makes the pools a readable WALL behind you rather than a scatter. It
+    /// also means this pattern touches no RNG stream at all.
+    /// </para>
+    /// <para>
+    /// ONE MAGAZINE ROUND FOR THE WHOLE FAN, where spread and cone both spend one per shell. The
+    /// magazine is three deep and takes six seconds to fill, so a fan that cost three rounds would
+    /// be a single shot per reload - the fan is the shot, and it is billed as one.
+    /// </para>
+    /// </remarks>
+    private static void FireSludge(World world, int weaponIdx, WeaponInstance inst)
+    {
+        var def = DefOf(world, inst.DefId)!;
+        var stats = inst.Stats;
+        var projectiles = world.Projectiles;
+        var player = world.Player;
+
+        if (stats.AmmoCapacity > 0)
+        {
+            if (inst.Ammo <= 0) return;
+            inst.Ammo--;
+        }
+
+        // The mech's back. A zero facing is possible on the very first tick of a run, before the
+        // player has moved; throwing along a zero vector would pile three globs on its own feet.
+        double fx = player.FaceX;
+        double fy = player.FaceY;
+        double flen = System.Math.Sqrt(fx * fx + fy * fy);
+        if (flen <= 0) return;
+        double baseX = -fx / flen;
+        double baseY = -fy / flen;
+
+        int count = stats.ProjectileCount >= 1 ? (int)stats.ProjectileCount : 1;
+        double half = stats.SpreadAngle * 0.5;
+        // EVEN OFFSETS ACROSS THE FULL ARC, edge to edge: with three globs that is -45, 0, +45. A
+        // single glob goes straight back, which is what the divisor guards.
+        double step = count > 1 ? stats.SpreadAngle / (count - 1) : 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            double a = count > 1 ? -half + step * i : 0;
+            double c = Trig.Cos(a);
+            double sn = Trig.Sin(a);
+            double dirX = baseX * c - baseY * sn;
+            double dirY = baseX * sn + baseY * c;
+
+            world.Stats.ShotsFired++;
+            uint handle = projectiles.Alloc(
+                player.X + dirX * def.MuzzleOffset,
+                player.Y + dirY * def.MuzzleOffset,
+                dirX * stats.ProjectileSpeed, dirY * stats.ProjectileSpeed,
+                stats.ProjectileLifetime, weaponIdx, def.Behaviour,
+                unchecked((uint)world.Stats.ShotsFired));
+            if (handle == Handle.Null) break;
+
+            int d = projectiles.Count - 1;
+            projectiles.Damage[d] = (float)stats.Damage;
+            projectiles.Knockback[d] = (float)stats.Knockback;
+            // The PUDDLE'S radius travels here, not a blast radius - SplashFrac is 0 on this
+            // weapon, so nothing in the damage path ever reads the pair as splash.
             projectiles.SplashRadius[d] = (float)stats.SplashRadius;
             projectiles.SplashFrac[d] = (float)stats.SplashFrac;
             projectiles.Radius[d] = (float)def.ShellRadius;

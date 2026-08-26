@@ -88,6 +88,8 @@ public static class CardIds
         "p-blast",
         "p-ammo",
         "w-mortar",
+        "w-plasma",
+        "w-sludge",
     };
 
     /// <summary>The cards that HAVE a tier 8, by their own id.</summary>
@@ -117,10 +119,10 @@ public sealed class HeroUnlocks
         new("indigo", "Indigo", UnlockCond.KillsWithTotal(999, WeaponIds.Artillery), "Heavy strider, spine-slung artillery tube. Opens with the Heavy Artillery, blasting 15% wider.", true, "mech_indigo"),
         new("brass", "Brass", UnlockCond.WinLevel("mossy-mayhem"), "Light hover, one heavy tube. Opens with the Phase Cannon, 10% harder-hitting.", true, "mech_brass"),
         new("vermilion", "Vermilion", UnlockCond.ChassisOwned(6), "Light hover, rotary drums. Opens with the Flak Cannon, and throws an extra shell every burst.", true, "mech_vermilion"),
-        new("jade", "Jade", UnlockCond.Never(), "Heavy biped, forward claw arms. Opens with the Short Laser.", true, "mech_jade"),
+        new("jade", "Jade", UnlockCond.Always(), "Heavy biped, forward claw arms. Opens with Toxic Sludge, laying pools 20% wider.", true, "mech_jade"),
         new("rust", "Rust", UnlockCond.Always(), "Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder.", true, "mech_rust"),
         new("cobalt", "Cobalt", UnlockCond.Never(), "Heavy quad, twin gun pods. Opens with the Medium Laser.", true, "mech_cobalt"),
-        new("copper", "Copper", UnlockCond.Never(), "Heavy quad, rotary drums. Opens with the Flak Cannon.", true, "mech_copper"),
+        new("copper", "Copper", UnlockCond.Always(), "Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.", true, "mech_copper"),
     };
 
     public static readonly LockedThing[] Levels =
@@ -141,6 +143,8 @@ public sealed class HeroUnlocks
         new(19, "p-blast", "Shaped Charges", UnlockCond.SplashKillsTotal(2000)),
         new(20, "p-ammo", "Ammo Drums", UnlockCond.ReloadsTotal(1911)),
         new(21, "w-mortar", "Mortar", UnlockCond.KillsWithTotal(1812, WeaponIds.Mortar)),
+        new(22, "w-plasma", "Plasma Thrower", UnlockCond.BurningAtOnce(30)),
+        new(23, "w-sludge", "Toxic Sludge", UnlockCond.EliteKillsWithTotal(30, WeaponIds.Sludge)),
     };
 
     /// <summary>

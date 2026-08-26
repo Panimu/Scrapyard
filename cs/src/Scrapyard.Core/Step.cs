@@ -99,6 +99,10 @@ public static class Step
         // S8 so damage order is explicit and both halves are independently testable.
         Damage.UpdateDamage(world, scenery, Constants.Dt);
 
+        // S9b after S9: sludge on the ground bills whatever is standing in it, through the same
+        // kill path a shell uses - so the gem it earns still lands in this tick's S10.
+        Puddles.UpdatePuddles(world, Constants.Dt);
+
         // S10 after S9: drops read the KillFeed, so a kill's XP lands the SAME tick - no artificial
         // lag. ONLY pickup allocation site.
         Pickups.UpdatePickups(world, scenery, Constants.Dt);

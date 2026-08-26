@@ -98,6 +98,114 @@ public static class Damage
         ApplyBeams(world);
         ApplyHits(world, scenery);
         ApplyContacts(world);
+        AdvanceBurning(world, dt);
+    }
+
+    /// <summary>
+    /// FIRE, TICKING. Bodies the Plasma Thrower has lit take their damage here and nowhere else.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IN THIS FILE BECAUSE BURNING IS DAMAGE. It needs <see cref="KillEnemy"/> and
+    /// <see cref="CreditWeapon"/>, which are the two things that make a burn kill
+    /// indistinguishable from a shell kill - a gem drops, the archetype tally moves, the weapon
+    /// gets its damage credited. A burn pass written beside the contact timers would have had to
+    /// reimplement both, and a second copy of a kill path is how a weapon quietly stops earning
+    /// its own unlock.
+    /// </para>
+    /// <para>
+    /// LAST IN THE TICK, after the shots have landed. A body lit this tick starts burning on the
+    /// next one rather than taking its first fire damage in the same instant as the bolt.
+    /// </para>
+    /// <para>
+    /// THE COUNT IS TAKEN BEFORE THE DECREMENT, so a body with a sliver of fire left still counts
+    /// as alight this tick. <c>PeakBurning</c> is what the Plasma Thrower's unlock reads, and it is
+    /// a high-water mark rather than a total.
+    /// </para>
+    /// <para>
+    /// CLAMPED AT ZERO, never negative, for the reason the contact timers clamp: a field that
+    /// drifts below zero changes the world hash for every enemy that ever caught fire.
+    /// </para>
+    /// </remarks>
+    private static void AdvanceBurning(World world, double dt)
+    {
+        var enemies = world.Enemies;
+        var left = enemies.BurnLeft;
+        int n = enemies.Count;
+        int alight = 0;
+
+        for (int d = 0; d < n; d++)
+        {
+            double t = left[d];
+            if (t <= 0) continue;
+            if ((enemies.Flags[d] & EnemyPool.FlagDead) != 0) continue;
+
+            alight++;
+
+            double next = t - dt;
+            left[d] = next > 0 ? (float)next : 0f;
+
+            double dmg = enemies.BurnDps[d] * dt;
+            if (dmg <= 0) continue;
+
+            // THE SLOT THAT LIT IT. 255 is nobody and resolves to no weapon, so an unattributed
+            // fire still damages and simply credits nothing rather than crediting slot 0.
+            DamageEnemy(world, d, dmg, enemies.BurnBy[d]);
+        }
+
+        if (alight > world.Stats.PeakBurning) world.Stats.PeakBurning = alight;
+    }
+
+    /// <summary>
+    /// Sets a body alight, or refreshes a fire already on it.
+    /// </summary>
+    /// <remarks>
+    /// THE STRONGER FIRE WINS AND THE LONGER ONE LASTS, judged separately. A second bolt into a
+    /// body already burning must never make it burn WEAKER and must never cut the fire short, so
+    /// the rate takes the max and the duration takes the max, and the igniter is whoever owns the
+    /// stronger rate. Refreshing both blindly would let a grazing hit downgrade a fire a moment
+    /// after a solid one lit it.
+    /// </remarks>
+    public static void Ignite(World world, int ed, double dps, double seconds, int bySlot)
+    {
+        if (dps <= 0 || seconds <= 0) return;
+        var enemies = world.Enemies;
+        if ((enemies.Flags[ed] & EnemyPool.FlagDead) != 0) return;
+
+        if (dps >= enemies.BurnDps[ed])
+        {
+            enemies.BurnDps[ed] = (float)dps;
+            enemies.BurnBy[ed] = (byte)bySlot;
+        }
+
+        if (seconds > enemies.BurnLeft[ed]) enemies.BurnLeft[ed] = (float)seconds;
+    }
+
+    /// <summary>
+    /// HIT POINTS OFF, DAMAGE CREDITED, AND THE KILL PATH TAKEN IF IT FALLS - the smallest
+    /// complete way to hurt something, with no geometry and no projectile behind it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE TWO CALLERS ARE THE TWO SOURCES OF DAMAGE-OVER-TIME: fire on a body
+    /// (<see cref="AdvanceBurning"/>) and sludge on the ground (<c>Puddles</c>). Both share exactly
+    /// one problem - they bill a body no shot is currently touching - and the thing they must not
+    /// do is invent a second kill path.
+    /// </para>
+    /// <para>
+    /// NO EnemyDamaged EVENT, deliberately, and it is the argument beams make: the event exists to
+    /// flash a body that has just been HIT, and a source that bills sixty times a second would
+    /// hold every victim permanently white.
+    /// </para>
+    /// </remarks>
+    public static void DamageEnemy(World world, int ed, double amount, int bySlot)
+    {
+        if (amount <= 0) return;
+        var enemies = world.Enemies;
+        double hp = enemies.Hp[ed] - amount;
+        enemies.Hp[ed] = (float)hp;
+        CreditWeapon(world, bySlot, amount);
+        if (hp <= 0) KillEnemy(world, ed, bySlot);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -216,6 +324,22 @@ public static class Damage
                               enemies.X[ed], enemies.Y[ed], raw, enemies.Slot[ed]);
 
             ApplyKnockback(world, ed, proj.Vx[pd], proj.Vy[pd], proj.Knockback[pd]);
+
+            // FIRE, IF THE GUN THAT FIRED THIS SETS FIRES. Read off the weapon def at IMPACT
+            // rather than carried on the projectile, which would have been two more fields in the
+            // pool and therefore two more entries in the hash format - for a fact that has not
+            // changed since the bolt left the muzzle. The rate is a fraction of the hit that lit
+            // the body (WeaponDef.Burn), so a damage tier and a chassis bonus both raise the fire
+            // without either of them naming fire.
+            var owner = world.Weapons[proj.OwnerWeapon[pd]];
+            if (owner != null)
+            {
+                var burn = WeaponCatalog.All[owner.DefId].Burn;
+                if (burn != null)
+                {
+                    Ignite(world, ed, raw * burn.DpsFrac, burn.Seconds, proj.OwnerWeapon[pd]);
+                }
+            }
 
             if (enemies.Hp[ed] <= 0) KillEnemy(world, ed, proj.OwnerWeapon[pd]);
 

@@ -58,6 +58,8 @@ export type AchievementId =
   | 'radiator-bank'
   | 'phase-cannon'
   | 'mortar'
+  | 'plasma'
+  | 'sludge'
   | 'shaped-charges'
   | 'flak-cannon'
   | 'drones'
@@ -136,6 +138,8 @@ function cardUnlock(id: UpgradeId): UnlockCond {
 const RADIATOR_UNLOCK = cardUnlock('p-radiator');
 const PHASE_CANNON_UNLOCK = cardUnlock('w-phase-cannon');
 const MORTAR_UNLOCK = cardUnlock('w-mortar');
+const PLASMA_UNLOCK = cardUnlock('w-plasma');
+const SLUDGE_UNLOCK = cardUnlock('w-sludge');
 const BLAST_UNLOCK = cardUnlock('p-blast');
 const FLAK_UNLOCK = cardUnlock('w-flak-cannon');
 const DRONE_UNLOCK = cardUnlock('w-drone');
@@ -376,6 +380,29 @@ export const ACHIEVEMENT_CATALOG: readonly AchievementDef[] = Object.freeze([
     // disagree about what eighteen hundred and twelve means, and the Scrapopedia's unlabeled
     // progress bar reads this same object.
     cond: MORTAR_UNLOCK,
+  },
+  {
+    id: 'plasma',
+    platformKey: 'scrapyard_plasma',
+    // The only trophy in the table for a MOMENT rather than a total - thirty bodies alight at
+    // once, which is a picture of one fight going right rather than a body of work.
+    name: 'Everything Is Fine',
+    icon: 'icon_w-plasma',
+    description: describeUnlockDone(PLASMA_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like every other card unlock here.
+    cond: PLASMA_UNLOCK,
+  },
+  {
+    id: 'sludge',
+    platformKey: 'scrapyard_sludge',
+    // Thirty elites finished by ground the player was walking away from.
+    name: 'Scorched Earth',
+    icon: 'icon_w-sludge',
+    description: describeUnlockDone(SLUDGE_UNLOCK, upgradeName, weaponName, levelName),
+    secret: true,
+    // BY REFERENCE, like every other card unlock here.
+    cond: SLUDGE_UNLOCK,
   },
   {
     id: 'shaped-charges',

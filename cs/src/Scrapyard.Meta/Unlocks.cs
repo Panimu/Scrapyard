@@ -37,6 +37,27 @@ public enum UnlockKind
     ReloadsTotal,
     BossKillBy,
     ContactHits,
+
+    /// <summary>
+    /// This many enemies ON FIRE AT THE SAME MOMENT, at any point in one run.
+    /// </summary>
+    /// <remarks>
+    /// THE ONLY KIND THAT ASKS ABOUT A STATE RATHER THAN A TALLY. "Thirty on fire" is a picture of
+    /// a fight going well; a running total of ignitions would be satisfied by thirty fires lit one
+    /// at a time over a quiet quarter of an hour, which is the opposite of what it describes.
+    /// </remarks>
+    BurningAtOnce,
+
+    /// <summary>
+    /// This many killing blows landed ON ELITES with one of these weapons, across every run.
+    /// </summary>
+    /// <remarks>
+    /// The rank-split twin of <see cref="KillsWithTotal"/>. "Thirty kills" is a number a weapon
+    /// reaches by being carried; "thirty ELITES" is a number it reaches by being carried into the
+    /// part of a run that is going badly.
+    /// </remarks>
+    EliteKillsWithTotal,
+
     DiedTo,
     FullRepair,
     LasersOverheated,
@@ -82,6 +103,9 @@ public readonly record struct UnlockCond
     public static UnlockCond FullRepair() => new() { Kind = UnlockKind.FullRepair };
     public static UnlockCond LasersOverheated() => new() { Kind = UnlockKind.LasersOverheated };
     public static UnlockCond ContactHits(int n) => new() { Kind = UnlockKind.ContactHits, Count = n };
+    public static UnlockCond BurningAtOnce(int n) => new() { Kind = UnlockKind.BurningAtOnce, Count = n };
+    public static UnlockCond EliteKillsWithTotal(int count, params int[] weapons) =>
+        new() { Kind = UnlockKind.EliteKillsWithTotal, Count = count, Weapons = weapons };
     public static UnlockCond DiedTo(string rank) => new() { Kind = UnlockKind.DiedTo, Rank = rank };
     public static UnlockCond Tier(int upgradeId, int tier) =>
         new() { Kind = UnlockKind.Tier, UpgradeId = upgradeId, Count = tier };
@@ -130,6 +154,12 @@ public sealed record RunRecord
 
     public double ContactHits { get; init; }
 
+    /// <summary>The most enemies alight at one moment this run. See <c>RunStats.PeakBurning</c>.</summary>
+    public double PeakBurning { get; init; }
+
+    /// <summary>Killing blows landed on ELITES this run, by weapon - the elite column of the rank table.</summary>
+    public required Dictionary<int, double> EliteKillsWith { get; init; }
+
     /// <summary>The rank that landed the last bite, or "" for a run that did not end in death.</summary>
     public string DiedTo { get; init; } = "";
 
@@ -143,6 +173,9 @@ public sealed record RunRecord
 public sealed class CareerRecord
 {
     public required Dictionary<int, double> KillsWith { get; init; }
+
+    /// <summary>Killing blows ever landed ON ELITES, by weapon, every run included.</summary>
+    public required Dictionary<int, double> EliteKillsWith { get; init; }
     public double SplashKills { get; init; }
     public double Reloads { get; init; }
     public int HeroesOwned { get; init; }
@@ -175,6 +208,15 @@ public static class Unlocks
             case UnlockKind.FullRepair: return run.FullRepairs > 0;
             case UnlockKind.LasersOverheated: return run.LasersOverheated;
             case UnlockKind.ContactHits: return run.ContactHits >= cond.Count;
+            case UnlockKind.BurningAtOnce: return run.PeakBurning >= cond.Count;
+
+            case UnlockKind.EliteKillsWithTotal:
+                {
+                    if (career is null) return false;
+                    double n = 0;
+                    foreach (int w in cond.Weapons) n += Get(career.EliteKillsWith, w);
+                    return n >= cond.Count;
+                }
             case UnlockKind.DiedTo: return run.DiedTo != "" && run.DiedTo == cond.Rank;
 
             case UnlockKind.BossKillHolding:
@@ -236,6 +278,10 @@ public static class Unlocks
             case UnlockKind.KillsWithTotal:
                 n = 0;
                 foreach (int w in cond.Weapons) n += Get(career.KillsWith, w);
+                break;
+            case UnlockKind.EliteKillsWithTotal:
+                n = 0;
+                foreach (int w in cond.Weapons) n += Get(career.EliteKillsWith, w);
                 break;
             default: return -1;
         }

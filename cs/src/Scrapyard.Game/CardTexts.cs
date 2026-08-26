@@ -90,7 +90,7 @@ public static class CardTexts
             new[] { "Unlock.", "Repairs more each time.", "Repairs more each time.", "Repairs sooner.", "Repairs more each time.", "Repairs more each time.", "Repairs sooner again." }),
         new("p-shield", "Energy Shield", "A blue rim absorbs one hit outright and burns whatever broke it. A moment of immunity with it, and then it comes back.", false,
             new[] { "Unlock.", "Comes back sooner.", "A longer moment of immunity when it breaks.", "Comes back sooner again.", "A longer moment still.", "Comes back much sooner.", "A second rim. Each recharges in turn." }),
-        new("p-radiator", "Radiator Bank", "Every beam runs a bigger heat buffer and sheds it faster between bursts.", false,
+        new("p-radiator", "Radiator Bank", "Anything that runs hot carries a bigger heat buffer and sheds it faster between bursts.", false,
             new[] { "Sheds heat a little faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a bigger heat buffer.", "Sheds heat faster between bursts.", "Carries a much bigger heat buffer.", "Sheds heat much faster between bursts." }),
         new("p-blast", "Shaped Charges", "Every blast reaches wider.", false,
             new[] { "Every blast reaches a little wider.", "Every blast reaches a little wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches wider.", "Every blast reaches much wider.", "Every blast reaches much wider." }),
@@ -98,6 +98,10 @@ public static class CardTexts
             new[] { "A little more in every drum.", "A little more in every drum.", "More in every drum.", "More in every drum.", "More in every drum.", "Much more in every drum.", "Much more in every drum." }),
         new("w-mortar", "Mortar", "Lobs a heavy shell into the thickest part of the crowd. Prefers whatever is already in front of the barrel.", true,
             new[] { "Unlock.", "A wider blast.", "Lobs more often.", "A heavier shell.", "A wider blast again.", "Lobs more often again.", "A second shell every volley." }),
+        new("w-plasma", "Plasma Thrower", "Throws slow gouts of fire and leaves what they touch burning. Picks the biggest thing in front of it that is not already alight.", true,
+            new[] { "Unlock.", "Carries a bigger heat buffer.", "Burns hotter.", "Throws a little further.", "Carries a bigger heat buffer again.", "Sheds heat faster between bursts.", "Burns hotter again." }),
+        new("w-sludge", "Toxic Sludge", "Throws acid out behind the mech, leaving pools that eat whatever walks through them. Only fires when something is back there.", true,
+            new[] { "Unlock.", "The acid bites harder.", "Two more throws before the reload.", "Wider pools.", "The acid bites harder again.", "Reloads faster.", "Wider pools again." }),
     };
 
     /// <summary>The text for a catalog index, or a placeholder if the table has gone stale.</summary>
