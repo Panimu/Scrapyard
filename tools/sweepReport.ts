@@ -624,7 +624,10 @@ export function renderSweepHtml(
   // ---- loadouts -----------------------------------------------------------------------------------
   var lrows = rows.map(function (r) {
     var top = r.per.slice().sort(function (a, b) { return b.damage - a.damage; })[0];
+    var asc = r.ascended || [];
     return {
+      nasc: asc.length,
+      ascNames: asc.map(function (i) { return names[i]; }).join(', '),
       guns: r.per.map(function (p) { return names[p.weapon]; }).join(', '),
       search: r.per.map(function (p) { return p.weapon + ' ' + names[p.weapon]; }).join(' ').toLowerCase(),
       damage: r.damage, dps: r.dps, kills: r.kills, elite: r.elite, boss: r.boss,
@@ -645,6 +648,15 @@ export function renderSweepHtml(
       cls: function (r) { return r.win >= 0.5 ? 'good' : ''; } },
     { k: 'carry', t: 'top gun', f: function (r) { return r.carry; } }
   ];
+  // WHICH GUNS REACHED TIER 8 IN THIS ROW, in the ascended view only - there is nothing to say in
+  // the other one. It is the column that explains the rest of the row: two loadouts differing by
+  // one weapon can differ by two ascensions, because the Hornet's requirement is a weapon.
+  if (mode === 'asc') {
+    cols.splice(1, 0, { k: 'nasc', t: 'tier 8', f: function (r) {
+      return r.nasc > 0 ? r.nasc + ' <span class="na">' + r.ascNames + '</span>'
+                        : '<span class="na">none</span>'; },
+      cls: function () { return 'guns'; } });
+  }
 
   var tl = build(document.getElementById('tl'), cols, lrows, 'dps');
   var sel = document.getElementById('must');

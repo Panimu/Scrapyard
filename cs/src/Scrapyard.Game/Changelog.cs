@@ -28,6 +28,12 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-26T21:54Z", "v395", "THE ENERGY SHIELD IS BRIGHTER AND SIMPLER",
+            new[]
+            {
+                "The broken rings around the field are gone. What is left is the swirl itself - one bright blue, barely transparent, turning against a second copy inside it. The rings were drawn on top of the swirl and argued with it; without them the shield reads as one thing.",
+                "The inner half is now the brighter of the two, so the field is strongest right where your mech is rather than thinnest there. It still grows with every rim you are carrying.",
+            }),
         new("2026-08-26T21:10Z", "v393", "THE PLASMA THROWER BURNS THROUGH A FILE",
             new[]
             {

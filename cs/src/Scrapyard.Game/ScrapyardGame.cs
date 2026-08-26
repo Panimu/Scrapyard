@@ -185,20 +185,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>How much further out each additional rim sits.</summary>
     private const double ShieldRimStep = 7;
 
-    /// <summary>Rim thickness, in world units.</summary>
-    private const double ShieldRimWidth = 2.5;
-
     /// <summary>
-    /// Segments per rim. A ring here is short quads laid end to end around a circle - there is no
-    /// circle primitive, only a 1x1 white texture - and 56 is where the joins stop being visible at
-    /// the radius these are drawn at.
+    /// Segments in a whole circle. A ring here is short quads laid end to end - there is no circle
+    /// primitive, only a 1x1 white texture - and 56 is where the joins stop being visible at the
+    /// radius these are drawn at.
     /// </summary>
+    /// <remarks>
+    /// NAMED FOR THE SHIELD AND NO LONGER THE SHIELD'S. The rims it was written for are gone (see
+    /// DrawShieldRim); Arc and Ring outlived them because the artillery marker and the sludge pop
+    /// both draw circles. `ShieldRimWidth` did not outlive them and has been deleted rather than
+    /// left sitting here meaning nothing.
+    /// </remarks>
     private const int ShieldRimSegments = 56;
 
     private const double ShieldPulseHz = 0.7;
 
     /// <summary>How strongly the field's body reads. Well under 1, or it swallows the mech.</summary>
-    private const float ShieldBodyAlpha = 0.34f;
+    private const float ShieldBodyAlpha = 0.9f;
 
     /// <summary>Frames in the twirl loop.</summary>
     private const int ShieldTwirlFrames = 3;
@@ -224,49 +227,23 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// arc can afford to vanish for a moment; the field cannot.
     /// </para>
     /// </remarks>
-    private static readonly Color[] ShieldColours =
-    {
-        new(0x1c, 0x4f, 0xa8), new(0x4f, 0xa8, 0xff), new(0x7f, 0xd4, 0xff),
-    };
+    private static readonly Color ShieldTint = new(0x3d, 0x9b, 0xff);
 
-    /// <summary>How long one full trip round <see cref="ShieldColours"/> takes, in seconds.</summary>
-    private const double ShieldColourSec = 3.4;
+    /// <summary>The inner twirl, as a multiple of the outer one's size.</summary>
+    private const double ShieldInnerSize = 0.72;
 
-    /// <summary>The field's colour right now: <see cref="ShieldColours"/>, lerped.</summary>
+    /// <summary>
+    /// The inner twirl's alpha, as a multiple of the outer one's.
+    /// </summary>
     /// <remarks>
-    /// The three stops are all blues of increasing lightness, so a straight-line path between them
-    /// stays blue - the muddy midpoint that makes RGB lerping a bad habit only happens between
-    /// hues, and there are none here.
+    /// ABOVE ONE, and it was 0.7. The inner copy sits over the mech - the exact place a player is
+    /// looking - so making it the fainter of the two put the thinnest part of the field where it
+    /// most needed to be read. The result is clamped, so a bright pulse cannot push it past opaque.
     /// </remarks>
-    private static Color ShieldColour(double clock)
-    {
-        int n = ShieldColours.Length;
-        double t = clock / ShieldColourSec % 1;
-        if (t < 0) t += 1;
-        t *= n;
-        int i = (int)t;
-        return Color.Lerp(ShieldColours[i % n], ShieldColours[(i + 1) % n], (float)(t - i));
-    }
+    private const float ShieldInnerBoost = 1.45f;
 
-    /// <summary>Arcs in the innermost layer. Each layer out gets one more, so they never line up.</summary>
-    private const int ShieldArcs = 5;
-
-    /// <summary>How much of each arc's slot is gap. Below about a fifth it stops reading as broken.</summary>
-    private const double ShieldGapFrac = 0.32;
-
-    /// <summary>Radians a second the innermost layer turns. Outer layers are slower.</summary>
-    private const double ShieldSpinRate = 0.55;
-
-    /// <summary>The sweep: faster than any layer, and always the same way round.</summary>
-    private const double ShieldSweepRate = 2.1;
-
-    /// <summary>How long the sweep is, in radians. Short - it is a highlight, not another ring.</summary>
-    private const double ShieldSweepArc = 0.55;
-
-    /// <summary>The sweep's colour: the rim's blue run almost to white, so it reads as brightest.</summary>
-    private static readonly Color ShieldSweepTint = new(0xcf, 0xe8, 0xff);
-    private const double ShieldAlphaMin = 0.45;
-    private const double ShieldAlphaMax = 0.8;
+    private const double ShieldAlphaMin = 0.8;
+    private const double ShieldAlphaMax = 1.0;
 
     /// <summary>The Energy Shield's blue. The same one the HUD pips and the break burst use.</summary>
     private static readonly Color ShieldRimTint = new(0x4f, 0xa8, 0xff);
@@ -3563,7 +3540,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     }
 
     /// <summary>
-    /// The Energy Shield: a field, drawn as counter-rotating arc segments with a haze inside them.
+    /// The Energy Shield: two counter-rotating twirl sprites, and nothing drawn by hand.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -3572,20 +3549,30 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// it (Plum, which carries no gun) played as a mech with an invisible mechanic.
     /// </para>
     /// <para>
-    /// WHY IT IS NOT CONCENTRIC RINGS. It was, and the problem with two blue circles pulsing
-    /// together is that nothing about them says ENERGY - a ring is the most inert shape there is,
-    /// and two of them read as a target painted on the mech's own feet. Worse, the whole thing
-    /// moved as ONE object: both rings brightened and dimmed on the same clock, so the field had a
-    /// single heartbeat and no internal life at all.
+    /// THE HAND-DRAWN RIMS ARE GONE. There were broken rings - one arc-segmented circle per shield
+    /// layer, counter-rotating, plus a bright sweep running the outermost one - built out of
+    /// hundreds of little rotated quads because SpriteBatch cannot draw a circle. The argument for
+    /// them was that a ring with holes in it reads as something being HELD together. The argument
+    /// against is what they actually looked like next to the sprite: quads approximating a curve
+    /// have a faceted edge and a dead flat colour, and they sat OVER the twirl arguing with it, so
+    /// the field read as artwork with a wireframe drawn on top rather than as one thing.
     /// </para>
     /// <para>
-    /// FOUR THINGS FIX THAT, each doing a different job. THE HAZE, a faint disc filling the
-    /// innermost rim, so the field is a VOLUME the mech stands inside rather than an outline drawn
-    /// round it - an outline says "boundary", a fill says "inside here is different". BROKEN
-    /// RINGS: arcs with gaps, because a closed ring is a solid object and a ring with holes in it
-    /// is something being HELD together. COUNTER-ROTATION, layer against layer, which is the
-    /// oldest trick there is for saying "powered". And A SWEEP - one brighter, faster arc on the
-    /// outermost rim, the bit of motion the eye actually catches.
+    /// WHAT IS LEFT IS THE ART. Two copies of the same three-frame Kenney twirl, counter-rotating
+    /// at different rates and different sizes. The frame cycle changes the SHAPE and the spin moves
+    /// it, on separate clocks, so the pose never repeats; the counter-rotation is the oldest trick
+    /// there is for saying "powered", and it is now the only thing saying it.
+    /// </para>
+    /// <para>
+    /// BRIGHT BLUE AND ONLY SLIGHTLY TRANSPARENT. The walking three-stop gradient went with the
+    /// rims: it existed to keep a field made of flat quads from reading as a decal, and a
+    /// spiralling sprite has motion of its own. One confident blue holds against the rust ground
+    /// far better than a colour that spends a third of its cycle near white, which is what used to
+    /// make the shield look like it was failing at the top of every pulse.
+    /// </para>
+    /// <para>
+    /// THE INNER COPY IS THE BRIGHTER ONE. It was the fainter, at 0.7 of the outer, which put the
+    /// dimmer layer where the mech is - so the field was thinnest exactly where the player looks.
     /// </para>
     /// <para>
     /// IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait. It is a field, not a
@@ -3602,68 +3589,36 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         int layers = (int)w.Player.ShieldLayers;
         if (layers <= 0) return;
 
+        // A BREATH, NOT A BLINK. The pulse is narrow on purpose now that it is the only thing
+        // modulating the field: with the rims gone there is nothing else to carry brightness, so a
+        // deep pulse would take the whole shield with it every cycle.
         double pulse = (System.Math.Sin(_clockSec * ShieldPulseHz * System.Math.PI * 2) + 1) * 0.5;
         float alpha = (float)(ShieldAlphaMin + (ShieldAlphaMax - ShieldAlphaMin) * pulse);
 
+        // STILL GROWS WITH THE LAYERS. The rims were what made a second layer visible as a second
+        // RING; without them the field says "more" by being bigger, which is the only channel left
+        // and is at least the one a player reads without counting anything.
         double outer = ShieldRimRadius + (layers - 1) * ShieldRimStep;
 
-        // ---- THE BODY ----------------------------------------------------------------------
-        //
-        // A SWIRL, NOT A FLAT DISC. The haze was two translucent circles, which is honest as "the
-        // field has an inside" and says nothing about what that inside is DOING - a fill has no
-        // motion in it, so the whole volume sat still while only the rims turned.
-        //
-        // These three Kenney arcs are a loop, and being a spiral they also give free rotation: the
-        // frame cycle changes the SHAPE and the spin moves it, on different clocks, so the body
-        // never repeats a pose.
-        //
-        // TWO COPIES COUNTER-ROTATING, the same trick the rims use one layer out and the cheapest
-        // way to stop a single turning spiral reading as a wheel.
-        //
-        // THE COLOUR WALKS between three blues rather than sitting on one. A field on a single
-        // tint is a decal; one that shifts is being fed by something.
         int frame = (int)(_clockSec * ShieldTwirlFps) % ShieldTwirlFrames;
         if (frame < 0) frame += ShieldTwirlFrames;
-        var walk = ShieldColour(_clockSec);
 
         for (int i = 0; i < 2; i++)
         {
             var body = _sprites.Get($"twirl_{(frame + i) % ShieldTwirlFrames}");
             if (body is null) break;
-            double size = outer * 2 * (i == 0 ? 1 : 0.72);
+
+            // THE INNER COPY IS SMALLER, TURNS THE OTHER WAY AND IS BRIGHTER. It used to be the
+            // faint one, which put the dimmer layer over the mech itself.
+            double size = outer * 2 * (i == 0 ? 1 : ShieldInnerSize);
+            float layerAlpha = alpha * (i == 0 ? ShieldBodyAlpha : ShieldBodyAlpha * ShieldInnerBoost);
+            if (layerAlpha > 1f) layerAlpha = 1f;
+
             BlitRotated(body, px, py, size, size,
                         _clockSec * ShieldTwirlSpin * (i == 0 ? 1 : -0.62),
-                        walk * (alpha * (i == 0 ? ShieldBodyAlpha : ShieldBodyAlpha * 0.7f)),
+                        ShieldTint * layerAlpha,
                         SpriteEffects.None);
         }
-
-        for (int i = 0; i < layers; i++)
-        {
-            double r = ShieldRimRadius + i * ShieldRimStep;
-            // Opposite way each layer out, and slower the further out it is - a big ring turning as
-            // fast as a small one looks like the whole thing is spinning rather than its parts.
-            double dir = i % 2 == 0 ? 1 : -1;
-            double spin = _clockSec * ShieldSpinRate * dir * (1 - i * 0.22);
-            int arcs = ShieldArcs + i;
-            double step = System.Math.PI * 2 / arcs;
-            // The gap is a FRACTION of the slot, so a layer with more arcs gets proportionally
-            // smaller gaps rather than dissolving into dashes.
-            double sweep = step * (1 - ShieldGapFrac);
-            float layerAlpha = alpha * (0.55f + 0.45f * (layers > 1 ? i / (float)(layers - 1) : 1f));
-
-            for (int a = 0; a < arcs; a++)
-            {
-                // The same walking colour the body is on, so the field reads as ONE thing being
-                // fed rather than as rings drawn over an unrelated swirl.
-                Arc(px, py, r, ShieldRimWidth, walk * layerAlpha, spin + a * step, sweep);
-            }
-        }
-
-        // THE SWEEP: one bright short arc running the outermost rim, faster than any layer and
-        // always the same way round. It is the piece of motion the eye actually catches, and the
-        // reason the field reads as scanning rather than idling.
-        Arc(px, py, outer, ShieldRimWidth * 1.6, ShieldSweepTint * (0.9f * alpha),
-            _clockSec * ShieldSweepRate, ShieldSweepArc);
     }
 
     /// <summary>

@@ -66,40 +66,62 @@ public static class Overlay
                               pauseRect.Y + (pauseRect.Height - UiFont.GlyphH(scale)) / 2, scale,
                               Ink);
 
+        // THE LEVEL, AS A BADGE BESIDE THE PAUSE BUTTON, which is where the web build puts it
+        // (`.hud__level` - a 40px rounded square in the top row, cleared by the pause button's tap
+        // target). It was a two-letter prefix on the status line under the bars, in the dim ink
+        // everything else down there uses, which made the run's single most-consulted number the
+        // least visible thing in the corner.
+        //
+        // IT SIZES TO ITS CONTENTS with a floor, exactly as the web's `min-width` does: "1" and
+        // "12" should not move the bars by different amounts, but "100" must still fit.
+        string levelText = p.Level.ToString();
+        int levelW = System.Math.Max(pauseSize, UiFont.Measure(levelText, scale) + 12 * scale);
+        var levelRect = new Rectangle(pauseRect.X - 6 * scale - levelW, pauseRect.Y,
+                                      levelW, pauseSize);
+        Screens.CardFace(batch, sprites, levelRect, 6 * scale, Panel, Edge,
+                         System.Math.Max(1, scale / 2));
+        Screens.UiDrawCentred(batch, sprites, levelText, levelRect.Center.X,
+                              levelRect.Y + (levelRect.Height - UiFont.GlyphH(scale)) / 2, scale,
+                              Ink);
+
         // Hull. The number is on the bar rather than beside it: at a glance the bar is the answer,
         // and the number is for the moment you want to know exactly how much trouble you are in.
         //
-        // THE BARS STOP SHORT OF THE PAUSE BUTTON rather than running under it. They were the full
-        // width of the window with the button laid on top, so the right-hand end of the hull bar -
-        // the part that empties last, and the part you look at when it is nearly gone - was behind
-        // a panel.
+        // THE BARS STOP SHORT OF THE BADGE AND THE BUTTON rather than running under them. They were
+        // the full width of the window with the button laid on top, so the right-hand end of the
+        // hull bar - the part that empties last, and the part you look at when it is nearly gone -
+        // was behind a panel.
         double hpFrac = p.Stats.MaxHp > 0 ? System.Math.Clamp(p.Hp / p.Stats.MaxHp, 0, 1) : 0;
-        int barW = pauseRect.X - 6 * scale - 12;
-        Bar(batch, sprites, 12, 12, barW, 8 * scale, hpFrac,
-            new Color(0x28, 0x10, 0x10), new Color(0xd6, 0x3c, 0x3c));
-        Screens.UiDraw(batch, sprites,
-                       $"{System.Math.Ceiling(p.Hp):0} / {p.Stats.MaxHp:0}", 16,
-                       12 + (8 * scale - UiFont.GlyphH(small)) / 2, small, Ink);
+        int barW = levelRect.X - 6 * scale - 12;
+        int hpH = HpBarH * scale;
+        Bar(batch, sprites, 12, 12, barW, hpH, hpFrac, HpTail, HpHead);
+
+        // CENTRED ON THE BAR, as the web's `.bar__label` is. Left-aligned it collided with the
+        // fill's bright head at low HP - white text over the lightest part of the gradient - and
+        // sat in empty track at high HP, which is the one time it is least worth reading.
+        Screens.UiDrawCentred(batch, sprites,
+                              $"{System.Math.Ceiling(p.Hp):0} / {p.Stats.MaxHp:0}",
+                              12 + barW / 2, 12 + (hpH - UiFont.GlyphH(small)) / 2, small, Ink);
 
         // The Energy Shield's rims, drawn as pips rather than folded into the hull bar: a rim is a
         // discrete thing that blocks one hit whatever its size, and a fraction would say otherwise.
-        int y = 12 + 8 * scale + 3;
+        int y = 12 + hpH + BarGap * scale;
         for (int i = 0; i < p.ShieldLayers; i++)
         {
             batch.Draw(sprites.Blank, new Rectangle(12 + i * (7 * scale), y, 5 * scale, 4 * scale),
                        new Color(0x6f, 0xd8, 0xff));
         }
-        if (p.ShieldLayers > 0) y += 4 * scale + 3;
+        if (p.ShieldLayers > 0) y += 4 * scale + BarGap * scale;
 
         double xpFrac = p.XpToNext > 0 ? System.Math.Clamp(p.Xp / p.XpToNext, 0, 1) : 0;
-        Bar(batch, sprites, 12, y, barW, 4 * scale, xpFrac,
-            new Color(0x10, 0x18, 0x28), new Color(0x4f, 0xd1, 0xff));
-        y += 4 * scale + 4;
+        Bar(batch, sprites, 12, y, barW, XpBarH * scale, xpFrac, XpTail, XpHead);
+        y += XpBarH * scale + 4 * scale;
 
+        // NO "LV n" HERE ANY MORE - it is the badge above. Two places showing one number is one
+        // place too many, and the one that gets stale is always the one nobody is looking at.
         int mins = (int)(w.RunSec / 60);
         int secs = (int)(w.RunSec % 60);
-        Screens.UiDraw(batch, sprites, $"LV {p.Level}   {mins}:{secs:00}   x{w.Stats.Kills:0}",
-                       12, y, small, Dim);
+        Screens.UiDraw(batch, sprites, $"{mins}:{secs:00}   x{w.Stats.Kills:0}", 12, y, small, Dim);
 
         y += UiFont.LineHeight(small) + 4 * scale;
         DrawLoadout(batch, sprites, w, 12, y, barW, scale);
@@ -1324,26 +1346,58 @@ public static class Overlay
     /// have to be regenerated whenever a colour moved.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Bar heights and the gap between them, in units of the HUD scale.
+    /// </summary>
+    /// <remarks>
+    /// FROM THE WEB BUILD'S STYLESHEET, where `.bar` is 12px and `.bar--xp` is 7px with a 5px gap.
+    /// The port had 8 and 4 with a 3px gap: both thinner, and at a RATIO of 2 rather than 1.7, so
+    /// the XP bar read as a hairline under the hull bar rather than as the second of two bars.
+    /// </remarks>
+    private const int HpBarH = 9;
+    private const int XpBarH = 5;
+    private const int BarGap = 3;
+
+    /// <summary>
+    /// The two ends of each bar's gradient, from the web build's `--hp` / `--xp` and the lighter
+    /// stop each one starts from.
+    /// </summary>
+    /// <remarks>
+    /// AUTHORED PER BAR RATHER THAN DERIVED. The head used to be the fill colour plus 60 on every
+    /// channel, which is a fine way to make something lighter and a poor way to make it look
+    /// designed: on the hull bar it produced a washed pink where the web's own gradient runs to a
+    /// warm coral, because +60 on a red that is already at 214 has nowhere to go and only lifts the
+    /// green and blue. Two colours per bar, matching the stylesheet.
+    /// </remarks>
+    private static readonly Color HpHead = new(0xff, 0x7a, 0x5f);
+    private static readonly Color HpTail = new(0xd7, 0x50, 0x3f);
+    private static readonly Color XpHead = new(0x7f, 0xe0, 0xff);
+    private static readonly Color XpTail = new(0x4f, 0xd1, 0xff);
+
+    /// <summary>
+    /// The track under both bars - one neutral dark, not a dimmed copy of the fill.
+    /// </summary>
+    /// <remarks>
+    /// The port tinted each track with its own fill colour, so an empty hull bar was a dark RED
+    /// trough and an empty XP bar a dark blue one. The web uses `rgba(10, 14, 20, 0.75)` for both,
+    /// which is the right call: a track is the SHAPE of the bar, and colouring it says there is
+    /// something there when there is not.
+    /// </remarks>
+    private static readonly Color BarTrack = new(0x0a, 0x0e, 0x14);
+
     private static void Bar(SpriteBatch batch, Sprites sprites, int x, int y, int w, int h,
-                            double frac, Color back, Color front)
+                            double frac, Color tail, Color head)
     {
         if (w <= 0 || h <= 0) return;
 
         int radius = h / 2;
         int thick = System.Math.Max(1, h / 8);
         var track = new Rectangle(x, y, w, h);
-        Screens.CardFace(batch, sprites, track, radius, back * 0.9f, Edge, thick);
+        Screens.CardFace(batch, sprites, track, radius, BarTrack * 0.75f, Edge, thick);
 
         int inner = w - thick * 2;
         int fill = (int)System.Math.Round(inner * System.Math.Clamp(frac, 0, 1));
         if (fill <= 0) return;
-
-        // THE HEAD IS THE SAME HUE, LIFTED - not a second colour. A fill that changed hue along
-        // its length would be two facts where there is one.
-        var head = new Color(
-            (int)System.Math.Min(255, front.R + 60),
-            (int)System.Math.Min(255, front.G + 60),
-            (int)System.Math.Min(255, front.B + 60));
 
         int fy = y + thick;
         int fh = h - thick * 2;
@@ -1353,7 +1407,7 @@ public static class Overlay
             // colour at a given point on the bar does not move as the bar drains.
             float t = inner > 1 ? i / (float)(inner - 1) : 1f;
             batch.Draw(sprites.Blank, new Rectangle(x + thick + i, fy, 1, fh),
-                       Color.Lerp(head, front, t));
+                       Color.Lerp(head, tail, t));
         }
     }
 }

@@ -290,8 +290,6 @@ const TURRET_KICK_SEC = 0.08;
  */
 const SHIELD_RIM_RADIUS = 38;
 const SHIELD_RIM_STEP = 7;
-const SHIELD_RIM_WIDTH = 2.5;
-const SHIELD_RIM_TINT = 0x4fa8ff;
 
 /**
  * The Mech Insurance window, worn on the chassis. Gold, matching the burst that opened it and the
@@ -362,32 +360,30 @@ function mixTint(a: number, b: number, t: number): number {
   return (r << 16) | (g << 8) | bl;
 }
 /**
- * The rim breathes between these two alphas. A static ring reads as part of the chassis art; a
- * moving one reads as a field that is running, which is the difference between the player noticing
- * it is gone and not.
+ * The field breathes between these two alphas. A static field reads as part of the chassis art; a
+ * moving one reads as something that is RUNNING, which is the difference between the player
+ * noticing it is gone and not.
  */
-const SHIELD_ALPHA_MIN = 0.45;
-const SHIELD_ALPHA_MAX = 0.8;
+const SHIELD_ALPHA_MIN = 0.8;
+const SHIELD_ALPHA_MAX = 1;
+
 /** Breaths per second. Slow: this is ambient state, not an alarm. */
 const SHIELD_PULSE_HZ = 0.7;
 
-/** Arcs in the innermost layer. Each layer out gets one more, so they never line up. */
-const SHIELD_ARCS = 5;
+/** The field's colour: one bright blue. See drawShieldRim for why it stopped walking. */
+const SHIELD_TINT = 0x3d9bff;
 
-/** How much of each arc's slot is gap. Below about a fifth the ring stops reading as broken. */
-const SHIELD_GAP_FRAC = 0.32;
+/** The inner twirl, as a multiple of the outer one's size. */
+const SHIELD_INNER_SIZE = 0.72;
 
-/** Radians a second the innermost layer turns. Outer layers are slower - see the caller. */
-const SHIELD_SPIN_RATE = 0.55;
-
-/** The sweep: faster than any layer, and always the same way round. */
-const SHIELD_SWEEP_RATE = 2.1;
-
-/** How long the sweep is, in radians. Short - it is a highlight, not a fifth ring. */
-const SHIELD_SWEEP_ARC = 0.55;
-
-/** The sweep's own colour: the rim's blue run almost to white, so it reads as the brightest part. */
-const SHIELD_SWEEP_TINT = 0xcfe8ff;
+/**
+ * The inner twirl's alpha, as a multiple of the outer one's.
+ *
+ * ABOVE ONE, and it was 0.7. The inner copy sits over the mech - the exact place a player is
+ * looking - so making it the fainter of the two put the thinnest part of the field where it most
+ * needed to be read. Clamped at the call site, so a bright pulse cannot push it past opaque.
+ */
+const SHIELD_INNER_BOOST = 1.45;
 
 /** Sprites the field's body costs. Two counter-rotating copies, and one shield on screen. */
 const SHIELD_BODY_SPRITES = 4;
@@ -404,48 +400,17 @@ const SHIELD_TWIRL_FPS = 5;
 /** Radians a second the body turns. The second copy runs back the other way at 0.62 of it. */
 const SHIELD_TWIRL_SPIN = 0.5;
 
-/** How strongly the body reads. Additive, so this is well under 1 or the mech disappears. */
-const SHIELD_BODY_ALPHA = 0.34;
-
 /**
- * THE THREE BLUES THE FIELD WALKS BETWEEN, in loop order.
+ * How strongly the field reads. BRIGHT AND ONLY SLIGHTLY TRANSPARENT.
  *
- * A field on ONE tint is a decal; one that shifts is being fed by something. Deep, then the rim's
- * own blue, then a pale cyan - so it reads as charge cycling rather than as a colour animation for
- * its own sake.
+ * IT WAS 0.34, WHICH WAS RIGHT WHEN THE RIMS CARRIED THE FIELD and wrong the moment they went:
+ * multiplied by a pulse that bottomed out at 0.45, the sprite was drawing at about 0.15 and the
+ * shield was very nearly invisible. Rendered and looked at, not reasoned about.
  *
- * THE TOP STOP IS NOT WHITE, and it was. THE GROUND IS ORANGE: a near-white field over rust has
- * almost no contrast, so at the top of every cycle the whole thing faded out and came back - which
- * reads as the shield failing rather than as it being charged. Cyan holds against orange, which is
- * most of why it is the colour. The sweep keeps the near-white, and is the only part that has it -
- * one small bright arc can afford to disappear for a moment; the field cannot.
+ * THE PULSE IS NARROW NOW for the same reason - it is the only thing modulating the field, so a
+ * deep breath would take the whole shield down with it every cycle.
  */
-const SHIELD_COLOURS: readonly number[] = Object.freeze([0x1c4fa8, 0x4fa8ff, 0x7fd4ff]);
-
-/** How long one full trip round SHIELD_COLOURS takes, in seconds. */
-const SHIELD_COLOUR_SEC = 3.4;
-
-/**
- * The field's colour right now: SHIELD_COLOURS, lerped in RGB.
- *
- * IN RGB AND NOT IN ANYTHING BETTER, deliberately. The three stops are all blues of increasing
- * lightness, so the straight-line path between them stays blue - the muddy midpoint that makes RGB
- * lerping a bad habit only happens between hues, and there are none here.
- */
-function shieldColour(clock: number): number {
-  const n = SHIELD_COLOURS.length;
-  const t = ((clock / SHIELD_COLOUR_SEC) % 1) * n;
-  const i = Math.floor(t);
-  const f = t - i;
-  const a = SHIELD_COLOURS[i % n];
-  const b = SHIELD_COLOURS[(i + 1) % n];
-  const mix = (shift: number): number => {
-    const ca = (a >> shift) & 0xff;
-    const cb = (b >> shift) & 0xff;
-    return Math.round(ca + (cb - ca) * f) & 0xff;
-  };
-  return (mix(16) << 16) | (mix(8) << 8) | mix(0);
-}
+const SHIELD_BODY_ALPHA = 0.9;
 
 /**
  * ARTILLERY STRIKE MARKERS.
@@ -943,7 +908,11 @@ export class GameRenderer {
     this.shieldBody = new SpritePool({
       capacity: SHIELD_BODY_SPRITES,
       texture: tex.twirl[0],
-      blendMode: 'add',
+      // NORMAL, NOT ADDITIVE, and the desktop front-end is why: it draws this in its ordinary
+      // alpha-blended pass, so an additive web build was a different-looking shield on the two
+      // front-ends. Additive over the rust ground also clips channels and pulls a blue field
+      // toward white - the same trap the beam layer documents one screen up.
+      blendMode: 'normal',
       label: 'shield-body',
     });
 
@@ -1297,11 +1266,11 @@ export class GameRenderer {
         // "that cost you HP", and firing it here would teach the player to read a blocked hit as
         // a taken one, which is the exact opposite of what the shield is telling them.
         case EV_PLAYER_SHIELD_BROKEN:
-          this.effects.shieldBreak(a, b, SHIELD_RIM_TINT);
+          this.effects.shieldBreak(a, b, SHIELD_TINT);
           break;
 
         case EV_PLAYER_SHIELD_RESTORED:
-          this.effects.shieldRestore(a, b, SHIELD_RIM_TINT);
+          this.effects.shieldRestore(a, b, SHIELD_TINT);
           break;
 
         // MECH INSURANCE PAID OUT. The burst is the moment; `savedFor` is the aftermath, and both
@@ -2237,8 +2206,18 @@ export class GameRenderer {
    *   eye actually catches, and the reason the field reads as scanning rather than idling.
    *
    * REBUILT EVERY FRAME, unlike the old version, and that is the price of all of the above: the
-   * geometry now depends on the clock rather than only on the layer count. It is a handful of arcs
-   * for a shape that is on screen for at most a few seconds at a time.
+   * THE HAND-DRAWN RIMS ARE GONE. There were broken rings - one arc-segmented circle per shield
+   * layer, counter-rotating, plus a bright sweep running the outermost one. The argument for them
+   * was that a ring with holes in it reads as something being HELD together. The argument against
+   * is what they looked like next to the sprite: flat strokes sitting OVER the twirl and arguing
+   * with it, so the field read as artwork with a wireframe drawn on top rather than as one thing.
+   * What is left is the art.
+   *
+   * BRIGHT BLUE AND ONLY SLIGHTLY TRANSPARENT, on ONE tint rather than a walk through three. The
+   * walk existed to keep a field made of flat strokes from reading as a decal, and a spiralling
+   * sprite has motion of its own; a single confident blue also holds against the rust ground far
+   * better than a colour that spent a third of its cycle near white, which is what used to make
+   * the shield look like it was failing at the top of every pulse.
    *
    * IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait - it is a field, not a part
    * of the machine, and something that walked with the legs would read as painted on.
@@ -2265,71 +2244,41 @@ export class GameRenderer {
     const pulse = (Math.sin(clock * SHIELD_PULSE_HZ * Math.PI * 2) + 1) * 0.5;
     g.alpha = SHIELD_ALPHA_MIN + (SHIELD_ALPHA_MAX - SHIELD_ALPHA_MIN) * pulse;
 
+    // STILL GROWS WITH THE LAYERS. The rims were what made a second layer visible as a second
+    // RING; without them the field says "more" by being bigger, which is the only channel left and
+    // is at least the one a player reads without counting anything.
     const outer = SHIELD_RIM_RADIUS + (layers - 1) * SHIELD_RIM_STEP;
 
-    // ---- THE BODY --------------------------------------------------------------------------
-    //
-    // A SWIRL, NOT A FLAT DISC. The haze was two translucent circles, which is honest as "the
-    // field has an inside" and says nothing about what that inside is DOING - a fill has no
-    // motion in it, so the whole volume sat still while only the rims turned.
+    // ---- THE BODY, AND NOW THE WHOLE OF IT ---------------------------------------------------
     //
     // These three Kenney arcs are a loop, and being a spiral they also give free rotation: the
     // frame cycle changes the SHAPE and the spin moves it, on different clocks, so the body never
     // repeats a pose. Additive, because a field is light and light adds.
     //
-    // TWO COPIES COUNTER-ROTATING, which is the same trick the rims use one layer out and the
-    // cheapest way to stop a single turning spiral reading as a wheel.
+    // TWO COPIES COUNTER-ROTATING, the cheapest way to stop a single turning spiral reading as a
+    // wheel - and now the only thing saying "powered", since the rims are gone.
     //
-    // THE COLOUR WALKS between three blues rather than sitting on one. A field on a single tint is
-    // a decal; one that shifts is being fed by something.
+    // THE INNER COPY IS THE BRIGHTER ONE. It was the fainter, at 0.7 of the outer, which put the
+    // dimmer layer exactly where the mech is - the part a player is actually looking at.
     const frame = Math.floor(clock * SHIELD_TWIRL_FPS) % SHIELD_TWIRL_FRAMES;
-    const tint = shieldColour(clock);
     for (let i = 0; i < 2; i++) {
       const b = this.shieldBody.acquire();
       if (b === undefined) break;
       b.texture = this.tex.twirl[(frame + i) % SHIELD_TWIRL_FRAMES];
       b.position.set(px, py);
       b.rotation = clock * SHIELD_TWIRL_SPIN * (i === 0 ? 1 : -0.62);
-      const size = outer * 2 * (i === 0 ? 1 : 0.72);
+      const size = outer * 2 * (i === 0 ? 1 : SHIELD_INNER_SIZE);
       b.scale.set(size / SHIELD_TWIRL_SRC);
-      b.tint = tint;
-      b.alpha = g.alpha * (i === 0 ? SHIELD_BODY_ALPHA : SHIELD_BODY_ALPHA * 0.7);
+      b.tint = SHIELD_TINT;
+      b.alpha = Math.min(
+        1,
+        g.alpha * (i === 0 ? SHIELD_BODY_ALPHA : SHIELD_BODY_ALPHA * SHIELD_INNER_BOOST),
+      );
     }
 
-    for (let i = 0; i < layers; i++) {
-      const r = SHIELD_RIM_RADIUS + i * SHIELD_RIM_STEP;
-      // Opposite way each layer out, and slower the further out it is - a big ring turning as fast
-      // as a small one looks like the whole thing is spinning rather than the parts of it.
-      const dir = i % 2 === 0 ? 1 : -1;
-      const spin = clock * SHIELD_SPIN_RATE * dir * (1 - i * 0.22);
-      const arcs = SHIELD_ARCS + i;
-      const step = (Math.PI * 2) / arcs;
-      // The gap is a FRACTION of the step, so a layer with more arcs gets proportionally smaller
-      // gaps rather than dissolving into dashes.
-      const sweep = step * (1 - SHIELD_GAP_FRAC);
-
-      for (let a = 0; a < arcs; a++) {
-        const from = spin + a * step;
-        g.arc(0, 0, r, from, from + sweep).stroke({
-          width: SHIELD_RIM_WIDTH,
-          // The same walking colour the body is on, so the field reads as ONE thing being fed
-          // rather than as rings drawn over an unrelated swirl.
-          color: tint,
-          alpha: 0.55 + 0.45 * (i / Math.max(1, layers - 1)),
-        });
-      }
-    }
-
-    // THE SWEEP: one bright short arc running the outermost rim, faster than any layer and always
-    // the same way round. It is the piece of motion the eye actually catches, and the reason the
-    // field reads as scanning rather than idling.
-    const sweepFrom = clock * SHIELD_SWEEP_RATE;
-    g.arc(0, 0, outer, sweepFrom, sweepFrom + SHIELD_SWEEP_ARC).stroke({
-      width: SHIELD_RIM_WIDTH * 1.6,
-      color: SHIELD_SWEEP_TINT,
-      alpha: 0.9,
-    });
-
+    // NOTHING IS STROKED INTO `g` ANY MORE. It is kept, cleared and positioned above so the
+    // shield stays one object in the z-order and so a later effect has somewhere to go; the arcs
+    // it used to hold are gone. See the note on this method for why.
     this.shieldBody.end();
   }
 

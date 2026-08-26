@@ -65,6 +65,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T21:54Z',
+    version: 'v395',
+    title: 'THE ENERGY SHIELD IS BRIGHTER AND SIMPLER',
+    notes: [
+      'The broken rings around the field are gone. What is left is the swirl itself — one bright blue, barely transparent, turning against a second copy inside it. The rings were drawn on top of the swirl and argued with it; without them the shield reads as one thing.',
+      'The inner half is now the brighter of the two, so the field is strongest right where your mech is rather than thinnest there. It still grows with every rim you are carrying.',
+    ],
+  },
+  {
     at: '2026-08-26T21:10Z',
     version: 'v393',
     title: 'THE PLASMA THROWER BURNS THROUGH A FILE',
