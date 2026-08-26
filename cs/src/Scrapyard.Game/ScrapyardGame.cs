@@ -179,11 +179,46 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private const double HealFlashSec = 0.45;
     private const double InsurancePulseHz = 9;
 
+    /// <summary>Radius of the innermost shield rim, in world units. The web build's own number.</summary>
+    private const double ShieldRimRadius = 38;
+
+    /// <summary>How much further out each additional rim sits.</summary>
+    private const double ShieldRimStep = 7;
+
+    /// <summary>Rim thickness, in world units.</summary>
+    private const double ShieldRimWidth = 2.5;
+
+    /// <summary>
+    /// Segments per rim. A ring here is short quads laid end to end around a circle - there is no
+    /// circle primitive, only a 1x1 white texture - and 56 is where the joins stop being visible at
+    /// the radius these are drawn at.
+    /// </summary>
+    private const int ShieldRimSegments = 56;
+
+    private const double ShieldPulseHz = 0.7;
+    private const double ShieldAlphaMin = 0.45;
+    private const double ShieldAlphaMax = 0.8;
+
+    /// <summary>The Energy Shield's blue. The same one the HUD pips and the break burst use.</summary>
+    private static readonly Color ShieldRimTint = new(0x4f, 0xa8, 0xff);
+
     /// <summary>The Plasma Thrower: hot orange, deliberately far from the phase bolt.</summary>
     private static readonly Color FlameTint = new(0xff, 0x8a, 0x3c);
 
     /// <summary>Toxic Sludge, glob and pool alike - one colour so the two read as one substance.</summary>
     private static readonly Color SludgeTint = new(0x8c, 0xe0, 0x3a);
+
+    /// <summary>The pool's darker body, under its rim.</summary>
+    private static readonly Color SludgeDeepTint = new(0x4a, 0x8c, 0x1c);
+
+    /// <summary>The raised lip the acid has eaten around the pool's edge.</summary>
+    private static readonly Color SludgeRimTint = new(0xa8, 0xe8, 0x5a);
+
+    /// <summary>The bottom: deep patches, and the shaded underside of every bubble.</summary>
+    private static readonly Color SludgeFloorTint = new(0x2c, 0x5c, 0x10);
+
+    /// <summary>The bubbles' caps, and the rings they leave when they pop.</summary>
+    private static readonly Color SludgeLightTint = new(0xea, 0xff, 0xb4);
 
     private static readonly Color PlayerHitTint = new(0xff, 0xb0, 0xa8);
     private static readonly Color PlayerHealTint = new(0xb6, 0xf5, 0xc4);
@@ -844,9 +879,29 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// exists and has not been earned; letting the cursor rest on it would be a menu entry that
     /// does nothing when pressed, which is worse than either showing or hiding it.
     /// </remarks>
-    private void MoveCursor(ref int cursor, MenuRows.MenuRow[] rows)
+    private void MoveCursor(ref int cursor, MenuRows.MenuRow[] rows) =>
+        MoveCursor(ref cursor, rows, 1);
+
+    /// <summary>
+    /// The same walk, over a menu laid out <paramref name="cols"/> buttons to a row.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// UP AND DOWN MOVE BY A WHOLE ROW; LEFT AND RIGHT MOVE BY ONE. On a single column those are
+    /// the same thing, which is why every other menu can call the one-argument overload and know
+    /// nothing about this. The pause menu is two wide, and a cursor that walked it in reading order
+    /// would answer Down by moving sideways.
+    /// </para>
+    /// <para>
+    /// BOTH AXES WRAP THROUGH THE WHOLE LIST rather than within a row or a column. It keeps the
+    /// disabled-row skip below honest - a row where every entry is disabled would trap a cursor
+    /// that could only move within it - and "keep pressing and you reach everything" is the
+    /// behaviour a pad player already expects from the one-column menus.
+    /// </para>
+    /// </remarks>
+    private void MoveCursor(ref int cursor, MenuRows.MenuRow[] rows, int cols)
     {
-        int step = _menu.Vertical;
+        int step = _menu.Vertical * cols + _menu.Horizontal;
         if (step == 0) return;
 
         int n = rows.Length;
@@ -1398,7 +1453,8 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private void UpdatePaused(KeyboardState keys)
     {
         var rows = MenuRows.Pause(_sim.World);
-        MoveCursor(ref _pauseCursor, rows);
+        // TWO WIDE - see Screens.DrawPause, which lays this menu out as a grid.
+        MoveCursor(ref _pauseCursor, rows, 2);
         if (MouseChoose(_pauseRects, rows, ref _pauseCursor)) { ChoosePause(_pauseCursor); return; }
         if (_menu.Confirm) { ChoosePause(_pauseCursor); return; }
 
@@ -2263,6 +2319,73 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             {
                 DrawHpBar(x, y, e.Radius[d], drawUnits, e.Hp[d] / e.MaxHp[d]);
             }
+
+            if (e.BurnLeft[d] > 0) DrawBurning(x, y, e.Radius[d], e.SpawnId[d]);
+        }
+    }
+
+    /// <summary>Frames in the burn loop. See tools/make-burn.mjs.</summary>
+    private const int BurnFrames = 3;
+
+    /// <summary>Frames a second. Fast enough to flicker, slow enough to read as three poses.</summary>
+    private const double BurnFps = 9;
+
+    /// <summary>
+    /// Flame TILE height as a multiple of the body's radius.
+    /// </summary>
+    /// <remarks>
+    /// IT IS THE TILE, NOT THE FLAME. The DCSS source is a 32x32 cell with a small tongue in
+    /// the middle of a lot of empty space, so the visible fire is roughly a third of what this
+    /// number produces. At 1.05 the flame came out about five pixels tall and could not be seen
+    /// at all, which is not restraint, it is absence.
+    /// </remarks>
+    private const double BurnScale = 2.3;
+
+    /// <summary>
+    /// Phase offset per unit of spawn id, in frames. Awkward on purpose, so consecutive ids do not
+    /// land on the same frame and a wave that arrived together does not burn in lockstep.
+    /// </summary>
+    private const double BurnStagger = 0.618;
+
+    /// <summary>
+    /// The two small flames a burning body wears.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE PLASMA THROWER'S WHOLE DAMAGE IS THE BURN, and before this there was nothing on screen
+    /// to distinguish a body about to fall over from one the bolt had merely passed - the fire was
+    /// a number in the pool and nowhere else.
+    /// </para>
+    /// <para>
+    /// TWO SMALL ONES OVER THE SHOULDERS rather than one big one on the centre: a single flame in
+    /// the middle reads as a status icon parked on top of a sprite, and an offset pair reads as the
+    /// thing itself alight.
+    /// </para>
+    /// <para>
+    /// ON THE COSMETIC CLOCK, so it keeps moving through a level-up freeze, and staggered by spawn
+    /// id so a burning crowd flickers as a crowd rather than as one animation played sixteen times.
+    /// </para>
+    /// </remarks>
+    private void DrawBurning(double x, double y, double radius, uint spawnId)
+    {
+        double stagger = spawnId * BurnStagger;
+        for (int i = 0; i < 2; i++)
+        {
+            double phase = _clockSec * BurnFps + stagger + i * 0.37;
+            int frame = (int)System.Math.Floor(phase) % BurnFrames;
+            if (frame < 0) frame += BurnFrames;
+
+            var tex = _sprites.Get($"burn_{frame}");
+            if (tex is null) return;
+
+            // A little bob, out of phase between the two, so neither the pair nor the loop is
+            // something the eye can lock onto.
+            double bob = System.Math.Sin(phase * System.Math.PI * 0.9 + i * 2.1) * radius * 0.09;
+            double size = radius * BurnScale;
+            Blit(tex,
+                 x + (i == 0 ? -1 : 1) * radius * 0.42,
+                 y - radius * 0.72 + bob,
+                 size * ((double)tex.Width / tex.Height), size, 0, Color.White);
         }
     }
 
@@ -2435,13 +2558,117 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // puddle reads as WET until it is nearly gone rather than as a slow dissolve from the
             // moment it lands.
             float t = (float)(frac > 0.25 ? 1 : frac / 0.25);
+            double age = life - p.Left[d];
 
-            var screen = _camera.ToScreen(p.X[d] - r, p.Y[d] - r);
-            int size = (int)System.Math.Max(2, r * 2 * _camera.Scale);
-            _batch.Draw(_sprites.Blank,
-                        new Rectangle((int)screen.X, (int)screen.Y, size, size),
-                        SludgeTint * (0.28f * t));
+            double cx = p.X[d];
+            double cy = p.Y[d];
+
+            // A SEED PER POOL, off the position it landed at. It has to be stable across frames or
+            // the bubbles would jump every time this runs, and it has to DIFFER between pools or
+            // sixteen puddles would boil in lockstep. The position is already unique per pool and
+            // already fixed for its whole life, so it is the seed - no field, no RNG, and nothing
+            // the renderer stores between frames.
+            uint seed = unchecked((uint)((int)(cx * 16) * 73856093) ^ (uint)((int)(cy * 16) * 19349663));
+
+            // IT SPREADS AS IT LANDS. A pool that appeared at full size read as a decal switched
+            // on; a quarter-second of growth reads as something poured. Only the first fifth of a
+            // second, so it is never the reason a body walked through unharmed.
+            double grow = age < 0.22 ? 0.55 + 0.45 * (age / 0.22) : 1;
+            double rr = r * grow;
+
+            // A LIP, A BODY AND A FLOOR. Three concentric fills read as depth where one fill and an
+            // outline read as a sticker: the outer ring is the raised edge the acid has eaten, the
+            // dark band under it is the shadow that edge casts inward, and the inner fill is the
+            // surface. Drawn largest first, so each sits ON the one before.
+            Disc(cx, cy, rr, SludgeRimTint * (0.5f * t));
+            Disc(cx, cy, rr * 0.94, SludgeDeepTint * (0.62f * t));
+            Disc(cx, cy, rr * 0.86, SludgeTint * (0.55f * t));
+
+            // DEEP PATCHES, WHICH DO NOT MOVE. Every bubble below is on a timer, and a surface
+            // whose only detail is animated reads as a screensaver - the eye needs something fixed
+            // to measure the movement against. Three or four dark blotches placed by the seed and
+            // never touched again are what make this a puddle with a bottom rather than a disc
+            // with sparkles on it.
+            seed = unchecked(seed * 1664525 + 1013904223);
+            int patches = 3 + (int)((seed >> 8) % 2);
+            for (int q = 0; q < patches; q++)
+            {
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double pang = (seed >> 8) / (double)(1 << 24) * System.Math.PI * 2;
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double pat = System.Math.Sqrt((seed >> 8) / (double)(1 << 24)) * rr * 0.55;
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double psize = rr * (0.16 + (seed >> 8) / (double)(1 << 24) * 0.16);
+                Disc(cx + System.Math.Cos(pang) * pat, cy + System.Math.Sin(pang) * pat, psize,
+                     SludgeFloorTint * (0.42f * t));
+            }
+
+            // ---- the bubbles ----------------------------------------------------------------
+            //
+            // EACH ONE SWELLS AND POPS ON ITS OWN CLOCK, at its own place and its own pace, and
+            // both come out of the seed. What makes it read as boiling rather than as blinking is
+            // that a bubble spends most of its cycle small and only briefly large - hence the
+            // cubed phase below - and that the pop leaves a ring behind for a moment.
+            int bubbles = 5 + (int)(rr / 7);
+            if (bubbles > 14) bubbles = 14;
+
+            for (int b = 0; b < bubbles; b++)
+            {
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double ang = (seed >> 8) / (double)(1 << 24) * System.Math.PI * 2;
+                seed = unchecked(seed * 1664525 + 1013904223);
+                // SQUARE-ROOTED so the bubbles scatter EVENLY over the disc: area grows with the
+                // square of the radius, and a plain uniform draw bunches them in the middle.
+                double at = System.Math.Sqrt((seed >> 8) / (double)(1 << 24)) * rr * 0.74;
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double rate = 0.55 + (seed >> 8) / (double)(1 << 24) * 1.0;
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double offset = (seed >> 8) / (double)(1 << 24);
+                seed = unchecked(seed * 1664525 + 1013904223);
+                double big = rr * (0.09 + (seed >> 8) / (double)(1 << 24) * 0.11);
+
+                double phase = (_clockSec * rate + offset) % 1.0;
+                double bx = cx + System.Math.Cos(ang) * at;
+                double by = cy + System.Math.Sin(ang) * at;
+
+                if (phase < 0.78)
+                {
+                    // Swelling. Cubed, so it is small for most of the cycle and only briefly full.
+                    double k = phase / 0.78;
+                    double br = big * k * k * k;
+                    // A DOME, NOT A DOT: a dark ring under a pale cap. A flat disc of one colour at
+                    // this size is a bullet hole; the two-tone is what gives it a curved top.
+                    Disc(bx, by, br, SludgeFloorTint * (0.55f * t));
+                    Disc(bx - br * 0.16, by - br * 0.18, br * 0.72, SludgeLightTint * (0.85f * t));
+                }
+                else
+                {
+                    // Popped: a ring opening outward and fading, which is what says it BURST
+                    // rather than that it was switched off.
+                    double k = (phase - 0.78) / 0.22;
+                    Ring(bx, by, big * (1 + k * 1.6), 2, SludgeLightTint * (float)(0.7 * (1 - k) * t));
+                }
+            }
         }
+    }
+
+    /// <summary>A filled circle, from the baked disc texture. See <see cref="Sprites.SoftDisc"/>.</summary>
+    private void Disc(double cx, double cy, double radius, Color tint)
+    {
+        if (radius <= 0) return;
+        float px = (float)(radius * 2 * _camera.Scale);
+        if (px < 1) return;
+        var at = _camera.ToScreen(cx, cy);
+        float k = px / Sprites.SoftDiscSize;
+        _batch.Draw(_sprites.SoftDisc,
+                    new Vector2(at.X, at.Y),
+                    null,
+                    tint,
+                    0f,
+                    new Vector2(Sprites.SoftDiscSize / 2f, Sprites.SoftDiscSize / 2f),
+                    new Vector2(k, k),
+                    SpriteEffects.None,
+                    0f);
     }
 
     private void DrawStrikeMarker(double x, double y, double radius)
@@ -2597,6 +2824,80 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // way a real mount would; spinning it about its own centre slides the whole barrel
             // round the chassis like a clock hand.
             BlitAbout(turret, px, py, tw, th, a, tint, RenderTables.TurretPivotX);
+        }
+
+        // LAST, SO IT SITS OVER THE HULL AND THE BARRELS. A field is in front of the machine as
+        // well as behind it, and a rim drawn under the mech would be a ring the chassis was
+        // standing on.
+        DrawShieldRim(w, px, py);
+    }
+
+    /// <summary>
+    /// The Energy Shield's rims: one blue ring per layer still standing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE SHIELD HAD NO PRESENCE IN THE WORLD AT ALL on this front-end. The HUD drew a pip per
+    /// layer and that was the whole of it, so the one chassis built entirely around the shield
+    /// (Plum, which carries no gun) played as a mech with an invisible mechanic - and every other
+    /// build holding the card had no way to see the rim it was about to lose. The web build has
+    /// drawn these rings since the card shipped; this is that, ported.
+    /// </para>
+    /// <para>
+    /// IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait. It is a field, not a
+    /// part of the machine, and a ring that walked with the legs would read as painted on.
+    /// </para>
+    /// <para>
+    /// THE PULSE RUNS ON THE COSMETIC CLOCK rather than on sim time, so it keeps breathing through
+    /// a level-up freeze - when the simulation is stopped and the rim is one of the few things on
+    /// screen still moving.
+    /// </para>
+    /// </remarks>
+    private void DrawShieldRim(World w, double px, double py)
+    {
+        int layers = (int)w.Player.ShieldLayers;
+        if (layers <= 0) return;
+
+        double pulse = (System.Math.Sin(_clockSec * ShieldPulseHz * System.Math.PI * 2) + 1) * 0.5;
+        var tint = ShieldRimTint * (float)(ShieldAlphaMin + (ShieldAlphaMax - ShieldAlphaMin) * pulse);
+
+        for (int i = 0; i < layers; i++)
+        {
+            Ring(px, py, ShieldRimRadius + i * ShieldRimStep, ShieldRimWidth, tint);
+        }
+    }
+
+    /// <summary>
+    /// A circle outline, as <see cref="ShieldRimSegments"/> short quads laid end to end.
+    /// </summary>
+    /// <remarks>
+    /// EACH SEGMENT IS A ROTATED QUAD, not a dot. The artillery marker draws its ring as unrotated
+    /// squares, which is fine for a dashed target ring and wrong for a continuous one: at this
+    /// radius the gaps between squares are wider than the squares. A quad as long as the arc it
+    /// covers closes them, and one extra sine and cosine per segment is nothing at 56 of them.
+    /// </remarks>
+    private void Ring(double cx, double cy, double radius, double thickness, Color tint)
+    {
+        double step = System.Math.PI * 2 / ShieldRimSegments;
+        // A shade over the exact arc length, so consecutive segments overlap rather than leaving a
+        // hairline of background between them.
+        float len = (float)(radius * step * 1.15 * _camera.Scale);
+        float thick = (float)System.Math.Max(1, thickness * _camera.Scale);
+
+        for (int i = 0; i < ShieldRimSegments; i++)
+        {
+            double a = i * step;
+            var at = _camera.ToScreen(cx + System.Math.Cos(a) * radius,
+                                      cy + System.Math.Sin(a) * radius);
+            _batch.Draw(_sprites.Blank,
+                        new Vector2(at.X, at.Y),
+                        null,
+                        tint,
+                        (float)(a + System.Math.PI / 2),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(thick, len),
+                        SpriteEffects.None,
+                        0f);
         }
     }
 
@@ -2768,7 +3069,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             WeaponIds.Cannon => inst.Level >= UpgradeCatalog.WeaponAscendedTier
                                 ? "turret_twin" : "turret",
-            WeaponIds.PhaseCannon => "turret_phase",
+            // THE TWO SHARED MOUNTS, and both were missing here. `WeaponDef.Excludes` guarantees a
+            // loadout can never hold both halves of a pair, so a shared barrel can never be owed
+            // to two live guns at once - which is exactly why they SHARE the sprite rather than
+            // each needing one. Without these rows the Mortar and the Plasma Thrower drew no
+            // turret at all: a mech that fired from nowhere and whose mount never tracked.
+            WeaponIds.Mortar => "turret",
+            WeaponIds.PhaseCannon or WeaponIds.Plasma => "turret_phase",
             WeaponIds.MachineGun or WeaponIds.FlakCannon => "turret_mg",
             _ => "",
         };

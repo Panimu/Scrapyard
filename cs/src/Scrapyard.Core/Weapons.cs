@@ -927,9 +927,17 @@ public static class Weapons
     /// also means this pattern touches no RNG stream at all.
     /// </para>
     /// <para>
-    /// ONE MAGAZINE ROUND FOR THE WHOLE FAN, where spread and cone both spend one per shell. The
-    /// magazine is three deep and takes six seconds to fill, so a fan that cost three rounds would
-    /// be a single shot per reload - the fan is the shot, and it is billed as one.
+    /// THE FAN IS LAID ACROSS THE MAGAZINE, NOT ACROSS A VOLLEY. One glob leaves per throw, and
+    /// WHICH WAY it goes is decided by how many rounds are left: a full rack throws to one edge of
+    /// the cone, the next throw a step further round, and the last round reaches the far edge.
+    /// Emptying a magazine paints the whole arc - the same wall a three-at-once volley made -
+    /// except that it arrives as three separate decisions the player can walk between.
+    /// </para>
+    /// <para>
+    /// IT COSTS NO STATE. The magazine is already a counter that runs down and refills and is
+    /// already in the hash, so the pattern needs no field of its own and a reload cannot leave the
+    /// fan halfway round the cone. A capacity tier makes the wall FINER rather than each throw
+    /// bigger, which is the right shape for a tier on this gun.
     /// </para>
     /// </remarks>
     private static void FireSludge(World world, int weaponIdx, WeaponInstance inst)
@@ -939,7 +947,12 @@ public static class Weapons
         var projectiles = world.Projectiles;
         var player = world.Player;
 
-        if (stats.AmmoCapacity > 0)
+        // READ BEFORE THE DECREMENT, because the angle comes off what the rack held when the
+        // trigger was pulled. Reading it after would put a full rack's first throw on the second
+        // position and fire the last throw from an empty one.
+        double cap = stats.AmmoCapacity;
+        double heldRounds = inst.Ammo;
+        if (cap > 0)
         {
             if (inst.Ammo <= 0) return;
             inst.Ammo--;
@@ -956,13 +969,21 @@ public static class Weapons
 
         int count = stats.ProjectileCount >= 1 ? (int)stats.ProjectileCount : 1;
         double half = stats.SpreadAngle * 0.5;
-        // EVEN OFFSETS ACROSS THE FULL ARC, edge to edge: with three globs that is -45, 0, +45. A
-        // single glob goes straight back, which is what the divisor guards.
-        double step = count > 1 ? stats.SpreadAngle / (count - 1) : 0;
+
+        // WHERE IN THE ARC THIS THROW GOES, from the rack. cap - held counts UP from 0 as the
+        // magazine empties, so a full rack starts at one edge and the last round reaches the other.
+        // A gun with no magazine throws straight back - it has no rack to walk across.
+        double shot = cap > 1 ? (cap - heldRounds) / (cap - 1) : 0.5;
+        double aimAt = cap > 1 ? -half + stats.SpreadAngle * shot : 0;
+
+        // Any glob beyond the first fans about THAT heading rather than about the mech's back, so a
+        // future tier throwing two at once would throw them as a pair either side of where this
+        // shot was going. Today ProjectileCount is 1 and this is the identity.
+        double step = count > 1 ? stats.SpreadAngle * 0.25 / (count - 1) : 0;
 
         for (int i = 0; i < count; i++)
         {
-            double a = count > 1 ? -half + step * i : 0;
+            double a = aimAt + (count > 1 ? -stats.SpreadAngle * 0.125 + step * i : 0);
             double c = Trig.Cos(a);
             double sn = Trig.Sin(a);
             double dirX = baseX * c - baseY * sn;

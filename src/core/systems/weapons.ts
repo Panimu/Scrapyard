@@ -1628,9 +1628,19 @@ export const firePhase: FirePattern = (world, weaponIdx, inst, targets, targetCo
  * which is what makes the pools a readable WALL behind you rather than a scatter. It also means
  * this pattern touches no RNG stream at all.
  *
- * ONE MAGAZINE ROUND FOR THE WHOLE FAN, where `spread` and `cone` both spend one per shell. The
- * magazine is three deep and takes six seconds to fill, so a fan that cost three rounds would be
- * a single shot per reload - the fan is the shot, and it is billed as one.
+ * THE FAN IS LAID ACROSS THE MAGAZINE, NOT ACROSS A VOLLEY, and that is the part worth reading
+ * twice. One glob leaves per throw, and WHICH WAY it goes is decided by how many rounds are left:
+ * a full rack throws to one edge of the cone, the next throw a step further round, and the last
+ * round in the rack reaches the far edge. Emptying a magazine therefore paints the whole arc - the
+ * same wall a three-at-once volley made - except that it arrives as three separate decisions the
+ * player can walk between rather than as one event.
+ *
+ * IT COSTS NO STATE. The magazine is already a counter that runs down and refills, and it is
+ * already in the hash; deriving the angle from it means the pattern needs no field of its own and
+ * a reload cannot leave the fan halfway round the cone.
+ *
+ * AND A CAPACITY TIER MAKES THE WALL FINER rather than making each throw bigger, which is the
+ * right shape for a tier on this gun: more pools, more closely spaced, over the same arc.
  */
 export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targetCount): void => {
   const def = world.weaponCatalog[inst.defId] as WeaponDef;
@@ -1638,7 +1648,12 @@ export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const projectiles = world.projectiles;
   const player = world.player;
 
-  if (stats.ammoCapacity > 0) {
+  // READ BEFORE THE DECREMENT, because the angle is derived from what the rack held when the
+  // trigger was pulled. Reading it after would make a full rack's first throw land on the second
+  // position and the last throw fire from an empty one.
+  const cap = stats.ammoCapacity;
+  const held = inst.ammo;
+  if (cap > 0) {
     if (inst.ammo <= 0) return;
     inst.ammo--;
   }
@@ -1655,12 +1670,22 @@ export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const count = stats.projectileCount >= 1 ? stats.projectileCount : 1;
   const behaviour = BEHAVIOUR_ID[def.behaviour];
   const half = stats.spreadAngle * 0.5;
-  // EVEN OFFSETS ACROSS THE FULL ARC, edge to edge: with three globs that is -45, 0, +45. A single
-  // glob goes straight back, which is what the divisor guards.
-  const step = count > 1 ? stats.spreadAngle / (count - 1) : 0;
+
+  // WHERE IN THE ARC THIS THROW GOES, from the rack. `cap - held` counts UP from 0 as the magazine
+  // empties, so a full rack starts at one edge and the last round reaches the other.
+  //
+  // A gun with no magazine at all throws straight back - it has no rack to walk across, and the
+  // alternative would be dividing by zero.
+  const shot = cap > 1 ? (cap - held) / (cap - 1) : 0.5;
+  const aimAt = cap > 1 ? -half + stats.spreadAngle * shot : 0;
+
+  // Any glob beyond the first fans about that heading rather than about the mech's back, so a
+  // future tier that threw two at once would throw them as a PAIR either side of where this shot
+  // was going. Today `projectileCount` is 1 and this is the identity.
+  const step = count > 1 ? stats.spreadAngle * 0.25 / (count - 1) : 0;
 
   for (let i = 0; i < count; i++) {
-    const a = count > 1 ? -half + step * i : 0;
+    const a = aimAt + (count > 1 ? -stats.spreadAngle * 0.125 + step * i : 0);
     const c = dcos(a);
     const sn = dsin(a);
     const dirX = baseX * c - baseY * sn;

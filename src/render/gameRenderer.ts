@@ -125,6 +125,41 @@ const PICKUP_SPRITES = 560; // GEM_SOFT_CAP is 500, plus the barrels' consumable
 const PROJECTILE_SPRITES = 256; // PROJECTILE_CAP
 const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;
+
+/**
+ * TWO FLAMES PER BURNING BODY, and the Plasma Thrower's whole purpose is to have a great many
+ * burning at once - the card's own unlock asks for thirty. 320 is comfortably past the peak a
+ * maxed thrower reaches and still one small pool.
+ */
+const FLAME_SPRITES = 320;
+
+/** Frames in the burn loop. See tools/make-burn.mjs. */
+const BURN_FRAMES = 3;
+
+/** Frames a second the loop runs at. Fast enough to flicker, slow enough to read as three poses. */
+const BURN_FPS = 9;
+
+/** The source tile's size, in px. All three frames are 32x32 DCSS tiles. */
+const BURN_SRC = 32;
+
+/**
+ * Flame TILE height as a multiple of the body's radius.
+ *
+ * IT IS THE TILE, NOT THE FLAME. The DCSS source is a 32x32 cell with a small tongue in the
+ * middle of a lot of empty space, so the visible fire is roughly a third of whatever this
+ * number produces. At 1.05 - which is what "small on purpose" first meant - the flame came out
+ * about five pixels tall and could not be seen at all, which is not restraint, it is absence.
+ */
+const BURN_SCALE = 2.3;
+
+/**
+ * Phase offset per unit of spawnId, in frames.
+ *
+ * IRRATIONAL-ISH ON PURPOSE, so consecutive spawn ids do not land on the same frame and a wave
+ * that arrived together does not burn in lockstep - which is the single thing that would make a
+ * crowd of these read as an effect rather than as fire.
+ */
+const BURN_STAGGER = 0.618;
 /** DRONE_CAP is 8. Sixteen is slack for a second drone source. */
 const DRONE_SPRITES = 16;
 /**
@@ -283,6 +318,27 @@ const PLASMA_TINT = 0x55c8ff;
 const FLAME_TINT = 0xff8a3c;
 /** Toxic Sludge, glob and pool alike - one colour so the two read as the same substance. */
 const SLUDGE_TINT = 0x8ce03a;
+
+/** The pool's darker body, under its rim. */
+const SLUDGE_DARK = 0x4a8c1c;
+
+/** The bubbles' caps, and the rings they leave when they pop. */
+const SLUDGE_LIGHT = 0xeaffb4;
+
+/** The raised lip the acid has eaten around the pool's edge. */
+const SLUDGE_RIM = 0xa8e85a;
+
+/** The bottom: deep patches, and the shaded underside of every bubble. */
+const SLUDGE_DEEP = 0x2c5c10;
+
+/** How long a pool takes to spread to full size, in seconds. */
+const PUDDLE_SPREAD_SEC = 0.22;
+
+/** Ceiling on bubbles per pool. The count scales with radius up to this. */
+const PUDDLE_MAX_BUBBLES = 14;
+
+/** Fraction of a bubble's cycle spent swelling. The rest is the pop. */
+const PUDDLE_SWELL_FRAC = 0.78;
 const STRIKE_RING_WIDTH = 2;
 const STRIKE_FILL_ALPHA = 0.1;
 const STRIKE_RING_ALPHA = 0.75;
@@ -469,6 +525,8 @@ export class GameRenderer {
   private readonly projectiles: SpritePool;
   private readonly drones: SpritePool;
   private readonly glows: SpritePool;
+  /** The flames on burning bodies. See BURN_* and drawEnemies. */
+  private readonly flames: SpritePool;
   private readonly beams: BeamLayer;
   private readonly effects: Effects;
 
@@ -600,6 +658,13 @@ export class GameRenderer {
       blendMode: 'add',
       label: 'glows',
     });
+    // NORMAL BLENDED, not additive. An additive flame over a dark body washes out to a pale smear
+    // and stops reading as fire; these tiles already carry their own light.
+    this.flames = new SpritePool({
+      capacity: FLAME_SPRITES,
+      texture: tex.burn[0],
+      label: 'flames',
+    });
     // Effects first: the beam layer spawns impact debris, burn marks and the overheat sputter
     // through it, so it holds the reference for the life of the renderer.
     this.effects = new Effects(tex);
@@ -652,6 +717,8 @@ export class GameRenderer {
       this.trails.container,
       this.glows.container,
       this.effects.addPool.container,
+      // Over the horde and over the glows: a body is on fire, and the fire is in front of it.
+      this.flames.container,
       // The beam layer goes after them because its own halo is additive too - it extends that
       // single run - and only its opaque cores flip the blend state back, once, at the very end.
       this.beams.container,
@@ -1377,11 +1444,13 @@ export class GameRenderer {
     const pool = this.enemies;
     const bars = this.hpBars;
     const glows = this.glows;
+    const flames = this.flames;
     const art = this.creatureArt;
 
     pool.begin();
     bars.begin();
     glows.begin();
+    flames.begin();
 
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
@@ -1569,6 +1638,33 @@ export class GameRenderer {
         }
       }
 
+      // ON FIRE, AND SAYING SO. The Plasma Thrower's whole damage is the burn, and before this
+      // there was nothing on screen to distinguish a body about to fall over from one the bolt had
+      // merely passed. Two small tongues over the shoulders rather than one big one on the centre:
+      // one flame in the middle reads as a status icon parked on top of a sprite, and two offset
+      // ones read as the thing itself alight.
+      //
+      // STAGGERED BY spawnId so a burning crowd flickers as a crowd rather than as one animation
+      // played sixteen times, and driven by the COSMETIC clock so it keeps moving through a
+      // level-up freeze.
+      if (p.burnLeft[d] > 0) {
+        const stagger = p.spawnId[d] * BURN_STAGGER;
+        for (let i = 0; i < 2; i++) {
+          const f = flames.acquire();
+          if (f === undefined) break;
+          const phase = this.clock * BURN_FPS + stagger + i * 0.37;
+          const frame = Math.floor(phase) % BURN_FRAMES;
+          f.texture = this.tex.burn[frame < 0 ? frame + BURN_FRAMES : frame];
+          // A little bob, out of phase between the two, so neither the pair nor the loop is
+          // something the eye can lock onto.
+          const bob = Math.sin(phase * Math.PI * 0.9 + i * 2.1) * radius * 0.09;
+          f.position.set(x + (i === 0 ? -1 : 1) * radius * 0.42, y - radius * 0.72 + bob);
+          const size = radius * BURN_SCALE;
+          f.scale.set(size / BURN_SRC);
+          f.alpha = 0.95;
+        }
+      }
+
       // RANK DECIDES THE BAR, AND NOTHING ELSE DOES. Elites and bosses always carry one; a
       // regular never does, whatever chassis it happens to be built on.
       //
@@ -1586,6 +1682,7 @@ export class GameRenderer {
     pool.end();
     bars.end();
     glows.end();
+    flames.end();
   }
 
   /**
@@ -1922,8 +2019,89 @@ export class GameRenderer {
       // reads as WET until it is nearly gone rather than as a slow dissolve from the moment it
       // lands - which would make every pool look like it was already expiring.
       const t = frac > 0.25 ? 1 : frac / 0.25;
-      g.circle(p.x[d], p.y[d], r).fill({ color: SLUDGE_TINT, alpha: 0.3 * t });
-      g.circle(p.x[d], p.y[d], r).stroke({ width: 2, color: SLUDGE_TINT, alpha: 0.55 * t });
+      const age = life - p.left[d];
+
+      const cx = p.x[d];
+      const cy = p.y[d];
+
+      // IT SPREADS AS IT LANDS. A pool that appeared at full size read as a decal switched on; a
+      // fifth of a second of growth reads as something poured. Short enough that it is never the
+      // reason a body walked through unharmed.
+      const grow = age < PUDDLE_SPREAD_SEC ? 0.55 + 0.45 * (age / PUDDLE_SPREAD_SEC) : 1;
+      const rr = r * grow;
+
+      // A LIP, A BODY AND A FLOOR. Three concentric fills read as depth where one fill and an
+      // outline read as a sticker: the outer ring is the raised edge the acid has eaten, the dark
+      // band under it is the shadow that edge casts inward, and the inner fill is the surface.
+      g.circle(cx, cy, rr).fill({ color: SLUDGE_RIM, alpha: 0.5 * t });
+      g.circle(cx, cy, rr * 0.94).fill({ color: SLUDGE_DARK, alpha: 0.62 * t });
+      g.circle(cx, cy, rr * 0.86).fill({ color: SLUDGE_TINT, alpha: 0.55 * t });
+
+      // ---- the bubbles ------------------------------------------------------------------------
+      //
+      // A SEED PER POOL, off the position it landed at. It has to be stable across frames or the
+      // bubbles would jump every time this runs, and it has to DIFFER between pools or sixteen
+      // puddles would boil in lockstep. The landing position is already unique per pool and fixed
+      // for its whole life, so it IS the seed - no field, no RNG, nothing stored between frames.
+      //
+      // NOT FROM `world.rng`. The renderer must never touch the simulation's randomness: drawing a
+      // frame twice would then change the run.
+      let seed = (Math.imul(Math.floor(cx * 16), 73856093) ^ Math.imul(Math.floor(cy * 16), 19349663)) >>> 0;
+      const rand = (): number => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return (seed >>> 8) / 0x1000000;
+      };
+
+      // DEEP PATCHES, which do not move. Every bubble in this pool is on a timer, and a surface
+      // where the ONLY detail is animated reads as a screensaver - the eye needs something fixed
+      // to measure the movement against. Three or four dark blotches, placed by the seed and never
+      // touched again, are what make it a puddle with a bottom rather than a disc with sparkles.
+      const patches = 3 + Math.floor(rand() * 2);
+      for (let q = 0; q < patches; q++) {
+        const ang = rand() * Math.PI * 2;
+        const at = Math.sqrt(rand()) * rr * 0.55;
+        const size = rr * (0.16 + rand() * 0.16);
+        g.circle(cx + Math.cos(ang) * at, cy + Math.sin(ang) * at, size)
+          .fill({ color: SLUDGE_DEEP, alpha: 0.42 * t });
+      }
+
+      let bubbles = 5 + Math.floor(rr / 7);
+      if (bubbles > PUDDLE_MAX_BUBBLES) bubbles = PUDDLE_MAX_BUBBLES;
+
+      for (let b = 0; b < bubbles; b++) {
+        const ang = rand() * Math.PI * 2;
+        // SQUARE-ROOTED so they scatter EVENLY over the disc: area grows with the square of the
+        // radius, and a plain uniform draw bunches them in the middle.
+        const at = Math.sqrt(rand()) * rr * 0.74;
+        const rate = 0.55 + rand() * 1.0;
+        const offset = rand();
+        const big = rr * (0.09 + rand() * 0.11);
+
+        const phase = (this.clock * rate + offset) % 1;
+        const bx = cx + Math.cos(ang) * at;
+        const by = cy + Math.sin(ang) * at;
+
+        if (phase < PUDDLE_SWELL_FRAC) {
+          // Swelling. Cubed, so it is small for most of its cycle and only briefly full - which is
+          // what makes the field read as boiling rather than as blinking.
+          const k = phase / PUDDLE_SWELL_FRAC;
+          const br = big * k * k * k;
+          // A DOME, NOT A DOT: a dark ring under a pale cap. A flat disc of one colour at this size
+          // is a bullet hole; the two-tone is what gives it a curved top.
+          g.circle(bx, by, br).fill({ color: SLUDGE_DEEP, alpha: 0.55 * t });
+          g.circle(bx - br * 0.16, by - br * 0.18, br * 0.72)
+            .fill({ color: SLUDGE_LIGHT, alpha: 0.85 * t });
+        } else {
+          // Popped: a ring opening outward and fading, which is what says it BURST rather than
+          // that it was switched off.
+          const k = (phase - PUDDLE_SWELL_FRAC) / (1 - PUDDLE_SWELL_FRAC);
+          g.circle(bx, by, big * (1 + k * 1.6)).stroke({
+            width: 2,
+            color: SLUDGE_LIGHT,
+            alpha: 0.7 * (1 - k) * t,
+          });
+        }
+      }
     }
   }
 

@@ -562,7 +562,10 @@ public static class WeaponCatalog
             Cooldown = 0.9,
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
-            ProjectileCount = 3, // three globs per shot, one magazine round for all three
+            // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a
+            // volley - see FireSludge - so emptying a rack still paints the whole arc, one pool at
+            // a time, and a capacity tier makes the wall finer instead of each throw bigger.
+            ProjectileCount = 1,
             // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The puddle hook hangs off the glob's
             // EXPIRY, so a glob stopped by a body would pool at the mech's feet instead.
             Pierce = 250,

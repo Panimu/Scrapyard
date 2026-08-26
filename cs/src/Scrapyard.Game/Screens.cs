@@ -1802,21 +1802,37 @@ public static class Screens
         int radius = 7 * scale;
         int thick = System.Math.Max(1, scale / 2);
 
-        // MEASURED AND CENTRED, the same as the title. What is carried sits UNDER the buttons rather
-        // than beside them, because on a phone there is only one column and the run is the thing
-        // being resumed - the loadout is what you paused to look at, and the button is how you leave.
+        // TWO COLUMNS THROUGHOUT, and it is about the one thing this screen was short of: HEIGHT.
+        // Six buttons in a stack over two stacked loadout lists ran past the bottom of a short
+        // window, and the fix costs nothing because neither a button nor a card slot ever needed
+        // the full width of the column - both are a short label and, at most, a tier.
+        //
+        // WEAPONS AND SYSTEMS SIDE BY SIDE rather than one under the other, so the panel is as tall
+        // as the LONGER list instead of as tall as both. They are also the two halves of one
+        // question - what is on the mech - and reading them as a pair is what the player is doing.
+        int colGap = gap;
+        int colW = (width - colGap) / 2;
+
         var loadout = Loadout(w);
         int slotH = 13 * scale + UiFont.GlyphH(small);
         int loadH = 0;
         foreach (var (_, slots) in loadout)
         {
-            loadH += UiFont.LineHeight(small) + 4 * scale
-                   + System.Math.Max(1, slots.Count) * (slotH + 2 * scale) + 8 * scale;
+            int h = UiFont.LineHeight(small) + 4 * scale
+                  + System.Math.Max(1, slots.Count) * (slotH + 2 * scale);
+            // The TALLER column, not the sum: they are drawn beside each other.
+            if (h > loadH) loadH = h;
         }
+
+        loadH += 8 * scale;
+
+        // Two per row, and an odd count leaves the last button alone on its row rather than
+        // stretched across it - a wide button beside nothing reads as a different KIND of control.
+        int menuRows = (rows.Length + 1) / 2;
 
         int titleH = UiFont.GlyphH(scale * 2) + 6 * scale;
         int statH = UiFont.LineHeight(small) + 12 * scale;
-        int menuH = rows.Length * (rowH + gap);
+        int menuH = menuRows * (rowH + gap);
         int noteH = UiFont.LineHeight(small) + 12 * scale;
         int y = System.Math.Max(10 * scale, (vh - (titleH + statH + menuH + loadH + noteH)) / 2);
 
@@ -1830,58 +1846,105 @@ public static class Screens
                          vw / 2, y, small, Palette.Faint);
         y += statH;
 
+        // APPENDED IN INDEX ORDER whatever the geometry: the hit rectangles are matched to rows by
+        // POSITION in this list, so a grid that appended column-by-column would put the cursor on
+        // the wrong button for every click.
         for (int i = 0; i < rows.Length; i++)
         {
-            var r = new Rectangle(x0, y, width, rowH);
+            int col = i % 2;
+            int row = i / 2;
+            var r = new Rectangle(x0 + col * (colW + colGap), y + row * (rowH + gap), colW, rowH);
             outRects?.Add(r);
             Button(batch, sprites, r, rows[i].Label, scale, i == 0, i == cursor);
-            y += rowH + gap;
         }
+
+        y += menuRows * (rowH + gap);
 
         // WHAT IS BEING CARRIED, which is the other reason a player pauses. The card text says what
         // a weapon does; this says what is actually on the mech and at what tier, which is the
         // question the level-up screen keeps asking and nothing else answers.
         y += 4 * scale;
-        foreach (var (title, slots) in loadout)
+
+        // BOTH COLUMNS START AT THE SAME y AND EACH KEEPS ITS OWN CURSOR, so five weapons beside
+        // two systems leaves a gap under the systems rather than dragging the weapons down.
+        int listTop = y;
+        int listBottom = y;
+        for (int col = 0; col < loadout.Count; col++)
         {
-            UiDraw(batch, sprites, Spaced(title), x0 + 2 * scale, y, small, Palette.Faint);
-            y += UiFont.LineHeight(small) + 4 * scale;
+            var (title, slots) = loadout[col];
+            int cx = x0 + col * (colW + colGap);
+            int cy = listTop;
+
+            UiDraw(batch, sprites, Spaced(title), cx + 2 * scale, cy, small, Palette.Faint);
+            cy += UiFont.LineHeight(small) + 4 * scale;
 
             // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a panel
             // that failed to load; a hollow slot with "EMPTY" in it reads as a mount you have not
             // filled - which is the thing the player is actually deciding about.
             if (slots.Count == 0)
             {
-                var r = new Rectangle(x0, y, width, slotH);
+                var r = new Rectangle(cx, cy, colW, slotH);
                 RoundOutline(batch, sprites, r, 4 * scale, thick, Palette.Button);
                 UiDraw(batch, sprites, "EMPTY", r.X + 6 * scale,
                           r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
-                y += slotH + 2 * scale;
+                cy += slotH + 2 * scale;
             }
 
             foreach (var (name, tier) in slots)
             {
-                var r = new Rectangle(x0, y, width, slotH);
+                var r = new Rectangle(cx, cy, colW, slotH);
                 RoundRect(batch, sprites, r, 4 * scale, Palette.Button);
                 batch.Draw(sprites.Blank,
                            new Rectangle(r.X, r.Y + 2 * scale, 2 * scale, r.Height - 4 * scale),
                            Palette.Accent);
 
-                UiDraw(batch, sprites, name, r.X + 6 * scale,
-                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Ink);
+                // THE TIER IS RESERVED FIRST and the name is trimmed to what is left. At half width
+                // the longest ascension names ran under "T7" and the two overlapped into a smear -
+                // and the tier is the half that has to survive, because a name is already legible
+                // from its first few letters.
                 string t = "T" + tier;
-                UiDraw(batch, sprites, t, r.Right - 6 * scale - UiFont.Measure(t, small),
+                int tw = UiFont.Measure(t, small);
+                int room = r.Width - 12 * scale - tw - 4 * scale;
+                UiDraw(batch, sprites, Fit(name, small, room), r.X + 6 * scale,
+                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Ink);
+                UiDraw(batch, sprites, t, r.Right - 6 * scale - tw,
                           r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Accent);
-                y += slotH + 2 * scale;
+                cy += slotH + 2 * scale;
             }
-            y += 8 * scale;
+
+            if (cy > listBottom) listBottom = cy;
         }
+
+        y = listBottom + 8 * scale;
 
         // ABANDONING IS SAFE, and saying so matters: the banking rule means everything earned is
         // already in the save. A player who does not know that will keep playing a run they are not
         // enjoying to protect progress they already have.
         UiDrawCentred(batch, sprites, "EVERYTHING EARNED IS ALREADY BANKED", vw / 2,
                          y + 4 * scale, small, Palette.Dim);
+    }
+
+    /// <summary>
+    /// <paramref name="text"/>, cut to fit <paramref name="room"/> pixels, with a trailing dot.
+    /// </summary>
+    /// <remarks>
+    /// A CUT NAME STILL READS; TWO NAMES ON TOP OF EACH OTHER DO NOT. The pause list went to half
+    /// width and the longest ascension names stopped fitting beside their tier, so this trims from
+    /// the end and marks that it did rather than letting the two overlap. It MEASURES rather than
+    /// counting characters, because the font is not fixed width.
+    /// </remarks>
+    private static string Fit(string text, int scale, int room)
+    {
+        if (room <= 0) return "";
+        if (UiFont.Measure(text, scale) <= room) return text;
+
+        for (int n = text.Length - 1; n > 0; n--)
+        {
+            string cut = text.Substring(0, n) + ".";
+            if (UiFont.Measure(cut, scale) <= room) return cut;
+        }
+
+        return "";
     }
 
     /// <summary>What is on the mech, by pool, named at the tier it is actually at.</summary>

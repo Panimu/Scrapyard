@@ -1913,10 +1913,10 @@ export const SLUDGE: WeaponDef = Object.freeze({
     cooldown: 0.9,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,
-    // THREE GLOBS PER SHOT, one magazine round for all three - see fireSludge. Three is what
-    // makes a fan read as a fan, and it is what lets the tier ladder widen the pools rather than
-    // add more of them.
-    projectileCount: 3,
+    // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a volley - see
+    // fireSludge - so emptying a rack still paints the whole arc, one pool at a time, and a
+    // capacity tier makes the wall finer instead of making each throw bigger.
+    projectileCount: 1,
     // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The hook that drops a puddle hangs off the
     // glob's EXPIRY (systems/projectiles.ts), so a glob stopped by a body would leave its pool at
     // the mech's feet instead of behind it. Over a 68-unit throw nothing can absorb this many

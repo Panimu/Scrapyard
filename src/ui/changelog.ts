@@ -46,6 +46,30 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T08:05Z',
+    title: 'BURNING ENEMIES ARE ON FIRE NOW',
+    notes: [
+      'An enemy the Plasma Thrower has lit wears flames. Most of that weapon’s damage is the burn and none of it was visible — a body about to fall over looked exactly like one the bolt had missed.',
+    ],
+  },
+  {
+    at: '2026-08-26T08:05Z',
+    title: 'TOXIC SLUDGE THROWS ONE AT A TIME',
+    notes: [
+      'One glob per throw instead of three at once, and where it goes is decided by how full the rack is: a full magazine throws to one edge of the arc, the next throw a step further round, and the last round reaches the far edge. Emptying a magazine still paints the whole wall — it just arrives as three decisions you can walk between rather than one event.',
+      'The pools are round, and they look like acid: a raised lip, a dark bottom, and bubbles that swell and pop. They were flat squares.',
+    ],
+  },
+  {
+    at: '2026-08-26T08:05Z',
+    title: 'DESKTOP: THE SHIELD, THE BIG TURRETS, AND A SHORTER PAUSE MENU',
+    notes: [
+      'The Energy Shield draws its rims around the mech. It had none — the only sign you were carrying one was a pip in the corner, which made the chassis built entirely around it (Plum, which has no gun) a mech with an invisible mechanic.',
+      'The Mortar and the Plasma Thrower have their turrets back. Both bolt onto a mount another gun already uses, and neither was listed — so both fired from nowhere and neither barrel tracked.',
+      'The pause menu fits: buttons two to a row, and what you are carrying is laid out weapons beside systems instead of one list under the other.',
+    ],
+  },
+  {
     at: '2026-08-26T07:19Z',
     title: 'DESKTOP: THE PAUSE MENU AND THE CHEST REELS',
     notes: [

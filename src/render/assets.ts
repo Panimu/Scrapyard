@@ -346,6 +346,11 @@ export interface GameTextures {
   /** The drone, drawn by `npm run drone`. Circular on purpose - see tools/make-drone.mjs. */
   readonly drone: Texture;
   /**
+   * THE THREE FLAME FRAMES a burning body wears, in animation order. Vendored DCSS tiles copied
+   * through `npm run burn` - see tools/make-burn.mjs for why they are not drawn.
+   */
+  readonly burn: readonly Texture[];
+  /**
    * MOSSY MAYHEM'S WALL SEGMENTS. Four sets, all baked by `npm run walls`.
    *
    * `wallTiles` is the 4x4 AUTOTILE, indexed `row * 4 + col`, where the two indices are the ones
@@ -535,6 +540,7 @@ export async function loadGameTextures(
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
+  keys.push('burn_0', 'burn_1', 'burn_2');
   // Mossy Mayhem's walls. `mwall_t<col><row>` is the autotile; see GameTextures.wallTiles.
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) keys.push(`mwall_t${col}${row}`);
@@ -663,6 +669,7 @@ export async function loadGameTextures(
     fxBurst: get('fx_burst'),
     fxSparkle: get('fx_sparkle'),
     fxTrail: get('fx_trail'),
+    burn: [get('burn_0'), get('burn_1'), get('burn_2')],
   };
 }
 

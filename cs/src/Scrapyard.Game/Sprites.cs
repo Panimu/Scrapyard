@@ -59,6 +59,18 @@ public sealed class Sprites
     /// <summary>The size of <see cref="SoftRect"/>, in texels.</summary>
     public const int SoftRectSize = 128;
 
+    /// <summary>A white disc with an ANTIALIASED edge, for the round things.</summary>
+    /// <remarks>
+    /// SAME ARGUMENT AS <see cref="SoftRect"/>, one shape further along. A circle assembled out of
+    /// stretched 1x1 texels is either a staircase or a polygon: Toxic Sludge's pools were drawn as
+    /// squares because a square was the only shape a single texel could make cheaply, and a square
+    /// puddle is not a puddle. One baked disc draws in one call at any size and any tint.
+    /// </remarks>
+    public Texture2D SoftDisc { get; }
+
+    /// <summary>The size of <see cref="SoftDisc"/>, in texels.</summary>
+    public const int SoftDiscSize = 128;
+
     public Sprites(GraphicsDevice device, string root)
     {
         _device = device;
@@ -66,6 +78,7 @@ public sealed class Sprites
         Blank = new Texture2D(device, 1, 1);
         Blank.SetData(new[] { Microsoft.Xna.Framework.Color.White });
         SoftRect = MakeSoftRect(device);
+        SoftDisc = MakeSoftDisc(device);
     }
 
     /// <summary>
@@ -104,6 +117,48 @@ public sealed class Sprites
                         double dx = System.Math.Max(System.Math.Max(r - px, px - (n - r)), 0);
                         double dy = System.Math.Max(System.Math.Max(r - py, py - (n - r)), 0);
                         if (dx * dx + dy * dy <= (double)r * r) hits++;
+                    }
+                }
+
+                float a = hits / (float)(sub * sub);
+                data[y * n + x] = new Microsoft.Xna.Framework.Color(a, a, a, a);
+            }
+        }
+
+        var tex = new Texture2D(device, n, n);
+        tex.SetData(data);
+        return tex;
+    }
+
+    /// <summary>
+    /// Bakes <see cref="SoftDisc"/>: a filled circle whose edge texels carry partial coverage.
+    /// </summary>
+    /// <remarks>
+    /// The same supersampled coverage and the same premultiplied output as
+    /// <see cref="MakeSoftRect"/> - see that method for why both of those are necessary. The circle
+    /// is inset half a texel from the edge of the texture so the outermost ring is never clipped by
+    /// the texture bounds, which would put a flat side on the disc at large scales.
+    /// </remarks>
+    private static Texture2D MakeSoftDisc(GraphicsDevice device)
+    {
+        const int n = SoftDiscSize;
+        const int sub = 4;
+        const double c = n / 2.0;
+        const double r = n / 2.0 - 0.5;
+
+        var data = new Microsoft.Xna.Framework.Color[n * n];
+        for (int y = 0; y < n; y++)
+        {
+            for (int x = 0; x < n; x++)
+            {
+                int hits = 0;
+                for (int sy = 0; sy < sub; sy++)
+                {
+                    for (int sx = 0; sx < sub; sx++)
+                    {
+                        double px = x + (sx + 0.5) / sub - c;
+                        double py = y + (sy + 0.5) / sub - c;
+                        if (px * px + py * py <= r * r) hits++;
                     }
                 }
 
