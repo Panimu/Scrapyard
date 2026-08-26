@@ -120,10 +120,32 @@ toggled needs a matching `.thing[hidden] { display: none }` rule.**
 ## Measure balance changes, do not assert them
 
 `npm run sim` plays a full run headless and prints a timeline; `npm run dps` measures every
-weapon at T1 and T7 by stepping the real simulation; `npm run loadout` gives the bot all eight
-weapons and every passive at T7, forbids tier 8, and prints the damage share of each. A balance
+weapon at T1 and T7 by stepping the real simulation; `npm run loadout` holds every weapon in the
+catalog at T7 with every passive, forbids tier 8, and prints the damage share of each. A balance
 claim without a number in front of it is a guess. Run a handful of seeds — single-seed results
 diverge chaotically.
+
+**`npm run loadout`'s DEFAULT LOADOUT IS ONE NOBODY CAN PLAY, and it is not a neutral distortion.**
+`MAX_WEAPONS` is 3, five with both Reinforced Mounts purchases. Holding all fourteen is what makes
+the share table possible, and it systematically buries every weapon whose output is CAPPED rather
+than throughput-limited. A gun that fires faster when there is more to shoot scales with the run; a
+drone fleet does not — its output is bounded by how many drones are alive and how far they must
+fly, so with thirteen other guns deleting bodies first the drones are not weak, they are STARVED.
+
+The numbers, on the same seeds with the same passives: on the default loadout the Drones read 2.5%
+of damage and LAST place; on a real five-gun loadout they read 20%, THIRD place, with 93 elites and
+14 bosses — more of both than any other weapon in that run, by a factor of two. A player's own
+survived run agreed with the second and that is how this was caught, after the first number had
+already been written up as "the clearest balance defect in the game".
+
+So: **name the loadout before quoting a share.** `--weapons machine-gun,drone,laser-long` holds a
+build a player could actually assemble, and that is the mode a claim about whether a weapon is any
+GOOD has to come from. The default mode answers a different and narrower question — what share of
+a fourteen-gun run a weapon takes when every gun is competing for the same bodies — and it must
+never be quoted as though it answered the first.
+
+Throughput weapons survive the switch: the Mortar reads 16% of the default table and 37% of a
+five-gun one, so a claim that it dominates holds either way. The trap is specific to capped ones.
 
 **Measurement runs are OPT-IN.** They take minutes and they are not free. Run them when asked to,
 or when a change has to be defended with a number — not reflexively after every edit.
@@ -234,7 +256,7 @@ npm run share       single-file HTML build for sharing
 
 npm run sim         headless run with the reference bot        }
 npm run dps         measured DPS table                         }  opt-in, minutes each
-npm run loadout     all 8 weapons at T7, damage share by gun   }
+npm run loadout     every weapon at T7, damage share by gun    }  --weapons for a REAL build
 
 npm run mechs       redraw the chassis sprites
 npm run plasma      rebake the Kenney particles (burn frames, gout, shield twirl)

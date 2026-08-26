@@ -14,6 +14,39 @@
  * about this tool except the loadout itself. `npm run t8` is the same rig with a different one.
  *
  * ---------------------------------------------------------------------------------------------
+ * READ THIS BEFORE QUOTING A NUMBER OUT OF THE DEFAULT TABLE
+ * ---------------------------------------------------------------------------------------------
+ * ALL FOURTEEN WEAPONS AT ONCE IS NOT A LOADOUT ANYONE CAN PLAY. `MAX_WEAPONS` is 3, and five is
+ * the ceiling with both Reinforced Mounts purchases. This rig writes the loadout directly and never
+ * goes through `isOfferable`, which is what makes the share table possible at all - and it is also
+ * a systematic distortion, not a neutral one.
+ *
+ * IT PENALISES EVERY WEAPON WHOSE OUTPUT IS CAPPED RATHER THAN THROUGHPUT-LIMITED. A gun that
+ * fires faster when there is more to shoot scales with the run. A DRONE FLEET DOES NOT: its output
+ * is bounded by how many drones are alive and how long they take to fly, so with thirteen other
+ * guns deleting bodies first, the drones are not weak - they are STARVED. Measured on the default
+ * loadout the Drones read 2.5% of damage and last place. Measured on a real five-gun loadout
+ * (machine-gun, drone, phase-cannon, laser-short, laser-long) on the SAME SEEDS with the SAME
+ * passives they read 20%, third place, and 93 elites and 14 bosses - more of both than any other
+ * weapon in the run, by a factor of two. A real player's run agreed with the second number, which
+ * is how this was caught.
+ *
+ * SO: THE DEFAULT TABLE ANSWERS "what share of a fourteen-gun run does this weapon take", and that
+ * is a genuine question about how weapons compete for the same bodies. It does NOT answer "is this
+ * weapon any good", and it must never be quoted as if it did. For that, name the loadout.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * `--weapons <id,id,...>`
+ * ---------------------------------------------------------------------------------------------
+ * The guns to hold, by catalog id, instead of all fourteen. Order does not matter. This is the
+ * flag that turns the rig from a competition table into a measurement of a build:
+ *
+ *   npm run loadout -- --weapons machine-gun,drone,phase-cannon,laser-short,laser-long
+ *
+ * Nothing enforces MAX_WEAPONS here either - a rig that refused to hold fourteen would lose the
+ * comparison the default mode exists for - so passing six is allowed and is on the caller.
+ *
+ * ---------------------------------------------------------------------------------------------
  * `--passives none | all | both`
  * ---------------------------------------------------------------------------------------------
  * `all` is the default and is what this tool has always done. `none` holds the same nine guns at
@@ -68,7 +101,7 @@ import { NEUTRAL, clock, pickLevel, pickSeeds, report, type Outcome } from './me
  * both resolvers read `stacks` and a weapon resolved before its passives were written would be
  * resolved without them.
  */
-function equipEverything(world: World, passives: boolean): void {
+function equipEverything(world: World, passives: boolean, held: readonly number[]): void {
   world.noAscension = true;
 
   const stacks = world.levelUp.stacks;
@@ -81,9 +114,14 @@ function equipEverything(world: World, passives: boolean): void {
     stacks[i] = Math.min(WEAPON_MAX_TIER, UPGRADE_CATALOG[i].maxStacks);
   }
 
-  for (let d = 0; d < WEAPON_CATALOG.length; d++) {
-    const inst = world.weapons[d];
-    if (inst === undefined) throw new Error(`loadout: no weapon slot ${d} - see WEAPON_SLOTS`);
+  // SLOT INDEX AND CATALOG INDEX ARE NOT THE SAME NUMBER once a subset is held - `held[i]` is the
+  // catalog entry and `i` is the mount it sits on. They coincide in the default all-weapons mode,
+  // which is exactly why writing this as one variable would have gone unnoticed until the day it
+  // did not.
+  for (let i = 0; i < held.length; i++) {
+    const d = held[i];
+    const inst = world.weapons[i];
+    if (inst === undefined) throw new Error(`loadout: no weapon slot ${i} - see WEAPON_SLOTS`);
     inst.defId = d;
     inst.level = WEAPON_MAX_TIER;
     inst.cooldownLeft = 0;
@@ -97,13 +135,40 @@ function equipEverything(world: World, passives: boolean): void {
     inst.reloadLeft = 0;
     resolveWeaponStats(WEAPON_CATALOG[d], NEUTRAL, WEAPON_MAX_TIER, stacks, UPGRADE_CATALOG, inst.stats);
   }
-  world.weaponCount = WEAPON_CATALOG.length;
+  world.weaponCount = held.length;
 
   resolvePlayerStats(NEUTRAL, stacks, UPGRADE_CATALOG, world.player.stats, DEFAULT_TUNING);
   world.player.hp = world.player.stats.maxHp;
   world.player.shieldLayers = world.player.stats.shieldLayers;
   // After resolution and never re-resolved, because no card is ever taken - which this guarantees.
   world.player.stats.xpGain = 0;
+}
+
+/**
+ * `--weapons a,b,c` as CATALOG INDICES, defaulting to every weapon there is.
+ *
+ * BY ID RATHER THAN BY INDEX ON THE COMMAND LINE, because a catalog index is only meaningful
+ * beside the table that produced it - the same rule the save file follows - and because
+ * `--weapons drone,machine-gun` is a thing a person can type from memory.
+ */
+function pickWeapons(argv: readonly string[]): number[] {
+  const i = argv.indexOf('--weapons');
+  if (i < 0 || argv[i + 1] === undefined) return WEAPON_CATALOG.map((_, d) => d);
+
+  const out: number[] = [];
+  for (const raw of argv[i + 1].split(',')) {
+    const id = raw.trim();
+    if (id === '') continue;
+    const d = WEAPON_CATALOG.findIndex((w) => w.id === id);
+    if (d < 0) {
+      throw new Error(
+        `loadout: no weapon '${id}'. Known: ${WEAPON_CATALOG.map((w) => w.id).join(', ')}`,
+      );
+    }
+    if (!out.includes(d)) out.push(d);
+  }
+  if (out.length === 0) throw new Error('loadout: --weapons named nothing');
+  return out;
 }
 
 /** `--passives none|all|both`, defaulting to what this tool has always done. */
@@ -114,13 +179,25 @@ function pickPassives(argv: readonly string[]): 'none' | 'all' | 'both' {
   return 'all';
 }
 
-function header(seeds: readonly number[], passives: boolean): void {
+function header(seeds: readonly number[], passives: boolean, held: readonly number[]): void {
+  const all = held.length === WEAPON_CATALOG.length;
   console.log('');
   console.log(
-    passives
-      ? '  EVERY WEAPON AT TIER 7, EVERY PASSIVE AT TIER 7, NO TIER 8'
-      : '  EVERY WEAPON AT TIER 7, NO PASSIVES AT ALL, NO TIER 8',
+    `  ${all ? 'EVERY WEAPON' : `${held.length} WEAPONS`} AT TIER 7, ` +
+      `${passives ? 'EVERY PASSIVE AT TIER 7' : 'NO PASSIVES AT ALL'}, NO TIER 8`,
   );
+  // NAMED WHEN IT IS A SUBSET, because the whole point of the flag is that the answer depends on
+  // the company a weapon keeps - a table that does not say which company is a table that will be
+  // quoted as though it were about the weapon alone.
+  if (!all) console.log(`  holding ${held.map((d) => WEAPON_CATALOG[d].name).join(', ')}`);
+  else {
+    console.log(
+      '  A LOADOUT NOBODY CAN PLAY - MAX_WEAPONS is 3, five with both Mounts. This is a share-of-',
+    );
+    console.log(
+      '  competition table, not a verdict on any weapon. See the header, and --weapons.',
+    );
+  }
   console.log(
     `  chassis ${NEUTRAL.name} [${NEUTRAL.id}] - no player, weapon or per-weapon bonus   ` +
       `run length ${clock(RUN_LENGTH_SEC)}   ${seeds.length} seed${seeds.length === 1 ? '' : 's'}`,
@@ -132,18 +209,19 @@ function main(argv: readonly string[]): void {
   const level = pickLevel(argv);
   const seeds = pickSeeds(argv);
   const mode = pickPassives(argv);
+  const held = pickWeapons(argv);
 
   if (mode !== 'both') {
     const on = mode === 'all';
-    header(seeds, on);
-    report(seeds, level, (w) => equipEverything(w, on));
+    header(seeds, on, held);
+    report(seeds, level, (w) => equipEverything(w, on, held));
     return;
   }
 
-  header(seeds, false);
-  const bare = report(seeds, level, (w) => equipEverything(w, false));
-  header(seeds, true);
-  const full = report(seeds, level, (w) => equipEverything(w, true));
+  header(seeds, false, held);
+  const bare = report(seeds, level, (w) => equipEverything(w, false, held));
+  header(seeds, true, held);
+  const full = report(seeds, level, (w) => equipEverything(w, true, held));
   compare(bare, full);
 }
 
