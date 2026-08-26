@@ -18,8 +18,10 @@ import {
   WEAPON_CATALOG,
   WEAPON_MAX_TIER,
   resolvePlayerStats,
+  resolveSplitStats,
   resolveWeaponStats,
 } from '../src/core/index.js';
+import { fillLaserMounts } from '../src/core/systems/progression.js';
 import { type World } from '../src/core/types.js';
 import { NEUTRAL, runOne, type Outcome } from './measureRig.js';
 import { type SweepRow } from './sweepReport.js';
@@ -91,10 +93,17 @@ function equipCombo(world: World, combo: readonly number[], ascend: boolean): vo
     stacks[i] = Math.min(WEAPON_MAX_TIER, UPGRADE_CATALOG[i].maxStacks);
   }
 
+  // INSTALL EVERY AUTHORED SLOT FIRST; RESOLVE STATS LAST, ONCE, OVER EVERYTHING. The Hydra grows
+  // TWO MORE WEAPON SLOTS beyond `combo.length` (fillLaserMounts, below) - it does not make the
+  // Short Laser hit harder, it puts two more of them on the chassis, so a "5-weapon loadout" that
+  // ascends it actually measures seven live instances. Every slot, authored or grown, needs a
+  // stats block before the sim can step; resolving inline in this loop, as an earlier version of
+  // this file did, left the grown slots permanently zeroed - a beam with range 0 finds nothing and
+  // never fires, which is why the ascended Short Laser previously measured as a single unascended
+  // one wearing the Hydra's name. tools/t8.ts hit this exact trap first; its own header names it.
   for (let i = 0; i < combo.length; i++) {
     const d = combo[i];
-    const tier =
-      ascend && canAscend(d, combo) ? WEAPON_ASCENDED_TIER : WEAPON_MAX_TIER;
+    const tier = ascend && canAscend(d, combo) ? WEAPON_ASCENDED_TIER : WEAPON_MAX_TIER;
     const inst = world.weapons[i];
     if (inst === undefined) throw new Error(`sweep: no weapon slot ${i} - see WEAPON_SLOTS`);
     inst.defId = d;
@@ -108,9 +117,57 @@ function equipCombo(world: World, combo: readonly number[], ascend: boolean): vo
     // -1 is "magazine not yet filled". Zero would open the run on a reload.
     inst.ammo = -1;
     inst.reloadLeft = 0;
-    resolveWeaponStats(WEAPON_CATALOG[d], NEUTRAL, tier, stacks, UPGRADE_CATALOG, inst.stats);
+
+    // THE CARD'S OWN STACK GOES TO EIGHT TOO, for the loadout that actually reached it - matching
+    // the state a real Cyber Chest leaves it in. The fill above clamped every weapon card to
+    // WEAPON_MAX_TIER regardless, ascended or not; this is the one exception, and it has to land
+    // before resolveWeaponStats reads `stacks` below.
+    if (tier === WEAPON_ASCENDED_TIER) {
+      const card = UPGRADE_CATALOG.findIndex(
+        (u) => u.kind === 'weapon' && u.grantsWeapon === WEAPON_CATALOG[d].id,
+      );
+      if (card >= 0) stacks[card] = WEAPON_ASCENDED_TIER;
+    }
   }
   world.weaponCount = combo.length;
+
+  // THE HYDRA GROWS ITS COPIES HERE, exactly as `applyChoice` would in a real run and exactly as
+  // tools/t8.ts does for the same reason: this rig installs weapons directly rather than through
+  // the level-up system, so the one ascension whose effect is an INSTALL rather than a stat change
+  // would otherwise never happen. Every copy shares the ascended weapon's defId, so
+  // `Outcome.byWeapon` sums all three into one row automatically - which is the question actually
+  // being asked: what the Hydra is worth, not what one of its heads is worth.
+  for (let i = 0; i < combo.length; i++) {
+    const d = combo[i];
+    const def = WEAPON_CATALOG[d];
+    if (def.fillsMountsFrom === undefined) continue;
+    if (!(ascend && canAscend(d, combo))) continue;
+    fillLaserMounts(world, def.id, WEAPON_ASCENDED_TIER);
+  }
+
+  // EVERY SLOT, INCLUDING THE ONES JUST GROWN - see the note above the install loop. This is a
+  // second, later pass over 0..weaponCount rather than resolving inline, on purpose: the grown
+  // slots do not exist yet when the install loop runs.
+  for (let i = 0; i < world.weaponCount; i++) {
+    const inst = world.weapons[i];
+    resolveWeaponStats(
+      WEAPON_CATALOG[inst.defId],
+      NEUTRAL,
+      inst.level,
+      stacks,
+      UPGRADE_CATALOG,
+      inst.stats,
+    );
+  }
+
+  // THE HORNET'S CHILDREN. `world.splitStats` backs every shell the GTM Hornet spawns when a Long
+  // Missiles round splits, and `createWorld` resolves it once at ZERO passives - nothing else
+  // rebuilds it unless told to. Every ascended measurement of the Hornet before this fix ran its
+  // PARENT shell on this loadout's full passive stack and its CHILDREN on none of it, which is
+  // exactly the kind of quiet fiction this whole rig exists to avoid. Resolved unconditionally,
+  // whether or not the Hornet is held - see resolveSplitStats's own header for why that is cheap
+  // and always correct to do.
+  resolveSplitStats(world, NEUTRAL);
 
   resolvePlayerStats(NEUTRAL, stacks, UPGRADE_CATALOG, world.player.stats, DEFAULT_TUNING);
   world.player.hp = world.player.stats.maxHp;
