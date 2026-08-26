@@ -912,7 +912,8 @@
     "drone",
     "phase-cannon",
     "mortar",
-    "laser-long"
+    "laser-long",
+    "plasma"
    ],
    "effects": [],
    "tierEffects": [

@@ -321,6 +321,17 @@ public static class Targeting
     /// THE LAST ENTRY IS EXACTLY -1, which accepts everything: <c>dot >= -|d|</c> cannot be false.
     /// That is what guarantees the widening terminates with a target whenever anything is in range.
     /// </remarks>
+    /// <summary>
+    /// cos(50 degrees), so <c>SelectRearCone</c> accepts a body within 50 degrees either side of
+    /// the mech's back - a HUNDRED-degree cone in total.
+    /// </summary>
+    /// <remarks>
+    /// THE IDENTICAL DIGITS THE TYPESCRIPT CARRIES. It is the correctly-rounded double for
+    /// cos(50 degrees); an angle differing in the last bit would put a body on the edge of the
+    /// cone inside it in one language and outside it in the other.
+    /// </remarks>
+    private const double SludgeRearCos = 0.6427876096865394;
+
     private static readonly double[] ConeCos =
     {
         0.9659258262890683, // 15 degrees
@@ -529,9 +540,16 @@ public static class Targeting
     /// mech is walking, so the cone is measured against the same vector the hull is drawn at.
     /// </para>
     /// <para>
-    /// A HUNDRED AND TWENTY DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone
-    /// rules above. Those widen because they must eventually find SOMETHING; this one must be able
-    /// to answer no, because "no" is the whole point of it.
+    /// A HUNDRED DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone rules above.
+    /// Those widen because they must eventually find SOMETHING; this one must be able to answer no,
+    /// because "no" is the whole point of it. Anything outside the cone is not a target, however
+    /// big it is and however hard it is chasing.
+    /// </para>
+    /// <para>
+    /// IT WAS A GREAT DEAL WIDER, and by accident rather than by choice. <c>ConeCos</c> is indexed
+    /// by HALF-angle - its last entry, 180, accepts the whole field - so reading <c>ConeCos[7]</c>
+    /// off the table gave 120 degrees EITHER SIDE of the mech's back: a 240-degree cone that
+    /// excluded only a narrow wedge dead ahead.
     /// </para>
     /// </remarks>
     private static int SelectRearCone(World w, double originX, double originY, double rangeSq,
@@ -554,9 +572,10 @@ public static class Targeting
         var candidates = w.Scratch.Candidates;
         var ex = enemies.X;
         var ey = enemies.Y;
-        // ConeCos[7] is exactly cos(120 degrees) - see the table and its note on why these are
-        // literals rather than a call to Math.Cos.
-        double minCos = ConeCos[7];
+        // NOT FROM ConeCos. That table is 15-degree steps for the two rules that WIDEN, and 50 is
+        // not on it - so this carries its own, for the same reason the table does: the identical
+        // literal in both languages, or the two ports disagree about which bodies are behind you.
+        double minCos = SludgeRearCos;
 
         int kept = 0;
         for (int i = 0; i < n; i++)

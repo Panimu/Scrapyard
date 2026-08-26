@@ -495,13 +495,22 @@ public static class WeaponCatalog
         Base = new WeaponStatBlock
         {
             Damage = 9,
-            Cooldown = 0.18,
+            Cooldown = 0.27,
             Range = 230, // between the Short Laser's 165 and the Medium's 302.5, nearer the short end
             ProjectileSpeed = 260, // slow, and visibly so - it is a thrower, not a beam
             ProjectileCount = 1,
             Pierce = 0, // stops in the first body: piercing would make "not already burning" moot
-            SplashRadius = 0,
-            SplashFrac = 0,
+            // A VERY SMALL SPLASH THAT IS ALMOST NO DAMAGE AND ALL FIRE. SplashFrac at a fifth
+            // makes the blast a rounding error next to the bolt; what it does is LIGHT what it
+            // touches, at the rate a direct hit would have (see ApplySplash - the burn
+            // deliberately does not fall off with the damage).
+            //
+            // SMALL ON PURPOSE. At 26 it catches a neighbour or two pressed against the body that
+            // was hit - a crowd starting to catch rather than a crowd going up at once - and it
+            // keeps the "aim at what is not already burning" rule meaningful, which a wide blast
+            // would not.
+            SplashRadius = 26,
+            SplashFrac = 0.2,
             TurretTraverse = 1.3089969389957472, // degToRad(75)
             FireArc = 0.3490658503988659,        // degToRad(20)
             HeatPerSec = 7.5,

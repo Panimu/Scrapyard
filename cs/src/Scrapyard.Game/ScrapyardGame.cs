@@ -226,6 +226,18 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>The Plasma Thrower: hot orange, deliberately far from the phase bolt.</summary>
     private static readonly Color FlameTint = new(0xff, 0x8a, 0x3c);
 
+    /// <summary>The haze around a gout - the air it is heating, not the fire.</summary>
+    private static readonly Color FlameDeepTint = new(0xd9, 0x4b, 0x12);
+
+    /// <summary>The centre of a gout, near-white. What makes the rest read as burning.</summary>
+    private static readonly Color FlameCoreTint = new(0xff, 0xf0, 0xc4);
+
+    /// <summary>How fast a gout breathes, in radians a second.</summary>
+    private const double FlameFlickerHz = 15;
+
+    /// <summary>How far it breathes. Small - a flame flickers, it does not throb.</summary>
+    private const double FlameFlickerAmt = 0.16;
+
     /// <summary>Toxic Sludge, glob and pool alike - one colour so the two read as one substance.</summary>
     private static readonly Color SludgeTint = new(0x8c, 0xe0, 0x3a);
 
@@ -2369,13 +2381,25 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// number produces. At 1.05 the flame came out about five pixels tall and could not be seen
     /// at all, which is not restraint, it is absence.
     /// </remarks>
-    private const double BurnScale = 2.3;
+    private const double BurnScale = 1.9;
 
     /// <summary>
     /// Phase offset per unit of spawn id, in frames. Awkward on purpose, so consecutive ids do not
     /// land on the same frame and a wave that arrived together does not burn in lockstep.
     /// </summary>
     private const double BurnStagger = 0.618;
+
+    /// <summary>How fast a flame breathes, relative to the frame cycle. Faster, so they never sync.</summary>
+    private const double BurnBreathe = 1.7;
+
+    /// <summary>How far it breathes. The axes are counter-phased, so this is a STRETCH, not a swell.</summary>
+    private const double BurnBreatheAmt = 0.12;
+
+    /// <summary>How fast it sways, relative to the frame cycle. A third period again.</summary>
+    private const double BurnSway = 0.63;
+
+    /// <summary>How far it leans either side of upright, in radians.</summary>
+    private const double BurnSwayAmt = 0.16;
 
     /// <summary>
     /// The two small flames a burning body wears.
@@ -2411,11 +2435,25 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // A little bob, out of phase between the two, so neither the pair nor the loop is
             // something the eye can lock onto.
             double bob = System.Math.Sin(phase * System.Math.PI * 0.9 + i * 2.1) * radius * 0.09;
+
+            // THREE FRAMES ALONE WERE NOT ENOUGH. The DCSS tiles differ mostly in their outline, so
+            // cycling them at this size read as a shape being swapped rather than as fire moving.
+            // Two continuous motions on top of the cycle fix that, and both are things a flame
+            // actually does: it BREATHES, taller and thinner then shorter and wider (the axes
+            // counter-phased, so the tongue stretches rather than merely swelling), and it LEANS,
+            // a slow sway either side of upright. Both run on different periods from the cycle and
+            // from each other, so the loop never lands in the same pose twice.
+            double breathe = System.Math.Sin(phase * BurnBreathe + i * 1.3) * BurnBreatheAmt;
             double size = radius * BurnScale;
-            Blit(tex,
-                 x + (i == 0 ? -1 : 1) * radius * 0.42,
-                 y - radius * 0.72 + bob,
-                 size * ((double)tex.Width / tex.Height), size, 0, Color.White);
+            double aspect = (double)tex.Width / tex.Height;
+            BlitAbout(tex,
+                      x + (i == 0 ? -1 : 1) * radius * 0.42,
+                      y - radius * 0.72 + bob,
+                      size * aspect * (1 - breathe),
+                      size * (1 + breathe),
+                      System.Math.Sin(phase * BurnSway + i * 2.6) * BurnSwayAmt,
+                      Color.White,
+                      0.5);
         }
     }
 
@@ -2528,9 +2566,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 VisualId.MissileLong => ("missile", RenderTables.MissileDrawLen * 1.15, 0.72),
                 VisualId.Slug => ("slug", RenderTables.SlugDrawLen, 1.0),
                 VisualId.Plasma => ("shell", RenderTables.ShellDrawLen * 1.2, 1.2),
-                // A GOUT OF FIRE: the slug run hot and a little fat. New art buys very little at
-                // eight pixels across, and this keeps the thrower reading as the same FAMILY of
-                // thing as the phase bolt it shares a mount with.
+                // A GOUT OF FIRE. The body only - the haze behind it and the white core over it
+                // are drawn separately, below, because one tinted sprite cannot carry a
+                // temperature gradient and a flame without one is an orange pill.
                 VisualId.Flame => ("slug", RenderTables.SlugDrawLen * 1.5, 1.2),
                 // A GLOB, not a round: no elongation, because it is falling rather than flying.
                 VisualId.Sludge => ("slug", RenderTables.SlugDrawLen * 1.3, 1.0),
@@ -2546,6 +2584,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 VisualId.Sludge => SludgeTint,
                 _ => Color.White,
             };
+
+            // A GOUT OF FIRE, IN THREE LAYERS - the haze it is heating, the flame itself, and a
+            // near-white core. What a single tinted sprite cannot have is a TEMPERATURE GRADIENT,
+            // and that is the whole difference between fire and an orange pill.
+            //
+            // AND IT FLICKERS, per round and out of step with its neighbours: SpawnId is already
+            // unique per projectile and already deterministic, so it is the phase. On the COSMETIC
+            // clock, so a level-up freeze leaves them alive rather than frozen mid-air.
+            if (vis == VisualId.Flame)
+            {
+                double flick = 1 + System.Math.Sin(_clockSec * FlameFlickerHz + p.SpawnId[d] * 1.7)
+                                   * FlameFlickerAmt;
+                Disc(x, y, p.Radius[d] * 1.8 * flick, FlameDeepTint * 0.3f);
+                Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide * flick,
+                     len * flick, angle, tint);
+                // Counter-phased against the body, so the core swells as the flame narrows. A core
+                // breathing WITH its own flame is the same pulse drawn twice.
+                Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * 0.48 * (2 - flick),
+                     len * 0.48 * (2 - flick), angle, FlameCoreTint);
+                continue;
+            }
+
             Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide, len, angle, tint);
         }
     }

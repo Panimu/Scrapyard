@@ -155,6 +155,7 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
     notes: [
       'It looks straight ahead first, the way the Mortar does - a cone off the barrel, opened thirty degrees at a time until it finds something. So this is the second gun in the yard you aim with the whole mech.',
       'The bolt is almost nothing. What matters is that whatever it touches CATCHES FIRE, and a burning enemy keeps taking damage for three seconds afterwards. Most of this weapon’s damage is never fired.',
+      'It also splashes, barely. The blast does almost no damage — what it does is LIGHT whatever is pressed up against the body you hit, at full strength. A crowd does not go up at once, but it does start to catch.',
       'Fire does not stack. A second gout into a body already alight only tops the timer back up, which is exactly why the targeting refuses to pick one - left alone the thrower walks itself down a crowd, biggest first, lighting each in turn. If absolutely everything in reach is already burning it shoots the biggest anyway rather than falling silent.',
       'It runs on HEAT, not a cooldown, and it is not a beam. Held on a target it heats; slewing between them it cools; hold it too long and the breaker trips. A Radiator Bank helps it exactly as much as it helps a laser.',
       'It shares the Phase Cannon’s mount, and the two can never be carried together. A run picks one enormous bolt or a great many small burning ones.',
@@ -166,7 +167,8 @@ const MANUAL: Readonly<Record<UpgradeId, ManualEntry>> = {
       'It is the only weapon in the yard that shoots at where you have BEEN. A glob of acid leaves the mech’s back toward whatever is chasing hardest, lands a short way along, and stays on the ground for a few seconds eating anything that walks through it.',
       'It throws WIDE on purpose. The glob lands within twenty degrees or so of the thing it picked, never exactly on it — which is the difference between area denial and a slow shotgun. You are laying ground between you and the trouble, not hitting the trouble.',
       'So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.',
-      'It will not fire into an empty yard. There has to be something in a wide cone behind you or it holds - which matters, because the magazine is three throws and the reload is long.',
+      'The cone behind you is narrower than you would guess, and nothing outside it counts — however big it is and however hard it is chasing. That is the cost of a gun that faces backwards, and it is what makes WHICH WAY YOU WALK the thing you are actually deciding.',
+      'It will not fire into an empty yard either. Nothing in the cone and it holds, which matters because the magazine is three throws and the reload is long.',
       'It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that.',
     ],
   },

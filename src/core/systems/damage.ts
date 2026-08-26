@@ -475,6 +475,18 @@ function applySplash(
   const r2 = radius * radius;
   // Precomputed so the per-body work is one sqrt, one multiply and one add.
   const falloff = (1 - SPLASH_RIM_FRAC) / radius;
+
+  // DOES THIS BLAST SET FIRES? Resolved once, outside the loop, rather than per body - the answer
+  // is a property of the gun and cannot change between two victims of the same shell.
+  //
+  // THE FIRE DOES NOT FALL OFF WITH THE BLAST, and that is the point of it on the Plasma Thrower:
+  // its splash is deliberately almost no damage, so a burn scaled by that damage would be almost
+  // no burn and the AoE would do nothing at all. What the blast spreads is the FIRE, at the rate a
+  // direct hit would have started it, and the damage is a rounding error beside it.
+  const owner = world.weapons[slot];
+  const burn = owner === undefined ? undefined : WEAPON_CATALOG[owner.defId].burn;
+  const burnDps = burn === undefined ? 0 : owner!.stats.damage * burn.dpsFrac;
+
   for (let i = 0; i < found; i++) {
     const ed = candidates[i];
     if (ed === exclude) continue;
@@ -499,6 +511,11 @@ function applySplash(
       scaled,
       enemies.slot[ed],
     );
+    // LIT BEFORE THE KILL CHECK, so a body the blast finishes still counted as burning for the
+    // tick it died on - `peakBurning` is a high-water mark and a fire that never registered is a
+    // fire the unlock never saw.
+    if (burn !== undefined) ignite(world, ed, burnDps, burn.seconds, slot);
+
     if (enemies.hp[ed] <= 0 && (enemies.flags[ed] & ENEMY_FLAG_DEAD) === 0) {
       // The blast was the killing blow. Guarded on DEAD exactly as killEnemy itself is, so a
       // body two blasts reach in one tick counts one splash kill, not two.

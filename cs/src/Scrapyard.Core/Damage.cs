@@ -425,6 +425,18 @@ public static class Damage
         double r2 = radius * radius;
         // Precomputed so the per-body work is one sqrt, one multiply and one add.
         double falloff = (1 - Constants.SplashRimFrac) / radius;
+
+        // DOES THIS BLAST SET FIRES? Resolved once, outside the loop, rather than per body - the
+        // answer is a property of the gun and cannot change between two victims of one shell.
+        //
+        // THE FIRE DOES NOT FALL OFF WITH THE BLAST, and that is the point of it on the Plasma
+        // Thrower: its splash is deliberately almost no damage, so a burn scaled by that damage
+        // would be almost no burn and the AoE would do nothing at all. What the blast spreads is
+        // the FIRE, at the rate a direct hit would have started it.
+        var owner = world.Weapons[slot];
+        var burn = owner is null ? null : WeaponCatalog.All[owner.DefId].Burn;
+        double burnDps = burn is null ? 0 : owner!.Stats.Damage * burn.DpsFrac;
+
         for (int i = 0; i < found; i++)
         {
             int ed = candidates[i];
@@ -444,6 +456,11 @@ public static class Damage
             CreditWeapon(world, slot, scaled < hpBefore ? scaled : hpBefore);
             world.Events.Push(EventKind.EnemyDamaged, world.Tick,
                               enemies.X[ed], enemies.Y[ed], scaled, enemies.Slot[ed]);
+
+            // LIT BEFORE THE KILL CHECK, so a body the blast finishes still counted as burning
+            // for the tick it died on - PeakBurning is a high-water mark, and a fire that never
+            // registered is a fire the unlock never saw.
+            if (burn is not null) Ignite(world, ed, burnDps, burn.Seconds, slot);
 
             if (enemies.Hp[ed] <= 0 && (enemies.Flags[ed] & EnemyPool.FlagDead) == 0)
             {

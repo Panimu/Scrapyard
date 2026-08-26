@@ -46,6 +46,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T14:53Z',
+    title: 'THE PLASMA THROWER SPREADS FIRE',
+    notes: [
+      'Every bolt now carries a tiny blast that does almost no damage and LIGHTS what it touches at full strength. A crowd does not go up at once, but it does start to catch — and since the gun refuses to aim at anything already burning, it walks itself through a pack much faster than it used to.',
+      'It fires noticeably slower to pay for that.',
+      'The bolt itself is a proper gout of fire now — a haze it is heating, the flame, and a near-white core — and it flickers, each one out of step with its neighbours.',
+      'The flames on a burning enemy are smaller, and they move: they breathe taller and thinner, and lean. Three frames alone read as a shape being swapped rather than as fire.',
+    ],
+  },
+  {
+    at: '2026-08-26T14:53Z',
+    title: 'TOXIC SLUDGE HAS TO ACTUALLY BE BEHIND YOU',
+    notes: [
+      'The cone it will throw into is a hundred degrees behind the mech. It was far wider than intended — near enough everything except a wedge dead ahead — which made “which way am I walking” barely a decision. Nothing outside the cone is a target now, however big it is and however hard it is chasing.',
+    ],
+  },
+  {
     at: '2026-08-26T13:45Z',
     title: 'THE ENERGY SHIELD IS A FIELD NOW, NOT TWO RINGS',
     notes: [

@@ -1797,7 +1797,7 @@ export const MORTAR: WeaponDef = Object.freeze({
 // already alight, is the only weapon here that ASKS the player to hold the line and let it work.
 // The cone starts at 30 degrees and widens by 30 until it finds one, so it is aimed with the
 // whole mech exactly as the Mortar is.
-const PLASMA_COOLDOWN = 0.18;
+const PLASMA_COOLDOWN = 0.27;
 const PLASMA_HEAT_PER_SEC = 7.5;
 const PLASMA_HEAT_DISPERSION = 8.5;
 // Between the Short Laser's 165 and the Medium's 302.5, and nearer the short end: a stream of
@@ -1827,8 +1827,16 @@ export const PLASMA: WeaponDef = Object.freeze({
     // enemies from one bolt and make the "not already burning" rule pointless.
     pierce: 0,
     knockback: 0,
-    splashRadius: 0,
-    splashFrac: 0,
+    // A VERY SMALL SPLASH THAT IS ALMOST NO DAMAGE AND ALL FIRE. `splashFrac` at a fifth means the
+    // blast is a rounding error next to the bolt; what it actually does is LIGHT what it touches,
+    // at the rate a direct hit would have (see applySplash - the burn deliberately does not fall
+    // off with the damage).
+    //
+    // SMALL ON PURPOSE. At 26 it catches a neighbour or two pressed up against the body that was
+    // hit, which is a crowd starting to catch rather than a crowd going up at once - and it keeps
+    // the "aim at what is not already burning" rule meaningful, which a wide blast would not.
+    splashRadius: 26,
+    splashFrac: 0.2,
     turretTraverse: PLASMA_TURRET_TRAVERSE,
     fireArc: PLASMA_FIRE_ARC,
     heatPerSec: PLASMA_HEAT_PER_SEC,
@@ -1875,9 +1883,14 @@ export const PLASMA: WeaponDef = Object.freeze({
 // composes with everything: any chassis can carry it beside whatever it already has, and the
 // large-turret and medium-turret pairs stay the only exclusive choices in the game.
 //
-// IT AIMS, AND IT AIMS BADLY. `rear-cone` picks the BIGGEST thing in a wide cone behind the mech,
-// and the throw goes at that bearing with up to 20 degrees of error either side. There is still no
-// turret to slew and nothing is tracked between shots - the choice is made fresh at the trigger.
+// IT AIMS, AND IT AIMS BADLY. `rear-cone` picks the BIGGEST thing in a HUNDRED-degree cone behind
+// the mech - 50 degrees either side of its back - and the throw goes at that bearing with up to 20
+// degrees of error. There is still no turret to slew and nothing is tracked between shots: the
+// choice is made fresh at the trigger, out of whatever is behind you at that moment.
+//
+// OUTSIDE THE CONE IS NOT A TARGET, however big it is and however hard it is chasing. That is the
+// cost of the gun facing backwards, and it is what makes WHICH WAY YOU WALK the thing you are
+// actually deciding.
 //
 // AIM AND ERROR ARE BOTH LOAD-BEARING. Aim with no error is a slow shotgun that happens to leave a
 // puddle; error with no aim is weather, and weather does not reward looking behind you. Together

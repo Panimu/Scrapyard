@@ -471,6 +471,10 @@ public static class UpgradeCatalog
         {
             WeaponIds.Artillery, WeaponIds.Drone, WeaponIds.PhaseCannon, WeaponIds.Mortar,
             WeaponIds.LaserLong,
+            // THE PLASMA THROWER'S BLAST IS TINY AND IT IS STILL A BLAST - and on that gun this
+            // card is not really a damage card: its splash exists to SPREAD FIRE, so a wider one
+            // catches another neighbour rather than hitting the same one harder.
+            WeaponIds.Plasma,
         },
         TierEffects = RampEffectsWeapon(WeaponStat.SplashRadius),
     };

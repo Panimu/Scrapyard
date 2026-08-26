@@ -497,6 +497,17 @@ export const targetDensest: TargetingFn = (
  * what guarantees the widening loop terminates with a target whenever anything is in range at
  * all, rather than falling off the end of the table having found nothing.
  */
+/**
+ * cos(50 degrees), so `targetRearCone` accepts a body within 50 degrees either side of the mech's
+ * back - a HUNDRED-degree cone in total.
+ *
+ * WRITTEN OUT RATHER THAN COMPUTED, like every cosine in this file. It is the correctly-rounded
+ * double for cos(50 degrees), and the C# port carries the identical digits: an angle that differed
+ * in the last bit would put a body on the edge of the cone inside it in one language and outside
+ * it in the other, which is a divergence the corpus would find and nobody would enjoy diagnosing.
+ */
+const SLUDGE_REAR_COS = 0.6427876096865394;
+
 const CONE_COS: readonly number[] = Object.freeze([
   0.9659258262890683, // 15 degrees
   0.8660254037844387, // 30
@@ -724,9 +735,16 @@ export const targetConeColdest: TargetingFn = (
  * renderer draws the hull at. Reading `world.player` here rather than threading a third pair of
  * arguments through every rule keeps the seam the size it is.
  *
- * A HUNDRED AND TWENTY DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone rules
- * above. Those widen because they must eventually find SOMETHING; this one must be able to answer
- * no, because "no" is the whole point of it.
+ * A HUNDRED DEGREES, FIXED, AND IT NEVER WIDENS - the opposite of the two cone rules above. Those
+ * widen because they must eventually find SOMETHING; this one must be able to answer no, because
+ * "no" is the whole point of it. Anything outside the cone is not a target, however big it is and
+ * however hard it is chasing.
+ *
+ * IT WAS A GREAT DEAL WIDER, and by accident rather than by choice. `CONE_COS` is indexed by
+ * HALF-angle - its last entry, 180, accepts the whole field - so reading `CONE_COS[7]` off the
+ * table gave 120 degrees EITHER SIDE of the mech's back: a 240-degree cone that excluded only a
+ * narrow wedge dead ahead. The comment here said "a hundred and twenty degrees" and meant it,
+ * which is exactly how a number goes wrong quietly.
  */
 export const targetRearCone: TargetingFn = (
   world,
@@ -755,9 +773,11 @@ export const targetRearCone: TargetingFn = (
   const candidates = world.scratch.candidates;
   const ex = enemies.x;
   const ey = enemies.y;
-  // CONE_COS[7] is exactly cos(120 degrees) - see the table, and the note there about why these
-  // are literals rather than a call to Math.cos.
-  const minCos = CONE_COS[7];
+  // NOT FROM CONE_COS. That table is 15-degree steps for the two rules that WIDEN, and 50 is not
+  // on it - so this carries its own, for the same reason the table does: no Math.cos in core (see
+  // CLAUDE.md), and the identical literal in both languages or the two ports disagree about which
+  // bodies are behind you.
+  const minCos = SLUDGE_REAR_COS;
 
   let kept = 0;
   for (let i = 0; i < n; i++) {

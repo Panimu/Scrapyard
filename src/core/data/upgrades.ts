@@ -1046,6 +1046,11 @@ export const UPGRADE_CATALOG: readonly UpgradeDef[] = Object.freeze([
       'phase-cannon',
       'mortar',
       'laser-long',
+      // THE PLASMA THROWER'S BLAST IS TINY AND IT IS STILL A BLAST - and on that gun this card is
+      // not really a damage card at all: its splash exists to SPREAD FIRE, so a wider one catches
+      // another neighbour rather than hitting the same one harder. The gating test is what found
+      // this the moment the weapon grew a splash radius.
+      'plasma',
     ]),
     /**
      * BEHIND TWO THOUSAND BLAST KILLS, ACROSS EVERY RUN - the mechanic's own career condition:

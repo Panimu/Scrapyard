@@ -160,7 +160,7 @@ const BURN_SRC = 32;
  * number produces. At 1.05 - which is what "small on purpose" first meant - the flame came out
  * about five pixels tall and could not be seen at all, which is not restraint, it is absence.
  */
-const BURN_SCALE = 2.3;
+const BURN_SCALE = 1.9;
 
 /**
  * Phase offset per unit of spawnId, in frames.
@@ -170,6 +170,18 @@ const BURN_SCALE = 2.3;
  * crowd of these read as an effect rather than as fire.
  */
 const BURN_STAGGER = 0.618;
+
+/** How fast a flame breathes, relative to the frame cycle. Faster, so the two never sync. */
+const BURN_BREATHE = 1.7;
+
+/** How far it breathes. The axes are counter-phased, so this is a STRETCH, not a swell. */
+const BURN_BREATHE_AMT = 0.12;
+
+/** How fast it sways, relative to the frame cycle. A third period again. */
+const BURN_SWAY = 0.63;
+
+/** How far it leans either side of upright, in radians. */
+const BURN_SWAY_AMT = 0.16;
 /** DRONE_CAP is 8. Sixteen is slack for a second drone source. */
 const DRONE_SPRITES = 16;
 /**
@@ -347,6 +359,18 @@ const STRIKE_TINT = 0xff3b30;
 const PLASMA_TINT = 0x55c8ff;
 /** The Plasma Thrower: hot orange, deliberately far from the phase bolt it shares a mount with. */
 const FLAME_TINT = 0xff8a3c;
+
+/** The haze around a gout - the air it is heating, not the fire. */
+const FLAME_DEEP = 0xd94b12;
+
+/** The centre of a gout, near-white. What makes the rest read as burning. */
+const FLAME_CORE = 0xfff0c4;
+
+/** How fast a gout breathes, in radians a second. */
+const FLAME_FLICKER_HZ = 15;
+
+/** How far it breathes, as a fraction of its size. Small - a flame flickers, it does not throb. */
+const FLAME_FLICKER_AMT = 0.16;
 /** Toxic Sludge, glob and pool alike - one colour so the two read as the same substance. */
 const SLUDGE_TINT = 0x8ce03a;
 
@@ -1799,12 +1823,27 @@ export class GameRenderer {
           const phase = this.clock * BURN_FPS + stagger + i * 0.37;
           const frame = Math.floor(phase) % BURN_FRAMES;
           f.texture = this.tex.burn[frame < 0 ? frame + BURN_FRAMES : frame];
+
           // A little bob, out of phase between the two, so neither the pair nor the loop is
           // something the eye can lock onto.
           const bob = Math.sin(phase * Math.PI * 0.9 + i * 2.1) * radius * 0.09;
           f.position.set(x + (i === 0 ? -1 : 1) * radius * 0.42, y - radius * 0.72 + bob);
+
+          // THREE FRAMES ALONE WERE NOT ENOUGH. The DCSS tiles differ mostly in their outline, so
+          // cycling them at this size read as a shape being swapped rather than as fire moving.
+          // Two continuous motions on top of the cycle fix that, and both are the kind of thing a
+          // flame actually does:
+          //
+          //   IT BREATHES, taller and thinner then shorter and wider - the axes counter-phased, so
+          //   the tongue stretches instead of merely getting bigger;
+          //   IT LEANS, a slow sway either side of upright.
+          //
+          // Both run FASTER than the frame cycle and on different periods, so the loop never lands
+          // in the same pose twice and there is nothing for the eye to lock onto.
+          const breathe = Math.sin(phase * BURN_BREATHE + i * 1.3) * BURN_BREATHE_AMT;
           const size = radius * BURN_SCALE;
-          f.scale.set(size / BURN_SRC);
+          f.scale.set((size * (1 - breathe)) / BURN_SRC, (size * (1 + breathe)) / BURN_SRC);
+          f.rotation = Math.sin(phase * BURN_SWAY + i * 2.6) * BURN_SWAY_AMT;
           f.alpha = 0.95;
         }
       }
@@ -2148,20 +2187,46 @@ export class GameRenderer {
         s.texture = this.tex.slug;
         s.scale.set(SLUG_SCALE);
       } else if (vis === VIS_FLAME) {
-        // A GOUT OF FIRE: the tracer's rounded head run hot, with a wider soft halo over it - the
-        // same two-sprite trick the phase bolt uses, warmed and made rounder. New art would buy
-        // very little at eight pixels across, and this keeps the thrower reading as the same
-        // FAMILY of thing as the bolt it shares a mount with.
+        // A GOUT OF FIRE, IN THREE LAYERS. It was two - the tracer's head with a wider copy of
+        // itself behind it - and two copies of one shape at two sizes is a blob with a blur on it,
+        // not a flame. What it was missing is the thing every fire has and no tinted sprite gets
+        // for free: a TEMPERATURE GRADIENT. Cool at the edge, hot in the middle, white where it is
+        // hottest.
+        //
+        //   the HAZE, wide and faint and deep orange - the air around it, not the fire;
+        //   the BODY, the flame's own colour, the size the thing actually is;
+        //   the CORE, small and near-white, which is what makes the rest read as burning rather
+        //   than as an orange pill.
+        //
+        // AND IT FLICKERS, per projectile and out of step with its neighbours. `spawnId` is
+        // already unique per round and already deterministic, so it is the phase - two globs in
+        // flight together must not pulse as a pair. On the COSMETIC clock, so a level-up freeze
+        // leaves them alive rather than frozen mid-air.
+        const flick =
+          1 + Math.sin(this.clock * FLAME_FLICKER_HZ + p.spawnId[d] * 1.7) * FLAME_FLICKER_AMT;
+
         s.texture = this.tex.slug;
-        s.scale.set(SLUG_SCALE * 1.6);
-        const halo = shells.acquire();
-        if (halo !== undefined) {
-          halo.texture = this.tex.slug;
-          halo.position.set(x, y);
-          halo.rotation = s.rotation;
-          halo.scale.set(SLUG_SCALE * 3);
-          halo.tint = FLAME_TINT;
-          halo.alpha = 0.35;
+        s.scale.set(SLUG_SCALE * 1.5 * flick);
+
+        const haze = shells.acquire();
+        if (haze !== undefined) {
+          haze.texture = this.tex.fxFlash;
+          haze.position.set(x, y);
+          haze.rotation = s.rotation;
+          haze.scale.set((p.radius[d] * 3.6 * flick) / PARTICLE_SRC);
+          haze.tint = FLAME_DEEP;
+          haze.alpha = 0.3;
+        }
+        const core = shells.acquire();
+        if (core !== undefined) {
+          core.texture = this.tex.slug;
+          core.position.set(x, y);
+          core.rotation = s.rotation;
+          // Counter-phased against the body, so the core swells as the flame narrows. A core that
+          // breathed WITH its own flame would just be the same pulse drawn twice.
+          core.scale.set(SLUG_SCALE * 0.72 * (2 - flick));
+          core.tint = FLAME_CORE;
+          core.alpha = 0.95;
         }
       } else if (vis === VIS_PLASMA) {
         // THE PHASE BOLT: the machine-gun tracer run big and blue-hot, under a soft halo of
