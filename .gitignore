@@ -20,3 +20,8 @@ artifacts/
 
 # scratch dump scripts used while cross-checking a port against the TS oracle
 .tmpdump/
+# THE LOADOUT SWEEP'S OUTPUT. Megabytes of measurement that is only true of the catalog it was
+# taken against - see sweep.bat. Committing it would mean a diff of 1372 changed numbers every time
+# a weapon moves, and a reader trusting a page that a later balance change had already invalidated.
+# Re-run `sweep --fresh` instead; it takes about twenty minutes.
+sweep/

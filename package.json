@@ -78,6 +78,7 @@
     "screenshot": "tsx tools/screenshot.ts",
     "share": "SINGLEFILE=1 vite build && node tools/inline_build.mjs dist artifacts/scrapyard-play.html",
     "dps": "tsx tools/dps.ts",
+    "sweep": "tsx tools/sweepLoadout.ts",
     "loadout": "tsx tools/loadout.ts",
     "t8": "tsx tools/t8.ts",
     "passives": "tsx tools/passives.ts",

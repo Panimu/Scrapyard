@@ -147,6 +147,18 @@ never be quoted as though it answered the first.
 Throughput weapons survive the switch: the Mortar reads 16% of the default table and 37% of a
 five-gun one, so a claim that it dominates holds either way. The trap is specific to capped ones.
 
+**`sweep` (`sweep.bat` in the repository root) settles the argument by not picking a loadout at
+all.** It measures EVERY playable five-weapon combination — 1372 of the 2002, the other 630 holding
+a mutually-exclusive pair — over three seeds each, and writes one self-contained HTML page:
+per-weapon share and win rate across every loadout that held it, which pairs are worth more
+together than apart, and the whole sortable list. Roughly forty minutes across a desktop's cores,
+and it appends results as they land so an interrupted sweep resumes.
+
+**Re-run it with `--fresh` after ANY change to the weapon catalog.** The page is only true of the
+numbers it was measured against, and a resumed sweep silently mixes results from before and after
+a balance change. `sweep/` is gitignored for the same reason — a committed page is a page that goes
+stale without anyone noticing.
+
 **Measurement runs are OPT-IN.** They take minutes and they are not free. Run them when asked to,
 or when a change has to be defended with a number — not reflexively after every edit.
 
@@ -257,6 +269,9 @@ npm run share       single-file HTML build for sharing
 npm run sim         headless run with the reference bot        }
 npm run dps         measured DPS table                         }  opt-in, minutes each
 npm run loadout     every weapon at T7, damage share by gun    }  --weapons for a REAL build
+
+sweep               EVERY playable 5-gun loadout -> sweep/index.html   (~40 min, resumable)
+sweep --fresh       the same, discarding earlier results. USE AFTER A BALANCE CHANGE.
 
 npm run mechs       redraw the chassis sprites
 npm run plasma      rebake the Kenney particles (burn frames, gout, shield twirl)
