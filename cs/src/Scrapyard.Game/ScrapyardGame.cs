@@ -553,6 +553,29 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>Whether <see cref="_toastLeft"/> is counting down a banner or the gap after one.</summary>
     private bool _toastShowing;
 
+    /// <summary>
+    /// Everything THIS RUN has unlocked, for the end screen to list.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A SECOND LIST, NOT THE TOAST QUEUE, and it has to be: the queue is CONSUMED as banners are
+    /// shown, so by the time a run ends it is empty. These are the same events kept for a different
+    /// audience.
+    /// </para>
+    /// <para>
+    /// AND BOTH ARE WANTED. The banner is the moment - "this just happened, mid-fight, carry on" -
+    /// and the summary is the receipt, read at leisure by someone deciding what to do next. Neither
+    /// replaces the other: a banner shown during a boss fight is a banner that may genuinely not
+    /// have been looked at, and a summary is the only place the run's whole haul appears at once.
+    /// </para>
+    /// <para>
+    /// ACCUMULATED RATHER THAN ASKED FOR AT THE END, because unlocks are banked WHILE the run is
+    /// still going - by the time the end screen appears, Bank has long since reported the chassis
+    /// as new and will not report it again. Cleared at run start.
+    /// </para>
+    /// </remarks>
+    private readonly List<Overlay.Earned> _earnedThisRun = new();
+
     public ScrapyardGame(int seed, int heroId, string levelId)
     {
         _seed = seed;
@@ -662,6 +685,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _toast.Clear();
         _toastLeft = 0;
         _toastShowing = false;
+        _earnedThisRun.Clear();
         _accumulatorMs = 0;
         _alpha = 0;
         _stride = 0;
@@ -1880,6 +1904,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             {
                 if (hero.Id != h) continue;
                 _toast.Add(new Overlay.Toast(hero.Art, "CHASSIS UNLOCKED", hero.Name, hero.Line));
+                _earnedThisRun.Add(new Overlay.Earned(hero.Name, "chassis"));
                 break;
             }
         }
@@ -1890,6 +1915,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             {
                 if (lvl.Id != l) continue;
                 _toast.Add(new Overlay.Toast(lvl.Art, "YARD UNLOCKED", lvl.Name, lvl.Line));
+                _earnedThisRun.Add(new Overlay.Earned(lvl.Name, "yard"));
                 break;
             }
         }
@@ -1901,6 +1927,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 if (card.Id != c) continue;
                 _toast.Add(new Overlay.Toast(card.IconKey, "CARD UNLOCKED", card.Name,
                                              card.Description));
+                _earnedThisRun.Add(new Overlay.Earned(card.Name, "card"));
                 break;
             }
         }
@@ -2243,7 +2270,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                                   _save.ReducesMotion(), vw, vh);
                 break;
             case RunPhase.Dead:
-            case RunPhase.Victory: Overlay.DrawEnd(_batch, _sprites, w, vw, vh, _endRects); break;
+            case RunPhase.Victory:
+                Overlay.DrawEnd(_batch, _sprites, w, vw, vh, _earnedThisRun, _endRects);
+                break;
         }
 
         var toastAt = _camera.ToScreen(px, py);

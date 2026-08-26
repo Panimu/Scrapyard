@@ -14,6 +14,23 @@
  * about this tool except the loadout itself. `npm run t8` is the same rig with a different one.
  *
  * ---------------------------------------------------------------------------------------------
+ * `--passives none | all | both`
+ * ---------------------------------------------------------------------------------------------
+ * `all` is the default and is what this tool has always done. `none` holds the same nine guns at
+ * tier 7 with EVERY PASSIVE AT ZERO, and `both` runs the pair and prints what the passives were
+ * worth.
+ *
+ * WHY THE PAIR IS WORTH MORE THAN EITHER HALF. A weapon's share of the damage is a share of a
+ * TOTAL, so a passive that lifts every gun equally changes no share at all - the table looks
+ * identical and the run is twice as strong. Running the same loadout stripped is the only way to
+ * see which guns the passive layer actually favours, and it is not evenly spread: the passives are
+ * damage, rate, range, blast, heat and magazine, and a gun with no magazine gets nothing from one
+ * of them while a beam gets two cards nothing else can use.
+ *
+ * THE SEEDS ARE THE SAME BOTH WAYS, which is what makes the comparison mean anything: same map,
+ * same spawns, same scenery, same everything except what is bolted to the mech.
+ *
+ * ---------------------------------------------------------------------------------------------
  * EVERY DISTORTION IN HERE IS DELIBERATE, AND EACH IS A DECISION
  * ---------------------------------------------------------------------------------------------
  *   EVERY WEAPON AT TIER 7, EVERY PASSIVE AT TIER 7 - however many of each the catalog holds, which
@@ -43,7 +60,7 @@ import { resolvePlayerStats, resolveWeaponStats } from '../src/core/data/stats.j
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import { RUN_LENGTH_SEC } from '../src/core/constants.js';
 import { type World } from '../src/core/types.js';
-import { NEUTRAL, clock, pickLevel, pickSeeds, report } from './measureRig.js';
+import { NEUTRAL, clock, pickLevel, pickSeeds, report, type Outcome } from './measureRig.js';
 
 /**
  * Installs the whole catalog at tier 7 and re-resolves everything, exactly as `applyUpgrade` would
@@ -51,12 +68,16 @@ import { NEUTRAL, clock, pickLevel, pickSeeds, report } from './measureRig.js';
  * both resolvers read `stacks` and a weapon resolved before its passives were written would be
  * resolved without them.
  */
-function equipEverything(world: World): void {
+function equipEverything(world: World, passives: boolean): void {
   world.noAscension = true;
 
   const stacks = world.levelUp.stacks;
   stacks.fill(0);
   for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
+    // A WEAPON CARD IS NOT A PASSIVE, and the difference is the whole point of `--passives none`:
+    // the guns stay at tier 7 either way, because a tier on a weapon card IS the weapon. What is
+    // being removed is the SYSTEMS layer - the cards that make every gun better at once.
+    if (!passives && UPGRADE_CATALOG[i].kind === 'passive') continue;
     stacks[i] = Math.min(WEAPON_MAX_TIER, UPGRADE_CATALOG[i].maxStacks);
   }
 
@@ -85,19 +106,115 @@ function equipEverything(world: World): void {
   world.player.stats.xpGain = 0;
 }
 
-function main(argv: readonly string[]): void {
-  const level = pickLevel(argv);
-  const seeds = pickSeeds(argv);
+/** `--passives none|all|both`, defaulting to what this tool has always done. */
+function pickPassives(argv: readonly string[]): 'none' | 'all' | 'both' {
+  const i = argv.indexOf('--passives');
+  const v = i >= 0 ? argv[i + 1] : undefined;
+  if (v === 'none' || v === 'both') return v;
+  return 'all';
+}
 
+function header(seeds: readonly number[], passives: boolean): void {
   console.log('');
-  console.log('  EVERY WEAPON AT TIER 7, EVERY PASSIVE AT TIER 7, NO TIER 8');
+  console.log(
+    passives
+      ? '  EVERY WEAPON AT TIER 7, EVERY PASSIVE AT TIER 7, NO TIER 8'
+      : '  EVERY WEAPON AT TIER 7, NO PASSIVES AT ALL, NO TIER 8',
+  );
   console.log(
     `  chassis ${NEUTRAL.name} [${NEUTRAL.id}] - no player, weapon or per-weapon bonus   ` +
       `run length ${clock(RUN_LENGTH_SEC)}   ${seeds.length} seed${seeds.length === 1 ? '' : 's'}`,
   );
   console.log('');
+}
 
-  report(seeds, level, equipEverything);
+function main(argv: readonly string[]): void {
+  const level = pickLevel(argv);
+  const seeds = pickSeeds(argv);
+  const mode = pickPassives(argv);
+
+  if (mode !== 'both') {
+    const on = mode === 'all';
+    header(seeds, on);
+    report(seeds, level, (w) => equipEverything(w, on));
+    return;
+  }
+
+  header(seeds, false);
+  const bare = report(seeds, level, (w) => equipEverything(w, false));
+  header(seeds, true);
+  const full = report(seeds, level, (w) => equipEverything(w, true));
+  compare(bare, full);
+}
+
+/**
+ * What the passive layer was worth, per weapon and overall.
+ *
+ * PER WEAPON AND NOT ONLY OVERALL, because the overall number is the least interesting thing here:
+ * of course seven passives at tier 7 make a run stronger. The question is WHICH GUNS they make
+ * stronger, and by how much relative to each other - a gun that gains less than the loadout average
+ * is a gun the systems layer is quietly leaving behind, and no share table can show that.
+ */
+function compare(bare: readonly Outcome[], full: readonly Outcome[]): void {
+  const sum = (rows: readonly Outcome[], pick: (o: Outcome) => number): number =>
+    rows.reduce((n, o) => n + pick(o), 0);
+
+  const bareTotal = sum(bare, (o) => o.damageDealt);
+  const fullTotal = sum(full, (o) => o.damageDealt);
+
+  console.log('');
+  console.log('  WHAT THE PASSIVES WERE WORTH');
+  console.log('');
+  console.log(
+    `  damage dealt   ${Math.round(bareTotal)} bare -> ${Math.round(fullTotal)} full` +
+      `   x${(fullTotal / Math.max(1, bareTotal)).toFixed(2)}`,
+  );
+  console.log(
+    `  kills          ${sum(bare, (o) => o.kills)} bare -> ${sum(full, (o) => o.kills)} full`,
+  );
+  console.log(
+    `  damage taken   ${Math.round(sum(bare, (o) => o.damageTaken))} bare -> ` +
+      `${Math.round(sum(full, (o) => o.damageTaken))} full`,
+  );
+  console.log(
+    `  wins           ${bare.filter((o) => o.won).length}/${bare.length} bare -> ` +
+      `${full.filter((o) => o.won).length}/${full.length} full`,
+  );
+  console.log('');
+
+  const nameW = Math.max(...WEAPON_CATALOG.map((w) => w.name.length), 6);
+  console.log(
+    `  ${'weapon'.padEnd(nameW)}  ${'bare'.padStart(9)}  ${'full'.padStart(9)}  ` +
+      `${'gain'.padStart(6)}  ${'vs loadout'.padStart(10)}`,
+  );
+
+  const overall = fullTotal / Math.max(1, bareTotal);
+  const rows = WEAPON_CATALOG.map((w, i) => {
+    const b = sum(bare, (o) => o.byWeapon[i] ?? 0);
+    const f = sum(full, (o) => o.byWeapon[i] ?? 0);
+    return { name: w.name, b, f, gain: f / Math.max(1, b) };
+  })
+    // Biggest contributor first, so the table opens on the guns that matter and the ones that
+    // never fired sit at the bottom where they belong.
+    .sort((a, b) => b.f - a.f);
+
+  for (const r of rows) {
+    if (r.b < 1 && r.f < 1) continue;
+    // AGAINST THE LOADOUT'S OWN GAIN, not against 1. "x2.4" means nothing until you know the whole
+    // rig went up x2.1; this column is the part that says who was favoured.
+    const rel = r.gain / overall;
+    const mark = rel >= 1.15 ? ' ++' : rel >= 1.05 ? ' +' : rel <= 0.85 ? ' --' : rel <= 0.95 ? ' -' : '';
+    console.log(
+      `  ${r.name.padEnd(nameW)}  ${Math.round(r.b).toString().padStart(9)}  ` +
+        `${Math.round(r.f).toString().padStart(9)}  ${('x' + r.gain.toFixed(2)).padStart(6)}  ` +
+        `${('x' + rel.toFixed(2)).padStart(10)}${mark}`,
+    );
+  }
+
+  console.log('');
+  console.log('  gain = full / bare for that gun.  vs loadout = that gain against the rig overall,');
+  console.log('  so ++ is a gun the passive layer favours and -- is one it leaves behind.');
+  console.log('');
 }
 
 main(process.argv.slice(2));

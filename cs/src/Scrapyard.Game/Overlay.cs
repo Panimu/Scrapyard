@@ -967,7 +967,7 @@ public static class Overlay
     /// </para>
     /// </remarks>
     public static void DrawEnd(SpriteBatch batch, Sprites sprites, World w, int vw, int vh,
-                               List<Rectangle>? outRects = null)
+                               List<Earned>? earned = null, List<Rectangle>? outRects = null)
     {
         Scrim(batch, sprites, vw, vh);
         int scale = Screens.MenuScale(vh);
@@ -1007,6 +1007,46 @@ public static class Overlay
         }
 
         int bottom = backY - 8 * scale;
+
+        // --- WHAT THE RUN OPENED, above every number ---------------------------------------------
+        //
+        // IT GOES AT THE TOP, ABOVE THE STATISTICS. A run that earned something has produced
+        // exactly one fact worth leading with, and it is not the accuracy percentage.
+        //
+        // THIS IS THE SECOND HALF OF A PAIR. The corner banner said each of these as it happened,
+        // mid-fight, and a banner shown during a boss fight is a banner that may genuinely not have
+        // been looked at. The summary is the receipt: the whole haul in one place, read at leisure
+        // by someone deciding what to do next. Neither replaces the other.
+        //
+        // EACH ROW SAYS WHICH KIND IT IS. Three different things land on this list - a mech, a
+        // card, a yard - and the web build's own heading used to be "Chassis earned", which
+        // cheerfully announced a newly earned CARD as a chassis.
+        if (earned is { Count: > 0 })
+        {
+            int rowH = UiFont.LineHeight(small) + 6 * scale;
+            int panelH = UiFont.LineHeight(small) + 6 * scale + earned.Count * rowH + 8 * scale;
+            var panel = new Rectangle(x0, y, width, panelH);
+            Screens.CardFace(batch, sprites, panel, 6 * scale, Panel, Accent,
+                             System.Math.Max(1, scale / 2));
+
+            int ey = y + 6 * scale;
+            Screens.UiDraw(batch, sprites, Screens.Spaced("UNLOCKED"), x0 + 8 * scale, ey, small,
+                      Accent);
+            ey += UiFont.LineHeight(small) + 4 * scale;
+
+            foreach (var e in earned)
+            {
+                Screens.UiDraw(batch, sprites, e.Name, x0 + 8 * scale, ey, small, Ink);
+                // The kind sits hard right, so the names read as a column and the kinds as a
+                // second one - which is what stops three rows of two words reading as prose.
+                int kw = UiFont.Measure(e.Kind, small);
+                Screens.UiDraw(batch, sprites, e.Kind, x0 + width - 8 * scale - kw, ey, small,
+                          Faint);
+                ey += rowH;
+            }
+
+            y += panelH + 4 * scale;
+        }
 
         // --- the numbers, two across ------------------------------------------------------------
         var stats = new List<(string K, string V)>
@@ -1124,6 +1164,10 @@ public static class Overlay
     /// clock rather than at the end, so the news arrives at the moment it becomes true. Telling the
     /// player on the summary screen instead would make an unlock feel like a reward for stopping.
     /// </remarks>
+    /// <summary>One thing this run unlocked, for the end screen's list.</summary>
+    /// <param name="Kind">"chassis", "card" or "yard" - three things land on one list.</param>
+    public readonly record struct Earned(string Name, string Kind);
+
     /// <summary>One thing that has just come open, waiting to be announced.</summary>
     /// <param name="Icon">A sprite key - the mech, the card's icon, the yard's plate.</param>
     /// <param name="Eyebrow">What KIND of thing it is. The only part that differs between kinds.</param>

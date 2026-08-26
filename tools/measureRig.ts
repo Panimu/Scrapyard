@@ -221,7 +221,7 @@ export function report(
   levelId: string,
   equip: (w: World) => void,
   label: WeaponLabel = (i) => WEAPON_CATALOG[i]?.name ?? `weapon ${i}`,
-): void {
+): Outcome[] {
   const outcomes = seeds.map((s) => runOne(s, levelId, equip));
   for (const o of outcomes) printRun(o);
 
@@ -290,4 +290,7 @@ export function report(
     );
   }
   console.log('');
+  // HANDED BACK so a caller can compare two runs of the rig - see loadout's `--passives
+  // both`. Everything above is printing; this is the same data, unformatted.
+  return outcomes;
 }
