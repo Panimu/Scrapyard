@@ -46,6 +46,35 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T18:41Z',
+    title: 'TOXIC SLUDGE IS ONLY ITS POOLS NOW',
+    notes: [
+      'The globs pass straight through everything and do no damage at all on the way. All of the gun\u2019s damage is in the acid it leaves on the floor \u2014 which is what it was mostly doing anyway, and now it says so.',
+      'It throws more slowly, and a rack takes a second longer to reload. Three pools down at once is the weapon; how quickly you can get them there is the cost.',
+    ],
+  },
+  {
+    at: '2026-08-26T18:41Z',
+    title: 'THE MORTAR\u2019S BLAST IS SMALLER',
+    notes: [
+      'A fifth off the radius, at every tier, which is about a third off the ground each shell actually covers. It was reaching between bodies it had no business reaching between.',
+    ],
+  },
+  {
+    at: '2026-08-26T18:41Z',
+    title: 'HEAVY ARTILLERY\u2019S BLAST IS SMALLER',
+    notes: [
+      'A tenth off the radius, at every tier. A lighter hand than the Mortar gets \u2014 the shells still have to be walked onto a crowd, and that is the part that was already fair.',
+    ],
+  },
+  {
+    at: '2026-08-26T18:41Z',
+    title: 'FLAK SHELLS HIT A SHADE SOFTER',
+    notes: [
+      'A small trim to each individual shell. The gun is still three of them into a wide cone, twenty-three times a second \u2014 nothing about how it plays has moved.',
+    ],
+  },
+  {
     at: '2026-08-26T18:15Z',
     title: 'TOXIC SLUDGE BURNS HALF AS HARD',
     notes: [

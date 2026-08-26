@@ -27,6 +27,291 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-26T18:41Z", "TOXIC SLUDGE IS ONLY ITS POOLS NOW",
+            new[]
+            {
+                "The globs pass straight through everything and do no damage at all on the way. All of the gunu2019s damage is in the acid it leaves on the floor u2014 which is what it was mostly doing anyway, and now it says so.",
+                "It throws more slowly, and a rack takes a second longer to reload. Three pools down at once is the weapon; how quickly you can get them there is the cost.",
+            }),
+        new("2026-08-26T18:41Z", "THE MORTARu2019S BLAST IS SMALLER",
+            new[]
+            {
+                "A fifth off the radius, at every tier, which is about a third off the ground each shell actually covers. It was reaching between bodies it had no business reaching between.",
+            }),
+        new("2026-08-26T18:41Z", "HEAVY ARTILLERYu2019S BLAST IS SMALLER",
+            new[]
+            {
+                "A tenth off the radius, at every tier. A lighter hand than the Mortar gets u2014 the shells still have to be walked onto a crowd, and that is the part that was already fair.",
+            }),
+        new("2026-08-26T18:41Z", "FLAK SHELLS HIT A SHADE SOFTER",
+            new[]
+            {
+                "A small trim to each individual shell. The gun is still three of them into a wide cone, twenty-three times a second u2014 nothing about how it plays has moved.",
+            }),
+        new("2026-08-26T18:15Z", "TOXIC SLUDGE BURNS HALF AS HARD",
+            new[]
+            {
+                "The globs and the pools they leave now do half the damage they did. Everything else about the gun is untouched - same throw, same arc behind you, same three in the rack, same size of pool.",
+                "Stacked up with a full set of upgrades it had quietly become one of the strongest guns in the game, because a pool multiplies its damage across ground that the blast upgrades keep making wider. Two dials pulling on each other in the same direction is a lot steeper than either one looks.",
+            }),
+        new("2026-08-26T17:19Z", "UNLOCKS ANNOUNCE THEMSELVES PROPERLY",
+            new[]
+            {
+                "A chassis, card or yard coming open now slides up a panel in the corner with the thing's own picture on it, the same way an achievement does. On the web it was said nowhere at all until the run ended; on desktop it was two lines of centred capitals over the fight, which is the register of a system message rather than of a reward.",
+                "They queue, one at a time, so a poll that opens two things does not print both on top of each other.",
+            }),
+        new("2026-08-26T17:19Z", "SLUDGE POOLS BUBBLE MORE SLOWLY",
+            new[]
+            {
+                "The pops were arriving fast enough to read as static rather than as something coming to the boil.",
+            }),
+        new("2026-08-26T15:50Z", "FIRE THAT LOOKS LIKE FIRE",
+            new[]
+            {
+                "The Plasma Thrower's bolt has art of its own instead of being the machine-gun round tinted orange. It is a gout with a dark edge, a flame body and a white-hot centre, and it flickers.",
+                "A burning enemy wears a proper tongue of flame that leans and breathes, on a four-pose loop.",
+            }),
+        new("2026-08-26T15:50Z", "THE ENERGY SHIELD SWIRLS",
+            new[]
+            {
+                "The field's body is a slow counter-rotating swirl rather than a flat wash, and its colour walks between three blues - so it reads as something being fed rather than a ring painted on the ground.",
+            }),
+        new("2026-08-26T14:53Z", "THE PLASMA THROWER SPREADS FIRE",
+            new[]
+            {
+                "Every bolt now carries a tiny blast that does almost no damage and LIGHTS what it touches at full strength. A crowd does not go up at once, but it does start to catch - and since the gun refuses to aim at anything already burning, it walks itself through a pack much faster than it used to.",
+                "It fires noticeably slower to pay for that.",
+                "The bolt itself is a proper gout of fire now - a haze it is heating, the flame, and a near-white core - and it flickers, each one out of step with its neighbours.",
+                "The flames on a burning enemy are smaller, and they move: they breathe taller and thinner, and lean. Three frames alone read as a shape being swapped rather than as fire.",
+            }),
+        new("2026-08-26T14:53Z", "TOXIC SLUDGE HAS TO ACTUALLY BE BEHIND YOU",
+            new[]
+            {
+                "The cone it will throw into is a hundred degrees behind the mech. It was far wider than intended - near enough everything except a wedge dead ahead - which made \"which way am I walking\" barely a decision. Nothing outside the cone is a target now, however big it is and however hard it is chasing.",
+            }),
+        new("2026-08-26T13:45Z", "THE ENERGY SHIELD IS A FIELD NOW, NOT TWO RINGS",
+            new[]
+            {
+                "It was concentric blue circles pulsing on one clock, which is the most inert shape there is drawn twice. It is now a haze you are standing inside, broken rings that counter-rotate layer against layer, and a bright arc sweeping the outer rim - so it reads as something being held together and powered rather than as a target painted on your own feet.",
+            }),
+        new("2026-08-26T13:45Z", "THE BARRAGE PAINTS A PROPER RETICLE",
+            new[]
+            {
+                "The artillery's marker is an instrument instead of a red circle: a hairline bound with twelve graduations round it, four corner brackets that close inward as the fuse burns, and a crosshair with a hole in the middle - so the spot the shell is actually going to hit stays unpainted and you can see what is standing on it.",
+            }),
+        new("2026-08-26T13:45Z", "SLUDGE POOLS HAVE RAGGED BOTTOMS",
+            new[]
+            {
+                "The dark patches on a pool's floor were perfect circles sitting inside an outline that deliberately is not one. They wander now, and harder than the outline does - they should look eaten out rather than poured.",
+            }),
+        new("2026-08-26T13:23Z", "TOXIC SLUDGE AIMS AT WHAT IS CHASING YOU",
+            new[]
+            {
+                "It throws at the BIGGEST thing in the cone behind you rather than wherever the mech happened to be pointing. Put the worst thing behind you and the ground goes between you and it.",
+                "But it throws WIDE - up to twenty degrees off either side, rolled fresh every time. You are laying ground near the trouble, never exactly on it, which is the difference between area denial and a slow shotgun.",
+                "It throws a little slower.",
+                "The pools are rounder than they were, and the bubbles have been redone: they sit on the surface with a shadow under them and a highlight on top, they come in a real range of sizes, and a burst leaves two rings instead of one.",
+            }),
+        new("2026-08-26T12:45Z", "DESKTOP: ARROWS TO THE BOSS AND THE CHEST",
+            new[]
+            {
+                "A boss off the edge of the screen gets a red pointer on the edge nearest it, and a chest gets a blue one. Neither existed here at all. The chest needed it more than the boss did: a boss is enormous and coming towards you, while a chest is a silent box left exactly where the boss happened to die - which, after a fight that crossed half the yard, is nowhere near where the fight ended.",
+            }),
+        new("2026-08-26T12:45Z", "DESKTOP: A TIER 8 WEARS ITS OWN ICON AGAIN",
+            new[]
+            {
+                "The Twin Mount, Chain Laser, Hornet, Giga Beam and Hydra have had drawn icons all along, and every screen here was asking for the base card's instead - so a Twin Mount showed one shell and a Hydra showed one beam. The chest reel, the payout list and the loadout strip all name and draw the thing you actually got.",
+                "The ascension announcement itself said the old card's name. The one screen whose entire job is to tell you the thing in your hands is not the thing you were carrying was announcing the thing you were carrying.",
+            }),
+        new("2026-08-26T12:32Z", "THE HEAVIES TURN FIVE SECONDS SOONER",
+            new[]
+            {
+                "A siege ring now stops marching on the mark it was given and comes for you while it is still closing, rather than just after. You get less of a perfect circle standing on empty ground and more of a wall that has clearly changed its mind about you.",
+            }),
+        new("2026-08-26T12:32Z", "TOXIC SLUDGE THROWS FROM UNDER THE MECH",
+            new[]
+            {
+                "The glob leaves from behind the hull and over the legs, so it reads as lobbed out from under the machine instead of skating across the top of it. It is also round now rather than a bullet wearing green.",
+                "The pools are no longer perfect circles - each one has its own uneven coastline, because acid poured on the ground does not find a radius.",
+            }),
+        new("2026-08-26T12:32Z", "DESKTOP: THE ARTILLERY RING, AND LEGS THAT GO UNDER THE HULL",
+            new[]
+            {
+                "The barrage draws its proper target marker again: a wash over the ground it is about to take, a ring, a second ring closing on the fuse, and four crosshair ticks. It had been reduced to a dotted outline, which said a circle was there but not when it mattered.",
+                "A mech's legs sit under its hull instead of on top of it, so the hip joints stop showing through the plating.",
+            }),
+        new("2026-08-26T08:05Z", "BURNING ENEMIES ARE ON FIRE NOW",
+            new[]
+            {
+                "An enemy the Plasma Thrower has lit wears flames. Most of that weapon's damage is the burn and none of it was visible - a body about to fall over looked exactly like one the bolt had missed.",
+            }),
+        new("2026-08-26T08:05Z", "TOXIC SLUDGE THROWS ONE AT A TIME",
+            new[]
+            {
+                "One glob per throw instead of three at once, and where it goes is decided by how full the rack is: a full magazine throws to one edge of the arc, the next throw a step further round, and the last round reaches the far edge. Emptying a magazine still paints the whole wall - it just arrives as three decisions you can walk between rather than one event.",
+                "The pools are round, and they look like acid: a raised lip, a dark bottom, and bubbles that swell and pop. They were flat squares.",
+            }),
+        new("2026-08-26T08:05Z", "DESKTOP: THE SHIELD, THE BIG TURRETS, AND A SHORTER PAUSE MENU",
+            new[]
+            {
+                "The Energy Shield draws its rims around the mech. It had none - the only sign you were carrying one was a pip in the corner, which made the chassis built entirely around it (Plum, which has no gun) a mech with an invisible mechanic.",
+                "The Mortar and the Plasma Thrower have their turrets back. Both bolt onto a mount another gun already uses, and neither was listed - so both fired from nowhere and neither barrel tracked.",
+                "The pause menu fits: buttons two to a row, and what you are carrying is laid out weapons beside systems instead of one list under the other.",
+            }),
+        new("2026-08-26T07:19Z", "DESKTOP: THE PAUSE MENU AND THE CHEST REELS",
+            new[]
+            {
+                "No menu borrows a movement key any more. Auto-level was on [A] - which is strafe left - so holding it when a level-up card appeared switched on a setting the card itself calls one-way. It is [L] now, on the card and in the pause menu both. The title screen gave up its [W] and [S] for the same reason, and is now [U] for upgrades and [O] for settings.",
+                "The two switches in the pause menu say which way they are set. Auto-level read the same whichever way it was pointing, so pressing it told you nothing.",
+                "Infinite rerolls is in the pause menu, where the web build has always had it. The switch existed and was being saved; there was simply no way to reach it.",
+                "The chest reels keep their symbols inside the window. A tile sliding through the slot was drawn in full, so icons appeared above and below the reel and the drum stopped reading as a drum.",
+            }),
+        new("2026-08-26T05:51Z", "THREE CARDS GET THEIR PICTURES",
+            new[]
+            {
+                "The Mortar, the Plasma Thrower and Toxic Sludge were drawing a broken image on the level-up card and in the Scrapopedia. They have icons now - a shell arcing into a knot of bodies, a gout of fire landing on something, and a pool of acid thrown out backwards.",
+                "Copper carries the medium turret it actually fires from, instead of the rotary drums it had while it was a second Flak Cannon chassis.",
+            }),
+        new("2026-08-26T05:31Z", "A NEW GUN: THE PLASMA THROWER",
+            new[]
+            {
+                "It throws slow gouts of fire, and whatever they touch CATCHES FIRE. The bolt itself is almost nothing - a burning enemy keeps taking damage for three seconds afterwards, so most of this weapon's damage is never fired.",
+                "It picks the biggest thing in front of it that is NOT already alight, and looks straight ahead first the way the Mortar does. Fire does not stack, so re-lighting the same body is wasted - left alone, the thrower walks itself down a crowd, biggest first. If absolutely everything in reach is already burning it shoots the biggest anyway.",
+                "It runs on HEAT rather than a cooldown, and it is not a laser. Held on a target it heats; slewing between them it cools; hold it too long and the breaker trips. A Radiator Bank helps it exactly as much as it helps a beam, and now gets offered to a run carrying one.",
+                "It bolts onto the Phase Cannon's mount, so a run carries one or the other and never both. Copper opens with it, throwing 10% further and 10% hotter.",
+                "The card stays locked until you have had 30 enemies burning at the same moment.",
+            }),
+        new("2026-08-26T05:31Z", "A NEW GUN: TOXIC SLUDGE",
+            new[]
+            {
+                "It is the only weapon in the yard that shoots at where you have BEEN. A fan of acid leaves the mech's back, lands a short way behind, and stays on the ground for a few seconds eating anything that walks through it.",
+                "So it pays you for retreating. Every other gun wants you facing the horde; this one wants you walking away from it, laying ground the crowd has to cross to reach you.",
+                "It will not fire into an empty yard - there has to be something in a wide cone behind you or it holds. Which matters, because the magazine is three throws and the reload is long. Ammo Drums is now offered to a run carrying it.",
+                "It uses no mount at all, so it fits alongside anything. Nothing else in the game can say that. Jade opens with it, laying pools 20% wider.",
+                "The card stays locked until you have finished 30 elites with it.",
+            }),
+        new("2026-08-26T05:31Z", "THE MORTAR'S UNLOCK WAS UNREACHABLE ON DESKTOP",
+            new[]
+            {
+                "Mortar kills were never being added to the career total on the desktop build, so its 1812 could never arrive however long you played. They count now. Kills banked before this were not recorded and are not recoverable.",
+            }),
+        new("2026-08-24T14:58Z", "A NEW GUN: THE MORTAR",
+            new[]
+            {
+                "It lobs one heavy shell into the thickest part of the crowd - the artillery's blast, but thrown AT something rather than onto open ground.",
+                "It looks straight ahead first. There is a narrow cone off the barrel, and if there is a crowd in it that crowd gets the shell, whatever is happening elsewhere; only when the cone is empty does it widen its search. So it is a gun you aim with the whole mech - point the chassis at the horde and it hammers the horde.",
+                "It bolts onto the Cannon's mount, so a run carries one or the other and never both. Rust opens with it, and lobs 30% harder.",
+                "The card stays locked until you have finished 1812 enemies with one.",
+            }),
+        new("2026-08-24T13:28Z", "RANDOM PICKS THE MECH AND GETS ON WITH IT",
+            new[]
+            {
+                "The Random button on mech select now takes the chassis it rolled and moves straight to the yard, instead of moving the highlight and waiting for you to press Next. It is the button for people who do not want to choose, so asking them to confirm the choice was the one thing it should not have done.",
+            }),
+        new("2026-08-24T10:36Z", "A LOCKED CHASSIS IS JUST A SILHOUETTE NOW",
+            new[]
+            {
+                "The question mark is gone from the tiles of mechs you have not earned. They are the chassis' own outline in flat grey and nothing else - sixteen machines look different enough from each other that the shape says everything the mark was saying, without putting a symbol on the one thing the tile exists to show.",
+                "It still gives nothing away about how to earn them. That was the question mark's job and it has not changed hands: what unlocked a chassis is only ever stated by the trophy that fires when you do it.",
+            }),
+        new("2026-08-24T10:28Z", "FIXED: THE MOUSE WHEEL GIVING UP AFTER THE FIRST SCROLL DOWN",
+            new[]
+            {
+                "The wheel worked, then stopped, then sometimes started again. Windows reports the wheel as a running total that counts DOWNWARDS when you scroll toward yourself, and the game was treating any negative total as \"nothing has happened yet\" - so the first notch downward switched the wheel off, and only scrolling back up past the starting point brought it back.",
+                "You can also drag the scroll bar now, or click anywhere on its track to jump there. The bar is easier to hit than it is to see: the grab area is wider than the line drawn, because four pixels is not something anyone can aim at.",
+            }),
+        new("2026-08-24T09:42Z", "FIXED: SCRAPOPEDIA PAGES GETTING STUCK WHEN SCROLLED BACK UP",
+            new[]
+            {
+                "Scrolling past the bottom of a page kept counting even though the page had stopped moving, so coming back up did nothing until you had undone every step of the overshoot. On a short page a second of held Down could cost you a dozen presses of Up.",
+                "The wheel also moves a page by the same distance it moves a list now, instead of one line at a time.",
+            }),
+        new("2026-08-24T09:15Z", "THE MENUS SCROLL SMOOTHLY INSTEAD OF A ROW AT A TIME",
+            new[]
+            {
+                "Upgrades, Mech select, Settings and the Scrapopedia now scroll by the pixel. They used to jump a whole row, which meant the thing you were reading moved out from under you - and a row that did not fit was simply not drawn, so every one of those lists ended in a band of dead space that no amount of scrolling could reach.",
+                "A row can be half-seen now, the way it can in any list anywhere. The wheel moves the view and leaves your selection where you put it; the arrow keys move the selection and the view follows only as far as it has to.",
+            }),
+        new("2026-08-24T08:46Z", "FIXED: THE ARROW KEYS DOING NOTHING UNTIL YOU CLICKED",
+            new[]
+            {
+                "On every menu, the row under the mouse pointer took the highlight - sixty times a second, whether the pointer had moved or not. Since you arrive at a screen by clicking the button that opens it, the pointer was left sitting over a row and kept snatching the highlight back, so the arrow keys looked dead until you clicked somewhere. They were working the whole time; the mouse was overwriting them. The pointer now only takes the highlight when it actually moves.",
+            }),
+        new("2026-08-24T08:46Z", "THE WORKSHOP FITS MORE IN AND SAYS WHERE YOU ARE",
+            new[]
+            {
+                "It shows five upgrades at a time instead of four, and the rows are tighter: each one keeps a single line saying what the thing is, and the tier pips have moved up beside the line that says what you own rather than taking a row of their own.",
+                "The banked total sits on one line with its label instead of two, which is where the extra row came from.",
+                "A line under the total says how many of the sixteen you have started and how many are maxed - the list can only ever show a handful, so it now tells you the size of what you are scrolling through.",
+            }),
+        new("2026-08-24T04:38Z", "THE LONG MENUS SAY THAT THEY SCROLL, AND THE WHEEL WORKS",
+            new[]
+            {
+                "The Workshop lists sixteen upgrades and only four fit on screen at once. It has always scrolled, but nothing said so - there was no bar, no counter, just four rows and a gap underneath - so the other twelve may as well not have existed. Every list that is taller than its window now shows a rail down its right-hand side saying how much more there is, and lists that already fit do not show one.",
+                "The mouse wheel scrolls them: the Workshop, Settings, Mech select, the Scrapopedia index and its pages.",
+            }),
+        new("2026-08-23T22:01Z", "THE LOADOUT ROW IS BACK WHERE IT BELONGS",
+            new[]
+            {
+                "It sits under the XP bar again rather than down in the bottom-left corner, so reading what you are carrying no longer means looking away from the hull, the clock and everything else the HUD is telling you. Each gun is a small panel edged in its own colour.",
+                "The insurance banner and the unlock toast use the interface font now, like the rest of the HUD.",
+            }),
+        new("2026-08-23T21:16Z", "THE LOADOUT ROW SHOWS WHAT EACH GUN IS WAITING ON",
+            new[]
+            {
+                "Every weapon you hold now carries its own bar. A laser shows heat climbing toward its cut-out, with a notch at the point it comes back; a Machine Gun or Flak Cannon shows rounds left, and while it reloads the bar refills with the seconds counting down; everything else fills as it rearms and sits full when it is ready and simply has nothing to shoot.",
+                "Each bar is the weapon's own colour, so a row carrying a green, a blue and a red laser is readable without stopping to read it. A cut-out beam goes red and says OUT.",
+                "Before this the row was an icon and a tier number, which left out the one thing it is for: every gun in this game is waiting on something, and none of it was on screen.",
+            }),
+        new("2026-08-23T21:16Z", "HUD AND MENU POLISH",
+            new[]
+            {
+                "The hull and XP bars are rounded, outlined and graded now, instead of two flat slabs, and they stop short of the pause button rather than running underneath it - the right-hand end of the hull bar, which is the part you look at when it is nearly gone, was behind a panel.",
+                "The HUD uses the interface font throughout.",
+                "Mech select has a Random button, for when you do not want to pick. It only ever lands on a chassis you own, and it moves the cursor rather than starting the run, so you can still change your mind.",
+                "The end-of-run screen has a Title button beside New Run, and both can be clicked - the one screen you reach by losing used to answer nothing but a function key.",
+                "Auto-level is a button on the level-up card now rather than a line of text naming a key, and taking it no longer flashes the card up for a frame on every level. The pick it makes is announced in white with an outline, so it is readable over whatever you happen to be standing on.",
+                "The NEW sticker on the title screen has smooth edges instead of a staircase.",
+            }),
+        new("2026-08-23T20:59Z", "FIXED: MECHS STANDING ON NOTHING",
+            new[]
+            {
+                "A mech that stopped walking lost its legs - the body is drawn separately from them, and the legs were only being drawn while it moved. They are now always there, and the gait runs off the distance walked rather than a clock, so a parked mech stands on the step it finished instead of marching on the spot.",
+                "The walk cycle plays its full twelve poses again instead of six, and the chassis leans into its stride the way it used to. Hovers keep their skirt pulsing while standing, because a hover holding perfectly still has landed.",
+            }),
+        new("2026-08-23T20:59Z", "FIXED: BARRELS ON GUNS THAT DO NOT HAVE ONE",
+            new[]
+            {
+                "Every weapon was bolting a cannon barrel onto the chassis. Only four guns have a turret - the Cannon, the Phase Cannon, and the rotary snout the Machine Gun and Flak Cannon share - and a missile rack, an artillery tube or a drone bay now shows what it actually is.",
+                "Turrets were also drawn at nearly twice their intended size, and swung about their own middle instead of their mount, so a barrel orbited the mech like a clock hand. Both fixed: they sit on the hull at the right length and sweep across it.",
+                "The Cannon wears its twin barrels once it has ascended, which it was never doing - that art had been misassigned to the Flak Cannon.",
+            }),
+        new("2026-08-23T20:53Z", "THE SCRAPOPEDIA SAYS WHAT THINGS ARE",
+            new[]
+            {
+                "Every entry in the manual now carries a line under its name saying what it is - guns, systems, ascensions, chassis, creatures, ranks and trophies alike. The list used to be names only, so finding the right page meant opening pages until you got there.",
+                "A trophy you have not earned still shows nothing but its shape, as before.",
+            }),
+        new("2026-08-23T20:49Z", "FIXED: MOST GUNS NEVER GOT A SCRAPOPEDIA PAGE",
+            new[]
+            {
+                "The manual was listing the wrong thing. A gun earned itself a page only if it was one of the seven that have to be unlocked before the deck will offer them - so the fourteen you carry every single run, the Cannon and the Machine Gun and all three lasers among them, never appeared however long you played. The Medium Laser you start holding was missing from an otherwise untouched save.",
+                "It now lists what you have actually held, which is what it always said it did. Anything you carry in your next run turns up in it.",
+            }),
+        new("2026-08-23T20:37Z", "FIXED: CAREER TOTALS THAT NEVER ADDED UP",
+            new[]
+            {
+                "Everything counted \"across every run\" was only ever counting your BEST run. Four hundred kills with the artillery in each of three runs left the tally reading four hundred, so Indigo wanted all 999 of them in a single sitting - and the same went for the Flak Cannon, the Drones and the Phase Cannon.",
+                "Blast kills and magazine reloads were not being counted at all, which meant Shaped Charges and Ammo Drums could not be earned however you played.",
+                "All six now accumulate the way they always said they did. Whatever your save had already banked is kept and counts toward the total - nothing you have earned is lost, and several things you had already done enough for will land the next time you finish a run.",
+            }),
+        new("2026-08-23T19:52Z", "FIXED: CITY CHAOS HAD NO SCRAPOPEDIA ENTRIES",
+            new[]
+            {
+                "Every machine on City Chaos opened onto a title and nothing else - the whole map shipped without a manual entry for anything in it. Killing one now opens onto the same kind of write-up the Scrapyard and Mossy Mayhem have always had.",
+            }),
+        new("2026-08-23T19:52Z", "S ENEMY LIST SHOWS WHAT YOU FOUGHT\",\n    notes: [\n      ",
+            System.Array.Empty<string>()),
         new("2026-08-22T08:50Z", "THE CHEST REELS SPIN AGAIN ON WINDOWS",
             new[]
             {
@@ -237,58 +522,58 @@ public static class Changelog
         new("2026-08-19T11:58Z", "SOMETHING IS BEING BUILT",
             new[]
             {
-                "A third yard now sits on the level select u2014 City Chaos u2014 greyed out and not enterable. It is a placeholder for work that has not been done rather than a promise about when it will be, and it is there so you can see it coming.",
+                "A third yard now sits on the level select - City Chaos - greyed out and not enterable. It is a placeholder for work that has not been done rather than a promise about when it will be, and it is there so you can see it coming.",
             }),
         new("2026-08-19T11:47Z", "AUTO LEVEL",
             new[]
             {
-                "A new option: let the game pick your upgrades. Turn it on from the pause menu, or straight off a level-up card when you have had enough of choosing u2014 that card gets picked too.",
+                "A new option: let the game pick your upgrades. Turn it on from the pause menu, or straight off a level-up card when you have had enough of choosing - that card gets picked too.",
                 "It picks with a plan rather than at random. It will complete an ascension you already know how to build; failing that it takes a gun you do not have, then deepens a gun you do, then a passive you do. It will never hand you an ascension you have not found for yourself.",
-                "Each pick floats its name over the mech for a moment so the build never changes behind your back u2014 and if Mech Insurance fires, the label holds for the whole pause instead of dissolving over a stopped world.",
+                "Each pick floats its name over the mech for a moment so the build never changes behind your back - and if Mech Insurance fires, the label holds for the whole pause instead of dissolving over a stopped world.",
             }),
         new("2026-08-19T11:35Z", "THE GIGA LASER LOOKS LIKE A LASER",
             new[]
             {
                 "The swath is 20% narrower. Area is what that number buys, so a fifth off the width is a fifth off the ground it covers, and its damage, burst and reach are untouched.",
-                "It is drawn properly now. It was a flat slab of red with a wash around it and a square end bolted to the hull; it is now a hot thread running down a channel of light, with an edge you can actually see, and it leaves the mech through a lit emitter instead of starting in mid-air. The bright band is the part that burns u2014 what you see is what it hits.",
+                "It is drawn properly now. It was a flat slab of red with a wash around it and a square end bolted to the hull; it is now a hot thread running down a channel of light, with an edge you can actually see, and it leaves the mech through a lit emitter instead of starting in mid-air. The bright band is the part that burns - what you see is what it hits.",
                 "The three ordinary lasers are drawn exactly as before, to the pixel.",
             }),
         new("2026-08-19T11:19Z", "FOUR GUNS, AND A FIFTH TO BUY",
             new[]
             {
                 "A mech now carries FOUR weapons out of the yard rather than five. The choice of what to leave behind is the run, and at five it had stopped being much of a choice.",
-                "The workshop sells the fifth slot back u2014 Reinforced Mounts, one purchase, and not a cheap one. It is the same five guns you had; it is just yours now rather than assumed.",
+                "The workshop sells the fifth slot back - Reinforced Mounts, one purchase, and not a cheap one. It is the same five guns you had; it is just yours now rather than assumed.",
                 "Also new in the workshop: Scrap Magnetics pulls cores in from further off, so the ground you cannot safely cross still pays you.",
             }),
         new("2026-08-19T11:02Z", "A LONGER BREATH, AND A STEADIER SCREEN",
             new[]
             {
-                "When Mech Insurance saves you, the world now holds still for four seconds instead of just over one. You come back from a save standing in the crowd that nearly killed you u2014 that pause is for picking a way out, not for reading three words.",
+                "When Mech Insurance saves you, the world now holds still for four seconds instead of just over one. You come back from a save standing in the crowd that nearly killed you - that pause is for picking a way out, not for reading three words.",
                 "The Machine Gun and the Flak Cannon no longer shake the screen. Their barrels still kick; the camera does not. Eleven to twenty-three shots a second was not weight, it was a vibration you could not aim through.",
-                "The Flak Cannonu2019s mount comes round 10% slower than the belt gunu2019s. A degree of lag disappears inside a sixty-degree cone, and what you feel instead is the weight of the thing swinging onto a new crowd.",
+                "The Flak Cannon's mount comes round 10% slower than the belt gun's. A degree of lag disappears inside a sixty-degree cone, and what you feel instead is the weight of the thing swinging onto a new crowd.",
             }),
         new("2026-08-19T10:59Z", "MOSSY MAYHEM HAS A FACE",
             new[]
             {
-                "The level select shows Mossy Mayhemu2019s own art now u2014 its moss and one of its trees u2014 instead of the blank plate it has been wearing since it opened. Both yards now tell you where they are taking you before you press them.",
+                "The level select shows Mossy Mayhem's own art now - its moss and one of its trees - instead of the blank plate it has been wearing since it opened. Both yards now tell you where they are taking you before you press them.",
             }),
         new("2026-08-19T10:47Z", "A FIFTH ASCENSION EXISTS",
             new[]
             {
-                "One more of the weapons you know can become something else u2014 and this one does not change the gun at all. What it takes and what it becomes is yours to find; the Scrapopedia counts one more silhouette.",
+                "One more of the weapons you know can become something else - and this one does not change the gun at all. What it takes and what it becomes is yours to find; the Scrapopedia counts one more silhouette.",
                 "Your lasers now have somewhere to go: the chassis carries five mounts rather than three, with a pair added at the back. Nothing fires from them yet unless you find the reason.",
             }),
         new("2026-08-19T10:38Z", "VERMILION ROLLS OUT, AND IT BRINGS A FOURTH SHELL",
             new[]
             {
-                "Vermilion now opens with the Flak Cannon and throws an extra shell every burst u2014 four instead of three, out of the same magazine, which empties that much sooner for it. Those rotary drums were always more flak than missile rack.",
+                "Vermilion now opens with the Flak Cannon and throws an extra shell every burst - four instead of three, out of the same magazine, which empties that much sooner for it. Those rotary drums were always more flak than missile rack.",
                 "It is earned by having six other chassis in the bay: the first thing in the game unlocked by what your save has collected rather than by what one run did.",
-                "The Flak Cannon card is sealed until you have put down a great many enemies with the gun itself u2014 which is what Vermilion is for. Its achievement will tell you the number when you get there.",
+                "The Flak Cannon card is sealed until you have put down a great many enemies with the gun itself - which is what Vermilion is for. Its achievement will tell you the number when you get there.",
             }),
         new("2026-08-19T09:09Z", "THE GIGA LASER COOLS SLOWER",
             new[]
             {
-                "The Giga Laser sheds heat 10% slower than the beam it ascends from. The burst is exactly as long and exactly as wide u2014 the wait between bursts is what got longer. It was carrying more of a run than any other ascension by a wide margin, and a beam that bills a whole crowd every tick should pay for it in silence rather than in a smaller shot.",
+                "The Giga Laser sheds heat 10% slower than the beam it ascends from. The burst is exactly as long and exactly as wide - the wait between bursts is what got longer. It was carrying more of a run than any other ascension by a wide margin, and a beam that bills a whole crowd every tick should pay for it in silence rather than in a smaller shot.",
             }),
         new("2026-08-19T09:06Z", "ELITES AND BOSSES GET THEIR OWN NUMBER",
             new[]
@@ -298,20 +583,20 @@ public static class Changelog
         new("2026-08-19T08:47Z", "THE SUMMARY SAYS WHAT YOU ACTUALLY WON",
             new[]
             {
-                "The run summaryu2019s unlock banner was headed u201cChassis earnedu201d and announced everything that way u2014 so a run that earned a new CARD was told it had earned a chassis. It now just says u201cUnlockedu201d, and each line tells you whether it was a chassis, a card or a yard.",
+                "The run summary's unlock banner was headed u201cChassis earnedu201d and announced everything that way - so a run that earned a new CARD was told it had earned a chassis. It now just says u201cUnlockedu201d, and each line tells you whether it was a chassis, a card or a yard.",
                 "Siege Heavies hold their mark for 50 seconds now rather than 90. The knot still forms; you no longer wait a minute and a half for it to turn on you.",
             }),
         new("2026-08-19T08:36Z", "NEW WEAPON: THE FLAK CANNON",
             new[]
             {
-                "Three shells a burst, thrown into a wide random spray at the nearest enemy. It reaches further than any other shell in the game and it cannot be aimed u2014 no two bursts are the same shape, and nothing you can take will tighten it. Fire it at a loner and most of the belt goes into the dirt; fire it into a wave and almost every shell finds something.",
-                "It bolts onto the Machine Gunu2019s mount, so the deck will never offer you both. A run picks the stream or the spray.",
-                "Copper now rolls out with the Flak Cannon u2014 those rotary drums were always more flak than machine gun. Bone still opens with the belt gun and still hits 30% harder with it.",
+                "Three shells a burst, thrown into a wide random spray at the nearest enemy. It reaches further than any other shell in the game and it cannot be aimed - no two bursts are the same shape, and nothing you can take will tighten it. Fire it at a loner and most of the belt goes into the dirt; fire it into a wave and almost every shell finds something.",
+                "It bolts onto the Machine Gun's mount, so the deck will never offer you both. A run picks the stream or the spray.",
+                "Copper now rolls out with the Flak Cannon - those rotary drums were always more flak than machine gun. Bone still opens with the belt gun and still hits 30% harder with it.",
             }),
         new("2026-08-19T08:19Z", "HOT EMITTERS SIT WHERE THE GUNS ARE",
             new[]
             {
-                "A laseru2019s heat glow and the sputter it makes when it cuts out now sit on the emitter that is actually straining u2014 the shoulder or nose mount the beam leaves from u2014 instead of floating out in front of the chassis. Second and third lasers were the worst offenders: theirs could end up hanging in open ground nowhere near the mech.",
+                "A laser's heat glow and the sputter it makes when it cuts out now sit on the emitter that is actually straining - the shoulder or nose mount the beam leaves from - instead of floating out in front of the chassis. Second and third lasers were the worst offenders: theirs could end up hanging in open ground nowhere near the mech.",
             }),
         new("2026-08-19T07:29Z", "A FOURTH ASCENSION EXISTS",
             new[]

@@ -442,8 +442,9 @@ public static class WeaponCatalog
             ProjectileCount = 1,
             Knockback = 120,
             // THE DAMAGE IS THE BLAST. There is no direct hit worth the name on a shell aimed at a
-            // gap between bodies rather than at a body.
-            SplashRadius = 75,
+            // gap between bodies rather than at a body. Cut a fifth at every rung - see the
+            // TypeScript for why the tier steps are scaled too.
+            SplashRadius = 60,
             SplashFrac = 1,
             TurretTraverse = 0.9424777960769379, // degToRad(54) - slower than the Cannon's, on purpose
             FireArc = 0.20943951023931956,       // degToRad(12)
@@ -451,10 +452,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { SplashRadius = 12 },   // T2  75 -> 87
+            new WeaponStatDelta { SplashRadius = 9.6 },  // T2  60 -> 69.6
             new WeaponStatDelta { Cooldown = -0.3 },     // T3  2.0 -> 1.7 s  (-15% of base)
             new WeaponStatDelta { Damage = 20 },         // T4  55.1 -> 75.1
-            new WeaponStatDelta { SplashRadius = 12 },   // T5  87 -> 99
+            new WeaponStatDelta { SplashRadius = 9.6 },  // T5  69.6 -> 79.2
             new WeaponStatDelta { Cooldown = -0.3 },     // T6  1.7 -> 1.4 s
             new WeaponStatDelta { ProjectileCount = 1 }, // T7  a second shell
             new WeaponStatDelta(),                       // T8  no ascension - the twin barrels are
@@ -572,20 +573,22 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            // The glob's own hit. Small on purpose: Puddle.DpsFrac multiplies it into what the
-            // ground does, so this is the weapon's damage dial wearing its smallest hat. Halved
-            // from 8 - see the TypeScript for the measurement that says why.
+            // NOT WHAT THE GLOB HITS FOR - the glob hits for nothing at all. This is the DIAL,
+            // and its only consumer is Puddle.DpsFrac, which multiplies it into what the ground
+            // does. It stays here rather than moving into the puddle block so that both damage
+            // tiers and Jade's chassis bonus still raise the pool. See the TypeScript.
             Damage = 4,
-            Cooldown = 1.15,
+            Cooldown = 1.4, // slower, 1.15 -> 1.4: the trigger rate is how fast a rack empties
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
             // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a
             // volley - see FireSludge - so emptying a rack still paints the whole arc, one pool at
             // a time, and a capacity tier makes the wall finer instead of each throw bigger.
             ProjectileCount = 1,
-            // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The puddle hook hangs off the glob's
-            // EXPIRY, so a glob stopped by a body would pool at the mech's feet instead.
-            Pierce = 250,
+            // NOTHING, BECAUSE NOTHING IS EVER PIERCED. The glob is flagged NOCONTACT at spawn
+            // (see FireSludge), so the collision sweep skips it and expiry is the only way the
+            // round can end - which is exactly what the puddle hook needs.
+            Pierce = 0,
             Knockback = 0,
             // THE PUDDLE'S RADIUS, NOT A BLAST: SplashFrac is 0, so nothing in the damage path
             // ever reads this as splash. It is read once, by the puddle hook.
@@ -600,7 +603,7 @@ public static class WeaponCatalog
             SpreadAngle = 0.6981317007977318,   // degToRad(40)
             FlightTime = 0.45,                  // the THROW: about 68 units
             AmmoCapacity = 3,
-            ReloadTime = 6,
+            ReloadTime = 7, // seven, up from six - slowed alongside the trigger, not instead of it
         },
         PerLevel = new[]
         {
@@ -752,7 +755,7 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            Damage = 4, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
+            Damage = 3.8, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
             Knockback = 18,
             TurretTraverse = 12.723450247038663, // degToRad(729) - trimmed 10% off the Cannon's 810
             FireArc = LaserFireArc,               // degToRad(30)
@@ -790,7 +793,9 @@ public static class WeaponCatalog
             Range = 320, // STRIKE_RADIUS_MAX
             ProjectileCount = 2,
             Knockback = 120,
-            SplashRadius = 75, // the damage IS the blast; there is no direct hit
+            // The damage IS the blast; there is no direct hit. Cut a tenth at every rung - see
+            // the TypeScript for why the tier steps are scaled too.
+            SplashRadius = 67.5,
             SplashFrac = 1,
             TurretTraverse = LaserTraverse, // degToRad(720)
             FireArc = 3.141592653589793,    // degToRad(180)
@@ -799,10 +804,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { SplashRadius = 18 },      // T2
+            new WeaponStatDelta { SplashRadius = 16.2 },    // T2  67.5 -> 83.7
             new WeaponStatDelta { Cooldown = -0.6315 },     // T3  3.789 * (1/6)
             new WeaponStatDelta { Damage = 22 },            // T4
-            new WeaponStatDelta { SplashRadius = 18 },      // T5
+            new WeaponStatDelta { SplashRadius = 16.2 },    // T5  83.7 -> 99.9
             new WeaponStatDelta { Cooldown = -0.6315 },     // T6
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  -> 3 shells
         },

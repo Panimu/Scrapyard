@@ -487,7 +487,7 @@
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "4010000000000000",
+    "damage": "400e666666666666",
     "cooldown": "3fc0a3d70a3d70a4",
     "range": "4079000000000000",
     "projectileSpeed": "4083600000000000",
@@ -560,7 +560,7 @@
     "projectileCount": "4000000000000000",
     "pierce": "0000000000000000",
     "knockback": "405e000000000000",
-    "splashRadius": "4052c00000000000",
+    "splashRadius": "4050e00000000000",
     "splashFrac": "3ff0000000000000",
     "turretTraverse": "402921fb54442d18",
     "fireArc": "400921fb54442d18",
@@ -575,7 +575,7 @@
    },
    "perLevel": [
     {
-     "splashRadius": "4032000000000000"
+     "splashRadius": "4030333333333333"
     },
     {
      "cooldown": "bfe4353f7ced9168"
@@ -584,7 +584,7 @@
      "damage": "4036000000000000"
     },
     {
-     "splashRadius": "4032000000000000"
+     "splashRadius": "4030333333333333"
     },
     {
      "cooldown": "bfe4353f7ced9168"
@@ -755,7 +755,7 @@
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
     "knockback": "405e000000000000",
-    "splashRadius": "4052c00000000000",
+    "splashRadius": "404e000000000000",
     "splashFrac": "3ff0000000000000",
     "turretTraverse": "3fee28c731eb6950",
     "fireArc": "3fcacee9f37bebd6",
@@ -770,7 +770,7 @@
    },
    "perLevel": [
     {
-     "splashRadius": "4028000000000000"
+     "splashRadius": "4023333333333333"
     },
     {
      "cooldown": "bfd3333333333333"
@@ -779,7 +779,7 @@
      "damage": "4034000000000000"
     },
     {
-     "splashRadius": "4028000000000000"
+     "splashRadius": "4023333333333333"
     },
     {
      "cooldown": "bfd3333333333333"
@@ -879,11 +879,11 @@
    "requiresTarget": true,
    "base": {
     "damage": "4010000000000000",
-    "cooldown": "3ff2666666666666",
+    "cooldown": "3ff6666666666666",
     "range": "4075400000000000",
     "projectileSpeed": "4062c00000000000",
     "projectileCount": "3ff0000000000000",
-    "pierce": "406f400000000000",
+    "pierce": "0000000000000000",
     "knockback": "0000000000000000",
     "splashRadius": "4045000000000000",
     "splashFrac": "0000000000000000",
@@ -896,7 +896,7 @@
     "spreadAngle": "3fe657184ae74487",
     "flightTime": "3fdccccccccccccd",
     "ammoCapacity": "4008000000000000",
-    "reloadTime": "4018000000000000"
+    "reloadTime": "401c000000000000"
    },
    "perLevel": [
     {

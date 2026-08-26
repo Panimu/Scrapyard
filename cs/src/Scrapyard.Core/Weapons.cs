@@ -1018,6 +1018,12 @@ public static class Weapons
             projectiles.Radius[d] = (float)def.ShellRadius;
             projectiles.PierceLeft[d] = (sbyte)stats.Pierce;
             projectiles.VisualId[d] = (byte)def.VisualId;
+            // THE GLOB HITS NOTHING. NoContact takes the round out of the collision sweep
+            // altogether, so it cannot damage, knock back or be absorbed by anything it flies
+            // over - it arrives, it expires, and the pool it leaves is the entire weapon. The flag
+            // rather than Damage = 0, because Damage is what Puddle.DpsFrac multiplies. See the
+            // TypeScript.
+            projectiles.Flags[d] |= ProjectilePool.FlagNoContact;
 
             world.Events.Push(EventKind.WeaponFired, world.Tick,
                               projectiles.X[d], projectiles.Y[d], dirX, dirY, weaponIdx);

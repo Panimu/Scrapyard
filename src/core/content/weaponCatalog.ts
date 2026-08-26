@@ -1291,7 +1291,7 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    damage: 4, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
+    damage: 3.8, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
     cooldown: 0.13, // 7.7 bursts/s = 23 rounds/s
     range: 400, // the longest projectile reach in the game - and the least accurate
     projectileSpeed: 620, // 0.65 s to maximum range: the spread is VISIBLE opening in flight
@@ -1397,7 +1397,13 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     projectileCount: 2,
     pierce: 0,
     knockback: 120,
-    splashRadius: 75, // the damage IS the blast; there is no direct hit
+    // The damage IS the blast; there is no direct hit.
+    //
+    // CUT A TENTH, AT EVERY RUNG - 75 -> 67.5, with both tier steps scaled to match, for the
+    // reason the Mortar's is scaled: a base-only cut is a gun that catches up by tier 5. A tenth
+    // off the radius is a fifth off the area (0.9^2 = 0.81), which is a lighter hand than the
+    // Mortar gets and matches where the two sat in the table.
+    splashRadius: 67.5,
     splashFrac: 1,
     turretTraverse: degToRad(720),
     fireArc: degToRad(180),
@@ -1411,10 +1417,10 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     reloadTime: 0,
   }),
   perLevel: Object.freeze([
-    { splashRadius: 18 }, // T2  75 -> 93
+    { splashRadius: 16.2 }, // T2  67.5 -> 83.7
     { cooldown: ARTILLERY_RATE_TIER }, // T3  3.789 -> 3.1575 s  (-1/6 of base)
     { damage: 22 }, // T4  55.1 -> 77.1
-    { splashRadius: 18 }, // T5  93 -> 111
+    { splashRadius: 16.2 }, // T5  83.7 -> 99.9
     { cooldown: ARTILLERY_RATE_TIER }, // T6  3.1575 -> 2.526 s  (2/3 base, as always)
     { projectileCount: 1 }, // T7  a third shell
   ]),
@@ -1726,7 +1732,16 @@ export const MORTAR: WeaponDef = Object.freeze({
     knockback: 120,
     // THE DAMAGE IS THE BLAST. There is no direct hit worth the name on a shell aimed at a gap
     // between bodies rather than at a body.
-    splashRadius: 75,
+    //
+    // CUT A FIFTH, AT EVERY RUNG - 75 -> 60 here and the two tier steps scaled to match, so the
+    // gun is a fifth smaller at tier 1 and at tier 7 alike. Scaling the ladder rather than only
+    // the base is the difference between "the gun is smaller" and "the gun starts smaller and
+    // catches up", and the second is not a nerf by tier 5.
+    //
+    // A FIFTH OFF THE RADIUS IS A THIRD OFF THE AREA, which is the number that matters to a
+    // shell aimed at a gap: 0.8^2 = 0.64. That is the intended size of the change - this gun led
+    // every column of the loadout table and took 9 of 40 bosses.
+    splashRadius: 60,
     splashFrac: 1,
     // SLOWER THAN THE CANNON'S on the same mount, and the cone rule is why: a gun that hunts for
     // work near the barrel should be visibly reluctant to leave it.
@@ -1751,10 +1766,10 @@ export const MORTAR: WeaponDef = Object.freeze({
    * volley is a different relationship with a crowd than one bigger one.
    */
   perLevel: Object.freeze([
-    { splashRadius: 12 }, // T2  75 -> 87
+    { splashRadius: 9.6 }, // T2  60 -> 69.6
     { cooldown: MORTAR_RATE_TIER }, // T3  2.0 -> 1.7 s
     { damage: 20 }, // T4  55.1 -> 75.1
-    { splashRadius: 12 }, // T5  87 -> 99
+    { splashRadius: 9.6 }, // T5  69.6 -> 79.2
     { cooldown: MORTAR_RATE_TIER }, // T6  1.7 -> 1.4 s
     { projectileCount: 1 }, // T7  a second shell
     {}, // T8 - no ascension: the twin barrels are the Cannon's announcement and nothing else's
@@ -1906,7 +1921,10 @@ export const PLASMA: WeaponDef = Object.freeze({
 // enough pierce to reach where it is going rather than stopping in the first body, so a crowd
 // packed right behind the mech takes a small hit as the spread goes through it - and then the
 // pools do the work, for four seconds each, to anything standing in them.
-const SLUDGE_RELOAD = 6;
+// SEVEN, UP FROM SIX. See `cooldown` - the trigger and the reload were both slowed in the same
+// pass, because slowing only one of them moves where the gun's downtime sits without changing how
+// much of it there is.
+const SLUDGE_RELOAD = 7;
 // THE AIM ERROR, END TO END - so a throw lands within 20 degrees either side of the bearing to
 // whatever it picked. It is NOT a fan: one glob leaves per throw, and this is how wrong that throw
 // is allowed to be. See fireSludge.
@@ -1935,19 +1953,33 @@ export const SLUDGE: WeaponDef = Object.freeze({
     // only gun in the set that changes rank. The pool multiplies damage by an area the blast passive
     // widens, so damage and blast compound on one weapon, and the base being small is exactly what
     // hid how steep that curve was.
+    // NOT WHAT THE GLOB HITS FOR - the glob hits for nothing at all. This is the DIAL, and its
+    // only consumer is `puddle.dpsFrac`, which multiplies it into what the ground does.
+    //
+    // IT STAYS ON THE ROUND RATHER THAN MOVING INTO THE PUDDLE BLOCK, which is the whole reason
+    // the impact was silenced with a flag instead of by writing `damage: 0` here. `dpsFrac` is a
+    // fraction OF THIS, so the two damage tiers and Jade's chassis bonus still raise what the
+    // pool does without any of them naming a pool. Zero here would have made the gun unupgradable
+    // and every damage card a dead draw beside it.
     damage: 4,
-    cooldown: 1.15,
+    // SLOWER, 1.15 -> 1.4. The magazine is three deep, so the trigger rate decides how fast a
+    // rack empties and therefore how much ground is down at once - which IS the weapon.
+    cooldown: 1.4,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,
     // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a volley - see
     // fireSludge - so emptying a rack still paints the whole arc, one pool at a time, and a
     // capacity tier makes the wall finer instead of making each throw bigger.
     projectileCount: 1,
-    // ENOUGH TO REACH THE GROUND IT IS AIMED AT. The hook that drops a puddle hangs off the
-    // glob's EXPIRY (systems/projectiles.ts), so a glob stopped by a body would leave its pool at
-    // the mech's feet instead of behind it. Over a 68-unit throw nothing can absorb this many
-    // passes, which makes expiry the only way this round ever ends.
-    pierce: 250,
+    // NOTHING, BECAUSE NOTHING IS EVER PIERCED. The glob is flagged NOCONTACT at spawn (see
+    // fireSludge), so the collision sweep skips it entirely and expiry is the ONLY way the round
+    // can end - which is exactly what the puddle hook needs.
+    //
+    // IT USED TO BE 250, and that was the same idea done the expensive way: enough pierce that
+    // nothing could absorb the round before it reached the ground it was aimed at. It worked, and
+    // it also meant the glob raked every body it passed for full damage on the way. Now the pool
+    // is the entire weapon, so the pass-through costs nothing and states itself.
+    pierce: 0,
     knockback: 0,
     // THE PUDDLE'S RADIUS, NOT A BLAST. `splashFrac` is 0, so nothing in the damage path ever
     // treats this as splash; it is read once, by the puddle hook, as the size of the pool.

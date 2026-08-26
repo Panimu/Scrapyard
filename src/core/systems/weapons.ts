@@ -1719,6 +1719,19 @@ export const fireSludge: FirePattern = (world, weaponIdx, inst, _targets, _targe
     projectiles.radius[d] = def.shellRadius;
     projectiles.pierceLeft[d] = stats.pierce;
     projectiles.visualId[d] = def.visualId;
+    // THE GLOB HITS NOTHING. NOCONTACT takes the round out of the collision sweep (S8) altogether,
+    // so it cannot damage, knock back or be absorbed by anything it flies over - it arrives, it
+    // expires, and the pool it leaves is the entire weapon.
+    //
+    // THE FLAG RATHER THAN `damage: 0`, because `damage` is what `puddle.dpsFrac` multiplies: a
+    // zero there would have zeroed the ground too and made both damage tiers on this gun dead
+    // cards. Silencing the IMPACT is a different statement from having no damage, and this is the
+    // one field that can say it.
+    //
+    // THE SAME FLAG THE ARTILLERY USES, for a related reason - a weapon whose fuse is the whole
+    // event wants nothing able to cut the fuse short. No branch appears anywhere downstream: S8
+    // skips the round, S9 expires it, and the puddle hook does the rest.
+    projectiles.flags[d] |= PROJECTILE_FLAG_NOCONTACT;
 
     pushEvent(
       world.events,
