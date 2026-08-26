@@ -154,66 +154,153 @@ function main(argv: readonly string[]): void {
  * of course seven passives at tier 7 make a run stronger. The question is WHICH GUNS they make
  * stronger, and by how much relative to each other - a gun that gains less than the loadout average
  * is a gun the systems layer is quietly leaving behind, and no share table can show that.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY DPS AND NOT ONLY DAMAGE
+ * ---------------------------------------------------------------------------------------------
+ * THE TWO SIDES DO NOT RUN FOR THE SAME LENGTH OF TIME. A stripped loadout dies around eleven
+ * minutes and an equipped one reaches sixteen, so every raw damage total on the bare side is a
+ * total over a SHORTER RUN - and comparing them directly credits the passives with time they were
+ * merely present for. Dividing by each side's own seconds is the only column here that is not
+ * distorted by that, and it is consistently kinder to the bare numbers than the damage column is.
+ *
+ * It is damage per second OF THE RUN, not per second of firing. A gun that spends half the run out
+ * of range scores half, and that is the intent: this measures what a weapon CONTRIBUTED, not how
+ * hard it hits when it happens to be pointed at something. `npm run dps` is the other question.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY ELITE AND BOSS KILLS SIT BESIDE THE TOTAL
+ * ---------------------------------------------------------------------------------------------
+ * A kill column against a horde is overwhelmingly regulars, so a gun can take a third of it and
+ * never once have finished something that mattered. The lasers do exactly that. Splitting the two
+ * ranks out is what separates a chaff-clearer from a gun that closes a boss, and the passive layer
+ * does not treat those two jobs the same way.
  */
 function compare(bare: readonly Outcome[], full: readonly Outcome[]): void {
   const sum = (rows: readonly Outcome[], pick: (o: Outcome) => number): number =>
     rows.reduce((n, o) => n + pick(o), 0);
+  const sumOf = (rows: readonly Outcome[], pick: (o: Outcome) => readonly number[]): number =>
+    rows.reduce((t, o) => t + pick(o).reduce((a, b) => a + b, 0), 0);
 
-  const bareTotal = sum(bare, (o) => o.damageDealt);
-  const fullTotal = sum(full, (o) => o.damageDealt);
+  const bareDmg = sum(bare, (o) => o.damageDealt);
+  const fullDmg = sum(full, (o) => o.damageDealt);
+  // EACH SIDE'S OWN CLOCK. See the header - this is the whole reason the dps columns exist.
+  const bareSec = Math.max(1, sum(bare, (o) => o.seconds));
+  const fullSec = Math.max(1, sum(full, (o) => o.seconds));
+
+  const num = (v: number, w = 0): string => Math.round(v).toLocaleString('en-US').padStart(w);
+  const x = (v: number, w = 0): string => ('x' + v.toFixed(2)).padStart(w);
 
   console.log('');
   console.log('  WHAT THE PASSIVES WERE WORTH');
   console.log('');
   console.log(
-    `  damage dealt   ${Math.round(bareTotal)} bare -> ${Math.round(fullTotal)} full` +
-      `   x${(fullTotal / Math.max(1, bareTotal)).toFixed(2)}`,
+    `  time on the clock   ${clock(bareSec)} bare -> ${clock(fullSec)} full   ` +
+      `pooled over ${bare.length} seeds, and NOT the same - the bare side dies earlier`,
   );
   console.log(
-    `  kills          ${sum(bare, (o) => o.kills)} bare -> ${sum(full, (o) => o.kills)} full`,
+    `  damage dealt        ${num(bareDmg)} bare -> ${num(fullDmg)} full   ` +
+      `${x(fullDmg / bareDmg)}`,
   );
   console.log(
-    `  damage taken   ${Math.round(sum(bare, (o) => o.damageTaken))} bare -> ` +
-      `${Math.round(sum(full, (o) => o.damageTaken))} full`,
+    `  dps                 ${(bareDmg / bareSec).toFixed(0)} bare -> ` +
+      `${(fullDmg / fullSec).toFixed(0)} full   ` +
+      `${x(fullDmg / fullSec / (bareDmg / bareSec))}   <- the honest one`,
   );
   console.log(
-    `  wins           ${bare.filter((o) => o.won).length}/${bare.length} bare -> ` +
+    `  kills               ${num(sum(bare, (o) => o.kills))} bare -> ` +
+      `${num(sum(full, (o) => o.kills))} full`,
+  );
+  console.log(
+    `  elite kills         ${sumOf(bare, (o) => o.eliteKills)} bare -> ` +
+      `${sumOf(full, (o) => o.eliteKills)} full`,
+  );
+  console.log(
+    `  boss kills          ${sumOf(bare, (o) => o.bossKills)} bare -> ` +
+      `${sumOf(full, (o) => o.bossKills)} full`,
+  );
+  console.log(
+    `  damage taken        ${num(sum(bare, (o) => o.damageTaken))} bare -> ` +
+      `${num(sum(full, (o) => o.damageTaken))} full`,
+  );
+  console.log(
+    `  wins                ${bare.filter((o) => o.won).length}/${bare.length} bare -> ` +
       `${full.filter((o) => o.won).length}/${full.length} full`,
   );
-  console.log('');
+
+  // --- every weapon, both ways, side by side -----------------------------------------------------
+  interface Side {
+    dmg: number;
+    dps: number;
+    kills: number;
+    elite: number;
+    boss: number;
+  }
 
   const nameW = Math.max(...WEAPON_CATALOG.map((w) => w.name.length), 6);
-  console.log(
-    `  ${'weapon'.padEnd(nameW)}  ${'bare'.padStart(9)}  ${'full'.padStart(9)}  ` +
-      `${'gain'.padStart(6)}  ${'vs loadout'.padStart(10)}`,
-  );
-
-  const overall = fullTotal / Math.max(1, bareTotal);
   const rows = WEAPON_CATALOG.map((w, i) => {
-    const b = sum(bare, (o) => o.byWeapon[i] ?? 0);
-    const f = sum(full, (o) => o.byWeapon[i] ?? 0);
-    return { name: w.name, b, f, gain: f / Math.max(1, b) };
+    const side = (rs: readonly Outcome[], sec: number): Side => ({
+      dmg: sum(rs, (o) => o.byWeapon[i] ?? 0),
+      dps: sum(rs, (o) => o.byWeapon[i] ?? 0) / sec,
+      kills: sum(rs, (o) => o.killsByWeapon[i] ?? 0),
+      elite: sum(rs, (o) => o.eliteKills[i] ?? 0),
+      boss: sum(rs, (o) => o.bossKills[i] ?? 0),
+    });
+    const b = side(bare, bareSec);
+    const f = side(full, fullSec);
+    return {
+      name: w.name,
+      b,
+      f,
+      dmgGain: f.dmg / Math.max(1, b.dmg),
+      dpsGain: f.dps / Math.max(0.0001, b.dps),
+    };
   })
     // Biggest contributor first, so the table opens on the guns that matter and the ones that
     // never fired sit at the bottom where they belong.
-    .sort((a, b) => b.f - a.f);
+    .sort((a, b) => b.f.dmg - a.f.dmg)
+    .filter((r) => r.b.dmg >= 1 || r.f.dmg >= 1);
 
+  const head =
+    `${'dps'.padStart(7)}  ${'damage'.padStart(10)}  ${'kills'.padStart(7)}  ` +
+    `${'elite'.padStart(5)}  ${'boss'.padStart(4)}`;
+  const cells = (s: Side): string =>
+    `${s.dps.toFixed(1).padStart(7)}  ${num(s.dmg, 10)}  ${num(s.kills, 7)}  ` +
+    `${String(s.elite).padStart(5)}  ${String(s.boss).padStart(4)}`;
+
+  console.log('');
+  console.log(
+    `  ${' '.repeat(nameW)}${'---------------- NO PASSIVES -----------------'.padEnd(head.length)}  ` +
+      `${'---------------- ALL PASSIVES ----------------'.padEnd(head.length)}`,
+  );
+  console.log(`  ${'weapon'.padEnd(nameW)}${head}  ${head}`);
+  for (const r of rows) console.log(`  ${r.name.padEnd(nameW)}${cells(r.b)}  ${cells(r.f)}`);
+
+  // --- and what that came to, as a multiple ------------------------------------------------------
+  const overall = fullDmg / fullSec / (bareDmg / bareSec);
+  console.log('');
+  console.log(
+    `  ${'weapon'.padEnd(nameW)}  ${'dmg gain'.padStart(8)}  ${'dps gain'.padStart(8)}  ` +
+      `${'vs loadout'.padStart(10)}`,
+  );
   for (const r of rows) {
-    if (r.b < 1 && r.f < 1) continue;
     // AGAINST THE LOADOUT'S OWN GAIN, not against 1. "x2.4" means nothing until you know the whole
-    // rig went up x2.1; this column is the part that says who was favoured.
-    const rel = r.gain / overall;
-    const mark = rel >= 1.15 ? ' ++' : rel >= 1.05 ? ' +' : rel <= 0.85 ? ' --' : rel <= 0.95 ? ' -' : '';
+    // rig went up x2.1; this column is the part that says who was favoured. Built on the DPS gain
+    // rather than the damage gain, because the damage gain has the extra five minutes inside it.
+    const rel = r.dpsGain / overall;
+    const mark =
+      rel >= 1.15 ? ' ++' : rel >= 1.05 ? ' +' : rel <= 0.85 ? ' --' : rel <= 0.95 ? ' -' : '';
     console.log(
-      `  ${r.name.padEnd(nameW)}  ${Math.round(r.b).toString().padStart(9)}  ` +
-        `${Math.round(r.f).toString().padStart(9)}  ${('x' + r.gain.toFixed(2)).padStart(6)}  ` +
-        `${('x' + rel.toFixed(2)).padStart(10)}${mark}`,
+      `  ${r.name.padEnd(nameW)}  ${x(r.dmgGain, 8)}  ${x(r.dpsGain, 8)}  ${x(rel, 10)}${mark}`,
     );
   }
 
   console.log('');
-  console.log('  gain = full / bare for that gun.  vs loadout = that gain against the rig overall,');
-  console.log('  so ++ is a gun the passive layer favours and -- is one it leaves behind.');
+  console.log('  dps is damage per second OF THE RUN, over each side’s own length - the bare runs');
+  console.log('  are shorter, so the damage column flatters the passives and the dps column does not.');
+  console.log('  vs loadout = that gun’s dps gain against the rig overall: ++ is a gun the passive');
+  console.log('  layer favours, -- one it leaves behind.  kills are KILLING BLOWS, so they do not sum');
+  console.log('  to the run’s kills.  elite and boss are the two ranks that are not chaff.');
   console.log('');
 }
 

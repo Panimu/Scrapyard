@@ -878,7 +878,7 @@
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "4020000000000000",
+    "damage": "4010000000000000",
     "cooldown": "3ff2666666666666",
     "range": "4075400000000000",
     "projectileSpeed": "4062c00000000000",

@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T18:15Z',
+    title: 'TOXIC SLUDGE BURNS HALF AS HARD',
+    notes: [
+      'The globs and the pools they leave now do half the damage they did. Everything else about the gun is untouched — same throw, same arc behind you, same three in the rack, same size of pool.',
+      'Stacked up with a full set of upgrades it had quietly become one of the strongest guns in the game, because a pool multiplies its damage across ground that the blast upgrades keep making wider. Two dials pulling on each other in the same direction is a lot steeper than either one looks.',
+    ],
+  },
+  {
     at: '2026-08-26T17:19Z',
     title: 'UNLOCKS ANNOUNCE THEMSELVES PROPERLY',
     notes: [

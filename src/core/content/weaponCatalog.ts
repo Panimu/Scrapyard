@@ -1928,7 +1928,14 @@ export const SLUDGE: WeaponDef = Object.freeze({
   base: Object.freeze({
     // The glob's own hit. Small on purpose: `puddle.dpsFrac` multiplies it into what the ground
     // does, so this number is really the weapon's damage dial wearing its smallest hat.
-    damage: 8,
+    //
+    // HALVED FROM 8, AND THE WHOLE GUN CAME WITH IT - which is the reason to turn THIS dial rather
+    // than `puddle.dpsFrac`. Measured at tier 7 with every passive, sludge was gaining x3.27 against
+    // a loadout gaining x1.98, and moved from tenth place stripped to fourth place equipped: the
+    // only gun in the set that changes rank. The pool multiplies damage by an area the blast passive
+    // widens, so damage and blast compound on one weapon, and the base being small is exactly what
+    // hid how steep that curve was.
+    damage: 4,
     cooldown: 1.15,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,

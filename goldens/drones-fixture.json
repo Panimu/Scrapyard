@@ -24,8 +24,8 @@
   "cellSize": 64,
   "bucketCount": 4096,
   "arenaSize": 12288,
-  "weaponCatalogCount": 11,
-  "upgradeCount": 21
+  "weaponCatalogCount": 14,
+  "upgradeCount": 24
  },
  "cases": [
   {

@@ -573,8 +573,9 @@ public static class WeaponCatalog
         Base = new WeaponStatBlock
         {
             // The glob's own hit. Small on purpose: Puddle.DpsFrac multiplies it into what the
-            // ground does, so this is the weapon's damage dial wearing its smallest hat.
-            Damage = 8,
+            // ground does, so this is the weapon's damage dial wearing its smallest hat. Halved
+            // from 8 - see the TypeScript for the measurement that says why.
+            Damage = 4,
             Cooldown = 1.15,
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
