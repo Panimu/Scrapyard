@@ -147,7 +147,7 @@ public static class PediaText
         ("jade", "Jade", "Heavy biped, forward claw arms. Opens with Toxic Sludge, laying pools 20% wider."),
         ("rust", "Rust", "Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder."),
         ("cobalt", "Cobalt", "Heavy quad, twin gun pods. Opens with the Medium Laser."),
-        ("copper", "Copper", "Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter."),
+        ("copper", "Copper", "Heavy quad, one heavy tube. Opens with the Plasma Thrower, throwing 10% further and 10% hotter."),
     };
 
     /// <summary>A lead paragraph and the notes under it - the shape every bestiary page uses.</summary>
@@ -232,5 +232,5 @@ public static class PediaText
     }
 
     /// <summary>The catalogs' fingerprint when this file was emitted. See the tests.</summary>
-    public const uint CatalogDigest = 0xd5dbef74u;
+    public const uint CatalogDigest = 0xf6fdcdfdu;
 }

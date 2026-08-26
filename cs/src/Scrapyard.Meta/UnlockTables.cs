@@ -122,7 +122,7 @@ public sealed class HeroUnlocks
         new("jade", "Jade", UnlockCond.Always(), "Heavy biped, forward claw arms. Opens with Toxic Sludge, laying pools 20% wider.", true, "mech_jade"),
         new("rust", "Rust", UnlockCond.Always(), "Heavy quad, spine-slung artillery tube. Opens with the Mortar, lobbing 30% harder.", true, "mech_rust"),
         new("cobalt", "Cobalt", UnlockCond.Never(), "Heavy quad, twin gun pods. Opens with the Medium Laser.", true, "mech_cobalt"),
-        new("copper", "Copper", UnlockCond.Always(), "Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.", true, "mech_copper"),
+        new("copper", "Copper", UnlockCond.Always(), "Heavy quad, one heavy tube. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.", true, "mech_copper"),
     };
 
     public static readonly LockedThing[] Levels =

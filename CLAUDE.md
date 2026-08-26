@@ -136,7 +136,18 @@ otherwise every pacing number after that point is about the bot rather than the 
 
 `npm run mechs`, `npm run fence`, `npm run scrap` draw sprites through headless Chromium's canvas
 into `public/sprites/`. The PNGs are checked in, so nobody needs Chromium to build or play.
-**Never run `npx playwright install`** — browsers are preinstalled at `/opt/pw-browsers`.
+
+**If Chromium is missing, install it** — `npx playwright install chromium`. This used to say never
+to, on the grounds that browsers were preinstalled at `/opt/pw-browsers`; that is true of one
+machine and of no other, and on every machine without that directory the rule turned "regenerate
+the art" into "cannot regenerate the art". Two card icons and two chassis shipped wrong because of
+it. The tools already handle both cases: `resolveChromium` uses `PLAYWRIGHT_BROWSERS_PATH` or
+`/opt/pw-browsers` when either exists, and otherwise falls through to Playwright's own download,
+so nothing needs editing either way.
+
+**A new gun needs BOTH `npm run icons` and `npm run mechs`.** The card icon is drawn from the
+card's own id, and a chassis is drawn with the mount its opening weapon implies - so a weapon
+added without them is a broken `<img>` on the level-up card and a mech carrying the wrong gun.
 
 ## Where art comes from, in this order
 

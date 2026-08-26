@@ -46,6 +46,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T05:51Z',
+    title: 'THREE CARDS GET THEIR PICTURES',
+    notes: [
+      'The Mortar, the Plasma Thrower and Toxic Sludge were drawing a broken image on the level-up card and in the Scrapopedia. They have icons now — a shell arcing into a knot of bodies, a gout of fire landing on something, and a pool of acid thrown out backwards.',
+      'Copper carries the medium turret it actually fires from, instead of the rotary drums it had while it was a second Flak Cannon chassis.',
+    ],
+  },
+  {
     at: '2026-08-26T05:31Z',
     title: 'A NEW GUN: THE PLASMA THROWER',
     notes: [

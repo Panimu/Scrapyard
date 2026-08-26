@@ -114,7 +114,9 @@ const HEROES = [
   // the same tube on 'quad' legs and Plum on 'chicken' - so this does not collide with either.
   { key: 'mech_indigo', cls: 'heavy', legs: 'strider', mount: 'artillery', torso: 'wedge', hull: '#5a4bb8', trim: '#362c78', glass: '#45e0d0' },
   { key: 'mech_bone', cls: 'light', legs: 'strider', mount: 'pods', torso: 'spear', hull: '#ded3b6', trim: '#a2977a', glass: '#ff9d3c' },
-  { key: 'mech_copper', cls: 'heavy', legs: 'quad', mount: 'gatling', torso: 'drum', hull: '#a85f3c', trim: '#703a22', glass: '#ff9d3c' },
+  // The medium turret, matching the Phase Cannon's Brass: Copper opens with the Plasma Thrower,
+  // which bolts to that same mount. It carried rotary drums while it was a second Flak chassis.
+  { key: 'mech_copper', cls: 'heavy', legs: 'quad', mount: 'cannon', torso: 'drum', hull: '#a85f3c', trim: '#703a22', glass: '#ff9d3c' },
   { key: 'mech_plum', cls: 'heavy', legs: 'chicken', mount: 'artillery', torso: 'wedge', hull: '#8f4a76', trim: '#5e2c4c', glass: '#ff6fae' },
   { key: 'mech_fern', cls: 'light', legs: 'hover', mount: 'claws', torso: 'spear', hull: '#7fb23a', trim: '#4f7320', glass: '#c8ff5e' },
 ];

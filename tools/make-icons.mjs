@@ -49,6 +49,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.ts';
+import { UPGRADE_CATALOG } from '../src/core/data/upgrades.ts';
 
 /**
  * Upgrade id -> the beam colour that weapon actually draws with, straight from the catalog.
@@ -93,45 +94,39 @@ const S = 128;
  * these strings must match src/core/data/upgrades.ts exactly. A missing one draws nothing rather
  * than throwing, but it is a blank tile on a slot machine, which is worse than an ugly one.
  */
-const ICONS = [
-  'w-cannon',
-  'w-missile-short',
-  'w-missile-long',
-  'w-machine-gun',
-  'w-flak-cannon',
-  'w-artillery',
-  'w-drone',
-  'w-phase-cannon',
-  // TIER 8, the Cannon's. Not a card in the deck - see the two other tier-8 icons above for why
-  // an ascension still needs a picture of its own: the reel has to say the thing in your hands
-  // is not the thing you were carrying.
-  'w-twin-mount',
-  'w-laser-short',
-  'w-laser-medium',
-  'w-laser-long',
-  // TIER 8. Not a card in the deck - it is the Medium Laser's ascension - but it needs an icon of
-  // its own, because the whole point of a tier 8 is that the thing in your hands is not the thing
-  // you were carrying.
-  'w-chain-laser',
-  // TIER 8 AGAIN - the Long Missiles'. Same reason: the thing in your hands is not the thing you
-  // were carrying, and the reel has to say so.
-  'w-gtm-hornet',
-  // TIER 8 AGAIN - the Long Laser's. Same reason again.
-  'w-giga-laser',
-  // TIER 8 AGAIN - the Short Laser's, and the odd one out: it is not a changed beam but MORE
-  // beams, so its glyph is a count rather than a shape.
-  'w-hydra',
-  'p-range',
-  'p-damage',
-  'p-rate',
-  'p-speed',
-  'p-armour',
-  'p-shield',
-  'p-repair',
-  'p-radiator',
-  'p-blast',
-  'p-ammo',
+/**
+ * THE ASCENSIONS, which are the only icons that are NOT cards.
+ *
+ * A tier 8 is not in the deck and has no `UpgradeDef`, so it cannot be derived from the catalog
+ * the way everything else here now is - and it still needs a picture, because the whole point of
+ * an ascension is that the thing in your hands is not the thing you were carrying, and the reel
+ * has to say so.
+ *
+ * Hydra is the odd one out: it is not a changed beam but MORE beams, so its glyph is a count
+ * rather than a shape.
+ */
+const ASCENSION_ICONS = [
+  'w-twin-mount',   // the Cannon's
+  'w-chain-laser',  // the Medium Laser's
+  'w-gtm-hornet',   // the Long Missiles'
+  'w-giga-laser',   // the Long Laser's
+  'w-hydra',        // the Short Laser's
 ];
+
+/**
+ * EVERY CARD IN THE CATALOG, PLUS THE ASCENSIONS. Derived, and that is the point.
+ *
+ * This was a hand-written list of ids, and it went stale exactly the way a hand-written copy of a
+ * table goes stale: three weapon cards - the Mortar, the Plasma Thrower and Toxic Sludge - shipped
+ * with no icon at all, which draws as a broken image on the level-up card. Nobody forgot; there
+ * was simply no way to find out, because a list that does not know what it is a list OF cannot
+ * report that it is short.
+ *
+ * The failure mode now is the opposite and it is loud: a card with no `if (id === ...)` branch in
+ * DRAW below comes out as an empty plate, which is visible in the contact sheet the moment this
+ * runs.
+ */
+const ICONS = [...UPGRADE_CATALOG.map((d) => d.id), ...ASCENSION_ICONS];
 
 const DRAW = `(id) => {
   const LASER_KEY = ${JSON.stringify(LASER_KEY)};
@@ -427,6 +422,101 @@ const DRAW = `(id) => {
     g.globalAlpha = 1;
     g.beginPath(); g.arc(104, CY, 11, 0, 6.284); g.fillStyle = PLASMA; g.fill();
     g.beginPath(); g.arc(104, CY, 5, 0, 6.284); g.fillStyle = '#d9f2ff'; g.fill();
+  }
+
+  if (id === 'w-mortar') {
+    // THE ARC AND THE CROWD IT IS AIMED AT. The Heavy Artillery's glyph is a ring on empty ground
+    // with a shell falling toward it; this is the same shell, thrown at BODIES - so the ground
+    // ring is replaced by three packed dots, which is the whole difference between the two guns
+    // in one substitution. The stubby tube at the left says the shell came from somewhere the
+    // player is pointing, which the barrage's never does.
+    bar(20, CY + 6, 20, 16, STEEL);
+    g.strokeStyle = KEY_DIM;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(34, CY + 4);
+    g.quadraticCurveTo(CX + 8, CY - 48, CX + 34, CY + 10);
+    g.stroke();
+    // The knot it is falling into: three bodies close enough together to be one target.
+    g.fillStyle = KEY;
+    for (const [dx, dy] of [[26, 26], [42, 20], [36, 36]]) {
+      g.beginPath(); g.arc(CX + dx, CY + dy, 7.5, 0, 6.284); g.fill();
+    }
+    // The shell itself, still in the air, at the top of the arc's descent.
+    g.beginPath(); g.arc(CX + 26, CY - 6, 8, 0, 6.284); g.fillStyle = KEY; g.fill();
+  }
+
+  if (id === 'w-plasma') {
+    // FIRE ON A BODY, which is where this weapon's damage actually is. A nozzle, a short throw of
+    // three shrinking gouts, and the thing at the end ALIGHT rather than hit - so the glyph ends
+    // in a flame sitting on a body outline instead of in an impact.
+    //
+    // IT WEARS ITS OWN ORANGE, the licence the lasers and the phase bolt already take. The amber
+    // border still says "weapon" for the chest's kind-matching payout.
+    const FLAME = '#ff8a3c';
+    const FLAME_HI = '#ffd08a';
+    bar(20, CY - 10, 18, 20, STEEL);
+    // The throw: three gouts, getting smaller and higher, because it is thrown rather than fired.
+    for (const [gx, gy, gr] of [[46, CY - 2, 9], [64, CY - 6, 7], [80, CY - 10, 5]]) {
+      g.beginPath(); g.arc(gx, gy, gr, 0, 6.284); g.fillStyle = FLAME; g.fill();
+    }
+    // The body it lands on: an outline, unfilled, the way the phase glyph draws a body it is not
+    // billing - except this one IS billed, and what says so is the flame standing on top of it.
+    g.strokeStyle = STEEL;
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(102, CY + 12, 13, 0, 6.284); g.stroke();
+    // The flame: a teardrop, point up, with a bright inner tongue. Drawn last so it sits over the
+    // body rather than beside it.
+    const flame = (bx, by, h, w, fill) => {
+      g.beginPath();
+      g.moveTo(bx, by - h);
+      g.quadraticCurveTo(bx + w, by - h * 0.35, bx + w * 0.7, by);
+      g.quadraticCurveTo(bx, by + w * 0.5, bx - w * 0.7, by);
+      g.quadraticCurveTo(bx - w, by - h * 0.35, bx, by - h);
+      g.closePath();
+      g.fillStyle = fill;
+      g.fill();
+    };
+    flame(102, CY + 4, 30, 13, FLAME);
+    flame(102, CY + 2, 17, 6.5, FLAME_HI);
+  }
+
+  if (id === 'w-sludge') {
+    // BEHIND YOU, AND ON THE GROUND. Both facts are the weapon and both are in the glyph: an arrow
+    // running LEFT - the only icon in the set that points backwards - out of a mech's tail, over a
+    // pool lying in perspective on the floor.
+    //
+    // THE POOL IS AN ELLIPSE, not a circle, for the reason the artillery's ring is: a flat disc
+    // seen from the game's angle is the shape that reads as GROUND rather than as a projectile.
+    const ACID = '#8ce03a';
+    const ACID_DIM = '#4e8a1f';
+    // The pool, with a darker rim and two bubbles - the rim is what stops it reading as a hole.
+    g.fillStyle = ACID;
+    g.globalAlpha = 0.85;
+    g.beginPath(); g.ellipse(CX - 6, CY + 30, 42, 17, 0, 0, 6.284); g.fill();
+    g.globalAlpha = 1;
+    g.strokeStyle = ACID_DIM;
+    g.lineWidth = 3.5;
+    g.beginPath(); g.ellipse(CX - 6, CY + 30, 42, 17, 0, 0, 6.284); g.stroke();
+    g.fillStyle = ACID_DIM;
+    for (const [bx, by, br] of [[CX - 20, CY + 28, 5], [CX + 8, CY + 33, 3.5]]) {
+      g.beginPath(); g.arc(bx, by, br, 0, 6.284); g.fill();
+    }
+    // The tail it came out of, at the RIGHT - so the throw reads right-to-left.
+    bar(CX + 28, CY - 34, 18, 20, STEEL);
+    // Three globs on the way down and to the left, getting lower as they go.
+    g.fillStyle = ACID;
+    for (const [gx, gy, gr] of [[CX + 18, CY - 20, 8], [CX - 2, CY - 8, 6.5], [CX - 20, CY + 4, 5]]) {
+      g.beginPath(); g.arc(gx, gy, gr, 0, 6.284); g.fill();
+    }
+    // The arrow head, pointing LEFT. Nothing else in this set does.
+    g.strokeStyle = ACID;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(CX - 22, CY - 6);
+    g.lineTo(CX - 32, CY + 4);
+    g.lineTo(CX - 20, CY + 12);
+    g.stroke();
   }
 
   if (id === 'w-flak-cannon') {

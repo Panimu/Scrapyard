@@ -551,7 +551,7 @@ export const HERO_CATALOG: readonly HeroDef[] = Object.freeze([
      */
     name: 'Copper',
     identity:
-      'Heavy quad, rotary drums. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.',
+      'Heavy quad, one heavy tube. Opens with the Plasma Thrower, throwing 10% further and 10% hotter.',
     sprite: 'mech_copper',
     gait: 'walk',
     startingWeapon: 'plasma',
