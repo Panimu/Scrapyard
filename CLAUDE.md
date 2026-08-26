@@ -149,10 +149,18 @@ five-gun one, so a claim that it dominates holds either way. The trap is specifi
 
 **`sweep` (`sweep.bat` in the repository root) settles the argument by not picking a loadout at
 all.** It measures EVERY playable five-weapon combination — 1372 of the 2002, the other 630 holding
-a mutually-exclusive pair — over three seeds each, and writes one self-contained HTML page:
-per-weapon share and win rate across every loadout that held it, which pairs are worth more
-together than apart, and the whole sortable list. Roughly forty minutes across a desktop's cores,
-and it appends results as they land so an interrupted sweep resumes.
+a mutually-exclusive pair — over three seeds each, and writes one self-contained HTML page: the
+catalog as authored, then per-weapon share and win rate across every loadout that held it, which
+pairs are worth more together than apart, and the whole sortable list. It appends results as they
+land so an interrupted sweep resumes, and the workers run at BELOW-NORMAL priority so the desktop
+stays usable — which costs almost nothing, because priority decides who wins a core rather than how
+many there are.
+
+**It measures each loadout TWICE**: at tier 7, and again with ascensions allowed. The second is not
+"everything at tier 8" — only five weapons have an ascension, and the GTM Hornet requires the Short
+Missiles *held in the same loadout*, so whether a gun ascends depends on its company. Both sets are
+kept, in separate files, and the page toggles between them. Roughly ninety minutes for both halves
+across a desktop's cores; `--ascend none` does the tier-7 half alone.
 
 **Re-run it with `--fresh` after ANY change to the weapon catalog.** The page is only true of the
 numbers it was measured against, and a resumed sweep silently mixes results from before and after
@@ -270,8 +278,10 @@ npm run sim         headless run with the reference bot        }
 npm run dps         measured DPS table                         }  opt-in, minutes each
 npm run loadout     every weapon at T7, damage share by gun    }  --weapons for a REAL build
 
-sweep               EVERY playable 5-gun loadout -> sweep/index.html   (~40 min, resumable)
+sweep               EVERY playable 5-gun loadout, at T7 AND ascended -> sweep/index.html
+                    (~90 min, resumable, below-normal priority)
 sweep --fresh       the same, discarding earlier results. USE AFTER A BALANCE CHANGE.
+sweep --ascend none the tier-7 half only, in half the time
 
 npm run mechs       redraw the chassis sprites
 npm run plasma      rebake the Kenney particles (burn frames, gout, shield twirl)

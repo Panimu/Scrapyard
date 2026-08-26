@@ -45,12 +45,33 @@
  *   sweep --size 3               every three-gun loadout instead
  *   sweep --seeds 5              five seeds a combination rather than three
  *   sweep --jobs 4               fewer workers, if the machine is wanted for something else
+ *   sweep --ascend none          tier 7 only, skipping the ascended half (half the time)
+ *   sweep --priority normal      run flat out - see below. Default is `below`.
  *   sweep --fresh                discard previous results and re-measure
  *   sweep --limit 40             stop after 40 combinations - for checking the plumbing
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE WORKERS RUN BELOW NORMAL PRIORITY
+ * ---------------------------------------------------------------------------------------------
+ * EIGHTEEN PROCESSES AT NORMAL PRIORITY IS A DESKTOP NOBODY CAN USE for the three quarters of an
+ * hour this takes, and a forty-minute job that fights the foreground is a job that gets killed
+ * halfway or never started. They are dropped to BELOW_NORMAL, which on Windows is
+ * BELOW_NORMAL_PRIORITY_CLASS and on POSIX is nice 10.
+ *
+ * IT COSTS ALMOST NOTHING IN WALL CLOCK. Lowering priority does not take cores away - it only
+ * decides who wins when something else wants one. On an otherwise idle machine the sweep still
+ * gets every core it asked for; on a busy one it yields, which is the entire point.
+ *
+ * `--priority low` is nice 19 / IDLE, for running it while genuinely doing something else - it
+ * will be starved by anything at all, including a browser scrolling. `--priority normal` is the
+ * old behaviour, for when the machine is dedicated to this and the wall clock matters.
+ *
+ * LEAVING TWO CORES FREE IS NOT A SUBSTITUTE and both are kept. Spare cores stop the machine
+ * seizing; low priority stops the sweep winning the argument over the cores it does use.
  */
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { cpus } from 'node:os';
+import { constants, cpus, setPriority } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,7 +82,34 @@ import { renderSweepHtml, type SweepRow, type SweepMeta } from './sweepReport.js
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const OUT_DIR = join(ROOT, 'sweep');
-const RESULTS = join(OUT_DIR, 'results.jsonl');
+/**
+ * WHERE A SWEEP'S ROWS LAND - one file per (size, seeds, mode), not one file for everything.
+ *
+ * A ROW MEASURED UNDER DIFFERENT SETTINGS IS NOT A ROW, and the resume filter already refused to
+ * read one. That was enough to keep the numbers honest and NOT enough to keep the file sane: a
+ * three-weapon sweep and a five-weapon sweep would append to the same file at the same time, and
+ * two processes interleaving line-writes can tear one. Observed, while testing this tool against
+ * itself. The filename now carries what the rows ARE, so two sweeps cannot collide - and the tier-7
+ * results survive an ascended sweep rather than being overwritten by it, which is the whole point
+ * of keeping both.
+ */
+const resultsPath = (size: number, seeds: number, mode: Mode): string =>
+  join(OUT_DIR, `results-${size}w-${seeds}s-${mode}.jsonl`);
+
+/**
+ * WHAT TIER THE GUNS ARE HELD AT.
+ *
+ * `t7` is every weapon at tier 7 with no ascension - the measurement this tool has always taken,
+ * and the one that answers "how do these guns compare". `asc` promotes each weapon that has EARNED
+ * a tier 8 in that particular loadout, which is not the same as "everything at eight": five of the
+ * fourteen have an ascension at all, and one of those five (the GTM Hornet) requires another
+ * WEAPON in the loadout rather than a passive. See canAscend in sweepWorker.ts.
+ *
+ * BOTH ARE KEPT AND BOTH ARE SHOWN. An ascension is the top of a build; tier 7 is where almost
+ * every real run actually ends. A page that showed only the second would be describing a game
+ * nobody finishes, and one that showed only the first would be hiding the capstones.
+ */
+type Mode = 't7' | 'asc';
 const PAGE = join(OUT_DIR, 'index.html');
 
 // ---------------------------------------------------------------------------------------------
@@ -132,6 +180,41 @@ function num(argv: readonly string[], flag: string, fallback: number): number {
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : fallback;
 }
 
+/**
+ * `--ascend none|all|both`, defaulting to both.
+ *
+ * BOTH BY DEFAULT because the two together are the interesting thing: what an ascension is WORTH
+ * is a subtraction, and it needs both halves measured on the same seeds.
+ */
+function pickModes(argv: readonly string[]): Mode[] {
+  const i = argv.indexOf('--ascend');
+  const v = i >= 0 ? argv[i + 1] : undefined;
+  if (v === 'none') return ['t7'];
+  if (v === 'all') return ['asc'];
+  return ['t7', 'asc'];
+}
+
+/**
+ * `--priority normal|below|low` as an `os.setPriority` value, defaulting to BELOW_NORMAL.
+ *
+ * POLITE BY DEFAULT AND RUDE ON REQUEST, rather than the other way round. The common case is
+ * somebody starting a forty-minute sweep and then continuing to use the machine.
+ */
+function pickPriority(argv: readonly string[]): number {
+  const i = argv.indexOf('--priority');
+  const v = i >= 0 ? argv[i + 1] : undefined;
+  if (v === 'normal') return constants.priority.PRIORITY_NORMAL;
+  if (v === 'low') return constants.priority.PRIORITY_LOW;
+  return constants.priority.PRIORITY_BELOW_NORMAL;
+}
+
+/** What `--priority` was, for the banner. */
+function priorityName(p: number): string {
+  if (p === constants.priority.PRIORITY_NORMAL) return 'normal';
+  if (p === constants.priority.PRIORITY_LOW) return 'low (idle)';
+  return 'below normal';
+}
+
 async function main(argv: readonly string[]): Promise<void> {
   const size = num(argv, '--size', 5);
   const seedCount = Math.min(num(argv, '--seeds', 3), DEFAULT_SEEDS.length);
@@ -140,70 +223,92 @@ async function main(argv: readonly string[]): Promise<void> {
   const jobs = num(argv, '--jobs', Math.max(1, cpus().length - 2));
   const limit = num(argv, '--limit', 0);
   const fresh = argv.includes('--fresh');
+  const priority = pickPriority(argv);
+  const modes = pickModes(argv);
 
   if (size < 1 || size > WEAPON_CATALOG.length) {
     throw new Error(`sweep: --size must be 1..${WEAPON_CATALOG.length}`);
   }
 
   mkdirSync(OUT_DIR, { recursive: true });
-  if (fresh && existsSync(RESULTS)) rmSync(RESULTS);
 
   const seeds = DEFAULT_SEEDS.slice(0, seedCount);
   let combos = combinations(size);
   const playable = combos.length;
   if (limit > 0) combos = combos.slice(0, limit);
 
-  // ---- what is already measured -----------------------------------------------------------------
-  const done = new Map<string, SweepRow>();
-  if (existsSync(RESULTS)) {
-    for (const line of readFileSync(RESULTS, 'utf8').split('\n')) {
-      if (line.trim() === '') continue;
-      try {
-        const row = JSON.parse(line) as SweepRow;
-        // A ROW MEASURED UNDER DIFFERENT SETTINGS IS NOT A ROW. Seeds and size are part of what a
-        // result MEANS, so a resume that mixed three-seed and five-seed rows would produce a table
-        // whose columns were not comparable to each other.
-        if (row.seeds === seedCount && row.combo.length === size) done.set(row.key, row);
-      } catch {
-        // A half-written line from a killed process. Dropping it re-measures that combination.
-      }
-    }
-  }
-
-  const todo = combos.filter((c) => !done.has(keyOf(c)));
-
   console.log('');
   console.log(`  SWEEPING EVERY ${size}-WEAPON LOADOUT`);
   console.log(
     `  ${playable} playable of ${choose(WEAPON_CATALOG.length, size)} combinations` +
       `${limit > 0 ? `, limited to ${combos.length}` : ''}   ` +
-      `${seedCount} seed${seedCount === 1 ? '' : 's'} each   ${jobs} workers`,
+      `${seedCount} seed${seedCount === 1 ? '' : 's'} each   ${jobs} workers at ` +
+      `${priorityName(priority)} priority`,
   );
-  if (done.size > 0) console.log(`  ${done.size} already measured - resuming`);
-  console.log('');
+  console.log(`  tiers: ${modes.map((m) => (m === 't7' ? 'tier 7' : 'ascended')).join(' and ')}`);
 
-  if (todo.length === 0) {
-    console.log('  nothing to run.');
-  } else {
-    await runAll(todo, seeds, jobs, size, seedCount, (row) => {
-      done.set(row.key, row);
-      appendFileSync(RESULTS, JSON.stringify(row) + '\n');
-    });
+  // ---- one pass per mode ---------------------------------------------------------------------
+  // SEQUENTIAL, NOT INTERLEAVED. Both passes want every core; running them together would halve
+  // each and finish at the same time, having made the progress line meaningless in the meanwhile.
+  const byMode: Record<Mode, SweepRow[]> = { t7: [], asc: [] };
+
+  for (const mode of modes) {
+    const results = resultsPath(size, seedCount, mode);
+    if (fresh && existsSync(results)) rmSync(results);
+
+    const done = new Map<string, SweepRow>();
+    if (existsSync(results)) {
+      for (const line of readFileSync(results, 'utf8').split('\n')) {
+        if (line.trim() === '') continue;
+        try {
+          const row = JSON.parse(line) as SweepRow;
+          // A ROW MEASURED UNDER DIFFERENT SETTINGS IS NOT A ROW. Seeds, size and mode are part of
+          // what a result MEANS; the filename now carries all three, and this is the belt to that
+          // pair of braces - a file edited by hand still cannot poison the table.
+          if (row.seeds === seedCount && row.combo.length === size && row.mode === mode) {
+            done.set(row.key, row);
+          }
+        } catch {
+          // A half-written line from a killed process. Dropping it re-measures that combination.
+        }
+      }
+    }
+
+    const todo = combos.filter((c) => !done.has(keyOf(c)));
+    console.log('');
+    console.log(
+      `  --- ${mode === 't7' ? 'TIER 7, NO ASCENSION' : 'ASCENSIONS ALLOWED'} ---` +
+        `${done.size > 0 ? `   ${done.size} already measured, resuming` : ''}`,
+    );
+
+    if (todo.length === 0) {
+      console.log('  nothing to run.');
+    } else {
+      await runAll(todo, seeds, jobs, size, seedCount, priority, mode, (row) => {
+        done.set(row.key, row);
+        appendFileSync(results, JSON.stringify(row) + '\n');
+      });
+    }
+
+    byMode[mode] = combos
+      .map((c) => done.get(keyOf(c)))
+      .filter((r): r is SweepRow => r !== undefined);
   }
 
   // ---- the page --------------------------------------------------------------------------------
-  const rows = combos.map((c) => done.get(keyOf(c))).filter((r): r is SweepRow => r !== undefined);
   const meta: SweepMeta = {
     size,
     seeds: seedCount,
     playable,
-    measured: rows.length,
+    measured: Math.max(byMode.t7.length, byMode.asc.length),
     generatedAt: new Date().toISOString(),
     weapons: WEAPON_CATALOG.map((w) => ({ id: w.id, name: w.name })),
   };
-  writeFileSync(PAGE, renderSweepHtml(rows, meta), 'utf8');
+  writeFileSync(PAGE, renderSweepHtml(byMode.t7, byMode.asc, meta), 'utf8');
   console.log('');
-  console.log(`  wrote ${PAGE}   ${rows.length} loadouts`);
+  console.log(
+    `  wrote ${PAGE}   ${byMode.t7.length} at tier 7, ${byMode.asc.length} ascended`,
+  );
   console.log('');
 }
 
@@ -239,6 +344,8 @@ function runAll(
   jobs: number,
   size: number,
   seedCount: number,
+  priority: number,
+  mode: Mode,
   onRow: (row: SweepRow) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -273,9 +380,29 @@ function runAll(
       // second copy of that knowledge to fall out of step.
       const child = spawn(
         process.execPath,
-        [...process.execArgv, join(HERE, 'sweepWorker.ts'), seeds.join(','), String(seedCount)],
+        [...process.execArgv, join(HERE, 'sweepWorker.ts'), seeds.join(','), String(seedCount),
+         mode],
         { cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'], env: process.env },
       );
+
+      // DROPPED AS SOON AS IT EXISTS. There is no way to spawn AT a priority portably, so the
+      // worker is briefly at the parent's - which is harmless, because it spends its first second
+      // and a half booting a TypeScript runtime rather than simulating anything.
+      //
+      // SWALLOWED IF IT FAILS. A machine or a container that refuses to renice is a machine where
+      // this should still run, just noisily; the alternative is a sweep that will not start
+      // because it could not be polite. `child.pid` is undefined if the spawn itself failed, and
+      // the 'error' handler below is what deals with that.
+      if (child.pid !== undefined) {
+        try {
+          setPriority(child.pid, priority);
+        } catch {
+          if (!warnedPriority) {
+            warnedPriority = true;
+            console.error(`\\n  could not lower worker priority - running at this process's own`);
+          }
+        }
+      }
 
       /** What this worker is holding, so a crash can put it back. */
       let inFlight: number[] | undefined;
@@ -345,6 +472,8 @@ function runAll(
       feed();
     };
 
+    /** So a machine that refuses to renice says so once rather than 1372 times. */
+    let warnedPriority = false;
     const poisoned = new Set<string>();
     const n = Math.min(jobs, queue.length);
     if (n === 0) {

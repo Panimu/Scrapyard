@@ -14,6 +14,7 @@ import { createInterface } from 'node:readline';
 import {
   DEFAULT_TUNING,
   UPGRADE_CATALOG,
+  WEAPON_ASCENDED_TIER,
   WEAPON_CATALOG,
   WEAPON_MAX_TIER,
   resolvePlayerStats,
@@ -26,7 +27,53 @@ import { type SweepRow } from './sweepReport.js';
 const LEVEL = 'scrapyard';
 
 /**
- * Holds exactly `combo`, at tier 7, with every passive at tier 7 and no ascension.
+ * WHETHER THIS LOADOUT COULD REALLY ASCEND THIS WEAPON.
+ *
+ * NOT "EVERY WEAPON GOES TO EIGHT". A tier 8 has a REQUIREMENT and the requirement is part of what
+ * the ascension is: the Chain Laser asks for Targeting Optics because chaining is bought with
+ * reach. Handing one out regardless would measure a weapon the game never gives anybody.
+ *
+ * FIVE OF THE FOURTEEN HAVE ONE AT ALL - Cannon, Long Missiles, and the three lasers. The other
+ * nine are simply at tier 8 with their tier-7 numbers, which is exactly what the catalog says
+ * happens, and their rows in the ascended sweep should look almost identical to their tier-7 ones.
+ *
+ * THE HORNET'S REQUIREMENT IS A WEAPON, NOT A PASSIVE, and that is the case that makes this
+ * function necessary rather than a constant. `w-missile-short @7` means the Long Missiles only
+ * ascend in a loadout that ALSO holds the Short Missiles - so whether a gun can ascend depends on
+ * the company it keeps, and 1372 loadouts disagree with each other about it. Every passive is at
+ * tier 7 here, so a passive requirement is always met; a weapon requirement is met only if that
+ * weapon is in this combination.
+ */
+function canAscend(defIdx: number, combo: readonly number[]): boolean {
+  const id = WEAPON_CATALOG[defIdx].id;
+  const card = UPGRADE_CATALOG.find((u) => u.kind === 'weapon' && u.grantsWeapon === id);
+  const asc = card?.ascension;
+  if (asc === undefined) return false;
+
+  const req = UPGRADE_CATALOG.find((u) => u.id === asc.requires);
+  if (req === undefined) return false;
+
+  // A WEAPON REQUIREMENT IS A LOADOUT QUESTION; a passive one is not, because every passive here
+  // sits at tier 7 and `requiresTier` is never above that.
+  if (req.kind === 'weapon') {
+    const needed = WEAPON_CATALOG.findIndex((w) => w.id === req.grantsWeapon);
+    return needed >= 0 && combo.includes(needed) && WEAPON_MAX_TIER >= asc.requiresTier;
+  }
+  return WEAPON_MAX_TIER >= asc.requiresTier;
+}
+
+/**
+ * Holds exactly `combo`, with every passive at tier 7.
+ *
+ * `ascend` DECIDES THE TIER PER WEAPON, not for the loadout: a gun that has earned its tier 8 gets
+ * it and one that has not stays at seven, in the same run. That is what the game does, and it is
+ * the only version of this measurement worth having - "everything at eight" would quietly include
+ * five ascensions nobody could have assembled together.
+ *
+ * `world.noAscension` IS STILL SET IN BOTH MODES. It vetoes `ascensionReady`, which is what a Cyber
+ * Chest goes through - and this rig writes the loadout directly rather than earning it, so leaving
+ * the chest route open would let a run promote a weapon MID-MEASUREMENT and change what was being
+ * measured half way through it. The tier is decided here, once, and then frozen.
  *
  * THE SAME SHAPE AS `loadout.ts`'s `equipEverything` AND DELIBERATELY NOT SHARED WITH IT. That one
  * is driven by a command line and prints; this one is called in a loop several hundred times per
@@ -35,7 +82,7 @@ const LEVEL = 'scrapyard';
  *
  * SLOT INDEX IS NOT CATALOG INDEX - `combo[i]` is the weapon, `i` is the mount it sits on.
  */
-function equipCombo(world: World, combo: readonly number[]): void {
+function equipCombo(world: World, combo: readonly number[], ascend: boolean): void {
   world.noAscension = true;
 
   const stacks = world.levelUp.stacks;
@@ -46,10 +93,12 @@ function equipCombo(world: World, combo: readonly number[]): void {
 
   for (let i = 0; i < combo.length; i++) {
     const d = combo[i];
+    const tier =
+      ascend && canAscend(d, combo) ? WEAPON_ASCENDED_TIER : WEAPON_MAX_TIER;
     const inst = world.weapons[i];
     if (inst === undefined) throw new Error(`sweep: no weapon slot ${i} - see WEAPON_SLOTS`);
     inst.defId = d;
-    inst.level = WEAPON_MAX_TIER;
+    inst.level = tier;
     inst.cooldownLeft = 0;
     inst.targetDense = -1;
     inst.turretX = 1;
@@ -59,14 +108,7 @@ function equipCombo(world: World, combo: readonly number[]): void {
     // -1 is "magazine not yet filled". Zero would open the run on a reload.
     inst.ammo = -1;
     inst.reloadLeft = 0;
-    resolveWeaponStats(
-      WEAPON_CATALOG[d],
-      NEUTRAL,
-      WEAPON_MAX_TIER,
-      stacks,
-      UPGRADE_CATALOG,
-      inst.stats,
-    );
+    resolveWeaponStats(WEAPON_CATALOG[d], NEUTRAL, tier, stacks, UPGRADE_CATALOG, inst.stats);
   }
   world.weaponCount = combo.length;
 
@@ -77,9 +119,10 @@ function equipCombo(world: World, combo: readonly number[]): void {
   world.player.stats.xpGain = 0;
 }
 
-const [seedArg, seedCountArg] = process.argv.slice(2);
+const [seedArg, seedCountArg, modeArg] = process.argv.slice(2);
 const seeds = seedArg.split(',').map((s) => Number(s));
 const seedCount = Number(seedCountArg);
+const ascend = modeArg === 'asc';
 
 /**
  * Pools the run's outcomes into one row.
@@ -109,6 +152,8 @@ function fold(combo: readonly number[], outcomes: readonly Outcome[]): SweepRow 
   });
 
   return {
+    mode: ascend ? 'asc' : 't7',
+    ascended: ascend ? combo.filter((d) => canAscend(d, combo)).map((d) => WEAPON_CATALOG[d].id) : [],
     key: combo
       .slice()
       .sort((a, b) => a - b)
@@ -132,10 +177,16 @@ function fold(combo: readonly number[], outcomes: readonly Outcome[]): SweepRow 
 }
 
 const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+
+// THE PARENT GOING AWAY IS THE STOP SIGNAL. Its death closes this pipe; without this the worker
+// would sit holding a finished simulation and a core, and a sweep killed from a task manager would
+// leave eighteen of them running. Observed, not theorised.
+rl.on('close', () => process.exit(0));
+process.stdout.on('error', () => process.exit(0));
 rl.on('line', (line: string) => {
   const text = line.trim();
   if (text === '') return;
   const combo = text.split(',').map((s) => Number(s));
-  const outcomes = seeds.map((seed) => runOne(seed, LEVEL, (w) => equipCombo(w, combo)));
+  const outcomes = seeds.map((seed) => runOne(seed, LEVEL, (w) => equipCombo(w, combo, ascend)));
   process.stdout.write(JSON.stringify(fold(combo, outcomes)) + '\n');
 });

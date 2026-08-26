@@ -9,7 +9,7 @@
  * 1372 rows of HTML. Sorting and filtering are the whole point of a table this size, and shipping
  * the numbers once lets the page re-sort without a regenerate.
  */
-import { WEAPON_CATALOG, type WeaponStatKey } from '../src/core/index.js';
+import { UPGRADE_CATALOG, WEAPON_CATALOG, type WeaponStatKey } from '../src/core/index.js';
 
 export interface SweepPerWeapon {
   weapon: string;
@@ -22,6 +22,10 @@ export interface SweepPerWeapon {
 }
 
 export interface SweepRow {
+  /** `t7` holds every weapon at tier 7; `asc` promotes the ones that earned a tier 8. */
+  mode: 't7' | 'asc';
+  /** Which weapons actually reached tier 8 in this loadout. Empty in `t7` mode. */
+  ascended: string[];
   /** `cannon+drone+...`, ids sorted - stable across catalog reordering. */
   key: string;
   /** Catalog indices, as measured. */
@@ -86,6 +90,10 @@ interface CatalogStat {
   /** "0.9x for 3s" for a gun that ignites, "" for the twelve that do not. */
   burn: string;
   puddle: string;
+  /** What it becomes at tier 8 - "Chain Laser" - or "" for the nine with no ascension. */
+  ascension: string;
+  /** What that costs: "Targeting Optics", or "Short Missiles at 7" for the Hornet. */
+  ascendNeeds: string;
 }
 
 /**
@@ -103,6 +111,26 @@ function atTier7(def: (typeof WEAPON_CATALOG)[number], key: WeaponStatKey): numb
     if (d !== undefined) v += d;
   }
   return v;
+}
+
+/**
+ * WHAT A WEAPON BECOMES AT TIER 8 AND WHAT IT COSTS, in words.
+ *
+ * READ OFF THE UPGRADE CARD, not restated here: the ascension belongs to the card that grants the
+ * weapon (data/upgrades.ts), and five of the fourteen have one. The requirement is named because
+ * it is the interesting half - "Giga Laser" says nothing about why a build would go there, and
+ * "needs Shaped Charges" says all of it.
+ */
+function ascensionOf(id: string): { name: string; needs: string } {
+  const card = UPGRADE_CATALOG.find((u) => u.kind === 'weapon' && u.grantsWeapon === id);
+  const asc = card?.ascension;
+  if (asc === undefined) return { name: '', needs: '' };
+  const req = UPGRADE_CATALOG.find((u) => u.id === asc.requires);
+  const reqName = req?.name ?? asc.requires;
+  return {
+    name: asc.name,
+    needs: asc.requiresTier > 1 ? `${reqName} at ${asc.requiresTier}` : reqName,
+  };
 }
 
 function catalogStats(): CatalogStat[] {
@@ -152,11 +180,17 @@ function catalogStats(): CatalogStat[] {
       reload7: atTier7(w, 'reloadTime'),
       burn: burn === undefined ? '' : `${burn.dpsFrac}x for ${burn.seconds}s`,
       puddle: pud === undefined ? '' : `${pud.dpsFrac}x for ${pud.seconds}s`,
+      ascension: ascensionOf(w.id).name,
+      ascendNeeds: ascensionOf(w.id).needs,
     };
   });
 }
 
-export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): string {
+export function renderSweepHtml(
+  t7: readonly SweepRow[],
+  asc: readonly SweepRow[],
+  meta: SweepMeta,
+): string {
   const names: Record<string, string> = {};
   for (const w of WEAPON_CATALOG) names[w.id] = w.name;
 
@@ -164,7 +198,7 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
 
   // `</script` INSIDE THE JSON WOULD END THE BLOCK EARLY. Nothing in a weapon id can produce one
   // today, and the day somebody names a weapon after an HTML tag is not the day to find that out.
-  const payload = JSON.stringify({ rows, meta, names, stats }).replace(/<\//g, '<\\/');
+  const payload = JSON.stringify({ t7, asc, meta, names, stats }).replace(/<\//g, '<\\/');
 
   return `<!doctype html>
 <html lang="en" data-theme="dark">
@@ -270,6 +304,20 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
   .bad { color: var(--bad); }
   .big { color: var(--ink); font-weight: 600; }
 
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button {
+    padding: 7px 16px;
+    border: 0;
+    background: var(--panel);
+    color: var(--ink-dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--accent); color: #17202b; }
   .to { color: var(--ink-faint); padding: 0 2px; }
   .na { color: #3d4a5c; }
   .bar { display: block; height: 3px; border-radius: 2px; background: var(--accent); opacity: 0.5; margin-top: 3px; }
@@ -314,6 +362,22 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
   </p>
   <div class="card scroll"><table id="ts"></table></div>
 
+  <h2>Measured</h2>
+  <p class="lede">
+    Everything below is measured, and measured twice. <b>Tier&nbsp;7</b> is every weapon maxed by
+    level-ups with no ascension &mdash; where almost every real run ends. <b>Ascended</b> promotes
+    each weapon that has <i>earned</i> its tier 8 <i>in that loadout</i>, which is not the same as
+    everything at eight: only five of the fourteen have an ascension at all, and the GTM Hornet
+    needs the Short Missiles held alongside it, so whether a gun ascends depends on its company.
+  </p>
+  <div class="controls">
+    <div class="seg" id="seg">
+      <button type="button" data-m="t7" class="on">Tier 7</button>
+      <button type="button" data-m="asc">Ascended</button>
+    </div>
+    <span class="count" id="mode-note"></span>
+  </div>
+
   <h2>Weapons</h2>
   <p class="lede">
     Every weapon, across every measured loadout that contains it. <b>Share</b> is the mean fraction
@@ -347,7 +411,13 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
 <script>
 (function () {
   var D = JSON.parse(document.getElementById('data').textContent);
-  var rows = D.rows, meta = D.meta, names = D.names;
+  var meta = D.meta, names = D.names;
+  // THE TIER-7 SET IS THE DEFAULT VIEW, because that is where almost every real run ends. The
+  // toggle switches every measured table below at once; the catalog table above them does not
+  // move, because it is not a measurement.
+  var SET = { t7: D.t7, asc: D.asc };
+  var mode = D.t7.length > 0 ? 't7' : 'asc';
+  var rows = SET[mode];
 
   // TRAILING ZEROES TRIMMED. 'd' is the MOST places to show, not exactly how many: a cooldown of
   // 0.13 and one of 1.4 both belong in the same column without the second becoming "1.400".
@@ -428,10 +498,39 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
         return r.magazine7 > 0 ? fmt(r.magazine7) + ' / ' + fmt(r.reload7, 1) + 's'
                                : '<span class="na">&mdash;</span>'; } },
     { k: 'burn', t: 'sets fire', f: function (r) {
-        return r.burn || r.puddle || '<span class="na">&mdash;</span>'; } }
+        return r.burn || r.puddle || '<span class="na">&mdash;</span>'; } },
+    { k: 'ascension', t: 'tier 8', f: function (r) {
+        return r.ascension || '<span class="na">none</span>'; },
+      cls: function (r) { return r.ascension ? 'guns' : ''; } },
+    { k: 'ascendNeeds', t: 'which needs', f: function (r) {
+        return r.ascendNeeds || '<span class="na">&mdash;</span>'; },
+      cls: function () { return 'guns'; } }
   ], D.stats, 'burst7');
 
+  // ---- everything below the toggle, rebuilt when it moves ------------------------------------
+  // REBUILT RATHER THAN RE-SORTED. The three tables are derived from the row set in different
+  // ways - one aggregates by weapon, one by pair, one is the rows themselves - so a switch is a
+  // recompute, not a filter. 1372 rows take about half a second, which is cheaper than keeping two
+  // of everything in memory and remembering to update both.
+  function renderMeasured() {
+    rows = SET[mode];
+
   // ---- per weapon --------------------------------------------------------------------------------
+  // WHAT THE SAME WEAPON DID IN THE OTHER SET, so the ascended view can say what the tier 8 was
+  // worth rather than only what it did. Absent in the tier-7 view, where there is nothing to
+  // compare against.
+  var otherShare = {};
+  if (mode === 'asc' && SET.t7.length > 0) {
+    var oa = {};
+    SET.t7.forEach(function (r) {
+      r.per.forEach(function (p) {
+        var q = oa[p.weapon] || (oa[p.weapon] = { n: 0, dps: 0 });
+        q.n++; q.dps += p.dps;
+      });
+    });
+    Object.keys(oa).forEach(function (k) { otherShare[k] = oa[k].n ? oa[k].dps / oa[k].n : 0; });
+  }
+
   var agg = {};
   meta.weapons.forEach(function (w) {
     agg[w.id] = { name: w.name, id: w.id, n: 0, share: 0, dps: 0, kills: 0, elite: 0, boss: 0,
@@ -456,12 +555,13 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
       kills: a.n ? a.kills / a.n : 0,
       elite: a.eliteAll ? a.elite / a.eliteAll : 0,
       boss: a.bossAll ? a.boss / a.bossAll : 0,
-      win: a.runs ? a.wins / a.runs : 0
+      win: a.runs ? a.wins / a.runs : 0,
+      lift: otherShare[id] > 0 && a.n ? (a.dps / a.n) / otherShare[id] : 0
     };
   }).filter(function (r) { return r.n > 0; });
 
   var maxShare = Math.max.apply(null, wrows.map(function (r) { return r.share; })) || 1;
-  build(document.getElementById('tw'), [
+  var wcols = [
     { k: 'name', t: 'weapon', f: function (r) { return r.name; }, cls: function () { return 'name'; } },
     { k: 'share', t: 'share of its loadout', f: function (r) {
         return pct(r.share) + '<span class="bar" style="width:' + (r.share / maxShare * 100).toFixed(1) + '%"></span>'; },
@@ -473,7 +573,13 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
     { k: 'win', t: 'win rate', f: function (r) { return pct(r.win); },
       cls: function (r) { return r.win >= 0.5 ? 'good' : ''; } },
     { k: 'n', t: 'loadouts', f: function (r) { return fmt(r.n); } }
-  ], wrows, 'share');
+  ];
+  if (mode === 'asc') {
+    wcols.splice(3, 0, { k: 'lift', t: 'vs tier 7', f: function (r) {
+      return r.lift > 0 ? 'x' + r.lift.toFixed(2) : '<span class="na">&mdash;</span>'; },
+      cls: function (r) { return r.lift >= 1.05 ? 'good' : r.lift > 0 && r.lift <= 0.97 ? 'bad' : ''; } });
+  }
+  build(document.getElementById('tw'), wcols, wrows, 'share');
 
   // ---- pairs --------------------------------------------------------------------------------------
   var solo = {}, pair = {};
@@ -542,11 +648,15 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
 
   var tl = build(document.getElementById('tl'), cols, lrows, 'dps');
   var sel = document.getElementById('must');
-  meta.weapons.forEach(function (w) {
-    var o = document.createElement('option');
-    o.value = w.id; o.textContent = w.name;
-    sel.appendChild(o);
-  });
+  // POPULATED ONCE. This runs on every toggle, and appending fourteen more options each time is
+  // exactly the kind of bug a rebuild invites.
+  if (sel.options.length <= 1) {
+    meta.weapons.forEach(function (w) {
+      var o = document.createElement('option');
+      o.value = w.id; o.textContent = w.name;
+      sel.appendChild(o);
+    });
+  }
 
   function filter() {
     var q = document.getElementById('q').value.trim().toLowerCase();
@@ -562,6 +672,38 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
   document.getElementById('q').oninput = filter;
   sel.onchange = filter;
   filter();
+  }
+
+  var seg = document.getElementById('seg');
+  [].forEach.call(seg.querySelectorAll('button'), function (b) {
+    b.onclick = function () {
+      var m = b.getAttribute('data-m');
+      if (SET[m].length === 0) return;
+      mode = m;
+      [].forEach.call(seg.querySelectorAll('button'), function (x) {
+        x.className = x.getAttribute('data-m') === mode ? 'on' : '';
+      });
+      renderMeasured();
+      note();
+    };
+    if (SET[b.getAttribute('data-m')].length === 0) {
+      b.disabled = true;
+      b.style.opacity = '0.4';
+      b.style.cursor = 'not-allowed';
+    }
+  });
+  [].forEach.call(seg.querySelectorAll('button'), function (x) {
+    x.className = x.getAttribute('data-m') === mode ? 'on' : '';
+  });
+
+  function note() {
+    var n = document.getElementById('mode-note');
+    if (mode !== 'asc') { n.textContent = SET.t7.length + ' loadouts, no weapon above tier 7'; return; }
+    var withAny = SET.asc.filter(function (r) { return r.ascended && r.ascended.length > 0; }).length;
+    n.textContent = SET.asc.length + ' loadouts, ' + withAny + ' of them able to ascend something';
+  }
+  note();
+  renderMeasured();
 
   document.getElementById('foot').textContent =
     'Generated by tools/sweepLoadout.ts. Re-run with sweep.bat --fresh after any balance change: ' +
