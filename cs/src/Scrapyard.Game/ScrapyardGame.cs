@@ -2043,6 +2043,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _fx.Draw(_batch, _camera);
 
         var (vw, vh) = Surface;
+
+        // OVER THE WORLD AND UNDER THE HUD. They are screen furniture pointing INTO the world, so
+        // they must not be covered by the yard - and must not sit on top of the bars and buttons,
+        // which are what the player reads first.
+        DrawEdgeArrows(w, vw, vh);
+
         Overlay.DrawHud(_batch, _sprites, w, vw, vh, out _hudPauseRect);
 
         switch (w.Phase)
@@ -2814,6 +2820,141 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     /// <summary>How small the closing ring gets before impact. Never zero - see the remarks.</summary>
     private const double StrikeMinFrac = 0.12;
+
+    /// <summary>The boss pointer's red. The web build's own value.</summary>
+    private static readonly Color BossArrowTint = new(0xe2, 0x3b, 0x3b);
+
+    /// <summary>
+    /// The chest pointer's blue.
+    /// </summary>
+    /// <remarks>
+    /// BLUE BECAUSE RED IS TAKEN, and taken by the thing that kills you. Two pointers of the same
+    /// colour would make the player look at both with the same urgency, and exactly one of them is.
+    /// </remarks>
+    private static readonly Color ChestArrowTint = new(0x4f, 0xa8, 0xff);
+
+    /// <summary>How far inside the drawn rect the tip sits, in UI units.</summary>
+    private const double ArrowInset = 18;
+
+    /// <summary>The arrow's drawn length, in UI units. The texture's own proportions do the rest.</summary>
+    private const double ArrowLen = 29;
+
+    /// <summary>How much bigger the black silhouette under the arrow is drawn.</summary>
+    private const double ArrowOutline = 1.16;
+
+    private const double ArrowPulseHz = 1.1;
+    private const float ArrowAlphaMin = 0.62f;
+    private const float ArrowAlphaMax = 1f;
+
+    /// <summary>A drawn radius to test a chest against, in world units.</summary>
+    private const double ChestArrowRadius = 16;
+
+    /// <summary>
+    /// Pointers on the edge of the screen for the bosses and chests that are off it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THIS WAS NEVER PORTED. The web build has had it since the first boss; this front-end simply
+    /// had no arrows at all, which is worst for the thing that needs them most - a CHEST is a
+    /// silent box that stays exactly where the boss happened to die, and after a fight that moved
+    /// across half the yard that is nowhere near where the fight ended. The one guaranteed reward
+    /// in a run was routinely walked away from.
+    /// </para>
+    /// <para>
+    /// AIMED FROM THE CAMERA, not from the mech. The arrow says "the edge of what you can see is
+    /// between you and it", which is a fact about the VIEW - and with the camera centred on the
+    /// player the two agree anyway.
+    /// </para>
+    /// <para>
+    /// ONE PULSE FOR EVERY ARROW IN THE FRAME, so two pointers breathe together rather than
+    /// beating against each other, and on the cosmetic clock so they keep moving through a
+    /// level-up freeze.
+    /// </para>
+    /// </remarks>
+    private void DrawEdgeArrows(World w, int vw, int vh)
+    {
+        int scale = System.Math.Max(1, vh / 400);
+        double cx = vw * 0.5;
+        double cy = vh * 0.5;
+
+        // Half-extents of the DRAWN rect in pixels, pulled in so the tip clears the edge.
+        double limX = _camera.HalfW * _camera.Scale - ArrowInset * scale;
+        double limY = _camera.HalfH * _camera.Scale - ArrowInset * scale;
+        if (limX <= 0 || limY <= 0) return;
+
+        double pulse = 0.5 + 0.5 * System.Math.Sin(_clockSec * ArrowPulseHz * System.Math.PI * 2);
+        float alpha = ArrowAlphaMin + (ArrowAlphaMax - ArrowAlphaMin) * (float)pulse;
+        double len = ArrowLen * scale;
+
+        var e = w.Enemies;
+        for (int d = 0; d < e.Count; d++)
+        {
+            if ((e.Flags[d] & EnemyPool.FlagDead) != 0) continue;
+            if ((e.Flags[d] & EnemyPool.FlagBoss) == 0) continue;
+
+            double bx = Lerp(e.PrevX[d], e.X[d]);
+            double by = Lerp(e.PrevY[d], e.Y[d]);
+            // Measured against the boss's OWN drawn radius, so the pointer survives exactly as
+            // long as the body is genuinely hidden and not a moment past it.
+            EdgeArrow(cx, cy, limX, limY,
+                      (bx - _camera.X) * _camera.Scale, (by - _camera.Y) * _camera.Scale,
+                      e.Radius[d] * _camera.Scale, len, BossArrowTint, alpha);
+        }
+
+        var p = w.Pickups;
+        for (int d = 0; d < p.Count; d++)
+        {
+            if (p.Kind[d] != PickupPool.KindChest) continue;
+            if ((p.Flags[d] & PickupPool.FlagDead) != 0) continue;
+
+            double bx = Lerp(p.PrevX[d], p.X[d]);
+            double by = Lerp(p.PrevY[d], p.Y[d]);
+            EdgeArrow(cx, cy, limX, limY,
+                      (bx - _camera.X) * _camera.Scale, (by - _camera.Y) * _camera.Scale,
+                      ChestArrowRadius * _camera.Scale, len, ChestArrowTint, alpha);
+        }
+    }
+
+    /// <summary>
+    /// One pointer on the edge of the drawn rect, aimed at an off-screen thing.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="dx"/>/<paramref name="dy"/> are the target's offset from screen centre in
+    /// pixels and <paramref name="r"/> is its drawn radius - the arrow is SUPPRESSED while any
+    /// part of the thing is on screen, which is what stops a pointer sitting over something the
+    /// player can already see.
+    /// </remarks>
+    private void EdgeArrow(double cx, double cy, double limX, double limY,
+                           double dx, double dy, double r, double len, Color tint, float alpha)
+    {
+        if (System.Math.Abs(dx) <= limX + r && System.Math.Abs(dy) <= limY + r) return;
+
+        // Where the ray from centre leaves the inset rect. BOTH axes are tested and the NEARER
+        // crossing wins, which is what puts a target off the top-left corner IN the corner rather
+        // than off whichever side it is less far past.
+        double ax = System.Math.Abs(dx);
+        double ay = System.Math.Abs(dy);
+        double tx = ax > 1e-4 ? limX / ax : double.PositiveInfinity;
+        double ty = ay > 1e-4 ? limY / ay : double.PositiveInfinity;
+        double t = tx < ty ? tx : ty;
+        if (double.IsInfinity(t)) return; // exactly under the camera: nothing to point at
+
+        float ex = (float)(cx + dx * t);
+        float ey = (float)(cy + dy * t);
+        float angle = (float)System.Math.Atan2(dy, dx);
+
+        // THE TIP IS THE ORIGIN, so the point lands on the crossing and the shaft trails inward.
+        var origin = new Vector2(Sprites.PointerW, Sprites.PointerH / 2f);
+        float k = (float)(len / Sprites.PointerW);
+
+        // A BLACK SILHOUETTE UNDER IT, slightly larger. The arrow has to keep an edge against rust
+        // ground, a fence, or a wall of bodies, and one tinted texture cannot carry two colours -
+        // so the outline is the same shape drawn bigger and darker first.
+        _batch.Draw(_sprites.Pointer, new Vector2(ex, ey), null, Color.Black * alpha, angle,
+                    origin, new Vector2((float)(k * ArrowOutline)), SpriteEffects.None, 0f);
+        _batch.Draw(_sprites.Pointer, new Vector2(ex, ey), null, tint * alpha, angle,
+                    origin, new Vector2(k), SpriteEffects.None, 0f);
+    }
 
     private void DrawPlayer(World w, double px, double py)
     {

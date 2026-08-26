@@ -94,6 +94,25 @@ public sealed class Sprites
     /// <summary>How many rough variants are baked. See <see cref="RoughDisc"/>.</summary>
     public const int RoughDiscCount = 4;
 
+    /// <summary>
+    /// The off-screen pointer: an arrow head with a tail stub, pointing along +X, antialiased.
+    /// </summary>
+    /// <remarks>
+    /// BAKED FOR THE REASON THE OTHER TWO ARE. A SpriteBatch fills rectangles; an arrow is a
+    /// triangle and a stub, and assembling one out of rotated 1x1 texels gives a staircase down
+    /// both leading edges - on a shape that is always drawn at an angle, which is the worst case.
+    ///
+    /// THE ORIGIN THE CALLER USES IS THE TIP, at the middle of the right edge, so rotating puts
+    /// the point exactly on the screen edge the ray crosses.
+    /// </remarks>
+    public Texture2D Pointer { get; }
+
+    /// <summary>Width of <see cref="Pointer"/>, in texels. The arrow's full length.</summary>
+    public const int PointerW = 64;
+
+    /// <summary>Height of <see cref="Pointer"/>, in texels. Twice the head's half-width.</summary>
+    public const int PointerH = 48;
+
     public Sprites(GraphicsDevice device, string root)
     {
         _device = device;
@@ -104,6 +123,7 @@ public sealed class Sprites
         SoftDisc = MakeSoftDisc(device);
         RoughDisc = new Texture2D[RoughDiscCount];
         for (int i = 0; i < RoughDiscCount; i++) RoughDisc[i] = MakeRoughDisc(device, i);
+        Pointer = MakePointer(device);
     }
 
     /// <summary>
@@ -271,6 +291,57 @@ public sealed class Sprites
 
     /// <summary>How far the radius wanders, as a fraction of it. "Poured", not "splattered".</summary>
     private const double Rough = 0.09;
+
+    /// <summary>
+    /// Bakes <see cref="Pointer"/>.
+    /// </summary>
+    /// <remarks>
+    /// The proportions are the web build's own arrow: a head 20 long by 22 across the base, and a
+    /// tail 9 long by 7 across. Written here as fractions of the texture so the two front-ends
+    /// draw the same shape without sharing a number that would have to be kept in step.
+    /// </remarks>
+    private static Texture2D MakePointer(GraphicsDevice device)
+    {
+        const int w = PointerW;
+        const int h = PointerH;
+        const int sub = 4;
+
+        // Head 20 units, tail 9, so the head starts 9/29 of the way along.
+        const double headStart = w * (9.0 / 29.0);
+        const double midY = h / 2.0;
+        // The tail is 7 across against the head's 22.
+        const double tailHalf = midY * (3.5 / 11.0);
+
+        var data = new Microsoft.Xna.Framework.Color[w * h];
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int hits = 0;
+                for (int sy = 0; sy < sub; sy++)
+                {
+                    for (int sx = 0; sx < sub; sx++)
+                    {
+                        double px = x + (sx + 0.5) / sub;
+                        double py = y + (sy + 0.5) / sub;
+
+                        // The head tapers to nothing at the tip; the tail is a constant stub.
+                        double half = px >= headStart
+                            ? midY * (w - px) / (w - headStart)
+                            : tailHalf;
+                        if (System.Math.Abs(py - midY) <= half) hits++;
+                    }
+                }
+
+                float a = hits / (float)(sub * sub);
+                data[y * w + x] = new Microsoft.Xna.Framework.Color(a, a, a, a);
+            }
+        }
+
+        var tex = new Texture2D(device, w, h);
+        tex.SetData(data);
+        return tex;
+    }
 
     /// <summary>
     /// The texture for a sprite key, or null if there is no such file.

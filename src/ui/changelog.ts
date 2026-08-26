@@ -46,6 +46,21 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T12:45Z',
+    title: 'DESKTOP: ARROWS TO THE BOSS AND THE CHEST',
+    notes: [
+      'A boss off the edge of the screen gets a red pointer on the edge nearest it, and a chest gets a blue one. Neither existed here at all. The chest needed it more than the boss did: a boss is enormous and coming towards you, while a chest is a silent box left exactly where the boss happened to die — which, after a fight that crossed half the yard, is nowhere near where the fight ended.',
+    ],
+  },
+  {
+    at: '2026-08-26T12:45Z',
+    title: 'DESKTOP: A TIER 8 WEARS ITS OWN ICON AGAIN',
+    notes: [
+      'The Twin Mount, Chain Laser, Hornet, Giga Beam and Hydra have had drawn icons all along, and every screen here was asking for the base card’s instead — so a Twin Mount showed one shell and a Hydra showed one beam. The chest reel, the payout list and the loadout strip all name and draw the thing you actually got.',
+      'The ascension announcement itself said the old card’s name. The one screen whose entire job is to tell you the thing in your hands is not the thing you were carrying was announcing the thing you were carrying.',
+    ],
+  },
+  {
     at: '2026-08-26T12:32Z',
     title: 'THE HEAVIES TURN FIVE SECONDS SOONER',
     notes: [

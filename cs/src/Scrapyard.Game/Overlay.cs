@@ -211,8 +211,12 @@ public static class Overlay
             Screens.CardFace(batch, sprites, chip, 4 * scale, new Color(8, 11, 16) * 0.62f,
                              fill * 0.35f, System.Math.Max(1, scale / 2));
 
+            // AT THE TIER IT IS HELD AT, so an ascended gun wears its own art in the loadout
+            // strip rather than the card it was built out of.
             int cardIndex = CardIndexForWeapon(w, inst.DefId);
-            var tex = cardIndex >= 0 ? sprites.Get(CardTexts.At(cardIndex).IconKey) : null;
+            var tex = cardIndex >= 0
+                ? sprites.Get(CardTexts.At(cardIndex).IconKeyAt(inst.Level))
+                : null;
             if (tex is not null)
             {
                 batch.Draw(tex, new Rectangle(ix + pad, y + (chipH - icon) / 2, icon, icon),
@@ -460,7 +464,11 @@ public static class Overlay
 
         // THE TIER YOU WOULD BE TAKING, not the one you hold. "TIER 3" on a card you own two of is
         // the honest label: it is what the pick buys.
-        return (text.Name, tierLine, desc, unlock ? "NEW" : $"TIER {tier}", weapon, text.IconKey);
+        // AT THE TIER BEING OFFERED, so a card can never advertise art the pick does not grant.
+        // Level-ups stop at 7, so today this is always the base icon - but the rule is the rule,
+        // and the next thing that offers a tier 8 will not need this line found again.
+        return (text.Name, tierLine, desc, unlock ? "NEW" : $"TIER {tier}", weapon,
+                text.IconKeyAt(tier));
     }
 
     private static int CardHeight(World w, int offer, int width, int scale, int small)
@@ -681,8 +689,13 @@ public static class Overlay
             // rather than folded into the payout line.
             Screens.UiDrawCentred(batch, sprites, "ASCENSION", vw / 2, ty, scale * 2, Accent);
             ty += 20 * scale;
-            Screens.UiDrawCentred(batch, sprites,
-                             CardTexts.At(chest.Ascension).Name.ToUpperInvariant(), vw / 2, ty,
+
+            // NAMED AT WHAT IT BECAME. This said the BASE card's name, so the one screen in the
+            // game whose entire job is to announce that the thing in your hands is not the thing
+            // you were carrying announced the thing you were carrying.
+            var ascCard = CardTexts.At(chest.Ascension);
+            string ascName = PediaText.AscensionOf(ascCard.Id) is { } a ? a.Name : ascCard.Name;
+            Screens.UiDrawCentred(batch, sprites, ascName.ToUpperInvariant(), vw / 2, ty,
                              scale, Ink);
             ty += 14 * scale;
         }
@@ -707,7 +720,15 @@ public static class Overlay
             {
                 int g = chest.Grants[i];
                 if (g < 0) continue;
-                Screens.UiDrawCentred(batch, sprites, CardTexts.At(g).Name.ToUpperInvariant(),
+                // NAMED AT WHAT IT BECAME, not at what it was. A chest that hands over a tier 8
+                // and then lists the base card's name is telling the player they won the thing
+                // they already had.
+                int gTier = g < w.LevelUp.Stacks.Length ? w.LevelUp.Stacks[g] : 0;
+                string gName = gTier >= UpgradeCatalog.WeaponAscendedTier
+                               && PediaText.AscensionOf(CardTexts.At(g).Id) is { } gAsc
+                    ? gAsc.Name
+                    : CardTexts.At(g).Name;
+                Screens.UiDrawCentred(batch, sprites, gName.ToUpperInvariant(),
                                  vw / 2, ty, scale, Dim);
                 ty += UiFont.LineHeight(scale);
             }
@@ -738,6 +759,11 @@ public static class Overlay
         int landed = chest.Reels[r];
         if (landed < 0) return;
 
+        // AN ASCENSION CHEST SHOWS THE TIER-8 ICON ON ALL THREE REELS, because that is the symbol
+        // the spin is about - the same rule the web build's own reel follows. The decoys keep
+        // their base art: they are the player's loadout blurring past, not what was won.
+        int landedTier = chest.Ascension >= 0 ? UpgradeCatalog.WeaponAscendedTier : 1;
+
         int tiles = ChestSpin.StripTiles(r);
         int pad = 6 * scale;
         int inner = box - pad * 2;
@@ -753,7 +779,7 @@ public static class Overlay
             int card = index >= tiles ? landed : DecoyAt(w, r, index);
             if (card < 0) continue;
 
-            var tex = sprites.Get(CardTexts.At(card).IconKey);
+            var tex = sprites.Get(CardTexts.At(card).IconKeyAt(index >= tiles ? landedTier : 1));
             if (tex is null) continue;
 
             // The tile slides up through the window; the one behind it comes in from below.
