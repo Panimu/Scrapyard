@@ -828,9 +828,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         if (_menu.Back) Exit();
 
         // The letter shortcuts, for hands already on a keyboard. Same four destinations.
-        if (Pressed(keys, Keys.W)) ChooseTitle(1);
+        // [U] AND [O], NOT [W] AND [S] - see MenuRows.Title. No menu in this game borrows a
+        // movement key, and the title screen gave up its two mnemonics to keep that true
+        // everywhere rather than almost everywhere.
+        if (Pressed(keys, Keys.U)) ChooseTitle(1);
         if (Pressed(keys, Keys.P)) ChooseTitle(2);
-        if (Pressed(keys, Keys.S)) ChooseTitle(3);
+        if (Pressed(keys, Keys.O)) ChooseTitle(3);
     }
 
     /// <summary>
@@ -905,14 +908,43 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             case 0: _screen = Screen.Playing; break;
             case 1: StartRun(unchecked(_seed * 1103515245 + 12345)); break;
-            case 2: _sim.World.AutoLevel = _sim.World.AutoLevel != 0 ? 0 : 1; break;
-            case 3: _changes.Open(); _returnTo = Screen.Paused; _screen = Screen.Changes; break;
+            case 2: ToggleAutoLevel(); break;
+            case 3: ToggleInfiniteRerolls(); break;
+            case 4: _changes.Open(); _returnTo = Screen.Paused; _screen = Screen.Changes; break;
             default:
                 // ABANDONING BANKS FIRST - see UpdatePaused.
                 Bank();
                 ToTitle();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Auto-level, off and on. A PER-RUN switch, so it touches the world and never the save.
+    /// </summary>
+    /// <remarks>
+    /// ONE PLACE FOR IT rather than the same expression in the key handler and the row handler.
+    /// They had drifted apart once already - the row toggled and the key toggled, but the level-up
+    /// card's own shortcut only ever turned it ON - and a switch with two implementations is a
+    /// switch that will eventually disagree with the label the menu is drawing beside it.
+    /// </remarks>
+    private void ToggleAutoLevel() =>
+        _sim.World.AutoLevel = _sim.World.AutoLevel != 0 ? 0 : 1;
+
+    /// <summary>
+    /// Infinite rerolls, off and on. PERSISTED, unlike auto-level.
+    /// </summary>
+    /// <remarks>
+    /// It is a property of how the save is being played rather than of one run, which is why it is
+    /// written back immediately: a debugging session that ended in a crash should not have to be
+    /// set up again. The open run is updated in the same breath so the level-up card behind this
+    /// menu reads the new answer without waiting for a restart.
+    /// </remarks>
+    private void ToggleInfiniteRerolls()
+    {
+        _save.InfiniteRerolls = !_save.InfiniteRerolls;
+        _sim.World.InfiniteRerolls = _save.InfiniteRerolls;
+        _save.Save();
     }
 
     private void UpdateChangelog(KeyboardState keys)
@@ -1365,7 +1397,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private void UpdatePaused(KeyboardState keys)
     {
-        var rows = MenuRows.Pause();
+        var rows = MenuRows.Pause(_sim.World);
         MoveCursor(ref _pauseCursor, rows);
         if (MouseChoose(_pauseRects, rows, ref _pauseCursor)) { ChoosePause(_pauseCursor); return; }
         if (_menu.Confirm) { ChoosePause(_pauseCursor); return; }
@@ -1376,7 +1408,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // FROM THE PAUSE MENU TOO, which is where the web build puts it - and BACK returns to the
         // pause menu rather than the title, because the run is still open behind it.
         // AND OFF AGAIN HERE, which is the only place it can go off - see the level-up card.
-        if (Pressed(keys, Keys.A)) _sim.World.AutoLevel = _sim.World.AutoLevel != 0 ? 0 : 1;
+        //
+        // [L], NOT [A]: this menu opens mid-run with a hand on WASD. See MenuRows.Pause.
+        if (Pressed(keys, Keys.L)) ToggleAutoLevel();
+
+        // THE SAME SWITCH THE WEB BUILD HAS HAD ALL ALONG. It is persisted, unlike auto-level,
+        // because it is a property of how this save is being played rather than of one run.
+        if (Pressed(keys, Keys.R)) ToggleInfiniteRerolls();
 
         if (Pressed(keys, Keys.C))
         {
@@ -1742,7 +1780,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         //
         // ONE-WAY HERE, deliberately: turning it off is something you do when NO card is up, since
         // auto-level means you never see this screen again. The pause menu is where it goes off.
-        if (Pressed(keys, Keys.A))
+        //
+        // [L], NOT [A]. This screen appears mid-run with a hand resting on WASD, and [A] is
+        // strafe-left - so a player holding it when a card came up switched on a one-way setting
+        // they never asked for and could not undo from this screen. See MenuRows.Pause.
+        if (Pressed(keys, Keys.L))
         {
             _sim.World.AutoLevel = 1;
             return;

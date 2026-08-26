@@ -415,7 +415,7 @@ public static class Overlay
         // clickable; a player has no reason to guess that this one thing is not.
         var autoRect = new Rectangle(x0, y, width, rerollH);
         outRects?.Add(autoRect);
-        Screens.OverlayButton(batch, sprites, autoRect, "AUTO LEVEL FROM HERE", "A", scale, true);
+        Screens.OverlayButton(batch, sprites, autoRect, "AUTO LEVEL FROM HERE", "L", scale, true);
     }
 
     /// <summary>What one offer says: its name, its tier line, and what the tier does.</summary>
@@ -760,10 +760,37 @@ public static class Overlay
             int oy = (int)((k - frac) * inner);
             var dst = new Rectangle(x + pad, y + pad + oy, inner, inner);
 
-            // CLIPPED BY HAND rather than with a scissor rectangle: a scissor test is a device state
-            // change and this is inside one batch with everything else on screen.
-            if (dst.Bottom <= y + pad || dst.Y >= y + box - pad) continue;
-            batch.Draw(tex, dst, Color.White);
+            // CLIPPED BY HAND rather than with a scissor rectangle: a scissor test is a device
+            // state change and this is inside one batch with everything else on screen.
+            //
+            // THE SOURCE RECTANGLE IS CLIPPED TOO, and that is the whole of the fix. This used to
+            // skip only a tile that had left the window ENTIRELY, which is a test that is false for
+            // both tiles on almost every frame of a spin: they slide by `inner` pixels, so at any
+            // moment one is hanging off the top and the other off the bottom. Both were drawn in
+            // full, so the reel showed its icons outside the slot and the drum illusion - a strip
+            // turning past a window - collapsed into two pictures sliding over the panel.
+            //
+            // Taking the same fraction off the TEXTURE that the window takes off the destination is
+            // exact at any offset, costs one extra rectangle, and needs no device state at all.
+            int winTop = y + pad;
+            int winBottom = y + box - pad;
+            int visTop = dst.Y > winTop ? dst.Y : winTop;
+            int visBottom = dst.Bottom < winBottom ? dst.Bottom : winBottom;
+            if (visBottom <= visTop) continue;
+
+            double fromTop = (visTop - dst.Y) / (double)inner;
+            double fromBottom = (dst.Bottom - visBottom) / (double)inner;
+            int srcTop = (int)(fromTop * tex.Height);
+            int srcBottom = tex.Height - (int)(fromBottom * tex.Height);
+            // A tile can be a single row tall at the very edge of the window; a source rectangle of
+            // zero height draws nothing and would make that row flicker rather than shrink.
+            if (srcBottom <= srcTop) srcBottom = srcTop + 1;
+            if (srcBottom > tex.Height) srcBottom = tex.Height;
+
+            batch.Draw(tex,
+                       new Rectangle(dst.X, visTop, inner, visBottom - visTop),
+                       new Rectangle(0, srcTop, tex.Width, srcBottom - srcTop),
+                       Color.White);
         }
     }
 

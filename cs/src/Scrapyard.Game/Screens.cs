@@ -1796,7 +1796,7 @@ public static class Screens
         int width = Column(vw, scale);
         int x0 = (vw - width) / 2;
 
-        var rows = MenuRows.Pause();
+        var rows = MenuRows.Pause(w);
         int rowH = 27 * scale;
         int gap = 5 * scale;
         int radius = 7 * scale;

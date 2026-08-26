@@ -58,7 +58,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'sprites');
 
@@ -91,7 +91,12 @@ const SHADOW = 'rgba(0,0,0,0.30)';
  * weapons with no beam - Cannon, missiles, machine gun, artillery - get a signature lamp colour
  * per weapon instead, which is the same promise made a different way.
  */
-const HEROES = [
+/**
+ * EXPORTED so a reference sheet can read the components rather than restate them. The Locked
+ * Roster artifact is generated from this array joined to HERO_CATALOG - which is the only way the
+ * two can be guaranteed to agree about what a chassis is made of.
+ */
+export const HEROES = [
   // ---- the original eight: lasers and the Cannon -----------------------------------------
   { key: 'mech_slate', cls: 'light', legs: 'chicken', mount: 'pods', torso: 'wedge', hull: '#8d99ae', trim: '#5b6779', glass: '#4fa8ff' },
   { key: 'mech_moss', cls: 'light', legs: 'strider', mount: 'gatling', torso: 'spear', hull: '#69ad6b', trim: '#417a48', glass: '#3be86b' },
@@ -646,4 +651,10 @@ async function main() {
   console.log(`\n${count} sprites, ${(bytes / 1024).toFixed(0)} kB -> ${OUT_DIR}`);
 }
 
-void main();
+// ONLY WHEN RUN, not when imported. `HEROES` is exported for the reference sheet to read, and an
+// import that silently spent thirty seconds redrawing 132 sprites through headless Chromium would
+// make reading one array the most expensive line in the tool that reads it.
+if (process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main();
+}

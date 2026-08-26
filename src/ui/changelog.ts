@@ -46,6 +46,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T07:19Z',
+    title: 'DESKTOP: THE PAUSE MENU AND THE CHEST REELS',
+    notes: [
+      'No menu borrows a movement key any more. Auto-level was on [A] — which is strafe left — so holding it when a level-up card appeared switched on a setting the card itself calls one-way. It is [L] now, on the card and in the pause menu both. The title screen gave up its [W] and [S] for the same reason, and is now [U] for upgrades and [O] for settings.',
+      'The two switches in the pause menu say which way they are set. Auto-level read the same whichever way it was pointing, so pressing it told you nothing.',
+      'Infinite rerolls is in the pause menu, where the web build has always had it. The switch existed and was being saved; there was simply no way to reach it.',
+      'The chest reels keep their symbols inside the window. A tile sliding through the slot was drawn in full, so icons appeared above and below the reel and the drum stopped reading as a drum.',
+    ],
+  },
+  {
     at: '2026-08-26T05:51Z',
     title: 'THREE CARDS GET THEIR PICTURES',
     notes: [

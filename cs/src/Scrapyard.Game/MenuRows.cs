@@ -1,3 +1,4 @@
+using Scrapyard.Core;
 using Scrapyard.Meta;
 
 namespace Scrapyard.Game;
@@ -48,20 +49,49 @@ public static class MenuRows
     /// the device.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// NO WASD SHORTCUT ANYWHERE IN THIS FILE. UPGRADES was [W] and SETTINGS was [S], which is
+    /// harmless on a screen with no mech on it and still wrong: a player learns "WASD moves the
+    /// machine" once, and a menu that borrows those letters teaches them there are exceptions to
+    /// look out for. The rule is worth more than the two mnemonics it cost - see
+    /// <see cref="Pause"/>, where the same borrowing was doing real damage.
+    /// </remarks>
     public static MenuRow[] Title() => new[]
     {
         new MenuRow("[ENTER]", "NEW GAME", true),
-        new MenuRow("[W]", "UPGRADES", true),
+        new MenuRow("[U]", "UPGRADES", true),
         new MenuRow("[P]", "SCRAPOPEDIA", true),
-        new MenuRow("[S]", "SETTINGS", true),
+        new MenuRow("[O]", "SETTINGS", true),
     };
 
-    /// <summary>The pause menu's rows. See <see cref="TitleRows"/>.</summary>
-    public static MenuRow[] Pause() => new[]
+    /// <summary>The pause menu's rows. See <see cref="Title"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE TWO SWITCHES SAY WHICH WAY THEY ARE SET.</b> Auto-level read "AUTO LEVEL" whichever
+    /// way it was pointing, so pressing it told you nothing: the menu looked identical before and
+    /// after, and the only way to find out what you had done was to level up and watch. A switch
+    /// that does not report its own state is a switch a player has to keep a model of, and this one
+    /// is easy to leave on by accident and expensive to leave on by accident.
+    /// </para>
+    /// <para>
+    /// <b>INFINITE REROLLS BELONGS HERE TOO.</b> The web build has had it in this menu since it
+    /// arrived; the desktop front-end simply never grew the row, so the switch existed, was
+    /// persisted in the save and could only be changed by editing the file.
+    /// </para>
+    /// <para>
+    /// <b>[L] AND [R], NOT [A].</b> Auto-level was [A], which is a movement key - and this menu and
+    /// the level-up card both appear mid-run with a hand resting on WASD. Strafing left while a
+    /// card came up turned on a setting that the level-up screen describes as one-way. That is the
+    /// whole argument against menu shortcuts borrowing game keys, and it is why the title screen
+    /// gave up its two as well.
+    /// </para>
+    /// </remarks>
+    public static MenuRow[] Pause(World w) => new[]
     {
         new MenuRow("[ESC]", "RESUME", true),
         new MenuRow("[F5]", "NEW RUN", true),
-        new MenuRow("[A]", "AUTO LEVEL", true),
+        new MenuRow("[L]", w.AutoLevel != 0 ? "AUTO LEVEL: ON" : "AUTO LEVEL: OFF", true),
+        new MenuRow("[R]", w.InfiniteRerolls ? "INFINITE REROLLS: ON" : "INFINITE REROLLS: OFF", true),
         new MenuRow("[C]", "CHANGELOG", true),
         new MenuRow("[BACKSPACE]", "ABANDON", true),
     };
