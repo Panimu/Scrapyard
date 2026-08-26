@@ -197,8 +197,56 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private const double ShieldPulseHz = 0.7;
 
-    /// <summary>The haze filling the field. Faint: it must not hide what the mech is standing on.</summary>
-    private const float ShieldHazeAlpha = 0.09f;
+    /// <summary>How strongly the field's body reads. Well under 1, or it swallows the mech.</summary>
+    private const float ShieldBodyAlpha = 0.34f;
+
+    /// <summary>Frames in the twirl loop.</summary>
+    private const int ShieldTwirlFrames = 3;
+
+    /// <summary>How fast it plays. Slow: the SHAPE changing is a texture swap and pops if quick.</summary>
+    private const double ShieldTwirlFps = 5;
+
+    /// <summary>Radians a second the body turns. The second copy runs back at 0.62 of it.</summary>
+    private const double ShieldTwirlSpin = 0.5;
+
+    /// <summary>
+    /// THE THREE BLUES THE FIELD WALKS BETWEEN, in loop order.
+    /// </summary>
+    /// <remarks>
+    /// A field on ONE tint is a decal; one that shifts is being fed by something. Deep, then the
+    /// rim's own blue, then a pale cyan - charge cycling rather than a colour animation for its own
+    /// sake.
+    /// <para>
+    /// THE TOP STOP IS NOT WHITE, and it was. THE GROUND IS ORANGE: a near-white field over rust
+    /// has almost no contrast, so at the top of every cycle the whole thing faded out and came
+    /// back - which reads as the shield FAILING rather than as it being charged. Cyan holds against
+    /// orange. The sweep keeps the near-white and is the only part that has it: one small bright
+    /// arc can afford to vanish for a moment; the field cannot.
+    /// </para>
+    /// </remarks>
+    private static readonly Color[] ShieldColours =
+    {
+        new(0x1c, 0x4f, 0xa8), new(0x4f, 0xa8, 0xff), new(0x7f, 0xd4, 0xff),
+    };
+
+    /// <summary>How long one full trip round <see cref="ShieldColours"/> takes, in seconds.</summary>
+    private const double ShieldColourSec = 3.4;
+
+    /// <summary>The field's colour right now: <see cref="ShieldColours"/>, lerped.</summary>
+    /// <remarks>
+    /// The three stops are all blues of increasing lightness, so a straight-line path between them
+    /// stays blue - the muddy midpoint that makes RGB lerping a bad habit only happens between
+    /// hues, and there are none here.
+    /// </remarks>
+    private static Color ShieldColour(double clock)
+    {
+        int n = ShieldColours.Length;
+        double t = clock / ShieldColourSec % 1;
+        if (t < 0) t += 1;
+        t *= n;
+        int i = (int)t;
+        return Color.Lerp(ShieldColours[i % n], ShieldColours[(i + 1) % n], (float)(t - i));
+    }
 
     /// <summary>Arcs in the innermost layer. Each layer out gets one more, so they never line up.</summary>
     private const int ShieldArcs = 5;
@@ -228,6 +276,22 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     /// <summary>The haze around a gout - the air it is heating, not the fire.</summary>
     private static readonly Color FlameDeepTint = new(0xd9, 0x4b, 0x12);
+
+    /// <summary>
+    /// The dark edge under a flame.
+    /// </summary>
+    /// <remarks>
+    /// IT EXISTS BECAUSE THE GROUND IS ORANGE. The Scrapyard's floor is rust, and an orange flame
+    /// on rust has almost no contrast - half of why the DCSS tiles read as a smudge. A dark rim
+    /// behind the tongue separates it from the ground the way a keyline does, without being one.
+    /// </remarks>
+    private static readonly Color FlameEdgeTint = new(0x4a, 0x14, 0x05);
+
+    /// <summary>How long a gout is drawn, in world units.</summary>
+    private const double GoutLen = 15;
+
+    /// <summary>The haze, as a multiple of the gout. Wide and faint: it is the air, not the fire.</summary>
+    private const double GoutHazeMul = 2.4;
 
     /// <summary>The centre of a gout, near-white. What makes the rest read as burning.</summary>
     private static readonly Color FlameCoreTint = new(0xff, 0xf0, 0xc4);
@@ -2366,8 +2430,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
     }
 
-    /// <summary>Frames in the burn loop. See tools/make-burn.mjs.</summary>
-    private const int BurnFrames = 3;
+    /// <summary>
+    /// POSES in the burn loop - FOUR, out of two textures.
+    /// </summary>
+    /// <remarks>
+    /// The odd bit picks the texture and the high bit mirrors it. A flame is asymmetric enough
+    /// that its mirror reads as a different tongue rather than the same one flipped, so this
+    /// doubles the loop for no extra bytes and no extra texture binds. See tools/make-plasma.mjs.
+    /// </remarks>
+    private const int BurnPoses = 4;
 
     /// <summary>Frames a second. Fast enough to flicker, slow enough to read as three poses.</summary>
     private const double BurnFps = 9;
@@ -2381,7 +2452,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// number produces. At 1.05 the flame came out about five pixels tall and could not be seen
     /// at all, which is not restraint, it is absence.
     /// </remarks>
-    private const double BurnScale = 1.9;
+    private const double BurnScale = 1.55;
 
     /// <summary>
     /// Phase offset per unit of spawn id, in frames. Awkward on purpose, so consecutive ids do not
@@ -2426,34 +2497,49 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         for (int i = 0; i < 2; i++)
         {
             double phase = _clockSec * BurnFps + stagger + i * 0.37;
-            int frame = (int)System.Math.Floor(phase) % BurnFrames;
-            if (frame < 0) frame += BurnFrames;
 
-            var tex = _sprites.Get($"burn_{frame}");
+            // FOUR POSES OUT OF TWO TEXTURES: the odd bit picks the file, the high bit mirrors it.
+            int pose = (int)System.Math.Floor(phase) % BurnPoses;
+            if (pose < 0) pose += BurnPoses;
+
+            var tex = _sprites.Get($"burn_{pose & 1}");
             if (tex is null) return;
+            var flip = pose >= 2 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
             // A little bob, out of phase between the two, so neither the pair nor the loop is
             // something the eye can lock onto.
             double bob = System.Math.Sin(phase * System.Math.PI * 0.9 + i * 2.1) * radius * 0.09;
+            double fx = x + (i == 0 ? -1 : 1) * radius * 0.42;
+            double fy = y - radius * 0.72 + bob;
 
-            // THREE FRAMES ALONE WERE NOT ENOUGH. The DCSS tiles differ mostly in their outline, so
-            // cycling them at this size read as a shape being swapped rather than as fire moving.
-            // Two continuous motions on top of the cycle fix that, and both are things a flame
-            // actually does: it BREATHES, taller and thinner then shorter and wider (the axes
-            // counter-phased, so the tongue stretches rather than merely swelling), and it LEANS,
-            // a slow sway either side of upright. Both run on different periods from the cycle and
-            // from each other, so the loop never lands in the same pose twice.
+            // TWO CONTINUOUS MOTIONS ON TOP OF THE POSE CYCLE, because a cycle alone reads as a
+            // shape being swapped rather than as fire moving. Both are things a flame does: it
+            // BREATHES, taller and thinner then shorter and wider (the axes counter-phased, so the
+            // tongue stretches rather than merely swelling), and it LEANS. Different periods from
+            // the cycle and from each other, so the loop never lands in the same pose twice.
             double breathe = System.Math.Sin(phase * BurnBreathe + i * 1.3) * BurnBreatheAmt;
             double size = radius * BurnScale;
             double aspect = (double)tex.Width / tex.Height;
-            BlitAbout(tex,
-                      x + (i == 0 ? -1 : 1) * radius * 0.42,
-                      y - radius * 0.72 + bob,
-                      size * aspect * (1 - breathe),
-                      size * (1 + breathe),
-                      System.Math.Sin(phase * BurnSway + i * 2.6) * BurnSwayAmt,
-                      Color.White,
-                      0.5);
+            double rot = System.Math.Sin(phase * BurnSway + i * 2.6) * BurnSwayAmt;
+
+            // THREE LAYERS OF ONE SILHOUETTE, which is what the white Kenney art buys that the
+            // coloured DCSS tiles could not: a TEMPERATURE GRADIENT out of a shape with no colour.
+            // The edge separates the flame from the rust ground; the body is its own orange; the
+            // core is pale, small and pushed DOWN, because a flame is hottest at its base.
+            for (int L = 0; L < 3; L++)
+            {
+                (double scale, double drop, Color tint, float alpha) = L switch
+                {
+                    0 => (1.14, 0.02, FlameEdgeTint, 0.5f),
+                    1 => (1.0, 0.0, FlameTint, 0.96f),
+                    _ => (0.52, 0.14, FlameCoreTint, 0.9f),
+                };
+
+                BlitRotated(tex, fx, fy + size * drop,
+                            size * aspect * (1 - breathe) * scale,
+                            size * (1 + breathe) * scale,
+                            rot, tint * alpha, flip);
+            }
         }
     }
 
@@ -2566,10 +2652,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 VisualId.MissileLong => ("missile", RenderTables.MissileDrawLen * 1.15, 0.72),
                 VisualId.Slug => ("slug", RenderTables.SlugDrawLen, 1.0),
                 VisualId.Plasma => ("shell", RenderTables.ShellDrawLen * 1.2, 1.2),
-                // A GOUT OF FIRE. The body only - the haze behind it and the white core over it
-                // are drawn separately, below, because one tinted sprite cannot carry a
-                // temperature gradient and a flame without one is an orange pill.
-                VisualId.Flame => ("slug", RenderTables.SlugDrawLen * 1.5, 1.2),
+                // A GOUT OF FIRE, with art of its own. It was the MACHINE GUN ROUND tinted
+                // orange, and no amount of stacking makes a capsule read as fire.
+                VisualId.Flame => ("gout", GoutLen, 1.0),
                 // A GLOB, not a round: no elongation, because it is falling rather than flying.
                 VisualId.Sludge => ("slug", RenderTables.SlugDrawLen * 1.3, 1.0),
                 _ => ("shell", RenderTables.ShellDrawLen, 1.0),
@@ -2596,13 +2681,22 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             {
                 double flick = 1 + System.Math.Sin(_clockSec * FlameFlickerHz + p.SpawnId[d] * 1.7)
                                    * FlameFlickerAmt;
-                Disc(x, y, p.Radius[d] * 1.8 * flick, FlameDeepTint * 0.3f);
-                Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide * flick,
-                     len * flick, angle, tint);
+                double gout = len * flick;
+                double aspect = (double)tex.Width / tex.Height;
+
+                var haze = _sprites.Get("gout_haze");
+                if (haze is not null)
+                {
+                    double hz = gout * GoutHazeMul;
+                    Blit(haze, x, y, hz * ((double)haze.Width / haze.Height), hz, angle,
+                         FlameDeepTint * 0.34f);
+                }
+
+                Blit(tex, x, y, gout * aspect, gout, angle, tint);
                 // Counter-phased against the body, so the core swells as the flame narrows. A core
                 // breathing WITH its own flame is the same pulse drawn twice.
-                Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * 0.48 * (2 - flick),
-                     len * 0.48 * (2 - flick), angle, FlameCoreTint);
+                double core = len * 0.5 * (2 - flick);
+                Blit(tex, x, y, core * aspect, core, angle, FlameCoreTint);
                 continue;
             }
 
@@ -3336,13 +3430,37 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         double pulse = (System.Math.Sin(_clockSec * ShieldPulseHz * System.Math.PI * 2) + 1) * 0.5;
         float alpha = (float)(ShieldAlphaMin + (ShieldAlphaMax - ShieldAlphaMin) * pulse);
 
-        double inner = ShieldRimRadius;
         double outer = ShieldRimRadius + (layers - 1) * ShieldRimStep;
 
-        // The haze. Two fills rather than one, the inner brighter, so it falls off toward the rim
-        // instead of ending at the hard edge a single flat disc would.
-        Disc(px, py, inner, ShieldRimTint * (ShieldHazeAlpha * alpha));
-        Disc(px, py, inner * 0.62, ShieldRimTint * (ShieldHazeAlpha * 0.8f * alpha));
+        // ---- THE BODY ----------------------------------------------------------------------
+        //
+        // A SWIRL, NOT A FLAT DISC. The haze was two translucent circles, which is honest as "the
+        // field has an inside" and says nothing about what that inside is DOING - a fill has no
+        // motion in it, so the whole volume sat still while only the rims turned.
+        //
+        // These three Kenney arcs are a loop, and being a spiral they also give free rotation: the
+        // frame cycle changes the SHAPE and the spin moves it, on different clocks, so the body
+        // never repeats a pose.
+        //
+        // TWO COPIES COUNTER-ROTATING, the same trick the rims use one layer out and the cheapest
+        // way to stop a single turning spiral reading as a wheel.
+        //
+        // THE COLOUR WALKS between three blues rather than sitting on one. A field on a single
+        // tint is a decal; one that shifts is being fed by something.
+        int frame = (int)(_clockSec * ShieldTwirlFps) % ShieldTwirlFrames;
+        if (frame < 0) frame += ShieldTwirlFrames;
+        var walk = ShieldColour(_clockSec);
+
+        for (int i = 0; i < 2; i++)
+        {
+            var body = _sprites.Get($"twirl_{(frame + i) % ShieldTwirlFrames}");
+            if (body is null) break;
+            double size = outer * 2 * (i == 0 ? 1 : 0.72);
+            BlitRotated(body, px, py, size, size,
+                        _clockSec * ShieldTwirlSpin * (i == 0 ? 1 : -0.62),
+                        walk * (alpha * (i == 0 ? ShieldBodyAlpha : ShieldBodyAlpha * 0.7f)),
+                        SpriteEffects.None);
+        }
 
         for (int i = 0; i < layers; i++)
         {
@@ -3360,7 +3478,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
             for (int a = 0; a < arcs; a++)
             {
-                Arc(px, py, r, ShieldRimWidth, ShieldRimTint * layerAlpha, spin + a * step, sweep);
+                // The same walking colour the body is on, so the field reads as ONE thing being
+                // fed rather than as rings drawn over an unrelated swirl.
+                Arc(px, py, r, ShieldRimWidth, walk * layerAlpha, spin + a * step, sweep);
             }
         }
 

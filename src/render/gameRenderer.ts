@@ -131,7 +131,7 @@ const GLOW_SPRITES = 96;
  * burning at once - the card's own unlock asks for thirty. 320 is comfortably past the peak a
  * maxed thrower reaches and still one small pool.
  */
-const FLAME_SPRITES = 320;
+const FLAME_SPRITES = 560;
 
 /**
  * Toxic Sludge's globs in flight. One per throw, a 0.45 s flight and a 0.9 s clock, so a single
@@ -143,14 +143,20 @@ const SLUDGE_SHELLS = 32;
 /** How wide a glob is drawn, in world units. Square: it is a blob, not a round. */
 const SLUDGE_GLOB_SIZE = 11;
 
-/** Frames in the burn loop. See tools/make-burn.mjs. */
-const BURN_FRAMES = 3;
+/**
+ * POSES in the burn loop - FOUR, out of two textures.
+ *
+ * The odd bit picks the texture and the high bit mirrors it. A flame is asymmetric enough that its
+ * mirror reads as a different tongue rather than the same one flipped, so this doubles the loop for
+ * no extra bytes and no extra texture binds. See tools/make-plasma.mjs.
+ */
+const BURN_POSES = 4;
 
 /** Frames a second the loop runs at. Fast enough to flicker, slow enough to read as three poses. */
 const BURN_FPS = 9;
 
-/** The source tile's size, in px. All three frames are 32x32 DCSS tiles. */
-const BURN_SRC = 32;
+/** The baked tile's size, in px. See tools/make-plasma.mjs. */
+const BURN_SRC = 128;
 
 /**
  * Flame TILE height as a multiple of the body's radius.
@@ -160,7 +166,7 @@ const BURN_SRC = 32;
  * number produces. At 1.05 - which is what "small on purpose" first meant - the flame came out
  * about five pixels tall and could not be seen at all, which is not restraint, it is absence.
  */
-const BURN_SCALE = 1.9;
+const BURN_SCALE = 1.55;
 
 /**
  * Phase offset per unit of spawnId, in frames.
@@ -182,6 +188,7 @@ const BURN_SWAY = 0.63;
 
 /** How far it leans either side of upright, in radians. */
 const BURN_SWAY_AMT = 0.16;
+
 /** DRONE_CAP is 8. Sixteen is slack for a second drone source. */
 const DRONE_SPRITES = 16;
 /**
@@ -315,9 +322,6 @@ const SHIELD_ALPHA_MAX = 0.8;
 /** Breaths per second. Slow: this is ambient state, not an alarm. */
 const SHIELD_PULSE_HZ = 0.7;
 
-/** The haze filling the field. Faint: it must not hide what the mech is standing on. */
-const SHIELD_HAZE_ALPHA = 0.09;
-
 /** Arcs in the innermost layer. Each layer out gets one more, so they never line up. */
 const SHIELD_ARCS = 5;
 
@@ -335,6 +339,64 @@ const SHIELD_SWEEP_ARC = 0.55;
 
 /** The sweep's own colour: the rim's blue run almost to white, so it reads as the brightest part. */
 const SHIELD_SWEEP_TINT = 0xcfe8ff;
+
+/** Sprites the field's body costs. Two counter-rotating copies, and one shield on screen. */
+const SHIELD_BODY_SPRITES = 4;
+
+/** The baked tile's size, in px. See tools/make-plasma.mjs. */
+const SHIELD_TWIRL_SRC = 128;
+
+/** Frames in the twirl loop. */
+const SHIELD_TWIRL_FRAMES = 3;
+
+/** How fast the loop plays. Slow: the SHAPE changing is a texture swap and pops if it is quick. */
+const SHIELD_TWIRL_FPS = 5;
+
+/** Radians a second the body turns. The second copy runs back the other way at 0.62 of it. */
+const SHIELD_TWIRL_SPIN = 0.5;
+
+/** How strongly the body reads. Additive, so this is well under 1 or the mech disappears. */
+const SHIELD_BODY_ALPHA = 0.34;
+
+/**
+ * THE THREE BLUES THE FIELD WALKS BETWEEN, in loop order.
+ *
+ * A field on ONE tint is a decal; one that shifts is being fed by something. Deep, then the rim's
+ * own blue, then a pale cyan - so it reads as charge cycling rather than as a colour animation for
+ * its own sake.
+ *
+ * THE TOP STOP IS NOT WHITE, and it was. THE GROUND IS ORANGE: a near-white field over rust has
+ * almost no contrast, so at the top of every cycle the whole thing faded out and came back - which
+ * reads as the shield failing rather than as it being charged. Cyan holds against orange, which is
+ * most of why it is the colour. The sweep keeps the near-white, and is the only part that has it -
+ * one small bright arc can afford to disappear for a moment; the field cannot.
+ */
+const SHIELD_COLOURS: readonly number[] = Object.freeze([0x1c4fa8, 0x4fa8ff, 0x7fd4ff]);
+
+/** How long one full trip round SHIELD_COLOURS takes, in seconds. */
+const SHIELD_COLOUR_SEC = 3.4;
+
+/**
+ * The field's colour right now: SHIELD_COLOURS, lerped in RGB.
+ *
+ * IN RGB AND NOT IN ANYTHING BETTER, deliberately. The three stops are all blues of increasing
+ * lightness, so the straight-line path between them stays blue - the muddy midpoint that makes RGB
+ * lerping a bad habit only happens between hues, and there are none here.
+ */
+function shieldColour(clock: number): number {
+  const n = SHIELD_COLOURS.length;
+  const t = ((clock / SHIELD_COLOUR_SEC) % 1) * n;
+  const i = Math.floor(t);
+  const f = t - i;
+  const a = SHIELD_COLOURS[i % n];
+  const b = SHIELD_COLOURS[(i + 1) % n];
+  const mix = (shift: number): number => {
+    const ca = (a >> shift) & 0xff;
+    const cb = (b >> shift) & 0xff;
+    return Math.round(ca + (cb - ca) * f) & 0xff;
+  };
+  return (mix(16) << 16) | (mix(8) << 8) | mix(0);
+}
 
 /**
  * ARTILLERY STRIKE MARKERS.
@@ -363,14 +425,46 @@ const FLAME_TINT = 0xff8a3c;
 /** The haze around a gout - the air it is heating, not the fire. */
 const FLAME_DEEP = 0xd94b12;
 
+/**
+ * The dark edge under a flame.
+ *
+ * IT EXISTS BECAUSE THE GROUND IS ORANGE. The Scrapyard's floor is rust, and an orange flame on
+ * rust has almost no contrast - which is half of why the DCSS tiles read as a smudge. A dark rim
+ * behind the tongue separates it from the ground the way a keyline does, without being a keyline.
+ */
+const FLAME_EDGE = 0x4a1405;
+
 /** The centre of a gout, near-white. What makes the rest read as burning. */
 const FLAME_CORE = 0xfff0c4;
+
+/**
+ * The three draws that make one flame, back to front. See the loop that reads it.
+ *
+ * `drop` is a fraction of the flame's height, pushing a layer DOWN toward the base - which is
+ * where fire is hottest, and the reason the core is not simply a smaller copy centred on the body.
+ */
+const BURN_LAYERS: readonly { scale: number; drop: number; tint: number; alpha: number }[] =
+  Object.freeze([
+    { scale: 1.14, drop: 0.02, tint: FLAME_EDGE, alpha: 0.5 },
+    { scale: 1, drop: 0, tint: FLAME_TINT, alpha: 0.96 },
+    { scale: 0.52, drop: 0.14, tint: FLAME_CORE, alpha: 0.9 },
+  ]);
+
 
 /** How fast a gout breathes, in radians a second. */
 const FLAME_FLICKER_HZ = 15;
 
 /** How far it breathes, as a fraction of its size. Small - a flame flickers, it does not throb. */
 const FLAME_FLICKER_AMT = 0.16;
+
+/** The baked tile's size, in px. See tools/make-plasma.mjs. */
+const GOUT_SRC = 128;
+
+/** How long a gout is drawn, in world units. */
+const GOUT_LEN = 15;
+
+/** The haze, as a multiple of the gout. Wide and faint: it is the air, not the fire. */
+const GOUT_HAZE_MUL = 2.4;
 /** Toxic Sludge, glob and pool alike - one colour so the two read as the same substance. */
 const SLUDGE_TINT = 0x8ce03a;
 
@@ -664,6 +758,14 @@ export class GameRenderer {
   /** The flames on burning bodies. See BURN_* and drawEnemies. */
   private readonly flames: SpritePool;
   /**
+   * THE ENERGY SHIELD'S BODY, as sprites rather than Graphics geometry.
+   *
+   * The rest of the field is arcs and fills, which a Graphics draws happily; the body is now a
+   * TEXTURE, and a Graphics cannot draw one. Two draws, and they sit in the player layer beside
+   * the rim so the whole field stays one object in the z-order.
+   */
+  private readonly shieldBody: SpritePool;
+  /**
    * TOXIC SLUDGE'S GLOBS, AND ONLY THOSE. A pool of its own because it lives at a different DEPTH
    * from every other round in the game - inside the player layer, between the legs and the hull.
    * See where it is added for why.
@@ -779,6 +881,12 @@ export class GameRenderer {
       texture: tex.slug,
       label: 'sludge-shells',
     });
+    this.shieldBody = new SpritePool({
+      capacity: SHIELD_BODY_SPRITES,
+      texture: tex.twirl[0],
+      blendMode: 'add',
+      label: 'shield-body',
+    });
 
     // BETWEEN THE LEGS AND THE HULL, which is the one place a thrown glob looks thrown.
     //
@@ -797,6 +905,8 @@ export class GameRenderer {
       this.sludgeShells.container,
       this.mech,
       ...this.barrels,
+      // The field's body UNDER its rims, so the arcs read as the edge of the thing the body fills.
+      this.shieldBody.container,
       this.shieldRim,
     );
 
@@ -1818,33 +1928,49 @@ export class GameRenderer {
       if (p.burnLeft[d] > 0) {
         const stagger = p.spawnId[d] * BURN_STAGGER;
         for (let i = 0; i < 2; i++) {
-          const f = flames.acquire();
-          if (f === undefined) break;
           const phase = this.clock * BURN_FPS + stagger + i * 0.37;
-          const frame = Math.floor(phase) % BURN_FRAMES;
-          f.texture = this.tex.burn[frame < 0 ? frame + BURN_FRAMES : frame];
+
+          // FOUR POSES OUT OF TWO TEXTURES: the odd bit picks the file, the high bit mirrors it.
+          let pose = Math.floor(phase) % BURN_POSES;
+          if (pose < 0) pose += BURN_POSES;
+          const tex = this.tex.burn[pose & 1];
+          const mirror = pose >= 2 ? -1 : 1;
 
           // A little bob, out of phase between the two, so neither the pair nor the loop is
           // something the eye can lock onto.
           const bob = Math.sin(phase * Math.PI * 0.9 + i * 2.1) * radius * 0.09;
-          f.position.set(x + (i === 0 ? -1 : 1) * radius * 0.42, y - radius * 0.72 + bob);
+          const fx = x + (i === 0 ? -1 : 1) * radius * 0.42;
+          const fy = y - radius * 0.72 + bob;
 
-          // THREE FRAMES ALONE WERE NOT ENOUGH. The DCSS tiles differ mostly in their outline, so
-          // cycling them at this size read as a shape being swapped rather than as fire moving.
-          // Two continuous motions on top of the cycle fix that, and both are the kind of thing a
-          // flame actually does:
-          //
-          //   IT BREATHES, taller and thinner then shorter and wider - the axes counter-phased, so
-          //   the tongue stretches instead of merely getting bigger;
-          //   IT LEANS, a slow sway either side of upright.
-          //
-          // Both run FASTER than the frame cycle and on different periods, so the loop never lands
-          // in the same pose twice and there is nothing for the eye to lock onto.
+          // TWO CONTINUOUS MOTIONS ON TOP OF THE POSE CYCLE, because a cycle alone reads as a
+          // shape being swapped rather than as fire moving. Both are things a flame does: it
+          // BREATHES, taller and thinner then shorter and wider (the axes counter-phased, so the
+          // tongue stretches rather than merely swelling), and it LEANS. Both run on different
+          // periods from the cycle and from each other, so the loop never lands in the same pose
+          // twice.
           const breathe = Math.sin(phase * BURN_BREATHE + i * 1.3) * BURN_BREATHE_AMT;
           const size = radius * BURN_SCALE;
-          f.scale.set((size * (1 - breathe)) / BURN_SRC, (size * (1 + breathe)) / BURN_SRC);
-          f.rotation = Math.sin(phase * BURN_SWAY + i * 2.6) * BURN_SWAY_AMT;
-          f.alpha = 0.95;
+          const sx = ((size * (1 - breathe)) / BURN_SRC) * mirror;
+          const sy = (size * (1 + breathe)) / BURN_SRC;
+          const rot = Math.sin(phase * BURN_SWAY + i * 2.6) * BURN_SWAY_AMT;
+
+          // THREE LAYERS OF ONE SILHOUETTE, which is what the white Kenney art buys that the
+          // coloured DCSS tiles could not: a TEMPERATURE GRADIENT out of a shape with no colour.
+          //
+          //   the EDGE, dark and a little larger, which separates the flame from the rust ground
+          //   it is standing on - see FLAME_EDGE;
+          //   the BODY, the flame's own orange;
+          //   the CORE, pale and small and pushed DOWN, because a flame is hottest at its base.
+          for (const layer of BURN_LAYERS) {
+            const f = flames.acquire();
+            if (f === undefined) break;
+            f.texture = tex;
+            f.position.set(fx, fy + size * layer.drop);
+            f.rotation = rot;
+            f.scale.set(sx * layer.scale, sy * layer.scale);
+            f.tint = layer.tint;
+            f.alpha = layer.alpha;
+          }
         }
       }
 
@@ -2046,8 +2172,13 @@ export class GameRenderer {
    */
   private drawShieldRim(layers: number, px: number, py: number): void {
     const g = this.shieldRim;
+    // BEGUN UNCONDITIONALLY, and ended below whether or not anything was acquired - a pool that is
+    // begun and not ended keeps last frame's sprites on screen, so a shield that drops to zero
+    // layers would leave its body hanging there forever.
+    this.shieldBody.begin();
     if (layers <= 0) {
       g.visible = false;
+      this.shieldBody.end();
       return;
     }
 
@@ -2061,13 +2192,36 @@ export class GameRenderer {
     const pulse = (Math.sin(clock * SHIELD_PULSE_HZ * Math.PI * 2) + 1) * 0.5;
     g.alpha = SHIELD_ALPHA_MIN + (SHIELD_ALPHA_MAX - SHIELD_ALPHA_MIN) * pulse;
 
-    const inner = SHIELD_RIM_RADIUS;
     const outer = SHIELD_RIM_RADIUS + (layers - 1) * SHIELD_RIM_STEP;
 
-    // The haze. Two fills rather than one, the inner brighter, so it falls off toward the rim
-    // instead of ending at a hard edge the way a single flat disc would.
-    g.circle(0, 0, inner).fill({ color: SHIELD_RIM_TINT, alpha: SHIELD_HAZE_ALPHA });
-    g.circle(0, 0, inner * 0.62).fill({ color: SHIELD_RIM_TINT, alpha: SHIELD_HAZE_ALPHA * 0.8 });
+    // ---- THE BODY --------------------------------------------------------------------------
+    //
+    // A SWIRL, NOT A FLAT DISC. The haze was two translucent circles, which is honest as "the
+    // field has an inside" and says nothing about what that inside is DOING - a fill has no
+    // motion in it, so the whole volume sat still while only the rims turned.
+    //
+    // These three Kenney arcs are a loop, and being a spiral they also give free rotation: the
+    // frame cycle changes the SHAPE and the spin moves it, on different clocks, so the body never
+    // repeats a pose. Additive, because a field is light and light adds.
+    //
+    // TWO COPIES COUNTER-ROTATING, which is the same trick the rims use one layer out and the
+    // cheapest way to stop a single turning spiral reading as a wheel.
+    //
+    // THE COLOUR WALKS between three blues rather than sitting on one. A field on a single tint is
+    // a decal; one that shifts is being fed by something.
+    const frame = Math.floor(clock * SHIELD_TWIRL_FPS) % SHIELD_TWIRL_FRAMES;
+    const tint = shieldColour(clock);
+    for (let i = 0; i < 2; i++) {
+      const b = this.shieldBody.acquire();
+      if (b === undefined) break;
+      b.texture = this.tex.twirl[(frame + i) % SHIELD_TWIRL_FRAMES];
+      b.position.set(px, py);
+      b.rotation = clock * SHIELD_TWIRL_SPIN * (i === 0 ? 1 : -0.62);
+      const size = outer * 2 * (i === 0 ? 1 : 0.72);
+      b.scale.set(size / SHIELD_TWIRL_SRC);
+      b.tint = tint;
+      b.alpha = g.alpha * (i === 0 ? SHIELD_BODY_ALPHA : SHIELD_BODY_ALPHA * 0.7);
+    }
 
     for (let i = 0; i < layers; i++) {
       const r = SHIELD_RIM_RADIUS + i * SHIELD_RIM_STEP;
@@ -2085,7 +2239,9 @@ export class GameRenderer {
         const from = spin + a * step;
         g.arc(0, 0, r, from, from + sweep).stroke({
           width: SHIELD_RIM_WIDTH,
-          color: SHIELD_RIM_TINT,
+          // The same walking colour the body is on, so the field reads as ONE thing being fed
+          // rather than as rings drawn over an unrelated swirl.
+          color: tint,
           alpha: 0.55 + 0.45 * (i / Math.max(1, layers - 1)),
         });
       }
@@ -2100,6 +2256,8 @@ export class GameRenderer {
       color: SHIELD_SWEEP_TINT,
       alpha: 0.9,
     });
+
+    this.shieldBody.end();
   }
 
   private drawProjectiles(world: World, alpha: number): void {
@@ -2205,26 +2363,31 @@ export class GameRenderer {
         const flick =
           1 + Math.sin(this.clock * FLAME_FLICKER_HZ + p.spawnId[d] * 1.7) * FLAME_FLICKER_AMT;
 
-        s.texture = this.tex.slug;
-        s.scale.set(SLUG_SCALE * 1.5 * flick);
+        // ART OF ITS OWN NOW. It was `slug` - the MACHINE GUN ROUND - tinted orange and drawn
+        // three times, and no amount of stacking makes a capsule read as fire. `gout` is a
+        // compact teardrop with a frayed edge, which is the one shape in the Kenney pack that
+        // reads as a lump of fire moving rather than as a flash at a muzzle.
+        const gout = GOUT_LEN * flick;
+        s.texture = this.tex.gout;
+        s.scale.set(gout / GOUT_SRC);
 
         const haze = shells.acquire();
         if (haze !== undefined) {
-          haze.texture = this.tex.fxFlash;
+          haze.texture = this.tex.goutHaze;
           haze.position.set(x, y);
           haze.rotation = s.rotation;
-          haze.scale.set((p.radius[d] * 3.6 * flick) / PARTICLE_SRC);
+          haze.scale.set((gout * GOUT_HAZE_MUL) / GOUT_SRC);
           haze.tint = FLAME_DEEP;
-          haze.alpha = 0.3;
+          haze.alpha = 0.34;
         }
         const core = shells.acquire();
         if (core !== undefined) {
-          core.texture = this.tex.slug;
+          core.texture = this.tex.gout;
           core.position.set(x, y);
           core.rotation = s.rotation;
           // Counter-phased against the body, so the core swells as the flame narrows. A core that
           // breathed WITH its own flame would just be the same pulse drawn twice.
-          core.scale.set(SLUG_SCALE * 0.72 * (2 - flick));
+          core.scale.set((GOUT_LEN * 0.5 * (2 - flick)) / GOUT_SRC);
           core.tint = FLAME_CORE;
           core.alpha = 0.95;
         }

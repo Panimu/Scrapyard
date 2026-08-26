@@ -46,6 +46,21 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T15:50Z',
+    title: 'FIRE THAT LOOKS LIKE FIRE',
+    notes: [
+      'The Plasma Thrower’s bolt has art of its own instead of being the machine-gun round tinted orange. It is a gout with a dark edge, a flame body and a white-hot centre, and it flickers.',
+      'A burning enemy wears a proper tongue of flame that leans and breathes, on a four-pose loop.',
+    ],
+  },
+  {
+    at: '2026-08-26T15:50Z',
+    title: 'THE ENERGY SHIELD SWIRLS',
+    notes: [
+      'The field’s body is a slow counter-rotating swirl rather than a flat wash, and its colour walks between three blues — so it reads as something being fed rather than a ring painted on the ground.',
+    ],
+  },
+  {
     at: '2026-08-26T14:53Z',
     title: 'THE PLASMA THROWER SPREADS FIRE',
     notes: [

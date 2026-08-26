@@ -71,7 +71,7 @@
     "levelart": "node tools/make-level-art.mjs",
     "sheep": "node tools/make-sheep.mjs",
     "floor": "node tools/make-floor.mjs",
-    "burn": "node tools/make-burn.mjs",
+    "plasma": "node tools/make-plasma.mjs",
     "icons": "tsx tools/make-icons.mjs",
     "titlefont": "node tools/make-title-art.mjs",
     "uifont": "node tools/make-ui-font.mjs",

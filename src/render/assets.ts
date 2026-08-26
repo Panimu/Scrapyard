@@ -346,10 +346,17 @@ export interface GameTextures {
   /** The drone, drawn by `npm run drone`. Circular on purpose - see tools/make-drone.mjs. */
   readonly drone: Texture;
   /**
-   * THE THREE FLAME FRAMES a burning body wears, in animation order. Vendored DCSS tiles copied
-   * through `npm run burn` - see tools/make-burn.mjs for why they are not drawn.
+   * THE TWO FLAME POSES a burning body wears. Kenney particles, baked by `npm run plasma`.
+   *
+   * TWO FILES, FOUR FRAMES: the renderer mirrors both horizontally for the other two poses. See
+   * tools/make-plasma.mjs.
    */
   readonly burn: readonly Texture[];
+  /** The Plasma Thrower's bolt, and the heat around it. Also `npm run plasma`. */
+  readonly gout: Texture;
+  readonly goutHaze: Texture;
+  /** THE ENERGY SHIELD'S BODY: three sweeping arcs, played as a loop. Also `npm run plasma`. */
+  readonly twirl: readonly Texture[];
   /**
    * MOSSY MAYHEM'S WALL SEGMENTS. Four sets, all baked by `npm run walls`.
    *
@@ -540,7 +547,8 @@ export async function loadGameTextures(
   for (let i = 0; i < 4; i++) keys.push(`cons_coin${i}`);
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
-  keys.push('burn_0', 'burn_1', 'burn_2');
+  keys.push('burn_0', 'burn_1', 'gout', 'gout_haze');
+  keys.push('twirl_0', 'twirl_1', 'twirl_2');
   // Mossy Mayhem's walls. `mwall_t<col><row>` is the autotile; see GameTextures.wallTiles.
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) keys.push(`mwall_t${col}${row}`);
@@ -669,7 +677,10 @@ export async function loadGameTextures(
     fxBurst: get('fx_burst'),
     fxSparkle: get('fx_sparkle'),
     fxTrail: get('fx_trail'),
-    burn: [get('burn_0'), get('burn_1'), get('burn_2')],
+    burn: [get('burn_0'), get('burn_1')],
+    gout: get('gout'),
+    goutHaze: get('gout_haze'),
+    twirl: [get('twirl_0'), get('twirl_1'), get('twirl_2')],
   };
 }
 
