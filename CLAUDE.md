@@ -212,6 +212,19 @@ deploy workflow checks out with `fetch-depth: 0` because a shallow clone would r
 
 ## Commands
 
+THE DESKTOP BUILD HAS ITS OWN LAUNCHER, `play.bat`, in the repository root:
+
+```
+play                rebuild the MonoGame build (Debug) and run it
+play release        the same, in Release
+play build          rebuild only, do not launch
+```
+
+It closes any running instance FIRST, because a running `Scrapyard.exe` holds `Scrapyard.Core.dll`
+open and MSBuild's copy step then fails with MSB3021 after ten retries - which looks like a
+compile error and is not one. It also refuses to launch when the build fails, rather than starting
+whatever was already sitting in `bin`, which would look like the change simply did nothing.
+
 ```
 npm run dev         vite dev server, open the printed LAN URL on a phone
 npm run typecheck   app config AND core config - both must pass
