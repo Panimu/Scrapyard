@@ -126,15 +126,20 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // then stopped too, when the Cannon gained an acquisition window narrower than its reach: the
   // gun declines targets it used to take, so the bot fights in a different place.
   //
-  // 0x23e7f4d6 is the current one - 530 kills, one chest, two drones built, dies at tick 12577.
-  // It carries the DRONE coverage as well, which is worth having in the same run.
+  // 0x23e7f4d6 followed it and lasted one commit - the Plasma Thrower's bolt slowing to 120 and
+  // gaining pierce moved the bot again. THREE REPLACEMENTS IN AS MANY DAYS is the honest character
+  // of this: it is a lucky-walk seed, and every change to what the guns do reshuffles the luck.
   //
-  // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the first hits, so
-  // the search is reproducible rather than a number somebody remembered. The others it turned up,
-  // if this one ever stops: 0x93f4ad9d, 0xc21f6e87, 0x6056e838, 0x776c48ad, 0x2cb922d3.
+  // 0x6056e838 is the current one - 466 kills, one chest, dies at tick 12406. It builds no drones,
+  // which does not matter: `scrapyard-h0` carries the drone coverage independently.
+  //
+  // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the hits, so the
+  // search is reproducible rather than a number somebody remembered. Still opening a chest as of
+  // this commit, if this one stops: 0xc21f6e87, 0x776c48ad, 0x2cb922d3. (0x93f4ad9d no longer
+  // does - check a candidate rather than trusting the list.)
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x23e7f4d6,
+    seed: 0x6056e838,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

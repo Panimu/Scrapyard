@@ -9,7 +9,7 @@
  * 1372 rows of HTML. Sorting and filtering are the whole point of a table this size, and shipping
  * the numbers once lets the page re-sort without a regenerate.
  */
-import { WEAPON_CATALOG } from '../src/core/index.js';
+import { WEAPON_CATALOG, type WeaponStatKey } from '../src/core/index.js';
 
 export interface SweepPerWeapon {
   weapon: string;
@@ -51,13 +51,120 @@ export interface SweepMeta {
   weapons: { id: string; name: string }[];
 }
 
+/**
+ * ONE WEAPON'S NUMBERS AS AUTHORED, at tier 1 and again at tier 7.
+ *
+ * TIER 7 WITHOUT PASSIVES, because that is the weapon's OWN ladder. A tier on a weapon card is the
+ * weapon; the passive layer is a separate thing that lifts all fourteen at once, and folding it in
+ * here would mean the table said something different about a gun depending on what else the run
+ * happened to be holding. The measured tables below DO include the passives - that is what they
+ * are measuring - and these do not, on purpose.
+ */
+interface CatalogStat {
+  id: string;
+  name: string;
+  rule: string;
+  kind: string;
+  damage: number;
+  damage7: number;
+  cooldown: number;
+  cooldown7: number;
+  /** damage x projectileCount / cooldown - what one gun puts out with the trigger held down. */
+  burst: number;
+  burst7: number;
+  range: number;
+  range7: number;
+  /** The reach it will actually PICK a target in. Differs from range on the Cannon alone. */
+  acquire7: number;
+  speed: number;
+  pierce7: number;
+  blast7: number;
+  shots7: number;
+  heat: number;
+  magazine7: number;
+  reload7: number;
+  /** "0.9x for 3s" for a gun that ignites, "" for the twelve that do not. */
+  burn: string;
+  puddle: string;
+}
+
+/**
+ * Sums a weapon's own ladder up to tier 7.
+ *
+ * ADDITIVE AND CUMULATIVE, which is the rule `resolveWeaponStats` follows: `perLevel[i]` applies at
+ * tier i+2, so tier 7 is the base plus the first six rungs. Tier 8 is deliberately excluded - an
+ * ascension is the one thing in this game meant to be found, and the Scrapopedia does not mention
+ * it either.
+ */
+function atTier7(def: (typeof WEAPON_CATALOG)[number], key: WeaponStatKey): number {
+  let v = def.base[key];
+  for (let i = 0; i < 6 && i < def.perLevel.length; i++) {
+    const d = def.perLevel[i][key];
+    if (d !== undefined) v += d;
+  }
+  return v;
+}
+
+function catalogStats(): CatalogStat[] {
+  const RULE: Record<string, string> = {
+    'highest-hp': 'strongest',
+    nearest: 'nearest',
+    'lowest-hp': 'weakest',
+    densest: 'thickest crowd',
+    'cone-densest': 'thickest, in arc',
+    'cone-coldest': 'not yet burning',
+    'rear-cone': 'behind you',
+  };
+
+  return WEAPON_CATALOG.map((w) => {
+    const dmg = w.base.damage;
+    const dmg7 = atTier7(w, 'damage');
+    const cd = w.base.cooldown;
+    const cd7 = atTier7(w, 'cooldown');
+    const n = Math.max(1, w.base.projectileCount);
+    const n7 = Math.max(1, atTier7(w, 'projectileCount'));
+    const range7 = atTier7(w, 'range');
+    const burn = w.burn;
+    const pud = w.puddle;
+
+    return {
+      id: w.id,
+      name: w.name,
+      rule: RULE[w.targeting] ?? w.targeting,
+      kind: w.kind === 'beam' ? 'beam' : 'projectile',
+      damage: dmg,
+      damage7: dmg7,
+      cooldown: cd,
+      cooldown7: cd7,
+      // A BEAM HAS NO COOLDOWN - it fires every tick it is allowed to and heat is what stops it,
+      // so `damage` on a beam is already a RATE and dividing it by anything would be wrong.
+      burst: w.kind === 'beam' ? dmg : cd > 0 ? (dmg * n) / cd : 0,
+      burst7: w.kind === 'beam' ? dmg7 : cd7 > 0 ? (dmg7 * n7) / cd7 : 0,
+      range: w.base.range,
+      range7,
+      acquire7: w.acquireFrac === undefined ? range7 : range7 * w.acquireFrac,
+      speed: w.base.projectileSpeed,
+      pierce7: atTier7(w, 'pierce'),
+      blast7: atTier7(w, 'splashRadius'),
+      shots7: n7,
+      heat: w.base.heatPerSec,
+      magazine7: atTier7(w, 'ammoCapacity'),
+      reload7: atTier7(w, 'reloadTime'),
+      burn: burn === undefined ? '' : `${burn.dpsFrac}x for ${burn.seconds}s`,
+      puddle: pud === undefined ? '' : `${pud.dpsFrac}x for ${pud.seconds}s`,
+    };
+  });
+}
+
 export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): string {
   const names: Record<string, string> = {};
   for (const w of WEAPON_CATALOG) names[w.id] = w.name;
 
+  const stats = catalogStats();
+
   // `</script` INSIDE THE JSON WOULD END THE BLOCK EARLY. Nothing in a weapon id can produce one
   // today, and the day somebody names a weapon after an HTML tag is not the day to find that out.
-  const payload = JSON.stringify({ rows, meta, names }).replace(/<\//g, '<\\/');
+  const payload = JSON.stringify({ rows, meta, names, stats }).replace(/<\//g, '<\\/');
 
   return `<!doctype html>
 <html lang="en" data-theme="dark">
@@ -163,6 +270,8 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
   .bad { color: var(--bad); }
   .big { color: var(--ink); font-weight: 600; }
 
+  .to { color: var(--ink-faint); padding: 0 2px; }
+  .na { color: #3d4a5c; }
   .bar { display: block; height: 3px; border-radius: 2px; background: var(--accent); opacity: 0.5; margin-top: 3px; }
 
   .controls { display: flex; gap: 10px; align-items: center; margin: 0 0 12px; flex-wrap: wrap; }
@@ -193,6 +302,17 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
       this measures what the guns do for a competent-but-not-clever pilot.
     </div>
   </header>
+
+  <h2>The guns, as authored</h2>
+  <p class="lede">
+    Straight off the weapon catalog &mdash; not measured, not simulated. Where a number moves with
+    the weapon&rsquo;s own tier ladder it is shown as <b>tier&nbsp;1 &rarr; tier&nbsp;7</b>; where
+    it does not, it is shown once. <b>Passives are NOT included</b>: a tier on a weapon card is the
+    weapon, while the passive layer lifts all fourteen at once, and folding it in would make this
+    table say something different about a gun depending on what else the run held. Tier 8 is left
+    out on purpose. Everything below this section is measured; this section is the input.
+  </p>
+  <div class="card scroll"><table id="ts"></table></div>
 
   <h2>Weapons</h2>
   <p class="lede">
@@ -229,7 +349,12 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
   var D = JSON.parse(document.getElementById('data').textContent);
   var rows = D.rows, meta = D.meta, names = D.names;
 
-  var fmt = function (v, d) { return v.toLocaleString('en-US', { minimumFractionDigits: d||0, maximumFractionDigits: d||0 }); };
+  // TRAILING ZEROES TRIMMED. 'd' is the MOST places to show, not exactly how many: a cooldown of
+  // 0.13 and one of 1.4 both belong in the same column without the second becoming "1.400".
+  // (Single quotes, not backticks: this whole script lives inside a template literal.)
+  var fmt = function (v, d) {
+    return v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: d || 0 });
+  };
   var pct = function (v) { return (v * 100).toFixed(1) + '%'; };
 
   document.getElementById('meta').innerHTML =
@@ -269,6 +394,42 @@ export function renderSweepHtml(rows: readonly SweepRow[], meta: SweepMeta): str
     draw();
     return { redraw: function (next) { data = next; draw(); } };
   }
+
+  // ---- the catalog, as authored --------------------------------------------------------------------
+  // A PAIR OF NUMBERS WHERE THE LADDER MOVES ONE, and a single number where it does not. Printing
+  // "240 -> 240" fourteen times for the guns whose range never changes would bury the three where
+  // it does.
+  function pair(a, b, d) {
+    var x = fmt(a, d), y = fmt(b, d);
+    return x === y ? x : x + ' <span class="to">&rarr;</span> ' + y;
+  }
+
+  build(document.getElementById('ts'), [
+    { k: 'name', t: 'weapon', f: function (r) { return r.name; }, cls: function () { return 'name'; } },
+    { k: 'rule', t: 'shoots the', f: function (r) { return r.rule; }, cls: function () { return 'guns'; } },
+    { k: 'burst7', t: 'damage / sec', f: function (r) { return pair(r.burst, r.burst7, 1); },
+      cls: function () { return 'big'; } },
+    { k: 'damage7', t: 'damage', f: function (r) { return pair(r.damage, r.damage7, 2); } },
+    { k: 'cooldown7', t: 'cooldown', f: function (r) {
+        return r.kind === 'beam' ? '<span class="na">beam</span>' : pair(r.cooldown, r.cooldown7, 3); } },
+    { k: 'shots7', t: 'shots', f: function (r) { return fmt(r.shots7); } },
+    { k: 'range7', t: 'range', f: function (r) { return pair(r.range, r.range7, 1); } },
+    { k: 'acquire7', t: 'picks within', f: function (r) {
+        return r.acquire7 === r.range7 ? '<span class="na">all of it</span>' : fmt(r.acquire7, 1); } },
+    { k: 'speed', t: 'speed', f: function (r) {
+        return r.speed > 0 ? fmt(r.speed) : '<span class="na">&mdash;</span>'; } },
+    { k: 'pierce7', t: 'pierce', f: function (r) {
+        return r.pierce7 > 0 ? fmt(r.pierce7) : '<span class="na">&mdash;</span>'; } },
+    { k: 'blast7', t: 'blast', f: function (r) {
+        return r.blast7 > 0 ? fmt(r.blast7, 1) : '<span class="na">&mdash;</span>'; } },
+    { k: 'heat', t: 'heat / sec', f: function (r) {
+        return r.heat > 0 ? fmt(r.heat, 1) : '<span class="na">&mdash;</span>'; } },
+    { k: 'magazine7', t: 'magazine', f: function (r) {
+        return r.magazine7 > 0 ? fmt(r.magazine7) + ' / ' + fmt(r.reload7, 1) + 's'
+                               : '<span class="na">&mdash;</span>'; } },
+    { k: 'burn', t: 'sets fire', f: function (r) {
+        return r.burn || r.puddle || '<span class="na">&mdash;</span>'; } }
+  ], D.stats, 'burst7');
 
   // ---- per weapon --------------------------------------------------------------------------------
   var agg = {};

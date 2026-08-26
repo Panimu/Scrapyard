@@ -73,6 +73,7 @@ import {
   type WeaponInstance,
   type World,
 } from '../core/index.js';
+import { BURN_FLAMES, BURN_SECONDS } from '../core/content/weaponCatalog.js';
 import { BeamLayer } from './beams.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
@@ -127,11 +128,15 @@ const HP_BAR_SPRITES = 128; // 64 bars x (track + fill)
 const GLOW_SPRITES = 96;
 
 /**
- * TWO FLAMES PER BURNING BODY, and the Plasma Thrower's whole purpose is to have a great many
- * burning at once - the card's own unlock asks for thirty. 320 is comfortably past the peak a
- * maxed thrower reaches and still one small pool.
+ * UP TO FIVE FLAMES PER BURNING BODY, THREE SPRITES EACH, and the Plasma Thrower's whole purpose
+ * is to have a great many burning at once - the card's own unlock asks for thirty.
+ *
+ * FIFTEEN SPRITES A BODY IS THE PRICE OF THE COUNTDOWN. It was six, for two flames. Ninety-six
+ * bodies fully alight is comfortably past the peak a maxed thrower reaches; past that the pool
+ * simply runs dry and the last bodies burn with fewer tongues, which is a graceful way to fail
+ * and is what `acquire` returning undefined already does.
  */
-const FLAME_SPRITES = 560;
+const FLAME_SPRITES = 1440;
 
 /**
  * Toxic Sludge's globs in flight. One per throw, a 0.45 s flight and a 0.9 s clock, so a single
@@ -166,7 +171,51 @@ const BURN_SRC = 128;
  * number produces. At 1.05 - which is what "small on purpose" first meant - the flame came out
  * about five pixels tall and could not be seen at all, which is not restraint, it is absence.
  */
-const BURN_SCALE = 1.55;
+const BURN_SCALE = 1.05;
+
+/**
+ * SECONDS OF FIRE PER FLAME DRAWN. Five tongues at full duration, one fewer every 0.6 s, none at
+ * all when the fire is out.
+ *
+ * DERIVED FROM THE TWO CATALOG CONSTANTS rather than written here, so a burn lengthened in the
+ * catalog stretches the countdown instead of parking it at five for the extra second. See
+ * BURN_SECONDS in the weapon catalog for why the pair lives there.
+ */
+const BURN_STEP = BURN_SECONDS / BURN_FLAMES;
+
+/**
+ * HOW FAR ACROSS THE BODY THE FLAMES SCATTER, as a fraction of its radius, and how far UP the
+ * whole cluster sits.
+ *
+ * SCATTERED RATHER THAN STACKED. Two symmetrical tongues over the shoulders read as a status icon
+ * parked on a sprite; five in scattered places read as the THING being alight, which is the whole
+ * point of drawing five. The vertical spread is squashed against the horizontal because these
+ * bodies are drawn wider than they are tall.
+ */
+/**
+ * A STABLE PSEUDO-RANDOM VALUE IN [0, 1) FOR ONE FLAME ON ONE BODY.
+ *
+ * NOT FROM `world.rng`, AND THIS IS THE RULE RATHER THAN A PREFERENCE. The renderer must never
+ * draw from a simulation stream: doing it once would make the horde depend on how many frames were
+ * drawn, which is to say on the frame rate, which is to say the replay would not reproduce.
+ *
+ * KEYED ON `spawnId`, NOT ON THE DENSE INDEX. The pools swap-remove on death, so a dense index is
+ * a different entity from one frame to the next - a flame keyed on it would leap to another body
+ * the instant something in front of it died. `spawnId` is the pool's own stable identity.
+ *
+ * STABLE ALSO MEANS STILL: the same body gets the same five places for the whole burn, so flames
+ * go OUT one at a time rather than the survivors reshuffling every frame. The index is part of the
+ * key for exactly that reason, and the count is not.
+ */
+function burnScatter(spawnId: number, i: number): number {
+  let h = Math.imul(spawnId ^ 0x9e3779b9, 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13) ^ Math.imul(i + 1, 0xc2b2ae35), 0x27d4eb2f);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const BURN_SPREAD = 0.86;
+const BURN_SPREAD_Y = 0.66;
+const BURN_RISE = 0.2;
 
 /**
  * Phase offset per unit of spawnId, in frames.
@@ -1937,7 +1986,15 @@ export class GameRenderer {
       // level-up freeze.
       if (p.burnLeft[d] > 0) {
         const stagger = p.spawnId[d] * BURN_STAGGER;
-        for (let i = 0; i < 2; i++) {
+        // THE COUNTDOWN. Five tongues at full duration and one fewer every BURN_STEP, so a body
+        // that has just caught is well alight and one about to stop burning is guttering. The
+        // fire going OUT is as much information as the fire starting - it is the difference
+        // between "keep hosing this" and "move on", and nothing on screen said it before.
+        //
+        // `ceil`, so any fire at all is at least one flame: a body with 0.01 s left is still
+        // burning and must not read as extinguished a frame early.
+        const lit = Math.min(BURN_FLAMES, Math.ceil(p.burnLeft[d] / BURN_STEP));
+        for (let i = 0; i < lit; i++) {
           const phase = this.clock * BURN_FPS + stagger + i * 0.37;
 
           // FOUR POSES OUT OF TWO TEXTURES: the odd bit picks the file, the high bit mirrors it.
@@ -1946,11 +2003,17 @@ export class GameRenderer {
           const tex = this.tex.burn[pose & 1];
           const mirror = pose >= 2 ? -1 : 1;
 
-          // A little bob, out of phase between the two, so neither the pair nor the loop is
+          // SCATTERED OVER THE BODY, in the same place every frame for the life of the burn - see
+          // burnScatter. The angle-and-radius pair puts them in a disc rather than in a box, and
+          // the sqrt makes that disc evenly covered instead of crowded at the middle.
+          const ang = burnScatter(p.spawnId[d], i * 2) * Math.PI * 2;
+          const rad = Math.sqrt(burnScatter(p.spawnId[d], i * 2 + 1)) * radius * BURN_SPREAD;
+
+          // A little bob, out of phase between them, so neither one flame nor the group is
           // something the eye can lock onto.
           const bob = Math.sin(phase * Math.PI * 0.9 + i * 2.1) * radius * 0.09;
-          const fx = x + (i === 0 ? -1 : 1) * radius * 0.42;
-          const fy = y - radius * 0.72 + bob;
+          const fx = x + Math.cos(ang) * rad;
+          const fy = y + Math.sin(ang) * rad * BURN_SPREAD_Y - radius * BURN_RISE + bob;
 
           // TWO CONTINUOUS MOTIONS ON TOP OF THE POSE CYCLE, because a cycle alone reads as a
           // shape being swapped rather than as fire moving. Both are things a flame does: it

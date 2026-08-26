@@ -2534,7 +2534,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 DrawHpBar(x, y, e.Radius[d], drawUnits, e.Hp[d] / e.MaxHp[d]);
             }
 
-            if (e.BurnLeft[d] > 0) DrawBurning(x, y, e.Radius[d], e.SpawnId[d]);
+            if (e.BurnLeft[d] > 0) DrawBurning(x, y, e.Radius[d], e.SpawnId[d], e.BurnLeft[d]);
         }
     }
 
@@ -2560,7 +2560,59 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// number produces. At 1.05 the flame came out about five pixels tall and could not be seen
     /// at all, which is not restraint, it is absence.
     /// </remarks>
-    private const double BurnScale = 1.55;
+    private const double BurnScale = 0.92;
+
+    /// <summary>
+    /// Seconds of fire per flame drawn: five tongues at full duration, one fewer every 0.6 s.
+    /// </summary>
+    /// <remarks>
+    /// Derived from the two catalog constants rather than written here, so a burn lengthened in
+    /// the catalog stretches the countdown instead of parking it at five for the extra second.
+    /// </remarks>
+    private const double BurnStep = WeaponCatalog.BurnSeconds / (double)WeaponCatalog.BurnFlames;
+
+    /// <summary>
+    /// How far across the body the flames scatter, as a fraction of its radius, and how far up the
+    /// whole cluster sits.
+    /// </summary>
+    /// <remarks>
+    /// Scattered rather than stacked: two symmetrical tongues over the shoulders read as a status
+    /// icon parked on a sprite, five in scattered places read as the THING being alight. The
+    /// vertical spread is squashed because these bodies are drawn wider than they are tall.
+    /// </remarks>
+    private const double BurnSpread = 0.58;
+    private const double BurnSpreadY = 0.62;
+    private const double BurnRise = 0.34;
+
+    /// <summary>
+    /// A stable pseudo-random value in [0, 1) for one flame on one body.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NOT FROM <c>World.Rng</c>, and that is a rule rather than a preference: the renderer drawing
+    /// from a simulation stream would make the horde depend on how many frames were drawn, and the
+    /// replay would stop reproducing.
+    /// </para>
+    /// <para>
+    /// Keyed on SpawnId rather than the dense index, because the pools swap-remove on death and a
+    /// flame keyed on a dense index would leap to another body the instant something died. Stable
+    /// also means still: the same body keeps the same five places for the whole burn, so flames go
+    /// OUT one at a time rather than the survivors reshuffling every frame.
+    /// </para>
+    /// <para>
+    /// Unchecked because the mixing relies on 32-bit wraparound; C# would throw where JavaScript's
+    /// <c>Math.imul</c> simply wraps, and the two have to agree.
+    /// </para>
+    /// </remarks>
+    private static double BurnScatter(uint spawnId, int i)
+    {
+        unchecked
+        {
+            uint h = (spawnId ^ 0x9E3779B9u) * 0x85EBCA6Bu;
+            h = (h ^ (h >> 13) ^ ((uint)(i + 1) * 0xC2B2AE35u)) * 0x27D4EB2Fu;
+            return (h ^ (h >> 16)) / 4294967296.0;
+        }
+    }
 
     /// <summary>
     /// Phase offset per unit of spawn id, in frames. Awkward on purpose, so consecutive ids do not
@@ -2599,10 +2651,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// id so a burning crowd flickers as a crowd rather than as one animation played sixteen times.
     /// </para>
     /// </remarks>
-    private void DrawBurning(double x, double y, double radius, uint spawnId)
+    private void DrawBurning(double x, double y, double radius, uint spawnId, double burnLeft)
     {
         double stagger = spawnId * BurnStagger;
-        for (int i = 0; i < 2; i++)
+        // THE COUNTDOWN. Five tongues at full duration and one fewer every BurnStep, so a body that
+        // has just caught is well alight and one about to stop burning is guttering. The fire going
+        // OUT is as much information as the fire starting. Ceiling, so any fire at all is at least
+        // one flame - a body with 0.01 s left must not read as extinguished a frame early.
+        int lit = System.Math.Min(WeaponCatalog.BurnFlames,
+                                  (int)System.Math.Ceiling(burnLeft / BurnStep));
+        for (int i = 0; i < lit; i++)
         {
             double phase = _clockSec * BurnFps + stagger + i * 0.37;
 
@@ -2616,9 +2674,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
             // A little bob, out of phase between the two, so neither the pair nor the loop is
             // something the eye can lock onto.
+            // SCATTERED OVER THE BODY, in the same place every frame for the life of the burn -
+            // see BurnScatter. Angle and radius put them in a disc rather than a box, and the sqrt
+            // makes that disc evenly covered instead of crowded at the middle.
+            double ang = BurnScatter(spawnId, i * 2) * System.Math.PI * 2;
+            double rad = System.Math.Sqrt(BurnScatter(spawnId, i * 2 + 1)) * radius * BurnSpread;
+
             double bob = System.Math.Sin(phase * System.Math.PI * 0.9 + i * 2.1) * radius * 0.09;
-            double fx = x + (i == 0 ? -1 : 1) * radius * 0.42;
-            double fy = y - radius * 0.72 + bob;
+            double fx = x + System.Math.Cos(ang) * rad;
+            double fy = y + System.Math.Sin(ang) * rad * BurnSpreadY - radius * BurnRise + bob;
 
             // TWO CONTINUOUS MOTIONS ON TOP OF THE POSE CYCLE, because a cycle alone reads as a
             // shape being swapped rather than as fire moving. Both are things a flame does: it

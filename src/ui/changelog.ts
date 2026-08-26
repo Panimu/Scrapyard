@@ -65,6 +65,24 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T21:10Z',
+    version: 'v393',
+    title: 'THE PLASMA THROWER BURNS THROUGH A FILE',
+    notes: [
+      'Its bolt is now the slowest thing in the game that flies — a gout you can watch cross the gap — and it punches through two bodies before it stops in a third. Every one of them catches.',
+      'That makes it a gun you line a shot up with rather than one you point. A slow bolt threaded through three enemies sets three of them alight; a bolt thrown at the nearest thing sets one.',
+    ],
+  },
+  {
+    at: '2026-08-26T21:10Z',
+    version: 'v393',
+    title: 'YOU CAN SEE HOW LONG SOMETHING HAS LEFT TO BURN',
+    notes: [
+      'A body that has just caught fire is covered in flames, scattered wherever they took hold. As the fire dies they go out one at a time, until the last one gutters and the body stops burning.',
+      'Fire going out is worth as much to know as fire starting — it is the difference between hosing something that is already dead and moving on to something that is not.',
+    ],
+  },
+  {
     at: '2026-08-26T19:40Z',
     version: 'v390',
     title: 'THE CANNON PICKS ITS FIGHTS CLOSER IN',

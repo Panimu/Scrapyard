@@ -1864,6 +1864,23 @@ const PLASMA_RANGE = 230;
 const PLASMA_TURRET_TRAVERSE = degToRad(75);
 const PLASMA_FIRE_ARC = degToRad(20);
 
+/**
+ * HOW LONG A BODY BURNS, and how many flames the renderer draws on it.
+ *
+ * THE PAIR LIVES HERE, TOGETHER, because the display is a COUNTDOWN of the duration: five flames
+ * at full and one fewer every `BURN_SECONDS / BURN_FLAMES` until the fire is out. Split across two
+ * files those two numbers drift, and the drift is silent - a burn lengthened to 4 seconds would
+ * simply sit at five flames for a second before starting to count, and nothing would say so.
+ *
+ * THE RENDERER NEEDS NO NEW SIM STATE TO DO THIS. It has `burnLeft` (seconds remaining) and it has
+ * these two constants; the count falls out as `ceil(burnLeft / step)`, capped. Storing an original
+ * duration on the enemy pool would have been a fourth burn field, a fourth entry in the hash
+ * format and a corpus re-record, for a number that is already derivable.
+ */
+export const BURN_SECONDS = 3;
+/** Flames drawn on a body at full duration. See BURN_SECONDS - the count counts DOWN from this. */
+export const BURN_FLAMES = 5;
+
 export const PLASMA: WeaponDef = Object.freeze({
   id: 'plasma',
   name: 'Plasma Thrower',
@@ -1876,14 +1893,27 @@ export const PLASMA: WeaponDef = Object.freeze({
     damage: 9,
     cooldown: PLASMA_COOLDOWN,
     range: PLASMA_RANGE,
-    // SLOW, AND VISIBLY SO. A gout of fire that crossed the gap instantly would be a laser with
-    // extra steps; at 260 the player can watch it travel, which is what sells it as a thrower and
-    // what makes leading a runner an actual skill.
-    projectileSpeed: 260,
+    // THE SLOWEST THING IN THE GAME THAT FLIES AT ALL, and deliberately so - 120 against the
+    // Toxic Sludge's 150, which was the previous floor, and a fifth of the Machine Gun's 900.
+    //
+    // A gout of fire that crossed the gap instantly would be a laser with extra steps. At 120 the
+    // bolt takes most of two seconds to cross its own reach, so it is a THROWN thing the whole way
+    // and leading a runner is an actual skill rather than a formality. It also makes the pierce
+    // below read as one bolt travelling through a file of bodies rather than as an instant line.
+    projectileSpeed: 120,
     projectileCount: 1,
-    // STOPS IN THE FIRST BODY IT REACHES, as specced. Piercing would light a whole file of
-    // enemies from one bolt and make the "not already burning" rule pointless.
-    pierce: 0,
+    // THROUGH TWO AND STOPS IN THE THIRD. `pierceLeft` is "bodies AFTER this one", so a bolt
+    // lands three passes, and EVERY ONE OF THEM CATCHES: ignition hangs off each hit in
+    // `applyHits`, not off the round ending, so a pierce needs no new code to set a file of
+    // enemies alight - it simply does.
+    //
+    // THIS USED TO BE 0 AND THE NOTE HERE ARGUED FOR IT: piercing "would light a whole file of
+    // enemies from one bolt and make the 'not already burning' rule pointless". The first half is
+    // exactly the intent now; the second half was wrong. `cone-coldest` still steers each new bolt
+    // at whatever is NOT yet burning, so what pierce changes is how much a well-aimed bolt is
+    // worth, not whether aiming matters. A slow bolt that threads three bodies is a shot the
+    // player lines up; one that stops in the first was a shot they only pointed.
+    pierce: 2,
     knockback: 0,
     // A VERY SMALL SPLASH THAT IS ALMOST NO DAMAGE AND ALL FIRE. `splashFrac` at a fifth means the
     // blast is a rounding error next to the bolt; what it actually does is LIGHT what it touches,
@@ -1922,7 +1952,7 @@ export const PLASMA: WeaponDef = Object.freeze({
   // roughly 2.7x its own damage if nothing tops it up - and topping it up is free, because
   // `ignite` refreshes rather than stacks. That asymmetry is the gun: spreading fire across the
   // crowd pays, hosing one body does not.
-  burn: Object.freeze({ dpsFrac: 0.9, seconds: 3 }),
+  burn: Object.freeze({ dpsFrac: 0.9, seconds: BURN_SECONDS }),
   reengageMul: 1,
   visualId: VIS_FLAME,
   muzzleOffset: 24,

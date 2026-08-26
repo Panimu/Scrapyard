@@ -1,5 +1,0 @@
-1. Reels animation shouldn't show the icons outside of the "window" of the reel
-2. Auto level needs a new hotkey, nothing should hotkey to game action keys like WASD
-3. Pause menu Auto Level option needs to be a toggle with feedback
-4. Pause menu is missing the infinite re-roll option
-5. Update the unlocked artifact to instead show every mech, its opening weapon and unlock condition and mech components

@@ -507,6 +507,20 @@ public static class WeaponCatalog
     /// That is why the burn is a FRACTION - the two damage tiers below are the whole gun.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// How long a body burns, and how many flames the renderer draws on it.
+    /// </summary>
+    /// <remarks>
+    /// The pair lives together because the display is a COUNTDOWN of the duration: five flames at
+    /// full and one fewer every <c>BurnSeconds / BurnFlames</c> until the fire is out. Split across
+    /// two files these drift silently - a burn lengthened to 4 seconds would sit at five flames for
+    /// a second before starting to count, and nothing would say so. See the TypeScript.
+    /// </remarks>
+    public const double BurnSeconds = 3;
+
+    /// <summary>Flames drawn on a body at full duration. The count counts DOWN from this.</summary>
+    public const int BurnFlames = 5;
+
     public static readonly WeaponDef Plasma = new()
     {
         Id = WeaponIds.Plasma, Name = "Plasma Thrower", Kind = Scrapyard.Core.WeaponKind.Projectile,
@@ -517,9 +531,13 @@ public static class WeaponCatalog
             Damage = 9,
             Cooldown = 0.27,
             Range = 230, // between the Short Laser's 165 and the Medium's 302.5, nearer the short end
-            ProjectileSpeed = 260, // slow, and visibly so - it is a thrower, not a beam
+            // THE SLOWEST THING IN THE GAME THAT FLIES AT ALL - 120 against the Toxic Sludge's
+            // 150, which was the previous floor. See the TypeScript.
+            ProjectileSpeed = 120,
             ProjectileCount = 1,
-            Pierce = 0, // stops in the first body: piercing would make "not already burning" moot
+            // THROUGH TWO AND STOPS IN THE THIRD, lighting every body it passes: ignition hangs
+            // off each hit in ApplyHits, not off the round ending. See the TypeScript.
+            Pierce = 2,
             // A VERY SMALL SPLASH THAT IS ALMOST NO DAMAGE AND ALL FIRE. SplashFrac at a fifth
             // makes the blast a rounding error next to the bolt; what it does is LIGHT what it
             // touches, at the rate a direct hit would have (see ApplySplash - the burn
@@ -553,7 +571,7 @@ public static class WeaponCatalog
         // Three seconds at 90% of the hit that lit it, so one bolt is worth ~2.7x its own damage
         // if nothing tops it up - and topping up is free, because Ignite refreshes rather than
         // stacks. Spreading fire pays; hosing one body does not.
-        Burn = new BurnSpec { DpsFrac = 0.9, Seconds = 3 },
+        Burn = new BurnSpec { DpsFrac = 0.9, Seconds = BurnSeconds },
         ReengageMul = 1, VisualId = VisualId.Flame,
         MuzzleOffset = 24, ShellRadius = 6,
         FireAlongFacing = false, DetonateOnExpiry = false,

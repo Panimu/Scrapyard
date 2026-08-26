@@ -28,6 +28,18 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-26T21:10Z", "v393", "THE PLASMA THROWER BURNS THROUGH A FILE",
+            new[]
+            {
+                "Its bolt is now the slowest thing in the game that flies - a gout you can watch cross the gap - and it punches through two bodies before it stops in a third. Every one of them catches.",
+                "That makes it a gun you line a shot up with rather than one you point. A slow bolt threaded through three enemies sets three of them alight; a bolt thrown at the nearest thing sets one.",
+            }),
+        new("2026-08-26T21:10Z", "v393", "YOU CAN SEE HOW LONG SOMETHING HAS LEFT TO BURN",
+            new[]
+            {
+                "A body that has just caught fire is covered in flames, scattered wherever they took hold. As the fire dies they go out one at a time, until the last one gutters and the body stops burning.",
+                "Fire going out is worth as much to know as fire starting - it is the difference between hosing something that is already dead and moving on to something that is not.",
+            }),
         new("2026-08-26T19:40Z", "v390", "THE CANNON PICKS ITS FIGHTS CLOSER IN",
             new[]
             {
