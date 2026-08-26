@@ -83,7 +83,7 @@ function blankStats(): WeaponStats {
     heatPerSec: 0, heatCapacity: 0, heatDispersion: 0, heatResume: 0,
     turnRate: 0, spreadAngle: 0, flightTime: 0, cosTurnStep: 1, sinTurnStep: 0,
     ammoCapacity: 0, reloadTime: 0,
-    projectileLifetime: 0, rangeSq: 0, cosTraverseStep: 1, sinTraverseStep: 0, cosFireArc: 1,
+    projectileLifetime: 0, acquireRangeSq: 0, cosTraverseStep: 1, sinTraverseStep: 0, cosFireArc: 1,
   };
 }
 

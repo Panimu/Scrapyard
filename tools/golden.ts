@@ -122,11 +122,19 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   //
   // 0x1d140a77 was the first such seed and stopped opening a chest when the Plasma Thrower and
   // Toxic Sludge entered the deck (the bot takes weapon cards greedily, so two new ones change
-  // every loadout it builds and therefore where it ends up standing). 0x65c9ecb3 is the
-  // replacement: 402 kills, one chest, dies at tick 12935.
+  // every loadout it builds and therefore where it ends up standing). 0x65c9ecb3 replaced it and
+  // then stopped too, when the Cannon gained an acquisition window narrower than its reach: the
+  // gun declines targets it used to take, so the bot fights in a different place.
+  //
+  // 0x23e7f4d6 is the current one - 530 kills, one chest, two drones built, dies at tick 12577.
+  // It carries the DRONE coverage as well, which is worth having in the same run.
+  //
+  // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the first hits, so
+  // the search is reproducible rather than a number somebody remembered. The others it turned up,
+  // if this one ever stops: 0x93f4ad9d, 0xc21f6e87, 0x6056e838, 0x776c48ad, 0x2cb922d3.
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x65c9ecb3,
+    seed: 0x23e7f4d6,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

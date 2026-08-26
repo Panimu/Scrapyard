@@ -330,7 +330,7 @@ export function updateWeapons(world: World, dt: number): void {
       world,
       player.x,
       player.y,
-      stats.rangeSq,
+      stats.acquireRangeSq,
       ask,
       targets,
       inst.turretX,

@@ -27,7 +27,7 @@
  *     AFTER the full cumulative sum, not after each tier.
  *   - THE GUARD RAILS THEMSELVES: cooldown's 0.05 floor, heatCapacity's 1 floor, the
  *     projectileCount/pierce integer floor, damageTakenMul's 0.25 floor, and the derived fields
- *     (moveDrag, rangeSq, the four trig pairs) computed from the ALREADY-CLAMPED values.
+ *     (moveDrag, acquireRangeSq, the four trig pairs) computed from the ALREADY-CLAMPED values.
  *   - THE SCALE FLOOR: a stack of cooldown-reducing cards deep enough to drive `scale` negative
  *     must clamp the stat to zero, not go negative and flip a sign nothing downstream expects.
  *   - `resolveSplitStats`: the short rack at max tier, whether or not it is held, with the 20%
@@ -65,7 +65,8 @@ const WEAPON_KEYS = [
   'damage', 'cooldown', 'range', 'projectileSpeed', 'projectileCount', 'pierce', 'knockback',
   'splashRadius', 'splashFrac', 'turretTraverse', 'fireArc', 'heatPerSec', 'heatCapacity',
   'heatDispersion', 'heatResume', 'turnRate', 'spreadAngle', 'flightTime', 'cosTurnStep',
-  'sinTurnStep', 'ammoCapacity', 'reloadTime', 'projectileLifetime', 'rangeSq', 'cosTraverseStep',
+  'sinTurnStep', 'ammoCapacity', 'reloadTime', 'projectileLifetime', 'acquireRangeSq',
+  'cosTraverseStep',
   'sinTraverseStep', 'cosFireArc',
 ] as const;
 

@@ -189,10 +189,13 @@ describe('the catalog numbers reach the resolved weapon', () => {
     // edited every time one does is a test that gets edited without being read.
     expect(LASER_SHORT.base.range).toBeLessThan(LASER_MEDIUM.base.range);
     expect(LASER_MEDIUM.base.range).toBeLessThan(LASER_LONG.base.range);
-    // Each is at least half again the one below it, which is what makes them three weapons rather
-    // than one weapon at three prices.
-    expect(LASER_MEDIUM.base.range).toBeGreaterThan(LASER_SHORT.base.range * 1.5);
-    expect(LASER_LONG.base.range).toBeGreaterThan(LASER_MEDIUM.base.range * 1.5);
+    // Each is AT LEAST half again the one below it, which is what makes them three weapons rather
+    // than one weapon at three prices. `OrEqual` because "at least" is what the sentence above says
+    // and what the design actually requires: the Long Laser's 420 is exactly 1.5x the Medium's
+    // 280, and a strict `>` here would have rejected an authored pair for landing on the round
+    // number rather than a hair past it.
+    expect(LASER_MEDIUM.base.range).toBeGreaterThanOrEqual(LASER_SHORT.base.range * 1.5);
+    expect(LASER_LONG.base.range).toBeGreaterThanOrEqual(LASER_MEDIUM.base.range * 1.5);
     // And the shortest still outreaches the Machine Gun, the one weapon meant to be closer in.
     expect(LASER_SHORT.base.range).toBeGreaterThan(130);
   });
@@ -208,7 +211,7 @@ describe('targeting: the WEAKEST enemy in range', () => {
     addEnemy(w, 120, 0, 40);
     sync(w);
 
-    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
+    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.acquireRangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(weak);
   });
@@ -223,7 +226,7 @@ describe('targeting: the WEAKEST enemy in range', () => {
     addEnemy(w, range + 10, 0, 1); // weaker, and just too far
     sync(w);
 
-    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
+    const n = TARGETING['lowest-hp'](w, 0, 0, w.weapons[0].stats.acquireRangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(inRange);
   });
@@ -827,13 +830,13 @@ describe('the Cannon is untouched by any of this', () => {
   it('still shoots the STRONGEST enemy while a laser shoots the weakest', () => {
     const w = makeWorld('cannon');
     addEnemy(w, 100, 0, 5);
-    // BOTH INSIDE THE CANNON'S REACH, which is the only thing these distances are for: the test
-    // is about picking the STRONGEST over the nearest, and a body outside range is not picked over
-    // anything. 180 rather than 200 because the base reach is now 197.6.
-    const strong = addEnemy(w, 180, 0, 900);
+    // BOTH INSIDE THE CANNON'S ACQUISITION WINDOW - 70% of its 240 reach, so 168 rather than 240.
+    // The distances are the only thing these two lines are for: the test is about picking the
+    // STRONGEST over the nearest, and a body the turret declines is not picked over anything.
+    const strong = addEnemy(w, 150, 0, 900);
     sync(w);
 
-    const n = TARGETING['highest-hp'](w, 0, 0, w.weapons[0].stats.rangeSq, 1, w.scratch.targets, 1, 0);
+    const n = TARGETING['highest-hp'](w, 0, 0, w.weapons[0].stats.acquireRangeSq, 1, w.scratch.targets, 1, 0);
     expect(n).toBe(1);
     expect(w.scratch.targets[0]).toBe(strong);
   });
@@ -930,7 +933,7 @@ describe('progression: weapon cards unlock a slot, then level the gun in it', ()
     // resolveWeaponStats ran for the new slot: without it, range would still be 0.
     expect(inst.stats.damage).toBe(LASER_LONG.base.damage);
     expect(inst.stats.range).toBe(LASER_LONG.base.range);
-    expect(inst.stats.rangeSq).toBe(LASER_LONG.base.range * LASER_LONG.base.range);
+    expect(inst.stats.acquireRangeSq).toBe(LASER_LONG.base.range * LASER_LONG.base.range);
     expect(inst.stats.heatPerSec).toBe(LASER_LONG.base.heatPerSec);
 
     // And it is live in the pipeline, not just present in the array.

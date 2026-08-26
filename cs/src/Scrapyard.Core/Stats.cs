@@ -97,7 +97,16 @@ public sealed class WeaponStats
     /// <summary>range / projectileSpeed, plus a margin so a shell never expires exactly at max range.</summary>
     public double ProjectileLifetime;
 
-    public double RangeSq;
+    /// <summary>
+    /// The square of how far this weapon will PICK a target - <c>(Range * AcquireFrac)^2</c>, and
+    /// the only number the targeting rules are handed.
+    /// </summary>
+    /// <remarks>
+    /// Not <c>Range * Range</c> any more, and named for the job rather than the arithmetic because
+    /// of it: the Cannon reaches 240 and chooses inside 168. Every other weapon leaves AcquireFrac
+    /// null and this is exactly the square of the reach.
+    /// </remarks>
+    public double AcquireRangeSq;
 
     /// <summary>cos/sin of ONE TICK of traverse (TurretTraverse * DT).</summary>
     public double CosTraverseStep;
@@ -351,7 +360,9 @@ public static class Stats
         double turnStep = outv.TurnRate * Constants.Dt;
         outv.CosTurnStep = Trig.Cos(turnStep);
         outv.SinTurnStep = Trig.Sin(turnStep);
-        outv.RangeSq = outv.Range * outv.Range;
+        // The window the turret chooses in, which is the reach for every weapon but the Cannon.
+        double acquire = def.AcquireFrac is double f ? outv.Range * f : outv.Range;
+        outv.AcquireRangeSq = acquire * acquire;
 
         double step = outv.TurretTraverse * Constants.Dt;
         outv.CosTraverseStep = Trig.Cos(step);

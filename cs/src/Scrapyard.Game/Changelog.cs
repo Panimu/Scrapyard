@@ -28,6 +28,17 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-26T19:40Z", "v390", "THE CANNON PICKS ITS FIGHTS CLOSER IN",
+            new[]
+            {
+                "Its shell still flies as far as it ever did, but the turret will no longer commit to anything past about seventy per cent of that. It fires one slow shell and can do nothing else until that shell lands - so the shots it used to take at the very edge of its reach, at something already walking out of the way, were the worst version of that bargain.",
+                "The gap is the shell's margin now: whatever it picks can keep running and still be there when the shell arrives.",
+            }),
+        new("2026-08-26T19:40Z", "v390", "THE MEDIUM AND LONG LASERS REACH LESS FAR",
+            new[]
+            {
+                "The Medium Laser and the Long Laser both give up some range. The Short Laser is untouched, and the three still step up in the same order - each reaching half again as far as the one below it.",
+            }),
         new("2026-08-26T19:22Z", "v389", "THE CANNON DOES NOT REACH AS FAR",
             new[]
             {

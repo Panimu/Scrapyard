@@ -220,7 +220,19 @@ export interface WeaponStats {
   // ---- derived ----
   /** range / projectileSpeed, plus a margin so a shell never expires exactly at max range. */
   projectileLifetime: number;
-  rangeSq: number;
+  /**
+   * THE SQUARE OF HOW FAR THIS WEAPON WILL PICK A TARGET - `(range * acquireFrac)^2`, and the only
+   * number the targeting rules are ever handed.
+   *
+   * NOT `range * range` ANY MORE, and named for the job rather than for the arithmetic because of
+   * it: the Cannon reaches 240 and chooses inside 168 (see WeaponDef.acquireFrac). For every other
+   * weapon the fraction is absent, this is exactly the square of the reach, and nothing changes.
+   *
+   * Squared because every caller compares it against a squared distance; taking the root once per
+   * weapon per tick to compare against a root would be the same answer, slower, in a different
+   * float.
+   */
+  acquireRangeSq: number;
   /** cos/sin of ONE TICK of traverse (turretTraverse * DT) - the rotate-towards step. */
   cosTraverseStep: number;
   sinTraverseStep: number;
@@ -523,7 +535,11 @@ export function resolveWeaponStats(
   const turnStep = out.turnRate * DT;
   out.cosTurnStep = dcos(turnStep);
   out.sinTurnStep = dsin(turnStep);
-  out.rangeSq = out.range * out.range;
+  // THE WINDOW THE TURRET CHOOSES IN, which is the reach for every weapon but the Cannon. A
+  // fraction of the resolved range rather than a second authored number, so a range tier and
+  // Targeting Optics widen the window in step without either of them naming this.
+  const acquire = def.acquireFrac === undefined ? out.range : out.range * def.acquireFrac;
+  out.acquireRangeSq = acquire * acquire;
 
   const step = out.turretTraverse * DT;
   out.cosTraverseStep = dcos(step);

@@ -239,6 +239,19 @@ public sealed class WeaponDef
     /// </remarks>
     public PuddleSpec? Puddle { get; init; }
 
+    /// <summary>
+    /// How much of its reach this gun will actually PICK a target in, or null for the thirteen
+    /// weapons that shoot at anything they can reach.
+    /// </summary>
+    /// <remarks>
+    /// Reach and acquisition are two different numbers, and this is the field that separates them.
+    /// <c>Range</c> is how far a shell gets; this fraction of it is how close a body has to be
+    /// before the gun commits. The Cannon carries 0.7 - it reaches 240 and chooses inside 168, so
+    /// the gap is the shell's margin and a target that keeps running is still hit. See the
+    /// TypeScript for the full argument.
+    /// </remarks>
+    public double? AcquireFrac { get; init; }
+
     // ---- fused weapons (missiles) ----
     /// <summary>Fires along the player's last movement direction rather than at a target.</summary>
     public required bool FireAlongFacing { get; init; }
@@ -380,9 +393,9 @@ public static class WeaponCatalog
         {
             Damage = 44, // no variance, no crit
             Cooldown = 1.263, // 0.792 shots/s - the whole pace of the game is this number
-            // A fifth off, 247 -> 197.6, with both range rungs scaled to match. 45% of the
-            // visible width at VIEW_MINOR_UNITS 440, down from 56%. See the TypeScript.
-            Range = 197.6,
+            // What the SHELL reaches, not what the turret will pick - see AcquireFrac below.
+            // The ladder is 240 -> 290 -> 340 and the acquisition window with it, 168 -> 203 -> 238.
+            Range = 240,
             ProjectileSpeed = 520, // 0.5 s to max range: plainly visible, leadable by enemies
             ProjectileCount = 1,
             Knockback = 190, // impulse/mass: runt 380 u/s, elite 27, boss immune
@@ -394,16 +407,19 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Range = 49.6 },    // T2  197.6 -> 247.2
+            new WeaponStatDelta { Range = 50 },      // T2  240 -> 290
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T3  -15% of base
             new WeaponStatDelta { Damage = 18 },     // T4  44 -> 62
-            new WeaponStatDelta { Range = 49.6 },    // T5  247.2 -> 296.8
+            new WeaponStatDelta { Range = 50 },      // T5  290 -> 340
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T6
             new WeaponStatDelta { Pierce = 1 },      // T7  punches through one body
             new WeaponStatDelta(),                    // T8  the Twin Mount - see TwinFrom
         },
         // ONE BARREL, TWO GUNS THAT COULD BOLT TO IT. Declared here and nowhere else - the check
         // runs both directions. See the TypeScript's own note on WeaponDef.excludes.
+        // Seventy per cent: the turret will not choose a body outside 168 even though the shell
+        // flies 240. See AcquireFrac.
+        AcquireFrac = 0.7,
         Excludes = new[] { WeaponIds.Mortar },
         TwinFrom = WeaponAscendedTier, ReengageMul = 0.55, VisualId = VisualId.Shell,
         MuzzleOffset = 30, ShellRadius = 9,
@@ -631,10 +647,10 @@ public static class WeaponCatalog
         165, 46, 7.5, 8.5, 0x3BE86B, 1.6, chainsFrom: 0, gigaFrom: null, fillsMountsFrom: WeaponAscendedTier);
 
     public static readonly WeaponDef LaserMedium = Laser(WeaponIds.LaserMedium, "Medium Laser",
-        302.5, 66, 16.5, 8.6, 0x4FA8FF, 2.1, chainsFrom: WeaponAscendedTier, gigaFrom: null, fillsMountsFrom: null);
+        280, 66, 16.5, 8.6, 0x4FA8FF, 2.1, chainsFrom: WeaponAscendedTier, gigaFrom: null, fillsMountsFrom: null);
 
     public static readonly WeaponDef LaserLong = Laser(WeaponIds.LaserLong, "Long Laser",
-        473, 92, 25.5, 8.0, 0xFF4D4D, 2.7, chainsFrom: 0, gigaFrom: WeaponAscendedTier, fillsMountsFrom: null);
+        420, 92, 25.5, 8.0, 0xFF4D4D, 2.7, chainsFrom: 0, gigaFrom: WeaponAscendedTier, fillsMountsFrom: null);
 
     /// <summary>Seconds a Long Missile flies before its Hornet ascension splits it into two children.</summary>
     public const double SplitSec = 0.35;

@@ -158,7 +158,7 @@ function createWeaponStats(): WeaponStats {
     ammoCapacity: 0,
     reloadTime: 0,
     projectileLifetime: 0,
-    rangeSq: 0,
+    acquireRangeSq: 0,
     cosTraverseStep: 1,
     sinTraverseStep: 0,
     cosFireArc: 1,

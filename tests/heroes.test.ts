@@ -39,7 +39,7 @@ function BLANK_WEAPON_STATS(): WeaponStats {
     knockback: 0, splashRadius: 0, splashFrac: 0, turretTraverse: 0, fireArc: 0, heatPerSec: 0,
     heatCapacity: 0, heatDispersion: 0, heatResume: 0, turnRate: 0, spreadAngle: 0, flightTime: 0,
     cosTurnStep: 1, sinTurnStep: 0, ammoCapacity: 0, reloadTime: 0, projectileLifetime: 0,
-    rangeSq: 0, cosTraverseStep: 1, sinTraverseStep: 0, cosFireArc: 1,
+    acquireRangeSq: 0, cosTraverseStep: 1, sinTraverseStep: 0, cosFireArc: 1,
   };
 }
 
@@ -197,7 +197,9 @@ describe('chassis bonuses', () => {
     const plain = statsFor('jade', 'laser-short');
     expect(moss.range).toBeCloseTo(plain.range * 2, 9);
     // The squared form is derived AFTER the bonus, or targeting would use the old reach.
-    expect(moss.rangeSq).toBeCloseTo(moss.range * moss.range, 6);
+    // Moss carries the Medium Laser, which has no `acquireFrac`, so its acquisition window IS
+    // the square of its reach. The Cannon is the one weapon where these two differ.
+    expect(moss.acquireRangeSq).toBeCloseTo(moss.range * moss.range, 6);
   });
 
   it('gives Ember 30% more Long Laser damage at the same heat', () => {

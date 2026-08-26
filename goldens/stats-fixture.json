@@ -214,7 +214,7 @@
    "result": {
     "damage": "4046000000000000",
     "cooldown": "3ff4353f7ced9168",
-    "range": "4068b33333333333",
+    "range": "406e000000000000",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -234,8 +234,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fda43fe5c91d14f",
-    "rangeSq": "40e310b851eb851e",
+    "projectileLifetime": "3fdfe6cb398064d4",
+    "acquireRangeSq": "40db900000000000",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"
@@ -251,7 +251,7 @@
    "result": {
     "damage": "4046000000000000",
     "cooldown": "3ff4353f7ced9168",
-    "range": "4068b33333333333",
+    "range": "406e000000000000",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "3ff0000000000000",
@@ -271,8 +271,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fda43fe5c91d14f",
-    "rangeSq": "40e310b851eb851e",
+    "projectileLifetime": "3fdfe6cb398064d4",
+    "acquireRangeSq": "40db900000000000",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"
@@ -290,7 +290,7 @@
    "result": {
     "damage": "404f000000000000",
     "cooldown": "3fec4a8c154c985f",
-    "range": "40728ccccccccccd",
+    "range": "4075400000000000",
     "projectileSpeed": "4080400000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "4000000000000000",
@@ -310,8 +310,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "3fe3b9cd05430452",
-    "rangeSq": "40f581a3d70a3d71",
+    "projectileLifetime": "3fe698cff3659cc1",
+    "acquireRangeSq": "40eba87ffffffffe",
     "cosTraverseStep": "3feffdb9e4db0192",
     "sinTraverseStep": "3f98200d0dd8e3cd",
     "cosFireArc": "3fef4cfc3279eddc"
@@ -329,7 +329,7 @@
    "result": {
     "damage": "405db33333333334",
     "cooldown": "3fa999999999999a",
-    "range": "4072e80000000000",
+    "range": "4071800000000000",
     "projectileSpeed": "3ff0000000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -349,8 +349,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "40746b3333333334",
-    "rangeSq": "40f6572400000000",
+    "projectileLifetime": "4072e66666666667",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "3febb67ae8584c73"
@@ -368,7 +368,7 @@
    "result": {
     "damage": "405db33333333334",
     "cooldown": "3fa999999999999a",
-    "range": "4072e80000000000",
+    "range": "4071800000000000",
     "projectileSpeed": "3ff0000000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -388,8 +388,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "40746b3333333334",
-    "rangeSq": "40f6572400000000",
+    "projectileLifetime": "4072e66666666667",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "3febb67ae8584c73"
@@ -407,7 +407,7 @@
    "result": {
     "damage": "406ae8f5c28f5c29",
     "cooldown": "3fa999999999999a",
-    "range": "407d900000000000",
+    "range": "407a400000000000",
     "projectileSpeed": "3ff0000000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -427,8 +427,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "407fed70a3d70a3e",
-    "rangeSq": "410b4f8800000000",
+    "projectileLifetime": "407c59999999999a",
+    "acquireRangeSq": "4105888000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "3febb67ae8584c73"
@@ -449,7 +449,7 @@
    "result": {
     "damage": "4075bc28f5c28f5f",
     "cooldown": "3fa999999999999a",
-    "range": "407d900000000000",
+    "range": "407a400000000000",
     "projectileSpeed": "3ff0000000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
@@ -469,8 +469,8 @@
     "sinTurnStep": "0000000000000000",
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
-    "projectileLifetime": "407fed70a3d70a3e",
-    "rangeSq": "410b4f8800000000",
+    "projectileLifetime": "407c59999999999a",
+    "acquireRangeSq": "4105888000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "3febb67ae8584c73"
@@ -512,7 +512,7 @@
     "ammoCapacity": "4071800000000000",
     "reloadTime": "401c000000000000",
     "projectileLifetime": "3fc7ced916872b02",
-    "rangeSq": "40d7764000000000",
+    "acquireRangeSq": "40d7764000000000",
     "cosTraverseStep": "3fef1da785f70e68",
     "sinTraverseStep": "3fcde189a594fbcb",
     "cosFireArc": "3fee11f642522a25"
@@ -554,7 +554,7 @@
     "ammoCapacity": "407a400000000000",
     "reloadTime": "4016000000000000",
     "projectileLifetime": "3fea32dea32dea33",
-    "rangeSq": "410af72000000000",
+    "acquireRangeSq": "410af72000000000",
     "cosTraverseStep": "3fef487faa289d5d",
     "sinTraverseStep": "3fcaf0bd16950066",
     "cosFireArc": "3febb67ae8584c73"
@@ -593,7 +593,7 @@
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3ff2666666666666",
-    "rangeSq": "40f3240000000000",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "bfefffffffff2c12"
@@ -634,7 +634,7 @@
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
     "projectileLifetime": "40618ccccccccccd",
-    "rangeSq": "40d0810000000000",
+    "acquireRangeSq": "40d0810000000000",
     "cosTraverseStep": "3fefffffffff2c12",
     "sinTraverseStep": "0000000000000000",
     "cosFireArc": "3fe14a280fb5068b"
@@ -670,7 +670,7 @@
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3ff2666666666666",
-    "rangeSq": "40f3240000000000",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "bfefffffffff2c12"
@@ -706,7 +706,7 @@
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3ff2666666666666",
-    "rangeSq": "40f3240000000000",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "bfefffffffff2c12"
@@ -742,7 +742,7 @@
     "ammoCapacity": "0000000000000000",
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3ff2666666666666",
-    "rangeSq": "40f3240000000000",
+    "acquireRangeSq": "40f3240000000000",
     "cosTraverseStep": "3fef4cfc3279eddc",
     "sinTraverseStep": "3fca9cd9ac4258f5",
     "cosFireArc": "bfefffffffff2c12"

@@ -41,7 +41,7 @@ public class StatsTests
         "damage", "cooldown", "range", "projectileSpeed", "projectileCount", "pierce", "knockback",
         "splashRadius", "splashFrac", "turretTraverse", "fireArc", "heatPerSec", "heatCapacity",
         "heatDispersion", "heatResume", "turnRate", "spreadAngle", "flightTime", "cosTurnStep",
-        "sinTurnStep", "ammoCapacity", "reloadTime", "projectileLifetime", "rangeSq",
+        "sinTurnStep", "ammoCapacity", "reloadTime", "projectileLifetime", "acquireRangeSq",
         "cosTraverseStep", "sinTraverseStep", "cosFireArc",
     };
 
@@ -220,7 +220,7 @@ public class StatsTests
         "ammoCapacity" => w.AmmoCapacity,
         "reloadTime" => w.ReloadTime,
         "projectileLifetime" => w.ProjectileLifetime,
-        "rangeSq" => w.RangeSq,
+        "acquireRangeSq" => w.AcquireRangeSq,
         "cosTraverseStep" => w.CosTraverseStep,
         "sinTraverseStep" => w.SinTraverseStep,
         "cosFireArc" => w.CosFireArc,

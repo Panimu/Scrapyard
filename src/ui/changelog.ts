@@ -65,6 +65,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-26T19:40Z',
+    version: 'v390',
+    title: 'THE CANNON PICKS ITS FIGHTS CLOSER IN',
+    notes: [
+      'Its shell still flies as far as it ever did, but the turret will no longer commit to anything past about seventy per cent of that. It fires one slow shell and can do nothing else until that shell lands — so the shots it used to take at the very edge of its reach, at something already walking out of the way, were the worst version of that bargain.',
+      'The gap is the shell’s margin now: whatever it picks can keep running and still be there when the shell arrives.',
+    ],
+  },
+  {
+    at: '2026-08-26T19:40Z',
+    version: 'v390',
+    title: 'THE MEDIUM AND LONG LASERS REACH LESS FAR',
+    notes: [
+      'The Medium Laser and the Long Laser both give up some range. The Short Laser is untouched, and the three still step up in the same order — each reaching half again as far as the one below it.',
+    ],
+  },
+  {
     at: '2026-08-26T19:22Z',
     version: 'v389',
     title: 'THE CANNON DOES NOT REACH AS FAR',
