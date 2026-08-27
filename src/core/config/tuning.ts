@@ -284,7 +284,7 @@ const DIRECTOR: DirectorTuning = {
   eliteIntervalPerCycle: 0.4,
   eliteIntervalMin: 4.5,
   maxLiveElites: 5,
-  maxSpawnsPerSec: 12,
+  maxSpawnsPerSec: 11,
   forwardBiasMinSpeed: 20,
   hpRampPerSec: 1.00218876, // 1.30 ** (1/120)
   speedRampPerSec: 1.00048569, // 1.06 ** (1/120)

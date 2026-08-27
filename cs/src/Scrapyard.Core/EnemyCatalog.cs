@@ -39,6 +39,13 @@ public readonly struct FlavourDef
     /// siege's Heavies ask for one.
     /// </summary>
     public required double FixateSec { get; init; }
+
+    /// <summary>
+    /// Speed multiplier applied ONCE, the instant a fixation ends. 1 for everything, including
+    /// every flavour with <see cref="FixateSec"/> at 0, which never reads it. Applied in EnemyAI's
+    /// seek pass, on the same tick the fixation timer runs out.
+    /// </summary>
+    public required double FixateSpeedMul { get; init; }
 }
 
 public static class Flavours
@@ -68,13 +75,13 @@ public static class Flavours
     /// </remarks>
     public static readonly FlavourDef[] All =
     {
-        new() { Name = "plain",   Hp = 1,    Speed = 1,        Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "swift",   Hp = 0.85, Speed = 1.18,     Dmg = 0.9,  Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "tough",   Hp = 1.3,  Speed = 0.88,     Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "spiky",   Hp = 0.95, Speed = 1,        Dmg = 1.35, Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "heavy",   Hp = 10,   Speed = 0.143748, Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 0.25, Relocate = 4, FixateSec = 45 },
-        new() { Name = "swarmer", Hp = 0.6,  Speed = 2,        Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0 },
-        new() { Name = "chest dropper", Hp = 3, Speed = 1.05,  Dmg = 1,    Xp = 0.5, DropsChest = true,  Knockback = 1,    Relocate = 1, FixateSec = 0 },
+        new() { Name = "plain",   Hp = 1,    Speed = 1,        Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
+        new() { Name = "swift",   Hp = 0.85, Speed = 1.18,     Dmg = 0.9,  Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
+        new() { Name = "tough",   Hp = 1.3,  Speed = 0.88,     Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
+        new() { Name = "spiky",   Hp = 0.95, Speed = 1,        Dmg = 1.35, Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
+        new() { Name = "heavy",   Hp = 10,   Speed = 0.143748, Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 0.25, Relocate = 4, FixateSec = 45, FixateSpeedMul = 1.5 },
+        new() { Name = "swarmer", Hp = 0.6,  Speed = 2,        Dmg = 1,    Xp = 1,   DropsChest = false, Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
+        new() { Name = "chest dropper", Hp = 3, Speed = 1.05,  Dmg = 1,    Xp = 0.5, DropsChest = true,  Knockback = 1,    Relocate = 1, FixateSec = 0,  FixateSpeedMul = 1 },
     };
 }
 
@@ -152,10 +159,10 @@ public static class Ranks
 
     public static readonly RankDef[] All =
     {
-        new() { Name = "regular", Hp = 1,  Xp = 1,  Speed = 1,    Dmg = 1,   Size = 1,   Mass = 1,    Pressure = 1 },
-        new() { Name = "elite",   Hp = 10, Xp = 8,  Speed = 0.86, Dmg = 1.5, Size = 1.5, Mass = 3,    Pressure = 3 },
+        new() { Name = "regular", Hp = 1,    Xp = 1,  Speed = 1,    Dmg = 1,   Size = 1,   Mass = 1,    Pressure = 1 },
+        new() { Name = "elite",   Hp = 11,   Xp = 8,  Speed = 0.86, Dmg = 1.5, Size = 1.5, Mass = 3,    Pressure = 3 },
         // Mass 1e9: a boss is not pushed by anything. Written as the literal the TypeScript uses.
-        new() { Name = "boss",    Hp = 42, Xp = 60, Speed = 0.72, Dmg = 2.2, Size = 2.9, Mass = 1e9,  Pressure = 6 },
+        new() { Name = "boss",    Hp = 46.2, Xp = 60, Speed = 0.72, Dmg = 2.2, Size = 2.9, Mass = 1e9,  Pressure = 6 },
     };
 }
 

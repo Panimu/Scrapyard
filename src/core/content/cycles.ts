@@ -94,6 +94,9 @@ export interface RankDef {
  * ELITES ARE TWICE AS TOUGH AND BOSSES THREE TIMES - and that is a HEALTH change only. Elite HP
  * 5 -> 10, boss 14 -> 42, with contact damage left exactly where it always was.
  *
+ * A FURTHER +10% PASS landed both at 11 and 46.2 - health only again, same as the change above:
+ * dmg, speed, xp and size are all untouched.
+ *
  * DAMAGE WAS TRIPLED WITH THE HEALTH AND IT DID NOT SURVIVE THE ARITHMETIC. A boss at 6.6x ran
  * into 145.2 contact damage in the last cycle against a 120 HP mech - a one-shot kill from full
  * health that a maxed Ablative Plate (22 flat) could not even turn into a survivable hit. At the
@@ -114,8 +117,8 @@ export interface RankDef {
  */
 export const RANKS: readonly RankDef[] = Object.freeze([
   Object.freeze({ id: RANK_REGULAR as Rank, name: 'regular', hp: 1, xp: 1, speed: 1, dmg: 1, size: 1, mass: 1, pressure: 1 }),
-  Object.freeze({ id: RANK_ELITE as Rank, name: 'elite', hp: 10, xp: 8, speed: 0.86, dmg: 1.5, size: 1.5, mass: 3, pressure: 3 }),
-  Object.freeze({ id: RANK_BOSS as Rank, name: 'boss', hp: 42, xp: 60, speed: 0.72, dmg: 2.2, size: 2.9, mass: 1e9, pressure: 6 }),
+  Object.freeze({ id: RANK_ELITE as Rank, name: 'elite', hp: 11, xp: 8, speed: 0.86, dmg: 1.5, size: 1.5, mass: 3, pressure: 3 }),
+  Object.freeze({ id: RANK_BOSS as Rank, name: 'boss', hp: 46.2, xp: 60, speed: 0.72, dmg: 2.2, size: 2.9, mass: 1e9, pressure: 6 }),
 ] as const) as readonly RankDef[];
 
 /** Largest `RankDef.size`. Sizes MAX_ENEMY_RADIUS, so it must stay a compile-time fact. */

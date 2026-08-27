@@ -65,6 +65,62 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-27T18:40Z',
+    version: 'v402',
+    title: 'THE PHASE CANNON HITS HARDER',
+    notes: [
+      'Its bolt does more damage at every tier, and the burst goes up with it.',
+    ],
+  },
+  {
+    at: '2026-08-27T18:40Z',
+    version: 'v402',
+    title: 'SHORT MISSILES TURN TIGHTER',
+    notes: [
+      'They curve onto a target harder at every tier, so fewer of them sail past something that stepped aside.',
+    ],
+  },
+  {
+    at: '2026-08-27T18:10Z',
+    version: 'v402',
+    title: 'SHEEP NO LONGER WALK THROUGH TREES',
+    notes: [
+      'The flock ignored the scenery entirely — an animal would stroll straight through a trunk or a wall. They now go round, and one is never put down inside anything.',
+    ],
+  },
+  {
+    at: '2026-08-27T18:10Z',
+    version: 'v402',
+    title: 'THE DESKTOP BUILD DRAWS SHEEP AS SHEEP',
+    notes: [
+      'Each one came out as a wide horizontal smear of a dozen animals — the whole animation strip drawn at once instead of one frame of it. They are single sheep now, and they chew and walk and bolt at the right speeds.',
+    ],
+  },
+  {
+    at: '2026-08-27T14:47Z',
+    version: 'v402',
+    title: 'A SIEGE’S HEAVIES SPEED UP ONCE THEY TURN',
+    notes: [
+      'A ring that has stood on its mark for the whole fixation used to turn and plod toward you at the same pace it walked in at. It now picks up noticeably once it starts hunting you.',
+    ],
+  },
+  {
+    at: '2026-08-27T14:47Z',
+    version: 'v402',
+    title: 'ELITES AND BOSSES ARE TOUGHER',
+    notes: [
+      'Both take a bit longer to bring down. Nothing else about them changed - not their damage, not their speed, not what they pay out.',
+    ],
+  },
+  {
+    at: '2026-08-27T14:47Z',
+    version: 'v402',
+    title: 'THE HORDE REFILLS A TOUCH SLOWER',
+    notes: [
+      'After you clear space around yourself, regulars trickle back in a little more gradually. How many can be near you at once is unchanged.',
+    ],
+  },
+  {
     at: '2026-08-27T13:57Z',
     version: 'v401',
     title: 'THE PLASMA THROWER STOPS SHOWING ITS COOLDOWN',

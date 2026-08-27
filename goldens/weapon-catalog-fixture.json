@@ -309,7 +309,7 @@
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
     "heatDispersion": "0000000000000000",
-    "turnRate": "4013333333333333",
+    "turnRate": "40151eb851eb851f",
     "spreadAngle": "3fd0c152382d7365",
     "flightTime": "3ff2666666666666",
     "ammoCapacity": "0000000000000000",
@@ -320,7 +320,7 @@
      "cooldown": "bfdccccccccccccd"
     },
     {
-     "turnRate": "3fe6666666666666"
+     "turnRate": "3fe8a3d70a3d70a4"
     },
     {
      "damage": "4036000000000000"
@@ -329,7 +329,7 @@
      "cooldown": "bfdccccccccccccd"
     },
     {
-     "turnRate": "3fe6666666666666"
+     "turnRate": "3fe8a3d70a3d70a4"
     },
     {
      "projectileCount": "3ff0000000000000"
@@ -680,7 +680,7 @@
    "behaviour": "phase",
    "requiresTarget": true,
    "base": {
-    "damage": "4042000000000000",
+    "damage": "4043cccccccccccd",
     "cooldown": "3ff999999999999a",
     "range": "4070400000000000",
     "projectileSpeed": "407cc00000000000",
@@ -702,7 +702,7 @@
    },
    "perLevel": [
     {
-     "damage": "4020000000000000"
+     "damage": "402199999999999a"
     },
     {
      "splashRadius": "4028000000000000"
@@ -711,7 +711,7 @@
      "cooldown": "bfceb851eb851eb8"
     },
     {
-     "damage": "4020000000000000"
+     "damage": "402199999999999a"
     },
     {
      "splashRadius": "4028000000000000"

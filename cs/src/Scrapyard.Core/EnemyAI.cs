@@ -130,7 +130,11 @@ public static class EnemyAI
                 }
                 else
                 {
+                    // THE FIXATION ENDS ONCE - same rule as the charge above, and for the same
+                    // reason: clearing the timer before applying the multiplier is what stops this
+                    // firing every tick once `fix <= 0` rather than on the one tick it happened.
                     p.FixateLeft[d] = 0;
+                    p.Speed[d] = (float)((double)p.Speed[d] * Flavours.All[p.FlavourId[d]].FixateSpeedMul);
                 }
             }
 

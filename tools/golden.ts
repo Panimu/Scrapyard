@@ -130,16 +130,25 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // gaining pierce moved the bot again. THREE REPLACEMENTS IN AS MANY DAYS is the honest character
   // of this: it is a lucky-walk seed, and every change to what the guns do reshuffles the luck.
   //
-  // 0x6056e838 is the current one - 466 kills, one chest, dies at tick 12406. It builds no drones,
-  // which does not matter: `scrapyard-h0` carries the drone coverage independently.
+  // 0x6056e838 held through several catalog changes and then stopped too, when the elite/boss HP
+  // pass (+10%) and the Heavy's post-fixation speed jump reshuffled the bot's engagements yet
+  // again - the exact failure mode this comment has described three times already.
+  //
+  // 0x69281635 lasted a single commit - the Phase Cannon's +10% damage and the Short Missiles'
+  // +10% turn rate were enough on their own, which is this entry's whole character rather than bad
+  // luck: the bot takes weapon cards greedily, so ANY change to what a gun does rebuilds its
+  // loadout and moves where it ends up standing.
+  //
+  // 0x4016664 is the current one - 616 kills, one chest, dies at tick 16143.
   //
   // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the hits, so the
-  // search is reproducible rather than a number somebody remembered. Still opening a chest as of
-  // this commit, if this one stops: 0xc21f6e87, 0x776c48ad, 0x2cb922d3. (0x93f4ad9d no longer
-  // does - check a candidate rather than trusting the list.)
+  // search is reproducible rather than a number somebody remembered. THE SEED MUST FIT IN AN
+  // Int32: the C# corpus reader stores it as one, and a larger value fails to parse rather than
+  // diverging, so the sweep skips anything over 0x7fffffff. Still opening a chest as of this
+  // commit, if this one stops: 0xcd29461, 0x3afd554b, 0x5ae3e3bd, 0x71f94432.
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x6056e838,
+    seed: 0x4016664,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

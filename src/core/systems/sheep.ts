@@ -26,11 +26,17 @@
  * a flocking model, and it produces what the brief asked for - animals that drift into the gaps and
  * scatter when the mech arrives - without a single tunable nobody can explain.
  *
- * NO COLLISION, IN EITHER DIRECTION. A sheep does not push the mech, does not push the horde, is
- * not in the spatial hash and is not routed around by the flow field. It is a soft thing that gets
- * out of the way, and the whole point of the design is that the horde ignores it: a drum the horde
- * could break would be loot the player never sees, and a sheep the horde could BLOCK would be a
- * moving wall in a map whose character is that there are no walls.
+ * NO COLLISION WITH BODIES, IN EITHER DIRECTION. A sheep does not push the mech, does not push the
+ * horde, is not in the spatial hash and is not routed around by the flow field. It is a soft thing
+ * that gets out of the way, and the whole point of the design is that the horde ignores it: a drum
+ * the horde could break would be loot the player never sees, and a sheep the horde could BLOCK
+ * would be a moving wall in a map whose character is that there are no walls.
+ *
+ * TERRAIN IS THE EXCEPTION, and it is not the same rule wearing a different hat. The paragraph
+ * above is about BODIES - things that move, that the player is fighting, and that a soft prop must
+ * not obstruct. Scenery is the map itself, and an animal strolling through a tree trunk is a
+ * glitch rather than a design decision. So a sheep is pushed out of scenery exactly as the horde
+ * is, slide and all, and is never PLACED inside any.
  *
  * ---------------------------------------------------------------------------------------------
  * THE FLOCK FOLLOWS THE PLAYER, AND IS TOPPED UP OUT OF SIGHT
@@ -46,6 +52,7 @@
  */
 
 import { EV_SHEEP_TAKEN, pushEvent } from '../events/ring.js';
+import { pushOutOfScenery, sceneryOverlap } from '../content/scenery.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import {
   SHEEP_FLEE,
@@ -206,6 +213,12 @@ export function updateSheep(world: World, dt: number): void {
         const sx = player.x + dcos(a) * r;
         const sy = player.y + dsin(a) * r;
         if (crowded(p, sx, sy)) continue;
+        // NOR INSIDE A TREE. The ring is drawn blind, so on a wooded map a placement lands in
+        // scenery often enough to matter - and unlike the horde, which walks out of a pile on its
+        // next tick, a sheep's default state is GRAZING: it would stand in the trunk indefinitely.
+        // Rejected rather than pushed out, because a push moves it toward its neighbours and the
+        // gap test above has already been passed by then.
+        if (sceneryOverlap(world.scenery, sx, sy, SHEEP_RADIUS) >= 0) continue;
         allocSheep(p, sx, sy, world.tick);
         break;
       }
@@ -282,8 +295,33 @@ export function updateSheep(world: World, dt: number): void {
 
     if (p.state[d] === SHEEP_GRAZE) continue;
     const speed = p.state[d] === SHEEP_FLEE ? FLEE_SPEED : WALK_SPEED;
-    p.x[d] += p.dirX[d] * speed * dt;
-    p.y[d] += p.dirY[d] * speed * dt;
+    let nx = p.x[d] + p.dirX[d] * speed * dt;
+    let ny = p.y[d] + p.dirY[d] * speed * dt;
+
+    // TERRAIN STOPS A SHEEP, and it did not used to - the flock walked through trees, scrap and
+    // buildings alike. "NO COLLISION, IN EITHER DIRECTION" in the header above is about BODIES:
+    // a sheep does not push the mech and the horde ignores it, which is what keeps it a soft prop
+    // rather than a moving wall. Terrain is not a body, and an animal strolling through a tree
+    // trunk reads as a bug in a way that a sheep the horde walks past does not.
+    //
+    // THE SAME PUSH-OUT THE HORDE GETS, including the slide: keep the tangent, lose only the
+    // component heading INTO the obstacle. A sheep holds one heading for the whole of a wander, so
+    // without the slide one that set off toward a tree would grind against it for the rest of its
+    // walk timer - and a fleeing sheep would pin itself against a wall exactly when the player is
+    // chasing it, which turns "catch it in the open" into "corner it on scenery" for free.
+    const push = pushOutOfScenery(world.scenery, nx, ny, SHEEP_RADIUS);
+    if (push.hit) {
+      nx = push.x;
+      ny = push.y;
+      const into = p.dirX[d] * push.nx + p.dirY[d] * push.ny;
+      if (into < 0) {
+        p.dirX[d] -= push.nx * into;
+        p.dirY[d] -= push.ny * into;
+      }
+    }
+
+    p.x[d] = nx;
+    p.y[d] = ny;
   }
 }
 

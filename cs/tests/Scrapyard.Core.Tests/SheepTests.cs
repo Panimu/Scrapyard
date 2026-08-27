@@ -46,8 +46,11 @@ public class SheepTests
         public int Sheep { get; init; }
         public void ResolveCycle(int index, ResolvedCycle outc) => MossyLadder.Resolve(index, outc);
 
-        // Not reached by this stage: the flock steers by the mech and the hash, never by the fence
-        // or the terrain. Present because ILevel requires them.
+        // THE TERRAIN IS REACHED NOW, and this used to say it was not: "the flock steers by the
+        // mech and the hash, never by the fence or the terrain". A sheep is pushed out of scenery
+        // and is never placed inside any, so MakeScenery has to build the SAME moss walls the
+        // TypeScript fixture recorded against - which is why the case's own seed is threaded
+        // through, exactly as Simulation does it.
         public string Id => "mossy-mayhem";
         public double ArenaHalf => double.PositiveInfinity;
         public IScenery MakeScenery(int seed) => new MossWalls(seed);
@@ -85,6 +88,9 @@ public class SheepTests
 
             var w = new World(seed, Shape());
             var level = new FixtureLevel { Sheep = c.GetProperty("want").GetInt32() };
+            // Built from the CASE's seed, the way Simulation builds it from the run's - the flock
+            // is pushed out of this, so it has to be the same terrain the fixture was recorded on.
+            var scenery = level.MakeScenery(seed);
 
             w.Phase = c.GetProperty("phase").GetInt32();
             w.Tick = c.GetProperty("tick").GetInt32();
@@ -127,7 +133,7 @@ public class SheepTests
             foreach (var expect in c.GetProperty("perTick").EnumerateArray())
             {
                 w.Spatial.Rebuild(w.Enemies);
-                Sheep.UpdateSheep(w, level, dt);
+                Sheep.UpdateSheep(w, level, scenery, dt);
 
                 string where = $"{name} tick {t}";
                 int n = w.Sheep.Count;

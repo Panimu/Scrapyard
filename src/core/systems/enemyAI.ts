@@ -188,6 +188,7 @@ function seek(world: World, dt: number): void {
   const fixateX = p.fixateX;
   const fixateY = p.fixateY;
   const fixateLeft = p.fixateLeft;
+  const flavourId = p.flavourId;
   const radius = p.radius;
   const spawnId = p.spawnId;
   const n = p.count;
@@ -232,7 +233,11 @@ function seek(world: World, dt: number): void {
         tgtY = fixateY[d];
         fixated = true;
       } else {
+        // THE FIXATION ENDS ONCE - same rule as the charge above, and for the same reason:
+        // clearing the timer before applying the multiplier is what stops this firing every tick
+        // once `fix <= 0` rather than on the one tick it actually happened.
         fixateLeft[d] = 0;
+        speed[d] *= FLAVOURS[flavourId[d]].fixateSpeedMul;
       }
     }
 

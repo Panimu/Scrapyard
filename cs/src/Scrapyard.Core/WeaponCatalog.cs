@@ -719,14 +719,16 @@ public static class WeaponCatalog
     public static readonly WeaponDef MissileShort = Missile(
         WeaponIds.MissileShort, "Short Missiles",
         volley: 2, spreadAngle: 0.2617993877991494 /* degToRad(15) */, cooldown: 3.0, damage: 68, range: 280, speed: 300,
-        flightTime: 1.15, turnRate: 4.8, knockback: 210, visualId: VisualId.MissileShort,
+        // Turn rate UP A TENTH across the whole ladder - see the TypeScript for why it is the stat
+        // that decides whether a homing missile connects at all.
+        flightTime: 1.15, turnRate: 5.28, knockback: 210, visualId: VisualId.MissileShort,
         perLevel: new[]
         {
             new WeaponStatDelta { Cooldown = -0.45 },       // T2  3.00 -> 2.55 s
-            new WeaponStatDelta { TurnRate = 0.7 },         // T3  4.8 -> 5.5 rad/s
+            new WeaponStatDelta { TurnRate = 0.77 },        // T3  5.28 -> 6.05 rad/s
             new WeaponStatDelta { Damage = 22 },            // T4  68 -> 90
             new WeaponStatDelta { Cooldown = -0.45 },       // T5  2.55 -> 2.10 s
-            new WeaponStatDelta { TurnRate = 0.7 },         // T6  5.5 -> 6.2 rad/s
+            new WeaponStatDelta { TurnRate = 0.77 },        // T6  6.05 -> 6.82 rad/s
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  a third missile
         });
 
@@ -900,7 +902,9 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Phase, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            Damage = 36, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
+            // Damage UP A TENTH across the whole ladder - see the TypeScript. The blast follows
+            // for free: SplashFrac is a fraction of this, not a figure of its own.
+            Damage = 39.6, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
             Knockback = 90, SplashRadius = 55, SplashFrac = 0.5,
             // degToRad(63) - was 60, +5%. NOT the slowest turret any more if it ever was - Mortar's
             // 51.3 on the heavy mount is slower. Still the slower of the two guns on this mount.
@@ -911,10 +915,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Damage = 8 },          // T2  36 -> 44
+            new WeaponStatDelta { Damage = 8.8 },        // T2  39.6 -> 48.4
             new WeaponStatDelta { SplashRadius = 12 },   // T3  55 -> 67
             new WeaponStatDelta { Cooldown = -0.24 },    // T4  1.60 -> 1.36 s
-            new WeaponStatDelta { Damage = 8 },          // T5  44 -> 52
+            new WeaponStatDelta { Damage = 8.8 },        // T5  48.4 -> 57.2
             new WeaponStatDelta { SplashRadius = 12 },   // T6  67 -> 79
             new WeaponStatDelta { Cooldown = -0.24 },    // T7  1.36 -> 1.12 s
         },

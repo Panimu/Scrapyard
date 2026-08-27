@@ -86,8 +86,9 @@ public static class Step
         // S6c after S5 and before anything reads a sheep's position: the flock steers by the hash
         // the horde was just rebuilt into, and by the mech's position after S3. It allocates nothing
         // and is read by nothing below - a sheep is not an enemy, is not in the hash, and collides
-        // with nothing - so where it sits in the tick is a statement about what it READS.
-        Sheep.UpdateSheep(world, level, Constants.Dt);
+        // with no BODY - so where it sits in the tick is a statement about what it READS. It does
+        // collide with TERRAIN, hence the scenery.
+        Sheep.UpdateSheep(world, level, scenery, Constants.Dt);
 
         // S7
         Projectiles.UpdateProjectiles(world, scenery, Constants.Dt);

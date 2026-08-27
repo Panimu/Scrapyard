@@ -1127,13 +1127,20 @@ function missile(
 
 export const MISSILE_SHORT = missile(
   'missile-short', 'Short Missiles',
-  2, 15, 3.0, 68, 280, 300, 1.15, 4.8, 0, 0, 210, VIS_MISSILE_SHORT,
+  // TURN RATE UP A TENTH, ACROSS THE LADDER rather than at the base alone - 4.8 -> 5.28, both
+  // rungs 0.7 -> 0.77, so T7 curves at 6.82 rad/s against the 6.2 it did. A homing missile's turn
+  // rate is the whole of whether it CONNECTS: too slow and it arcs past a body that stepped aside
+  // and spends the rest of its fuse coming back round.
+  2, 15, 3.0, 68, 280, 300, 1.15, 5.28, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
-    { turnRate: 0.7 }, // T3  2.4 -> 3.1 rad/s
+    // THESE TWO USED TO READ 2.4 -> 3.1 AND 3.1 -> 3.8, describing a base this rack has not had
+    // for a long time - the C# transcription had the right figures all along. A derived number in
+    // a comment is worth nothing the moment the thing it was derived from moves.
+    { turnRate: 0.77 }, // T3  5.28 -> 6.05 rad/s
     { damage: 22 }, // T4  68 -> 90
     { cooldown: -0.45 }, // T5  2.55 -> 2.10 s
-    { turnRate: 0.7 }, // T6  3.1 -> 3.8 rad/s
+    { turnRate: 0.77 }, // T6  6.05 -> 6.82 rad/s
     { projectileCount: 1 }, // T7  a third missile
   ]),
 );
@@ -1688,7 +1695,12 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
     // BELOW THE CANNON'S 44, deliberately: the Cannon buys its number by ignoring the crowd, and
     // a gun that hits the crowd for free cannot also match it on the direct hit. The blast makes
     // up the difference exactly when the target was chosen well.
-    damage: 36,
+    //
+    // UP A TENTH, ACROSS THE WHOLE LADDER rather than only at the base, so the gun is 10% harder
+    // hitting at every tier instead of at tier 1 alone: 36 -> 39.6 here and both damage rungs
+    // 8 -> 8.8, which lands T7 on 57.2 against the 52 it was. The BLAST moves with it for free -
+    // `splashFrac` is a fraction of this number, not a figure of its own.
+    damage: 39.6,
     cooldown: PHASE_COOLDOWN,
     range: 260,
     projectileSpeed: 460,
@@ -1716,10 +1728,10 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
     reloadTime: 0,
   }),
   perLevel: Object.freeze([
-    { damage: 8 }, // T2  36 -> 44
+    { damage: 8.8 }, // T2  39.6 -> 48.4
     { splashRadius: 12 }, // T3  55 -> 67
     { cooldown: PHASE_RATE_TIER }, // T4  1.60 -> 1.36 s
-    { damage: 8 }, // T5  44 -> 52
+    { damage: 8.8 }, // T5  48.4 -> 57.2
     { splashRadius: 12 }, // T6  67 -> 79
     { cooldown: PHASE_RATE_TIER }, // T7  1.36 -> 1.12 s (0.70x base, as the Cannon's ladder)
   ]),

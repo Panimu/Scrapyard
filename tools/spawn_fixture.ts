@@ -81,6 +81,7 @@ const tables = {
     knockback: f64(f.knockback),
     relocate: f64(f.relocate),
     fixateSec: f64(f.fixateSec),
+    fixateSpeedMul: f64(f.fixateSpeedMul),
   })),
 };
 

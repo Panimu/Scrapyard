@@ -28,6 +28,41 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-27T18:40Z", "v402", "THE PHASE CANNON HITS HARDER",
+            new[]
+            {
+                "Its bolt does more damage at every tier, and the burst goes up with it.",
+            }),
+        new("2026-08-27T18:40Z", "v402", "SHORT MISSILES TURN TIGHTER",
+            new[]
+            {
+                "They curve onto a target harder at every tier, so fewer of them sail past something that stepped aside.",
+            }),
+        new("2026-08-27T18:10Z", "v402", "SHEEP NO LONGER WALK THROUGH TREES",
+            new[]
+            {
+                "The flock ignored the scenery entirely - an animal would stroll straight through a trunk or a wall. They now go round, and one is never put down inside anything.",
+            }),
+        new("2026-08-27T18:10Z", "v402", "THE DESKTOP BUILD DRAWS SHEEP AS SHEEP",
+            new[]
+            {
+                "Each one came out as a wide horizontal smear of a dozen animals - the whole animation strip drawn at once instead of one frame of it. They are single sheep now, and they chew and walk and bolt at the right speeds.",
+            }),
+        new("2026-08-27T14:47Z", "v402", "A SIEGE'S HEAVIES SPEED UP ONCE THEY TURN",
+            new[]
+            {
+                "A ring that has stood on its mark for the whole fixation used to turn and plod toward you at the same pace it walked in at. It now picks up noticeably once it starts hunting you.",
+            }),
+        new("2026-08-27T14:47Z", "v402", "ELITES AND BOSSES ARE TOUGHER",
+            new[]
+            {
+                "Both take a bit longer to bring down. Nothing else about them changed - not their damage, not their speed, not what they pay out.",
+            }),
+        new("2026-08-27T14:47Z", "v402", "THE HORDE REFILLS A TOUCH SLOWER",
+            new[]
+            {
+                "After you clear space around yourself, regulars trickle back in a little more gradually. How many can be near you at once is unchanged.",
+            }),
         new("2026-08-27T13:57Z", "v401", "THE PLASMA THROWER STOPS SHOWING ITS COOLDOWN",
             new[]
             {

@@ -279,6 +279,32 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>How far it breathes. Small - a flame flickers, it does not throb.</summary>
     private const double FlameFlickerAmt = 0.16;
 
+    /// <summary>
+    /// THE FLOCK'S ART. Both sprites are horizontal strips of equal columns, and these counts MUST
+    /// match the sheets tools/make-sheep.mjs bakes - the PNG says nothing about how many columns it
+    /// has, so a wrong number here silently draws slivers of two frames at once. They are the pack's
+    /// own frame counts rather than a choice this project made.
+    /// </summary>
+    private const int SheepGrazeFrames = 12;
+
+    private const int SheepWalkFrames = 4;
+
+    /// <summary>
+    /// Drawn HEIGHT in world units, which is how every creature on this map is sized: 30 against a
+    /// 52 u mech reads as an animal you could walk over rather than a body you have to fight. The
+    /// break radius in core is 17, deliberately a little under half of it.
+    /// </summary>
+    private const double SheepDraw = 30;
+
+    /// <summary>The same frames played at three speeds - what says walking against bolting.</summary>
+    private const double SheepGrazeFps = 6;
+
+    private const double SheepWalkFps = 10;
+    private const double SheepFleeFps = 16;
+
+    /// <summary>Irrational-ish, so neighbouring spawn ids never land on the same frame.</summary>
+    private const double SheepStagger = 2.7;
+
     /// <summary>Toxic Sludge, glob and pool alike - one colour so the two read as one substance.</summary>
     private static readonly Color SludgeTint = new(0x8c, 0xe0, 0x3a);
 
@@ -3908,9 +3934,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     /// <summary>
     /// The flock. Mossy Mayhem's loot walks about, which is the whole joke - a drum you have to
-    /// chase. Grazing and walking are different frames because a sheep that never changed pose
+    /// chase. Grazing and walking are different cycles because a sheep that never changed pose
     /// would read as scenery rather than as something worth shooting.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// BOTH SPRITES ARE HORIZONTAL STRIPS - twelve equal columns for the graze, four for the walk -
+    /// exactly like the swaying foliage (see Terrain.BlitStem). This drew the WHOLE STRIP as one
+    /// quad, so every animal on the moss map came out as a horizontal row of twelve sheep squashed
+    /// into one body's width. The frame is a source rectangle, and the scale has to come from the
+    /// FRAME's width rather than the strip's.
+    /// </para>
+    /// <para>
+    /// THE PHASE COMES FROM SpawnId, not from the dense index: the pool swap-removes, so a phase
+    /// keyed by index makes the whole field jump a frame the moment one animal is taken. A dozen
+    /// sheep chewing in lockstep is a chorus line rather than a field.
+    /// </para>
+    /// <para>
+    /// THREE RATES OVER TWO SHEETS. The same frames played quicker is what reads as walking against
+    /// bolting, and it costs no extra art. On the COSMETIC clock, matching every other animation
+    /// here, so a level-up freeze leaves the flock chewing.
+    /// </para>
+    /// </remarks>
     private void DrawSheep(World w)
     {
         var sh = w.Sheep;
@@ -3918,25 +3963,35 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         for (int i = 0; i < sh.Count; i++)
         {
-            var tex = _sprites.Get(sh.State[i] == SheepPool.Graze ? "msheep_graze" : "msheep_walk");
+            bool grazing = sh.State[i] == SheepPool.Graze;
+            var tex = _sprites.Get(grazing ? "msheep_graze" : "msheep_walk");
             if (tex is null) continue;
-            const double size = 26;
-            // Facing is a flip rather than a rotation: the art is a side view, and a sheep rotated
-            // to face north is a sheep lying on its back.
-            var flip = sh.DirX[i] < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            BlitFlipped(tex, sh.X[i], sh.Y[i], size * ((double)tex.Width / tex.Height), size, flip);
-        }
-    }
 
-    private void BlitFlipped(Texture2D tex, double wx, double wy, double ww, double wh,
-                             SpriteEffects flip)
-    {
-        var screen = _camera.ToScreen(wx, wy);
-        var scale = new Vector2(
-            (float)(ww * _camera.Scale / tex.Width),
-            (float)(wh * _camera.Scale / tex.Height));
-        _batch.Draw(tex, screen, null, Color.White, 0f,
-                    new Vector2(tex.Width / 2f, tex.Height / 2f), scale, flip, 0f);
+            int frames = grazing ? SheepGrazeFrames : SheepWalkFrames;
+            double fps = grazing ? SheepGrazeFps
+                       : sh.State[i] == SheepPool.Flee ? SheepFleeFps
+                       : SheepWalkFps;
+            double phase = sh.SpawnId[i] * SheepStagger;
+            int f = (int)(System.Math.Floor(_clockSec * fps + phase) % frames);
+            if (f < 0) f += frames;
+
+            int fw = tex.Width / frames;
+            var src = new Rectangle(f * fw, 0, fw, tex.Height);
+
+            // Facing is a flip rather than a rotation: the art is a side view, and a sheep rotated
+            // to face north is a sheep lying on its back. The pack draws them facing LEFT, so a
+            // POSITIVE heading is the flipped one - and a grazing sheep (DirX zeroed) keeps
+            // whatever it was last doing rather than snapping to face right.
+            var flip = sh.DirX[i] > 0.01f ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+
+            // SIZED BY HEIGHT, like every creature on this map, so the strip's aspect never leaks
+            // into how big an animal is drawn.
+            double scale = SheepDraw / tex.Height;
+            var screen = _camera.ToScreen(sh.X[i], sh.Y[i]);
+            _batch.Draw(tex, screen, src, Color.White, 0f,
+                        new Vector2(fw / 2f, tex.Height / 2f),
+                        new Vector2((float)(scale * _camera.Scale)), flip, 0f);
+        }
     }
 
     /// <summary>

@@ -54,6 +54,7 @@ public class SpawnTests
             AssertBits(e, "knockback", a.Knockback, $"flavour {i}");
             AssertBits(e, "relocate", a.Relocate, $"flavour {i}");
             AssertBits(e, "fixateSec", a.FixateSec, $"flavour {i}");
+            AssertBits(e, "fixateSpeedMul", a.FixateSpeedMul, $"flavour {i}");
         }
     }
 

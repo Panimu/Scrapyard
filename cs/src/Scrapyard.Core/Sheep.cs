@@ -153,7 +153,7 @@ public static class Sheep
     /// One tick of the flock. Cheap by construction: <see cref="ILevel.Sheep"/> animals, one
     /// neighbour query each and only when one is actually deciding where to go.
     /// </summary>
-    public static void UpdateSheep(World world, ILevel level, double dt)
+    public static void UpdateSheep(World world, ILevel level, IScenery scenery, double dt)
     {
         var p = world.Sheep;
         // A level either keeps a flock or does not. The Scrapyard's loot is its drums; nothing runs.
@@ -212,6 +212,13 @@ public static class Sheep
                     double sx = player.X + Trig.Cos(a) * r;
                     double sy = player.Y + Trig.Sin(a) * r;
                     if (Crowded(p, sx, sy)) continue;
+                    // NOR INSIDE A TREE. The ring is drawn blind, so on a wooded map a placement
+                    // lands in scenery often enough to matter - and unlike the horde, which walks
+                    // out of a pile on its next tick, a sheep's default state is GRAZING: it would
+                    // stand in the trunk indefinitely. Rejected rather than pushed out, because a
+                    // push moves it toward its neighbours and the gap test above has already been
+                    // passed by then.
+                    if (scenery.Overlap(sx, sy, SheepRadius) >= 0) continue;
                     p.Alloc(sx, sy, world.Tick);
                     break;
                 }
@@ -310,8 +317,39 @@ public static class Sheep
             // `dirX * speed * dt`, which JavaScript groups as `(dirX * speed) * dt`; C# groups the
             // same way, so transcribing the expression rather than reordering it keeps the two
             // multiplications in the order that decides the last bit.
-            p.X[d] = (float)((double)p.X[d] + (double)p.DirX[d] * speed * dt);
-            p.Y[d] = (float)((double)p.Y[d] + (double)p.DirY[d] * speed * dt);
+            //
+            // HELD IN DOUBLE ACROSS THE PUSH-OUT, matching the TypeScript's `nx`/`ny` locals: it
+            // rounds to float ONCE, on the store below. Rounding into the columns first and then
+            // pushing would round twice and drift the two languages apart.
+            double nx = (double)p.X[d] + (double)p.DirX[d] * speed * dt;
+            double ny = (double)p.Y[d] + (double)p.DirY[d] * speed * dt;
+
+            // TERRAIN STOPS A SHEEP, and it did not used to - the flock walked through trees, scrap
+            // and buildings alike. "Collides with nothing" was about BODIES: a sheep does not push
+            // the mech and the horde ignores it, which is what keeps it a soft prop rather than a
+            // moving wall. Terrain is not a body, and an animal strolling through a tree trunk is a
+            // glitch rather than a design decision.
+            //
+            // THE SAME PUSH-OUT THE HORDE GETS, slide and all: keep the tangent, lose only the
+            // component heading INTO the obstacle. A sheep holds one heading for a whole wander, so
+            // without the slide one that set off toward a tree would grind against it for the rest
+            // of its walk timer - and a fleeing sheep would pin itself against a wall exactly when
+            // the player is chasing it.
+            var push = scenery.PushOut(nx, ny, SheepRadius);
+            if (push.Hit)
+            {
+                nx = push.X;
+                ny = push.Y;
+                double into = (double)p.DirX[d] * push.Nx + (double)p.DirY[d] * push.Ny;
+                if (into < 0)
+                {
+                    p.DirX[d] = (float)((double)p.DirX[d] - push.Nx * into);
+                    p.DirY[d] = (float)((double)p.DirY[d] - push.Ny * into);
+                }
+            }
+
+            p.X[d] = (float)nx;
+            p.Y[d] = (float)ny;
         }
     }
 
