@@ -28,6 +28,18 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-27T08:40Z", "v397", "THE THREE GUN MOUNTS ARE RETIMED",
+            new[]
+            {
+                "The Cannon and the Mortar share the heaviest mount, and it swings a shade slower.",
+                "The Machine Gun and the Flak Cannon share the fastest mount, and it swings a shade slower too.",
+                "The Phase Cannon and the Plasma Thrower share the mount between them, and it swings a shade faster.",
+            }),
+        new("2026-08-27T08:40Z", "v397", "TOXIC SLUDGE POOLS ARE SMALLER AND SLOWER TO THROW",
+            new[]
+            {
+                "The pools it leaves are a touch smaller, and the glob that makes them leaves the rack a touch less often.",
+            }),
         new("2026-08-26T21:54Z", "v395", "THE ENERGY SHIELD IS BRIGHTER AND SIMPLER",
             new[]
             {

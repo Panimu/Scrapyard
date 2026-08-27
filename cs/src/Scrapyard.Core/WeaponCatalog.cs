@@ -401,7 +401,7 @@ public static class WeaponCatalog
             Knockback = 190, // impulse/mass: runt 380 u/s, elite 27, boss immune
             // NO SPLASH. A single heavy shell into a single body is the whole weapon - the crowd
             // is a different weapon's problem. Its only multi-target tool is T7 pierce.
-            TurretTraverse = 1.413716694115407, // degToRad(81)
+            TurretTraverse = 1.3430308594096367, // degToRad(76.95) - was 81, -5%. See the TypeScript.
             FireArc = 0.20943951023931956,      // degToRad(12)
             HeatCapacity = HeatCapacityBase,
         },
@@ -465,7 +465,7 @@ public static class WeaponCatalog
             // TypeScript for why the tier steps are scaled too.
             SplashRadius = 60,
             SplashFrac = 1,
-            TurretTraverse = 0.9424777960769379, // degToRad(54) - slower than the Cannon's, on purpose
+            TurretTraverse = 0.895353906273091, // degToRad(51.3) - was 54, -5% alongside the Cannon
             FireArc = 0.20943951023931956,       // degToRad(12)
             HeatCapacity = HeatCapacityBase,
         },
@@ -549,7 +549,7 @@ public static class WeaponCatalog
             // would not.
             SplashRadius = 26,
             SplashFrac = 0.2,
-            TurretTraverse = 1.3089969389957472, // degToRad(75)
+            TurretTraverse = 1.3744467859455345, // degToRad(78.75) - was 75, +5% alongside the Phase Cannon
             FireArc = 0.3490658503988659,        // degToRad(20)
             HeatPerSec = 7.5,
             HeatCapacity = HeatCapacityBase,
@@ -615,7 +615,7 @@ public static class WeaponCatalog
             // does. It stays here rather than moving into the puddle block so that both damage
             // tiers and Jade's chassis bonus still raise the pool. See the TypeScript.
             Damage = 4,
-            Cooldown = 1.4, // slower, 1.15 -> 1.4: the trigger rate is how fast a rack empties
+            Cooldown = 1.47, // slower again, 1.15 -> 1.4 -> 1.47 (-5%): the trigger rate is how fast a rack empties
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
             // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a
@@ -629,7 +629,8 @@ public static class WeaponCatalog
             Knockback = 0,
             // THE PUDDLE'S RADIUS, NOT A BLAST: SplashFrac is 0, so nothing in the damage path
             // ever reads this as splash. It is read once, by the puddle hook.
-            SplashRadius = 42,
+            // -5%, 42 -> 39.9, and both ladder rungs scaled to match. See the TypeScript.
+            SplashRadius = 39.9,
             SplashFrac = 0,
             TurretTraverse = 3.141592653589793, // degToRad(180) - nothing to slew, nothing to hold
             FireArc = 3.141592653589793,
@@ -644,12 +645,12 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Damage = 3 },        // T2
-            new WeaponStatDelta { AmmoCapacity = 2 },  // T3
-            new WeaponStatDelta { SplashRadius = 12 }, // T4
-            new WeaponStatDelta { Damage = 4 },        // T5
-            new WeaponStatDelta { ReloadTime = -1 },   // T6
-            new WeaponStatDelta { SplashRadius = 14 }, // T7
+            new WeaponStatDelta { Damage = 3 },          // T2
+            new WeaponStatDelta { AmmoCapacity = 2 },    // T3
+            new WeaponStatDelta { SplashRadius = 11.4 }, // T4  -5%, was 12
+            new WeaponStatDelta { Damage = 4 },          // T5
+            new WeaponStatDelta { ReloadTime = -1 },     // T6
+            new WeaponStatDelta { SplashRadius = 13.3 }, // T7  -5%, was 14
             new WeaponStatDelta(),                     // T8  no ascension
         },
         // Four seconds of ground at 2.4x the glob - a fraction for the reason Burn is one.
@@ -758,7 +759,7 @@ public static class WeaponCatalog
             ProjectileSpeed = 900, // near-hitscan; at this range travel time is not the point
             ProjectileCount = 2,
             Knockback = 14, // barely a nudge, but 22 a second adds up against a runt
-            TurretTraverse = 14.137166941154069, // degToRad(810)
+            TurretTraverse = 13.430308594096365, // degToRad(769.5) - was 810, -5%
             FireArc = 0.3490658503988659,        // degToRad(20)
             HeatCapacity = HeatCapacityBase,
             SpreadAngle = 0.08726646259971647,   // degToRad(5) - "close together", a pair, not a shotgun
@@ -794,7 +795,10 @@ public static class WeaponCatalog
         {
             Damage = 3.6, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
             Knockback = 18,
-            TurretTraverse = 12.723450247038663, // degToRad(729) - trimmed 10% off the Cannon's 810
+            // degToRad(692.55) - was 729, -5% alongside the Machine Gun on the same mount, still
+            // 90% of its 769.5. (The comment this replaces named the Cannon; the 810 it meant was
+            // always the Machine Gun's.)
+            TurretTraverse = 12.087277734686728,
             FireArc = LaserFireArc,               // degToRad(30)
             HeatCapacity = HeatCapacityBase,
             SpreadAngle = FlakCone, AmmoCapacity = 300, ReloadTime = 13,
@@ -899,7 +903,9 @@ public static class WeaponCatalog
         {
             Damage = 36, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
             Knockback = 90, SplashRadius = 55, SplashFrac = 0.5,
-            TurretTraverse = 1.0471975511965976,  // degToRad(60) - the slowest turret in the game
+            // degToRad(63) - was 60, +5%. NOT the slowest turret any more if it ever was - Mortar's
+            // 51.3 on the heavy mount is slower. Still the slower of the two guns on this mount.
+            TurretTraverse = 1.0995574287564276,
             FireArc = 0.24434609527920614,        // degToRad(14)
             HeatCapacity = HeatCapacityBase,
             FlightTime = 1.2,

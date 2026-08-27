@@ -221,7 +221,7 @@
     "knockback": "4067c00000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "3ff69e9565708efc",
+    "turretTraverse": "3ff57d0ded2aee3d",
     "fireArc": "3fcacee9f37bebd6",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -236,8 +236,8 @@
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3fdfe6cb398064d4",
     "acquireRangeSq": "40db900000000000",
-    "cosTraverseStep": "3feffdb9e4db0192",
-    "sinTraverseStep": "3f98200d0dd8e3cd",
+    "cosTraverseStep": "3feffdf2a59d7ab4",
+    "sinTraverseStep": "3f96eb4d26fa9284",
     "cosFireArc": "3fef4cfc3279eddc"
    }
   },
@@ -258,7 +258,7 @@
     "knockback": "4067c00000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "3ff69e9565708efc",
+    "turretTraverse": "3ff57d0ded2aee3d",
     "fireArc": "3fcacee9f37bebd6",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -273,8 +273,8 @@
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3fdfe6cb398064d4",
     "acquireRangeSq": "40db900000000000",
-    "cosTraverseStep": "3feffdb9e4db0192",
-    "sinTraverseStep": "3f98200d0dd8e3cd",
+    "cosTraverseStep": "3feffdf2a59d7ab4",
+    "sinTraverseStep": "3f96eb4d26fa9284",
     "cosFireArc": "3fef4cfc3279eddc"
    }
   },
@@ -297,7 +297,7 @@
     "knockback": "4067c00000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "3ff69e9565708efc",
+    "turretTraverse": "3ff57d0ded2aee3d",
     "fireArc": "3fcacee9f37bebd6",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -312,8 +312,8 @@
     "reloadTime": "0000000000000000",
     "projectileLifetime": "3fe698cff3659cc1",
     "acquireRangeSq": "40eba87ffffffffe",
-    "cosTraverseStep": "3feffdb9e4db0192",
-    "sinTraverseStep": "3f98200d0dd8e3cd",
+    "cosTraverseStep": "3feffdf2a59d7ab4",
+    "sinTraverseStep": "3f96eb4d26fa9284",
     "cosFireArc": "3fef4cfc3279eddc"
    }
   },
@@ -498,7 +498,7 @@
     "knockback": "402c000000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "402c463abeccb2bb",
+    "turretTraverse": "402adc516875a9cb",
     "fireArc": "3fd657184ae74487",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -513,8 +513,8 @@
     "reloadTime": "401c000000000000",
     "projectileLifetime": "3fc7ced916872b02",
     "acquireRangeSq": "40d7764000000000",
-    "cosTraverseStep": "3fef1da785f70e68",
-    "sinTraverseStep": "3fcde189a594fbcb",
+    "cosTraverseStep": "3fef33a17eb28f04",
+    "sinTraverseStep": "3fcc69a495998558",
     "cosFireArc": "3fee11f642522a25"
    }
   },
@@ -540,7 +540,7 @@
     "knockback": "4032000000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "40297268121ea0dc",
+    "turretTraverse": "40282cafaad04c03",
     "fireArc": "3fe0c152382d7365",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -555,8 +555,8 @@
     "reloadTime": "4016000000000000",
     "projectileLifetime": "3fea32dea32dea33",
     "acquireRangeSq": "410af72000000000",
-    "cosTraverseStep": "3fef487faa289d5d",
-    "sinTraverseStep": "3fcaf0bd16950066",
+    "cosTraverseStep": "3fef5a545a710743",
+    "sinTraverseStep": "3fc99cb472badab5",
     "cosFireArc": "3febb67ae8584c73"
    }
   },

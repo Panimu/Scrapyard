@@ -466,7 +466,8 @@ export type ProjectileBehaviour = (world: World, behaviourId: number, dt: number
  * `degToRad` is a single exactly-rounded multiply, evaluated once at module init - not a trig
  * call, and not in a loop.
  */
-const CANNON_TURRET_TRAVERSE = degToRad(81);
+// -5%, 81 -> 76.95, and Mortar (the other gun on this mount) moves with it - see its own site.
+const CANNON_TURRET_TRAVERSE = degToRad(76.95);
 
 /**
  * 12 deg. A PERMISSION gate, not a dispersion cone: within this arc the weapon is allowed to
@@ -1229,7 +1230,8 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     knockback: 14, // barely a nudge, but 22 a second adds up against a runt
     splashRadius: 0,
     splashFrac: 0,
-    turretTraverse: degToRad(810), // whips around (trimmed 10% with the Cannon's); still far ahead of its rate of fire
+    // whips around; still far ahead of its rate of fire. -5%, 810 -> 769.5.
+    turretTraverse: degToRad(769.5),
     fireArc: degToRad(20),
     heatPerSec: 0,
     heatCapacity: HEAT_CAPACITY_BASE,
@@ -1349,7 +1351,8 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     // this throws three shells into a sixty-degree cone where a degree of lag is inside the spread
     // already. What the player feels instead is the mount's WEIGHT - a flak battery swinging onto
     // a new crowd is a heavier thing coming round than a machine gun is.
-    turretTraverse: degToRad(729),
+    // -5% alongside the Machine Gun on the same mount: 729 -> 692.55, still 90% of its 769.5.
+    turretTraverse: degToRad(692.55),
     // Wider than the belt gun's 20 deg. A weapon that sprays a sixty-degree cone has no business
     // waiting to be precisely laid on first; the gate would be finer than the weapon.
     fireArc: degToRad(30),
@@ -1654,12 +1657,14 @@ export const DRONE: WeaponDef = Object.freeze({
 export const PHASE_CLUSTER_RADIUS = 80;
 
 /**
- * 60 deg/s - the slowest turret in the game, a third under the Cannon's 90. The bolt cannot miss
- * once fired (it chases its mark through everything), so the traverse is where this weapon pays:
- * a crowd that forms BEHIND the mech is three full seconds of slew away, and repositioning so the
+ * 60 deg/s, now 63 (+5%). NOT the slowest turret in the game - Mortar's 51.3, on the heavy mount,
+ * is - but the slower of the two guns sharing THIS one; see PLASMA_TURRET_TRAVERSE. The bolt
+ * cannot miss once fired (it chases its mark through everything), so the traverse is where this
+ * weapon pays: a crowd that forms BEHIND the mech is a long slew away, and repositioning so the
  * turret's job stays small is the skill the gun asks for.
  */
-const PHASE_TURRET_TRAVERSE = degToRad(60);
+// +5%, 60 -> 63. Still the slower of the two guns on this mount - see PLASMA_TURRET_TRAVERSE.
+const PHASE_TURRET_TRAVERSE = degToRad(63);
 const PHASE_FIRE_ARC = degToRad(14);
 
 /** Same derived-rate-tier shape as the Cannon's - see CANNON_COOLDOWN for why. */
@@ -1787,8 +1792,8 @@ export const MORTAR: WeaponDef = Object.freeze({
     splashRadius: 60,
     splashFrac: 1,
     // SLOWER THAN THE CANNON'S on the same mount, and the cone rule is why: a gun that hunts for
-    // work near the barrel should be visibly reluctant to leave it.
-    turretTraverse: degToRad(54),
+    // work near the barrel should be visibly reluctant to leave it. -5% alongside it, 54 -> 51.3.
+    turretTraverse: degToRad(51.3),
     fireArc: CANNON_FIRE_ARC,
     heatPerSec: 0,
     heatCapacity: HEAT_CAPACITY_BASE,
@@ -1861,7 +1866,8 @@ const PLASMA_HEAT_DISPERSION = 8.5;
 // Between the Short Laser's 165 and the Medium's 302.5, and nearer the short end: a stream of
 // slow bolts that outranged what the player can see coming would be aimed on faith.
 const PLASMA_RANGE = 230;
-const PLASMA_TURRET_TRAVERSE = degToRad(75);
+// +5%, 75 -> 78.75, alongside the Phase Cannon on the same mount.
+const PLASMA_TURRET_TRAVERSE = degToRad(78.75);
 const PLASMA_FIRE_ARC = degToRad(20);
 
 /**
@@ -2035,9 +2041,10 @@ export const SLUDGE: WeaponDef = Object.freeze({
     // pool does without any of them naming a pool. Zero here would have made the gun unupgradable
     // and every damage card a dead draw beside it.
     damage: 4,
-    // SLOWER, 1.15 -> 1.4. The magazine is three deep, so the trigger rate decides how fast a
-    // rack empties and therefore how much ground is down at once - which IS the weapon.
-    cooldown: 1.4,
+    // SLOWER AGAIN, 1.15 -> 1.4 -> 1.47 (-5%). The magazine is three deep, so the trigger rate
+    // decides how fast a rack empties and therefore how much ground is down at once - which IS
+    // the weapon.
+    cooldown: 1.47,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,
     // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a volley - see
@@ -2056,7 +2063,9 @@ export const SLUDGE: WeaponDef = Object.freeze({
     knockback: 0,
     // THE PUDDLE'S RADIUS, NOT A BLAST. `splashFrac` is 0, so nothing in the damage path ever
     // treats this as splash; it is read once, by the puddle hook, as the size of the pool.
-    splashRadius: 42,
+    // -5%, 42 -> 39.9, and both ladder rungs scaled to match (54.9 -> 51.3 space): a base-only
+    // cut is a pool that starts smaller and catches up by the tier that matters.
+    splashRadius: 39.9,
     splashFrac: 0,
     // 180 degrees of both, so the "laid on target" gate in updateWeapons can never hold fire on a
     // weapon whose target is behind it by definition.
@@ -2079,10 +2088,10 @@ export const SLUDGE: WeaponDef = Object.freeze({
   perLevel: Object.freeze([
     { damage: 3 },
     { ammoCapacity: 2 },
-    { splashRadius: 12 },
+    { splashRadius: 11.4 },
     { damage: 4 },
     { reloadTime: -1 },
-    { splashRadius: 14 },
+    { splashRadius: 13.3 },
     {},
   ]),
   // FOUR SECONDS OF GROUND AT 2.4x THE GLOB. A fraction rather than a rate of its own, exactly as

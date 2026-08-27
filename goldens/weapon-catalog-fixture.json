@@ -32,7 +32,7 @@
     "knockback": "4067c00000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "3ff69e9565708efc",
+    "turretTraverse": "3ff57d0ded2aee3d",
     "fireArc": "3fcacee9f37bebd6",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -432,7 +432,7 @@
     "knockback": "402c000000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "402c463abeccb2bb",
+    "turretTraverse": "402adc516875a9cb",
     "fireArc": "3fd657184ae74487",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -496,7 +496,7 @@
     "knockback": "4032000000000000",
     "splashRadius": "0000000000000000",
     "splashFrac": "0000000000000000",
-    "turretTraverse": "40297268121ea0dc",
+    "turretTraverse": "40282cafaad04c03",
     "fireArc": "3fe0c152382d7365",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -691,7 +691,7 @@
     "knockback": "4056800000000000",
     "splashRadius": "404b800000000000",
     "splashFrac": "3fe0000000000000",
-    "turretTraverse": "3ff0c152382d7365",
+    "turretTraverse": "3ff197c987c952c4",
     "fireArc": "3fcf46bb9c109324",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -757,7 +757,7 @@
     "knockback": "405e000000000000",
     "splashRadius": "404e000000000000",
     "splashFrac": "3ff0000000000000",
-    "turretTraverse": "3fee28c731eb6950",
+    "turretTraverse": "3feca6bd3c393da5",
     "fireArc": "3fcacee9f37bebd6",
     "heatPerSec": "0000000000000000",
     "heatCapacity": "4059000000000000",
@@ -822,7 +822,7 @@
     "knockback": "0000000000000000",
     "splashRadius": "403a000000000000",
     "splashFrac": "3fc999999999999a",
-    "turretTraverse": "3ff4f1a6c638d03f",
+    "turretTraverse": "3ff5fdbbe9bba775",
     "fireArc": "3fd657184ae74487",
     "heatPerSec": "401e000000000000",
     "heatCapacity": "4059000000000000",
@@ -879,13 +879,13 @@
    "requiresTarget": true,
    "base": {
     "damage": "4010000000000000",
-    "cooldown": "3ff6666666666666",
+    "cooldown": "3ff7851eb851eb85",
     "range": "4075400000000000",
     "projectileSpeed": "4062c00000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
     "knockback": "0000000000000000",
-    "splashRadius": "4045000000000000",
+    "splashRadius": "4043f33333333333",
     "splashFrac": "0000000000000000",
     "turretTraverse": "400921fb54442d18",
     "fireArc": "400921fb54442d18",
@@ -906,7 +906,7 @@
      "ammoCapacity": "4000000000000000"
     },
     {
-     "splashRadius": "4028000000000000"
+     "splashRadius": "4026cccccccccccd"
     },
     {
      "damage": "4010000000000000"
@@ -915,7 +915,7 @@
      "reloadTime": "bff0000000000000"
     },
     {
-     "splashRadius": "402c000000000000"
+     "splashRadius": "402a99999999999a"
     },
     {}
    ],

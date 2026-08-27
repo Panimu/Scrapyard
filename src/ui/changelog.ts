@@ -65,6 +65,24 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-27T08:40Z',
+    version: 'v397',
+    title: 'THE THREE GUN MOUNTS ARE RETIMED',
+    notes: [
+      'The Cannon and the Mortar share the heaviest mount, and it swings a shade slower.',
+      'The Machine Gun and the Flak Cannon share the fastest mount, and it swings a shade slower too.',
+      'The Phase Cannon and the Plasma Thrower share the mount between them, and it swings a shade faster.',
+    ],
+  },
+  {
+    at: '2026-08-27T08:40Z',
+    version: 'v397',
+    title: 'TOXIC SLUDGE POOLS ARE SMALLER AND SLOWER TO THROW',
+    notes: [
+      'The pools it leaves are a touch smaller, and the glob that makes them leaves the rack a touch less often.',
+    ],
+  },
+  {
     at: '2026-08-26T21:54Z',
     version: 'v395',
     title: 'THE ENERGY SHIELD IS BRIGHTER AND SIMPLER',
