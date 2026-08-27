@@ -2828,6 +2828,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // clock, so a level-up freeze leaves them alive rather than frozen mid-air.
             if (vis == VisualId.Flame)
             {
+                // TURNED A HALF-CIRCLE PAST THE SHARED SHELL OFFSET. "gout" bakes Kenney's
+                // muzzle_02 - a teardrop with a dense round HEAD and a wispy tapered TAIL, the
+                // shape of a flame licking away from its own source. ShellRotOffset assumes a
+                // bullet instead, whose POINTED end is the front - applied unmodified the wispy
+                // tail led the throw and the dense head trailed it, a fireball flying tail-first.
+                double flameAngle = angle + System.Math.PI;
+
                 double flick = 1 + System.Math.Sin(_clockSec * FlameFlickerHz + p.SpawnId[d] * 1.7)
                                    * FlameFlickerAmt;
                 double gout = len * flick;
@@ -2837,15 +2844,15 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 if (haze is not null)
                 {
                     double hz = gout * GoutHazeMul;
-                    Blit(haze, x, y, hz * ((double)haze.Width / haze.Height), hz, angle,
+                    Blit(haze, x, y, hz * ((double)haze.Width / haze.Height), hz, flameAngle,
                          FlameDeepTint * 0.34f);
                 }
 
-                Blit(tex, x, y, gout * aspect, gout, angle, tint);
+                Blit(tex, x, y, gout * aspect, gout, flameAngle, tint);
                 // Counter-phased against the body, so the core swells as the flame narrows. A core
                 // breathing WITH its own flame is the same pulse drawn twice.
                 double core = len * 0.5 * (2 - flick);
-                Blit(tex, x, y, core * aspect, core, angle, FlameCoreTint);
+                Blit(tex, x, y, core * aspect, core, flameAngle, FlameCoreTint);
                 continue;
             }
 

@@ -2400,6 +2400,16 @@ export class GameRenderer {
         // already unique per round and already deterministic, so it is the phase - two globs in
         // flight together must not pulse as a pair. On the COSMETIC clock, so a level-up freeze
         // leaves them alive rather than frozen mid-air.
+        //
+        // TURNED A HALF-CIRCLE PAST ROT_OFFSET.shell, and this is the one visual on this pool that
+        // needs it. `gout` bakes Kenney's muzzle_02 - a teardrop with a dense round HEAD and a
+        // wispy tapered TAIL, the shape of a flame licking away from its own source. ROT_OFFSET.
+        // shell assumes the opposite convention: a bullet, whose POINTED end is the front. Applied
+        // unmodified, the wispy tail led the throw and the dense head trailed it - a fireball
+        // flying tail-first. Rendered and looked at against a drawn travel-direction arrow to
+        // confirm which way was actually wrong before adding this, rather than guessing from the
+        // rotation math alone.
+        s.rotation += Math.PI;
         const flick =
           1 + Math.sin(this.clock * FLAME_FLICKER_HZ + p.spawnId[d] * 1.7) * FLAME_FLICKER_AMT;
 

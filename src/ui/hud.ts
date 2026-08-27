@@ -423,11 +423,19 @@ export class Hud {
       // the one convention a player already has, and inverting it to match the laser would be
       // consistent with the wrong thing.
       const mag = stats.ammoCapacity > 0;
+      // NOT THE SAME QUESTION AS `beam`. The Plasma Thrower is `kind: 'projectile'` and heats
+      // exactly like a laser regardless - engaged it pays `heatPerSec`, idle it sheds
+      // `heatDispersion`, at capacity it latches `overheated` (see the `hot` flag in
+      // systems/weapons.ts, which this mirrors). Gating the heat bar on `beam` alone left the
+      // Plasma Thrower's chip reading its cooldown instead: a rearm sweep that reset every shot
+      // and never showed the heat actually climbing underneath it, with no way to see a cut-out
+      // coming and no resume notch once it happened.
+      const heated = beam || stats.heatPerSec > 0;
       // EVERY OTHER PROJECTILE WEAPON is paced by a COOLDOWN, and its bar is that: how far
       // through rearming it is, filling to full when it is ready to fire. The Cannon, both
       // missile racks and the artillery share it, because they share the limiter - splitting the
       // racks out would be inventing a distinction the simulation does not make.
-      const cool = !beam && !mag;
+      const cool = !heated && !mag;
 
       const chip = this.heatChips[n];
 
@@ -472,7 +480,7 @@ export class Hud {
         // readout of a different HUD.
         chip.setAttribute(
           'aria-label',
-          `${def.name}${beam ? ' heat' : mag ? ' ammunition' : ''}`,
+          `${def.name}${heated ? ' heat' : mag ? ' ammunition' : ''}`,
         );
         // Force the value writes below, so a rebind never inherits the previous weapon's fill.
         this.heatPct[n] = -1;

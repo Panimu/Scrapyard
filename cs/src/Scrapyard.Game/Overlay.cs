@@ -192,6 +192,14 @@ public static class Overlay
             bool beam = def.Kind == WeaponKind.Beam;
             bool mag = stats.AmmoCapacity > 0;
             bool reloading = mag && inst.ReloadLeft > 0;
+            // NOT THE SAME QUESTION AS `beam`. The Plasma Thrower is WeaponKind.Projectile and
+            // heats exactly like a laser regardless - engaged it pays HeatPerSec, idle it sheds
+            // HeatDispersion, at capacity it latches Overheated (see the `hot` flag in the core
+            // weapon system, which this mirrors). Gating the heat bar on `beam` alone left its
+            // chip reading a cooldown instead - a rearm sweep resetting every shot, never showing
+            // the heat actually climbing underneath it, with no resume notch and no warning before
+            // a cut-out.
+            bool heated = beam || stats.HeatPerSec > 0;
 
             double capacity = stats.HeatCapacity > 0 ? stats.HeatCapacity : 1;
             double frac;
@@ -205,7 +213,7 @@ public static class Overlay
                 double rounds = inst.Ammo < 0 ? stats.AmmoCapacity : inst.Ammo;
                 frac = rounds / stats.AmmoCapacity;
             }
-            else if (beam)
+            else if (heated)
             {
                 double heat = inst.Heat < 0 ? 0 : inst.Heat > capacity ? capacity : inst.Heat;
                 frac = heat / capacity;
@@ -221,6 +229,8 @@ public static class Overlay
 
             // A BEAM'S BAR IS ITS OWN BEAM COLOUR, taken from the catalog rather than restated, so
             // the chip and the line drawn across the field are one number and cannot drift apart.
+            // The Plasma Thrower has no beam colour of its own to borrow, so it stays on its
+            // catalog chip colour even though it now reads heat like one.
             var fill = beam ? FromPacked(def.BeamColour) : ChipColour(def.Id);
             // OVERHEATED AND RELOADING LOOK DIFFERENT ON PURPOSE. An overheat is a FAULT and takes
             // the warning red; a reload is a procedure that is going to finish, and stays calm.
@@ -254,9 +264,9 @@ public static class Overlay
             int fw = (int)System.Math.Round(bw * frac);
             if (fw > 0) batch.Draw(sprites.Blank, new Rectangle(bx, by, fw, barH), fill);
 
-            // THE RESUME NOTCH, and only on a beam: it is a property of heat's hysteresis and says
-            // nothing about a magazine or a cooldown.
-            if (beam)
+            // THE RESUME NOTCH, and only where heat applies: it is a property of heat's hysteresis
+            // and says nothing about a magazine or a cooldown.
+            if (heated)
             {
                 int nx = bx + (int)System.Math.Round(
                     bw * System.Math.Clamp(stats.HeatResume / capacity, 0, 1));

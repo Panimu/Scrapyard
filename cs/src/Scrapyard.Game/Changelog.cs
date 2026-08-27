@@ -28,6 +28,16 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-27T13:57Z", "v401", "THE PLASMA THROWER STOPS SHOWING ITS COOLDOWN",
+            new[]
+            {
+                "It runs on heat, the same as a laser, but its loadout bar was reading the gap between shots instead - no warning before it cut out, and no resume notch once it did. It now shows heat climbing, same as the beams.",
+            }),
+        new("2026-08-27T13:56Z", "v400", "THE PLASMA THROWER'S BOLT FACES THE RIGHT WAY",
+            new[]
+            {
+                "The dense head used to trail behind the throw with the wispy tail leading it - a fireball flying backwards. The head now leads.",
+            }),
         new("2026-08-27T11:20Z", "v399", "THE ENERGY SHIELD MOVES SMOOTHER",
             new[]
             {

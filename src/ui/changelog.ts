@@ -65,6 +65,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-27T13:57Z',
+    version: 'v401',
+    title: 'THE PLASMA THROWER STOPS SHOWING ITS COOLDOWN',
+    notes: [
+      'It runs on heat, the same as a laser, but its loadout bar was reading the gap between shots instead — no warning before it cut out, and no resume notch once it did. It now shows heat climbing, same as the beams.',
+    ],
+  },
+  {
+    at: '2026-08-27T13:56Z',
+    version: 'v400',
+    title: 'THE PLASMA THROWER’S BOLT FACES THE RIGHT WAY',
+    notes: [
+      'The dense head used to trail behind the throw with the wispy tail leading it — a fireball flying backwards. The head now leads.',
+    ],
+  },
+  {
     at: '2026-08-27T11:20Z',
     version: 'v399',
     title: 'THE ENERGY SHIELD MOVES SMOOTHER',
