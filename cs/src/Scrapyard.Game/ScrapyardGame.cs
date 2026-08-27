@@ -3559,9 +3559,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// </para>
     /// <para>
     /// WHAT IS LEFT IS THE ART. Two copies of the same three-frame Kenney twirl, counter-rotating
-    /// at different rates and different sizes. The frame cycle changes the SHAPE and the spin moves
-    /// it, on separate clocks, so the pose never repeats; the counter-rotation is the oldest trick
-    /// there is for saying "powered", and it is now the only thing saying it.
+    /// at different rates and different sizes; the counter-rotation is the oldest trick there is
+    /// for saying "powered", and it is the only thing saying it now the rims are gone.
+    /// </para>
+    /// <para>
+    /// THE POSE USED TO SNAP. Each copy's shape was a bare texture swap between the three poses
+    /// every 200ms - a real, visible pop, since the ROTATION was always continuous and only the
+    /// SHAPE stuttered. It is now CROSSFADED: two sprites per copy, the outgoing pose fading out
+    /// as the incoming one fades in, weighted by how far through the current 200ms window the
+    /// clock is. Four blits a frame instead of two, and the shape now morphs continuously between
+    /// three still poses rather than snapping between them.
     /// </para>
     /// <para>
     /// BRIGHT BLUE AND ONLY SLIGHTLY TRANSPARENT. The walking three-stop gradient went with the
@@ -3600,24 +3607,36 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // and is at least the one a player reads without counting anything.
         double outer = ShieldRimRadius + (layers - 1) * ShieldRimStep;
 
-        int frame = (int)(_clockSec * ShieldTwirlFps) % ShieldTwirlFrames;
-        if (frame < 0) frame += ShieldTwirlFrames;
+        // CROSSFADED, NOT SWITCHED. `phase` is the pose index as a continuous number; the pose
+        // itself is `floor(phase)` and `frac` is how far into the transition TO THE NEXT pose the
+        // clock currently is. Drawing both poses and fading between them by `frac` is what turns a
+        // hard 5Hz texture pop into a shape that visibly, continuously morphs.
+        double phase = _clockSec * ShieldTwirlFps;
+        int poseFloor = (int)System.Math.Floor(phase);
+        double frac = phase - poseFloor;
 
         for (int i = 0; i < 2; i++)
         {
-            var body = _sprites.Get($"twirl_{(frame + i) % ShieldTwirlFrames}");
-            if (body is null) break;
-
             // THE INNER COPY IS SMALLER, TURNS THE OTHER WAY AND IS BRIGHTER. It used to be the
             // faint one, which put the dimmer layer over the mech itself.
             double size = outer * 2 * (i == 0 ? 1 : ShieldInnerSize);
             float layerAlpha = alpha * (i == 0 ? ShieldBodyAlpha : ShieldBodyAlpha * ShieldInnerBoost);
             if (layerAlpha > 1f) layerAlpha = 1f;
+            double rotation = _clockSec * ShieldTwirlSpin * (i == 0 ? 1 : -0.62);
 
-            BlitRotated(body, px, py, size, size,
-                        _clockSec * ShieldTwirlSpin * (i == 0 ? 1 : -0.62),
-                        ShieldTint * layerAlpha,
-                        SpriteEffects.None);
+            // STAGGERED A POSE APART BETWEEN THE TWO COPIES, as before - `+ i` on the pose index,
+            // not on the phase, so the stagger is exact and does not itself need crossfading.
+            for (int poseOffset = 0; poseOffset < 2; poseOffset++)
+            {
+                double weight = poseOffset == 0 ? 1 - frac : frac;
+                if (weight <= 0) continue;
+                int pose = ((poseFloor + i + poseOffset) % ShieldTwirlFrames + ShieldTwirlFrames)
+                           % ShieldTwirlFrames;
+                var body = _sprites.Get($"twirl_{pose}");
+                if (body is null) continue;
+                BlitRotated(body, px, py, size, size, rotation,
+                            ShieldTint * (float)(layerAlpha * weight), SpriteEffects.None);
+            }
         }
     }
 

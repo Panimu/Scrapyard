@@ -385,8 +385,12 @@ const SHIELD_INNER_SIZE = 0.72;
  */
 const SHIELD_INNER_BOOST = 1.45;
 
-/** Sprites the field's body costs. Two counter-rotating copies, and one shield on screen. */
-const SHIELD_BODY_SPRITES = 4;
+/**
+ * Sprites the field's body costs a frame - two counter-rotating copies, each drawn as TWO poses
+ * crossfading into each other (see drawShieldRim), and one shield on screen. 4 needed, doubled
+ * for headroom the same way the rest of this file's pools are.
+ */
+const SHIELD_BODY_SPRITES = 8;
 
 /** The baked tile's size, in px. See tools/make-plasma.mjs. */
 const SHIELD_TWIRL_SRC = 128;
@@ -2185,43 +2189,32 @@ export class GameRenderer {
   }
 
   /**
-   * The Energy Shield: a field, drawn as counter-rotating arc segments with a haze inside them.
+   * The Energy Shield: two counter-rotating twirl sprites, one bright blue, crossfaded rather than
+   * flipbooked between poses.
    *
-   * WHY IT IS NOT CONCENTRIC RINGS ANY MORE. It was, and the problem with two blue circles that
-   * pulse together is that nothing about them says ENERGY - a ring is the most inert shape there
-   * is, and two of them read as a target painted on the mech's own feet. Worse, the whole thing
-   * moved as ONE object: both rings brightened and dimmed on the same clock, so the field had a
-   * single heartbeat and no internal life at all.
+   * WHAT IT USED TO BE. Concentric pulsing rings, then hand-drawn broken arcs layered over a
+   * twirl sprite, then just the sprite alone once the arcs were cut - each version is its own
+   * commit's worth of history and none of it matters here except the last step, which is where
+   * this picks up.
    *
-   * FOUR THINGS FIX THAT, and each one is doing a different job:
+   * THE POSE USED TO SNAP. Three baked frames (twirl_01/02/03), texture-swapped on a bare
+   * `Math.floor` every 200ms - a real, visible pop every fifth of a second, rendered and looked
+   * at rather than reasoned about (see the two frames a few ticks apart that caught it). The
+   * ROTATION was always continuous; it was the SHAPE changing that stuttered.
    *
-   *   THE HAZE. A faint disc filling the innermost rim, so the field is a VOLUME the mech is
-   *   standing inside rather than an outline drawn round it. This is the single biggest change:
-   *   an outline says "boundary", a fill says "inside here is different".
+   * NOW CROSSFADED: two sprites per copy, the outgoing pose fading out as the incoming one fades
+   * in, weighted by how far through the current 200ms window the clock is. Four sprites a frame
+   * instead of two, and the pop is gone - the shape now morphs continuously between three still
+   * poses instead of snapping between them, which is the only way to get continuous motion out of
+   * a three-frame flipbook without more source art (the Kenney pack has exactly these three).
    *
-   *   BROKEN RINGS. Each layer is arcs with gaps rather than a closed circle. A closed ring is a
-   *   solid object; a ring with holes in it is something being HELD together.
+   * TWO COPIES COUNTER-ROTATING, STAGGERED A POSE APART, unchanged from before: the oldest trick
+   * for saying "powered" - and one bright blue rather than a walk through three, since the walk
+   * existed to keep a field made of flat strokes from reading as a decal, and a spiralling,
+   * crossfading sprite already has plenty of motion of its own.
    *
-   *   COUNTER-ROTATION. Layer n turns the opposite way to layer n-1, at a different rate. Two
-   *   rings turning against each other is the oldest trick there is for saying "powered", and it
-   *   costs one angle per layer.
-   *
-   *   A SWEEP. One brighter, faster arc running round the outermost rim - the bit of motion the
-   *   eye actually catches, and the reason the field reads as scanning rather than idling.
-   *
-   * REBUILT EVERY FRAME, unlike the old version, and that is the price of all of the above: the
-   * THE HAND-DRAWN RIMS ARE GONE. There were broken rings - one arc-segmented circle per shield
-   * layer, counter-rotating, plus a bright sweep running the outermost one. The argument for them
-   * was that a ring with holes in it reads as something being HELD together. The argument against
-   * is what they looked like next to the sprite: flat strokes sitting OVER the twirl and arguing
-   * with it, so the field read as artwork with a wireframe drawn on top rather than as one thing.
-   * What is left is the art.
-   *
-   * BRIGHT BLUE AND ONLY SLIGHTLY TRANSPARENT, on ONE tint rather than a walk through three. The
-   * walk existed to keep a field made of flat strokes from reading as a decal, and a spiralling
-   * sprite has motion of its own; a single confident blue also holds against the rust ground far
-   * better than a colour that spent a third of its cycle near white, which is what used to make
-   * the shield look like it was failing at the top of every pulse.
+   * THE INNER COPY IS THE BRIGHTER ONE - it sits over the mech, the part a player is actually
+   * looking at, and putting the dimmer layer there was backwards.
    *
    * IT DOES NOT ROTATE WITH THE CHASSIS and does not yaw with the gait - it is a field, not a part
    * of the machine, and something that walked with the legs would read as painted on.
@@ -2264,20 +2257,41 @@ export class GameRenderer {
     //
     // THE INNER COPY IS THE BRIGHTER ONE. It was the fainter, at 0.7 of the outer, which put the
     // dimmer layer exactly where the mech is - the part a player is actually looking at.
-    const frame = Math.floor(clock * SHIELD_TWIRL_FPS) % SHIELD_TWIRL_FRAMES;
+    // CROSSFADED, NOT SWITCHED. `phase` is the pose index as a continuous number; the pose
+    // itself is `floor(phase)` and `frac` is how far into the transition TO THE NEXT pose the
+    // clock currently is. Drawing both poses and fading between them by `frac` is what turns a
+    // hard 5Hz texture pop into a shape that visibly, continuously morphs.
+    const phase = clock * SHIELD_TWIRL_FPS;
+    const poseFloor = Math.floor(phase);
+    const frac = phase - poseFloor;
     for (let i = 0; i < 2; i++) {
-      const b = this.shieldBody.acquire();
-      if (b === undefined) break;
-      b.texture = this.tex.twirl[(frame + i) % SHIELD_TWIRL_FRAMES];
-      b.position.set(px, py);
-      b.rotation = clock * SHIELD_TWIRL_SPIN * (i === 0 ? 1 : -0.62);
+      // STAGGERED A POSE APART BETWEEN THE TWO COPIES, as before - `+ i` on the pose index, not
+      // on the phase, so the stagger is exact and does not itself need crossfading.
+      const rotation = clock * SHIELD_TWIRL_SPIN * (i === 0 ? 1 : -0.62);
       const size = outer * 2 * (i === 0 ? 1 : SHIELD_INNER_SIZE);
-      b.scale.set(size / SHIELD_TWIRL_SRC);
-      b.tint = SHIELD_TINT;
-      b.alpha = Math.min(
+      const alpha = Math.min(
         1,
         g.alpha * (i === 0 ? SHIELD_BODY_ALPHA : SHIELD_BODY_ALPHA * SHIELD_INNER_BOOST),
       );
+      for (const [poseOffset, weight] of [
+        [0, 1 - frac],
+        [1, frac],
+      ] as const) {
+        // WEIGHT-ZERO SPRITES ARE STILL SKIPPED, not drawn invisibly - `frac` lands on exactly 0
+        // most frames (any tick that is not itself a crossfade step), and acquiring a sprite only
+        // to draw it at alpha 0 is a wasted blit every such frame for nothing on screen.
+        if (weight <= 0) continue;
+        const b = this.shieldBody.acquire();
+        if (b === undefined) break;
+        const pose = (((poseFloor + i + poseOffset) % SHIELD_TWIRL_FRAMES) + SHIELD_TWIRL_FRAMES) %
+          SHIELD_TWIRL_FRAMES;
+        b.texture = this.tex.twirl[pose];
+        b.position.set(px, py);
+        b.rotation = rotation;
+        b.scale.set(size / SHIELD_TWIRL_SRC);
+        b.tint = SHIELD_TINT;
+        b.alpha = alpha * weight;
+      }
     }
 
     // NOTHING IS STROKED INTO `g` ANY MORE. It is kept, cleared and positioned above so the

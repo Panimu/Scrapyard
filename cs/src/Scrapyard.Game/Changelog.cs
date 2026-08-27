@@ -28,6 +28,11 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-27T11:20Z", "v399", "THE ENERGY SHIELD MOVES SMOOTHER",
+            new[]
+            {
+                "Its swirl used to snap between three poses five times a second - the rotation was always smooth, but the shape itself popped. It now morphs continuously between them instead.",
+            }),
         new("2026-08-27T09:27Z", "v398", "THE MACHINE GUN AND THE FLAK CANNON CAN BE HELD TOGETHER",
             new[]
             {

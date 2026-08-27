@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-27T11:20Z',
+    version: 'v399',
+    title: 'THE ENERGY SHIELD MOVES SMOOTHER',
+    notes: [
+      'Its swirl used to snap between three poses five times a second — the rotation was always smooth, but the shape itself popped. It now morphs continuously between them instead.',
+    ],
+  },
+  {
     at: '2026-08-27T09:27Z',
     version: 'v398',
     title: 'THE MACHINE GUN AND THE FLAK CANNON CAN BE HELD TOGETHER',
