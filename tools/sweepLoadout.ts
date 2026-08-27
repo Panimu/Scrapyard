@@ -19,10 +19,31 @@
  * FIVE GUNS, because five is the ceiling: `MAX_WEAPONS` is 3 and both Reinforced Mounts purchases
  * take it to 5. `--size` will measure threes or fours instead.
  *
- * MINUS THE COMBINATIONS THAT CANNOT BE HELD. Three pairs exclude each other - Cannon/Mortar,
- * Flak Cannon/Machine Gun, Phase Cannon/Plasma Thrower - and `WeaponDef.excludes` is read here
- * rather than restated, so a fourth pair added to the catalog is dropped from this sweep with no
- * edit. Of the 2002 five-gun combinations, 1372 are playable and 630 are not.
+ * MINUS THE COMBINATIONS THAT CANNOT BE HELD. Some pairs exclude each other - Cannon/Mortar and
+ * Phase Cannon/Plasma Thrower share one turret mount each, and `WeaponDef.excludes` is read HERE
+ * rather than restated, so an exclusion added or removed in the catalog changes what this sweep
+ * measures with no edit to this file. (The Flak Cannon and the Machine Gun used to be a third
+ * such pair and no longer are - see the commit that removed it - which is exactly the kind of
+ * change this file should not have to know happened. The printed banner states the current
+ * count each run rather than a number frozen in this comment.)
+ *
+ * ---------------------------------------------------------------------------------------------
+ * THE MINI SWEEP
+ * ---------------------------------------------------------------------------------------------
+ * `--mini` swaps the exhaustive generator for MINI_SET below: a fixed 28 loadouts, validated
+ * against a completed full sweep to reproduce its per-weapon share, DPS and win-rate RANKINGS
+ * (Spearman rho >= 0.95 on every metric checked, most >= 0.998 - see the commit that added this
+ * for the validation numbers). ~56x fewer loadouts than a full sweep, same 5 seeds, same two
+ * tiers - minutes instead of hours.
+ *
+ * WHAT IT CANNOT DO: say anything trustworthy about PAIRS. 28 loadouts touch only 87 of the 91
+ * possible pairs at all, and only 13 clear the >=5-observation floor the full sweep's own Pairs
+ * table uses - nowhere near enough to rank "which two guns synergise". The mini report says so
+ * rather than showing a Pairs table built on 1-2 observations that would look exactly as
+ * confident as one built on 190.
+ *
+ * `--mini` IGNORES `--size` - the set is fixed at five-weapon loadouts, which is what it was
+ * validated against, and there is no version of it for threes or fours.
  *
  * ---------------------------------------------------------------------------------------------
  * IT RUNS IN PARALLEL AND IT RESUMES
@@ -42,6 +63,7 @@
  * USAGE
  * ---------------------------------------------------------------------------------------------
  *   sweep                        the lot: fives, 3 seeds, cores-2 workers, writes sweep/index.html
+ *   sweep --mini                 the validated 28-loadout set instead - writes sweep/mini.html
  *   sweep --size 3               every three-gun loadout instead
  *   sweep --seeds 5              five seeds a combination rather than three
  *   sweep --jobs 4               fewer workers, if the machine is wanted for something else
@@ -75,7 +97,7 @@ import { constants, cpus, setPriority } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WEAPON_CATALOG } from '../src/core/index.js';
+import { WEAPON_CATALOG, type WeaponId } from '../src/core/index.js';
 import { DEFAULT_SEEDS } from './measureRig.js';
 import { renderSweepHtml, type SweepRow, type SweepMeta } from './sweepReport.js';
 
@@ -93,8 +115,8 @@ const OUT_DIR = join(ROOT, 'sweep');
  * results survive an ascended sweep rather than being overwritten by it, which is the whole point
  * of keeping both.
  */
-const resultsPath = (size: number, seeds: number, mode: Mode): string =>
-  join(OUT_DIR, `results-${size}w-${seeds}s-${mode}.jsonl`);
+const resultsPath = (size: number, seeds: number, mode: Mode, mini: boolean): string =>
+  join(OUT_DIR, `results-${mini ? 'mini' : `${size}w`}-${seeds}s-${mode}.jsonl`);
 
 /**
  * WHAT TIER THE GUNS ARE HELD AT.
@@ -110,7 +132,7 @@ const resultsPath = (size: number, seeds: number, mode: Mode): string =>
  * nobody finishes, and one that showed only the first would be hiding the capstones.
  */
 type Mode = 't7' | 'asc';
-const PAGE = join(OUT_DIR, 'index.html');
+const pagePath = (mini: boolean): string => join(OUT_DIR, mini ? 'mini.html' : 'index.html');
 
 // ---------------------------------------------------------------------------------------------
 // Which combinations exist
@@ -159,6 +181,67 @@ function combinations(size: number): number[][] {
 
   walk(0);
   return out;
+}
+
+
+/**
+ * THE 28 LOADOUTS. Weapon IDS, not catalog indices - stored the same way the save file is, for
+ * the same reason: an index is only meaningful beside the table that produced it, and reordering
+ * WEAPON_CATALOG must not silently hand this a different set.
+ *
+ * BALANCED BY CONSTRUCTION - each of the fourteen weapons appears in exactly 10 of these 28
+ * loadouts (28 x 5 / 14 = 10 exactly), which is what a plain random draw at this size cannot
+ * promise and sometimes fails at badly enough to miss a weapon entirely. Picked by a greedy
+ * sampler that always took the next candidate hurting per-weapon balance least, seeded once and
+ * then locked - not re-rolled on every run, because a "mini sweep" that drew a fresh random set
+ * each time would not be reproducible from one balance change to the next.
+ *
+ * DO NOT HAND-EDIT THIS LIST. If the roster gains a fifteenth weapon, or an exclusion changes
+ * which combinations are legal, the validation this set is trusted on has to be redone - rerun
+ * the sampler in the commit that added it and replace the whole array, with fresh rho numbers in
+ * the commit message. A set edited by hand carries the old validation's confidence for numbers
+ * nothing actually checked.
+ */
+const MINI_SET: readonly (readonly WeaponId[])[] = [
+  ['cannon', 'flak-cannon', 'laser-medium', 'missile-long', 'phase-cannon'],
+  ['artillery', 'drone', 'laser-short', 'machine-gun', 'plasma'],
+  ['laser-long', 'missile-short', 'mortar', 'plasma', 'sludge'],
+  ['artillery', 'cannon', 'laser-long', 'laser-short', 'missile-long'],
+  ['drone', 'flak-cannon', 'missile-short', 'mortar', 'phase-cannon'],
+  ['cannon', 'laser-medium', 'machine-gun', 'missile-short', 'sludge'],
+  ['artillery', 'drone', 'flak-cannon', 'missile-long', 'phase-cannon'],
+  ['laser-medium', 'laser-short', 'mortar', 'plasma', 'sludge'],
+  ['cannon', 'laser-long', 'laser-short', 'machine-gun', 'sludge'],
+  ['drone', 'flak-cannon', 'laser-medium', 'machine-gun', 'plasma'],
+  ['artillery', 'laser-long', 'missile-long', 'missile-short', 'phase-cannon'],
+  ['artillery', 'laser-long', 'missile-long', 'mortar', 'plasma'],
+  ['cannon', 'drone', 'flak-cannon', 'laser-medium', 'missile-short'],
+  ['laser-short', 'machine-gun', 'mortar', 'phase-cannon', 'sludge'],
+  ['artillery', 'drone', 'flak-cannon', 'missile-long', 'sludge'],
+  ['cannon', 'laser-long', 'laser-medium', 'laser-short', 'missile-short'],
+  ['laser-long', 'machine-gun', 'missile-short', 'mortar', 'phase-cannon'],
+  ['artillery', 'drone', 'flak-cannon', 'machine-gun', 'plasma'],
+  ['laser-medium', 'laser-short', 'missile-long', 'mortar', 'phase-cannon'],
+  ['artillery', 'cannon', 'drone', 'plasma', 'sludge'],
+  ['flak-cannon', 'laser-medium', 'laser-short', 'machine-gun', 'sludge'],
+  ['cannon', 'laser-long', 'missile-long', 'missile-short', 'phase-cannon'],
+  ['flak-cannon', 'laser-short', 'missile-short', 'mortar', 'plasma'],
+  ['artillery', 'machine-gun', 'missile-long', 'mortar', 'phase-cannon'],
+  ['cannon', 'drone', 'laser-medium', 'plasma', 'sludge'],
+  ['artillery', 'cannon', 'laser-long', 'laser-medium', 'phase-cannon'],
+  ['drone', 'flak-cannon', 'machine-gun', 'missile-short', 'mortar'],
+  ['laser-long', 'laser-short', 'missile-long', 'plasma', 'sludge'],
+];
+
+/** MINI_SET resolved to catalog indices, in the order the rest of this file works in. */
+function miniCombos(): number[][] {
+  return MINI_SET.map((ids) =>
+    ids.map((id) => {
+      const d = WEAPON_CATALOG.findIndex((w) => w.id === id);
+      if (d < 0) throw new Error(`sweep: MINI_SET names unknown weapon '${id}'`);
+      return d;
+    }),
+  );
 }
 
 /** The stable name of a combination, and its key in the results file. */
@@ -216,12 +299,14 @@ function priorityName(p: number): string {
 }
 
 async function main(argv: readonly string[]): Promise<void> {
-  const size = num(argv, '--size', 5);
-  const seedCount = Math.min(num(argv, '--seeds', 3), DEFAULT_SEEDS.length);
+  const mini = argv.includes('--mini');
+  // MINI IGNORES --size: the set is fixed at five, which is what it was validated against.
+  const size = mini ? 5 : num(argv, '--size', 5);
+  const seedCount = Math.min(num(argv, '--seeds', mini ? 5 : 3), DEFAULT_SEEDS.length);
   // TWO CORES LEFT FOR THE MACHINE. A sweep that takes the whole desktop for a quarter of an hour
   // is a sweep somebody kills halfway through.
   const jobs = num(argv, '--jobs', Math.max(1, cpus().length - 2));
-  const limit = num(argv, '--limit', 0);
+  const limit = mini ? 0 : num(argv, '--limit', 0);
   const fresh = argv.includes('--fresh');
   const priority = pickPriority(argv);
   const modes = pickModes(argv);
@@ -233,18 +318,27 @@ async function main(argv: readonly string[]): Promise<void> {
   mkdirSync(OUT_DIR, { recursive: true });
 
   const seeds = DEFAULT_SEEDS.slice(0, seedCount);
-  let combos = combinations(size);
-  const playable = combos.length;
+  let combos = mini ? miniCombos() : combinations(size);
+  const playable = mini ? combos.length : combos.length;
   if (limit > 0) combos = combos.slice(0, limit);
 
   console.log('');
-  console.log(`  SWEEPING EVERY ${size}-WEAPON LOADOUT`);
-  console.log(
-    `  ${playable} playable of ${choose(WEAPON_CATALOG.length, size)} combinations` +
-      `${limit > 0 ? `, limited to ${combos.length}` : ''}   ` +
-      `${seedCount} seed${seedCount === 1 ? '' : 's'} each   ${jobs} workers at ` +
-      `${priorityName(priority)} priority`,
-  );
+  if (mini) {
+    console.log(`  MINI SWEEP - ${combos.length} FIXED LOADOUTS, VALIDATED AGAINST A FULL SWEEP`);
+    console.log(
+      `  per-weapon share/DPS/win rankings only - see the header for why pairs are not in this` +
+        ` report   ${seedCount} seed${seedCount === 1 ? '' : 's'} each   ${jobs} workers at ` +
+        `${priorityName(priority)} priority`,
+    );
+  } else {
+    console.log(`  SWEEPING EVERY ${size}-WEAPON LOADOUT`);
+    console.log(
+      `  ${playable} playable of ${choose(WEAPON_CATALOG.length, size)} combinations` +
+        `${limit > 0 ? `, limited to ${combos.length}` : ''}   ` +
+        `${seedCount} seed${seedCount === 1 ? '' : 's'} each   ${jobs} workers at ` +
+        `${priorityName(priority)} priority`,
+    );
+  }
   console.log(`  tiers: ${modes.map((m) => (m === 't7' ? 'tier 7' : 'ascended')).join(' and ')}`);
 
   // ---- one pass per mode ---------------------------------------------------------------------
@@ -253,7 +347,7 @@ async function main(argv: readonly string[]): Promise<void> {
   const byMode: Record<Mode, SweepRow[]> = { t7: [], asc: [] };
 
   for (const mode of modes) {
-    const results = resultsPath(size, seedCount, mode);
+    const results = resultsPath(size, seedCount, mode, mini);
     if (fresh && existsSync(results)) rmSync(results);
 
     const done = new Map<string, SweepRow>();
@@ -303,12 +397,12 @@ async function main(argv: readonly string[]): Promise<void> {
     measured: Math.max(byMode.t7.length, byMode.asc.length),
     generatedAt: new Date().toISOString(),
     weapons: WEAPON_CATALOG.map((w) => ({ id: w.id, name: w.name })),
+    mini,
   };
-  writeFileSync(PAGE, renderSweepHtml(byMode.t7, byMode.asc, meta), 'utf8');
+  const page = pagePath(mini);
+  writeFileSync(page, renderSweepHtml(byMode.t7, byMode.asc, meta), 'utf8');
   console.log('');
-  console.log(
-    `  wrote ${PAGE}   ${byMode.t7.length} at tier 7, ${byMode.asc.length} ascended`,
-  );
+  console.log(`  wrote ${page}   ${byMode.t7.length} at tier 7, ${byMode.asc.length} ascended`);
   console.log('');
 }
 

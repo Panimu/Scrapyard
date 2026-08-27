@@ -6,6 +6,10 @@ rem  Measure EVERY loadout a player could build, and open the results.
 rem
 rem    sweep                    the lot - every playable 5-weapon loadout, 3 seeds each,
 rem                             measured TWICE: at tier 7, and again with ascensions allowed
+rem    sweep --mini             28 FIXED loadouts instead - minutes, not hours. Validated to
+rem                             reproduce the full sweep's per-weapon rankings; says nothing
+rem                             about pairs (too few loadouts touch any one pair enough times).
+rem                             Writes sweep/mini.html, never overwrites the full sweep's page.
 rem    sweep --fresh            discard previous results first. USE THIS AFTER A BALANCE CHANGE.
 rem    sweep --ascend none      tier 7 only - half the work, half the page
 rem    sweep --size 3           every 3-weapon loadout instead

@@ -170,6 +170,12 @@ stale without anyone noticing.
 **Measurement runs are OPT-IN.** They take minutes and they are not free. Run them when asked to,
 or when a change has to be defended with a number — not reflexively after every edit.
 
+**The FULL sweep is stronger than opt-in: it is user-initiated only.** Don't launch it on your own
+after a balance change, even one that plainly invalidates a previous sweep's data — say the data is
+now stale and stop there. `sweep --mini` is cheap enough (minutes) to run proactively when checking
+a change; the full sweep (`sweep`, no flag) is not, and the user wants to control when that cost is
+paid.
+
 The reference bot in `src/sim/botPolicy.ts` is a MEASUREMENT INSTRUMENT. When a world change makes
 it behave stupidly (it once walked into the new perimeter fence and stood there), fix the bot —
 otherwise every pacing number after that point is about the bot rather than the game.
@@ -282,6 +288,9 @@ sweep               EVERY playable 5-gun loadout, at T7 AND ascended -> sweep/in
                     (~90 min, resumable, below-normal priority)
 sweep --fresh       the same, discarding earlier results. USE AFTER A BALANCE CHANGE.
 sweep --ascend none the tier-7 half only, in half the time
+sweep --mini        28 FIXED loadouts, validated to reproduce the full sweep's per-weapon
+                    rankings (not pairs - too few loadouts touch any one pair enough times)
+                    -> sweep/mini.html. Minutes, not hours.
 
 npm run mechs       redraw the chassis sprites
 npm run plasma      rebake the Kenney particles (burn frames, gout, shield twirl)

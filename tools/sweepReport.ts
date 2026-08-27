@@ -53,6 +53,8 @@ export interface SweepMeta {
   measured: number;
   generatedAt: string;
   weapons: { id: string; name: string }[];
+  /** Fixed validated 28-loadout set rather than the exhaustive generator. See MINI_SET. */
+  mini: boolean;
 }
 
 /**
@@ -348,6 +350,15 @@ export function renderSweepHtml(
       are not measured &mdash; they cannot be held. Numbers are pooled across seeds rather than
       averaged, so a seed that ran longer counts for more. The reference bot plays every run, so
       this measures what the guns do for a competent-but-not-clever pilot.
+      ${
+        meta.mini
+          ? '<br><br><b>THIS IS THE MINI SWEEP</b> \u2014 28 fixed loadouts, not the full 1500+.' +
+            ' Validated to reproduce the full sweep\u2019s per-weapon share, DPS and win-rate' +
+            ' RANKINGS (Spearman \u03c1 \u2265 0.95 on every metric checked against a completed' +
+            ' full sweep). It does <b>not</b> have enough loadouts to say anything about pairs' +
+            ' \u2014 see the note where that table would be.'
+          : ''
+      }
     </div>
   </header>
 
@@ -388,14 +399,25 @@ export function renderSweepHtml(
   </p>
   <div class="card scroll"><table id="tw"></table></div>
 
-  <h2>Pairs</h2>
+  ${
+    meta.mini
+      ? `<h2>Pairs</h2>
+  <p class="lede">
+    Not measured here. 28 loadouts touch most of the 91 possible pairs at least once, but almost
+    none of them enough times to say anything about lift &mdash; the full sweep\u2019s own Pairs
+    table only trusts a pair past eight observations, and a mini sweep this size clears that bar
+    for barely more than a tenth of them. Run the full sweep for pair analysis; this one was
+    validated for per-weapon rankings only.
+  </p>`
+      : `<h2>Pairs</h2>
   <p class="lede">
     Which two guns are worth more together than apart. <b>Lift</b> compares the mean damage of
     loadouts holding both against what those two weapons average separately &mdash; above 1.00 is a
     pair that helps itself, below is a pair that gets in its own way. Only pairs with enough
     loadouts behind them to mean anything are listed.
   </p>
-  <div class="card scroll"><table id="tp"></table></div>
+  <div class="card scroll"><table id="tp"></table></div>`
+  }
 
   <h2>Loadouts</h2>
   <div class="controls">
@@ -582,6 +604,10 @@ export function renderSweepHtml(
   build(document.getElementById('tw'), wcols, wrows, 'share');
 
   // ---- pairs --------------------------------------------------------------------------------------
+  // SKIPPED ENTIRELY IN MINI MODE. There is no #tp table in the DOM to build into - see the
+  // markup above, which replaces the whole Pairs section with an explanation instead - and
+  // nothing here would be trustworthy at 28 loadouts anyway (see that same explanation).
+  if (!meta.mini) {
   var solo = {}, pair = {};
   meta.weapons.forEach(function (w) { solo[w.id] = { sum: 0, n: 0 }; });
   rows.forEach(function (r) {
@@ -620,6 +646,7 @@ export function renderSweepHtml(
       cls: function (r) { return r.win >= 0.5 ? 'good' : ''; } },
     { k: 'n', t: 'loadouts', f: function (r) { return fmt(r.n); } }
   ], prows, 'lift');
+  }
 
   // ---- loadouts -----------------------------------------------------------------------------------
   var lrows = rows.map(function (r) {
