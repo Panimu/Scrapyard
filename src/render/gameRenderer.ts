@@ -836,7 +836,10 @@ export class GameRenderer {
   private prevPlayerX = Number.NaN;
   private prevPlayerY = Number.NaN;
   /** Seconds left of each turret's recoil kick, by TURRET_ART row. Cosmetic. */
-  private readonly turretKicks = new Float32Array(3);
+  // Sized off TURRET_ART itself, not a literal - the Machine Gun and the Flak Cannon used to
+  // share one row and now have one each, and a hardcoded 3 would have silently dropped the
+  // fourth mount's recoil state rather than erroring.
+  private readonly turretKicks = new Float32Array(TURRET_ART.length);
 
   constructor(
     private readonly app: Application,
@@ -2147,9 +2150,10 @@ export class GameRenderer {
     // into the chassis art, or from nowhere the mech could show.
     for (let i = 0; i < TURRET_ART.length; i++) {
       const sprite = this.barrels[i];
-      // The first of the row's mounts that is actually held. Rows name one weapon each except
-      // the shared rotary snout, and the two that share it are mutually exclusive - so this can
-      // never have to choose between two live guns.
+      // The first of the row's mounts that is actually held. Every row names one weapon except
+      // the Cannon/Mortar and Phase Cannon/Plasma Thrower rows, and WeaponDef.excludes guarantees
+      // a loadout can never hold both halves of either of THOSE - so this can never have to
+      // choose between two live guns.
       let inst: WeaponInstance | undefined;
       for (const id of TURRET_ART[i].weapons) {
         inst = heldWeapon(world, id);
@@ -2729,10 +2733,15 @@ function lerp(a: number, b: number, t: number): number {
  */
 const TURRET_ART: readonly {
   /**
-   * The mounts this row draws. USUALLY ONE, and a list only because two guns can share a piece
-   * of hardware: the Flak Cannon bolts onto the Machine Gun's rotary snout, and WeaponDef.excludes
-   * guarantees a loadout can never hold both - so the row shows whichever of them is held and
-   * there is no case where it owes two barrels at once.
+   * The mounts this row draws. USUALLY ONE, and a list only for the two pairs that still share a
+   * physical mount and are still mutually exclusive - the Cannon/Mortar barrel and the Phase
+   * Cannon/Plasma Thrower tube. WeaponDef.excludes guarantees a loadout can never hold both
+   * halves of one of THOSE pairs, so a row like that can never be owed two barrels at once.
+   *
+   * THE MACHINE GUN AND THE FLAK CANNON USED TO BE A THIRD PAIR HERE, sharing one row on the
+   * same guarantee. They no longer exclude each other, so they are two ONE-weapon rows now
+   * (below) rather than one row with two names in it - each gets its own sprite and tracks its
+   * own target, the same as every other single-weapon mount.
    */
   readonly weapons: readonly WeaponId[];
   readonly tex: 'turret' | 'turretPhase' | 'turretMg';
@@ -2749,16 +2758,18 @@ const TURRET_ART: readonly {
   readonly shake: boolean;
 }[] = [
   // TWO GUNS, ONE BARREL. `WeaponDef.excludes` guarantees a loadout can never hold both, so the
-  // row shows whichever of them is held and is never owed two barrels at once - the same
-  // arrangement the rotary snout has carried for the Machine Gun and the Flak Cannon.
+  // row shows whichever of them is held and is never owed two barrels at once.
   { weapons: ['cannon', 'mortar'], tex: 'turret', shake: true },
   // The medium turret, and the second pair sharing one barrel - see the note above the row for
   // the large one. The thrower does not kick: it is a stream of small bolts, not a shot.
   { weapons: ['phase-cannon'], tex: 'turretPhase', shake: true },
   { weapons: ['plasma'], tex: 'turretPhase', shake: false },
-  // The rotary mount, and the one row that does not shake - see `shake` above. Both guns on it
-  // are high rate of fire, and both lost the kick for the same reason.
-  { weapons: ['machine-gun', 'flak-cannon'], tex: 'turretMg', shake: false },
+  // THE ROTARY MOUNT, NOW TWO ROWS RATHER THAN ONE SHARED ROW - the Machine Gun and the Flak
+  // Cannon no longer exclude each other, so a loadout can hold both live at once, and one row
+  // could only ever draw one of them. Same texture, same "does not shake" - see `shake` above,
+  // both are high rate of fire - but independent sprites now, each tracking its own gun's aim.
+  { weapons: ['machine-gun'], tex: 'turretMg', shake: false },
+  { weapons: ['flak-cannon'], tex: 'turretMg', shake: false },
 ];
 
 /** The held instance of `id`, or undefined - slot order does not matter, ids are unique. */

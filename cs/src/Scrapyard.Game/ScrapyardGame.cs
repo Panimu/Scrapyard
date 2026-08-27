@@ -3819,10 +3819,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// A weapon with no art draws nothing, which is what the chassis sprite already shows.
     /// </para>
     /// <para>
-    /// THE FLAK CANNON SHARES THE ROTARY SNOUT with the Machine Gun rather than wearing the twin
-    /// mount - the two bolt onto one piece of hardware, and <c>WeaponDef.Excludes</c> guarantees a
-    /// loadout can never hold both, so the row is never owed two barrels at once. It was pointed
-    /// at <c>turret_twin</c>, which is the CANNON'S ASCENSION and belongs to nothing else.
+    /// THE FLAK CANNON SHARES THE ROTARY SNOUT SPRITE with the Machine Gun rather than wearing the
+    /// twin mount - the two bolt onto the same piece of hardware. They used to exclude each other
+    /// too, so only one was ever live at once; they no longer do, and nothing here had to change
+    /// for that - this switch is evaluated PER INSTANCE, in the loop above, so a loadout holding
+    /// both simply draws two independently-rotated turret_mg sprites rather than one. It was
+    /// pointed at <c>turret_twin</c>, which is the CANNON'S ASCENSION and belongs to nothing else.
     /// </para>
     /// <para>
     /// AND THE TWIN MOUNT IS WORN BY THE CANNON ITSELF, from its tier 8 on: the single tube for
@@ -3838,11 +3840,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             WeaponIds.Cannon => inst.Level >= UpgradeCatalog.WeaponAscendedTier
                                 ? "turret_twin" : "turret",
-            // THE TWO SHARED MOUNTS, and both were missing here. `WeaponDef.Excludes` guarantees a
-            // loadout can never hold both halves of a pair, so a shared barrel can never be owed
-            // to two live guns at once - which is exactly why they SHARE the sprite rather than
-            // each needing one. Without these rows the Mortar and the Plasma Thrower drew no
-            // turret at all: a mech that fired from nowhere and whose mount never tracked.
+            // THE SHARED MOUNTS. Mortar and Plasma still exclude their mount-mates
+            // (`WeaponDef.Excludes` guarantees a loadout can never hold both halves of either
+            // pair), so a shared barrel is never owed to two live guns for THEM. The Machine Gun
+            // and the Flak Cannon below no longer exclude each other - they simply both map to
+            // the same texture, and the per-instance loop above draws one sprite per live gun
+            // regardless. Without these rows the Mortar and the Plasma Thrower drew no turret at
+            // all: a mech that fired from nowhere and whose mount never tracked.
             WeaponIds.Mortar => "turret",
             WeaponIds.PhaseCannon or WeaponIds.Plasma => "turret_phase",
             WeaponIds.MachineGun or WeaponIds.FlakCannon => "turret_mg",

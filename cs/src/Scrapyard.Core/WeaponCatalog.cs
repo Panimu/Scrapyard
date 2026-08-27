@@ -812,9 +812,8 @@ public static class WeaponCatalog
             new WeaponStatDelta { Damage = 1.5 },        // T6  5.0 -> 6.5
             new WeaponStatDelta { ReloadTime = -4 },     // T7  13.0 -> 9.0 s
         },
-        // Bolts onto the SAME mount the Machine Gun uses. Declared here and nowhere else - the
-        // exclusion check runs both directions from one fact about the hardware.
-        Excludes = new[] { WeaponIds.MachineGun },
+        // Bolts onto the SAME mount the Machine Gun uses - no longer means the two exclude each
+        // other, though. See the TypeScript for why the rotary mount now carries both.
         ReengageMul = 1, VisualId = VisualId.Slug, MuzzleOffset = 28, ShellRadius = 5,
         FireAlongFacing = false, DetonateOnExpiry = false,
     };

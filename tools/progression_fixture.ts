@@ -373,7 +373,6 @@ function eventsSince(w: World, from: number): unknown[] {
 const CANNON = upIdx('w-cannon');
 const MACHINE_GUN = upIdx('w-machine-gun');
 const ARTILLERY = upIdx('w-artillery');
-const FLAK_CANNON = upIdx('w-flak-cannon');
 const LASER_SHORT = upIdx('w-laser-short');
 const DAMAGE = upIdx('p-damage');
 const RATE = upIdx('p-rate');
@@ -508,31 +507,10 @@ const cases = [
     choices: [-1, 0, -1],
   }),
 
-  // TWO GUNS THAT CANNOT SHARE THE CHASSIS, asked in BOTH DIRECTIONS - which is the whole point of
-  // these two cases existing rather than one.
-  //
-  // Only the Flak Cannon names the Machine Gun; the Machine Gun says nothing about the Flak. So a
-  // port that read only the offered card's own `excludes` would enforce the rule in whichever order
-  // the player happened to be offered the two - correct half the time, and seed-dependent, which is
-  // the worst kind of wrong. One case for each order.
-  //
-  // Everything else is maxed so the pool is exactly the refused gun and one passive: if the refusal
-  // stops working the offer count goes from two to three, before any value is compared.
-  buildCase({
-    name: 'holding-the-machine-gun-withholds-the-flak',
-    loadout: [{ id: 'machine-gun', level: 1 }],
-    stacks: everythingMaxedExcept([[MACHINE_GUN, 1], [FLAK_CANNON, 0], [RANGE, 2]]),
-    xpBanked: 200,
-    choices: [-1],
-  }),
-
-  buildCase({
-    name: 'holding-the-flak-withholds-the-machine-gun',
-    loadout: [{ id: 'flak-cannon', level: 1 }],
-    stacks: everythingMaxedExcept([[FLAK_CANNON, 1], [MACHINE_GUN, 0], [RANGE, 2]]),
-    xpBanked: 200,
-    choices: [-1],
-  }),
+  // THE MACHINE GUN AND THE FLAK CANNON USED TO EXCLUDE EACH OTHER - two cases lived here, one per
+  // order, proving the refusal held however the pair was offered. They no longer exclude each
+  // other (see WeaponDef.excludes on the Flak Cannon), so the case that would prove that is gone
+  // with it rather than regenerated with a name that no longer describes what it asserts.
 
   // THE PASSIVE SLOT CAP. Five passives held and three guns in the loadout, so the deck may still
   // offer TIERS of what is held - the five passives and the three guns - and no new passive at all.

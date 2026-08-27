@@ -918,8 +918,10 @@ function isOfferable(
     return false;
   }
 
-  // TWO GUNS THAT CANNOT SHARE THE CHASSIS. See WeaponDef.excludes - today the Flak Cannon and
-  // the Machine Gun, which are one rotary mount and one sprite between them.
+  // TWO GUNS THAT CANNOT SHARE THE CHASSIS. See WeaponDef.excludes - the Cannon and the Mortar,
+  // and the Phase Cannon and the Plasma Thrower, each pair built around one turret and one
+  // sprite. The Flak Cannon and the Machine Gun used to be a third pair here; they no longer
+  // exclude each other, and the render layer draws both independently now. See TURRET_ART.
   //
   // BOTH DIRECTIONS FROM ONE DECLARATION. The pair names each other only once, so this asks the
   // question twice: does the gun this card would grant refuse anything already held, and does

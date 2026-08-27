@@ -1,20 +1,22 @@
 /**
  * THE FLAK CANNON - three shells a burst into a randomly drawn cone, and the mount it shares.
  *
- * Two things here are new in the game and each fails silently if it is wrong:
+ * ONE THING HERE IS NEW IN THE GAME and fails silently if it is wrong: THE CONE IS DRAWN PER
+ * SHELL, from `rng.weapon` and no other stream. A fan with jitter would pass a casual look and
+ * would not be this weapon; rolls taken from the wrong stream would make a run's spawns depend on
+ * how many bursts had been fired.
  *
- *   THE CONE IS DRAWN PER SHELL, from `rng.weapon` and no other stream. A fan with jitter would
- *   pass a casual look and would not be this weapon; rolls taken from the wrong stream would make
- *   a run's spawns depend on how many bursts had been fired.
- *   THE EXCLUSION is declared on ONE of the two defs and has to hold in BOTH directions, or the
- *   deck enforces it in whichever order the seed happened to offer the pair.
+ * IT USED TO ALSO EXCLUDE THE MACHINE GUN - one mount, the theory went, could not carry two guns
+ * - declared on this def and checked in both directions so the deck could not enforce it in
+ * whichever order a seed happened to offer the pair. It no longer does; see WeaponDef.excludes
+ * on the catalog entry and the "shared mount" tests below for what replaced it.
  */
 
 import { describe, expect, it } from 'vitest';
 
 import { testHero } from './fixtures.js';
 
-import { DT } from '../src/core/constants.js';
+import { CHOOSE_REROLL, DT } from '../src/core/constants.js';
 import { DEFAULT_TUNING } from '../src/core/config/tuning.js';
 import {
   FLAK_CANNON,
@@ -213,7 +215,7 @@ describe('the cone', () => {
 
 // ---------------------------------------------------------------------------------------------
 
-describe('the shared mount: Flak Cannon and Machine Gun are mutually exclusive', () => {
+describe('the shared mount: Flak Cannon and Machine Gun no longer exclude each other', () => {
   /** The real upgrade catalog, so the deck is the game's own. */
   function deckWorld(startingWeapon: WeaponId, seed: number, metaTiers?: Uint8Array): World {
     const w = createWorld(
@@ -225,65 +227,70 @@ describe('the shared mount: Flak Cannon and Machine Gun are mutually exclusive',
     return w;
   }
 
-  /** Every card offered across `levels` level-ups, taking the first each time. */
-  function offersOver(w: World, levels: number): Set<number> {
-    const seen = new Set<number>();
-    for (let i = 0; i < levels; i++) {
-      if (w.phase !== RUN_PHASE_LEVEL_UP) {
-        w.xpBanked = (w.player.xpToNext - w.player.xp) / (w.player.stats.xpGain || 1);
-        updateProgression(w, DT);
-      }
-      if (w.phase !== RUN_PHASE_LEVEL_UP) break;
-      for (let s = 0; s < w.levelUp.offerCount; s++) seen.add(w.levelUp.offers[s]);
-      w.input.chooseIndex = 0;
-      updateProgression(w, DT);
-      w.input.chooseIndex = -1;
-    }
-    return seen;
-  }
-
-  it('never offers the Flak Cannon to a run already holding the Machine Gun', () => {
-    // The direction the declaration does NOT name: the held gun (machine-gun) carries no
-    // `excludes` of its own, so this can only pass if the check runs both ways.
-    const w = deckWorld('machine-gun', 3);
-    expect(offersOver(w, 40).has(upgradeIndex('w-flak-cannon'))).toBe(false);
-  });
-
-  it('never offers the Machine Gun to a run already holding the Flak Cannon', () => {
-    const w = deckWorld('flak-cannon', 3);
-    expect(offersOver(w, 40).has(upgradeIndex('w-machine-gun'))).toBe(false);
-  });
-
-  it('still offers the pair to a run holding neither, and still levels the one taken', () => {
-    // The exclusion must not read as "one of these is banned": a run with neither can be offered
-    // either, and taking one keeps ITS ladder available all the way up.
-    //
+  it('can hold and level both at once', () => {
+    // SUBSUMES "is each individually offerable to a run holding the other" - that used to be
+    // its own pair of tests, asserting the deck eventually surfaced the missing card within 40
+    // UNSCRIPTED picks. That was fine as a NEGATIVE assertion (the original exclusion made
+    // "never happens" easy to satisfy by chance) and is flaky as a positive one: with only the
+    // base three weapon slots and no steering, 40 random picks can fill the loadout with three
+    // OTHER guns before the RNG happens to surface this one, which is a fact about MAX_WEAPONS
+    // and has nothing to do with the exclusion under test. Rerolling until the exact card is
+    // offered - what this test does - proves the stronger and more relevant claim: both cards
+    // are reachable AND can be held together, not just that one shows up eventually.
     // FULL REINFORCED MOUNTS, so the run has room for five weapons rather than the base three -
-    // this test is about the exclusion, not about whether the tight starting loadout happens to
-    // fill up on other guns first over 60 level-ups.
+    // this test is about both cards remaining available together, not about whether the tight
+    // starting loadout happens to fill up on other guns first.
+    //
+    // REROLLED INTO RATHER THAN HOPED FOR, the same idiom hydra.test.ts and hornet.test.ts use:
+    // the deck is randomised, so waiting for two specific cards to come up unprompted would make
+    // this test flaky. Infinite rerolls makes it a statement about what the RULES allow rather
+    // than about what one seed's draws happened to offer.
     const tiers = new Uint8Array(META_CATALOG.length);
     tiers[metaIndex('m-mounts')] = 2;
     const w = deckWorld('cannon', 9, tiers);
+    w.infiniteRerolls = true;
     const flak = upgradeIndex('w-flak-cannon');
     const mg = upgradeIndex('w-machine-gun');
-    const offered = offersOver(w, 60);
-    expect(offered.has(flak) || offered.has(mg)).toBe(true);
 
-    // Whichever it took, that card keeps coming back as a tier.
-    const held = w.levelUp.stacks[flak] > 0 ? flak : w.levelUp.stacks[mg] > 0 ? mg : -1;
-    if (held >= 0) {
-      expect(w.levelUp.stacks[held]).toBeGreaterThan(0);
-      expect(offersOver(w, 40).has(held === flak ? mg : flak)).toBe(false);
-    }
+    const takeCard = (idx: number, tries = 400): boolean => {
+      for (let i = 0; i < tries; i++) {
+        if (w.phase !== RUN_PHASE_LEVEL_UP) {
+          w.xpBanked = (w.player.xpToNext - w.player.xp) / (w.player.stats.xpGain || 1);
+          updateProgression(w, DT);
+        }
+        if (w.phase !== RUN_PHASE_LEVEL_UP) return false;
+        let slot = -1;
+        for (let k = 0; k < w.levelUp.offerCount; k++) if (w.levelUp.offers[k] === idx) slot = k;
+        w.input.chooseIndex = slot >= 0 ? slot : CHOOSE_REROLL;
+        updateProgression(w, DT);
+        w.input.chooseIndex = -1;
+        if (slot >= 0) return true;
+      }
+      return false;
+    };
+
+    expect(takeCard(flak)).toBe(true);
+    expect(takeCard(mg)).toBe(true);
+    expect(w.levelUp.stacks[flak]).toBeGreaterThan(0);
+    expect(w.levelUp.stacks[mg]).toBeGreaterThan(0);
+
+    // BOTH LIVE ON THE CHASSIS AT ONCE, not just both taken at some point - the exclusion used to
+    // make the second pick REPLACE the first via the deck gate; this confirms it does not.
+    const held = (id: string): boolean => {
+      for (let i = 0; i < w.weaponCount; i++) if (w.weaponCatalog[w.weapons[i].defId].id === id) return true;
+      return false;
+    };
+    expect(held('flak-cannon')).toBe(true);
+    expect(held('machine-gun')).toBe(true);
   });
 
-  it('declares the exclusion exactly once, and the catalog agrees the two share a mount', () => {
-    // ONE declaration, not two that can drift - the check is what makes it symmetric.
-    expect(FLAK_CANNON.excludes).toContain('machine-gun');
-    expect(MACHINE_GUN.excludes).toBeUndefined();
-    // THE SAME MOUNT, NOT THE SAME SLEW. One sprite draws both, so the muzzle sits in the same
-    // place - but the flak battery comes round 10% slower than the belt gun, which is the weight
-    // of it. Asserted as a RATIO rather than a literal so a retune of either moves this with it.
+  it('declares no exclusion between them any more', () => {
+    expect(FLAK_CANNON.excludes ?? []).not.toContain('machine-gun');
+    expect(MACHINE_GUN.excludes ?? []).not.toContain('flak-cannon');
+    // THE SAME MOUNT, NOT THE SAME SLEW. One sprite draws each independently now, so the muzzle
+    // sits in the same place - but the flak battery comes round 10% slower than the belt gun,
+    // which is the weight of it. Asserted as a RATIO rather than a literal so a retune of either
+    // moves this with it.
     expect(FLAK_CANNON.muzzleOffset).toBe(MACHINE_GUN.muzzleOffset);
     expect(FLAK_CANNON.base.turretTraverse).toBeCloseTo(MACHINE_GUN.base.turretTraverse * 0.9, 4);
     expect(FLAK_CANNON.base.turretTraverse).toBeLessThan(MACHINE_GUN.base.turretTraverse);

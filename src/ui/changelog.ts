@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-27T09:27Z',
+    version: 'v398',
+    title: 'THE MACHINE GUN AND THE FLAK CANNON CAN BE HELD TOGETHER',
+    notes: [
+      'They used to be a choice — one rotary mount, one gun on it at a time. The chassis now carries both if you take both, one snout tracking each target.',
+    ],
+  },
+  {
     at: '2026-08-27T08:40Z',
     version: 'v397',
     title: 'THE THREE GUN MOUNTS ARE RETIMED',

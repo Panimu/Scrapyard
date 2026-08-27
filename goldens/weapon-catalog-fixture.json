@@ -538,9 +538,7 @@
    "twinFrom": null,
    "gigaFrom": null,
    "fillsMountsFrom": null,
-   "excludes": [
-    "machine-gun"
-   ],
+   "excludes": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },

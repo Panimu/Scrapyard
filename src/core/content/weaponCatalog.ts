@@ -1383,8 +1383,10 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     { damage: 1.5 }, // T6  5.0 -> 6.5
     { reloadTime: -4 }, // T7  13.0 -> 9.0 s
   ]),
-  // Declared HERE and nowhere else - the check runs both directions. See WeaponDef.excludes.
-  excludes: Object.freeze(['machine-gun'] as const),
+  // NO LONGER EXCLUDES THE MACHINE GUN. It did - one declaration, checked both directions, see
+  // WeaponDef.excludes - on the theory that a single rotary mount could not carry two guns at
+  // once. Both can be held together now; the render layer draws each independently rather than
+  // assuming there is only ever one live gun on this mount to draw. See TURRET_ART.
   reengageMul: 1,
   visualId: VIS_SLUG,
   muzzleOffset: 28,

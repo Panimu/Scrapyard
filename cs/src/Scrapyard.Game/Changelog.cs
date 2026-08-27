@@ -28,6 +28,11 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-27T09:27Z", "v398", "THE MACHINE GUN AND THE FLAK CANNON CAN BE HELD TOGETHER",
+            new[]
+            {
+                "They used to be a choice - one rotary mount, one gun on it at a time. The chassis now carries both if you take both, one snout tracking each target.",
+            }),
         new("2026-08-27T08:40Z", "v397", "THE THREE GUN MOUNTS ARE RETIMED",
             new[]
             {
