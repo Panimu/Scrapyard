@@ -651,7 +651,7 @@ public static class WeaponCatalog
             // does. It stays here rather than moving into the puddle block so that both damage
             // tiers and Jade's chassis bonus still raise the pool. See the TypeScript.
             Damage = 4,
-            Cooldown = 1.47, // slower again, 1.15 -> 1.4 -> 1.47 (-5%): the trigger rate is how fast a rack empties
+            Cooldown = 1.5435, // slower again, 1.15 -> 1.4 -> 1.47 -> 1.5435 (-5% each): trigger rate is how fast a rack empties
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
             // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a
@@ -690,7 +690,7 @@ public static class WeaponCatalog
             new WeaponStatDelta(),                     // T8  no ascension
         },
         // Four seconds of ground at 2.4x the glob - a fraction for the reason Burn is one.
-        Puddle = new PuddleSpec { DpsFrac = 2.4, Seconds = 4 },
+        Puddle = new PuddleSpec { DpsFrac = 2.64, Seconds = 4 },
         ReengageMul = 1, VisualId = VisualId.Sludge,
         MuzzleOffset = 18, ShellRadius = 5,
         FireAlongFacing = true, DetonateOnExpiry = false,

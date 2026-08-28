@@ -100,6 +100,34 @@ public class WeaponCatalogTests
                 AssertBits(slow, "seconds", d.Slow!.Seconds, where + " slow");
             }
 
+            // BURN AND PUDDLE, the same way round and for the same reason. These two were
+            // hand-transcribed here and unchecked until the Sludge's dpsFrac moved; a wrong value
+            // would have shown up only as a corpus divergence, if any recorded run happened to
+            // hold the weapon AND leave a pool.
+            var burn = e.GetProperty("burn");
+            if (burn.ValueKind == JsonValueKind.Null)
+            {
+                Assert.True(d.Burn is null, $"{where}: expected no burn block");
+            }
+            else
+            {
+                Assert.True(d.Burn is not null, $"{where}: expected a burn block");
+                AssertBits(burn, "dpsFrac", d.Burn!.DpsFrac, where + " burn");
+                AssertBits(burn, "seconds", d.Burn!.Seconds, where + " burn");
+            }
+
+            var puddle = e.GetProperty("puddle");
+            if (puddle.ValueKind == JsonValueKind.Null)
+            {
+                Assert.True(d.Puddle is null, $"{where}: expected no puddle block");
+            }
+            else
+            {
+                Assert.True(d.Puddle is not null, $"{where}: expected a puddle block");
+                AssertBits(puddle, "dpsFrac", d.Puddle!.DpsFrac, where + " puddle");
+                AssertBits(puddle, "seconds", d.Puddle!.Seconds, where + " puddle");
+            }
+
             var track = e.GetProperty("trackingTargeting");
             if (track.ValueKind == JsonValueKind.Null)
             {

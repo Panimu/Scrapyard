@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-28T20:34Z',
+    version: 'v405',
+    title: 'TOXIC SLUDGE POOLS BITE HARDER, AND ARRIVE SLOWER',
+    notes: [
+      'The ground it leaves does a tenth more damage. The gun throws five percent slower to pay for it, so there is a little less of that ground down at any one time.',
+    ],
+  },
+  {
     at: '2026-08-28T20:12Z',
     version: 'v404',
     title: 'THE MACHINE GUN RELOADS SOONER',

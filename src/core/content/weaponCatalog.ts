@@ -2124,10 +2124,12 @@ export const SLUDGE: WeaponDef = Object.freeze({
     // pool does without any of them naming a pool. Zero here would have made the gun unupgradable
     // and every damage card a dead draw beside it.
     damage: 4,
-    // SLOWER AGAIN, 1.15 -> 1.4 -> 1.47 (-5%). The magazine is three deep, so the trigger rate
-    // decides how fast a rack empties and therefore how much ground is down at once - which IS
-    // the weapon.
-    cooldown: 1.47,
+    // SLOWER AGAIN, 1.15 -> 1.4 -> 1.47 -> 1.5435 (-5% each time, as cooldown x1.05 - the
+    // convention this line established). The magazine is three deep, so the trigger rate decides
+    // how fast a rack empties and therefore how much ground is down at once - which IS the weapon.
+    // THIS PARTLY PAYS FOR THE POOLS' +10% below: less ground down at once, each patch hurting
+    // more. The two dials pull against each other on purpose.
+    cooldown: 1.5435,
     range: SLUDGE_DETECT_RANGE,
     projectileSpeed: 150,
     // ONE GLOB PER THROW. The fan is laid across the MAGAZINE rather than across a volley - see
@@ -2177,10 +2179,15 @@ export const SLUDGE: WeaponDef = Object.freeze({
     { splashRadius: 13.3 },
     {},
   ]),
-  // FOUR SECONDS OF GROUND AT 2.4x THE GLOB. A fraction rather than a rate of its own, exactly as
+  // FOUR SECONDS OF GROUND AT 2.64x THE GLOB. A fraction rather than a rate of its own, exactly as
   // WeaponDef.burn is and for the same reason: the two damage tiers and Jade's chassis bonus all
   // raise what the pool does without any of them naming a pool.
-  puddle: Object.freeze({ dpsFrac: 2.4, seconds: 4 }),
+  //
+  // 2.4 -> 2.64 IS THE POOLS' +10%, AND IT IS TURNED HERE RATHER THAN ON `damage` because this
+  // multiplies the dial at every tier at once. Raising the base damage instead would have left the
+  // two flat damage rungs behind, so the pools would have gained a full 10% at tier 1 and about
+  // half that by tier 7 - a "+10%" that quietly shrinks as the run goes on.
+  puddle: Object.freeze({ dpsFrac: 2.64, seconds: 4 }),
   reengageMul: 1,
   visualId: VIS_SLUDGE,
   // BEHIND THE MECH. Every other muzzle offset pushes a round out in front of the barrel; this

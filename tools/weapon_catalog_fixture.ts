@@ -69,12 +69,20 @@ function dumpDef(d: WeaponDef) {
     // null rather than absent, so the C# side can assert "this weapon has no tracking rule"
     // rather than silently skipping a field it forgot to read.
     trackingTargeting: d.trackingTargeting ?? null,
-    // THE SLOW BLOCK, pinned across the languages. `burn` and `puddle` are not here and predate
-    // this, which is exactly why it is worth adding: those two numbers are hand-transcribed into
-    // WeaponCatalog.cs and NOTHING checks them, so a typo only surfaces if a corpus run happens to
-    // hold the weapon. Null on the thirteen guns that slow nothing, so the C# side can assert the
-    // absence as well as the value.
+    // THE THREE OPTIONAL EFFECT BLOCKS, pinned across the languages. Each is hand-transcribed into
+    // WeaponCatalog.cs, and until they were pinned NOTHING checked them: a typo surfaced only if a
+    // corpus run happened to hold that weapon AND to trigger the effect, which is a coincidence
+    // rather than a test. `burn` and `puddle` were the two this comment used to say were missing;
+    // they were added when the Toxic Sludge's dpsFrac moved and it turned out a wrong value on the
+    // C# side would have gone unnoticed.
+    //
+    // Null on the weapons that do not carry the block, so the C# side asserts the ABSENCE as well
+    // as the value - a port that dropped a block entirely would otherwise pass by being uniformly
+    // empty.
     slow: d.slow === undefined ? null : { frac: bits(d.slow.frac), seconds: bits(d.slow.seconds) },
+    burn: d.burn === undefined ? null : { dpsFrac: bits(d.burn.dpsFrac), seconds: bits(d.burn.seconds) },
+    puddle:
+      d.puddle === undefined ? null : { dpsFrac: bits(d.puddle.dpsFrac), seconds: bits(d.puddle.seconds) },
     pattern: d.pattern,
     behaviour: d.behaviour,
     requiresTarget: d.requiresTarget,
