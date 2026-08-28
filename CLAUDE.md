@@ -290,7 +290,10 @@ sweep --fresh       the same, discarding earlier results. USE AFTER A BALANCE CH
 sweep --ascend none the tier-7 half only, in half the time
 sweep --mini        28 FIXED loadouts, validated to reproduce the full sweep's per-weapon
                     rankings (not pairs - too few loadouts touch any one pair enough times)
-                    -> sweep/mini.html. Minutes, not hours.
+                    -> sweep/mini.html. Minutes, not hours. Resumable.
+minisweep           the same 28, ALWAYS re-measured (--mini --fresh) -> sweep/mini.html.
+                    This is the one to reach for while iterating: a resumed mini sweep mixes
+                    results from before and after the change it was run to check.
 
 npm run mechs       redraw the chassis sprites
 npm run plasma      rebake the Kenney particles (burn frames, gout, shield twirl)

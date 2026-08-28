@@ -6,6 +6,8 @@ rem  Measure EVERY loadout a player could build, and open the results.
 rem
 rem    sweep                    the lot - every playable 5-weapon loadout, 3 seeds each,
 rem                             measured TWICE: at tier 7, and again with ascensions allowed
+rem    minisweep                the same 28 loadouts, always re-measured - see minisweep.bat,
+rem                             which is what you want while iterating on a balance change
 rem    sweep --mini             28 FIXED loadouts instead - minutes, not hours. Validated to
 rem                             reproduce the full sweep's per-weapon rankings; says nothing
 rem                             about pairs (too few loadouts touch any one pair enough times).
@@ -40,11 +42,23 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem WHICH PAGE, decided by whether this was a mini run. The mini sweep writes mini.html and the
+rem full one writes index.html; this used to open index.html unconditionally, so `sweep --mini`
+rem finished its work and then opened the FULL sweep's page - whatever numbers happened to be
+rem sitting there from whenever that was last run, presented as though they were this run's
+rem results. There is no louder failure than that: the page renders perfectly and is simply about
+rem a different set of measurements.
+set "PAGE=index.html"
+rem The trailing space on BOTH sides makes this an exact flag match rather than a substring
+rem one - without it a future `--minimum` would be read as `--mini` and open the wrong page.
+echo.%* | findstr /I /C:"--mini " >nul
+if not errorlevel 1 set "PAGE=mini.html"
+
 rem The page is only opened when it exists, so a run that measured nothing does not pop up a
 rem browser at a missing file.
-if exist "sweep\index.html" (
-  echo   Opening sweep\index.html
-  start "" "sweep\index.html"
+if exist "sweep\%PAGE%" (
+  echo   Opening sweep\%PAGE%
+  start "" "sweep\%PAGE%"
 )
 
 endlocal
