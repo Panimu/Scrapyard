@@ -802,7 +802,7 @@ public static class WeaponCatalog
             HeatCapacity = HeatCapacityBase,
             SpreadAngle = 0.08726646259971647,   // degToRad(5) - "close together", a pair, not a shotgun
             AmmoCapacity = 200,
-            ReloadTime = 15,
+            ReloadTime = 14.5,
         },
         PerLevel = new[]
         {
@@ -811,7 +811,7 @@ public static class WeaponCatalog
             new WeaponStatDelta { AmmoCapacity = 80 },  // T4  200 -> 280 rounds
             new WeaponStatDelta { Range = 25 },         // T5  130 -> 155
             new WeaponStatDelta { Damage = 3 },         // T6  7.0 -> 10.0
-            new WeaponStatDelta { ReloadTime = -4.5 },  // T7  15.0 -> 10.5 s
+            new WeaponStatDelta { ReloadTime = -4.5 },  // T7  14.5 -> 10.0 s
         },
         ReengageMul = 1, VisualId = VisualId.Slug, MuzzleOffset = 28, ShellRadius = 5,
         FireAlongFacing = false, DetonateOnExpiry = false,

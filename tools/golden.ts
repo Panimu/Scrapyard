@@ -144,16 +144,23 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // not a new card - the same gun doing the same damage in one more fragment - and the bot's walk
   // still moved. That is the clearest statement of this entry's character there has been.
   //
-  // 0x71f94432 is the current one - 379 kills, one chest, dies at tick 15046.
+  // 0x71f94432 lasted a matter of minutes: taking half a second off the MACHINE GUN'S RELOAD was
+  // enough. Not the gun the bot opens with, not a damage number, not a card - a reload timer on
+  // one weapon in the deck. At this point the honest reading is that ANY catalog edit at all
+  // should be expected to break this seed, and the fallback list below is the thing that makes
+  // that cheap rather than a search each time.
+  //
+  // 0x5785ba3b is the current one - 498 kills, one chest, dies at tick 13648.
   //
   // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the hits, so the
   // search is reproducible rather than a number somebody remembered. THE SEED MUST FIT IN AN
   // Int32: the C# corpus reader stores it as one, and a larger value fails to parse rather than
   // diverging, so the sweep skips anything over 0x7fffffff. Still opening a chest as of this
-  // commit, if this one stops: 0x3afd554b, 0x5ae3e3bd. (0xcd29461 no longer does.)
+  // commit, if this one stops: 0x5ae3e3bd, 0x776c48ad. (0xcd29461, 0x3afd554b, 0x4016664
+  // and 0x71f94432 no longer do.)
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x71f94432,
+    seed: 0x5785ba3b,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

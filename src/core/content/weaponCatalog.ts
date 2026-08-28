@@ -1287,7 +1287,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     spreadAngle: degToRad(5), // "close together" - a tight pair, not a shotgun
     flightTime: 0,
     ammoCapacity: 200,
-    reloadTime: 15,
+    reloadTime: 14.5, // 15 -> 14.5: half a second less standing there doing nothing
   }),
   perLevel: Object.freeze([
     { damage: 1.5 }, // T2  5.5 -> 7.0
@@ -1295,7 +1295,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     { ammoCapacity: 80 }, // T4  200 -> 280 rounds
     { range: 25 }, // T5  130 -> 155
     { damage: 3 }, // T6  7.0 -> 10.0
-    { reloadTime: -4.5 }, // T7  15.0 -> 10.5 s
+    { reloadTime: -4.5 }, // T7  14.5 -> 10.0 s
   ]),
   reengageMul: 1,
   visualId: VIS_SLUG,
