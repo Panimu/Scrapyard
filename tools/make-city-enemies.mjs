@@ -75,14 +75,14 @@ const JOBS = [
 
   // The boss lane. Stan and Frog each bake ONCE - their second, bigger creature row reuses the
   // same sprite at a different drawSize, which is the cascade's whole visual point.
-  { key: 'city_george', model: 'assets/quaternius/animated-mech/George.gltf', yaw: 270 },
-  { key: 'city_leela', model: 'assets/quaternius/animated-mech/Leela.gltf', yaw: 270 },
-  { key: 'city_stan', model: 'assets/quaternius/animated-mech/Stan.gltf', yaw: 270 },
-  { key: 'city_mike', model: 'assets/quaternius/animated-mech/Mike.gltf', yaw: 270 },
-  { key: 'city_bee', model: 'assets/quaternius/ultimate-space-kit/Mech_BarbaraTheBee.gltf', yaw: 270 },
-  { key: 'city_flamingo', model: 'assets/quaternius/ultimate-space-kit/Mech_FernandoTheFlamingo.gltf', yaw: 270 },
-  { key: 'city_frog', model: 'assets/quaternius/ultimate-space-kit/Mech_FinnTheFrog.gltf', yaw: 270 },
-  { key: 'city_panda', model: 'assets/quaternius/ultimate-space-kit/Mech_RaeTheRedPanda.gltf', yaw: 270 },
+  { key: 'city_george', model: 'assets/quaternius/animated-mech/George.gltf', yaw: 90 },
+  { key: 'city_leela', model: 'assets/quaternius/animated-mech/Leela.gltf', yaw: 90 },
+  { key: 'city_stan', model: 'assets/quaternius/animated-mech/Stan.gltf', yaw: 90 },
+  { key: 'city_mike', model: 'assets/quaternius/animated-mech/Mike.gltf', yaw: 90 },
+  { key: 'city_bee', model: 'assets/quaternius/ultimate-space-kit/Mech_BarbaraTheBee.gltf', yaw: 90 },
+  { key: 'city_flamingo', model: 'assets/quaternius/ultimate-space-kit/Mech_FernandoTheFlamingo.gltf', yaw: 90 },
+  { key: 'city_frog', model: 'assets/quaternius/ultimate-space-kit/Mech_FinnTheFrog.gltf', yaw: 90 },
+  { key: 'city_panda', model: 'assets/quaternius/ultimate-space-kit/Mech_RaeTheRedPanda.gltf', yaw: 90 },
 ];
 
 /** Rendered canvas edge, px. Trimmed to content before writing, so this is headroom, not size. */

@@ -667,28 +667,27 @@ export class ScrapopediaScreen {
    * things to go and do rather than a row of locked boxes.
    *
    * ---------------------------------------------------------------------------------------------
-   * THE ICON IS EARNED TOO
+   * EVERY ROW DRAWS ITS OWN ICON, AND A LOCKED ONE IS GREYED
    * ---------------------------------------------------------------------------------------------
-   * An earned row draws the achievement's own picture; an unearned one draws a sealed plate.
+   * THIS WAS THE OTHER WAY ROUND, AND THE REASONING IS KEPT BECAUSE IT IS STILL TRUE. An unearned
+   * row used to draw a sealed plate - a dashed box with a question mark - on the argument that a
+   * name is only a label while AN ICON IS THE ANSWER, and that each kind in the catalog leaks
+   * something different:
    *
-   * IT IS NOT SYMMETRY WITH THE NAME, and the difference is the whole reason this is written down.
-   * A name is a label - `Hornet's Nest` tells you there is something called that and nothing about
-   * what it is. AN ICON IS THE ANSWER, and every kind in the catalog leaks differently:
+   *   A MECH trophy's icon is the CHASSIS SPRITE, which the hero picker withholds behind a
+   *   silhouette. Drawing it here hands back what that screen is keeping.
+   *   AN ASCENSION's icon is a picture of the mechanic - a missile coming apart - and this file's
+   *   header is explicit that the Scrapopedia never mentions a tier 8 exists.
+   *   A MAP's icon is one of that map's own CREATURES, which the bestiary gates behind a kill.
    *
-   *   A MECH trophy's icon is the CHASSIS SPRITE, which is exactly what the picker withholds
-   *   behind a silhouette. Printing it here hands back the thing that screen is keeping.
-   *   AN ASCENSION's icon is a picture of the mechanic - a missile coming apart. The Scrapopedia
-   *   goes to some length elsewhere never to mention that a tier 8 exists (see this file's header);
-   *   drawing one on a row nobody has earned would undo that in a single glance.
-   *   A MAP's icon is one of that map's own CREATURES, and the bestiary gates those behind having
-   *   killed one. This row is not the place they arrive early.
+   * ALL THREE STILL HAPPEN. This is a deliberate trade, not a refutation: a page of question marks
+   * reads as a broken list rather than as a set of things to go and do, and the greyed icon is what
+   * turns it back into one. What still carries the secrecy is the DESCRIPTION, which is withheld
+   * exactly as before - so a locked row now says "there is a thing, here is roughly what it looks
+   * like" and not "here is what you have to do".
    *
-   * The plate is therefore drawn for every unearned row regardless of `AchievementDef.secret`, which
-   * is about the NAME and not about the picture: the map trophy is the one entry that is not secret,
-   * because the yard picker has always named the yard.
-   *
-   * So the plate is the same promise the hero picker makes: there is something here, and finding
-   * out what is the game.
+   * If the leak ever matters more than the legibility, the revert is this branch alone: draw the
+   * sealed plate again and the three consequences above go with it.
    */
   private achievementRow(def: AchievementDef): HTMLButtonElement {
     const got = this.has.achievement(def.id);
@@ -697,22 +696,14 @@ export class ScrapopediaScreen {
     b.className = `pedia__entry pedia__entry--achv${got ? '' : ' pedia__entry--unearned'}`;
     b.disabled = true;
 
-    if (got) {
-      const icon = document.createElement('img');
-      icon.className = 'pedia__icon pedia__icon--achv';
-      icon.src = spriteUrl(def.icon);
-      icon.alt = '';
-      icon.decoding = 'async';
-      b.appendChild(icon);
-    } else {
-      const sealed = document.createElement('span');
-      sealed.className = 'pedia__icon pedia__icon--achv pedia__icon--sealed';
-      sealed.textContent = '?';
-      // Decoration: the row already reads as unearned through the withheld description, and a
-      // screen reader announcing "question mark" before every locked name is noise.
-      sealed.setAttribute('aria-hidden', 'true');
-      b.appendChild(sealed);
-    }
+    // THE ICON EITHER WAY - see the note above. `--locked` desaturates and dims it; the row is
+    // already `disabled`, so neither state is clickable and there is no page behind it.
+    const icon = document.createElement('img');
+    icon.className = `pedia__icon pedia__icon--achv${got ? '' : ' pedia__icon--locked'}`;
+    icon.src = spriteUrl(def.icon);
+    icon.alt = '';
+    icon.decoding = 'async';
+    b.appendChild(icon);
 
     const words = document.createElement('span');
     words.className = 'pedia__achv-words';

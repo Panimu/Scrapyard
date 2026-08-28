@@ -394,6 +394,7 @@ export function hashRunStats(world: World): number {
   h = mixF64(h, s.shotsHit);
   h = mixF64(h, s.peakEnemies);
   h = mixF64(h, s.peakBurning);
+  h = mixF64(h, s.secondaryTouched);
   h = mixF64(h, s.endTick);
 
   return h >>> 0;

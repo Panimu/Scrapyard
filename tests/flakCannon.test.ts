@@ -1,5 +1,5 @@
 /**
- * THE FLAK CANNON - three shells a burst into a randomly drawn cone, and the mount it shares.
+ * THE FLAK CANNON - four shells a burst into a randomly drawn cone, and the mount it shares.
  *
  * ONE THING HERE IS NEW IN THE GAME and fails silently if it is wrong: THE CONE IS DRAWN PER
  * SHELL, from `rng.weapon` and no other stream. A fan with jitter would pass a casual look and
@@ -100,8 +100,8 @@ describe('the catalog numbers', () => {
     expect(def.pattern).toBe('cone');
 
     const s = w.weapons[0].stats;
-    expect(s.projectileCount).toBe(3);
-    expect(s.ammoCapacity).toBe(300);
+    expect(s.projectileCount).toBe(4);
+    expect(s.ammoCapacity).toBe(400);
     expect(s.spreadAngle).toBe(FLAK_CONE);
     // Ordered against the Machine Gun rather than pinned to literals - these are balance dials,
     // and what has to stay true is the RELATIONSHIP that makes them two different weapons.
@@ -138,13 +138,13 @@ describe('the catalog numbers', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('the cone', () => {
-  it('throws exactly three shells a burst, every one inside the arc', () => {
+  it('throws exactly four shells a burst, every one inside the arc', () => {
     const w = makeWorld();
     addEnemy(w, 200, 0);
     tick(w);
 
     const angles = shellAngles(w);
-    expect(angles.length).toBe(3);
+    expect(angles.length).toBe(4);
     const half = FLAK_CONE / 2;
     for (const a of angles) {
       // Aim is +x (the target is dead ahead and the mount starts facing it), so each heading is
@@ -169,7 +169,7 @@ describe('the cone', () => {
         tick(w);
         if (w.projectiles.count > 0) angles.push(...shellAngles(w));
       }
-      expect(angles.length).toBe(3);
+      expect(angles.length).toBe(4);
       bursts.push(angles.sort((x, y) => x - y));
     }
 
@@ -184,12 +184,12 @@ describe('the cone', () => {
     expect(Math.max(...all)).toBeGreaterThan(half * 0.5);
   });
 
-  it('spends a round per SHELL, so the belt empties three times a burst', () => {
+  it('spends a round per SHELL, so the belt empties four times a burst', () => {
     const w = makeWorld();
     addEnemy(w, 200, 0);
     const before = w.weapons[0].ammo < 0 ? w.weapons[0].stats.ammoCapacity : w.weapons[0].ammo;
     tick(w);
-    expect(w.weapons[0].ammo).toBe(before - 3);
+    expect(w.weapons[0].ammo).toBe(before - 4);
   });
 
   it('takes its rolls from the WEAPON stream, leaving spawns and loot untouched', () => {
@@ -311,7 +311,7 @@ describe('Copper opens with it', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('Vermilion', () => {
-  it('opens with the Flak Cannon and throws a fourth shell', () => {
+  it('opens with the Flak Cannon and throws a fifth shell', () => {
     const w = createWorld(
       { seed: 2, heroId: heroIndex('vermilion'), runLengthSec: 900, tuning: DEFAULT_TUNING },
       { heroes: HERO_CATALOG, weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
@@ -319,12 +319,12 @@ describe('Vermilion', () => {
     w.phase = RUN_PHASE_RUNNING;
 
     expect(w.weaponCatalog[w.weapons[0].defId].id).toBe('flak-cannon');
-    // THE BONUS IS ADDITIVE AND IT LANDS: the base burst is three, this frame's is four.
-    expect(FLAK_CANNON.base.projectileCount).toBe(3);
-    expect(w.weapons[0].stats.projectileCount).toBe(4);
+    // THE BONUS IS ADDITIVE AND IT LANDS: the base burst is four, this frame's is five.
+    expect(FLAK_CANNON.base.projectileCount).toBe(4);
+    expect(w.weapons[0].stats.projectileCount).toBe(5);
   });
 
-  it('actually fires four shells, and spends four rounds doing it', () => {
+  it('actually fires five shells, and spends five rounds doing it', () => {
     const w = createWorld(
       { seed: 2, heroId: heroIndex('vermilion'), runLengthSec: 900, tuning: DEFAULT_TUNING },
       { heroes: HERO_CATALOG, weapons: WEAPON_CATALOG, upgrades: UPGRADE_CATALOG },
@@ -334,9 +334,9 @@ describe('Vermilion', () => {
     const before = w.weapons[0].stats.ammoCapacity;
     tick(w);
 
-    expect(shellAngles(w).length).toBe(4);
+    expect(shellAngles(w).length).toBe(5);
     // The belt pays for it - see fireCone, which spends a round per SHELL.
-    expect(w.weapons[0].ammo).toBe(before - 4);
+    expect(w.weapons[0].ammo).toBe(before - 5);
   });
 
   it('is earned by owning six other chassis, and by nothing else', () => {

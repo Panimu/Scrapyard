@@ -226,9 +226,18 @@ public static class Weapons
             // A GIGA BEAM AIMS WHERE THE CROWD IS THICKEST - the densest-cluster rule - because a
             // swath that bills everything it covers is worth exactly what it covers. Tier-gated off
             // the def like every other ascension mechanic.
+            //
+            // AND A GUN MAY AIM BY ONE RULE AND SHOOT BY ANOTHER. TrackingTargeting is the rule to
+            // pick by while the cooldown is still running - see WeaponDef.TrackingTargeting. THE
+            // SAME TEST AS THE FIRE GATE BELOW, written the same way on purpose: "ready" here and
+            // "may fire" there have to mean the same thing.
+            bool ready = beam || inst.CooldownLeft <= 0;
+            var rule = !ready && def.TrackingTargeting is Targeting.Rule track
+                ? track
+                : def.Targeting;
             var targeting = def.GigaFrom is int gf && inst.Level >= gf
                 ? Targeting.Rule.Densest
-                : def.Targeting;
+                : rule;
             int n = Targeting.SelectTopK(world, scenery, player.X, player.Y, stats.AcquireRangeSq, ask,
                                          targets, inst.TurretX, inst.TurretY, targeting);
             if (beam && claimCount > 0)

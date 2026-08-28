@@ -19,6 +19,8 @@
    "name": "Cannon",
    "kind": "projectile",
    "targeting": "highest-hp",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "battery",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -86,6 +88,8 @@
    "name": "Short Laser",
    "kind": "beam",
    "targeting": "lowest-hp",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "beam",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -153,6 +157,8 @@
    "name": "Medium Laser",
    "kind": "beam",
    "targeting": "lowest-hp",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "beam",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -220,6 +226,8 @@
    "name": "Long Laser",
    "kind": "beam",
    "targeting": "lowest-hp",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "beam",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -291,6 +299,8 @@
    "name": "Short Missiles",
    "kind": "projectile",
    "targeting": "nearest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "spread",
    "behaviour": "homing",
    "requiresTarget": false,
@@ -355,6 +365,8 @@
    "name": "Long Missiles",
    "kind": "projectile",
    "targeting": "nearest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "spread",
    "behaviour": "homing",
    "requiresTarget": false,
@@ -419,6 +431,8 @@
    "name": "Machine Gun",
    "kind": "projectile",
    "targeting": "lowest-hp",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "spread",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -483,15 +497,17 @@
    "name": "Flak Cannon",
    "kind": "projectile",
    "targeting": "nearest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "cone",
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "400ccccccccccccd",
+    "damage": "400599999999999a",
     "cooldown": "3fc0a3d70a3d70a4",
     "range": "4079000000000000",
     "projectileSpeed": "4083600000000000",
-    "projectileCount": "4008000000000000",
+    "projectileCount": "4010000000000000",
     "pierce": "0000000000000000",
     "knockback": "4032000000000000",
     "splashRadius": "0000000000000000",
@@ -504,12 +520,12 @@
     "turnRate": "0000000000000000",
     "spreadAngle": "3ff0c152382d7365",
     "flightTime": "0000000000000000",
-    "ammoCapacity": "4072c00000000000",
+    "ammoCapacity": "4079000000000000",
     "reloadTime": "402a000000000000"
    },
    "perLevel": [
     {
-     "damage": "3ff0000000000000"
+     "damage": "3fe8000000000000"
     },
     {
      "cooldown": "bf9a9fbe76c8b439"
@@ -521,7 +537,7 @@
      "range": "4051800000000000"
     },
     {
-     "damage": "3ff8000000000000"
+     "damage": "3ff2000000000000"
     },
     {
      "reloadTime": "c010000000000000"
@@ -547,6 +563,8 @@
    "name": "Heavy Artillery",
    "kind": "projectile",
    "targeting": "nearest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "barrage",
    "behaviour": "straight",
    "requiresTarget": false,
@@ -611,6 +629,8 @@
    "name": "Drones",
    "kind": "projectile",
    "targeting": "nearest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "factory",
    "behaviour": "straight",
    "requiresTarget": false,
@@ -675,7 +695,12 @@
    "id": "phase-cannon",
    "name": "Phase Cannon",
    "kind": "projectile",
-   "targeting": "densest",
+   "targeting": "cone-densest",
+   "trackingTargeting": "densest",
+   "slow": {
+    "frac": "3fd6666666666666",
+    "seconds": "4000000000000000"
+   },
    "pattern": "phase",
    "behaviour": "phase",
    "requiresTarget": true,
@@ -687,7 +712,7 @@
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
     "knockback": "4056800000000000",
-    "splashRadius": "404b800000000000",
+    "splashRadius": "404ce00000000000",
     "splashFrac": "3fe0000000000000",
     "turretTraverse": "3ff197c987c952c4",
     "fireArc": "3fcf46bb9c109324",
@@ -705,7 +730,7 @@
      "damage": "402199999999999a"
     },
     {
-     "splashRadius": "4028000000000000"
+     "splashRadius": "4029333333333333"
     },
     {
      "cooldown": "bfceb851eb851eb8"
@@ -714,7 +739,7 @@
      "damage": "402199999999999a"
     },
     {
-     "splashRadius": "4028000000000000"
+     "splashRadius": "4029333333333333"
     },
     {
      "cooldown": "bfceb851eb851eb8"
@@ -742,6 +767,8 @@
    "name": "Mortar",
    "kind": "projectile",
    "targeting": "cone-densest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "battery",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -807,6 +834,8 @@
    "name": "Plasma Thrower",
    "kind": "projectile",
    "targeting": "cone-coldest",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "battery",
    "behaviour": "straight",
    "requiresTarget": true,
@@ -872,6 +901,8 @@
    "name": "Toxic Sludge",
    "kind": "projectile",
    "targeting": "rear-cone",
+   "trackingTargeting": null,
+   "slow": null,
    "pattern": "sludge",
    "behaviour": "straight",
    "requiresTarget": true,

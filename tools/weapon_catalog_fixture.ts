@@ -66,6 +66,15 @@ function dumpDef(d: WeaponDef) {
     name: d.name,
     kind: d.kind,
     targeting: d.targeting,
+    // null rather than absent, so the C# side can assert "this weapon has no tracking rule"
+    // rather than silently skipping a field it forgot to read.
+    trackingTargeting: d.trackingTargeting ?? null,
+    // THE SLOW BLOCK, pinned across the languages. `burn` and `puddle` are not here and predate
+    // this, which is exactly why it is worth adding: those two numbers are hand-transcribed into
+    // WeaponCatalog.cs and NOTHING checks them, so a typo only surfaces if a corpus run happens to
+    // hold the weapon. Null on the thirteen guns that slow nothing, so the C# side can assert the
+    // absence as well as the value.
+    slow: d.slow === undefined ? null : { frac: bits(d.slow.frac), seconds: bits(d.slow.seconds) },
     pattern: d.pattern,
     behaviour: d.behaviour,
     requiresTarget: d.requiresTarget,

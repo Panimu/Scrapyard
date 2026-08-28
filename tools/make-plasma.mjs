@@ -73,6 +73,22 @@ const SPRITES = [
   ['twirl_0', 'twirl_01.png'],
   ['twirl_1', 'twirl_02.png'],
   ['twirl_2', 'twirl_03.png'],
+
+  // THE ARCS THAT CRAWL OVER A SLOWED BODY - the Phase Cannon's blast leaves everything it caught
+  // dragging, and this is how a player reads that off the field rather than off a number.
+  //
+  // KENNEY'S, NOT `dcss/full/effect/zap_*`, AND THE REASON IS THE ONE THIS FILE ALREADY GIVES
+  // ABOVE. The DCSS zaps are genuinely the better DRAWING of electricity - four hand-pixelled
+  // zigzags - and they are on the wrong side of two lines. `assets/README.md` keeps DCSS for Mossy
+  // Mayhem's creatures while the Scrapyard's effects are Kenney, and a weapon effect is seen on
+  // every map. More practically they are 32x32 with the cyan baked in, so they cannot be tinted:
+  // exactly the complaint that moved the burn off `flame_{0,1,2}` in the first place. These four
+  // are WHITE branching arcs, which is what lets the renderer put a dim wide copy behind a pale
+  // narrow one and get a glow out of art that carries no colour at all.
+  ['zap_0', 'spark_01.png'],
+  ['zap_1', 'spark_02.png'],
+  ['zap_2', 'spark_03.png'],
+  ['zap_3', 'spark_04.png'],
 ];
 
 /** Chromium, from wherever this machine keeps it. Same resolution order as `make-icons`. */

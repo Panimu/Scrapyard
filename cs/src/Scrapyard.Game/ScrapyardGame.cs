@@ -2032,7 +2032,34 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         {
             // A CHEST TAKES ANY CHOICE, a click included - it is an acknowledgement, not a
             // decision, so it does not matter where on the overlay the click landed.
-            if (Pressed(keys, Keys.D1) || _menu.Confirm || _mouse.LeftClicked) _pendingChoice = 0;
+            bool ack = Pressed(keys, Keys.D1) || _menu.Confirm || _mouse.LeftClicked;
+            if (!ack) return;
+
+            // BUT THE FIRST PRESS SKIPS THE REELS RATHER THAN THE PAYOUT. Pressing during the spin
+            // used to collect outright, so an impatient player - or anyone who happened to be
+            // holding a key when the chest opened - was thrown straight back to the fight having
+            // never seen what they won. The chest is the one screen in the game whose whole job is
+            // to SHOW you something.
+            //
+            // SO IT SNAPS THE ANIMATION TO ITS END instead: the reels land, the payout is up, and
+            // the next press collects. Impatience costs the spin, not the result.
+            //
+            // BY MOVING THE CLOCK BACK, not by a "skipped" flag: everything the overlay draws is a
+            // pure function of elapsed time (see Overlay.DrawChest and ChestSpin), so putting the
+            // clock past the end of the spin IS the finished state, and there is no second way to
+            // be finished for the two to disagree about.
+            var chest = _sim.World.Chest;
+            System.Span<int> heat = stackalloc int[3];
+            ChestSpin.PlanHeat(chest.Reels, chest.Payout, chest.Ascension, heat);
+            double totalMs = ChestSpin.TotalMs(heat[1]);
+
+            if ((_clockSec - _chestOpenedSec) * 1000 < totalMs)
+            {
+                _chestOpenedSec = _clockSec - totalMs / 1000;
+                return;
+            }
+
+            _pendingChoice = 0;
             return;
         }
 
@@ -2242,6 +2269,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         _batch.Begin(blendState: BlendState.Additive, samplerState: SamplerState.PointClamp);
         _beams.DrawGlow(_batch, _camera, _clockSec);
+        DrawZaps();
         _batch.End();
 
         _batch.Begin(samplerState: SamplerState.PointClamp);
@@ -2538,6 +2566,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             }
 
             if (e.BurnLeft[d] > 0) DrawBurning(x, y, e.Radius[d], e.SpawnId[d], e.BurnLeft[d]);
+            if (e.SlowLeft[d] > 0) _zapBodies.Add((x, y, e.Radius[d], e.SpawnId[d]));
         }
     }
 
@@ -2607,6 +2636,68 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <c>Math.imul</c> simply wraps, and the two have to agree.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The arcs crawling over every slowed body collected this frame. ADDITIVE - see _zapBodies.
+    /// </summary>
+    /// <remarks>
+    /// THEY SNAP RATHER THAN BREATHE, which is the whole difference from the flames. Fire is
+    /// continuous: it leans and swells. Electricity is not - an arc is there for a frame and gone -
+    /// so the pose changes fast, each arc takes a new angle every pose, and nothing interpolates.
+    /// The list is CLEARED HERE rather than at the start of the frame, so a frame that never
+    /// reaches this draw (a phase that skips the world) cannot carry bodies into the next one.
+    /// </remarks>
+    private void DrawZaps()
+    {
+        foreach (var (x, y, radius, spawnId) in _zapBodies)
+        {
+            double phase = _clockSec * ZapFps + spawnId * ZapStagger;
+            int pose = (int)System.Math.Floor(phase) % ZapPoses;
+            if (pose < 0) pose += ZapPoses;
+
+            for (int i = 0; i < ZapArcs; i++)
+            {
+                var tex = _sprites.Get($"zap_{(pose + i) % ZapPoses}");
+                if (tex is null) continue;
+
+                // A new pose and a new angle every frame of the cycle, keyed off the pose index
+                // rather than the clock, so the arc jumps when the shape does instead of sliding.
+                int seed = pose * ZapArcs + i;
+                double ang = BurnScatter(spawnId, seed * 2) * System.Math.PI * 2;
+                double rad = System.Math.Sqrt(BurnScatter(spawnId, seed * 2 + 1)) * radius * ZapSpread;
+
+                double size = radius * ZapScale;
+                // Turned a quarter circle from where it sits, so the arcs crawl ACROSS the body
+                // rather than radiating from its centre.
+                var tint = (i == 0 ? ZapTint : ZapCore) * (float)(i == 0 ? 0.55 : 0.9);
+                Blit(tex, x + System.Math.Cos(ang) * rad, y + System.Math.Sin(ang) * rad,
+                     size * ((double)tex.Width / tex.Height), size,
+                     ang + System.Math.PI * 0.5, tint);
+            }
+        }
+        _zapBodies.Clear();
+
+        // THE PHASE BOLTS' OWN ARCS, deferred out of DrawProjectiles for the blend mode - see the
+        // note there. Same four sprites and the same cycle as a slowed body wears, sized off the
+        // ball rather than off a radius.
+        foreach (var (x, y, spawnId) in _plasmaArcs)
+        {
+            double phase = _clockSec * ZapFps + spawnId * ZapStagger;
+            int pose = (int)System.Math.Floor(phase) % ZapPoses;
+            if (pose < 0) pose += ZapPoses;
+
+            for (int a = 0; a < PlasmaArcs; a++)
+            {
+                var arcTex = _sprites.Get($"zap_{(pose + a) % ZapPoses}");
+                if (arcTex is null) continue;
+                double sz = PlasmaBall * PlasmaArcScale;
+                // A quarter turn apart, so the two forks cross rather than overlap.
+                var arcTint = (a == 0 ? ZapCore : PlasmaViolet) * (float)(a == 0 ? 0.9 : 0.6);
+                Blit(arcTex, x, y, sz, sz, pose * 1.9 + a * System.Math.PI * 0.5, arcTint);
+            }
+        }
+        _plasmaArcs.Clear();
+    }
+
     private static double BurnScatter(uint spawnId, int i)
     {
         unchecked
@@ -2622,6 +2713,56 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// land on the same frame and a wave that arrived together does not burn in lockstep.
     /// </summary>
     private const double BurnStagger = 0.618;
+
+    // ---- THE ARCS ON A SLOWED BODY. Mirrors the TypeScript's ZAP_* exactly. -------------------
+    // A slow is the one status in this game with no other tell: a burn ticks damage off and kills
+    // things, a reload empties a bar. A body moving 35% slower looks like a body that is slow, so
+    // without these the whole mechanic is invisible and the gun reads as doing nothing.
+    private const int ZapArcs = 2;
+    private const int ZapPoses = 4;
+
+    /// <summary>Fast, and deliberately not a multiple of the burn's - the two must not fall in step.</summary>
+    private const double ZapFps = 17;
+
+    private const double ZapSrc = 128;
+    private const double ZapScale = 3.2;
+    private const double ZapSpread = 0.55;
+    private const double ZapStagger = 0.382;
+
+    // ---- THE PHASE BOLT: A CRACKLING BALL, not a bullet. Mirrors the TypeScript's PLASMA_*. ----
+    // It was the machine-gun tracer run big - a capsule, which is the shape of a thing with a nose
+    // and a tail, and this round has neither. It phases through walls and bodies and lands only on
+    // its mark; drawn as a shell it read as an object being thrown.
+    private const double PlasmaBall = 26;
+    private const double PlasmaBloom = 1.9;
+    private const int PlasmaArcs = 2;
+    private const double PlasmaArcScale = 2.0;
+
+    /// <summary>The bolt's violet. SLIGHTLY SEE-THROUGH - it is not a physical object.</summary>
+    private static readonly Color PlasmaTint = new Color(0xc7, 0x7b, 0xff) * 0.8f;
+
+    /// <summary>The same violet at full strength, for the bloom and arcs to scale from.</summary>
+    private static readonly Color PlasmaViolet = new(0xc7, 0x7b, 0xff);
+
+    /// <summary>The Phase Cannon's own violet, so the arcs and the bolt are one weapon.</summary>
+    private static readonly Color ZapTint = new(0xc7, 0x7b, 0xff);
+
+    /// <summary>A paler core over it - what makes a coloured arc read as electricity.</summary>
+    private static readonly Color ZapCore = new(0xf2, 0xe2, 0xff);
+
+    /// <summary>
+    /// Bodies to put arcs on this frame, collected during the enemy pass and drawn later.
+    /// </summary>
+    /// <remarks>
+    /// COLLECTED RATHER THAN DRAWN IN PLACE, because these are ADDITIVE and the enemy pass runs in
+    /// the normal batch. Drawing them inline would cost two blend-state changes per body; the beam
+    /// glow already opens an additive batch and these ride in it. The list is a field rather than a
+    /// local so the frame allocates nothing.
+    /// </remarks>
+    private readonly System.Collections.Generic.List<(double X, double Y, double R, uint Id)> _zapBodies = new();
+
+    /// <summary>Phase bolts whose arcs are owed an additive draw this frame. See DrawZaps.</summary>
+    private readonly System.Collections.Generic.List<(double X, double Y, uint Id)> _plasmaArcs = new();
 
     /// <summary>How fast a flame breathes, relative to the frame cycle. Faster, so they never sync.</summary>
     private const double BurnBreathe = 1.7;
@@ -2818,28 +2959,72 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             // NOT HERE. Toxic Sludge's globs are drawn inside the mech's own stack - see DrawGlobs.
             if (vis == VisualId.Sludge) continue;
 
+            if (vis == VisualId.Plasma)
+            {
+                // THREE LAYERS AND NOTHING ELSE IS DRAWN AS A BALL: the round `gout_haze` blob for
+                // the body so there is no long axis at all, a wide dim copy for the bloom, and ARCS
+                // over the top from the same four sprites a slowed body wears. The arcs are the
+                // point - a ball with no motion in it is a marble, and the one thing this weapon
+                // must never look like is solid.
+                var blob = _sprites.Get("gout_haze");
+                if (blob is not null)
+                {
+                    // THE BALL FIRST, THE BLOOM OVER IT. The TypeScript acquires the core sprite
+                    // and then the bloom from the same pool, so the bloom lands on top as a
+                    // translucent wash - reversing it here put a hard edge where the web build has
+                    // a glow, on the same two sprites at the same sizes.
+                    Blit(blob, x, y, PlasmaBall, PlasmaBall, 0, PlasmaTint);
+                    Blit(blob, x, y, PlasmaBall * PlasmaBloom, PlasmaBall * PlasmaBloom, 0,
+                         PlasmaViolet * 0.28f);
+                }
+
+                // THE ARCS ARE ADDITIVE, and this pass is not - DrawProjectiles runs inside the
+                // normal batch. Drawn here they would blend the way the enemy-body arcs explicitly
+                // do NOT (see the zaps pool in the TypeScript, which is constructed additive
+                // precisely because a normally-blended halo greys out what it sits on). So they are
+                // handed to the same deferred list the slowed bodies use and drawn in the additive
+                // batch alongside the beam glow - which also keeps ONE piece of art blending one
+                // way throughout the build.
+                _plasmaArcs.Add((x, y, p.SpawnId[d]));
+                continue;
+            }
+
             // The shell points where it is going. The art points UP, hence the offset.
             double angle = System.Math.Atan2(p.Vy[d], p.Vx[d]) + RenderTables.ShellRotOffset;
 
-            (string key, double len, double wide) = vis switch
+            // THE TWO AXES SCALE INDEPENDENTLY, and `lenMul` must not leak into the width. This
+            // read `(key, len, wide)` with the length pre-multiplied, and the width was then
+            // derived from THAT - so a Long Missile drawn 1.15x long also came out 1.15x wide and
+            // read as a fat capsule instead of the slender dart the web build draws. The Short
+            // Missile was wrong the other way, coming out too narrow. The TypeScript sets X and Y
+            // separately (MISSILE_LONG_SCALE_X/Y in assets.ts); this now does the same.
+            //
+            // Every other row carries lenMul 1 and its old `wide`, so nothing else moves.
+            (string key, double baseLen, double lenMul, double wide) = vis switch
             {
-                VisualId.MissileShort => ("missile", RenderTables.MissileDrawLen * 0.9, 1.3),
-                VisualId.MissileLong => ("missile", RenderTables.MissileDrawLen * 1.15, 0.72),
-                VisualId.Slug => ("slug", RenderTables.SlugDrawLen, 1.0),
-                VisualId.Plasma => ("shell", RenderTables.ShellDrawLen * 1.2, 1.2),
+                VisualId.MissileShort => ("missile", RenderTables.MissileDrawLen, 0.9, 1.3),
+                VisualId.MissileLong => ("missile", RenderTables.MissileDrawLen, 1.15, 0.72),
+                VisualId.Slug => ("slug", RenderTables.SlugDrawLen, 1.0, 1.0),
+                VisualId.Plasma => ("shell", RenderTables.ShellDrawLen * 1.2, 1.0, 1.2),
                 // A GOUT OF FIRE, with art of its own. It was the MACHINE GUN ROUND tinted
                 // orange, and no amount of stacking makes a capsule read as fire.
-                VisualId.Flame => ("gout", GoutLen, 1.0),
+                VisualId.Flame => ("gout", GoutLen, 1.0, 1.0),
                 // A GLOB, not a round: no elongation, because it is falling rather than flying.
-                VisualId.Sludge => ("slug", RenderTables.SlugDrawLen * 1.3, 1.0),
-                _ => ("shell", RenderTables.ShellDrawLen, 1.0),
+                VisualId.Sludge => ("slug", RenderTables.SlugDrawLen * 1.3, 1.0, 1.0),
+                _ => ("shell", RenderTables.ShellDrawLen, 1.0, 1.0),
             };
+            double len = baseLen * lenMul;
 
             var tex = _sprites.Get(key);
             if (tex is null) continue;
             var tint = vis switch
             {
-                VisualId.Plasma => new Color(0xc7, 0x7b, 0xff),
+                // SLIGHTLY SEE-THROUGH, and nothing else on this pool is. The phase bolt is the
+                // one round in the game that is not a physical object - it phases through scrap,
+                // walls and bodies and lands only on its mark - so an opaque shell said the
+                // opposite of what the weapon does. 0.8, matching PLASMA_ALPHA in the TypeScript;
+                // MonoGame wants the colour premultiplied, hence the scale rather than an A byte.
+                VisualId.Plasma => PlasmaTint,
                 VisualId.Flame => FlameTint,
                 VisualId.Sludge => SludgeTint,
                 _ => Color.White,
@@ -2882,7 +3067,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 continue;
             }
 
-            Blit(tex, x, y, len * ((double)tex.Width / tex.Height) * wide, len, angle, tint);
+            Blit(tex, x, y, baseLen * ((double)tex.Width / tex.Height) * wide, len, angle, tint);
         }
     }
 
@@ -3534,6 +3719,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // is walking and where its guns are pointing is most of what a mech looks like. Every slot
         // is drawn, not just the first: a three-weapon loadout that showed one barrel would hide
         // two thirds of the build.
+        // BY MOUNT SIZE, HEAVIEST FIRST, AND NOT IN LOADOUT ORDER. This looped over the weapon
+        // slots, so which barrel ended up on top was decided by the order the player happened to
+        // pick their guns in - a Machine Gun taken before a Cannon put the little rotary snout
+        // UNDER the big one and left it half-buried. The web build has never had this: it builds
+        // one sprite per TURRET_ART row in stack order and lets addChild do the layering.
+        //
+        // THREE PASSES RATHER THAN A SORT, because the rank is a property of the sprite key and
+        // there are exactly three ranks - sorting would mean an allocation per frame in a draw
+        // path that currently makes none, to order at most a handful of barrels.
+        for (int rank = 0; rank < TurretRanks.Length; rank++)
         for (int i = 0; i < w.WeaponCount; i++)
         {
             var inst = w.Weapons[i];
@@ -3546,6 +3741,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             }
 
             string key = TurretFor(w, in inst);
+            if (TurretRankOf(key) != rank) continue;
             if (key == "") continue;
             var turret = _sprites.Get(key);
             if (turret is null) continue;
@@ -3859,6 +4055,34 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     /// <summary>
     /// Which barrel a gun shows. Four exist; everything else takes the default.
     /// </summary>
+    /// <summary>
+    /// The turret sprite keys in DRAW ORDER: heaviest mount first, so it ends up underneath.
+    /// </summary>
+    /// <remarks>
+    /// The heavy mount carries the Cannon and the Mortar, the medium one the Phase Cannon and the
+    /// Plasma Thrower, the small rotary one the Machine Gun and the Flak Cannon. A barrel drawn
+    /// over a bigger one reads as the small gun floating on top of the hull; under it, the stack
+    /// reads as hardware bolted to a chassis. `turret_twin` is the Cannon's tier-8 art and ranks
+    /// with the Cannon.
+    /// </remarks>
+    private static readonly string[][] TurretRanks =
+    {
+        new[] { "turret", "turret_twin" },
+        new[] { "turret_phase" },
+        new[] { "turret_mg" },
+    };
+
+    /// <summary>Which rank a turret key draws in, or -1 for a key that is not a turret.</summary>
+    private static int TurretRankOf(string key)
+    {
+        for (int r = 0; r < TurretRanks.Length; r++)
+        {
+            var keys = TurretRanks[r];
+            for (int k = 0; k < keys.Length; k++) if (keys[k] == key) return r;
+        }
+        return -1;
+    }
+
     /// <summary>
     /// The turret a mount wears, or "" for a weapon that has no barrel to draw.
     /// </summary>

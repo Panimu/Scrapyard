@@ -80,6 +80,7 @@ import { WEAPON_CATALOG } from '../content/weaponCatalog.js';
 import { RANKS, RANK_BOSS, RANK_ELITE, RANK_REGULAR } from '../content/cycles.js';
 import {
   ENEMY_FLAG_ANCHORED,
+  ENEMY_FLAG_SECONDARY,
   ENEMY_FLAG_BOSS,
   ENEMY_FLAG_ELITE,
   ENEMY_FLAG_DEAD,
@@ -103,7 +104,7 @@ import {
   pushKill,
   NO_DIRECT_HIT,
 } from '../events/ring.js';
-import { SPLASH_RIM_FRAC } from '../constants.js';
+import { SLOW_FRAC_MAX, SPLASH_RIM_FRAC } from '../constants.js';
 import { breakLootIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
@@ -144,6 +145,42 @@ export function updateDamage(world: World, dt: number): void {
   applyHits(world);
   applyContacts(world);
   advanceBurning(world, dt);
+  advanceSlows(world, dt);
+}
+
+/**
+ * Runs every slow down, and clears the pair when it expires.
+ *
+ * A SEPARATE PASS FROM `advanceBurning`, though both walk the same array and could have shared
+ * one. They are different lengths of thing: a burn bills damage and therefore has to go through
+ * `damageEnemy`, kill credit and all, while a slow only counts down. Folding the second into the
+ * first would put a `if (slowLeft > 0)` inside a loop that already `continue`s on `burnLeft <= 0`
+ * - so every slowed-but-not-burning body would be skipped, which is most of them.
+ *
+ * `slowFrac` IS CLEARED WITH THE TIMER, not left behind. Nothing reads it while `slowLeft` is 0,
+ * so leaving it would be harmless to play and poisonous to the hash: two worlds identical in every
+ * observable way would differ in a dead field, and the golden corpus would report a divergence
+ * with nothing to see.
+ *
+ * CLAMPED AT ZERO for the reason `advanceBurning` clamps - a field that drifts negative changes
+ * the world hash for every body that was ever slowed.
+ */
+function advanceSlows(world: World, dt: number): void {
+  const enemies = world.enemies;
+  const left = enemies.slowLeft;
+  const n = enemies.count;
+
+  for (let d = 0; d < n; d++) {
+    const t = left[d];
+    if (t <= 0) continue;
+    const next = t - dt;
+    if (next > 0) {
+      left[d] = next;
+    } else {
+      left[d] = 0;
+      enemies.slowFrac[d] = 0;
+    }
+  }
 }
 
 /**
@@ -238,11 +275,59 @@ export function ignite(
   const enemies = world.enemies;
   if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) return;
 
+  markSecondary(world, ed);
+
   if (dps >= enemies.burnDps[ed]) {
     enemies.burnDps[ed] = dps;
     enemies.burnBy[ed] = bySlot;
   }
   if (seconds > enemies.burnLeft[ed]) enemies.burnLeft[ed] = seconds;
+}
+
+/**
+ * Counts this body against `RunStats.secondaryTouched`, once and only once.
+ *
+ * THE THREE CALLERS ARE THE THREE SECONDARY EFFECTS - `ignite`, `chill`, and the sludge pool's
+ * damage pass. One function rather than three copies of the same two lines, for the reason
+ * `creditWeapon` is one function: a tally is only worth having if every site that should touch it
+ * does, and a fourth effect added later has one obvious place to call.
+ *
+ * NOT INSIDE `damageEnemy`. That is the generic "take hit points off" path and a burn already goes
+ * through it - so marking there would count the fire twice and, worse, would count nothing for a
+ * slow, which deals no damage at all.
+ */
+export function markSecondary(world: World, ed: number): void {
+  const enemies = world.enemies;
+  if ((enemies.flags[ed] & ENEMY_FLAG_SECONDARY) !== 0) return;
+  enemies.flags[ed] |= ENEMY_FLAG_SECONDARY;
+  world.stats.secondaryTouched++;
+}
+
+/**
+ * Slows a body, or refreshes a slow already on it.
+ *
+ * THE SAME TWO-MAXIMA RULE `ignite` USES, and for the same reason: a second bolt into a crowd
+ * already dragging must never make it FASTER, and must never cut the slow short - so the strength
+ * takes the max and the duration takes the max, judged separately. Refreshing both blindly would
+ * let the rim of one blast downgrade a slow the centre of another had just laid on.
+ *
+ * NO `bySlot`. A slow kills nothing, so there is nothing to credit - which is why the pool carries
+ * two fields here against the burn's three.
+ *
+ * CLAMPED BELOW 1. A frac of 1 is a body stopped dead forever-ish, which is a stun and not a slow;
+ * the catalog authors 0.35 today and this is the guard that keeps a future typo from shipping an
+ * unmoving horde rather than a slow one.
+ */
+export function chill(world: World, ed: number, frac: number, seconds: number): void {
+  if (frac <= 0 || seconds <= 0) return;
+  const enemies = world.enemies;
+  if ((enemies.flags[ed] & ENEMY_FLAG_DEAD) !== 0) return;
+
+  markSecondary(world, ed);
+
+  const capped = frac > SLOW_FRAC_MAX ? SLOW_FRAC_MAX : frac;
+  if (capped > enemies.slowFrac[ed]) enemies.slowFrac[ed] = capped;
+  if (seconds > enemies.slowLeft[ed]) enemies.slowLeft[ed] = seconds;
 }
 
 // -------------------------------------------------------------------------------------------
@@ -388,6 +473,12 @@ function applyHits(world: World): void {
       if (burn !== undefined) {
         ignite(world, ed, raw * burn.dpsFrac, burn.seconds, proj.ownerWeapon[pd]);
       }
+      // AND THE BODY THE BOLT ACTUALLY STRUCK IS SLOWED TOO. It sits at the dead centre of the
+      // blast and is the one thing `applySplash` deliberately excludes (it already took the direct
+      // hit), so without this the mark would be the single body in the whole circle walking away
+      // at full speed - the effect visibly failing on the target you aimed at.
+      const slow = WEAPON_CATALOG[owner.defId].slow;
+      if (slow !== undefined) chill(world, ed, slow.frac, slow.seconds);
     }
 
     if (enemies.hp[ed] <= 0) killEnemy(world, ed, proj.ownerWeapon[pd]);
@@ -487,6 +578,15 @@ function applySplash(
   const burn = owner === undefined ? undefined : WEAPON_CATALOG[owner.defId].burn;
   const burnDps = burn === undefined ? 0 : owner!.stats.damage * burn.dpsFrac;
 
+  // DOES THIS BLAST SLOW? Resolved once, outside the loop, for the reason the burn above is: it is
+  // a property of the gun and cannot differ between two victims of the same shell.
+  //
+  // AND IT DOES NOT FALL OFF WITH THE BLAST, exactly as the fire does not. A body clipped by the
+  // rim is standing in the same field as one at the centre; scaling the slow by distance would
+  // make the edge of the circle do visibly nothing, which is the complaint SPLASH_RIM_FRAC already
+  // answers for damage by refusing to reach zero.
+  const slow = owner === undefined ? undefined : WEAPON_CATALOG[owner.defId].slow;
+
   for (let i = 0; i < found; i++) {
     const ed = candidates[i];
     if (ed === exclude) continue;
@@ -515,6 +615,9 @@ function applySplash(
     // tick it died on - `peakBurning` is a high-water mark and a fire that never registered is a
     // fire the unlock never saw.
     if (burn !== undefined) ignite(world, ed, burnDps, burn.seconds, slot);
+    // Slowed before the kill check for the reason the fire is lit before it: a body the blast
+    // finishes still spent the tick it died on inside the field.
+    if (slow !== undefined) chill(world, ed, slow.frac, slow.seconds);
 
     if (enemies.hp[ed] <= 0 && (enemies.flags[ed] & ENEMY_FLAG_DEAD) === 0) {
       // The blast was the killing blow. Guarded on DEAD exactly as killEnemy itself is, so a

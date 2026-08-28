@@ -87,6 +87,13 @@ export interface Outcome {
    * the column that says WHY a run that reached the timer did not win.
    */
   bossesAlive: number;
+  /**
+   * DISTINCT BODIES A SECONDARY EFFECT REACHED - fire, slow, or sludge on the ground. See
+   * RunStats.secondaryTouched. A RUN-LEVEL figure and deliberately not per-weapon: the effects
+   * overlap on the same bodies, so splitting it by gun would double-count exactly the crowds a
+   * loadout with two of them works hardest on.
+   */
+  secondary: number;
 }
 
 /**
@@ -155,6 +162,7 @@ export function runOne(seed: number, levelId: string, equip: (w: World) => void)
     bossKills: WEAPON_CATALOG.map((_, i) => s.killsByWeaponRank[i * RANKS.length + RANK_BOSS] ?? 0),
     byShield: s.damageByShield,
     bossesAlive,
+    secondary: s.secondaryTouched,
   };
 }
 

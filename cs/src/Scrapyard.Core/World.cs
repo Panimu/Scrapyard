@@ -589,6 +589,17 @@ public sealed class RunStats
     /// alight.
     /// </remarks>
     public double PeakBurning;
+
+    /// <summary>
+    /// How many DISTINCT bodies a secondary effect ever reached - a fire, a slow, or sludge on the
+    /// ground. Counted once per enemy, whichever of the three and however many times.
+    /// </summary>
+    /// <remarks>
+    /// The damage column cannot see these: a gun that lights a crowd and lets the fire kill it, or
+    /// holds one still for somebody else, reads as low damage and low kills. One number for all
+    /// three - a body burning AND slowed is still one body.
+    /// </remarks>
+    public double SecondaryTouched;
     public double EndTick;
 
     public RunStats(in WorldShape shape)

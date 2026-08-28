@@ -175,6 +175,20 @@ public sealed class WeaponDef
     public required string Name { get; init; }
     public required int Kind { get; init; }
     public required Targeting.Rule Targeting { get; init; }
+
+    /// <summary>
+    /// The rule this weapon picks by while it is STILL ON COOLDOWN, or null for the thirteen guns
+    /// that use one rule the whole time.
+    /// </summary>
+    /// <remarks>
+    /// Target selection runs every tick, ready or not, and for most guns that is simply how the
+    /// turret tracks. For a slow gun with a slow turret the seconds between shots are also the only
+    /// chance it gets to LINE ONE UP, and what it should point at then is not what it should shoot
+    /// at the instant it comes up. The Phase Cannon slews toward the thickest knot anywhere in range
+    /// while it rearms, then takes the best thing inside the cone it reached. A beam never reads
+    /// this: it has no cooldown to be on.
+    /// </remarks>
+    public Targeting.Rule? TrackingTargeting { get; init; }
     public required int Pattern { get; init; }
     public required int Behaviour { get; init; }
 
@@ -240,6 +254,18 @@ public sealed class WeaponDef
     public PuddleSpec? Puddle { get; init; }
 
     /// <summary>
+    /// What this gun leaves everything in its blast dragging, or null for the thirteen that slow
+    /// nothing. Present-means-enabled, like <see cref="Burn"/> and <see cref="Puddle"/>.
+    /// </summary>
+    /// <remarks>
+    /// <c>Frac</c> is NOT a fraction of the hit, which is the one place this differs from the two
+    /// above: theirs scale with damage, and a slow has nothing to scale against - it is a fraction
+    /// of the VICTIM's own speed. So it does not move with the tier ladder at all, deliberately:
+    /// what a Phase Cannon tier buys is a bigger blast, not a deeper slow on each body in it.
+    /// </remarks>
+    public SlowSpec? Slow { get; init; }
+
+    /// <summary>
     /// How much of its reach this gun will actually PICK a target in, or null for the thirteen
     /// weapons that shoot at anything they can reach.
     /// </summary>
@@ -268,6 +294,16 @@ public sealed class BurnSpec
     public required double DpsFrac { get; init; }
 
     /// <summary>How long it burns.</summary>
+    public required double Seconds { get; init; }
+}
+
+/// <summary>What a blast leaves everything it caught dragging. See <c>WeaponDef.Slow</c>.</summary>
+public sealed class SlowSpec
+{
+    /// <summary>Fraction of its own speed the body loses. Clamped by Constants.SlowFracMax.</summary>
+    public required double Frac { get; init; }
+
+    /// <summary>How long it drags for. Refreshes rather than stacks - see Damage.Chill.</summary>
     public required double Seconds { get; init; }
 }
 
@@ -795,7 +831,7 @@ public static class WeaponCatalog
         Behaviour = Core.Behaviour.Straight, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
-            Damage = 3.6, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 3,
+            Damage = 2.7, Cooldown = 0.13, Range = 400, ProjectileSpeed = 620, ProjectileCount = 4,
             Knockback = 18,
             // degToRad(692.55) - was 729, -5% alongside the Machine Gun on the same mount, still
             // 90% of its 769.5. (The comment this replaces named the Cannon; the 810 it meant was
@@ -803,15 +839,15 @@ public static class WeaponCatalog
             TurretTraverse = 12.087277734686728,
             FireArc = LaserFireArc,               // degToRad(30)
             HeatCapacity = HeatCapacityBase,
-            SpreadAngle = FlakCone, AmmoCapacity = 300, ReloadTime = 13,
+            SpreadAngle = FlakCone, AmmoCapacity = 400, ReloadTime = 13,
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Damage = 1.0 },        // T2  4.0 -> 5.0
+            new WeaponStatDelta { Damage = 0.75 },       // T2  2.70 -> 3.45 a shell (13.8 a burst)
             new WeaponStatDelta { Cooldown = -0.026 },   // T3  0.130 -> 0.104 s
             new WeaponStatDelta { AmmoCapacity = 120 },  // T4  300 -> 420 rounds
             new WeaponStatDelta { Range = 70 },          // T5  400 -> 470
-            new WeaponStatDelta { Damage = 1.5 },        // T6  5.0 -> 6.5
+            new WeaponStatDelta { Damage = 1.125 },      // T6  3.45 -> 4.575 a shell (18.3 a burst)
             new WeaponStatDelta { ReloadTime = -4 },     // T7  13.0 -> 9.0 s
         },
         // Bolts onto the SAME mount the Machine Gun uses - no longer means the two exclude each
@@ -898,14 +934,20 @@ public static class WeaponCatalog
         // ONE MEDIUM TURRET, TWO GUNS THAT WANT IT. Declared here and nowhere else - the check
         // runs both directions. See WeaponDef.Excludes.
         Excludes = new[] { WeaponIds.Plasma },
-        Targeting = Core.Targeting.Rule.Densest, Pattern = Core.FirePattern.Phase,
+        // TWO RULES, AND THE COOLDOWN DECIDES WHICH - see the TypeScript. Ready: the thickest knot
+        // in a cone in front of the barrel, so there is always something to shoot without turning
+        // first. Rearming: everywhere, so the cone it is about to fire out of is pointed somewhere
+        // worth firing.
+        Targeting = Core.Targeting.Rule.ConeDensest,
+        TrackingTargeting = Core.Targeting.Rule.Densest,
+        Pattern = Core.FirePattern.Phase,
         Behaviour = Core.Behaviour.Phase, RequiresTarget = true,
         Base = new WeaponStatBlock
         {
             // Damage UP A TENTH across the whole ladder - see the TypeScript. The blast follows
             // for free: SplashFrac is a fraction of this, not a figure of its own.
             Damage = 39.6, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
-            Knockback = 90, SplashRadius = 55, SplashFrac = 0.5,
+            Knockback = 90, SplashRadius = 57.75, SplashFrac = 0.5,
             // degToRad(63) - was 60, +5%. NOT the slowest turret any more if it ever was - Mortar's
             // 51.3 on the heavy mount is slower. Still the slower of the two guns on this mount.
             TurretTraverse = 1.0995574287564276,
@@ -916,12 +958,16 @@ public static class WeaponCatalog
         PerLevel = new[]
         {
             new WeaponStatDelta { Damage = 8.8 },        // T2  39.6 -> 48.4
-            new WeaponStatDelta { SplashRadius = 12 },   // T3  55 -> 67
+            new WeaponStatDelta { SplashRadius = 12.6 }, // T3  57.75 -> 70.35
             new WeaponStatDelta { Cooldown = -0.24 },    // T4  1.60 -> 1.36 s
             new WeaponStatDelta { Damage = 8.8 },        // T5  48.4 -> 57.2
-            new WeaponStatDelta { SplashRadius = 12 },   // T6  67 -> 79
+            new WeaponStatDelta { SplashRadius = 12.6 }, // T6  70.35 -> 82.95
             new WeaponStatDelta { Cooldown = -0.24 },    // T7  1.36 -> 1.12 s
         },
+        // WHAT THE BLAST ACTUALLY DOES - see the TypeScript. A third off for two seconds, against
+        // a 1.12 s cooldown at tier 7, so a Phase Cannon worked into one clump holds it slowed
+        // continuously and one splitting its attention does not.
+        Slow = new SlowSpec { Frac = 0.35, Seconds = 2 },
         ReengageMul = 1, VisualId = VisualId.Plasma, MuzzleOffset = 30, ShellRadius = 7,
         FireAlongFacing = false, DetonateOnExpiry = true,
     };

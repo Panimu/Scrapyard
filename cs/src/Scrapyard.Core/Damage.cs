@@ -99,6 +99,7 @@ public static class Damage
         ApplyHits(world, scenery);
         ApplyContacts(world);
         AdvanceBurning(world, dt);
+        AdvanceSlows(world, dt);
     }
 
     /// <summary>
@@ -172,6 +173,8 @@ public static class Damage
         var enemies = world.Enemies;
         if ((enemies.Flags[ed] & EnemyPool.FlagDead) != 0) return;
 
+        MarkSecondary(world, ed);
+
         if (dps >= enemies.BurnDps[ed])
         {
             enemies.BurnDps[ed] = (float)dps;
@@ -179,6 +182,71 @@ public static class Damage
         }
 
         if (seconds > enemies.BurnLeft[ed]) enemies.BurnLeft[ed] = (float)seconds;
+    }
+
+    /// <summary>Counts this body against RunStats.SecondaryTouched, once and only once.</summary>
+    /// <remarks>
+    /// THE THREE CALLERS ARE THE THREE SECONDARY EFFECTS - Ignite, Chill and the sludge pool's
+    /// damage pass. NOT inside DamageEnemy: that is the generic "take hit points off" path and a
+    /// burn already goes through it, so marking there would count fire twice and a slow not at all.
+    /// </remarks>
+    public static void MarkSecondary(World world, int ed)
+    {
+        var enemies = world.Enemies;
+        if ((enemies.Flags[ed] & EnemyPool.FlagSecondary) != 0) return;
+        enemies.Flags[ed] |= EnemyPool.FlagSecondary;
+        world.Stats.SecondaryTouched++;
+    }
+
+    /// <summary>Slows a body, or refreshes a slow already on it.</summary>
+    /// <remarks>
+    /// THE SAME TWO-MAXIMA RULE <see cref="Ignite"/> USES, and for the same reason: a second bolt
+    /// into a crowd already dragging must never make it FASTER and must never cut the slow short,
+    /// so strength and duration take the max separately. No bySlot - a slow kills nothing, so
+    /// there is nothing to credit, which is why the pool carries two fields here against three.
+    /// </remarks>
+    public static void Chill(World world, int ed, double frac, double seconds)
+    {
+        if (frac <= 0 || seconds <= 0) return;
+        var enemies = world.Enemies;
+        if ((enemies.Flags[ed] & EnemyPool.FlagDead) != 0) return;
+
+        MarkSecondary(world, ed);
+
+        double capped = frac > Constants.SlowFracMax ? Constants.SlowFracMax : frac;
+        if (capped > enemies.SlowFrac[ed]) enemies.SlowFrac[ed] = (float)capped;
+        if (seconds > enemies.SlowLeft[ed]) enemies.SlowLeft[ed] = (float)seconds;
+    }
+
+    /// <summary>Runs every slow down, and clears the pair when it expires.</summary>
+    /// <remarks>
+    /// A SEPARATE PASS FROM <see cref="AdvanceBurning"/>, though both walk the same array: that
+    /// one continues on BurnLeft &lt;= 0, so folding this into it would skip every slowed body
+    /// that is not also alight - which is most of them. SlowFrac is cleared with the timer rather
+    /// than left behind: nothing reads it at 0, and a stale value would differ between two worlds
+    /// identical in every observable way and diverge the hash with nothing to see.
+    /// </remarks>
+    private static void AdvanceSlows(World world, double dt)
+    {
+        var enemies = world.Enemies;
+        var left = enemies.SlowLeft;
+        int n = enemies.Count;
+
+        for (int d = 0; d < n; d++)
+        {
+            double t = left[d];
+            if (t <= 0) continue;
+            double next = t - dt;
+            if (next > 0)
+            {
+                left[d] = (float)next;
+            }
+            else
+            {
+                left[d] = 0;
+                enemies.SlowFrac[d] = 0;
+            }
+        }
     }
 
     /// <summary>
@@ -339,6 +407,13 @@ public static class Damage
                 {
                     Ignite(world, ed, raw * burn.DpsFrac, burn.Seconds, proj.OwnerWeapon[pd]);
                 }
+
+                // AND THE BODY THE BOLT ACTUALLY STRUCK IS SLOWED TOO. It sits at the dead centre
+                // of the blast and is the one thing ApplySplash excludes (it already took the
+                // direct hit), so without this the mark would be the single body in the whole
+                // circle walking away at full speed.
+                var slow = WeaponCatalog.All[owner.DefId].Slow;
+                if (slow != null) Chill(world, ed, slow.Frac, slow.Seconds);
             }
 
             if (enemies.Hp[ed] <= 0) KillEnemy(world, ed, proj.OwnerWeapon[pd]);
@@ -437,6 +512,12 @@ public static class Damage
         var burn = owner is null ? null : WeaponCatalog.All[owner.DefId].Burn;
         double burnDps = burn is null ? 0 : owner!.Stats.Damage * burn.DpsFrac;
 
+        // DOES THIS BLAST SLOW? Resolved once, outside the loop, for the reason the burn above is:
+        // it is a property of the gun and cannot differ between two victims of the same shell. And
+        // it does not fall off with the blast, exactly as the fire does not - a body clipped by the
+        // rim is standing in the same field as one at the centre.
+        var slow = owner is null ? null : WeaponCatalog.All[owner.DefId].Slow;
+
         for (int i = 0; i < found; i++)
         {
             int ed = candidates[i];
@@ -461,6 +542,8 @@ public static class Damage
             // for the tick it died on - PeakBurning is a high-water mark, and a fire that never
             // registered is a fire the unlock never saw.
             if (burn is not null) Ignite(world, ed, burnDps, burn.Seconds, slot);
+            // Slowed before the kill check for the reason the fire is lit before it.
+            if (slow is not null) Chill(world, ed, slow.Frac, slow.Seconds);
 
             if (enemies.Hp[ed] <= 0 && (enemies.Flags[ed] & EnemyPool.FlagDead) == 0)
             {

@@ -189,6 +189,8 @@ function seek(world: World, dt: number): void {
   const fixateY = p.fixateY;
   const fixateLeft = p.fixateLeft;
   const flavourId = p.flavourId;
+  const slowLeft = p.slowLeft;
+  const slowFrac = p.slowFrac;
   const radius = p.radius;
   const spawnId = p.spawnId;
   const n = p.count;
@@ -205,8 +207,12 @@ function seek(world: World, dt: number): void {
       const rest = left - dt;
       if (rest > 0) {
         chargeLeft[d] = rest;
-        vx[d] = p.chargeX[d] * speed[d];
-        vy[d] = p.chargeY[d] * speed[d];
+        // Slowed even mid-charge. A swarm crossing the yard is exactly the crowd a blast is worth
+        // dropping on, and a charge that ignored the field would make the one formation the effect
+        // is best against the one formation it does nothing to.
+        const cs = speed[d] * (slowLeft[d] > 0 ? 1 - slowFrac[d] : 1);
+        vx[d] = p.chargeX[d] * cs;
+        vy[d] = p.chargeY[d] * cs;
         continue;
       }
       // THE CHARGE ENDS ONCE. Clearing the timer before halving the speed is what stops this
@@ -335,7 +341,12 @@ function seek(world: World, dt: number): void {
       uy = ty;
     }
 
-    const sp = speed[d];
+    // THE SLOW IS APPLIED HERE, AT THE USE SITE, AND NEVER WRITTEN BACK TO `speed`. Two other
+    // mechanics already mutate the stored speed in place - the swarm charge's one-off halving and
+    // a Heavy's post-fixation quickening - so a slow that multiplied it would compound on every
+    // refresh and the body would never recover. Reading it per tick costs one compare and one
+    // multiply, and is the only version of this that is correct.
+    const sp = speed[d] * (slowLeft[d] > 0 ? 1 - slowFrac[d] : 1);
     vx[d] = ux * sp;
     vy[d] = uy * sp;
   }

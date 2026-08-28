@@ -470,6 +470,52 @@ const BURN_LAYERS: readonly { scale: number; drop: number; tint: number; alpha: 
 
 
 /** How fast a gout breathes, in radians a second. */
+/**
+ * THE ARCS THAT CRAWL OVER A SLOWED BODY - the Phase Cannon's blast, made visible.
+ *
+ * A SLOW IS THE ONE STATUS IN THIS GAME WITH NO OTHER TELL. A burn ticks damage numbers off and
+ * kills things; a reload empties a bar the player is already watching. A body moving 35% slower
+ * looks exactly like a body that happens to be slow, so without this the whole mechanic is
+ * invisible and the gun reads as doing nothing at all.
+ *
+ * TWO ARCS, NOT FIVE. The burn's count is its own countdown - flames go out one at a time as the
+ * fire gutters - and copying that here would be a second countdown competing with it on bodies
+ * that are often both alight and slowed. Two is enough to say "this one is held", and the SPEED of
+ * the flicker carries the rest.
+ *
+ * THEY SNAP RATHER THAN BREATHE, which is the whole difference from the flames beside them. Fire
+ * is continuous - it leans and swells - and electricity is not: an arc is there for a frame and
+ * gone. So the pose changes fast, each arc is redrawn at a new angle every pose, and there is no
+ * interpolation anywhere in it. The two are drawn from the same pool and must never read alike.
+ */
+const ZAP_ARCS = 2;
+/** Two arcs a body, and a slowed crowd is small - the blast holds a dozen at the very most. */
+const ZAP_SPRITES = 96;
+const ZAP_POSES = 4;
+/** Fast, and deliberately not a multiple of BURN_FPS - the two must never fall into step. */
+const ZAP_FPS = 17;
+const ZAP_SRC = 128;
+/** As a multiple of the body's radius. A little wider than the body, so it reads as a field on it. */
+const ZAP_SCALE = 3.2;
+/** How far from the centre an arc may sit, as a fraction of the radius. */
+const ZAP_SPREAD = 0.55;
+/** Phase offset per unit of spawnId. Irrational-ish, as BURN_STAGGER is, and for the same reason. */
+const ZAP_STAGGER = 0.382;
+/** The Phase Cannon's own violet, so the arcs and the bolt that left them are one weapon. */
+const ZAP_TINT = 0xc77bff;
+/** A paler core over it, because a white centre is what makes a coloured arc read as electricity. */
+const ZAP_CORE = 0xf2e2ff;
+
+/** The phase bolt's opacity. See the projectile loop - it is the only round that is not solid. */
+const PLASMA_ALPHA = 0.8;
+/** The ball's drawn diameter, world units. Near the old capsule's length, so reach reads the same. */
+const PLASMA_BALL = 26;
+/** The bloom around it, as a multiple of the ball. */
+const PLASMA_BLOOM = 1.9;
+/** Forks of lightning over the ball, and how far past it they reach. */
+const PLASMA_ARCS = 2;
+const PLASMA_ARC_SCALE = 2.0;
+
 const FLAME_FLICKER_HZ = 15;
 
 /** How far it breathes, as a fraction of its size. Small - a flame flickers, it does not throb. */
@@ -785,6 +831,8 @@ export class GameRenderer {
   private readonly glows: SpritePool;
   /** The flames on burning bodies. See BURN_* and drawEnemies. */
   private readonly flames: SpritePool;
+  /** The arcs on slowed bodies. ADDITIVE, unlike the flames - see ZAP_*. */
+  private readonly zaps: SpritePool;
   /**
    * THE ENERGY SHIELD'S BODY, as sprites rather than Graphics geometry.
    *
@@ -976,6 +1024,17 @@ export class GameRenderer {
       texture: tex.burn[0],
       label: 'flames',
     });
+    // ADDITIVE, WHICH THE FLAMES DELIBERATELY ARE NOT. The note above them is right about fire -
+    // an additive flame over a dark body washes out to a pale smear. Electricity is the opposite
+    // case and normal blending is what smeared IT: these tiles are a small bright arc inside a
+    // wide soft halo, and drawn normally the halo greys out the whole body while the arc barely
+    // shows. Added, the halo becomes the glow it was drawn as and only the arc reads as a shape.
+    this.zaps = new SpritePool({
+      capacity: ZAP_SPRITES,
+      texture: tex.zap[0],
+      blendMode: 'add',
+      label: 'zaps',
+    });
     // Effects first: the beam layer spawns impact debris, burn marks and the overheat sputter
     // through it, so it holds the reference for the life of the renderer.
     this.effects = new Effects(tex);
@@ -1030,6 +1089,7 @@ export class GameRenderer {
       this.effects.addPool.container,
       // Over the horde and over the glows: a body is on fire, and the fire is in front of it.
       this.flames.container,
+      this.zaps.container,
       // The beam layer goes after them because its own halo is additive too - it extends that
       // single run - and only its opaque cores flip the blend state back, once, at the very end.
       this.beams.container,
@@ -1764,6 +1824,8 @@ export class GameRenderer {
     bars.begin();
     glows.begin();
     flames.begin();
+    const zaps = this.zaps;
+    zaps.begin();
 
     for (let d = 0; d < p.count; d++) {
       const x = lerp(p.prevX[d], p.x[d], alpha);
@@ -2023,6 +2085,44 @@ export class GameRenderer {
         }
       }
 
+      // AND THE ARCS, IF SOMETHING IS HOLDING THIS ONE. Drawn out of the same pool as the flames -
+      // a body can be alight and slowed at once and both have to appear - but deliberately unlike
+      // them: see ZAP_* for why electricity snaps where fire breathes.
+      if (p.slowLeft[d] > 0) {
+        const phase = this.clock * ZAP_FPS + p.spawnId[d] * ZAP_STAGGER;
+        let pose = Math.floor(phase) % ZAP_POSES;
+        if (pose < 0) pose += ZAP_POSES;
+
+        for (let i = 0; i < ZAP_ARCS; i++) {
+          const z = zaps.acquire();
+          if (z === undefined) break;
+
+          // A NEW POSE AND A NEW ANGLE EVERY FRAME OF THE CYCLE, keyed off the pose index rather
+          // than off the clock, so the arc jumps when the shape does instead of sliding between.
+          // `burnScatter` is reused rather than reimplemented: it is a pure hash of (spawnId, i)
+          // and this needs exactly what it gives - a stable-per-body, different-per-arc number.
+          const seed = pose * ZAP_ARCS + i;
+          z.texture = this.tex.zap[(pose + i) % ZAP_POSES];
+
+          const ang = burnScatter(p.spawnId[d], seed * 2) * Math.PI * 2;
+          const rad = Math.sqrt(burnScatter(p.spawnId[d], seed * 2 + 1)) * radius * ZAP_SPREAD;
+          z.position.set(x + Math.cos(ang) * rad, y + Math.sin(ang) * rad);
+
+          // Turned to a quarter of the way round the circle from wherever it sits, which keeps the
+          // arcs looking like they are crawling ACROSS the body rather than radiating from a point.
+          z.rotation = ang + Math.PI * 0.5;
+
+          const size = (radius * ZAP_SCALE) / ZAP_SRC;
+          // The wide dim copy first, then a smaller pale one over it - the same two-layer trick the
+          // flames use, and the reason these had to be white art rather than the DCSS zaps.
+          z.scale.set(size, size);
+          z.tint = i === 0 ? ZAP_TINT : ZAP_CORE;
+          // ADDED, so these are brightness rather than opacity: the wide violet copy is the glow
+          // and the pale one is the arc's own core sitting inside it.
+          z.alpha = i === 0 ? 0.55 : 0.9;
+        }
+      }
+
       // RANK DECIDES THE BAR, AND NOTHING ELSE DOES. Elites and bosses always carry one; a
       // regular never does, whatever chassis it happens to be built on.
       //
@@ -2041,6 +2141,7 @@ export class GameRenderer {
     bars.end();
     glows.end();
     flames.end();
+    zaps.end();
   }
 
   /**
@@ -2442,26 +2543,60 @@ export class GameRenderer {
           core.alpha = 0.95;
         }
       } else if (vis === VIS_PLASMA) {
-        // THE PHASE BOLT: the machine-gun tracer run big and blue-hot, under a soft halo of
-        // itself. Two sprites from the same pool rather than new art - at this scale the
-        // tracer's rounded head reads as a plasma bob, and the halo is what says "energy, not
-        // metal". The halo is acquired second, so it draws over the core as a translucent bloom.
-        s.texture = this.tex.slug;
-        s.scale.set(SLUG_SCALE * 2.2);
-        const halo = shells.acquire();
-        if (halo !== undefined) {
-          halo.texture = this.tex.slug;
-          halo.position.set(x, y);
-          halo.rotation = s.rotation;
-          halo.scale.set(SLUG_SCALE * 3.4);
-          halo.tint = PLASMA_TINT;
-          halo.alpha = 0.3;
+        // THE PHASE BOLT: A CRACKLING BALL OF PLASMA, not a bullet.
+        //
+        // IT WAS THE MACHINE-GUN TRACER RUN BIG, under a soft halo of itself - a capsule, which is
+        // the shape of a thing with a nose and a tail, and this round has neither. It phases
+        // through walls and bodies and lands only on its mark; drawing it as a shell said it was
+        // an object being thrown.
+        //
+        // THREE LAYERS AND NOTHING ELSE IS DRAWN AS A BALL: the round `gout_haze` blob for the
+        // body, so there is no long axis at all; a wide dim copy of it for the bloom; and ARCS
+        // over the top, from the same four sprites the slowed bodies wear, which is what makes it
+        // crackle rather than glow. The arcs are the whole point - a ball with no motion in it is
+        // a marble, and the one thing this weapon should never look like is solid.
+        //
+        // THE ARCS ARE THE ROUND'S OWN, phased off `spawnId` so two bolts in flight together never
+        // crackle in step, and turned by the pose so each frame is a different shape rather than
+        // the same fork spinning.
+        s.texture = this.tex.goutHaze;
+        s.scale.set(PLASMA_BALL / GOUT_SRC);
+        s.rotation = 0;
+
+        const bloom = shells.acquire();
+        if (bloom !== undefined) {
+          bloom.texture = this.tex.goutHaze;
+          bloom.position.set(x, y);
+          bloom.rotation = 0;
+          bloom.scale.set((PLASMA_BALL * PLASMA_BLOOM) / GOUT_SRC);
+          bloom.tint = PLASMA_TINT;
+          bloom.alpha = 0.28;
+        }
+
+        const phase = this.clock * ZAP_FPS + p.spawnId[d] * ZAP_STAGGER;
+        let pose = Math.floor(phase) % ZAP_POSES;
+        if (pose < 0) pose += ZAP_POSES;
+        for (let a = 0; a < PLASMA_ARCS; a++) {
+          const arc = this.zaps.acquire();
+          if (arc === undefined) break;
+          arc.texture = this.tex.zap[(pose + a) % ZAP_POSES];
+          arc.position.set(x, y);
+          // A quarter turn apart, so the two forks cross rather than overlap.
+          arc.rotation = pose * 1.9 + a * Math.PI * 0.5;
+          arc.scale.set((PLASMA_BALL * PLASMA_ARC_SCALE) / ZAP_SRC);
+          arc.tint = a === 0 ? ZAP_CORE : PLASMA_TINT;
+          arc.alpha = a === 0 ? 0.9 : 0.6;
         }
       } else {
         s.texture = this.tex.shell;
         s.scale.set(SHELL_SCALE);
       }
-      s.alpha = 1;
+      // THE PHASE BOLT IS SLIGHTLY SEE-THROUGH, and nothing else on this pool is. It is the one
+      // round in the game that is not a physical object - it phases through scrap, walls and
+      // bodies alike and lands only on its mark - so a solid, opaque shell was saying the opposite
+      // of what the weapon does. 0.8 is enough to read the ground through it without the bolt
+      // getting lost against a bright floor; its own halo above is already at 0.3.
+      s.alpha = vis === VIS_PLASMA ? PLASMA_ALPHA : 1;
       s.tint = vis === VIS_PLASMA ? PLASMA_TINT : vis === VIS_FLAME ? FLAME_TINT : 0xffffff;
     }
 

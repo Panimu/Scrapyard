@@ -80,6 +80,36 @@ public class WeaponCatalogTests
             Assert.True(e.GetProperty("name").GetString() == d.Name, $"{where}: name");
             AssertKind(e, d, where);
             AssertRule(e.GetProperty("targeting").GetString()!, d.Targeting, where);
+
+            // THE RULE IT AIMS BY WHILE REARMING, or null on the thirteen guns that have one rule.
+            // Checked in BOTH directions: a port that dropped the field would otherwise pass by
+            // having no tracking rule anywhere, which is exactly what it would look like if the
+            // Phase Cannon's had been forgotten.
+            // THE SLOW BLOCK, both ways round. A port that dropped it would otherwise pass by
+            // having no slow anywhere, which looks identical to the Phase Cannon's having been
+            // forgotten - so the absence is asserted as hard as the value.
+            var slow = e.GetProperty("slow");
+            if (slow.ValueKind == JsonValueKind.Null)
+            {
+                Assert.True(d.Slow is null, $"{where}: expected no slow block");
+            }
+            else
+            {
+                Assert.True(d.Slow is not null, $"{where}: expected a slow block");
+                AssertBits(slow, "frac", d.Slow!.Frac, where + " slow");
+                AssertBits(slow, "seconds", d.Slow!.Seconds, where + " slow");
+            }
+
+            var track = e.GetProperty("trackingTargeting");
+            if (track.ValueKind == JsonValueKind.Null)
+            {
+                Assert.True(d.TrackingTargeting is null, $"{where}: expected no tracking rule");
+            }
+            else
+            {
+                Assert.True(d.TrackingTargeting is not null, $"{where}: expected a tracking rule");
+                AssertRule(track.GetString()!, d.TrackingTargeting!.Value, where + " tracking");
+            }
             AssertPattern(e.GetProperty("pattern").GetString()!, d.Pattern, where);
             AssertBehaviour(e.GetProperty("behaviour").GetString()!, d.Behaviour, where);
             Assert.True(e.GetProperty("requiresTarget").GetBoolean() == d.RequiresTarget, $"{where}: requiresTarget");

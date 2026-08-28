@@ -199,6 +199,20 @@ export const CHOOSE_REROLL = -4;
 export const SPLASH_RIM_FRAC = 0.4;
 
 /**
+ * THE DEEPEST A SLOW MAY EVER RUN, whatever a weapon asks for. See `chill`.
+ *
+ * A slow of 1 is a body held perfectly still, which is a STUN - a different mechanic with
+ * different counterplay, and one this game does not have. 0.8 leaves anything caught in a blast
+ * visibly walking, so the horde is always closing on you and the question a slow poses stays "can
+ * I kill it before it arrives" rather than "is it coming at all".
+ *
+ * A CEILING, NOT A DIAL. Nothing authors near it today - the Phase Cannon's 0.35 is less than half
+ * of it - and it exists so that a typo in a catalog literal ships a slow that is too strong rather
+ * than a horde that has stopped moving.
+ */
+export const SLOW_FRAC_MAX = 0.8;
+
+/**
  * What a SWARM body's speed is multiplied by when its charge ends.
  *
  * A Swarmer runs at x2 while it is crossing the yard, which is faster than any hero and is only

@@ -32,6 +32,17 @@ export const ENEMY_FLAG_ELITE = 1 << 1;
 export const ENEMY_FLAG_BOSS = 1 << 2;
 /** Set by the director for enemies that must never be knocked back (the boss). */
 export const ENEMY_FLAG_ANCHORED = 1 << 3;
+/**
+ * THIS BODY HAS ALREADY BEEN COUNTED against `RunStats.secondaryTouched` - set the first time
+ * anything secondary reaches it (a fire, a slow, a pool of sludge) and never cleared.
+ *
+ * A FLAG RATHER THAN A SET, because "distinct enemies" needs identity and the pool already has
+ * one. Counting ignitions instead would report a single body relit forty times as forty; keeping a
+ * Set of handles would allocate every tick and would still have to answer what a recycled slot
+ * means. One bit says "counted" and is zeroed by allocation like the rest of `flags`, so a slot
+ * reused by a NEW enemy is correctly counted again - it is a different body.
+ */
+export const ENEMY_FLAG_SECONDARY = 1 << 4;
 
 export interface EnemyPool {
   readonly capacity: number;
@@ -81,6 +92,28 @@ export interface EnemyPool {
 
   /** The weapon DEF INDEX that lit this body, for crediting the kill. 255 is nobody. */
   readonly burnBy: Uint8Array;
+
+  /**
+   * SECONDS OF SLOW LEFT ON THIS BODY, and 0 for a body moving at its own pace.
+   *
+   * TWO FIELDS AND NOT THREE, which is the one place this differs from the burn beside it: a slow
+   * does no damage, so there is no kill to credit and therefore no `slowBy`. What it does need is
+   * the STRENGTH captured at the moment it landed (`slowFrac`), for exactly the reason `burnDps`
+   * is captured at ignition - a gun that levels up mid-slow must not retroactively deepen a slow
+   * it already applied.
+   *
+   * IT IS NEVER APPLIED TO `speed`. The stored speed is mutated in place by two other mechanics
+   * already (the swarm charge's one-off halving, and a Heavy's post-fixation quickening), so a
+   * slow that multiplied it would compound with itself on every refresh and never come back. It is
+   * read at the two velocity write sites in `seek` instead - see enemyAI.
+   *
+   * ZEROED ON ALLOCATION like every other field here, which is what stops a recycled slot
+   * inheriting the last occupant's slow.
+   */
+  readonly slowLeft: Float32Array;
+
+  /** How much of its speed this body loses while slowed, as it was when the slow landed. */
+  readonly slowFrac: Float32Array;
   readonly radius: Float32Array;
   readonly speed: Float32Array;
   readonly mass: Float32Array;
@@ -175,6 +208,8 @@ export function createEnemyPool(capacity: number): EnemyPool {
   const oMaxHp = L.f32(capacity);
   const oBurnLeft = L.f32(capacity);
   const oBurnDps = L.f32(capacity);
+  const oSlowLeft = L.f32(capacity);
+  const oSlowFrac = L.f32(capacity);
   const oRadius = L.f32(capacity);
   const oSpeed = L.f32(capacity);
   const oMass = L.f32(capacity);
@@ -220,6 +255,8 @@ export function createEnemyPool(capacity: number): EnemyPool {
     y: f32(oY),
     burnLeft: f32(oBurnLeft),
     burnDps: f32(oBurnDps),
+    slowLeft: f32(oSlowLeft),
+    slowFrac: f32(oSlowFrac),
     burnBy: u8(oBurnBy),
 
     prevX: f32(oPrevX),
@@ -274,6 +311,7 @@ export function createEnemyPool(capacity: number): EnemyPool {
     // APPENDED. This list IS the hash format, and inserting beside `hp` where the fields
     // logically belong would move every field after it - a bigger corpus diff saying nothing.
     p.burnLeft, p.burnDps, p.burnBy,
+    p.slowLeft, p.slowFrac,
   );
 
   resetEnemyPool(p);
@@ -341,6 +379,8 @@ export function allocEnemy(
   p.contactTimer[d] = 0;
   p.burnLeft[d] = 0;
   p.burnDps[d] = 0;
+  p.slowLeft[d] = 0;
+  p.slowFrac[d] = 0;
   // 255 IS NOBODY, not weapon zero - a slot that somehow burned without an igniter must not
   // credit its kill to the Cannon.
   p.burnBy[d] = 255;
@@ -410,6 +450,8 @@ export function reapEnemies(p: EnemyPool): void {
       // which reads as a body catching fire for no reason, several ticks after the shot.
       p.burnLeft[d] = p.burnLeft[last];
       p.burnDps[d] = p.burnDps[last];
+      p.slowLeft[d] = p.slowLeft[last];
+      p.slowFrac[d] = p.slowFrac[last];
       p.burnBy[d] = p.burnBy[last];
       p.xpValue[d] = p.xpValue[last];
       p.typeId[d] = p.typeId[last];

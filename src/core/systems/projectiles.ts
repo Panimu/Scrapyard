@@ -45,6 +45,7 @@ import {
   type WeaponDef,
 } from '../content/weaponCatalog.js';
 import { breakLootIn } from './pickups.js';
+import { sheepRayHit } from './sheep.js';
 import { datan2, dcos, dsin } from '../math/trig.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import type { World } from '../types.js';
@@ -412,6 +413,73 @@ export function updateProjectiles(world: World, dt: number): void {
     PROJECTILE_BEHAVIOURS[b](world, b, dt);
   }
   stopAtTheEdges(world);
+  mowTheFlock(world);
+}
+
+/**
+ * ANY ROUND THAT CROSSED A SHEEP TAKES IT, and is not slowed by it in the slightest.
+ *
+ * THE FLOCK WAS THE ONE THING A BULLET COULD NOT BREAK. A beam already took whatever it swept
+ * (`sheepRayHit`, twice in weapons.ts) and a blast already took whatever fell inside it
+ * (`breakLootIn`), so a laser build and an artillery build could farm the moss map's only loot
+ * while a Machine Gun build walked straight through it. That is not a difficulty difference, it is
+ * a weapon class that cannot open the box.
+ *
+ * IT COSTS THE ROUND NOTHING - no pierce spent, no damage decayed, no death. A sheep is a soft prop
+ * that gets out of the way (see systems/sheep.ts): a round that stopped in one would make the flock
+ * a moving shield for the horde behind it, on the one map whose character is that there are no
+ * walls. So this pass reads positions and never writes to the projectile pool at all.
+ *
+ * SWEPT, NOT SAMPLED. `prevX/prevY` to `x/y` is the segment the round actually covered this tick,
+ * and the fastest slug covers 15 u of it - close to a sheep's own 17 u radius, so a point test at
+ * the new position alone would let rounds skip past animals at the edge of the body. It is the same
+ * segment-to-point test `sheepRayHit` does, and it is here rather than there because that function
+ * answers "which sheep first" for a beam, and this one wants EVERY round independently.
+ *
+ * ONE PASS AFTER EVERY BEHAVIOUR, like `stopAtTheEdges` above and for the same reason: taking a
+ * sheep is a fact about the WORLD, not about how a given round flies, so a homing missile and a
+ * straight shell should do it identically and a fourth behaviour added later inherits it free.
+ *
+ * COSTS NOTHING ON THREE OF THE FOUR LEVELS. `sheep.count` is 0 unless the level keeps a flock, and
+ * the loop is skipped outright then - the Scrapyard pays one compare a tick for this.
+ */
+function mowTheFlock(world: World): void {
+  const flock = world.sheep;
+  if (flock.count === 0) return;
+
+  const p = world.projectiles;
+  const n = p.count;
+  for (let d = 0; d < n; d++) {
+    if ((p.flags[d] & PROJECTILE_FLAG_DEAD) !== 0) continue;
+
+    const x0 = p.prevX[d];
+    const y0 = p.prevY[d];
+    let dx = p.x[d] - x0;
+    let dy = p.y[d] - y0;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    // A ROUND THAT HAS NOT MOVED IS NOT CROSSING ANYTHING, and skipping it is load-bearing rather
+    // than tidy. This used to point-test a stationary round "so a shell spawned on top of an animal
+    // takes it", which sounds harmless and is not: the ARTILLERY STRIKE MARKER is a projectile with
+    // `projectileSpeed: 0` that sits on the ground for its whole 0.7 s fuse (see fireBarrage), so a
+    // point test ran on it forty-two times and the telegraph RING quietly vacuumed up any sheep that
+    // wandered near it - dropping the loot most of a second before the shell it is warning about
+    // even lands.
+    if (len <= 0) continue;
+    dx /= len;
+    dy /= len;
+
+    // FIRST ALONG THE SEGMENT, and only one per round per tick. `sheepRayHit` already returns the
+    // nearest hit rather than the first in the array, which is what makes this independent of the
+    // order the pool happens to be in.
+    const hit = sheepRayHit(world, x0, y0, dx, dy, len);
+    if (hit < 0) continue;
+
+    // THROUGH `breakLootIn`, exactly as the beam and the blast do, so the spanner or the coin the
+    // animal was carrying drops through the one door every weapon shares. The damage figure is the
+    // round's own - a drum in the same circle is broken by the same call, and it should take the
+    // number the shell actually carries.
+    breakLootIn(world, flock.x[hit], flock.y[hit], 0, p.damage[d]);
+  }
 }
 
 /**

@@ -72,6 +72,17 @@ public sealed class EnemyPool
     /// <summary>Set by the director for enemies that must never be knocked back (the boss).</summary>
     public const byte FlagAnchored = 1 << 3;
 
+    /// <summary>
+    /// This body has already been counted against RunStats.SecondaryTouched - set the first time a
+    /// fire, a slow or a pool of sludge reaches it, and never cleared.
+    /// </summary>
+    /// <remarks>
+    /// A FLAG RATHER THAN A SET, because "distinct enemies" needs identity and the pool already has
+    /// one. Zeroed by allocation like the rest of Flags, so a slot reused by a NEW enemy is counted
+    /// again - it is a different body.
+    /// </remarks>
+    public const byte FlagSecondary = 1 << 4;
+
     public int Capacity { get; }
     public int Count;
 
@@ -116,6 +127,21 @@ public sealed class EnemyPool
 
     /// <summary>The weapon def index that lit this body, for crediting the kill. 255 is nobody.</summary>
     public readonly byte[] BurnBy;
+
+    /// <summary>
+    /// Seconds of slow left on this body, and 0 for a body moving at its own pace.
+    /// </summary>
+    /// <remarks>
+    /// TWO FIELDS AND NOT THREE, the one place this differs from the burn above: a slow does no
+    /// damage, so there is no kill to credit and therefore no SlowBy. The STRENGTH is captured
+    /// when the slow lands (<see cref="SlowFrac"/>) for the reason BurnDps is captured at
+    /// ignition - a gun that levels mid-slow must not retroactively deepen a slow it already
+    /// applied. It is never folded into <see cref="Speed"/>; see EnemyAI's seek pass.
+    /// </remarks>
+    public readonly float[] SlowLeft;
+
+    /// <summary>How much of its speed this body loses while slowed, as it was when it landed.</summary>
+    public readonly float[] SlowFrac;
     public readonly float[] Radius;
     public readonly float[] Speed;
     public readonly float[] Mass;
@@ -214,6 +240,8 @@ public sealed class EnemyPool
         BurnLeft = new float[capacity];
         BurnDps = new float[capacity];
         BurnBy = new byte[capacity];
+        SlowLeft = new float[capacity];
+        SlowFrac = new float[capacity];
         Radius = new float[capacity];
         Speed = new float[capacity];
         Mass = new float[capacity];
@@ -304,6 +332,8 @@ public sealed class EnemyPool
         // 255 IS NOBODY, not weapon zero - a slot that somehow burned without an igniter must not
         // credit its kill to the Cannon.
         BurnBy[d] = 255;
+        SlowLeft[d] = 0;
+        SlowFrac[d] = 0;
         XpValue[d] = 0;
         TypeId[d] = (byte)typeId;
         FlavourId[d] = (byte)flavourId;
@@ -378,6 +408,8 @@ public sealed class EnemyPool
                 BurnLeft[d] = BurnLeft[last];
                 BurnDps[d] = BurnDps[last];
                 BurnBy[d] = BurnBy[last];
+                SlowLeft[d] = SlowLeft[last];
+                SlowFrac[d] = SlowFrac[last];
                 XpValue[d] = XpValue[last];
                 TypeId[d] = TypeId[last];
                 FlavourId[d] = FlavourId[last];
@@ -482,6 +514,9 @@ public sealed class EnemyPool
         acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(BurnLeft.AsSpan(0, n)));
         acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(BurnDps.AsSpan(0, n)));
         acc = Hash.MixBytes(acc, BurnBy.AsSpan(0, n));
+        // ORDER MATCHES THE TYPESCRIPT'S denseViews EXACTLY - these two sit after BurnBy there.
+        acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(SlowLeft.AsSpan(0, n)));
+        acc = Hash.MixBytes(acc, MemoryMarshal.AsBytes<float>(SlowFrac.AsSpan(0, n)));
 
         return acc;
     }

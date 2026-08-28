@@ -228,6 +228,7 @@ function fold(combo: readonly number[], outcomes: readonly Outcome[]): SweepRow 
     elite: sum((o) => o.eliteKills.reduce((a, b) => a + b, 0)),
     boss: sum((o) => o.bossKills.reduce((a, b) => a + b, 0)),
     bossesAlive: sum((o) => o.bossesAlive),
+    secondary: sum((o) => o.secondary),
     shield: sum((o) => o.byShield),
     per,
   };

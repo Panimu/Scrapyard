@@ -1481,8 +1481,12 @@ public static class Screens
                 var tex = row.Icon == "" ? null : sprites.Get(row.Icon);
                 if (tex is not null)
                 {
+                    // A LOCKED ACHIEVEMENT DRAWS ITS OWN ICON, DIMMED. There is no grayscale filter
+                    // here the way the web build has one, so the tint does the work: an even scale
+                    // on all three channels darkens without shifting hue, which is as close to
+                    // "greyed" as a SpriteBatch tint gets without a shader.
                     batch.Draw(tex, new Rectangle(ix, r.Y + (entryH - icon) / 2, icon, icon),
-                               Color.White);
+                               sealedRow ? Color.White * 0.45f : Color.White);
                 }
                 else if (sealedRow)
                 {

@@ -52,6 +52,7 @@ import {
   MISSILE_SHORT,
 } from '../src/core/content/weaponCatalog.js';
 import { allocEnemy, ENEMY_FLAG_DEAD, enemyHandleAt } from '../src/core/entity/enemyPool.js';
+import { allocSheep } from '../src/core/entity/sheepPool.js';
 import {
   allocProjectile,
   PROJECTILE_FLAG_PHASE,
@@ -99,6 +100,13 @@ interface CaseSpec {
   withScenery: boolean;
   shells: Shell[];
   enemies?: Body[];
+  /**
+   * THE FLOCK, placed by hand. `mowTheFlock` keys off `sheep.count` and not off the level, so a
+   * Scrapyard world can be given animals for the purpose of proving a round takes one - which is
+   * the only way to cover that path at all: the golden corpus never exercises it, because sheep
+   * spawn 560-800 u out and no gun in those recorded runs reaches that far.
+   */
+  sheep?: Body[];
   ticks: number;
 }
 
@@ -128,6 +136,11 @@ function buildCase(spec: CaseSpec) {
   w.splitStats.splashRadius = 24;
   w.splitStats.splashFrac = 0.5;
   w.splitStats.pierce = 0;
+
+  // THE FLOCK, before the enemies so the two resets cannot be confused. `sheep.count = 0` is the
+  // whole reset this pool needs - it has no free list and no generations.
+  w.sheep.count = 0;
+  for (const [i, sh] of (spec.sheep ?? []).entries()) allocSheep(w.sheep, sh.x, sh.y, 1000 + i);
 
   w.enemies.count = 0;
   w.enemies.killCount = 0;
@@ -197,6 +210,11 @@ function buildCase(spec: CaseSpec) {
 
     perTick.push({
       count: n,
+      // HOW MANY ANIMALS ARE LEFT, and how many the run has taken. Both, because they answer
+      // different questions: the count proves the pool was swap-removed, the tally proves the take
+      // went through the shared loot door rather than the sheep merely vanishing.
+      sheep: w.sheep.count,
+      sheepTaken: w.stats.sheepTaken,
       x: col(w.projectiles.x),
       y: col(w.projectiles.y),
       vx: col(w.projectiles.vx),
@@ -223,6 +241,9 @@ function buildCase(spec: CaseSpec) {
     killEnemyIndex: spec.killEnemyIndex ?? -1,
     arenaHalf: f64(spec.arenaHalf),
     withScenery: spec.withScenery,
+    // ALWAYS PRESENT, empty on the eight cases that place none - the C# side reads it
+    // unconditionally, and an absent key there is a KeyNotFoundException rather than a skip.
+    sheep: (spec.sheep ?? []).map((b) => ({ x: f64(b.x), y: f64(b.y) })),
     splitStats: {
       projectileSpeed: f64(w.splitStats.projectileSpeed),
       projectileLifetime: f64(w.splitStats.projectileLifetime),
@@ -272,6 +293,26 @@ const cases = [
       { x: 0, y: 100, vx: 300, vy: 400, lifeSec: 0.35, ownerWeapon: 0, behaviour: BEHAVIOUR_STRAIGHT },
     ],
     ticks: 30,
+  }),
+
+  // A ROUND CROSSING THE FLOCK. The one path the golden corpus cannot reach - sheep spawn far
+  // outside every gun's range in the recorded runs - so it is covered here or nowhere.
+  //
+  // BOTH HALVES OF THE RULE ARE PINNED. The animal is taken (`sheep` falls, `sheepTaken` rises,
+  // and an EV_SHEEP_TAKEN lands in the events), AND the round is not touched by it: the columns
+  // show it alive, at full damage, with its pierce unspent, still travelling. A port that stopped
+  // the shell in the sheep would pass a test that only checked the first half.
+  //
+  // TWO ANIMALS IN A LINE, so the second proves the take is one-per-round-per-tick rather than a
+  // sweep that clears everything on the segment.
+  buildCase({
+    name: 'shell-through-the-flock',
+    defId: CANNON, turnRate: 0, arenaHalf: ARENA_HALF, withScenery: false,
+    sheep: [{ x: 90, y: 0 }, { x: 190, y: 0 }],
+    shells: [
+      { x: 0, y: 0, vx: 520, vy: 0, lifeSec: 0.9, ownerWeapon: 0, behaviour: BEHAVIOUR_STRAIGHT },
+    ],
+    ticks: 40,
   }),
 
   // DETONATE ON EXPIRY. The fuse ending must push a hit with NO struck body - the bug the shared

@@ -139,16 +139,21 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // luck: the bot takes weapon cards greedily, so ANY change to what a gun does rebuilds its
   // loadout and moves where it ends up standing.
   //
-  // 0x4016664 is the current one - 616 kills, one chest, dies at tick 16143.
+  // 0x4016664 lasted one commit too, and stopped for the smallest change yet: the Flak Cannon
+  // splitting its burst from three shells to four at the same total damage. Not a damage change,
+  // not a new card - the same gun doing the same damage in one more fragment - and the bot's walk
+  // still moved. That is the clearest statement of this entry's character there has been.
+  //
+  // 0x71f94432 is the current one - 379 kills, one chest, dies at tick 15046.
   //
   // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the hits, so the
   // search is reproducible rather than a number somebody remembered. THE SEED MUST FIT IN AN
   // Int32: the C# corpus reader stores it as one, and a larger value fails to parse rather than
   // diverging, so the sweep skips anything over 0x7fffffff. Still opening a chest as of this
-  // commit, if this one stops: 0xcd29461, 0x3afd554b, 0x5ae3e3bd, 0x71f94432.
+  // commit, if this one stops: 0x3afd554b, 0x5ae3e3bd. (0xcd29461 no longer does.)
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x4016664,
+    seed: 0x71f94432,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

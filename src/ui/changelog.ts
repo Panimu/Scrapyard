@@ -65,6 +65,83 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-28T19:54Z',
+    version: 'v403',
+    title: 'THE PHASE CANNON BURSTS WIDER',
+    notes: [
+      'Its blast reaches five percent further at every tier, which is a tenth more ground covered - the same shot, catching more of what is standing around what it hit.',
+    ],
+  },
+  {
+    at: '2026-08-28T19:54Z',
+    version: 'v403',
+    title: 'THE FLAK CANNON SPLITS ITS BURST',
+    notes: [
+      'A burst is four shells instead of three, and it does exactly what it always did - the same damage arrives in one more fragment, so the cone fills in rather than hits harder.',
+      'Every shell still costs a round, so the drum was deepened to match - four hundred where it held three hundred. A full magazine is the same hundred bursts it always was.',
+      'Vermilion still throws one more than anybody else, which now means five.',
+    ],
+  },
+  {
+    at: '2026-08-28T05:30Z',
+    version: 'v402',
+    title: 'THE PHASE CANNON THROWS A BALL OF PLASMA',
+    notes: [
+      'Its round was a big blue bullet. It is now a ball of plasma with lightning crackling off it, which is rather more like what a shot that walks through walls ought to look like.',
+    ],
+  },
+  {
+    at: '2026-08-28T05:30Z',
+    version: 'v402',
+    title: 'ANYTHING CAN SHOOT A SHEEP NOW',
+    notes: [
+      'Lasers and explosions could always take one; bullets went straight through as if the animal were not there, so a gun build could not open the moss map’s only loot. Any round that crosses a sheep now takes it — and carries on, because a sheep is not cover.',
+    ],
+  },
+  {
+    at: '2026-08-28T05:30Z',
+    version: 'v402',
+    title: 'LOCKED TROPHIES SHOW WHAT THEY ARE',
+    notes: [
+      'The Scrapopedia drew a dashed box with a question mark for every trophy you had not earned. It now draws the trophy itself, greyed out. What it still will not tell you is how to get one.',
+    ],
+  },
+  {
+    at: '2026-08-28T05:30Z',
+    version: 'v402',
+    title: 'THE CHEST LETS YOU SKIP THE REELS',
+    notes: [
+      'Clicking during the spin used to do nothing at all. It now snaps the reels straight to their result — and it is a second press that collects, so being impatient costs you the animation and never the prize.',
+    ],
+  },
+  {
+    at: '2026-08-28T05:30Z',
+    version: 'v402',
+    title: 'THE DESKTOP BUILD DRAWS ITS MECHS AND MONSTERS PROPERLY',
+    notes: [
+      'City Chaos’ bosses were all facing backwards — every one of the eight walked left while looking right.',
+      'Long Missiles were drawn too fat and Short Missiles too thin. Both are the shape the web build has always drawn them.',
+      'Turrets stack by size now: the big gun underneath, the rotary snout on top. Which barrel ended up buried used to depend on the order you happened to pick your guns in.',
+    ],
+  },
+  {
+    at: '2026-08-27T20:52Z',
+    version: 'v402',
+    title: 'THE PHASE CANNON AIMS WHILE IT RELOADS',
+    notes: [
+      'It used to pick the thickest crowd anywhere in range and was still swinging toward it when it came off cooldown, so it spent its time turning rather than shooting. It now does both jobs in turn: while it is rearming it walks the turret toward the biggest crowd on the field, wherever that is, and the moment it is ready it takes the best target in front of the barrel instead of carrying on round. It fires about twice as often for it.',
+      'Its bolt is slightly see-through now, which is what a round that passes through walls and bodies ought to look like.',
+    ],
+  },
+  {
+    at: '2026-08-27T20:06Z',
+    version: 'v402',
+    title: 'THE PHASE CANNON’S BURST HOLDS THE CROWD',
+    notes: [
+      'Everything caught in the blast drags for a couple of seconds, and crawls with little arcs of electricity while it does. The bolt itself is unchanged — what the gun buys now is time for whatever else you are carrying.',
+    ],
+  },
+  {
     at: '2026-08-27T18:40Z',
     version: 'v402',
     title: 'THE PHASE CANNON HITS HARDER',

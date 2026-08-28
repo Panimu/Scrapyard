@@ -57,6 +57,8 @@ public static class Puddles
                     double dx = (double)enemies.X[ed] - x;
                     double dy = (double)enemies.Y[ed] - y;
                     if (dx * dx + dy * dy > r2) continue;
+                    // Counted before the damage, so a body the pool finishes still counts.
+                    Damage.MarkSecondary(world, ed);
                     Damage.DamageEnemy(world, ed, amount, pools.By[d]);
                 }
             }

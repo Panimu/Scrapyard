@@ -42,6 +42,8 @@ export interface SweepRow {
   elite: number;
   boss: number;
   bossesAlive: number;
+  /** Distinct bodies fire, a slow or sludge reached. See RunStats.secondaryTouched. */
+  secondary: number;
   shield: number;
   per: SweepPerWeapon[];
 }
@@ -658,6 +660,7 @@ export function renderSweepHtml(
       guns: r.per.map(function (p) { return names[p.weapon]; }).join(', '),
       search: r.per.map(function (p) { return p.weapon + ' ' + names[p.weapon]; }).join(' ').toLowerCase(),
       damage: r.damage, dps: r.dps, kills: r.kills, elite: r.elite, boss: r.boss,
+      secondary: r.secondary || 0,
       taken: r.taken, win: r.runs ? r.wins / r.runs : 0,
       carry: top ? names[top.weapon] + ' ' + pct(top.share) : ''
     };
@@ -670,6 +673,10 @@ export function renderSweepHtml(
     { k: 'kills', t: 'kills', f: function (r) { return fmt(r.kills); } },
     { k: 'elite', t: 'elite', f: function (r) { return fmt(r.elite); } },
     { k: 'boss', t: 'boss', f: function (r) { return fmt(r.boss); } },
+    // DISTINCT BODIES A SECONDARY EFFECT REACHED - fire, a slow, or sludge underfoot. The one
+    // column here that is not damage or a kill, and it exists because those two cannot see a gun
+    // whose job is to set up somebody else's shot.
+    { k: 'secondary', t: 'affected', f: function (r) { return fmt(r.secondary); } },
     { k: 'taken', t: 'taken', f: function (r) { return fmt(r.taken); } },
     { k: 'win', t: 'wins', f: function (r) { return pct(r.win); },
       cls: function (r) { return r.win >= 0.5 ? 'good' : ''; } },

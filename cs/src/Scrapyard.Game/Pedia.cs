@@ -240,7 +240,11 @@ public static class Pedia
             // condition in the past tense, earned or not - it is a goal as much as a record.
             var (shownName, shownDesc) = Achievements.Display(a, got);
             trophies.Add(new Row(Kind.Achievement, shownName.ToUpperInvariant(),
-                                 got ? "" : "-", i, a.Id, got ? a.Icon : "", shownDesc));
+                                 // THE ICON EITHER WAY, greyed by the screen when locked - see the
+                                 // note in scrapopediaScreen.ts for the trade this makes. `Sub`
+                                 // still marks the row locked, and the DESCRIPTION is still what
+                                 // is withheld.
+                                 got ? "" : "-", i, a.Id, a.Icon, shownDesc));
         }
         rows.Add(Heading("TROPHIES", earned, Achievements.All.Length));
         rows.AddRange(trophies);

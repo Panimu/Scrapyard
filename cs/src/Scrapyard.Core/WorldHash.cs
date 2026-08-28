@@ -189,6 +189,7 @@ public static partial class Hash
         h = MixF64(h, s.ShotsHit);
         h = MixF64(h, s.PeakEnemies);
         h = MixF64(h, s.PeakBurning);
+        h = MixF64(h, s.SecondaryTouched);
         h = MixF64(h, s.EndTick);
 
         return h;

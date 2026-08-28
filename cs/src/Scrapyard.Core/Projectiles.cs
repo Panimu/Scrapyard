@@ -447,6 +447,56 @@ public static class Projectiles
             }
         }
         StopAtTheEdges(world, scenery);
+        MowTheFlock(world, scenery);
+    }
+
+    /// <summary>
+    /// Any round that crossed a sheep takes it, and is not slowed by it in the slightest.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE FLOCK WAS THE ONE THING A BULLET COULD NOT BREAK. A beam already took whatever it swept
+    /// and a blast already took whatever fell inside it, so a laser or artillery build could farm
+    /// the moss map's only loot while a Machine Gun build walked straight through it.
+    /// </para>
+    /// <para>
+    /// IT COSTS THE ROUND NOTHING - no pierce spent, no damage decayed, no death. A round that
+    /// stopped in a sheep would make the flock a moving shield for the horde behind it, on the one
+    /// map whose character is that there are no walls. This pass never writes to the pool.
+    /// </para>
+    /// <para>
+    /// SWEPT, NOT SAMPLED: PrevX/PrevY to X/Y is the segment the round actually covered, and the
+    /// fastest slug covers 15 u of it against a sheep's 17 u radius.
+    /// </para>
+    /// </remarks>
+    private static void MowTheFlock(World world, IScenery scenery)
+    {
+        var flock = world.Sheep;
+        if (flock.Count == 0) return;
+
+        var p = world.Projectiles;
+        int n = p.Count;
+        for (int d = 0; d < n; d++)
+        {
+            if ((p.Flags[d] & ProjectilePool.FlagDead) != 0) continue;
+
+            double x0 = p.PrevX[d];
+            double y0 = p.PrevY[d];
+            double dx = (double)p.X[d] - x0;
+            double dy = (double)p.Y[d] - y0;
+            // A ROUND THAT HAS NOT MOVED IS NOT CROSSING ANYTHING - and the artillery strike marker
+            // is a projectile with zero speed that sits on the ground for its whole fuse, so a
+            // point test would let the telegraph ring vacuum sheep before its shell landed.
+            double len = Math.Sqrt(dx * dx + dy * dy);
+            if (len <= 0) continue;
+            dx /= len;
+            dy /= len;
+
+            int hit = Sheep.SheepRayHit(world, x0, y0, dx, dy, len);
+            if (hit < 0) continue;
+
+            Pickups.BreakLootIn(world, scenery, flock.X[hit], flock.Y[hit], 0, p.Damage[d]);
+        }
     }
 
     /// <summary>

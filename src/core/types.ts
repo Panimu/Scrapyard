@@ -556,6 +556,22 @@ export interface RunStats {
    * tick by the burn pass, which is the only place that knows how many are alight.
    */
   peakBurning: number;
+  /**
+   * HOW MANY DISTINCT BODIES A SECONDARY EFFECT EVER REACHED - a fire, a slow, or a pool of sludge
+   * standing on the ground. Counted once per enemy, whichever of the three touched it and however
+   * many times.
+   *
+   * WHAT IT IS FOR: the damage column cannot see these. A weapon that lights a crowd and lets the
+   * fire kill it, or one that holds a crowd still for somebody else, reads as low damage and low
+   * kills - see the Phase Cannon, which had the lowest boss-kill rate in the game while doing
+   * exactly the job it was built for. This is the column that says a gun did something the
+   * spreadsheet was not looking at.
+   *
+   * ONE NUMBER FOR ALL THREE, not three: they are one question - how much of the field did the
+   * run's secondary effects actually reach - and a body that is burning AND slowed is still one
+   * body. See ENEMY_FLAG_SECONDARY for why it is exact rather than approximate.
+   */
+  secondaryTouched: number;
   endTick: number;
 }
 

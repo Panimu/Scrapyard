@@ -354,6 +354,7 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
       shotsHit: 0,
       peakEnemies: 0,
       peakBurning: 0,
+      secondaryTouched: 0,
       endTick: 0,
     },
     drones: createDronePool(),

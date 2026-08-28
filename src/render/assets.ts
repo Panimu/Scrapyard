@@ -352,6 +352,12 @@ export interface GameTextures {
    * tools/make-plasma.mjs.
    */
   readonly burn: readonly Texture[];
+
+  /**
+   * THE ARCS ON A SLOWED BODY. Four white branching sparks, tinted per draw - see make-plasma for
+   * why these are Kenney's rather than the DCSS zaps that look more like lightning.
+   */
+  readonly zap: readonly Texture[];
   /** The Plasma Thrower's bolt, and the heat around it. Also `npm run plasma`. */
   readonly gout: Texture;
   readonly goutHaze: Texture;
@@ -548,6 +554,7 @@ export async function loadGameTextures(
   for (let i = 0; i < PUFF_FRAME_COUNT; i++) keys.push(`puff_${i}`);
   keys.push('fx_muzzle', 'fx_flash', 'fx_burst', 'fx_sparkle', 'fx_trail');
   keys.push('burn_0', 'burn_1', 'gout', 'gout_haze');
+  keys.push('zap_0', 'zap_1', 'zap_2', 'zap_3');
   keys.push('twirl_0', 'twirl_1', 'twirl_2');
   // Mossy Mayhem's walls. `mwall_t<col><row>` is the autotile; see GameTextures.wallTiles.
   for (let row = 0; row < 4; row++) {
@@ -678,6 +685,7 @@ export async function loadGameTextures(
     fxSparkle: get('fx_sparkle'),
     fxTrail: get('fx_trail'),
     burn: [get('burn_0'), get('burn_1')],
+    zap: [get('zap_0'), get('zap_1'), get('zap_2'), get('zap_3')],
     gout: get('gout'),
     goutHaze: get('gout_haze'),
     twirl: [get('twirl_0'), get('twirl_1'), get('twirl_2')],

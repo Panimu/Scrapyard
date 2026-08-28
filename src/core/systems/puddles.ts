@@ -16,7 +16,7 @@
 import { ENEMY_FLAG_DEAD } from '../entity/enemyPool.js';
 import { freePuddle } from '../entity/puddlePool.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
-import { damageEnemy } from './damage.js';
+import { damageEnemy, markSecondary } from './damage.js';
 import type { World } from '../types.js';
 
 export function updatePuddles(world: World, dt: number): void {
@@ -47,6 +47,9 @@ export function updatePuddles(world: World, dt: number): void {
         const dx = enemies.x[ed] - x;
         const dy = enemies.y[ed] - y;
         if (dx * dx + dy * dy > r2) continue;
+        // COUNTED BEFORE THE DAMAGE, so a body the pool finishes still counts as having stood in
+        // it - the same ordering `applySplash` uses to light a fire before the kill check.
+        markSecondary(world, ed);
         damageEnemy(world, ed, amount, pools.by[d]);
       }
     }

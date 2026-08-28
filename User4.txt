@@ -1,0 +1,8 @@
+1. Click or pressing 1 during the reel animation should snap to the animation being over, not to returning immediatly to the action.
+2. Any bullet or laser crossing a Sheep should kill it, without affecting the projectile
+3. In port long range missiles need to look more slender
+4. Phase cannon bullet should be a crackling plasma ball
+5. All the bosses on city chaos map are facing wrong way left<>right
+6. Heavy turret should always be drawn under the Medium and Small turrets.
+7. Medium turret should always be drawn under the Small turret.
+8. in Scrapopedia locked achievements should show their icon, greyed out. They are not clickable.

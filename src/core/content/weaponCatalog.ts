@@ -142,6 +142,26 @@ export interface WeaponDef {
   readonly name: string;
   readonly kind: WeaponKind;
   readonly targeting: TargetingId;
+
+  /**
+   * THE RULE THIS WEAPON PICKS BY WHILE IT IS STILL ON COOLDOWN, or absent for the thirteen guns
+   * that use one rule the whole time.
+   *
+   * TWO RULES BECAUSE THE DEAD TIME IS WORTH SOMETHING. Target selection runs every tick, ready or
+   * not (see updateWeapons), and for most guns that is simply how the turret tracks. For a slow
+   * gun with a slow turret the seconds between shots are also the only chance it gets to LINE ONE
+   * UP - and what it should be pointing at then is not what it should shoot at the instant it
+   * comes up.
+   *
+   * The Phase Cannon is the case: while it rearms it slews toward the thickest knot ANYWHERE in
+   * range (`densest`, all the way round if need be), and the moment it is ready it takes the best
+   * thing inside the cone it has actually reached (`cone-densest`). So the wait buys aim, and the
+   * shot is never held back waiting for a traverse to finish.
+   *
+   * A BEAM NEVER READS THIS. It has no cooldown to be on - heat is its limiter - so `ready` is
+   * always true for one, and a beam that authored this field would be quietly ignored.
+   */
+  readonly trackingTargeting?: TargetingId;
   readonly pattern: FirePatternId;
   readonly behaviour: BehaviourId;
   /**
@@ -311,6 +331,26 @@ export interface WeaponDef {
    * know how to move.
    */
   readonly puddle?: Readonly<{ dpsFrac: number; seconds: number }>;
+
+  /**
+   * WHAT THIS GUN LEAVES EVERYTHING IN ITS BLAST DRAGGING, or absent for the thirteen guns that
+   * slow nothing.
+   *
+   * Optional for the reason `burn` and `puddle` are, and present-means-enabled the same way: a
+   * `slowFrac: 0` on every other def would be thirteen lines saying nothing, and a separate
+   * boolean would be a second fact to fall out of step with the first.
+   *
+   * `frac` IS NOT A FRACTION OF THE HIT, and that is the one place this differs from the two
+   * blocks above. Theirs scale with damage so a damage tier moves them; a slow has nothing to
+   * scale against - it is a fraction of the VICTIM's own speed, so the same block reads the same
+   * on a runt and on a boss. It therefore does not move with the tier ladder at all, which is
+   * deliberate: what a Phase Cannon tier buys is a bigger blast (more bodies caught), not a deeper
+   * slow on each of them.
+   *
+   * IT REFRESHES RATHER THAN STACKS, exactly as `ignite` does - see `chill`. Two bolts into the
+   * same crowd hold it slowed for longer, they do not bring it to a halt.
+   */
+  readonly slow?: Readonly<{ frac: number; seconds: number }>;
 
   /**
    * HOW MUCH OF ITS REACH THIS GUN WILL ACTUALLY PICK A TARGET IN, or absent for the thirteen
@@ -1272,12 +1312,12 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
 //
 // The Machine Gun's opposite number on the same mount, and the two cannot be held together (see
 // WeaponDef.excludes). Where the belt gun is a precise stream that only works INSIDE the crowd,
-// this throws three shells at once into a sixty-degree cone at four hundred units - the longest
+// this throws four shells at once into a sixty-degree cone at four hundred units - the longest
 // reach of any projectile weapon here - and most of them miss.
 //
 //   3 shells   0.13 s cycle   4 damage   60 deg cone   300 rounds   13 s reload
 //
-// THE CONE IS THE WEAPON, and it is genuinely random rather than a fan: three shells drawn
+// THE CONE IS THE WEAPON, and it is genuinely random rather than a fan: four shells drawn
 // independently from the spread each burst, so no two bursts are the same shape and none of them
 // can be aimed. What the weapon actually delivers is a function of HOW MANY BODIES ARE IN THE
 // CONE, which is the trade being sold: fire it at a loner across the yard and most of the belt
@@ -1336,16 +1376,17 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
   behaviour: 'straight',
   requiresTarget: true,
   base: Object.freeze({
-    // TRIMMED TWICE, 4 -> 3.8 -> 3.6, and a burst now comes to 10.8 against the belt gun's 11.
-    // That inequality used to be asserted - see tests/flakCannon.test.ts - and the assertion is
-    // gone rather than the number: a three-shell burst standing as a FLOOR under a per-shell dial
-    // made every routine trim look like the weapon losing its identity. What separates these two
-    // guns is reach, magazine and burst rate, none of which is a damage number.
-    damage: 3.6, // under the belt gun's 5.5 - see the header for why: volume sells this gun now, not the shell
+    // TRIMMED TWICE, 4 -> 3.8 -> 3.6, then SPLIT: the burst went to four shells and the whole
+    // damage ladder was scaled by 3/4, so a burst comes to the same total at every tier and simply
+    // arrives as four fragments instead of three. The per-shell number is the thing that moved.
+    // The old 3-shell burst standing as a FLOOR under a per-shell dial used to be asserted - see
+    // tests/flakCannon.test.ts - and the assertion is gone rather than the number. What separates
+    // these two guns is reach, magazine and burst rate, none of which is a damage number.
+    damage: 2.7, // 3.6 * 3/4: four of these is the same burst the three used to be
     cooldown: 0.13, // 7.7 bursts/s = 23 rounds/s
     range: 400, // the longest projectile reach in the game - and the least accurate
     projectileSpeed: 620, // 0.65 s to maximum range: the spread is VISIBLE opening in flight
-    projectileCount: 3,
+    projectileCount: 4,
     pierce: 0,
     knockback: 18,
     splashRadius: 0,
@@ -1355,7 +1396,7 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     //
     // It costs this weapon less than it would cost the Machine Gun, which is why it is the one
     // that pays: the belt gun puts two rounds down a line and wants the line laid exactly, while
-    // this throws three shells into a sixty-degree cone where a degree of lag is inside the spread
+    // this throws four shells into a sixty-degree cone where a degree of lag is inside the spread
     // already. What the player feels instead is the mount's WEIGHT - a flak battery swinging onto
     // a new crowd is a heavier thing coming round than a machine gun is.
     // -5% alongside the Machine Gun on the same mount: 729 -> 692.55, still 90% of its 769.5.
@@ -1369,7 +1410,11 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     turnRate: 0,
     spreadAngle: FLAK_CONE,
     flightTime: 0,
-    ammoCapacity: 300,
+    // 300 -> 400 WHEN THE BURST WENT TO FOUR SHELLS. A round is spent per SHELL, so splitting
+    // the burst without touching this silently cut the magazine from 100 bursts to 75 and cost
+    // the gun 11% of its measured T7 dps - a reload tax, not a damage change, and invisible in
+    // the per-burst arithmetic that the split was designed to hold constant.
+    ammoCapacity: 400,
     reloadTime: 13,
   }),
   /**
@@ -1383,11 +1428,11 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
    * that can be upgraded into accuracy is a Machine Gun with extra steps.
    */
   perLevel: Object.freeze([
-    { damage: 1.0 }, // T2  4.0 -> 5.0
+    { damage: 0.75 }, // T2  2.70 -> 3.45 a shell (13.8 a burst)
     { cooldown: -0.026 }, // T3  0.130 -> 0.104 s  (~29 rounds/s)
     { ammoCapacity: 120 }, // T4  300 -> 420 rounds
     { range: 70 }, // T5  400 -> 470
-    { damage: 1.5 }, // T6  5.0 -> 6.5
+    { damage: 1.125 }, // T6  3.45 -> 4.575 a shell (18.3 a burst, as it was at three shells)
     { reloadTime: -4 }, // T7  13.0 -> 9.0 s
   ]),
   // NO LONGER EXCLUDES THE MACHINE GUN. It did - one declaration, checked both directions, see
@@ -1687,7 +1732,18 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
   excludes: Object.freeze(['plasma'] as const),
   name: 'Phase Cannon',
   kind: 'projectile',
-  targeting: 'densest',
+  // TWO RULES, AND THE COOLDOWN DECIDES WHICH. Plain `densest` routinely picked a crowd behind
+  // the mech, so the turret spent its life slewing and a gun coming off a 1.12 s cooldown
+  // mid-traverse did not fire at all - measured at roughly half the shots it takes now.
+  //
+  // WHEN READY it takes the thickest knot inside a cone in front of the barrel, so there is
+  // always something to shoot without turning first. The Mortar's own rule, shared rather than
+  // copied: the two guns want the same search and a second table at a different step size was a
+  // near-duplicate of it.
+  targeting: 'cone-densest',
+  // WHILE REARMING it looks everywhere instead, and walks the turret toward the biggest crowd on
+  // the field - so the cone it is about to fire out of is pointed somewhere worth firing.
+  trackingTargeting: 'densest',
   pattern: 'phase',
   behaviour: 'phase',
   requiresTarget: true,
@@ -1707,10 +1763,12 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
     projectileCount: 1,
     pierce: 0,
     knockback: 90,
-    // A MODERATE BURST at half strength: 18 into everything inside 55 u at tier 1. Enough to
+    // A MODERATE BURST at half strength: 18 into everything inside 57.75 u at tier 1. Enough to
     // matter against the packed chaff the targeting rule aims it into, nowhere near the
     // artillery's everything-in-the-circle blast.
-    splashRadius: 55,
+    // 55 -> 57.75, and both rungs scaled with it, so the +5% lands at EVERY tier rather than
+    // washing out as the ladder adds its flat twelves. Radius, so the area is up a tenth.
+    splashRadius: 57.75,
     splashFrac: 0.5,
     turretTraverse: PHASE_TURRET_TRAVERSE,
     fireArc: PHASE_FIRE_ARC,
@@ -1729,12 +1787,23 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
   }),
   perLevel: Object.freeze([
     { damage: 8.8 }, // T2  39.6 -> 48.4
-    { splashRadius: 12 }, // T3  55 -> 67
+    { splashRadius: 12.6 }, // T3  57.75 -> 70.35
     { cooldown: PHASE_RATE_TIER }, // T4  1.60 -> 1.36 s
     { damage: 8.8 }, // T5  48.4 -> 57.2
-    { splashRadius: 12 }, // T6  67 -> 79
+    { splashRadius: 12.6 }, // T6  70.35 -> 82.95
     { cooldown: PHASE_RATE_TIER }, // T7  1.36 -> 1.12 s (0.70x base, as the Cannon's ladder)
   ]),
+  // WHAT THE BLAST ACTUALLY DOES, now that its damage was never going to be the answer. Measured:
+  // the Phase Cannon had the LOWEST boss-kill rate of all fourteen weapons (0.43 per 1000 kills)
+  // and the second-lowest on elites, because `densest` aims it at chaff and chaff is not what
+  // kills you. Rather than make it a worse Mortar by raising numbers it will never win on, the
+  // burst now SHAPES the fight: everything it catches drags for two seconds, so the gun's job is
+  // to hold a crowd still for the weapons that do the killing.
+  //
+  // A THIRD OFF FOR TWO SECONDS, against a 1.12 s cooldown at tier 7 - so a Phase Cannon worked
+  // into one clump holds it slowed continuously, and one splitting its attention does not. That is
+  // the decision the gun now poses, and it is the first one it has ever had.
+  slow: Object.freeze({ frac: 0.35, seconds: 2 }),
   reengageMul: 1,
   visualId: VIS_PLASMA,
   muzzleOffset: 30,

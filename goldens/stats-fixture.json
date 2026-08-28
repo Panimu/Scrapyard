@@ -531,11 +531,11 @@
     "m-rate": 3
    },
    "result": {
-    "damage": "4018666666666666",
+    "damage": "40124ccccccccccd",
     "cooldown": "3faea86eb753b847",
     "range": "407d600000000000",
     "projectileSpeed": "4083600000000000",
-    "projectileCount": "4010000000000000",
+    "projectileCount": "4014000000000000",
     "pierce": "0000000000000000",
     "knockback": "4032000000000000",
     "splashRadius": "0000000000000000",
@@ -551,7 +551,7 @@
     "flightTime": "0000000000000000",
     "cosTurnStep": "3fefffffffff2c12",
     "sinTurnStep": "0000000000000000",
-    "ammoCapacity": "407a400000000000",
+    "ammoCapacity": "4080400000000000",
     "reloadTime": "4016000000000000",
     "projectileLifetime": "3fea32dea32dea33",
     "acquireRangeSq": "410af72000000000",

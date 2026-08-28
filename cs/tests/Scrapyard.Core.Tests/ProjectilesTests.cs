@@ -78,6 +78,18 @@ public class ProjectilesTests
             w.SplitStats.SplashFrac = ss.GetProperty("splashFrac").F64();
             w.SplitStats.Pierce = ss.GetProperty("pierce").F64();
 
+            // THE FLOCK, placed by hand. MowTheFlock keys off Sheep.Count and not off the level, so
+            // a Scrapyard world can be given animals - which is the only way to cover that path:
+            // the golden corpus never reaches it, because sheep spawn far outside every gun's range
+            // in the recorded runs.
+            w.Sheep.Count = 0;
+            int sh = 0;
+            foreach (var b in c.GetProperty("sheep").EnumerateArray())
+            {
+                w.Sheep.Alloc(b.GetProperty("x").F64(), b.GetProperty("y").F64(), 1000 + sh);
+                sh++;
+            }
+
             int e = 0;
             foreach (var b in c.GetProperty("enemies").EnumerateArray())
             {
@@ -136,6 +148,16 @@ public class ProjectilesTests
                 int n = w.Projectiles.Count;
                 Assert.True(expect.GetProperty("count").GetInt32() == n,
                     $"{where}: count expected {expect.GetProperty("count").GetInt32()}, got {n}");
+
+                // THE FLOCK, BOTH WAYS ROUND. The count proves the pool was swap-removed; the tally
+                // proves the take went through the shared loot door rather than the animal merely
+                // vanishing. Checked every tick, so a port that took BOTH animals on one tick - or
+                // stopped the round in the first - fails on the tick it diverges rather than at the
+                // end, where the two are indistinguishable.
+                Assert.True(expect.GetProperty("sheep").GetInt32() == w.Sheep.Count,
+                    $"{where}: sheep expected {expect.GetProperty("sheep").GetInt32()}, got {w.Sheep.Count}");
+                Assert.True(expect.GetProperty("sheepTaken").GetInt32() == (int)w.Stats.SheepTaken,
+                    $"{where}: sheepTaken expected {expect.GetProperty("sheepTaken").GetInt32()}, got {(int)w.Stats.SheepTaken}");
 
                 AssertF32Row(expect, "x", w.Projectiles.X, n, where);
                 AssertF32Row(expect, "y", w.Projectiles.Y, n, where);

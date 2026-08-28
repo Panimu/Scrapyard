@@ -105,8 +105,12 @@ public static class EnemyAI
                 if (rest > 0)
                 {
                     p.ChargeLeft[d] = (float)rest;
-                    p.Vx[d] = (float)((double)p.ChargeX[d] * p.Speed[d]);
-                    p.Vy[d] = (float)((double)p.ChargeY[d] * p.Speed[d]);
+                    // Slowed even mid-charge: a swarm crossing the yard is exactly the crowd a
+                    // blast is worth dropping on, and a charge that ignored the field would make
+                    // the one formation the effect is best against the one it does nothing to.
+                    double cs = (double)p.Speed[d] * (p.SlowLeft[d] > 0 ? 1 - (double)p.SlowFrac[d] : 1);
+                    p.Vx[d] = (float)((double)p.ChargeX[d] * cs);
+                    p.Vy[d] = (float)((double)p.ChargeY[d] * cs);
                     continue;
                 }
                 p.ChargeLeft[d] = 0;
@@ -197,7 +201,11 @@ public static class EnemyAI
                 uy = ty;
             }
 
-            double sp = p.Speed[d];
+            // THE SLOW IS APPLIED HERE, AT THE USE SITE, AND NEVER WRITTEN BACK TO Speed. Two
+            // other mechanics already mutate the stored speed in place - the swarm charge's
+            // halving and a Heavy's post-fixation quickening - so a slow that multiplied it would
+            // compound on every refresh and the body would never recover.
+            double sp = (double)p.Speed[d] * (p.SlowLeft[d] > 0 ? 1 - (double)p.SlowFrac[d] : 1);
             p.Vx[d] = (float)(ux * sp);
             p.Vy[d] = (float)(uy * sp);
         }

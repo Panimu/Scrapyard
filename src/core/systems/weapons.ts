@@ -324,8 +324,21 @@ export function updateWeapons(world: World, dt: number): void {
     // because a swath that bills everything it covers is worth exactly what it covers. The swap
     // is tier-gated off the def like every other ascension mechanic: below tier 8 this is still
     // the Long Laser picking off the weakest thing in range.
+    //
+    // AND A GUN MAY AIM BY ONE RULE AND SHOOT BY ANOTHER. `trackingTargeting` is the rule to pick
+    // by while the cooldown is still running - see WeaponDef.trackingTargeting. The Phase Cannon
+    // uses it to slew toward the biggest crowd anywhere in range while it rearms, then takes
+    // whatever is in the cone it reached the instant it is ready, rather than carrying on turning.
+    //
+    // THE SAME TEST AS THE FIRE GATE BELOW, deliberately written the same way: "ready" here and
+    // "may fire" there have to mean the same thing, or a weapon would aim by the tracking rule on
+    // the very tick it shoots.
+    const ready = beam || inst.cooldownLeft <= 0;
+    const rule = !ready && def.trackingTargeting !== undefined
+      ? def.trackingTargeting
+      : def.targeting;
     const targeting =
-      def.gigaFrom !== undefined && inst.level >= def.gigaFrom ? 'densest' : def.targeting;
+      def.gigaFrom !== undefined && inst.level >= def.gigaFrom ? 'densest' : rule;
     let n = TARGETING[targeting](
       world,
       player.x,

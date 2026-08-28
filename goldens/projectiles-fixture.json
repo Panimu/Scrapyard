@@ -36,6 +36,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -88,6 +89,8 @@
    "perTick": [
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "410aaaab40a00000",
      "y": "0000000042d55555",
      "vx": "4402000043960000",
@@ -106,6 +109,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "418aaaab41200000",
      "y": "0000000042e2aaaa",
      "vx": "4402000043960000",
@@ -124,6 +129,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41d0000041700000",
      "y": "0000000042efffff",
      "vx": "4402000043960000",
@@ -142,6 +149,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "420aaaab41a00000",
      "y": "0000000042fd5554",
      "vx": "4402000043960000",
@@ -160,6 +169,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d555641c80000",
      "y": "0000000043055555",
      "vx": "4402000043960000",
@@ -178,6 +189,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4250000141f00000",
      "y": "00000000430c0000",
      "vx": "4402000043960000",
@@ -196,6 +209,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4272aaac420c0000",
      "y": "000000004312aaab",
      "vx": "4402000043960000",
@@ -214,6 +229,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "428aaaab42200000",
      "y": "0000000043195556",
      "vx": "4402000043960000",
@@ -232,6 +249,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "429c000042340000",
      "y": "0000000043200001",
      "vx": "4402000043960000",
@@ -250,6 +269,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42ad555542480000",
      "y": "000000004326aaac",
      "vx": "4402000043960000",
@@ -268,6 +289,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42beaaaa425c0000",
      "y": "00000000432d5557",
      "vx": "4402000043960000",
@@ -286,6 +309,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42cfffff42700000",
      "y": "0000000043340002",
      "vx": "4402000043960000",
@@ -304,6 +329,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442820000",
      "y": "00000000433aaaad",
      "vx": "4402000043960000",
@@ -329,6 +356,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e15554428c0000",
      "y": "0000000043415558",
      "vx": "4402000043960000",
@@ -347,6 +376,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442960000",
      "y": "0000000043480003",
      "vx": "4402000043960000",
@@ -365,6 +396,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442a00000",
      "y": "00000000434eaaae",
      "vx": "4402000043960000",
@@ -383,6 +416,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442aa0000",
      "y": "0000000043555559",
      "vx": "4402000043960000",
@@ -401,6 +436,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442b40000",
      "y": "00000000435c0004",
      "vx": "4402000043960000",
@@ -419,6 +456,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442be0000",
      "y": "000000004362aaaf",
      "vx": "4402000043960000",
@@ -437,6 +476,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442c80000",
      "y": "000000004369555a",
      "vx": "4402000043960000",
@@ -455,6 +496,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -480,6 +523,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -498,6 +543,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -516,6 +563,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -534,6 +583,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -552,6 +603,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -570,6 +623,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -588,6 +643,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -606,6 +663,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -624,6 +683,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e1555442d20000",
      "y": "0000000043700005",
      "vx": "4402000043960000",
@@ -646,6 +707,875 @@
    "sceneryCount": 0
   },
   {
+   "name": "shell-through-the-flock",
+   "defId": 0,
+   "turnRate": "0000000000000000",
+   "killEnemyAt": -1,
+   "killEnemyIndex": -1,
+   "arenaHalf": "40b8000000000000",
+   "withScenery": false,
+   "sheep": [
+    {
+     "x": "4056800000000000",
+     "y": "0000000000000000"
+    },
+    {
+     "x": "4067c00000000000",
+     "y": "0000000000000000"
+    }
+   ],
+   "splitStats": {
+    "projectileSpeed": "4072c00000000000",
+    "projectileLifetime": "3ff8000000000000",
+    "damage": "4026000000000000",
+    "knockback": "4044000000000000",
+    "splashRadius": "4038000000000000",
+    "splashFrac": "3fe0000000000000",
+    "pierce": "0000000000000000"
+   },
+   "shells": [
+    {
+     "x": "0000000000000000",
+     "y": "0000000000000000",
+     "vx": "4080400000000000",
+     "vy": "0000000000000000",
+     "lifeSec": "3feccccccccccccd",
+     "ownerWeapon": 0,
+     "behaviour": 0,
+     "damage": "4024000000000000",
+     "knockback": "0000000000000000",
+     "splashRadius": "0000000000000000",
+     "splashFrac": "0000000000000000",
+     "radius": "4010000000000000",
+     "pierce": 0,
+     "visualId": 0,
+     "flags": 0,
+     "targetEnemy": -1
+    }
+   ],
+   "enemies": [],
+   "ticks": 40,
+   "perTick": [
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "410aaaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f622222",
+     "travelled": "410aaaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "418aaaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f5dddde",
+     "travelled": "418aaaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "41d00000",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f59999a",
+     "travelled": "41d00000",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "420aaaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f555556",
+     "travelled": "420aaaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "422d5556",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f511112",
+     "travelled": "422d5556",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "42500001",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f4cccce",
+     "travelled": "42500001",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "4272aaac",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f48888a",
+     "travelled": "4272aaac",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "428aaaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f444446",
+     "travelled": "428aaaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "429c0000",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f400002",
+     "travelled": "429c0000",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 2,
+     "sheepTaken": 0,
+     "x": "42ad5555",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f3bbbbe",
+     "travelled": "42ad5555",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "42beaaaa",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f37777a",
+     "travelled": "42beaaaa",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": [
+      {
+       "kind": 31,
+       "a": "42b40000",
+       "b": "00000000",
+       "d": "00000000"
+      }
+     ]
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "42cfffff",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f333336",
+     "travelled": "42cfffff",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "42e15554",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f2eeef2",
+     "travelled": "42e15554",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "42f2aaa9",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f2aaaae",
+     "travelled": "42f2aaa9",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "4301ffff",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f26666a",
+     "travelled": "4301ffff",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "430aaaaa",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f222226",
+     "travelled": "430aaaaa",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "43135555",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f1ddde2",
+     "travelled": "43135555",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "431c0000",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f19999e",
+     "travelled": "431c0000",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "4324aaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f15555a",
+     "travelled": "4324aaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "432d5556",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f111116",
+     "travelled": "432d5556",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 1,
+     "sheepTaken": 1,
+     "x": "43360001",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f0cccd2",
+     "travelled": "43360001",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "433eaaac",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f08888e",
+     "travelled": "433eaaac",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": [
+      {
+       "kind": 31,
+       "a": "433e0000",
+       "b": "00000000",
+       "d": "00000000"
+      }
+     ]
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43475557",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f04444a",
+     "travelled": "43475557",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43500002",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3f000006",
+     "travelled": "43500002",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "4358aaad",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ef77783",
+     "travelled": "4358aaad",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43615558",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3eeeeefa",
+     "travelled": "43615558",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "436a0003",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ee66671",
+     "travelled": "436a0003",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "4372aaae",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3edddde8",
+     "travelled": "4372aaae",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "437b5559",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ed5555f",
+     "travelled": "437b5559",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43820002",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3eccccd6",
+     "travelled": "43820002",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43865557",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ec4444d",
+     "travelled": "43865557",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "438aaaac",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ebbbbc4",
+     "travelled": "438aaaac",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "438f0001",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3eb3333b",
+     "travelled": "438f0001",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43935556",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3eaaaab2",
+     "travelled": "43935556",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "4397aaab",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3ea22229",
+     "travelled": "4397aaab",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "439c0000",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3e9999a0",
+     "travelled": "439c0000",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43a05555",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3e911117",
+     "travelled": "43a05555",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43a4aaaa",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3e88888e",
+     "travelled": "43a4aaaa",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43a8ffff",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3e800005",
+     "travelled": "43a8ffff",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    },
+    {
+     "count": 1,
+     "sheep": 0,
+     "sheepTaken": 2,
+     "x": "43ad5554",
+     "y": "00000000",
+     "vx": "44020000",
+     "vy": "00000000",
+     "lifeSec": "3e6eeef9",
+     "travelled": "43ad5554",
+     "damage": "41200000",
+     "radius": "40800000",
+     "flags": "0",
+     "behaviour": "0",
+     "visualId": "0",
+     "pierceLeft": "0",
+     "shotsFired": "0000000000000000",
+     "hits": [],
+     "events": []
+    }
+   ],
+   "barrelsBroken": "0000000000000000",
+   "pickupCount": 0,
+   "sceneryCount": 0
+  },
+  {
    "name": "artillery-airburst",
    "defId": 8,
    "turnRate": "0000000000000000",
@@ -653,6 +1583,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -705,6 +1636,8 @@
    "perTick": [
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "408aaaab408aaaab",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -723,6 +1656,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "410aaaab410aaaab",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -741,6 +1676,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4150000041500000",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -759,6 +1696,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "418aaaab418aaaab",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -777,6 +1716,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41ad555641ad5556",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -795,6 +1736,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41d0000141d00001",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -813,6 +1756,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac41f2aaac",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -831,6 +1776,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "420aaaab420aaaab",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -849,6 +1796,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "421c0000421c0000",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -867,6 +1816,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -905,6 +1856,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -923,6 +1876,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -941,6 +1896,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -959,6 +1916,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -977,6 +1936,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422d5555422d5555",
      "y": "0000000043480000",
      "vx": "4382000043820000",
@@ -1006,6 +1967,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -1079,6 +2041,8 @@
    "perTick": [
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "409fc5c2409fc5c2",
      "y": "3e8877f7c22110f0",
      "vx": "4395c9664395c966",
@@ -1097,6 +2061,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "411f6e7b411f6e7b",
      "y": "3f4c8246c2233209",
      "vx": "439525c1439525c1",
@@ -1115,6 +2081,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "416e68e5416e68e5",
      "y": "3fcc37d5c22661bf",
      "vx": "4394158743941587",
@@ -1133,6 +2101,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "419e4c50419e4c50",
      "y": "4029dbecc22a9dbf",
      "vx": "4392997f4392997f",
@@ -1151,6 +2121,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41c4e26041c4e260",
      "y": "407e2f44c22fe2f4",
      "vx": "4390b2bd4390b2bd",
@@ -1169,6 +2141,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41eada8c41eada8c",
      "y": "40b16c47c2362d89",
      "vx": "438e62a4438e62a4",
@@ -1187,6 +2161,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42080c9742080c97",
      "y": "40ebc742c23d78e8",
      "vx": "438baae3438baae3",
@@ -1205,6 +2181,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "421a4195421a4195",
      "y": "4116ff0bc245bfc3",
      "vx": "43888d7443888d74",
@@ -1223,6 +2201,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "422bfeff422c270f",
      "y": "413bf048c24ead79",
      "vx": "43850c9c43863914",
@@ -1241,6 +2221,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "423d37eb423e0c89",
      "y": "41649c73c2579b2f",
      "vx": "43812ae743863914",
@@ -1259,6 +2241,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "424ddfce424ff203",
      "y": "418872f8c26088e5",
      "vx": "4379d65343863914",
@@ -1277,6 +2261,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "425dea894261d77d",
      "y": "41a05640c269769b",
      "vx": "4370a0f643863914",
@@ -1295,6 +2281,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "426d833e4273bcf7",
      "y": "41b96075c2726451",
      "vx": "4369f29d43863914",
@@ -1313,6 +2301,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "427d1bf34282d139",
      "y": "41d26aaac27b5207",
      "vx": "4369f29d43863914",
@@ -1331,6 +2321,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42865a54428bc3f6",
      "y": "41eb74dfc2821fde",
      "vx": "4369f29d43863914",
@@ -1349,6 +2341,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "428e26af4294b6b3",
      "y": "42023f8ac28696b9",
      "vx": "4369f29d43863914",
@@ -1367,6 +2361,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4295f30a429da970",
      "y": "420ec4a5c28b0d94",
      "vx": "4369f29d43863914",
@@ -1385,6 +2381,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "429dbf6542a69c2d",
      "y": "421b49c0c28f846f",
      "vx": "4369f29d43863914",
@@ -1403,6 +2401,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42a58bc042af8eea",
      "y": "4227cedbc293fb4a",
      "vx": "4369f29d43863914",
@@ -1421,6 +2421,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42ad581b42b881a7",
      "y": "423453f6c2987225",
      "vx": "4369f29d43863914",
@@ -1439,6 +2441,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42b5247642c17464",
      "y": "4240d911c29ce900",
      "vx": "4369f29d43863914",
@@ -1457,6 +2461,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42bcf0d142ca6721",
      "y": "424d5e2cc2a15fdb",
      "vx": "4369f29d43863914",
@@ -1475,6 +2481,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42c4bd2c42d359de",
      "y": "4259e347c2a5d6b6",
      "vx": "4369f29c43863914",
@@ -1493,6 +2501,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42cc898742dc4c9b",
      "y": "42666862c2aa4d91",
      "vx": "4369f29c43863914",
@@ -1511,6 +2521,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42d455e242e53f58",
      "y": "4272ed7dc2aec46c",
      "vx": "4369f29c43863914",
@@ -1529,6 +2541,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42dc223d42ee3215",
      "y": "427f7298c2b33b47",
      "vx": "4369f29c43863914",
@@ -1547,6 +2561,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e3ee9842f724d2",
      "y": "4285fbd9c2b7b222",
      "vx": "4369f29c43863914",
@@ -1565,6 +2581,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42ebbaf243000bc8",
      "y": "428c3e66c2bc28fd",
      "vx": "4369f29b43863914",
@@ -1583,6 +2601,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42f3874c43048527",
      "y": "429280f3c2c09fd8",
      "vx": "4369f29b43863914",
@@ -1601,6 +2621,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fb53a64308fe86",
      "y": "4298c380c2c516b3",
      "vx": "4369f29b43863914",
@@ -1619,6 +2641,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43019000430d77e5",
      "y": "429f060dc2c98d8e",
      "vx": "4369f29b43863914",
@@ -1637,6 +2661,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4305762d4311f144",
      "y": "42a5489ac2ce0469",
      "vx": "4369f29b43863914",
@@ -1655,6 +2681,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43095c5a43166aa3",
      "y": "42ab8b27c2d27b44",
      "vx": "4369f29b43863914",
@@ -1673,6 +2701,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "430d4287431ae402",
      "y": "42b1cdb4c2d6f21f",
      "vx": "4369f29b43863914",
@@ -1691,6 +2721,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "431128b4431f5d61",
      "y": "42b81041c2db68fa",
      "vx": "4369f29b43863914",
@@ -1709,6 +2741,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43150ee14323d6c0",
      "y": "42be52cec2dfdfd5",
      "vx": "4369f29b43863914",
@@ -1727,6 +2761,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4318f50e4328501f",
      "y": "42c4955bc2e456b0",
      "vx": "4369f29b43863914",
@@ -1745,6 +2781,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "431cdb3b432cc97e",
      "y": "42cad7e8c2e8cd8b",
      "vx": "4369f29b43863913",
@@ -1763,6 +2801,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4320c168433142dc",
      "y": "42d11a75c2ed4466",
      "vx": "4369f29c43863911",
@@ -1781,6 +2821,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4324a7954335bc3a",
      "y": "42d75d02c2f1bb41",
      "vx": "4369f29c43863913",
@@ -1799,6 +2841,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43288dc2433a526e",
      "y": "42dd9f8fc2f5b65e",
      "vx": "4369f29c43899a11",
@@ -1817,6 +2861,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "432c73ef433f0220",
      "y": "42e3e21cc2f932d8",
      "vx": "4369f29d438c96e2",
@@ -1835,6 +2881,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43305a1c4343c7e7",
      "y": "42ea24a9c2fc2e25",
      "vx": "4369f29e438f2d5a",
@@ -1853,6 +2901,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "433440494348a04a",
      "y": "42f06736c2fea619",
      "vx": "4369f2a343915b96",
@@ -1871,6 +2921,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43384fc2434d87c1",
      "y": "42f63d10c3004c74",
      "vx": "4373a05843932000",
@@ -1889,6 +2941,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "433c859243527abb",
      "y": "42fba1f7c3010294",
      "vx": "437c9cb14394794e",
@@ -1907,6 +2961,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4340dea84357759d",
      "y": "430048ffc30174e7",
      "vx": "4382709143956685",
@@ -1925,6 +2981,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "434557da435c74c7",
      "y": "430284c6c301a31b",
      "vx": "438633d44395e6f9",
@@ -1943,6 +3001,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4349ede643617496",
      "y": "430482b1c3018d0d",
      "vx": "438995644395fa4b",
@@ -1961,6 +3021,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "434e9d7543667166",
      "y": "4306414cc30132ce",
      "vx": "438c92ca4395a06e",
@@ -1979,6 +3041,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4353631e436b6796",
      "y": "4307bf52c300949f",
      "vx": "438f29da4394d9a3",
@@ -1997,6 +3061,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43583b6843705389",
      "y": "4308fbadc2ff65e7",
      "vx": "439158b04393a67b",
@@ -2015,6 +3081,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "435d22cc437531aa",
      "y": "4309f577c2fd1ce0",
      "vx": "43931db6439207d6",
@@ -2033,6 +3101,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "436215b84379fe6d",
      "y": "430aabfac2fa4fd2",
      "vx": "439477a2438ffee1",
@@ -2051,6 +3121,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43671091437eb654",
      "y": "430b1eb1c2f700c8",
      "vx": "43956579438d8d18",
@@ -2069,6 +3141,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "436c0fb84381aaf8",
      "y": "430b4d49c2f3322a",
      "vx": "4395e68d438ab442",
@@ -2087,6 +3161,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43710f894383ecf1",
      "y": "430b379fc2eee6be",
      "vx": "4395fa8043877672",
@@ -2105,6 +3181,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43760eb043861f71",
      "y": "430b6637c2ea21a4",
      "vx": "4395e68d4383d604",
@@ -2123,6 +3201,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "437b0989438840de",
      "y": "430bd8eec2e4e655",
      "vx": "43956579437fab37",
@@ -2141,6 +3221,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "437ffc75438a4fab",
      "y": "430c8f71c2df38a0",
      "vx": "439477a24376f045",
@@ -2159,6 +3241,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438271ec438c4a59",
      "y": "430d893bc2d91ca7",
      "vx": "43931db6436d818e",
@@ -2177,6 +3261,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4384de11438e2f77",
      "y": "430ec596c2d296dd",
      "vx": "439158b0436365ef",
@@ -2195,6 +3281,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438740e6438ffda3",
      "y": "4310439cc2cbac02",
      "vx": "438f29da4358a4c4",
@@ -2213,6 +3301,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438998ae4391b38d",
      "y": "43120237c2c4611e",
      "vx": "438c92ca434d45e1",
@@ -2231,6 +3321,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438be3b443934ff7",
      "y": "43140022c2bcbb81",
      "vx": "438995644341518d",
@@ -2249,6 +3341,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438e204d4394d1b4",
      "y": "43163be9c2b4c0bc",
      "vx": "438633d44334d07d",
@@ -2267,6 +3361,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43904cd8439637ab",
      "y": "4318b3ecc2ac769e",
      "vx": "438270914327cbca",
@@ -2285,6 +3381,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439267c0439780d8",
      "y": "431b665fc2a3e330",
      "vx": "437c9cb0431a4cef",
@@ -2303,6 +3401,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43946f7c4398e6cf",
      "y": "431e514cc29b9912",
      "vx": "4373a0574327cbca",
@@ -2321,6 +3421,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43966293439a688c",
      "y": "43217292c2939e4d",
      "vx": "4369f2a24334d07d",
@@ -2339,6 +3441,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43983f99439c04f6",
      "y": "4324c7ebc28bf8b0",
      "vx": "435f9a9c4341518d",
@@ -2357,6 +3461,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439a0532439dbae0",
      "y": "43284ee9c284adcc",
      "vx": "43549fcd434d45e1",
@@ -2375,6 +3481,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2406,6 +3514,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2424,6 +3534,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2442,6 +3554,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2460,6 +3574,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2478,6 +3594,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2496,6 +3614,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2514,6 +3634,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439bb215439f890c",
      "y": "432c04fbc27b85e1",
      "vx": "43490a334358a4c4",
@@ -2543,6 +3665,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -2583,6 +3706,8 @@
    "perTick": [
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "40a00000",
      "y": "00000000",
      "vx": "43960000",
@@ -2601,6 +3726,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41200000",
      "y": "00000000",
      "vx": "43960000",
@@ -2619,6 +3746,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41700000",
      "y": "00000000",
      "vx": "43960000",
@@ -2637,6 +3766,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41a00000",
      "y": "00000000",
      "vx": "43960000",
@@ -2655,6 +3786,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41c80000",
      "y": "00000000",
      "vx": "43960000",
@@ -2673,6 +3806,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f00000",
      "y": "00000000",
      "vx": "43960000",
@@ -2691,6 +3826,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "420c0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2709,6 +3846,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42200000",
      "y": "00000000",
      "vx": "43960000",
@@ -2727,6 +3866,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42340000",
      "y": "00000000",
      "vx": "43960000",
@@ -2745,6 +3886,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42480000",
      "y": "00000000",
      "vx": "43960000",
@@ -2763,6 +3906,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "425c0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2781,6 +3926,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42700000",
      "y": "00000000",
      "vx": "43960000",
@@ -2799,6 +3946,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42820000",
      "y": "00000000",
      "vx": "43960000",
@@ -2817,6 +3966,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "428c0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2835,6 +3986,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42960000",
      "y": "00000000",
      "vx": "43960000",
@@ -2853,6 +4006,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42a00000",
      "y": "00000000",
      "vx": "43960000",
@@ -2871,6 +4026,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42aa0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2889,6 +4046,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42b40000",
      "y": "00000000",
      "vx": "43960000",
@@ -2907,6 +4066,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42be0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2925,6 +4086,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42c80000",
      "y": "00000000",
      "vx": "43960000",
@@ -2943,6 +4106,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42d20000",
      "y": "00000000",
      "vx": "43960000",
@@ -2961,6 +4126,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42dc0000",
      "y": "00000000",
      "vx": "43960000",
@@ -2979,6 +4146,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e60000",
      "y": "00000000",
      "vx": "43960000",
@@ -2997,6 +4166,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42f00000",
      "y": "00000000",
      "vx": "43960000",
@@ -3015,6 +4186,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa0000",
      "y": "00000000",
      "vx": "43960000",
@@ -3033,6 +4206,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43020000",
      "y": "00000000",
      "vx": "43960000",
@@ -3051,6 +4226,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43070000",
      "y": "00000000",
      "vx": "43960000",
@@ -3069,6 +4246,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "430c0000",
      "y": "00000000",
      "vx": "43960000",
@@ -3087,6 +4266,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43110000",
      "y": "00000000",
      "vx": "43960000",
@@ -3105,6 +4286,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3130,6 +4313,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3148,6 +4333,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3166,6 +4353,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3184,6 +4373,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3202,6 +4393,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43160000",
      "y": "00000000",
      "vx": "43960000",
@@ -3231,6 +4424,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -3271,6 +4465,8 @@
    "perTick": [
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "408aaaab",
      "y": "00000000",
      "vx": "43820000",
@@ -3289,6 +4485,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "410aaaab",
      "y": "00000000",
      "vx": "43820000",
@@ -3307,6 +4505,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41500000",
      "y": "00000000",
      "vx": "43820000",
@@ -3325,6 +4525,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "418aaaab",
      "y": "00000000",
      "vx": "43820000",
@@ -3343,6 +4545,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41ad5556",
      "y": "00000000",
      "vx": "43820000",
@@ -3361,6 +4565,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41d00001",
      "y": "00000000",
      "vx": "43820000",
@@ -3379,6 +4585,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac41f2aaac41f2aaac",
      "y": "000000000000000000000000",
      "vx": "438200004394b77c4394b77c",
@@ -3404,6 +4612,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac420d2989420d2989",
      "y": "00000000bf2712d23f2712d2",
      "vx": "438200004394b77c4394b77c",
@@ -3422,6 +4632,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4220fdbc4220fdbc",
      "y": "00000000bfa712d23fa712d2",
      "vx": "438200004394b77c4394b77c",
@@ -3440,6 +4652,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4234d1ef4234d1ef",
      "y": "00000000bffa9c3b3ffa9c3b",
      "vx": "438200004394b77c4394b77c",
@@ -3458,6 +4672,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4248a6224248a622",
      "y": "00000000c02712d2402712d2",
      "vx": "438200004394b77c4394b77c",
@@ -3476,6 +4692,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac425c7a55425c7a55",
      "y": "00000000c050d7874050d787",
      "vx": "438200004394b77c4394b77c",
@@ -3494,6 +4712,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42704e8842704e88",
      "y": "00000000c07a9c3c407a9c3c",
      "vx": "438200004394b77c4394b77c",
@@ -3512,6 +4732,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4282115d4282115d",
      "y": "00000000c092307840923078",
      "vx": "438200004394b77c4394b77c",
@@ -3530,6 +4752,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac428bfb76428bfb76",
      "y": "00000000c0a712d240a712d2",
      "vx": "438200004394b77c4394b77c",
@@ -3548,6 +4772,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4295e58f4295e58f",
      "y": "00000000c0bbf52c40bbf52c",
      "vx": "438200004394b77c4394b77c",
@@ -3566,6 +4792,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac429fcfa8429fcfa8",
      "y": "00000000c0d0d78640d0d786",
      "vx": "438200004394b77c4394b77c",
@@ -3584,6 +4812,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42a9b9c142a9b9c1",
      "y": "00000000c0e5b9e040e5b9e0",
      "vx": "438200004394b77c4394b77c",
@@ -3602,6 +4832,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42b3a3da42b3a3da",
      "y": "00000000c0fa9c3a40fa9c3a",
      "vx": "438200004394b77c4394b77c",
@@ -3620,6 +4852,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42bd8df342bd8df3",
      "y": "00000000c107bf4a4107bf4a",
      "vx": "438200004394b77c4394b77c",
@@ -3638,6 +4872,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42c7780c42c7780c",
      "y": "00000000c112307741123077",
      "vx": "438200004394b77c4394b77c",
@@ -3656,6 +4892,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42d1622542d16225",
      "y": "00000000c11ca1a4411ca1a4",
      "vx": "438200004394b77c4394b77c",
@@ -3674,6 +4912,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42db4c3e42db4c3e",
      "y": "00000000c12712d1412712d1",
      "vx": "438200004394b77c4394b77c",
@@ -3692,6 +4932,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42e5365742e53657",
      "y": "00000000c13183fe413183fe",
      "vx": "438200004394b77c4394b77c",
@@ -3710,6 +4952,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42ef207042ef2070",
      "y": "00000000c13bf52b413bf52b",
      "vx": "438200004394b77c4394b77c",
@@ -3728,6 +4972,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac42f90a8942f90a89",
      "y": "00000000c146665841466658",
      "vx": "438200004394b77c4394b77c",
@@ -3746,6 +4992,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac43017a5143017a51",
      "y": "00000000c150d7854150d785",
      "vx": "438200004394b77c4394b77c",
@@ -3764,6 +5012,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac43066f5e43066f5e",
      "y": "00000000c15b48b2415b48b2",
      "vx": "438200004394b77c4394b77c",
@@ -3782,6 +5032,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac430b646b430b646b",
      "y": "00000000c165b9df4165b9df",
      "vx": "438200004394b77c4394b77c",
@@ -3800,6 +5052,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4310597843105978",
      "y": "00000000c1702b0c41702b0c",
      "vx": "438200004394b77c4394b77c",
@@ -3818,6 +5072,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac43154e8543154e85",
      "y": "00000000c17a9c39417a9c39",
      "vx": "438200004394b77c4394b77c",
@@ -3836,6 +5092,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac431a4392431a4392",
      "y": "00000000c18286b3418286b3",
      "vx": "438200004394b77c4394b77c",
@@ -3854,6 +5112,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac431f389f431f389f",
      "y": "00000000c187bf4a4187bf4a",
      "vx": "438200004394b77c4394b77c",
@@ -3872,6 +5132,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac43242dac43242dac",
      "y": "00000000c18cf7e1418cf7e1",
      "vx": "438200004394b77c4394b77c",
@@ -3890,6 +5152,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac432922b9432922b9",
      "y": "00000000c192307841923078",
      "vx": "438200004394b77c4394b77c",
@@ -3908,6 +5172,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac432e17c6432e17c6",
      "y": "00000000c197690f4197690f",
      "vx": "438200004394b77c4394b77c",
@@ -3926,6 +5192,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac43330cd343330cd3",
      "y": "00000000c19ca1a6419ca1a6",
      "vx": "438200004394b77c4394b77c",
@@ -3944,6 +5212,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac433801e0433801e0",
      "y": "00000000c1a1da3d41a1da3d",
      "vx": "438200004394b77c4394b77c",
@@ -3962,6 +5232,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac433cf6ed433cf6ed",
      "y": "00000000c1a712d441a712d4",
      "vx": "438200004394b77c4394b77c",
@@ -3980,6 +5252,8 @@
     },
     {
      "count": 3,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f2aaac4341ebfa4341ebfa",
      "y": "00000000c1ac4b6b41ac4b6b",
      "vx": "438200004394b77c4394b77c",
@@ -4009,6 +5283,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -4049,6 +5324,8 @@
    "perTick": [
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "40bc3c3c",
      "y": "4048c8c9",
      "vx": "43b07878",
@@ -4067,6 +5344,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "413c3c3c",
      "y": "40c8c8c9",
      "vx": "43b07878",
@@ -4085,6 +5364,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "418d2d2d",
      "y": "41169697",
      "vx": "43b07878",
@@ -4103,6 +5384,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41bc3c3c",
      "y": "4148c8c9",
      "vx": "43b07878",
@@ -4121,6 +5404,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41eb4b4b",
      "y": "417afafb",
      "vx": "43b07878",
@@ -4139,6 +5424,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "420d2d2d",
      "y": "41969697",
      "vx": "43b07878",
@@ -4157,6 +5444,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4224b4b4",
      "y": "41afafb0",
      "vx": "43b07878",
@@ -4175,6 +5464,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "423c3c3b",
      "y": "41c8c8c9",
      "vx": "43b07878",
@@ -4193,6 +5484,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4253c3c2",
      "y": "41e1e1e2",
      "vx": "43b07878",
@@ -4211,6 +5504,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "426b4b49",
      "y": "41fafafb",
      "vx": "43b07878",
@@ -4229,6 +5524,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42816968",
      "y": "420a0a0a",
      "vx": "43b07878",
@@ -4247,6 +5544,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "428d2d2c",
      "y": "42169696",
      "vx": "43b07878",
@@ -4265,6 +5564,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4298f0f0",
      "y": "42232322",
      "vx": "43b07878",
@@ -4283,6 +5584,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42a4b4b4",
      "y": "422fafaf",
      "vx": "43b07878",
@@ -4301,6 +5604,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42b07878",
      "y": "423c3c3c",
      "vx": "43b07878",
@@ -4319,6 +5624,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42bc3c3c",
      "y": "4248c8c9",
      "vx": "43b07878",
@@ -4337,6 +5644,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42c80000",
      "y": "42555556",
      "vx": "43b07878",
@@ -4355,6 +5664,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42d3c3c4",
      "y": "4261e1e3",
      "vx": "43b07878",
@@ -4373,6 +5684,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42df8788",
      "y": "426e6e6f",
      "vx": "43b07878",
@@ -4391,6 +5704,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42eb4b4c",
      "y": "427afafc",
      "vx": "43b07878",
@@ -4409,6 +5724,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42f70f10",
      "y": "4283c3c4",
      "vx": "43b07878",
@@ -4427,6 +5744,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4301696a",
      "y": "428a0a0a",
      "vx": "43b07878",
@@ -4445,6 +5764,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43074b4c",
      "y": "42905050",
      "vx": "43b07878",
@@ -4463,6 +5784,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "430d2d2e",
      "y": "42969696",
      "vx": "43b07878",
@@ -4481,6 +5804,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43130f10",
      "y": "429cdcdc",
      "vx": "43b07878",
@@ -4499,6 +5824,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4318f0f2",
      "y": "42a32322",
      "vx": "43b07878",
@@ -4517,6 +5844,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "431ed2d4",
      "y": "42a96968",
      "vx": "43b07878",
@@ -4535,6 +5864,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4324b4b6",
      "y": "42afafae",
      "vx": "43b07878",
@@ -4553,6 +5884,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "432a9698",
      "y": "42b5f5f4",
      "vx": "43b07878",
@@ -4571,6 +5904,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4330787a",
      "y": "42bc3c3a",
      "vx": "43b07878",
@@ -4589,6 +5924,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43365a5c",
      "y": "42c28280",
      "vx": "43b07878",
@@ -4607,6 +5944,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "433c3c3e",
      "y": "42c8c8c6",
      "vx": "43b07878",
@@ -4625,6 +5964,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43421e20",
      "y": "42cf0f0c",
      "vx": "43b07878",
@@ -4643,6 +5984,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43480002",
      "y": "42d55553",
      "vx": "43b07878",
@@ -4661,6 +6004,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "434de1e4",
      "y": "42db9b9a",
      "vx": "43b07878",
@@ -4679,6 +6024,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4353c3c6",
      "y": "42e1e1e0",
      "vx": "43b07878",
@@ -4697,6 +6044,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4359a5a8",
      "y": "42e82827",
      "vx": "43b07878",
@@ -4715,6 +6064,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "435f878a",
      "y": "42ee6e6e",
      "vx": "43b07878",
@@ -4733,6 +6084,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4365696c",
      "y": "42f4b4b4",
      "vx": "43b07878",
@@ -4751,6 +6104,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "436b4b4e",
      "y": "42fafafb",
      "vx": "43b07878",
@@ -4769,6 +6124,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43712d30",
      "y": "4300a0a1",
      "vx": "43b07878",
@@ -4787,6 +6144,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43770f12",
      "y": "4303c3c4",
      "vx": "43b07878",
@@ -4805,6 +6164,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "437cf0f4",
      "y": "4306e6e7",
      "vx": "43b07878",
@@ -4823,6 +6184,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4381696b",
      "y": "430a0a0a",
      "vx": "43b07877",
@@ -4841,6 +6204,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43845a5c",
      "y": "430d2d2d",
      "vx": "43b07876",
@@ -4859,6 +6224,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "43874b4d",
      "y": "43105050",
      "vx": "43b07875",
@@ -4877,6 +6244,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438a3c3e",
      "y": "43137373",
      "vx": "43b07874",
@@ -4895,6 +6264,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -4913,6 +6284,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -4938,6 +6311,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -4963,6 +6338,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -4988,6 +6365,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5013,6 +6392,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5038,6 +6419,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5063,6 +6446,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5088,6 +6473,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5113,6 +6500,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5138,6 +6527,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5163,6 +6554,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5188,6 +6581,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438d2d2f",
      "y": "43169697",
      "vx": "43b07872",
@@ -5224,6 +6619,7 @@
    "killEnemyIndex": 0,
    "arenaHalf": "40b8000000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -5264,6 +6660,8 @@
    "perTick": [
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "40becfa6",
      "y": "403ecfa6",
      "vx": "43b2e2ac",
@@ -5282,6 +6680,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "413ecfa6",
      "y": "40becfa6",
      "vx": "43b2e2ac",
@@ -5300,6 +6700,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "418f1bbd",
      "y": "410f1bbd",
      "vx": "43b2e2ac",
@@ -5318,6 +6720,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41becfa7",
      "y": "413ecfa7",
      "vx": "43b2e2ac",
@@ -5336,6 +6740,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41ee8391",
      "y": "416e8391",
      "vx": "43b2e2ac",
@@ -5354,6 +6760,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "420f1bbd",
      "y": "418f1bbd",
      "vx": "43b2e2ac",
@@ -5372,6 +6780,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4226f5b2",
      "y": "41a6f5b2",
      "vx": "43b2e2ac",
@@ -5390,6 +6800,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "423ecfa7",
      "y": "41becfa7",
      "vx": "43b2e2ac",
@@ -5408,6 +6820,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4256a99c",
      "y": "41d6a99c",
      "vx": "43b2e2ac",
@@ -5426,6 +6840,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "426e8391",
      "y": "41ee8391",
      "vx": "43b2e2ac",
@@ -5444,6 +6860,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42832ec3",
      "y": "42032ec3",
      "vx": "43b2e2ac",
@@ -5462,6 +6880,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "428f1bbd",
      "y": "420f1bbd",
      "vx": "43b2e2ac",
@@ -5480,6 +6900,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "429b08b7",
      "y": "421b08b7",
      "vx": "43b2e2ac",
@@ -5498,6 +6920,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42a6f5b1",
      "y": "4226f5b1",
      "vx": "43b2e2ac",
@@ -5516,6 +6940,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42b2e2ab",
      "y": "4232e2ab",
      "vx": "43b2e2ac",
@@ -5534,6 +6960,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42becfa5",
      "y": "423ecfa5",
      "vx": "43b2e2ac",
@@ -5552,6 +6980,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42cabc9f",
      "y": "424abc9f",
      "vx": "43b2e2ac",
@@ -5570,6 +7000,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42d6a999",
      "y": "4256a999",
      "vx": "43b2e2ac",
@@ -5588,6 +7020,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42e29693",
      "y": "42629693",
      "vx": "43b2e2ac",
@@ -5606,6 +7040,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42ee838d",
      "y": "426e838d",
      "vx": "43b2e2ac",
@@ -5624,6 +7060,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5656,6 +7094,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5674,6 +7114,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5692,6 +7134,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5710,6 +7154,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5728,6 +7174,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5746,6 +7194,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5764,6 +7214,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5782,6 +7234,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5800,6 +7254,8 @@
     },
     {
      "count": 1,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42fa7087",
      "y": "427a7087",
      "vx": "43b2e2ac",
@@ -5829,6 +7285,7 @@
    "killEnemyIndex": -1,
    "arenaHalf": "4072c00000000000",
    "withScenery": false,
+   "sheep": [],
    "splitStats": {
     "projectileSpeed": "4072c00000000000",
     "projectileLifetime": "3ff8000000000000",
@@ -5881,6 +7338,8 @@
    "perTick": [
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4170000041700000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5899,6 +7358,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "41f0000041f00000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5917,6 +7378,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4234000042340000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5935,6 +7398,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4270000042700000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5953,6 +7418,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4296000042960000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5971,6 +7438,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42b4000042b40000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -5989,6 +7458,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42d2000042d20000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6007,6 +7478,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "42f0000042f00000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6025,6 +7498,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4307000043070000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6043,6 +7518,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4316000043160000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6061,6 +7538,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4325000043250000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6079,6 +7558,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4334000043340000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6097,6 +7578,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4343000043430000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6115,6 +7598,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4352000043520000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6133,6 +7618,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4361000043610000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6151,6 +7638,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4370000043700000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6169,6 +7658,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "437f0000437f0000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6187,6 +7678,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4387000043870000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6205,6 +7698,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "438e8000438e8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6223,6 +7718,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "4396000043960000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6241,6 +7738,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6285,6 +7784,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6303,6 +7804,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6321,6 +7824,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6339,6 +7844,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6357,6 +7864,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6375,6 +7884,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6393,6 +7904,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6411,6 +7924,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",
@@ -6429,6 +7944,8 @@
     },
     {
      "count": 2,
+     "sheep": 0,
+     "sheepTaken": 0,
      "x": "439d8000439d8000",
      "y": "0000000042700000",
      "vx": "4461000044610000",

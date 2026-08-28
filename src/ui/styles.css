@@ -1753,6 +1753,25 @@ body {
   line-height: 1;
 }
 
+/* THE LOCKED ACHIEVEMENT'S OWN ICON, greyed. It used to be a dashed plate with a question mark on
+   it (`--sealed`, kept below because the mech picker still uses that language) - the argument being
+   that an icon is the ANSWER and a name is only a label, so drawing one spoils the thing the
+   Scrapopedia is careful about elsewhere. That was overruled deliberately: a wall of question marks
+   reads as a broken list rather than a set of things to go and do.
+
+   DESATURATED AND DIMMED RATHER THAN SILHOUETTED, because the row is still not a spoiler-free
+   surface - the description stays withheld, and that is what carries the secrecy now. The greying
+   is what says "not yet", and it has to survive on a dark panel, hence the opacity as well as the
+   grayscale: a full-colour icon at 45% still reads as coloured. */
+.pedia__icon--locked {
+  /* NO OPACITY OF ITS OWN. `.pedia__entry--unearned` below already puts 0.45 on the whole row, and
+     CSS opacity composites as a GROUP - so an 0.45 here multiplied with that one and rendered the
+     icon at about 0.20, which on this panel is nearly invisible. That is the exact failure the
+     change was meant to cure: a locked row you cannot read is the question-mark plate again with
+     extra steps. The desaturation is what says "not yet"; the row's opacity does the dimming, once. */
+  filter: grayscale(1) brightness(0.75);
+}
+
 .pedia__entry--unearned {
   border-left-color: var(--ink-faint);
   opacity: 0.45;
@@ -2879,6 +2898,14 @@ body {
 }
 
 .chest__go--waiting { opacity: .35; }
+
+/* A DISABLED BUTTON SWALLOWS THE CLICK, and the button is exactly where a player aims. The panel
+   listens for a click to skip the spin (see ChestOverlay.skip), but a click that lands on a
+   disabled form control is not dispatched at all in Chrome or Firefox - it does not bubble, so the
+   one place an impatient player is most likely to press was the one place that did nothing.
+   Letting pointer events fall THROUGH the button while it is dead hands that click to the panel,
+   and the button starts taking its own clicks again the moment it is armed. */
+.chest__go:disabled { pointer-events: none; }
 
 /* The landing classes are never added under reduced motion - chestOverlay.ts skips the whole
    schedule - but the reels frame is shared, so its two states are disarmed here as well. */

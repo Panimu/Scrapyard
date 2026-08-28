@@ -92,6 +92,18 @@ public static class Constants
     /// </summary>
     public const double SplashRimFrac = 0.4;
 
+    /// <summary>
+    /// The deepest a slow may ever run, whatever a weapon asks for. See Damage.Chill.
+    /// </summary>
+    /// <remarks>
+    /// A slow of 1 is a body held perfectly still, which is a STUN - a different mechanic with
+    /// different counterplay, and one this game does not have. 0.8 leaves anything caught visibly
+    /// walking. A CEILING, not a dial: nothing authors near it (the Phase Cannon's 0.35 is less
+    /// than half), and it exists so a typo ships a slow that is too strong rather than a horde
+    /// that has stopped moving.
+    /// </remarks>
+    public const double SlowFracMax = 0.8;
+
     /// <summary>The Scrapyard's fenced yard, edge to edge.</summary>
     public const int ArenaSize = 12288;
 

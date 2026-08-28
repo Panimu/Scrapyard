@@ -202,6 +202,19 @@ export class ChestOverlay {
   /** Every pending setTimeout, so a hide() mid-spin cannot leave one firing into a dead overlay. */
   private timers: number[] = [];
   private settled = false;
+  /**
+   * Everything a running spin would need to finish itself early, or undefined when nothing is
+   * spinning. Captured at `show` rather than recomputed, so a skip cannot disagree with the
+   * animation it is cutting short - in particular about `heat`, which decides the win classes.
+   */
+  private pending:
+    | {
+        world: World;
+        heat: number[];
+        payout: number;
+        ascending: boolean;
+      }
+    | undefined;
 
   constructor(private readonly onCollect: () => void) {
     const el = document.createElement('div');
@@ -253,6 +266,13 @@ export class ChestOverlay {
     this.button.textContent = 'Collect';
     this.button.addEventListener('click', () => this.collect());
     el.appendChild(this.button);
+
+    // A CLICK ANYWHERE ON THE OVERLAY SKIPS THE SPIN. On the panel rather than on the button,
+    // because the button is DISABLED until the payout is up - a disabled control fires no click,
+    // which is exactly why an impatient click used to do nothing at all. `skip` is a no-op once
+    // the machine has settled, so this can never steal the collect: the button's own handler is
+    // the only thing that collects, and by then it is enabled and on top of this one.
+    el.addEventListener('click', () => this.skip());
 
     this.element = el;
   }
@@ -432,11 +452,47 @@ export class ChestOverlay {
 
     const settleIn = reduced ? 0 : landAt[landAt.length - 1];
     this.after(settleIn + PAYOUT_DELAY_MS, () => this.settle(world));
+
+    // WHAT A SKIP HAS TO FINISH, captured while it is all in scope. See `skip`.
+    this.pending = { world, heat, payout: chest.payout, ascending };
+  }
+
+  /**
+   * SNAPS A SPIN THAT IS STILL RUNNING TO ITS END, and does not collect.
+   *
+   * A CLICK DURING THE REELS USED TO DO NOTHING AT ALL - the Collect button is disabled until the
+   * payout is up, so an impatient player got no response whatsoever and the machine looked frozen.
+   * The desktop build had the opposite fault: any key collected outright, so the same impatience
+   * threw you back into the fight having never seen what you won.
+   *
+   * NEITHER IS RIGHT, AND THE ANSWER IS THE SAME ON BOTH: the first press finishes the ANIMATION,
+   * the second collects. The chest is the one screen whose whole job is to show you something, so
+   * impatience should cost the spin and never the result.
+   *
+   * IT LANDS EVERY REEL RATHER THAN JUMPING STRAIGHT TO `settle`, because the landing is what
+   * writes the win classes and the anticipation flags onto the windows - skipping it would settle
+   * onto three reels still mid-transition and leave the symbols parked wherever the ease had got
+   * to. The transitions are cleared first so each strip snaps rather than easing from where it was.
+   */
+  skip(): void {
+    const p = this.pending;
+    if (p === undefined || this.settled) return;
+
+    this.clearTimers();
+    for (const strip of this.reelEls) strip.style.transition = 'none';
+    for (let r = 0; r < this.reelEls.length; r++) {
+      this.land(r, p.heat[r], p.payout, p.ascending);
+    }
+    this.settle(p.world);
   }
 
   hide(): void {
     this.clearTimers();
     this.clearEffects();
+    // DROPPED HERE TOO, not only in `settle`. A chest closed before it settled - the run ending
+    // under it, say - would otherwise leave this overlay holding a reference to a finished World
+    // for as long as the page lives, and leave a `skip` that could still settle it.
+    this.pending = undefined;
     this.element.hidden = true;
   }
 
@@ -535,6 +591,7 @@ export class ChestOverlay {
   private settle(world: World): void {
     if (this.settled) return;
     this.settled = true;
+    this.pending = undefined;
 
     this.revealName();
 

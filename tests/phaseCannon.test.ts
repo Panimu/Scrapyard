@@ -1,7 +1,7 @@
 /**
  * THE PHASE CANNON - one bolt, through everything, into the thickest part of the crowd.
  *
- * Three things are pinned here and each is a way the weapon could be silently wrong: the densest
+ * Three things are pinned here and each is a way the weapon could be silently wrong: the cluster
  * rule picks the body with the most neighbours (not the nearest, not the biggest), the bolt
  * touches NOTHING on the way to its mark and everything around it on arrival, and a mark that
  * dies mid-flight still costs the field a burst at the end of the bolt's run.
@@ -129,6 +129,10 @@ describe('the bolt', () => {
     const farBlocker = addEnemy(w, 140, 0, 100);
     // ...and the knot behind them. Counts: centre 2, edges 1, blockers 1 each (60 u apart) - the
     // centre is the mark even though two bodies stand directly between it and the muzzle.
+    // THE KNOT SITS INSIDE THE FIRST CONE, which the old `densest` rule did not require. At 220 u
+    // a fifteen-degree cone is about +/-59 u wide and the edges sit at 11.6 degrees, so all three
+    // are in the opening cone and the centre is the mark - the case this test means, with the mark
+    // behind cover and the rule reaching it anyway.
     const edgeA = addEnemy(w, 220, 45, 100);
     const centre = addEnemy(w, 220, 0, 100);
     const edgeB = addEnemy(w, 220, -45, 100);
@@ -251,8 +255,12 @@ describe('the card and the chassis', () => {
     });
   });
 
-  it('ships the identity the design asked for: densest targeting, phasing, a slow turret', () => {
-    expect(PHASE_CANNON.targeting).toBe('densest');
+  it('ships the identity the design asked for: cone targeting, phasing, a slow turret', () => {
+    // A CONE IN FRONT OF THE BARREL when it is ready to shoot - not plain `densest`, which took
+    // the thickest knot anywhere in range and left the turret slewing instead of firing.
+    expect(PHASE_CANNON.targeting).toBe('cone-densest');
+    // And a SECOND rule for the dead time - see WeaponDef.trackingTargeting.
+    expect(PHASE_CANNON.trackingTargeting).toBe('densest');
     expect(PHASE_CANNON.pattern).toBe('phase');
     expect(PHASE_CANNON.behaviour).toBe('phase');
     // Below the Cannon's 44, with a moderate half-strength burst.
