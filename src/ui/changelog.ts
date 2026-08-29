@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T09:40Z',
+    version: 'v408',
+    title: 'THE MACHINE GUN AND THE FLAK CANNON BOTH CARRY MORE',
+    notes: [
+      'Fifty more rounds in each drum before it has to be changed. The Flak Cannon now gets more bursts out of a magazine than it did before its burst went to four shells, so the extra shell finally costs it nothing.',
+    ],
+  },
+  {
     at: '2026-08-29T09:05Z',
     version: 'v407',
     title: 'TOXIC SLUDGE LINGERS LONGER',

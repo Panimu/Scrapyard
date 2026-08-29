@@ -101,7 +101,7 @@ describe('the catalog numbers', () => {
 
     const s = w.weapons[0].stats;
     expect(s.projectileCount).toBe(4);
-    expect(s.ammoCapacity).toBe(400);
+    expect(s.ammoCapacity).toBe(450);
     expect(s.spreadAngle).toBe(FLAK_CONE);
     // Ordered against the Machine Gun rather than pinned to literals - these are balance dials,
     // and what has to stay true is the RELATIONSHIP that makes them two different weapons.

@@ -28,6 +28,11 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T09:40Z", "v408", "THE MACHINE GUN AND THE FLAK CANNON BOTH CARRY MORE",
+            new[]
+            {
+                "Fifty more rounds in each drum before it has to be changed. The Flak Cannon now gets more bursts out of a magazine than it did before its burst went to four shells, so the extra shell finally costs it nothing.",
+            }),
         new("2026-08-29T09:05Z", "v407", "TOXIC SLUDGE LINGERS LONGER",
             new[]
             {

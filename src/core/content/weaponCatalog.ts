@@ -1286,13 +1286,13 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     turnRate: 0,
     spreadAngle: degToRad(5), // "close together" - a tight pair, not a shotgun
     flightTime: 0,
-    ammoCapacity: 200,
+    ammoCapacity: 250, // 200 -> 250: a quarter more belt between changes
     reloadTime: 14.5, // 15 -> 14.5: half a second less standing there doing nothing
   }),
   perLevel: Object.freeze([
     { damage: 1.5 }, // T2  5.5 -> 7.0
     { cooldown: -0.018 }, // T3  0.090 -> 0.072 s  (~28 rounds/s)
-    { ammoCapacity: 80 }, // T4  200 -> 280 rounds
+    { ammoCapacity: 80 }, // T4  250 -> 330 rounds
     { range: 25 }, // T5  130 -> 155
     { damage: 3 }, // T6  7.0 -> 10.0
     { reloadTime: -4.5 }, // T7  14.5 -> 10.0 s
@@ -1414,7 +1414,10 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
     // the burst without touching this silently cut the magazine from 100 bursts to 75 and cost
     // the gun 11% of its measured T7 dps - a reload tax, not a damage change, and invisible in
     // the per-burst arithmetic that the split was designed to hold constant.
-    ammoCapacity: 400,
+    // 400 -> 450. With four shells a burst this is 112.5 bursts a drum against the 100 the
+    // three-shell gun had, and 142.5 at tier 7 against its 140 - so the split's reload tax is now
+    // fully repaid at both ends rather than only at tier 1.
+    ammoCapacity: 450,
     reloadTime: 13,
   }),
   /**
@@ -1430,7 +1433,7 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
   perLevel: Object.freeze([
     { damage: 0.75 }, // T2  2.70 -> 3.45 a shell (13.8 a burst)
     { cooldown: -0.026 }, // T3  0.130 -> 0.104 s  (~29 rounds/s)
-    { ammoCapacity: 120 }, // T4  300 -> 420 rounds
+    { ammoCapacity: 120 }, // T4  450 -> 570 rounds (142.5 bursts)
     { range: 70 }, // T5  400 -> 470
     { damage: 1.125 }, // T6  3.45 -> 4.575 a shell (18.3 a burst, as it was at three shells)
     { reloadTime: -4 }, // T7  13.0 -> 9.0 s

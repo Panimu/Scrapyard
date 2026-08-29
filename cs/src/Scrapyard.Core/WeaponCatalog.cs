@@ -801,14 +801,14 @@ public static class WeaponCatalog
             FireArc = 0.3490658503988659,        // degToRad(20)
             HeatCapacity = HeatCapacityBase,
             SpreadAngle = 0.08726646259971647,   // degToRad(5) - "close together", a pair, not a shotgun
-            AmmoCapacity = 200,
+            AmmoCapacity = 250,
             ReloadTime = 14.5,
         },
         PerLevel = new[]
         {
             new WeaponStatDelta { Damage = 1.5 },       // T2  5.5 -> 7.0
             new WeaponStatDelta { Cooldown = -0.018 },  // T3  0.090 -> 0.072 s
-            new WeaponStatDelta { AmmoCapacity = 80 },  // T4  200 -> 280 rounds
+            new WeaponStatDelta { AmmoCapacity = 80 },  // T4  250 -> 330 rounds
             new WeaponStatDelta { Range = 25 },         // T5  130 -> 155
             new WeaponStatDelta { Damage = 3 },         // T6  7.0 -> 10.0
             new WeaponStatDelta { ReloadTime = -4.5 },  // T7  14.5 -> 10.0 s
@@ -839,13 +839,13 @@ public static class WeaponCatalog
             TurretTraverse = 12.087277734686728,
             FireArc = LaserFireArc,               // degToRad(30)
             HeatCapacity = HeatCapacityBase,
-            SpreadAngle = FlakCone, AmmoCapacity = 400, ReloadTime = 13,
+            SpreadAngle = FlakCone, AmmoCapacity = 450, ReloadTime = 13,
         },
         PerLevel = new[]
         {
             new WeaponStatDelta { Damage = 0.75 },       // T2  2.70 -> 3.45 a shell (13.8 a burst)
             new WeaponStatDelta { Cooldown = -0.026 },   // T3  0.130 -> 0.104 s
-            new WeaponStatDelta { AmmoCapacity = 120 },  // T4  300 -> 420 rounds
+            new WeaponStatDelta { AmmoCapacity = 120 }, // T4  450 -> 570 rounds (142.5 bursts)
             new WeaponStatDelta { Range = 70 },          // T5  400 -> 470
             new WeaponStatDelta { Damage = 1.125 },      // T6  3.45 -> 4.575 a shell (18.3 a burst)
             new WeaponStatDelta { ReloadTime = -4 },     // T7  13.0 -> 9.0 s
