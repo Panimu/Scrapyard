@@ -1816,10 +1816,19 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
   // burst now SHAPES the fight: everything it catches drags for two seconds, so the gun's job is
   // to hold a crowd still for the weapons that do the killing.
   //
-  // A THIRD OFF FOR TWO SECONDS, against a 1.12 s cooldown at tier 7 - so a Phase Cannon worked
-  // into one clump holds it slowed continuously, and one splitting its attention does not. That is
-  // the decision the gun now poses, and it is the first one it has ever had.
-  slow: Object.freeze({ frac: 0.35, seconds: 2 }),
+  // NEARLY HALF OFF FOR TWO SECONDS, 0.35 -> 0.455 (+30%), against a 1.12 s cooldown at tier 7 -
+  // so a Phase Cannon worked into one clump holds it slowed continuously, and one splitting its
+  // attention does not. That is the decision the gun now poses, and it is the first one it has
+  // ever had.
+  //
+  // THE DURATION IS UNTOUCHED, so the change is entirely in how hard the drag bites rather than
+  // in how long it lasts. Those are different weapons: a longer chill would let one bolt cover
+  // more of the cooldown and reward splitting attention, which is the opposite of the decision
+  // the two-second window is there to pose.
+  //
+  // Well clear of SLOW_FRAC_MAX (0.8), which exists so that stacked sources can never bring an
+  // enemy to a standstill - a body that cannot move is a body the player can ignore.
+  slow: Object.freeze({ frac: 0.455, seconds: 2 }),
   reengageMul: 1,
   visualId: VIS_PLASMA,
   muzzleOffset: 30,

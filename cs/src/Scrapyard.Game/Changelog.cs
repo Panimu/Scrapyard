@@ -28,6 +28,11 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T12:20Z", "v415", "THE PHASE CANNON CHILLS HARDER",
+            new[]
+            {
+                "Anything caught in the blast now drags at closer to half speed than two thirds. It wears off just as quickly as before - the bite is deeper, not longer.",
+            }),
         new("2026-08-29T12:00Z", "v414", "THE CANNON REACHES FURTHER",
             new[]
             {

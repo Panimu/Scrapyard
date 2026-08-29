@@ -967,7 +967,7 @@ public static class WeaponCatalog
         // WHAT THE BLAST ACTUALLY DOES - see the TypeScript. A third off for two seconds, against
         // a 1.12 s cooldown at tier 7, so a Phase Cannon worked into one clump holds it slowed
         // continuously and one splitting its attention does not.
-        Slow = new SlowSpec { Frac = 0.35, Seconds = 2 },
+        Slow = new SlowSpec { Frac = 0.455, Seconds = 2 },
         ReengageMul = 1, VisualId = VisualId.Plasma, MuzzleOffset = 30, ShellRadius = 7,
         FireAlongFacing = false, DetonateOnExpiry = true,
     };

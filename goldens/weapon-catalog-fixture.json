@@ -718,7 +718,7 @@
    "targeting": "cone-densest",
    "trackingTargeting": "densest",
    "slow": {
-    "frac": "3fd6666666666666",
+    "frac": "3fdd1eb851eb851f",
     "seconds": "4000000000000000"
    },
    "burn": null,
