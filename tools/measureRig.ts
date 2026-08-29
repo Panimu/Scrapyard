@@ -34,6 +34,7 @@ import { DT } from '../src/core/constants.js';
 import { WEAPON_CATALOG } from '../src/core/content/weaponCatalog.js';
 import { LEVEL_CATALOG, firstPlayableLevel, levelById } from '../src/core/content/levels.js';
 import { HERO_CATALOG } from '../src/core/data/heroes.js';
+import { META_CATALOG } from '../src/core/data/meta.js';
 import { RANKS, RANK_BOSS, RANK_ELITE } from '../src/core/content/cycles.js';
 import { Simulation } from '../src/core/simulation.js';
 import { RUN_PHASE_DEAD, RUN_PHASE_VICTORY, type World } from '../src/core/types.js';
@@ -130,8 +131,40 @@ export function pickSeeds(argv: readonly string[]): number[] {
  * THE PLAYER IS MORTAL. Unlike `npm run dps`, nothing zeroes `damageTakenMul`: the run is meant to
  * reach a real ending, so it plays until the mech dies or the yard is cleared at the timer.
  */
+/**
+ * EVERY TITLE-SCREEN UPGRADE, AT MAX TIER.
+ *
+ * THIS WAS MISSING ENTIRELY AND EVERY MEASUREMENT THIS RIG HAS EVER PRODUCED RAN WITHOUT IT.
+ * `createWorld` reads `config.metaTiers?.[i] ?? 0`, so a rig that never passed the field measured a
+ * completely fresh save: no Hull Reserves, no Hull Plating, no Ordnance Stores, and - the part that
+ * makes it a per-weapon bias rather than a flat handicap - no Bursting Charges, no Coolant Baffles,
+ * no Heat Sinks and no Fabricator Feed.
+ *
+ * Those four are weapon-specific. Bursting Charges is +30% splash radius, which only the six weapons
+ * that HAVE a splash radius can use; Coolant Baffles and Heat Sinks only help something that heats;
+ * Fabricator Feed takes 2s off a drone's 15s cooldown and nothing else. So the rig was quietly
+ * handicapping the area weapons, the beams and the drones against everything else, and then
+ * reporting the result as a balance ranking.
+ *
+ * IT WAS ALSO INTERNALLY INCONSISTENT. The sweep equips FIVE weapons, which is only legal with both
+ * tiers of Reinforced Mounts - so the rig took the slots a meta upgrade grants while granting none
+ * of the stats. `world.maxWeapons` read 3 while five guns sat on the chassis.
+ *
+ * Max tier rather than a realistic seven-of-sixteen, because the alternative is choosing WHICH
+ * seven, and that is a strategy question the rig has no business answering on the player's behalf.
+ * Everything maxed is at least a stated, uniform condition: the endgame save.
+ */
+export const MAX_META: Uint8Array = Uint8Array.from(
+  META_CATALOG.map((m) => (m as { tiers: number }).tiers),
+);
+
 export function runOne(seed: number, levelId: string, equip: (w: World) => void): Outcome {
-  const sim = new Simulation({ seed, heroId: HERO_CATALOG.indexOf(NEUTRAL), levelId });
+  const sim = new Simulation({
+    seed,
+    heroId: HERO_CATALOG.indexOf(NEUTRAL),
+    levelId,
+    metaTiers: MAX_META,
+  });
   const world = sim.world;
   equip(world);
 
