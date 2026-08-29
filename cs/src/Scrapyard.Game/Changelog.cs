@@ -28,6 +28,21 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T08:20Z", "v406", "THE MORTAR AND THE ARTILLERY BOTH LAND SMALLER, AND SLOWER",
+            new[]
+            {
+                "Both blasts cover a tenth less ground, at every tier, and both guns fire five percent slower. The two weapons that ask nothing of your aim now ask a little more of your positioning.",
+            }),
+        new("2026-08-29T08:20Z", "v406", "THE PHASE CANNON HITS HARDER",
+            new[]
+            {
+                "A tenth more damage on the bolt, at every tier.",
+            }),
+        new("2026-08-29T08:20Z", "v406", "TOXIC SLUDGE POOLS BITE HARDER AGAIN",
+            new[]
+            {
+                "A tenth more on top of the tenth they gained a moment ago - the ground now does about a fifth more than it did before either change.",
+            }),
         new("2026-08-28T20:34Z", "v405", "TOXIC SLUDGE POOLS BITE HARDER, AND ARRIVE SLOWER",
             new[]
             {

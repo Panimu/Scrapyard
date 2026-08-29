@@ -14,6 +14,7 @@
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
     "sim": "tsx tools/sim.ts",
     "golden": "tsx tools/golden.ts",
+    "golden:all": "tsx tools/golden_all.ts",
     "golden:trig": "tsx tools/trig_fixture.ts",
     "golden:events": "tsx tools/event_kinds_fixture.ts",
     "golden:targeting": "tsx tools/targeting_fixture.ts",

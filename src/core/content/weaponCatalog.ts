@@ -1473,7 +1473,8 @@ export const FLAK_CANNON: WeaponDef = Object.freeze({
  * these are derived rather than flat. One sixth each, which is what -0.6 s was against the 3.6 s
  * this ladder was authored around; tier 7 is still exactly two thirds of the base reload.
  */
-const ARTILLERY_COOLDOWN = 3.789;
+const ARTILLERY_COOLDOWN = 3.97845; // 3.789 -> 3.97845: rate of fire -5%. The tiers are
+                                    // fractions of this, so tier 7 is still exactly 2/3 of base.
 const ARTILLERY_RATE_TIER_FRAC = 1 / 6;
 const ARTILLERY_RATE_TIER = -ARTILLERY_COOLDOWN * ARTILLERY_RATE_TIER_FRAC;
 
@@ -1501,7 +1502,7 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     // reason the Mortar's is scaled: a base-only cut is a gun that catches up by tier 5. A tenth
     // off the radius is a fifth off the area (0.9^2 = 0.81), which is a lighter hand than the
     // Mortar gets and matches where the two sat in the table.
-    splashRadius: 67.5,
+    splashRadius: 60.75, // 67.5 -> 60.75: blast -10%, rungs scaled to match
     splashFrac: 1,
     turretTraverse: degToRad(720),
     fireArc: degToRad(180),
@@ -1515,10 +1516,10 @@ export const ARTILLERY: WeaponDef = Object.freeze({
     reloadTime: 0,
   }),
   perLevel: Object.freeze([
-    { splashRadius: 16.2 }, // T2  67.5 -> 83.7
+    { splashRadius: 14.58 }, // T2  60.75 -> 75.33
     { cooldown: ARTILLERY_RATE_TIER }, // T3  3.789 -> 3.1575 s  (-1/6 of base)
     { damage: 22 }, // T4  55.1 -> 77.1
-    { splashRadius: 16.2 }, // T5  83.7 -> 99.9
+    { splashRadius: 14.58 }, // T5  75.33 -> 89.91
     { cooldown: ARTILLERY_RATE_TIER }, // T6  3.1575 -> 2.526 s  (2/3 base, as always)
     { projectileCount: 1 }, // T7  a third shell
   ]),
@@ -1756,7 +1757,7 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
     // hitting at every tier instead of at tier 1 alone: 36 -> 39.6 here and both damage rungs
     // 8 -> 8.8, which lands T7 on 57.2 against the 52 it was. The BLAST moves with it for free -
     // `splashFrac` is a fraction of this number, not a figure of its own.
-    damage: 39.6,
+    damage: 43.56, // 39.6 -> 43.56, +10%, rungs scaled so every tier gains it
     cooldown: PHASE_COOLDOWN,
     range: 260,
     projectileSpeed: 460,
@@ -1786,10 +1787,10 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
     reloadTime: 0,
   }),
   perLevel: Object.freeze([
-    { damage: 8.8 }, // T2  39.6 -> 48.4
+    { damage: 9.68 }, // T2  43.56 -> 53.24
     { splashRadius: 12.6 }, // T3  57.75 -> 70.35
     { cooldown: PHASE_RATE_TIER }, // T4  1.60 -> 1.36 s
-    { damage: 8.8 }, // T5  48.4 -> 57.2
+    { damage: 9.68 }, // T5  53.24 -> 62.92
     { splashRadius: 12.6 }, // T6  70.35 -> 82.95
     { cooldown: PHASE_RATE_TIER }, // T7  1.36 -> 1.12 s (0.70x base, as the Cannon's ladder)
   ]),
@@ -1834,7 +1835,8 @@ export const PHASE_CANNON: WeaponDef = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 
 /** The lob's rhythm, and its rate tiers as a fraction of it - see CANNON_COOLDOWN for why. */
-const MORTAR_COOLDOWN = 2.0;
+const MORTAR_COOLDOWN = 2.1; // 2.0 -> 2.1: rate of fire -5%. The tiers below are fractions of
+                             // this, so the whole ladder moves with it and stays -5% at T7.
 const MORTAR_RATE_TIER_FRAC = 0.15;
 const MORTAR_RATE_TIER = -MORTAR_COOLDOWN * MORTAR_RATE_TIER_FRAC;
 
@@ -1872,7 +1874,7 @@ export const MORTAR: WeaponDef = Object.freeze({
     // A FIFTH OFF THE RADIUS IS A THIRD OFF THE AREA, which is the number that matters to a
     // shell aimed at a gap: 0.8^2 = 0.64. That is the intended size of the change - this gun led
     // every column of the loadout table and took 9 of 40 bosses.
-    splashRadius: 60,
+    splashRadius: 54, // 60 -> 54: blast -10%, rungs scaled to match
     splashFrac: 1,
     // SLOWER THAN THE CANNON'S on the same mount, and the cone rule is why: a gun that hunts for
     // work near the barrel should be visibly reluctant to leave it. -5% alongside it, 54 -> 51.3.
@@ -1897,10 +1899,10 @@ export const MORTAR: WeaponDef = Object.freeze({
    * volley is a different relationship with a crowd than one bigger one.
    */
   perLevel: Object.freeze([
-    { splashRadius: 9.6 }, // T2  60 -> 69.6
+    { splashRadius: 8.64 }, // T2  54 -> 62.64
     { cooldown: MORTAR_RATE_TIER }, // T3  2.0 -> 1.7 s
     { damage: 18 }, // T4  49.59 -> 67.59
-    { splashRadius: 9.6 }, // T5  69.6 -> 79.2
+    { splashRadius: 8.64 }, // T5  62.64 -> 71.28
     { cooldown: MORTAR_RATE_TIER }, // T6  1.7 -> 1.4 s
     { projectileCount: 1 }, // T7  a second shell
     {}, // T8 - no ascension: the twin barrels are the Cannon's announcement and nothing else's
@@ -2123,7 +2125,10 @@ export const SLUDGE: WeaponDef = Object.freeze({
     // fraction OF THIS, so the two damage tiers and Jade's chassis bonus still raise what the
     // pool does without any of them naming a pool. Zero here would have made the gun unupgradable
     // and every damage card a dead draw beside it.
-    damage: 4,
+    // +10%, 4 -> 4.4, AND THIS COMPOUNDS WITH THE POOLS' OWN +10%. The glob hits nothing, so this
+    // number's ONLY consumer is `puddle.dpsFrac` - raising it is raising the pools a second time.
+    // Against the ladder before both changes the ground now does 1.1 x 1.1 = 1.21x, not 1.1x.
+    damage: 4.4,
     // SLOWER AGAIN, 1.15 -> 1.4 -> 1.47 -> 1.5435 (-5% each time, as cooldown x1.05 - the
     // convention this line established). The magazine is three deep, so the trigger rate decides
     // how fast a rack empties and therefore how much ground is down at once - which IS the weapon.
@@ -2170,11 +2175,12 @@ export const SLUDGE: WeaponDef = Object.freeze({
     reloadTime: SLUDGE_RELOAD,
   }),
   // The specced ladder, rung for rung: damage, magazine, pools, damage, reload, pools.
+  // The two damage rungs are scaled with the base so the +10% holds at every tier.
   perLevel: Object.freeze([
-    { damage: 3 },
+    { damage: 3.3 },
     { ammoCapacity: 2 },
     { splashRadius: 11.4 },
-    { damage: 4 },
+    { damage: 4.4 },
     { reloadTime: -1 },
     { splashRadius: 13.3 },
     {},

@@ -275,6 +275,13 @@ whatever was already sitting in `bin`, which would look like the change simply d
 
 ```
 npm run dev         vite dev server, open the printed LAN URL on a phone
+npm run golden:all  regenerate EVERY cross-language fixture (40 of them), then
+                    `npm run golden -- record`. AFTER ANY CATALOG CHANGE, and in that order.
+                    Which fixtures a change moves is not obvious - a weapon's damage reaches
+                    the progression fixture, because the deck offers weapon cards - so
+                    regenerating the ones that come to mind means finding the rest one failed
+                    C# test at a time. It discovers the list from package.json rather than
+                    holding one, because a hand-maintained list is the same bug one level up.
 npm run typecheck   app config AND core config - both must pass
 npm test            vitest
 npm run build       typecheck + production build

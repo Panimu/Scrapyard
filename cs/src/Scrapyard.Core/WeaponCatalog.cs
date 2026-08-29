@@ -491,7 +491,7 @@ public static class WeaponCatalog
         {
             // A tenth off, 55.1 -> 49.59, with the tier 4 step scaled to match. See the TypeScript.
             Damage = 49.59,
-            Cooldown = 2.0,
+            Cooldown = 2.1,  // 2.0 -> 2.1: rate of fire -5%
             Range = 330, // further than the Cannon: it reaches the crowd forming, not the one on you
             ProjectileSpeed = 300, // slow enough to see, and slow enough to walk out from under
             ProjectileCount = 1,
@@ -499,7 +499,7 @@ public static class WeaponCatalog
             // THE DAMAGE IS THE BLAST. There is no direct hit worth the name on a shell aimed at a
             // gap between bodies rather than at a body. Cut a fifth at every rung - see the
             // TypeScript for why the tier steps are scaled too.
-            SplashRadius = 60,
+            SplashRadius = 54, // 60 -> 54: blast -10%
             SplashFrac = 1,
             TurretTraverse = 0.895353906273091, // degToRad(51.3) - was 54, -5% alongside the Cannon
             FireArc = 0.20943951023931956,       // degToRad(12)
@@ -507,11 +507,11 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { SplashRadius = 9.6 },  // T2  60 -> 69.6
-            new WeaponStatDelta { Cooldown = -0.3 },     // T3  2.0 -> 1.7 s  (-15% of base)
+            new WeaponStatDelta { SplashRadius = 8.64 }, // T2  54 -> 62.64
+            new WeaponStatDelta { Cooldown = -0.315 },   // T3  2.1 -> 1.785 s  (-15% of base)
             new WeaponStatDelta { Damage = 18 },         // T4  49.59 -> 67.59
-            new WeaponStatDelta { SplashRadius = 9.6 },  // T5  69.6 -> 79.2
-            new WeaponStatDelta { Cooldown = -0.3 },     // T6  1.7 -> 1.4 s
+            new WeaponStatDelta { SplashRadius = 8.64 }, // T5  62.64 -> 71.28
+            new WeaponStatDelta { Cooldown = -0.315 },   // T6  1.785 -> 1.47 s
             new WeaponStatDelta { ProjectileCount = 1 }, // T7  a second shell
             new WeaponStatDelta(),                       // T8  no ascension - the twin barrels are
                                                          //     the Cannon's announcement alone
@@ -650,7 +650,7 @@ public static class WeaponCatalog
             // and its only consumer is Puddle.DpsFrac, which multiplies it into what the ground
             // does. It stays here rather than moving into the puddle block so that both damage
             // tiers and Jade's chassis bonus still raise the pool. See the TypeScript.
-            Damage = 4,
+            Damage = 4.4, // +10%, and it compounds with the pools own +10%: this feeds only DpsFrac
             Cooldown = 1.5435, // slower again, 1.15 -> 1.4 -> 1.47 -> 1.5435 (-5% each): trigger rate is how fast a rack empties
             Range = 340, // the DETECTION reach, not the throw - see FlightTime
             ProjectileSpeed = 150,
@@ -681,10 +681,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Damage = 3 },          // T2
+            new WeaponStatDelta { Damage = 3.3 },        // T2
             new WeaponStatDelta { AmmoCapacity = 2 },    // T3
             new WeaponStatDelta { SplashRadius = 11.4 }, // T4  -5%, was 12
-            new WeaponStatDelta { Damage = 4 },          // T5
+            new WeaponStatDelta { Damage = 4.4 },        // T5
             new WeaponStatDelta { ReloadTime = -1 },     // T6
             new WeaponStatDelta { SplashRadius = 13.3 }, // T7  -5%, was 14
             new WeaponStatDelta(),                     // T8  no ascension
@@ -867,13 +867,13 @@ public static class WeaponCatalog
         Base = new WeaponStatBlock
         {
             Damage = 55.1,
-            Cooldown = 3.789, // slow: a rhythm you plan around, not a gun you aim
+            Cooldown = 3.97845, // slow: a rhythm you plan around, not a gun you aim
             Range = 320, // STRIKE_RADIUS_MAX
             ProjectileCount = 2,
             Knockback = 120,
             // The damage IS the blast; there is no direct hit. Cut a tenth at every rung - see
             // the TypeScript for why the tier steps are scaled too.
-            SplashRadius = 67.5,
+            SplashRadius = 60.75, // 67.5 -> 60.75: blast -10%
             SplashFrac = 1,
             TurretTraverse = LaserTraverse, // degToRad(720)
             FireArc = 3.141592653589793,    // degToRad(180)
@@ -882,11 +882,11 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { SplashRadius = 16.2 },    // T2  67.5 -> 83.7
-            new WeaponStatDelta { Cooldown = -0.6315 },     // T3  3.789 * (1/6)
+            new WeaponStatDelta { SplashRadius = 14.58 },   // T2  60.75 -> 75.33
+            new WeaponStatDelta { Cooldown = -0.663075 },   // T3  3.97845 * (1/6)
             new WeaponStatDelta { Damage = 22 },            // T4
-            new WeaponStatDelta { SplashRadius = 16.2 },    // T5  83.7 -> 99.9
-            new WeaponStatDelta { Cooldown = -0.6315 },     // T6
+            new WeaponStatDelta { SplashRadius = 14.58 },   // T5  75.33 -> 89.91
+            new WeaponStatDelta { Cooldown = -0.663075 },   // T6
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  -> 3 shells
         },
         ReengageMul = 1, VisualId = VisualId.StrikeMarker, MuzzleOffset = 0, ShellRadius = 0,
@@ -946,7 +946,7 @@ public static class WeaponCatalog
         {
             // Damage UP A TENTH across the whole ladder - see the TypeScript. The blast follows
             // for free: SplashFrac is a fraction of this, not a figure of its own.
-            Damage = 39.6, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
+            Damage = 43.56, Cooldown = 1.6, Range = 260, ProjectileSpeed = 460, ProjectileCount = 1,
             Knockback = 90, SplashRadius = 57.75, SplashFrac = 0.5,
             // degToRad(63) - was 60, +5%. NOT the slowest turret any more if it ever was - Mortar's
             // 51.3 on the heavy mount is slower. Still the slower of the two guns on this mount.
@@ -957,10 +957,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Damage = 8.8 },        // T2  39.6 -> 48.4
+            new WeaponStatDelta { Damage = 9.68 },       // T2  43.56 -> 53.24
             new WeaponStatDelta { SplashRadius = 12.6 }, // T3  57.75 -> 70.35
             new WeaponStatDelta { Cooldown = -0.24 },    // T4  1.60 -> 1.36 s
-            new WeaponStatDelta { Damage = 8.8 },        // T5  48.4 -> 57.2
+            new WeaponStatDelta { Damage = 9.68 },       // T5  53.24 -> 62.92
             new WeaponStatDelta { SplashRadius = 12.6 }, // T6  70.35 -> 82.95
             new WeaponStatDelta { Cooldown = -0.24 },    // T7  1.36 -> 1.12 s
         },

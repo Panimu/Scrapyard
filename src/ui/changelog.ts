@@ -65,6 +65,30 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T08:20Z',
+    version: 'v406',
+    title: 'THE MORTAR AND THE ARTILLERY BOTH LAND SMALLER, AND SLOWER',
+    notes: [
+      'Both blasts cover a tenth less ground, at every tier, and both guns fire five percent slower. The two weapons that ask nothing of your aim now ask a little more of your positioning.',
+    ],
+  },
+  {
+    at: '2026-08-29T08:20Z',
+    version: 'v406',
+    title: 'THE PHASE CANNON HITS HARDER',
+    notes: [
+      'A tenth more damage on the bolt, at every tier.',
+    ],
+  },
+  {
+    at: '2026-08-29T08:20Z',
+    version: 'v406',
+    title: 'TOXIC SLUDGE POOLS BITE HARDER AGAIN',
+    notes: [
+      'A tenth more on top of the tenth they gained a moment ago - the ground now does about a fifth more than it did before either change.',
+    ],
+  },
+  {
     at: '2026-08-28T20:34Z',
     version: 'v405',
     title: 'TOXIC SLUDGE POOLS BITE HARDER, AND ARRIVE SLOWER',

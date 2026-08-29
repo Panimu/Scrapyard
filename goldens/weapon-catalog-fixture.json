@@ -588,13 +588,13 @@
    "requiresTarget": false,
    "base": {
     "damage": "404b8ccccccccccd",
-    "cooldown": "400e4fdf3b645a1d",
+    "cooldown": "400fd3dd97f62b6b",
     "range": "4074000000000000",
     "projectileSpeed": "0000000000000000",
     "projectileCount": "4000000000000000",
     "pierce": "0000000000000000",
     "knockback": "405e000000000000",
-    "splashRadius": "4050e00000000000",
+    "splashRadius": "404e600000000000",
     "splashFrac": "3ff0000000000000",
     "turretTraverse": "402921fb54442d18",
     "fireArc": "400921fb54442d18",
@@ -609,19 +609,19 @@
    },
    "perLevel": [
     {
-     "splashRadius": "4030333333333333"
+     "splashRadius": "402d28f5c28f5c29"
     },
     {
-     "cooldown": "bfe4353f7ced9168"
+     "cooldown": "bfe537e90ff97247"
     },
     {
      "damage": "4036000000000000"
     },
     {
-     "splashRadius": "4030333333333333"
+     "splashRadius": "402d28f5c28f5c29"
     },
     {
-     "cooldown": "bfe4353f7ced9168"
+     "cooldown": "bfe537e90ff97247"
     },
     {
      "projectileCount": "3ff0000000000000"
@@ -727,7 +727,7 @@
    "behaviour": "phase",
    "requiresTarget": true,
    "base": {
-    "damage": "4043cccccccccccd",
+    "damage": "4045c7ae147ae148",
     "cooldown": "3ff999999999999a",
     "range": "4070400000000000",
     "projectileSpeed": "407cc00000000000",
@@ -749,7 +749,7 @@
    },
    "perLevel": [
     {
-     "damage": "402199999999999a"
+     "damage": "40235c28f5c28f5c"
     },
     {
      "splashRadius": "4029333333333333"
@@ -758,7 +758,7 @@
      "cooldown": "bfceb851eb851eb8"
     },
     {
-     "damage": "402199999999999a"
+     "damage": "40235c28f5c28f5c"
     },
     {
      "splashRadius": "4029333333333333"
@@ -798,13 +798,13 @@
    "requiresTarget": true,
    "base": {
     "damage": "4048cb851eb851ec",
-    "cooldown": "4000000000000000",
+    "cooldown": "4000cccccccccccd",
     "range": "4074a00000000000",
     "projectileSpeed": "4072c00000000000",
     "projectileCount": "3ff0000000000000",
     "pierce": "0000000000000000",
     "knockback": "405e000000000000",
-    "splashRadius": "404e000000000000",
+    "splashRadius": "404b000000000000",
     "splashFrac": "3ff0000000000000",
     "turretTraverse": "3feca6bd3c393da5",
     "fireArc": "3fcacee9f37bebd6",
@@ -819,19 +819,19 @@
    },
    "perLevel": [
     {
-     "splashRadius": "4023333333333333"
+     "splashRadius": "402147ae147ae148"
     },
     {
-     "cooldown": "bfd3333333333333"
+     "cooldown": "bfd428f5c28f5c29"
     },
     {
      "damage": "4032000000000000"
     },
     {
-     "splashRadius": "4023333333333333"
+     "splashRadius": "402147ae147ae148"
     },
     {
-     "cooldown": "bfd3333333333333"
+     "cooldown": "bfd428f5c28f5c29"
     },
     {
      "projectileCount": "3ff0000000000000"
@@ -941,7 +941,7 @@
    "behaviour": "straight",
    "requiresTarget": true,
    "base": {
-    "damage": "4010000000000000",
+    "damage": "401199999999999a",
     "cooldown": "3ff8b22d0e560419",
     "range": "4075400000000000",
     "projectileSpeed": "4062c00000000000",
@@ -963,7 +963,7 @@
    },
    "perLevel": [
     {
-     "damage": "4008000000000000"
+     "damage": "400a666666666666"
     },
     {
      "ammoCapacity": "4000000000000000"
@@ -972,7 +972,7 @@
      "splashRadius": "4026cccccccccccd"
     },
     {
-     "damage": "4010000000000000"
+     "damage": "401199999999999a"
     },
     {
      "reloadTime": "bff0000000000000"
