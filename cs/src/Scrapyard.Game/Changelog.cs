@@ -28,6 +28,12 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T11:45Z", "v413", "LONG MISSILES FLY FURTHER, SHORT ONES HIT HARDER",
+            new[]
+            {
+                "A long missile burns for half a second more before it gives out. That is a quarter more reach and a quarter longer to come round on something that dodged - which on the slowest-turning rack in the game is most of whether it connects at all.",
+                "Short missiles do five percent more damage at every tier.",
+            }),
         new("2026-08-29T11:30Z", "v412", "A CROSS SET OF SPANNERS, AND MORE DRUMS WORTH BREAKING",
             new[]
             {

@@ -1171,14 +1171,17 @@ export const MISSILE_SHORT = missile(
   // rungs 0.7 -> 0.77, so T7 curves at 6.82 rad/s against the 6.2 it did. A homing missile's turn
   // rate is the whole of whether it CONNECTS: too slow and it arcs past a body that stepped aside
   // and spends the rest of its fuse coming back round.
-  2, 15, 3.0, 68, 280, 300, 1.15, 5.28, 0, 0, 210, VIS_MISSILE_SHORT,
+  // DAMAGE UP A TWENTIETH, ACROSS THE LADDER rather than at the base alone - 68 -> 71.4 with the
+  // rung 22 -> 23.1, so tier 7 is 94.5 against 90. Scaling the rung too is what keeps a "+5%" from
+  // shrinking to +3.8% by the tier that matters.
+  2, 15, 3.0, 71.4, 280, 300, 1.15, 5.28, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     // THESE TWO USED TO READ 2.4 -> 3.1 AND 3.1 -> 3.8, describing a base this rack has not had
     // for a long time - the C# transcription had the right figures all along. A derived number in
     // a comment is worth nothing the moment the thing it was derived from moves.
     { turnRate: 0.77 }, // T3  5.28 -> 6.05 rad/s
-    { damage: 22 }, // T4  68 -> 90
+    { damage: 23.1 }, // T4  71.4 -> 94.5
     { cooldown: -0.45 }, // T5  2.55 -> 2.10 s
     { turnRate: 0.77 }, // T6  6.05 -> 6.82 rad/s
     { projectileCount: 1 }, // T7  a third missile
@@ -1225,13 +1228,18 @@ export const SPLIT_TURN_MUL = 1.2;
 
 export const MISSILE_LONG = missile(
   'missile-long', 'Long Missiles',
-  3, 10, 4.2, 46, 430, 330, 2.0, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
+  // FUSE UP HALF A SECOND, 2.0 -> 2.5. On this rack the fuse is not a timeout, it is the REACH:
+  // resolveWeaponStats lets an authored flightTime win over range/speed, so a missile travels
+  // speed x fuse and no further. 330 x 2.5 is 825 units against 660, and tier 6's rung carries
+  // that to 1023 rather than 858 - and the same half second is half a second more homing, which
+  // on a rack this slow-turning is what decides whether a missile comes back round at all.
+  3, 10, 4.2, 46, 430, 330, 2.5, 1.95, 0, 0, 160, VIS_MISSILE_LONG,
   Object.freeze([
     { cooldown: -0.6 }, // T2  4.20 -> 3.60 s
     { turnRate: 0.45 }, // T3  1.30 -> 1.75 rad/s
     { damage: 15 }, // T4  46 -> 61
     { projectileCount: 1 }, // T5  a fourth missile
-    { flightTime: 0.6 }, // T6  2.0 -> 2.6 s, reach ~860
+    { flightTime: 0.6 }, // T6  2.5 -> 3.1 s, reach ~1020
     { projectileCount: 1 }, // T7  a fifth missile
   ]),
   // T8 - the GTM Hornet. See SPLIT_SEC above.

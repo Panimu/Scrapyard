@@ -570,7 +570,7 @@
    },
    "meta": {},
    "result": {
-    "damage": "4056800000000000",
+    "damage": "4057a00000000000",
     "cooldown": "3ffae147ae147ade",
     "range": "4071800000000000",
     "projectileSpeed": "4072c00000000000",
@@ -647,7 +647,7 @@
    "hero": "onyx",
    "stacks": {},
    "result": {
-    "damage": "4056800000000000",
+    "damage": "4057a00000000000",
     "cooldown": "4000cccccccccccc",
     "range": "4071800000000000",
     "projectileSpeed": "4072c00000000000",
@@ -683,7 +683,7 @@
     "w-missile-short": 7
    },
    "result": {
-    "damage": "4056800000000000",
+    "damage": "4057a00000000000",
     "cooldown": "4000cccccccccccc",
     "range": "4071800000000000",
     "projectileSpeed": "4072c00000000000",
@@ -719,7 +719,7 @@
     "p-rate": 7
    },
    "result": {
-    "damage": "4056800000000000",
+    "damage": "4057a00000000000",
     "cooldown": "3fef5c28f5c28f5d",
     "range": "4071800000000000",
     "projectileSpeed": "4072c00000000000",

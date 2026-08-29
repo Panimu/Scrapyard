@@ -754,7 +754,7 @@ public static class WeaponCatalog
 
     public static readonly WeaponDef MissileShort = Missile(
         WeaponIds.MissileShort, "Short Missiles",
-        volley: 2, spreadAngle: 0.2617993877991494 /* degToRad(15) */, cooldown: 3.0, damage: 68, range: 280, speed: 300,
+        volley: 2, spreadAngle: 0.2617993877991494 /* degToRad(15) */, cooldown: 3.0, damage: 71.4, range: 280, speed: 300,
         // Turn rate UP A TENTH across the whole ladder - see the TypeScript for why it is the stat
         // that decides whether a homing missile connects at all.
         flightTime: 1.15, turnRate: 5.28, knockback: 210, visualId: VisualId.MissileShort,
@@ -762,7 +762,7 @@ public static class WeaponCatalog
         {
             new WeaponStatDelta { Cooldown = -0.45 },       // T2  3.00 -> 2.55 s
             new WeaponStatDelta { TurnRate = 0.77 },        // T3  5.28 -> 6.05 rad/s
-            new WeaponStatDelta { Damage = 22 },            // T4  68 -> 90
+            new WeaponStatDelta { Damage = 23.1 },          // T4  71.4 -> 94.5
             new WeaponStatDelta { Cooldown = -0.45 },       // T5  2.55 -> 2.10 s
             new WeaponStatDelta { TurnRate = 0.77 },        // T6  6.05 -> 6.82 rad/s
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  a third missile
@@ -771,14 +771,14 @@ public static class WeaponCatalog
     public static readonly WeaponDef MissileLong = Missile(
         WeaponIds.MissileLong, "Long Missiles",
         volley: 3, spreadAngle: 0.17453292519943295 /* degToRad(10) */, cooldown: 4.2, damage: 46, range: 430, speed: 330,
-        flightTime: 2.0, turnRate: 1.95, knockback: 160, visualId: VisualId.MissileLong,
+        flightTime: 2.5, turnRate: 1.95, knockback: 160, visualId: VisualId.MissileLong,
         perLevel: new[]
         {
             new WeaponStatDelta { Cooldown = -0.6 },        // T2  4.20 -> 3.60 s
             new WeaponStatDelta { TurnRate = 0.45 },        // T3  1.95 -> 2.40 rad/s
             new WeaponStatDelta { Damage = 15 },            // T4  46 -> 61
             new WeaponStatDelta { ProjectileCount = 1 },    // T5  a fourth missile
-            new WeaponStatDelta { FlightTime = 0.6 },       // T6  2.0 -> 2.6 s, reach ~860
+            new WeaponStatDelta { FlightTime = 0.6 },       // T6  2.5 -> 3.1 s, reach ~1020
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  a fifth missile
         },
         // T8 - the GTM Hornet. See SplitSec above.

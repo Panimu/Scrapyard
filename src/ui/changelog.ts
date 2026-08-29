@@ -65,6 +65,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T11:45Z',
+    version: 'v413',
+    title: 'LONG MISSILES FLY FURTHER, SHORT ONES HIT HARDER',
+    notes: [
+      'A long missile burns for half a second more before it gives out. That is a quarter more reach and a quarter longer to come round on something that dodged - which on the slowest-turning rack in the game is most of whether it connects at all.',
+      'Short missiles do five percent more damage at every tier.',
+    ],
+  },
+  {
     at: '2026-08-29T11:30Z',
     version: 'v412',
     title: 'A CROSS SET OF SPANNERS, AND MORE DRUMS WORTH BREAKING',
