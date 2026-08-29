@@ -690,7 +690,7 @@ public static class WeaponCatalog
             new WeaponStatDelta(),                     // T8  no ascension
         },
         // Four seconds of ground at 2.4x the glob - a fraction for the reason Burn is one.
-        Puddle = new PuddleSpec { DpsFrac = 2.64, Seconds = 4 },
+        Puddle = new PuddleSpec { DpsFrac = 2.64, Seconds = 4.5 },
         ReengageMul = 1, VisualId = VisualId.Sludge,
         MuzzleOffset = 18, ShellRadius = 5,
         FireAlongFacing = true, DetonateOnExpiry = false,

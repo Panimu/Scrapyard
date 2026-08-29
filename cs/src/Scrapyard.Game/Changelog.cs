@@ -28,6 +28,11 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T09:05Z", "v407", "TOXIC SLUDGE LINGERS LONGER",
+            new[]
+            {
+                "Every pool stays on the ground half a second longer, so more of the yard is poisoned at any one time and each patch is worth more before it fades.",
+            }),
         new("2026-08-29T08:20Z", "v406", "THE MORTAR AND THE ARTILLERY BOTH LAND SMALLER, AND SLOWER",
             new[]
             {

@@ -2185,7 +2185,9 @@ export const SLUDGE: WeaponDef = Object.freeze({
     { splashRadius: 13.3 },
     {},
   ]),
-  // FOUR SECONDS OF GROUND AT 2.64x THE GLOB. A fraction rather than a rate of its own, exactly as
+  // FOUR AND A HALF SECONDS OF GROUND AT 2.64x THE GLOB, 4 -> 4.5. Duration is a straight
+  // multiplier on what a pool is worth, so this is +12.5% on top of the two damage passes below.
+  // A fraction rather than a rate of its own, exactly as
   // WeaponDef.burn is and for the same reason: the two damage tiers and Jade's chassis bonus all
   // raise what the pool does without any of them naming a pool.
   //
@@ -2193,7 +2195,7 @@ export const SLUDGE: WeaponDef = Object.freeze({
   // multiplies the dial at every tier at once. Raising the base damage instead would have left the
   // two flat damage rungs behind, so the pools would have gained a full 10% at tier 1 and about
   // half that by tier 7 - a "+10%" that quietly shrinks as the run goes on.
-  puddle: Object.freeze({ dpsFrac: 2.64, seconds: 4 }),
+  puddle: Object.freeze({ dpsFrac: 2.64, seconds: 4.5 }),
   reengageMul: 1,
   visualId: VIS_SLUDGE,
   // BEHIND THE MECH. Every other muzzle offset pushes a round out in front of the barrel; this
