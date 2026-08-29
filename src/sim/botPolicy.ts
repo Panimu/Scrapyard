@@ -69,10 +69,29 @@ const GEM_SEEK_RADIUS_SQ = GEM_SEEK_RADIUS * GEM_SEEK_RADIUS;
 const WALL_FEEL = 1000;
 const WALL_PUSH = 2.5;
 
-/** Per-RANK flee weight. A boss is one body but the reason you are moving, so it outweighs the
- *  chaff around it - keyed off the flags rather than the chassis, because under the cycle ladder
- *  a boss and the regular next to it share a chassis. */
-const RANK_FLEE_WEIGHT = [1, 2.2, 4] as const;
+/**
+ * Per-RANK flee weight, [regular, elite, boss]. Keyed off the flags rather than the chassis, because
+ * under the cycle ladder a boss and the regular next to it share one.
+ *
+ * INVERTED, [4, 2.2, 1] -> [1, 2.2, 4]. It used to read "a boss is one body but the reason you are
+ * moving, so it outweighs the chaff around it", which is a fair description of what frightens a
+ * player and the exact opposite of what one DOES. A player keeps the boss close and on screen,
+ * because the boss is the thing that has to die and every weapon in the game picks its own target
+ * from whatever is in range. What a player actually backs away from is the chaff, which is
+ * numerous, touches you from every side at once, and is worth nothing to stand near.
+ *
+ * THE OLD WEIGHTS WERE CONTAMINATING EVERY BOSS MEASUREMENT. A bot that flees a boss four times
+ * harder than a runt spends the endgame holding the one target it must kill at the edge of its
+ * range or outside it, so "how many bosses does this weapon kill" was substantially a reading of
+ * this constant. Measured on the 28-loadout set, merely making a boss no MORE repellent than a
+ * runt moved per-weapon boss kills by -23% to +47% - the racks and the Phase Cannon up, the drones
+ * and the short-range guns down. That is a bigger spread than most balance changes produce, from a
+ * number that was never meant to be a balance dial.
+ *
+ * This is the rule in CLAUDE.md applied to itself: the bot is a MEASUREMENT INSTRUMENT, and when it
+ * behaves in a way no player would, every number downstream is about the bot rather than the game.
+ */
+const RANK_FLEE_WEIGHT = [4, 2.2, 1] as const;
 
 export interface BotState {
   readonly frame: { moveX: number; moveY: number; buttons: number; chooseIndex: number };

@@ -92,7 +92,10 @@ public static class BotPolicy
     /// KEYED OFF THE FLAGS rather than the chassis, because under the cycle ladder a boss and the
     /// regular beside it share one.
     /// </remarks>
-    private static readonly double[] RankFleeWeight = { 1, 2.2, 4 };
+    // INVERTED, { 1, 2.2, 4 } -> { 4, 2.2, 1 }: a player keeps the boss close because it is the
+    // thing that has to die, and backs away from the chaff. See the TS side for the measurement
+    // that forced this - the old weights moved per-weapon boss kills by up to 47%.
+    private static readonly double[] RankFleeWeight = { 4, 2.2, 1 };
 
     /// <summary>Diagnostics the harness prints, and nothing the policy reads.</summary>
     public sealed class State
