@@ -2388,6 +2388,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             string? key = kind switch
             {
                 PickupPool.KindRepair => "cons_spanner",
+                    PickupPool.KindRepairCross => "cons_spanner_cross",
                 PickupPool.KindCredit => "cons_coin0",
                 PickupPool.KindMagnet => "cons_magnet",
                 PickupPool.KindDice => "cons_dice",

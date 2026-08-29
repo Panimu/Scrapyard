@@ -91,6 +91,7 @@ import {
   PICKUP_KIND_GEM,
   PICKUP_KIND_MAGNET,
   PICKUP_KIND_REPAIR,
+  PICKUP_KIND_REPAIR_CROSS,
   allocPickup,
   markPickupDead,
 } from '../entity/pickupPool.js';
@@ -350,7 +351,14 @@ function dropConsumable(world: World, x: number, y: number): void {
   // barrels that actually held something.
   const held = (which - t.barrelEmptyChance) / (1 - t.barrelEmptyChance);
 
-  if (held < CONSUMABLE_REPAIR_CHANCE) {
+  if (held < CONSUMABLE_REPAIR_CROSS_CHANCE) {
+    // THE CROSS SET FIRST, so its band is the bottom of the partition and the single spanner's is
+    // what is left of the repair share. Ordering it this way means retuning the rare one cannot
+    // move the boundary between the spanner and the magnet.
+    kind = PICKUP_KIND_REPAIR_CROSS;
+    value = Math.max(1, Math.round(world.player.stats.maxHp * t.repairFracCross));
+    tier = 0;
+  } else if (held < CONSUMABLE_REPAIR_CHANCE) {
     kind = PICKUP_KIND_REPAIR;
     value = Math.max(1, Math.round(world.player.stats.maxHp * t.repairFrac));
     tier = 0;
@@ -441,6 +449,12 @@ function creditTier(value: number, thresholds: readonly number[]): number {
  * that changes the next ten seconds rather than the next number.
  */
 const CONSUMABLE_REPAIR_CHANCE = 0.45;
+/**
+ * THE CROSS SET'S SLICE, taken OUT of the repair share above rather than added beside it - so
+ * "a drum held a spanner of some kind" is still 45% of the drums that held anything, and what
+ * changed is which grade turned up. A quarter of the spanners found are now the cross.
+ */
+const CONSUMABLE_REPAIR_CROSS_CHANCE = 0.11;
 const CONSUMABLE_MAGNET_CHANCE = 0.15;
 /**
  * THE DICE, and it is the rarest thing a drum can hold by a wide margin: one barrel in twenty that
@@ -712,7 +726,9 @@ function magnetAndCollect(world: World, dt: number): void {
       const dragged =
         magnetAll &&
         d2 !== 0 &&
-        (pool.kind[d] === PICKUP_KIND_CREDIT || pool.kind[d] === PICKUP_KIND_REPAIR);
+        (pool.kind[d] === PICKUP_KIND_CREDIT ||
+          pool.kind[d] === PICKUP_KIND_REPAIR ||
+          pool.kind[d] === PICKUP_KIND_REPAIR_CROSS);
       if (!dragged) {
         pool.vx[d] = 0;
         pool.vy[d] = 0;
@@ -832,7 +848,7 @@ function collect(world: World, d: number): void {
  * number reaches exactly and must not be one ulp away from.
  */
 function wouldBeWasted(world: World, kind: number): boolean {
-  if (kind !== PICKUP_KIND_REPAIR) return false;
+  if (kind !== PICKUP_KIND_REPAIR && kind !== PICKUP_KIND_REPAIR_CROSS) return false;
   return world.player.hp >= world.player.stats.maxHp;
 }
 
@@ -861,7 +877,7 @@ function takeConsumable(world: World, d: number): void {
     return;
   }
 
-  if (kind === PICKUP_KIND_REPAIR) {
+  if (kind === PICKUP_KIND_REPAIR || kind === PICKUP_KIND_REPAIR_CROSS) {
     // Clamped to max: a spanner tops you up, it never overheals into a buffer the HUD cannot show.
     const hp = player.hp + value;
     player.hp = hp > player.stats.maxHp ? player.stats.maxHp : hp;

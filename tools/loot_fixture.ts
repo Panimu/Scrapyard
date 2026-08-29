@@ -180,6 +180,8 @@ function scrapyardCase() {
   const breaks: unknown[] = [];
   const kindsSeen = new Set<number>();
   let empties = 0;
+  let exactHalves = 0;
+  const t = w.config.tuning.pickups;
 
   for (let k = 0; k < 60; k++) {
     const i = drums[k];
@@ -211,25 +213,37 @@ function scrapyardCase() {
     });
 
     if (snap.dropped === null) empties++;
-    else kindsSeen.add((snap.dropped as { kind: number }).kind);
+    else {
+      const dk = (snap.dropped as { kind: number }).kind;
+      kindsSeen.add(dk);
+      // The pre-rounding heal, recomputed the way dropConsumable does it. A `.5` here is the case
+      // where JS `Math.round` (toward +Infinity) and a naive C# round-half-away-from-zero differ.
+      if (dk === 1 || dk === 6) {
+        const frac = dk === 6 ? t.repairFracCross : t.repairFrac;
+        if (Math.abs((w.player.stats.maxHp * frac) % 1 - 0.5) < 1e-9) exactHalves++;
+      }
+    }
   }
 
   // COVERAGE, ASSERTED. A fixture that quietly stopped reaching the dice would look exactly like
   // one that still did, and the dice is the rarest thing a drum can hold by a wide margin.
-  for (const [name, kind] of [['repair', 1], ['credit', 2], ['magnet', 3], ['dice', 5]] as const) {
+  for (const [name, kind] of [['repair', 1], ['credit', 2], ['magnet', 3], ['dice', 5],
+                             ['repair-cross', 6]] as const) {
     if (!kindsSeen.has(kind)) throw new Error(`no ${name} drop in ${breaks.length} barrels`);
   }
   if (empties === 0) throw new Error('no empty barrel in the run - the empty band is uncovered');
 
   // THE EXACT-HALF CASE MUST ACTUALLY BE REACHED, or the rounding claim above is untested.
-  const halves = breaks.filter((b) => {
-    const r = b as { maxHp: string; dropped: { kind: number; value: number } | null };
-    return r.dropped !== null && r.dropped.kind === 1 && r.dropped.value % 1 === 0 &&
-      (r.dropped.value === 51 || r.dropped.value === 52);
-  }).length;
+  //
+  // TESTED AS THE PROPERTY, NOT AS TWO LITERALS. This used to look for a heal of exactly 51 or 52,
+  // which were the values `maxHp * 0.25` happened to produce on a half at the time - so halving
+  // repairFrac for the cross set broke the fixture generator with a message about rounding, which
+  // is not what had changed. What the check is FOR is that some repair drop landed on a `.5`
+  // before rounding, and that survives any retune of either grade.
+  const halves = exactHalves;
   if (halves === 0) {
-    throw new Error('no spanner rolled on a maxHp whose quarter is an exact half - the JS/C# ' +
-      'rounding split is untested');
+    throw new Error('no repair drop landed on an exact .5 before rounding - the JS/C# rounding ' +
+      'split is untested');
   }
 
   return { name: 'scrapyard-drums', lootBefore: started, breaks, empties, exactHalfHeals: halves };

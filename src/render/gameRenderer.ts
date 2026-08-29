@@ -58,6 +58,7 @@ import {
   PICKUP_KIND_GEM,
   PICKUP_KIND_MAGNET,
   PICKUP_KIND_REPAIR,
+  PICKUP_KIND_REPAIR_CROSS,
   RANK_REGULAR,
   SCENERY_CELL,
   SCENERY_COLS,
@@ -1389,9 +1390,15 @@ export class GameRenderer {
           this.effects.sparkle(
             a,
             b,
-            d === PICKUP_KIND_REPAIR ? 0x3ecb70 : d === PICKUP_KIND_MAGNET ? 0xe03b3b : 0x4fb8ff,
+            d === PICKUP_KIND_REPAIR || d === PICKUP_KIND_REPAIR_CROSS
+              ? 0x3ecb70
+              : d === PICKUP_KIND_MAGNET
+                ? 0xe03b3b
+                : 0x4fb8ff,
           );
-          if (d === PICKUP_KIND_REPAIR) this.healFlash = HEAL_FLASH_SEC;
+          // BOTH GRADES FLASH. The flash says "you were healed", which is true of either.
+          if (d === PICKUP_KIND_REPAIR || d === PICKUP_KIND_REPAIR_CROSS)
+            this.healFlash = HEAL_FLASH_SEC;
           break;
 
         case EV_GEM_COLLECTED: {
@@ -1779,7 +1786,9 @@ export class GameRenderer {
       s.texture =
         kind === PICKUP_KIND_REPAIR
           ? this.tex.consSpanner
-          : kind === PICKUP_KIND_MAGNET
+          : kind === PICKUP_KIND_REPAIR_CROSS
+            ? this.tex.consSpannerCross
+            : kind === PICKUP_KIND_MAGNET
             ? this.tex.consMagnet
             : kind === PICKUP_KIND_DICE
               ? this.tex.consDice

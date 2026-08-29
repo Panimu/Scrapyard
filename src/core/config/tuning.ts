@@ -189,6 +189,8 @@ export interface PickupTuning {
   readonly consumableRadius: number;
   /** Spanner heal, as a fraction of MAX HP - so it stays worth picking up at every level. */
   readonly repairFrac: number;
+  /** The cross set's heal, same units. Twice the single spanner's, and the drop is rarer. */
+  readonly repairFracCross: number;
   /** Credit coin value at t=0 and at the end of the run. Interpolated by run time. */
   readonly creditMin: number;
   readonly creditMax: number;
@@ -312,7 +314,10 @@ const PICKUPS: PickupTuning = {
   consumableRadius: 34,
   // 30 HP at base maxHp - six runt bites, and six times what a level-up heals. A barrel is a
   // real decision to walk to, so it has to pay like one.
-  repairFrac: 0.25,
+  // HALVED, 0.25 -> 0.125, when the cross set arrived. The pair are one item at two grades: the
+  // common one now tops you up and the rare one does what the common one used to.
+  repairFrac: 0.125,
+  repairFracCross: 0.25,
   creditMin: 1,
   creditMax: 50,
   // Single coin / small stack / large stack / overflowing bag. The thresholds are spaced so the
@@ -327,7 +332,9 @@ const PICKUPS: PickupTuning = {
   // if every one paid out, twenty-two per cent of the yard would be a guaranteed drip of heals and
   // credits and the player would stop noticing them. The empty is what keeps the full one a
   // result.
-  barrelEmptyChance: 0.25,
+  // 0.25 -> 0.15. More drums hold something, which is what pays for the spanner being halved:
+  // the heal per drum still falls, but not by the whole half.
+  barrelEmptyChance: 0.15,
 
   // THE YARD REPLACES ITS DRUMS. A 16-minute run against a fixed layout is a run whose second
   // half has no barrels left anywhere the player has been - the piles do not move, so a cleared

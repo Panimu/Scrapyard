@@ -65,11 +65,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T11:30Z',
+    version: 'v412',
+    title: 'A CROSS SET OF SPANNERS, AND MORE DRUMS WORTH BREAKING',
+    notes: [
+      'A rarer second repair drop: a crossed pair of spanners that heals twice what a single one does. About one spanner in four is now the set.',
+      'The single spanner heals half what it used to, so the pair are one item at two grades rather than two pickups.',
+      'Fewer drums are empty - about one in seven instead of one in four - so there is more in the yard to find.',
+      'The spanner no longer has a hard-edged bite taken out of the shadow it casts.',
+    ],
+  },
+  {
     at: '2026-08-29T11:20Z',
     version: 'v411',
-    title: 'RING ATTACKS BECOME RARE',
+    title: 'RING ATTACKS EASE OFF SLIGHTLY',
     notes: [
-      'The encircling attack now turns up about one wave in twenty-seven rather than one in three. It was the most common way a wave went wrong; it is now the least.',
+      'The encircling attack turns up a little less often than it did.',
     ],
   },
   {

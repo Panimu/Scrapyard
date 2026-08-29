@@ -477,36 +477,72 @@ const DRAW_CONSUMABLE = `(kind) => {
   // everyone who has ever seen one. What makes it a spanner is the GAP - so the notch is cut wide
   // enough (about a third of the head) to survive at a glance, and the heads are set at different
   // angles the way a real double-ended wrench is.
-  if (kind === 0) {
+  // 0 is the single spanner, 6 the cross set. ONE ROUTINE DRAWS BOTH, because they have to read
+  // as the same object at two grades - a cross set drawn from different parts would be a
+  // different pickup wearing the heal colour.
+  if (kind === 0 || kind === 6) {
     const DARK = '#1c6335', LIT = '#3ecb70';
+
+    // DRAWN ON ITS OWN LAYER, THEN COMPOSITED. The jaw is a wedge punched out with
+    // destination-out, and on the main canvas that erases whatever is under it - which is the
+    // soft contact shadow. The single spanner has shipped with a hard transparent wedge bitten
+    // out of its own shadow for that reason; at four jaws the cross set made it obvious.
+    // An offscreen layer means the punch can only reach the tool.
+    const tc = document.createElement('canvas');
+    tc.width = S; tc.height = S;
+    const tg = tc.getContext('2d');
+
     const head = (hx, hy, rot) => {
-      g.save();
-      g.translate(hx, hy); g.rotate(rot);
-      g.beginPath(); g.arc(0, 0, S * 0.15, 0, 6.284);
-      g.fillStyle = DARK; g.fill();
-      g.beginPath(); g.arc(0, 0, S * 0.15 - 3.5, 0, 6.284);
-      g.fillStyle = LIT; g.fill();
+      tg.save();
+      tg.translate(hx, hy); tg.rotate(rot);
+      tg.beginPath(); tg.arc(0, 0, S * 0.15, 0, 6.284);
+      tg.fillStyle = DARK; tg.fill();
+      tg.beginPath(); tg.arc(0, 0, S * 0.15 - 3.5, 0, 6.284);
+      tg.fillStyle = LIT; tg.fill();
       // The jaw: a wide wedge of everything punched back out, opening away from the shaft.
-      g.globalCompositeOperation = 'destination-out';
-      g.beginPath();
-      g.moveTo(0, 0);
-      g.lineTo(-S * 0.17, -S * 0.24);
-      g.lineTo(S * 0.17, -S * 0.24);
-      g.closePath(); g.fill();
-      g.restore();
+      tg.globalCompositeOperation = 'destination-out';
+      tg.beginPath();
+      tg.moveTo(0, 0);
+      tg.lineTo(-S * 0.17, -S * 0.24);
+      tg.lineTo(S * 0.17, -S * 0.24);
+      tg.closePath(); tg.fill();
+      tg.restore();
     };
 
-    g.save();
-    g.translate(CX, CY); g.rotate(-0.55);
-    // Shaft.
-    g.lineCap = 'round';
-    g.strokeStyle = DARK; g.lineWidth = 15;
-    g.beginPath(); g.moveTo(0, -S * 0.17); g.lineTo(0, S * 0.17); g.stroke();
-    g.strokeStyle = LIT; g.lineWidth = 9;
-    g.beginPath(); g.moveTo(0, -S * 0.17); g.lineTo(0, S * 0.17); g.stroke();
-    head(0, -S * 0.22, 0);
-    head(0, S * 0.22, Math.PI * 0.82);
-    g.restore();
+    const spanner = (rot, k, reach) => {
+      const L = S * 0.17 * reach;
+      tg.save();
+      tg.translate(CX, CY); tg.rotate(rot); tg.scale(k, k);
+      tg.lineCap = 'round';
+      tg.strokeStyle = DARK; tg.lineWidth = 15;
+      tg.beginPath(); tg.moveTo(0, -L); tg.lineTo(0, L); tg.stroke();
+      tg.strokeStyle = LIT; tg.lineWidth = 9;
+      tg.beginPath(); tg.moveTo(0, -L); tg.lineTo(0, L); tg.stroke();
+      head(0, -L - S * 0.05, 0);
+      head(0, L + S * 0.05, Math.PI * 0.82);
+      tg.restore();
+    };
+
+    if (kind === 0) {
+      spanner(-0.55, 1, 1);
+    } else {
+      // A CLEAN X AND NOTHING ELSE. Everything tried on top of this made it worse at the size it
+      // is actually seen - about 34 world units, where the whole sprite is a thumbnail. A binding
+      // strap across the crossing read as a bright bar and broke the X in half; sliding the two
+      // apart along their axes turned a shape into a scatter. What survives downsampling is one
+      // bold silhouette, so the pair is symmetric, steeply angled, and shrunk enough that all
+      // four jaws stay inside the tile.
+      //
+      // The heads are the problem this shape has to solve: a spanner has one at EACH end, so two
+      // of them put four identical lobes on the tile and it reads as a clover. Steep angles are
+      // what fix it - at +-0.62 rad the four heads sit as two close PAIRS, top and bottom, rather
+      // than at four compass points, and a pair of jaws side by side reads as tools where four
+      // spaced ones read as petals.
+      spanner(-0.62, 0.80, 1.35);
+      spanner(0.62, 0.80, 1.35);
+    }
+
+    g.drawImage(tc, 0, 0);
   }
 
   // --- 1..4: COINS, one / small stack / large stack / bag ------------------------------------
@@ -650,7 +686,7 @@ async function main() {
     console.log(`  scrap_${v}        ${(buf.length / 1024).toFixed(1)} kB`);
   }
 
-  const CONSUMABLES = ['cons_spanner', 'cons_coin0', 'cons_coin1', 'cons_coin2', 'cons_coin3', 'cons_magnet'];
+  const CONSUMABLES = ['cons_spanner', 'cons_coin0', 'cons_coin1', 'cons_coin2', 'cons_coin3', 'cons_magnet', 'cons_spanner_cross'];
   for (let k = 0; k < CONSUMABLES.length; k++) {
     const dataUrl = await page.evaluate(`(${DRAW_CONSUMABLE})(${k})`);
     const buf = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');

@@ -2,7 +2,7 @@
  "note": "breakLootIn + dropConsumable. All three terrains give different answers to the same call, and a port that collapsed any two would read as a balance complaint rather than a bug. The LOOT stream is compared after every break with a draw count beside it: dropConsumable spends two values ALWAYS, even for the three kinds that ignore the jitter, so a short-circuit would desynchronise every later drop while still producing a plausible spanner.",
  "barrelBreakRadius": "4080000000000000",
  "tuning": {
-  "repairFrac": "3fd0000000000000",
+  "repairFrac": "3fc0000000000000",
   "creditMin": "3ff0000000000000",
   "creditMax": "4049000000000000",
   "creditTierValues": [
@@ -11,7 +11,7 @@
    "4034000000000000",
    "4042000000000000"
   ],
-  "barrelEmptyChance": "3fd0000000000000",
+  "barrelEmptyChance": "3fc3333333333333",
   "runLengthSec": "408e000000000000"
  },
  "shape": {
@@ -105,7 +105,7 @@
     "result": true,
     "pickupCount": 1,
     "dropped": {
-     "kind": 5,
+     "kind": 2,
      "value": 1,
      "tier": 0,
      "flags": 2,
@@ -150,7 +150,7 @@
     "pickupCount": 2,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003eb",
@@ -171,7 +171,7 @@
       "kind": 7,
       "a": "40b0134ec0000000",
       "b": "c0b5f533c0000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -237,8 +237,8 @@
     "result": true,
     "pickupCount": 4,
     "dropped": {
-     "kind": 1,
-     "value": 51,
+     "kind": 3,
+     "value": 0,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003ed",
@@ -259,7 +259,7 @@
       "kind": 7,
       "a": "c066b502a0000000",
       "b": "c0b2fb1d40000000",
-      "c": "4049800000000000",
+      "c": "0000000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -326,7 +326,7 @@
     "pickupCount": 6,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003ef",
@@ -347,7 +347,7 @@
       "kind": 7,
       "a": "40b3a56140000000",
       "b": "c0b2b24fa0000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -502,7 +502,7 @@
     "pickupCount": 10,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003f3",
@@ -523,7 +523,7 @@
       "kind": 7,
       "a": "40acc28500000000",
       "b": "c0afcc7a20000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -546,7 +546,7 @@
     "pickupCount": 11,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003f4",
@@ -567,7 +567,7 @@
       "kind": 7,
       "a": "40b058f940000000",
       "b": "c0b15ed700000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -663,7 +663,7 @@
     "pickupCount": 13,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003f7",
@@ -684,7 +684,7 @@
       "kind": 7,
       "a": "c0a0b394c0000000",
       "b": "c0aaccca60000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -704,8 +704,16 @@
     "tick": 1016,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 13,
-    "dropped": null,
+    "pickupCount": 14,
+    "dropped": {
+     "kind": 6,
+     "value": 50,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "400003f8",
+     "x": "c07c8f0240000000",
+     "y": "c0ab41aa20000000"
+    },
     "barrelsBroken": "4031000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -714,6 +722,13 @@
       "a": "c07c8f0240000000",
       "b": "c0ab41aa20000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "c07c8f0240000000",
+      "b": "c0ab41aa20000000",
+      "c": "4049000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -733,7 +748,7 @@
     "tick": 1017,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 14,
+    "pickupCount": 15,
     "dropped": {
      "kind": 2,
      "value": 2,
@@ -777,7 +792,7 @@
     "tick": 1018,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 14,
+    "pickupCount": 15,
     "dropped": null,
     "barrelsBroken": "4033000000000000",
     "sheepTaken": "0000000000000000",
@@ -806,8 +821,16 @@
     "tick": 1019,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 14,
-    "dropped": null,
+    "pickupCount": 16,
+    "dropped": {
+     "kind": 6,
+     "value": 52,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "400003fb",
+     "x": "40b6a8d980000000",
+     "y": "c0aad08f40000000"
+    },
     "barrelsBroken": "4034000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -816,6 +839,13 @@
       "a": "40b6a8d980000000",
       "b": "c0aad08f40000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "40b6a8d980000000",
+      "b": "c0aad08f40000000",
+      "c": "404a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -835,7 +865,7 @@
     "tick": 1020,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 15,
+    "pickupCount": 17,
     "dropped": {
      "kind": 3,
      "value": 0,
@@ -879,10 +909,10 @@
     "tick": 1021,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 16,
+    "pickupCount": 18,
     "dropped": {
-     "kind": 1,
-     "value": 51,
+     "kind": 3,
+     "value": 0,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003fd",
@@ -903,7 +933,7 @@
       "kind": 7,
       "a": "c09255c3e0000000",
       "b": "c0a3d29780000000",
-      "c": "4049800000000000",
+      "c": "0000000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -923,8 +953,16 @@
     "tick": 1022,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 16,
-    "dropped": null,
+    "pickupCount": 19,
+    "dropped": {
+     "kind": 6,
+     "value": 51,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "400003fe",
+     "x": "4094107a00000000",
+     "y": "c0a6253c00000000"
+    },
     "barrelsBroken": "4037000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -933,6 +971,13 @@
       "a": "4094107a00000000",
       "b": "c0a6253c00000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "4094107a00000000",
+      "b": "c0a6253c00000000",
+      "c": "4049800000000000",
       "d": "0000000000000000"
      }
     ],
@@ -952,10 +997,10 @@
     "tick": 1023,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 17,
+    "pickupCount": 20,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "400003ff",
@@ -976,7 +1021,7 @@
       "kind": 7,
       "a": "409be66580000000",
       "b": "c0a41c4b00000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -996,10 +1041,10 @@
     "tick": 1024,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 18,
+    "pickupCount": 21,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000400",
@@ -1020,7 +1065,7 @@
       "kind": 7,
       "a": "40b7181b60000000",
       "b": "c0a5045720000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1040,8 +1085,16 @@
     "tick": 1025,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 18,
-    "dropped": null,
+    "pickupCount": 22,
+    "dropped": {
+     "kind": 6,
+     "value": 51,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "40000401",
+     "x": "c0b6fa7b80000000",
+     "y": "c09f56e9c0000000"
+    },
     "barrelsBroken": "403a000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -1050,6 +1103,13 @@
       "a": "c0b6fa7b80000000",
       "b": "c09f56e9c0000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "c0b6fa7b80000000",
+      "b": "c09f56e9c0000000",
+      "c": "4049800000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1069,10 +1129,10 @@
     "tick": 1026,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 19,
+    "pickupCount": 23,
     "dropped": {
      "kind": 1,
-     "value": 51,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000402",
@@ -1093,7 +1153,7 @@
       "kind": 7,
       "a": "c0b10dfac0000000",
       "b": "c09e891440000000",
-      "c": "4049800000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1113,7 +1173,7 @@
     "tick": 1027,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 20,
+    "pickupCount": 24,
     "dropped": {
      "kind": 2,
      "value": 17,
@@ -1157,10 +1217,10 @@
     "tick": 1028,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 21,
+    "pickupCount": 25,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000404",
@@ -1181,7 +1241,7 @@
       "kind": 7,
       "a": "c0a05994a0000000",
       "b": "c0a0c76a20000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1201,7 +1261,7 @@
     "tick": 1029,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 22,
+    "pickupCount": 26,
     "dropped": {
      "kind": 2,
      "value": 9,
@@ -1245,7 +1305,7 @@
     "tick": 1030,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 23,
+    "pickupCount": 27,
     "dropped": {
      "kind": 2,
      "value": 1,
@@ -1289,10 +1349,10 @@
     "tick": 1031,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 24,
+    "pickupCount": 28,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000407",
@@ -1313,7 +1373,7 @@
       "kind": 7,
       "a": "40a064dc60000000",
       "b": "c09ad47920000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1333,7 +1393,7 @@
     "tick": 1032,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 25,
+    "pickupCount": 29,
     "dropped": {
      "kind": 3,
      "value": 0,
@@ -1377,7 +1437,7 @@
     "tick": 1033,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 26,
+    "pickupCount": 30,
     "dropped": {
      "kind": 3,
      "value": 0,
@@ -1421,7 +1481,7 @@
     "tick": 1034,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 27,
+    "pickupCount": 31,
     "dropped": {
      "kind": 2,
      "value": 4,
@@ -1465,10 +1525,10 @@
     "tick": 1035,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 28,
+    "pickupCount": 32,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "4000040b",
@@ -1489,7 +1549,7 @@
       "kind": 7,
       "a": "40831a8460000000",
       "b": "c08d747100000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1509,7 +1569,7 @@
     "tick": 1036,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 29,
+    "pickupCount": 33,
     "dropped": {
      "kind": 2,
      "value": 19,
@@ -1553,8 +1613,16 @@
     "tick": 1037,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 29,
-    "dropped": null,
+    "pickupCount": 34,
+    "dropped": {
+     "kind": 6,
+     "value": 51,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "4000040d",
+     "x": "40a9ef44a0000000",
+     "y": "c090f40de0000000"
+    },
     "barrelsBroken": "4043000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -1563,6 +1631,13 @@
       "a": "40a9ef44a0000000",
       "b": "c090f40de0000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "40a9ef44a0000000",
+      "b": "c090f40de0000000",
+      "c": "4049800000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1582,10 +1657,10 @@
     "tick": 1038,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 30,
+    "pickupCount": 35,
     "dropped": {
      "kind": 1,
-     "value": 51,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "4000040e",
@@ -1606,7 +1681,7 @@
       "kind": 7,
       "a": "c0b64dc760000000",
       "b": "40821d0320000000",
-      "c": "4049800000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1626,7 +1701,7 @@
     "tick": 1039,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 31,
+    "pickupCount": 36,
     "dropped": {
      "kind": 2,
      "value": 3,
@@ -1670,10 +1745,10 @@
     "tick": 1040,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 32,
+    "pickupCount": 37,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000410",
@@ -1694,7 +1769,7 @@
       "kind": 7,
       "a": "c0ac0ad220000000",
       "b": "4071b88240000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1714,7 +1789,7 @@
     "tick": 1041,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 32,
+    "pickupCount": 37,
     "dropped": null,
     "barrelsBroken": "4045000000000000",
     "sheepTaken": "0000000000000000",
@@ -1743,7 +1818,7 @@
     "tick": 1042,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 32,
+    "pickupCount": 37,
     "dropped": null,
     "barrelsBroken": "4045800000000000",
     "sheepTaken": "0000000000000000",
@@ -1772,8 +1847,16 @@
     "tick": 1043,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 32,
-    "dropped": null,
+    "pickupCount": 38,
+    "dropped": {
+     "kind": 6,
+     "value": 52,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "40000413",
+     "x": "408df73800000000",
+     "y": "40707f9d40000000"
+    },
     "barrelsBroken": "4046000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -1782,6 +1865,13 @@
       "a": "408df73800000000",
       "b": "40707f9d40000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "408df73800000000",
+      "b": "40707f9d40000000",
+      "c": "404a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1801,8 +1891,16 @@
     "tick": 1044,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 32,
-    "dropped": null,
+    "pickupCount": 39,
+    "dropped": {
+     "kind": 6,
+     "value": 50,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "40000414",
+     "x": "409effe4e0000000",
+     "y": "407089d260000000"
+    },
     "barrelsBroken": "4046800000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -1811,6 +1909,13 @@
       "a": "409effe4e0000000",
       "b": "407089d260000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "409effe4e0000000",
+      "b": "407089d260000000",
+      "c": "4049000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1830,7 +1935,7 @@
     "tick": 1045,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 33,
+    "pickupCount": 40,
     "dropped": {
      "kind": 2,
      "value": 38,
@@ -1874,10 +1979,10 @@
     "tick": 1046,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 34,
+    "pickupCount": 41,
     "dropped": {
      "kind": 1,
-     "value": 51,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000416",
@@ -1898,7 +2003,7 @@
       "kind": 7,
       "a": "c09136c460000000",
       "b": "409557f0c0000000",
-      "c": "4049800000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1918,10 +2023,10 @@
     "tick": 1047,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 35,
+    "pickupCount": 42,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000417",
@@ -1942,7 +2047,7 @@
       "kind": 7,
       "a": "40a0028360000000",
       "b": "4095777920000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -1962,10 +2067,10 @@
     "tick": 1048,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 36,
+    "pickupCount": 43,
     "dropped": {
-     "kind": 1,
-     "value": 50,
+     "kind": 3,
+     "value": 0,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000418",
@@ -1986,7 +2091,7 @@
       "kind": 7,
       "a": "40b646bc80000000",
       "b": "408d22e400000000",
-      "c": "4049000000000000",
+      "c": "0000000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2006,10 +2111,10 @@
     "tick": 1049,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 37,
+    "pickupCount": 44,
     "dropped": {
      "kind": 1,
-     "value": 51,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000419",
@@ -2030,7 +2135,7 @@
       "kind": 7,
       "a": "c0b68d3a20000000",
       "b": "409b3c2600000000",
-      "c": "4049800000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2050,7 +2155,7 @@
     "tick": 1050,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 37,
+    "pickupCount": 44,
     "dropped": null,
     "barrelsBroken": "4049800000000000",
     "sheepTaken": "0000000000000000",
@@ -2079,7 +2184,7 @@
     "tick": 1051,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 38,
+    "pickupCount": 45,
     "dropped": {
      "kind": 2,
      "value": 34,
@@ -2123,7 +2228,7 @@
     "tick": 1052,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 39,
+    "pickupCount": 46,
     "dropped": {
      "kind": 3,
      "value": 0,
@@ -2167,10 +2272,10 @@
     "tick": 1053,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 40,
+    "pickupCount": 47,
     "dropped": {
      "kind": 1,
-     "value": 51,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "4000041d",
@@ -2191,7 +2296,7 @@
       "kind": 7,
       "a": "40a49d9600000000",
       "b": "409f2341e0000000",
-      "c": "4049800000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2211,7 +2316,7 @@
     "tick": 1054,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 41,
+    "pickupCount": 48,
     "dropped": {
      "kind": 2,
      "value": 18,
@@ -2255,7 +2360,7 @@
     "tick": 1055,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 41,
+    "pickupCount": 48,
     "dropped": null,
     "barrelsBroken": "404c000000000000",
     "sheepTaken": "0000000000000000",
@@ -2284,8 +2389,16 @@
     "tick": 1056,
     "maxHp": "4069000000000000",
     "result": true,
-    "pickupCount": 41,
-    "dropped": null,
+    "pickupCount": 49,
+    "dropped": {
+     "kind": 6,
+     "value": 50,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "40000420",
+     "x": "c09f4c71a0000000",
+     "y": "40a592d440000000"
+    },
     "barrelsBroken": "404c800000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -2294,6 +2407,13 @@
       "a": "c09f4c71a0000000",
       "b": "40a592d440000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "c09f4c71a0000000",
+      "b": "40a592d440000000",
+      "c": "4049000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2313,8 +2433,16 @@
     "tick": 1057,
     "maxHp": "4069400000000000",
     "result": true,
-    "pickupCount": 41,
-    "dropped": null,
+    "pickupCount": 50,
+    "dropped": {
+     "kind": 6,
+     "value": 51,
+     "tier": 0,
+     "flags": 2,
+     "spawnId": "40000421",
+     "x": "c07f4a3200000000",
+     "y": "40a51bd4c0000000"
+    },
     "barrelsBroken": "404d000000000000",
     "sheepTaken": "0000000000000000",
     "events": [
@@ -2323,6 +2451,13 @@
       "a": "c07f4a3200000000",
       "b": "40a51bd4c0000000",
       "c": "4034000000000000",
+      "d": "0000000000000000"
+     },
+     {
+      "kind": 7,
+      "a": "c07f4a3200000000",
+      "b": "40a51bd4c0000000",
+      "c": "4049800000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2342,7 +2477,7 @@
     "tick": 1058,
     "maxHp": "4069800000000000",
     "result": true,
-    "pickupCount": 41,
+    "pickupCount": 50,
     "dropped": null,
     "barrelsBroken": "404d800000000000",
     "sheepTaken": "0000000000000000",
@@ -2371,10 +2506,10 @@
     "tick": 1059,
     "maxHp": "4069c00000000000",
     "result": true,
-    "pickupCount": 42,
+    "pickupCount": 51,
     "dropped": {
      "kind": 1,
-     "value": 52,
+     "value": 26,
      "tier": 0,
      "flags": 2,
      "spawnId": "40000423",
@@ -2395,7 +2530,7 @@
       "kind": 7,
       "a": "40b6610280000000",
       "b": "40a3e0f040000000",
-      "c": "404a000000000000",
+      "c": "403a000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -2408,8 +2543,8 @@
     "draws": 2
    }
   ],
-  "empties": 18,
-  "exactHalfHeals": 16
+  "empties": 9,
+  "exactHalfHeals": 8
  },
  "mossy": {
   "name": "mossy-trees",
@@ -2933,7 +3068,7 @@
     "result": true,
     "pickupCount": 1,
     "dropped": {
-     "kind": 5,
+     "kind": 2,
      "value": 1,
      "tier": 0,
      "flags": 2,
@@ -2976,7 +3111,7 @@
     "pickupCount": 2,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "400001f4",
@@ -2997,7 +3132,7 @@
       "kind": 7,
       "a": "c09c800000000000",
       "b": "c0a5c00000000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],
@@ -3094,7 +3229,7 @@
     "result": true,
     "pickupCount": 1,
     "dropped": {
-     "kind": 5,
+     "kind": 2,
      "value": 1,
      "tier": 0,
      "flags": 2,
@@ -3134,7 +3269,7 @@
     "pickupCount": 2,
     "dropped": {
      "kind": 1,
-     "value": 50,
+     "value": 25,
      "tier": 0,
      "flags": 2,
      "spawnId": "400002bc",
@@ -3155,7 +3290,7 @@
       "kind": 7,
       "a": "4044000000000000",
       "b": "4044000000000000",
-      "c": "4049000000000000",
+      "c": "4039000000000000",
       "d": "0000000000000000"
      }
     ],

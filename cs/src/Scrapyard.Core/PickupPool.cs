@@ -16,6 +16,10 @@ public sealed class PickupPool
 
     public const byte KindGem = 0;
     public const byte KindRepair = 1;
+
+    /// <summary>A cross set of spanners: twice the single's heal, otherwise identical. Appended,
+    /// never inserted - the kind is written into the pool and the event ring.</summary>
+    public const byte KindRepairCross = 6;
     public const byte KindCredit = 2;
     public const byte KindMagnet = 3;
     public const byte KindChest = 4;

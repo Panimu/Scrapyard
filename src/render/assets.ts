@@ -319,6 +319,8 @@ export interface GameTextures {
   readonly fencePost: Texture;
   /** Scrap piles, indexed by `Scenery.variant`. */
   readonly scrap: readonly Texture[];
+  /** The cross set - PICKUP_KIND_REPAIR_CROSS. Twice the heal, a quarter of the spanners. */
+  consSpannerCross: Texture;
   /** The spanner - PICKUP_KIND_REPAIR. */
   readonly consSpanner: Texture;
   /** Blue credit coins, indexed by the pickup's `tier`: single / small / large / bag. */
@@ -545,7 +547,7 @@ export async function loadGameTextures(
   // nothing to remember in the renderer - which is the whole reason the key lives on the level.
   for (const key of levelFloorKeys()) keys.push(key);
   for (let i = 0; i < SCENERY_VARIANTS; i++) keys.push(`scrap_${i}`);
-  keys.push('cons_spanner', 'cons_magnet', 'cons_dice', 'chest');
+  keys.push('cons_spanner', 'cons_spanner_cross', 'cons_magnet', 'cons_dice', 'chest');
   // PACKAGE B. Remove this line and the `cover` field with the layer.
   for (let i = 0; i < GROUND_COVER_VARIANTS; i++) keys.push(`cover_${i}`);
   // PACKAGE C. Masks 1..15; there is no `path_0` because an empty cell draws nothing.
@@ -666,6 +668,7 @@ export async function loadGameTextures(
     fencePost: get('fence_post'),
     scrap: Array.from({ length: SCENERY_VARIANTS }, (_, i) => get(`scrap_${i}`)),
     consSpanner: get('cons_spanner'),
+    consSpannerCross: get('cons_spanner_cross'),
     consCoin: Array.from({ length: 4 }, (_, i) => get(`cons_coin${i}`)),
     consMagnet: get('cons_magnet'),
     consDice: get('cons_dice'),

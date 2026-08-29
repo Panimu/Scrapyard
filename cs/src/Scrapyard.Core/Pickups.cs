@@ -60,6 +60,11 @@ public static class Pickups
     /// </summary>
     private const double ConsumableRepairChance = 0.45;
 
+    /// <summary>The cross set's slice, taken OUT of the repair share above rather than added
+    /// beside it - so "a drum held a spanner of some kind" is still 45% of the drums that held
+    /// anything, and what changed is which grade turned up.</summary>
+    private const double ConsumableRepairCrossChance = 0.11;
+
     /// <summary>The rarest of the three: the only one that changes the next ten seconds rather than the next number.</summary>
     private const double ConsumableMagnetChance = 0.15;
 
@@ -212,7 +217,15 @@ public static class Pickups
         // barrels that actually held something.
         double held = (which - t.BarrelEmptyChance) / (1 - t.BarrelEmptyChance);
 
-        if (held < ConsumableRepairChance)
+        if (held < ConsumableRepairCrossChance)
+        {
+            // The cross set's band is the BOTTOM of the partition, so retuning the rare grade
+            // cannot move the boundary between the spanner and the magnet.
+            kind = PickupPool.KindRepairCross;
+            value = (int)Math.Max(1, Input.JsRound(world.Player.Stats.MaxHp * t.RepairFracCross));
+            tier = 0;
+        }
+        else if (held < ConsumableRepairChance)
         {
             kind = PickupPool.KindRepair;
             value = (int)Math.Max(1, Input.JsRound(world.Player.Stats.MaxHp * t.RepairFrac));
@@ -585,7 +598,9 @@ public static class Pickups
                 bool dragged =
                     magnetAll &&
                     d2 != 0 &&
-                    (pool.Kind[d] == PickupPool.KindCredit || pool.Kind[d] == PickupPool.KindRepair);
+                    (pool.Kind[d] == PickupPool.KindCredit ||
+                     pool.Kind[d] == PickupPool.KindRepair ||
+                     pool.Kind[d] == PickupPool.KindRepairCross);
                 if (!dragged)
                 {
                     pool.Vx[d] = 0;
@@ -714,7 +729,7 @@ public static class Pickups
     /// </remarks>
     private static bool WouldBeWasted(World world, int kind)
     {
-        if (kind != PickupPool.KindRepair) return false;
+        if (kind != PickupPool.KindRepair && kind != PickupPool.KindRepairCross) return false;
         return world.Player.Hp >= world.Player.Stats.MaxHp;
     }
 
@@ -744,7 +759,7 @@ public static class Pickups
             return;
         }
 
-        if (kind == PickupPool.KindRepair)
+        if (kind == PickupPool.KindRepair || kind == PickupPool.KindRepairCross)
         {
             // Clamped to max: a spanner tops you up, it never overheals into a buffer the HUD cannot
             // show.

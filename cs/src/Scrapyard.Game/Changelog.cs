@@ -28,10 +28,18 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
-        new("2026-08-29T11:20Z", "v411", "RING ATTACKS BECOME RARE",
+        new("2026-08-29T11:30Z", "v412", "A CROSS SET OF SPANNERS, AND MORE DRUMS WORTH BREAKING",
             new[]
             {
-                "The encircling attack now turns up about one wave in twenty-seven rather than one in three. It was the most common way a wave went wrong; it is now the least.",
+                "A rarer second repair drop: a crossed pair of spanners that heals twice what a single one does. About one spanner in four is now the set.",
+                "The single spanner heals half what it used to, so the pair are one item at two grades rather than two pickups.",
+                "Fewer drums are empty - about one in seven instead of one in four - so there is more in the yard to find.",
+                "The spanner no longer has a hard-edged bite taken out of the shadow it casts.",
+            }),
+        new("2026-08-29T11:20Z", "v411", "RING ATTACKS EASE OFF SLIGHTLY",
+            new[]
+            {
+                "The encircling attack turns up a little less often than it did.",
             }),
         new("2026-08-29T11:05Z", "v411", "A COIN CAN BE WORTH ANYTHING UP TO ITS CEILING",
             new[]

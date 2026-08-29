@@ -28,6 +28,8 @@ export const PICKUP_KIND_GEM = 0;
  * test the magnet and the collector need to tell "XP" from "a thing you walk over and use".
  *
  *   REPAIR  a spanner. Heals a fraction of max HP.
+ *   REPAIR_CROSS  a crossed pair of spanners. The same drop, worth twice the one above - so the
+ *           two read as one item at two grades rather than as two different pickups.
  *   CREDIT  a blue coin. `value` is 1..50 and `tier` picks which of the four coin sprites is
  *           drawn, so the pile you can see IS the amount you are about to bank.
  *   MAGNET  drags every gem in the world to the player for a few seconds.
@@ -43,6 +45,18 @@ export const PICKUP_KIND_CHEST = 4;
  * rather than a number now - which is exactly why it is the rare one.
  */
 export const PICKUP_KIND_DICE = 5;
+/**
+ * A CROSS SET OF SPANNERS. Heals twice what the single does, and is otherwise the same pickup in
+ * every respect - magnet-dragged, wasted at full health, clamped to max.
+ *
+ * A SEPARATE KIND RATHER THAN A `value` ON THE EXISTING ONE, because `value` is already the heal
+ * and the renderer needs to know WHICH SPRITE to draw before it knows what the number means. A
+ * kind is the only field the draw path reads without interpreting it.
+ *
+ * APPENDED, never inserted: the kind is written into the pool, the event ring and the save's
+ * stat lines, so the existing five must keep the numbers they have.
+ */
+export const PICKUP_KIND_REPAIR_CROSS = 6;
 
 export interface PickupPool {
   readonly capacity: number;

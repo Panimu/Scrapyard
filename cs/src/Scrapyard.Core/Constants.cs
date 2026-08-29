@@ -442,7 +442,8 @@ public sealed class PickupTuning
     public double BarrelRegrowSec = 18;
 
     /// <summary>Spanner heal, as a fraction of MAX HP - so it stays worth picking up at every level.</summary>
-    public double RepairFrac = 0.25;
+    public double RepairFrac = 0.125; // halved when the cross set arrived
+    public double RepairFracCross = 0.25;
 
     /// <summary>Credit coin value at t=0 and at the end of the run. Interpolated by run time.</summary>
     public double CreditMin = 1;
@@ -463,7 +464,7 @@ public sealed class PickupTuning
     /// if every one paid out, the player would stop noticing them. The empty is what keeps the full
     /// one a result.
     /// </remarks>
-    public double BarrelEmptyChance = 0.25;
+    public double BarrelEmptyChance = 0.15;
 
     /// <summary>
     /// THE CONSOLATION PAIR'S numbers, offered only once every upgrade in the game has been taken.
