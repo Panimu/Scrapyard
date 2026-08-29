@@ -87,6 +87,23 @@ function canAscend(defIdx: number, combo: readonly number[]): boolean {
 function equipCombo(world: World, combo: readonly number[], ascend: boolean): void {
   world.noAscension = true;
 
+  // EVERY PASSIVE AT MAX, AND THAT IS MORE THAN A PLAYER CAN HOLD. `world.maxPassives` is 7 with
+  // Auxiliary Bay maxed (5 + 2); this grants all ten. It is a DELIBERATE FUDGE and not an
+  // oversight, so do not "fix" it by capping to maxPassives.
+  //
+  // The reason is combinatorial. The sweep already measures 1572 weapon combinations; making the
+  // passive loadout a free choice as well would multiply that by C(10,7) = 120 and turn a
+  // two-and-a-half hour run into a fortnight. Holding all ten instead means every loadout sits
+  // under an IDENTICAL passive stack, so the differences the sweep reports are differences between
+  // WEAPONS, which is the question it exists to answer.
+  //
+  // What it costs is that absolute numbers - win rate, run length - describe a build nobody can
+  // assemble, and a passive that disproportionately serves one weapon flatters it. Read the sweep
+  // for how weapons rank against each other, not for how a real run goes.
+  //
+  // The meta upgrades ARE now granted in full - see MAX_META in measureRig.ts - which is a
+  // different case: those are a permanent save state a player genuinely ends up holding all of,
+  // rather than a per-run choice between mutually exclusive options.
   const stacks = world.levelUp.stacks;
   stacks.fill(0);
   for (let i = 0; i < UPGRADE_CATALOG.length; i++) {
