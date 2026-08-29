@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T10:40Z',
+    version: 'v410',
+    title: 'THE HORDE ARRIVES A LITTLE MORE GRADUALLY',
+    notes: [
+      'Bodies feed onto the field slightly slower. Just as many turn up in the end - this changes the pace they arrive at, not how many you face.',
+    ],
+  },
+  {
     at: '2026-08-29T10:15Z',
     version: 'v409',
     title: 'THE YARD THROWS MORE AT YOU',

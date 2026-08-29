@@ -320,7 +320,7 @@ public sealed class DirectorTuning
     public int MaxLiveElites = 5;
 
     /// <summary>Rate limit on the drip. Blocked spawns are never banked - see the accumulator clamp.</summary>
-    public double MaxSpawnsPerSec = 11;
+    public double MaxSpawnsPerSec = 10;
 }
 
 /// <summary>How the horde pushes itself apart, and how knockback decays.</summary>

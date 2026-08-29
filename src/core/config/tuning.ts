@@ -284,7 +284,10 @@ const DIRECTOR: DirectorTuning = {
   eliteIntervalPerCycle: 0.4,
   eliteIntervalMin: 4.5,
   maxLiveElites: 5,
-  maxSpawnsPerSec: 11,
+  // 12 -> 11 -> 10. A RATE LIMIT, not a headcount cap: it governs how fast the director may
+  // feed bodies in, never how many may stand on the field at once. That is pressure, above.
+  // Lowering it makes a wave arrive more gradually without ever making it smaller.
+  maxSpawnsPerSec: 10,
   forwardBiasMinSpeed: 20,
   hpRampPerSec: 1.00218876, // 1.30 ** (1/120)
   speedRampPerSec: 1.00048569, // 1.06 ** (1/120)
