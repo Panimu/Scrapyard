@@ -65,6 +65,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-29T10:15Z',
+    version: 'v409',
+    title: 'THE YARD THROWS MORE AT YOU',
+    notes: [
+      'A wave that passed quietly now rarely does - roughly one in seventeen instead of one in seven. Most of what fills the gap is the swarm, which is now the likeliest thing a wave can turn into.',
+      'Cyber Chest elites turn up a little more often too, and so do ring attacks.',
+    ],
+  },
+  {
     at: '2026-08-29T09:40Z',
     version: 'v408',
     title: 'THE MACHINE GUN AND THE FLAK CANNON BOTH CARRY MORE',

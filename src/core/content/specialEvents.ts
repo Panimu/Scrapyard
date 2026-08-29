@@ -62,6 +62,14 @@
  *     swarm       12   17.1%   UNCHANGED
  *     chest elite  5    7.1%   half the ring, as asked
  *
+ * THAT TABLE IS HISTORY, NOT THE LIVE ONE, and the difference has grown enough to be worth
+ * saying: the swarm has since been raised twice and `nothing` cut twice, so the live weights are
+ * 15/10/30/7 and the shape has inverted - the swarm is now the LIKELIEST outcome of a draw at
+ * 48%, where in the table above it was the rarest set-piece at 17%. The chest elite is no longer
+ * "half the ring" either; at 7 against 10 it is seven tenths of it. Read the arithmetic above for
+ * HOW a new entry is slotted in without re-slicing the others, which is what it is here to teach,
+ * and read SPECIAL_EVENTS itself for what the game currently does.
+ *
  * Doubling every weight changes nothing about the draw - a weighted table is scale-free - and it
  * means the next event specified as a fraction of an existing one has room to land on an integer
  * too.
@@ -135,8 +143,8 @@ export interface SpecialEventDef {
  * upgrade catalog and the event kinds live under.
  */
 export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
-  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 30 }),
-  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 12 }),
+  Object.freeze({ id: EVENT_NOTHING as SpecialEventId, name: 'nothing', weight: 15 }),
+  Object.freeze({ id: EVENT_RING_ATTACK as SpecialEventId, name: 'ring attack', weight: 10 }),
   Object.freeze({ id: EVENT_SWARM as SpecialEventId, name: 'the swarm', weight: 30 }),
   Object.freeze({ id: EVENT_CHEST_ELITE as SpecialEventId, name: 'chest elite', weight: 7 }),
 ]);

@@ -103,6 +103,14 @@ public class BotCoverageProbe
         // fixed - a bot that genuinely spends every pick on offence rather than falling through to
         // whatever was offered first dies to some scenarios sooner, so the same nine runs now total
         // 69,241 ticks. Set with headroom under the measured total rather than pinned to it.
-        Assert.True(ticks > 60000);
+        // AND IT MOVED AGAIN, 60,000 -> 45,000, when the special-event table was sharpened
+        // (`nothing` 30 -> 15, ring 12 -> 10): a wave that used to pass quietly now rarely does, so
+        // the bot dies sooner and the same nine runs total 59,704 ticks. That is the THIRD time
+        // this floor has been cut for the same underlying reason - the corpus is a record of how
+        // long a bot survives, so every change that makes the game harder shortens it. 98,970 ->
+        // 69,241 -> 59,704. The headroom here is deliberately wide for that reason; if this trips
+        // again, check that the drop is explained by a difficulty change before lowering it, since
+        // the other thing that shortens every run is the bot having got stupid.
+        Assert.True(ticks > 45000);
     }
 }

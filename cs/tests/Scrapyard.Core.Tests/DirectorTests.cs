@@ -35,7 +35,7 @@ public class DirectorTests
         // plausible horde rather than an obvious failure. Pinned against the resolver's own output
         // via the fixture's per-checkpoint `cycle` block, and against the tables directly here.
         Assert.Equal(4, SpecialEvents.Weight.Length);
-        Assert.Equal(79, SpecialEvents.TotalWeight);
+        Assert.Equal(62, SpecialEvents.TotalWeight);
         Assert.Equal(SpecialEvents.Weight.Sum(), SpecialEvents.TotalWeight);
 
         Assert.Equal(8, ScrapyardLadder.All.Length);
