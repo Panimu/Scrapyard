@@ -554,13 +554,16 @@ export const CANNON: WeaponDef = Object.freeze({
     damage: 44, // no variance, no crit
     cooldown: CANNON_COOLDOWN, // 0.792 shots/s - the whole pace of the game is this number
     // WHAT THE SHELL REACHES, not what the turret will pick. See `acquireFrac` below: this gun
-    // flies 240 and only commits inside 168, and the gap between the two is deliberate.
+    // flies 300 and only commits inside 210, and the gap between the two is deliberate.
     //
-    // The rungs are 50, so the ladder is 240 -> 290 -> 340 and the acquisition window moves with
-    // it, 168 -> 203 -> 238. Fifty rather than the 49.6 left over from scaling an older base:
+    // The rungs are 50, so the ladder is 300 -> 350 -> 400 and the acquisition window moves with
+    // it, 210 -> 245 -> 280. Fifty rather than the 49.6 left over from scaling an older base:
     // 240 + 49.6 + 49.6 is 339.20000000000005, and a ladder that lands on a clean number is one
     // less float to chase through a golden fixture.
-    range: 240,
+    //
+    // 240 -> 300 AT THE BASE ONLY. The rungs are untouched, so the ladder shifts up rather than
+    // steepening, and `acquireFrac` carries the whole change into the targeting for free.
+    range: 300,
     projectileSpeed: 520, // 0.5 s to max range: plainly visible flight, and leadable by enemies
     projectileCount: 1,
     pierce: 0,
@@ -596,10 +599,10 @@ export const CANNON: WeaponDef = Object.freeze({
    * relationship with the swarm it otherwise ignores.
    */
   perLevel: Object.freeze([
-    { range: 50 }, // T2  240 -> 290
+    { range: 50 }, // T2  300 -> 350
     { cooldown: CANNON_RATE_TIER }, // T3  1.263 -> 1.0736 s  (-15% of base)
     { damage: 18 }, // T4  44 -> 62
-    { range: 50 }, // T5  290 -> 340
+    { range: 50 }, // T5  350 -> 400
     { cooldown: CANNON_RATE_TIER }, // T6  1.0736 -> 0.8841 s  (0.70x base, as always)
     { pierce: 1 }, // T7  punches through one body
     // T8 - THE TWIN MOUNT, and it carries no stats at all, exactly like the Chain Laser's rung:
@@ -608,9 +611,10 @@ export const CANNON: WeaponDef = Object.freeze({
     // read as a bonus stapled to a stat card.
     {}, // T8
   ]),
-  // SEVENTY PER CENT. The turret will not choose a body outside 168 even though the shell flies
-  // 240 - see WeaponDef.acquireFrac for why a gun that fires one slow shell should decline the
-  // shots at the edge of its own reach.
+  // SEVENTY PER CENT. The turret will not choose a body outside 210 even though the shell flies
+  // 300 - see WeaponDef.acquireFrac for why a gun that fires one slow shell should decline the
+  // shots at the edge of its own reach. A FRACTION AND NOT A DISTANCE, which is why raising the
+  // base range moved the window with it and needed no second edit.
   acquireFrac: 0.7,
   // ONE BARREL, TWO GUNS THAT COULD BOLT TO IT. Declared HERE and nowhere else - the check runs
   // both directions, so naming the Mortar from this side is the whole fact. See the Flak Cannon's

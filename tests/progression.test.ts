@@ -499,23 +499,23 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     const card = 0; // solo catalog: the Cannon card is the only one in this world's pool
     const s = (): WeaponStats => statsOfCard(w, card) as WeaponStats;
 
-    expect(s().range).toBe(CANNON.base.range); // 240
+    expect(s().range).toBe(CANNON.base.range); // 300
     expect(s().cooldown).toBe(CANNON.base.cooldown); // 1.2
     expect(s().damage).toBe(CANNON.base.damage); // 44
     expect(s().pierce).toBe(0);
 
     expect(takeTier(w, card)).toBe(2); // RANGE
-    expect(s().range).toBe(290);
+    expect(s().range).toBe(350);
     // SEVENTY PER CENT OF THE REACH, not the square of it: the Cannon declines targets past
     // `range * acquireFrac`. See WeaponDef.acquireFrac. The window moves with the range tier,
     // which is the thing being asserted here.
-    expect(s().acquireRangeSq).toBeCloseTo(290 * 0.7 * (290 * 0.7), 6);
+    expect(s().acquireRangeSq).toBeCloseTo(350 * 0.7 * (350 * 0.7), 6);
     expect(s().cooldown).toBe(CANNON.base.cooldown);
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(3); // FIRE RATE
     expect(s().cooldown).toBeCloseTo(1.07355, 9);
-    expect(s().range).toBe(290); // and nothing else moved
+    expect(s().range).toBe(350); // and nothing else moved
     expect(s().damage).toBe(CANNON.base.damage);
 
     expect(takeTier(w, card)).toBe(4); // DAMAGE
@@ -523,7 +523,7 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(s().cooldown).toBeCloseTo(1.07355, 9);
 
     expect(takeTier(w, card)).toBe(5); // RANGE again
-    expect(s().range).toBe(340);
+    expect(s().range).toBe(400);
 
     expect(takeTier(w, card)).toBe(6); // FIRE RATE again
     expect(s().cooldown).toBeCloseTo(0.8841, 9);
@@ -531,7 +531,7 @@ describe('weapon tiers: a card unlocks a gun, then levels it 2 -> 7', () => {
     expect(takeTier(w, card)).toBe(7); // PIERCE
     expect(s().pierce).toBe(1);
     // The last tier changes what the gun IS; everything below it is intact.
-    expect(s().range).toBe(340);
+    expect(s().range).toBe(400);
     expect(s().damage).toBe(62);
     expect(s().cooldown).toBeCloseTo(0.8841, 9);
   });

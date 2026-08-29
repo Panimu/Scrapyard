@@ -431,7 +431,7 @@ public static class WeaponCatalog
             Cooldown = 1.263, // 0.792 shots/s - the whole pace of the game is this number
             // What the SHELL reaches, not what the turret will pick - see AcquireFrac below.
             // The ladder is 240 -> 290 -> 340 and the acquisition window with it, 168 -> 203 -> 238.
-            Range = 240,
+            Range = 300,
             ProjectileSpeed = 520, // 0.5 s to max range: plainly visible, leadable by enemies
             ProjectileCount = 1,
             Knockback = 190, // impulse/mass: runt 380 u/s, elite 27, boss immune
@@ -443,10 +443,10 @@ public static class WeaponCatalog
         },
         PerLevel = new[]
         {
-            new WeaponStatDelta { Range = 50 },      // T2  240 -> 290
+            new WeaponStatDelta { Range = 50 },      // T2  300 -> 350
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T3  -15% of base
             new WeaponStatDelta { Damage = 18 },     // T4  44 -> 62
-            new WeaponStatDelta { Range = 50 },      // T5  290 -> 340
+            new WeaponStatDelta { Range = 50 },      // T5  350 -> 400
             new WeaponStatDelta { Cooldown = -0.18944999999999998 }, // T6
             new WeaponStatDelta { Pierce = 1 },      // T7  punches through one body
             new WeaponStatDelta(),                    // T8  the Twin Mount - see TwinFrom
