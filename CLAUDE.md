@@ -148,7 +148,7 @@ Throughput weapons survive the switch: the Mortar reads 16% of the default table
 five-gun one, so a claim that it dominates holds either way. The trap is specific to capped ones.
 
 **`sweep` (`sweep.bat` in the repository root) settles the argument by not picking a loadout at
-all.** It measures EVERY playable five-weapon combination — 1372 of the 2002, the other 630 holding
+all.** It measures EVERY playable five-weapon combination — 1572 of the 2002, the other 430 holding
 a mutually-exclusive pair — over three seeds each, and writes one self-contained HTML page: the
 catalog as authored, then per-weapon share and win rate across every loadout that held it, which
 pairs are worth more together than apart, and the whole sortable list. It appends results as they
