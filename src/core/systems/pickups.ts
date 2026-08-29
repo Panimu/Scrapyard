@@ -320,16 +320,21 @@ export function breakLootIn(
  * pulling those out of the spawn stream would make the horde itself depend on how much scenery
  * someone shot. Loot is the stream that already exists for exactly this.
  *
- * Two draws, always, in this order: WHICH consumable, then the coin jitter. The second is drawn
- * even for a spanner or a magnet, so that adding or reweighting a kind later cannot shift the
- * stream for the kinds either side of it.
+ * Two draws, always, in this order: WHICH consumable, then the COIN'S OWN ROLL. The second is
+ * drawn even for a spanner or a magnet, so that adding or reweighting a kind later cannot shift
+ * the stream for the kinds either side of it.
+ *
+ * The second draw is a bare `nextFloat` and NOT `nextInt`: nextInt rejects the ragged tail of the
+ * u32 range, so it consumes a variable number of words, and a variable draw count in a path this
+ * hot would desynchronise the loot stream between the two languages the first time a rejection
+ * landed on one side and not the other.
  */
 function dropConsumable(world: World, x: number, y: number): void {
   const rng = world.rng.loot;
   const t = world.config.tuning.pickups;
 
   const which = rng.nextFloat();
-  const jitter = rng.nextRange(1 - t.creditJitter, 1 + t.creditJitter);
+  const coinRoll = rng.nextFloat();
 
   // EMPTY. Drawn from the same `which` roll rather than a separate one, so the odds are a single
   // readable partition of [0, 1) and adding a fourth outcome later does not change how many values
@@ -365,9 +370,20 @@ function dropConsumable(world: World, x: number, y: number): void {
     // player is safe and everything is slow.
     const span = world.config.runLengthSec > 0 ? world.runSec / world.config.runLengthSec : 0;
     const clamped = span < 0 ? 0 : span > 1 ? 1 : span;
-    const base = t.creditMin + (t.creditMax - t.creditMin) * clamped;
-    const rolled = Math.round(base * jitter);
-    value = rolled < t.creditMin ? t.creditMin : rolled > t.creditMax ? t.creditMax : rolled;
+    // UNIFORM FROM 1 TO THE CURRENT CEILING, not a narrow band around it. The ceiling is what
+    // rides the clock; the coin itself is any whole number up to it. That means a late coin can
+    // still be a 1 - the drop is a lottery whose top prize grows, rather than a payout that
+    // silently indexes the clock.
+    //
+    // IT USED TO BE `ceiling * jitter` WITH 25% JITTER, which never produced anything near the
+    // bottom of the range: at the midpoint of a run the ceiling is ~25 and a coin was always
+    // between 19 and 32. `creditJitter` existed only for that and is gone with it.
+    //
+    // Halving the mean is the point and not a side effect - a coin was worth the ceiling, and is
+    // now worth about half of it.
+    const ceiling = t.creditMin + (t.creditMax - t.creditMin) * clamped;
+    const steps = Math.floor(ceiling) - t.creditMin + 1;
+    value = t.creditMin + Math.floor(coinRoll * steps);
     tier = creditTier(value, t.creditTierValues);
   }
 

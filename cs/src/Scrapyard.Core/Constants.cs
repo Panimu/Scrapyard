@@ -450,7 +450,6 @@ public sealed class PickupTuning
     public double CreditMax = 50;
 
     /// <summary>+/- this fraction of jitter on a coin, so two barrels a minute apart are not the same coin.</summary>
-    public double CreditJitter = 0.25;
 
     /// <summary>Coin <c>value</c> at or above which each of the four coin sprites is used.</summary>
     public readonly double[] CreditTierValues = { 1, 8, 20, 36 };

@@ -540,7 +540,6 @@ const fixture = {
       repairFrac: f64(t.repairFrac),
       creditMin: f64(t.creditMin),
       creditMax: f64(t.creditMax),
-      creditJitter: f64(t.creditJitter),
       creditTierValues: t.creditTierValues.map(f64),
       barrelEmptyChance: f64(t.barrelEmptyChance),
       runLengthSec: f64(w.config.runLengthSec),

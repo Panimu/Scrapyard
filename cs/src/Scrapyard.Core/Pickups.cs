@@ -195,7 +195,7 @@ public static class Pickups
         var t = world.Tuning.Pickups;
 
         double which = rng.NextDouble();
-        double jitter = rng.NextRange(1 - t.CreditJitter, 1 + t.CreditJitter);
+        double coinRoll = rng.NextDouble();
 
         // EMPTY. Drawn from the same `which` roll rather than a separate one, so the odds are a
         // single readable partition of [0, 1) and adding a fourth outcome later does not change how
@@ -236,9 +236,14 @@ public static class Pickups
             // VALUE RIDES THE CLOCK - see World.RunLengthSec.
             double span = world.RunLengthSec > 0 ? world.RunSec / world.RunLengthSec : 0;
             double clamped = span < 0 ? 0 : span > 1 ? 1 : span;
-            double baseValue = t.CreditMin + (t.CreditMax - t.CreditMin) * clamped;
-            double rolled = Input.JsRound(baseValue * jitter);
-            value = (int)(rolled < t.CreditMin ? t.CreditMin : rolled > t.CreditMax ? t.CreditMax : rolled);
+            // UNIFORM FROM 1 TO THE CURRENT CEILING, not a narrow band around it - see the TS
+            // comment. A bare NextFloat, never NextInt: NextInt rejects the ragged tail of the
+            // u32 range and so consumes a variable number of words, which would desynchronise
+            // the loot stream from the TS side the first time a rejection landed on one and not
+            // the other.
+            double ceiling = t.CreditMin + (t.CreditMax - t.CreditMin) * clamped;
+            int steps = (int)Math.Floor(ceiling) - (int)t.CreditMin + 1;
+            value = (int)t.CreditMin + (int)Math.Floor(coinRoll * steps);
             tier = CreditTier(value, t.CreditTierValues);
         }
 

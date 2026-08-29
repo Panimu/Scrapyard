@@ -28,6 +28,17 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-29T11:20Z", "v411", "RING ATTACKS BECOME RARE",
+            new[]
+            {
+                "The encircling attack now turns up about one wave in twenty-seven rather than one in three. It was the most common way a wave went wrong; it is now the least.",
+            }),
+        new("2026-08-29T11:05Z", "v411", "A COIN CAN BE WORTH ANYTHING UP TO ITS CEILING",
+            new[]
+            {
+                "Coins used to be worth roughly whatever the clock said, give or take a quarter. Now a coin is any amount from one up to that ceiling, so a late barrel might hand you a fortune or might hand you a single credit.",
+                "The ceiling still climbs through the run. What changed is that the floor no longer climbs with it.",
+            }),
         new("2026-08-29T10:40Z", "v410", "THE HORDE ARRIVES A LITTLE MORE GRADUALLY",
             new[]
             {

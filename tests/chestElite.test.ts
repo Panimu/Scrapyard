@@ -7,8 +7,8 @@
  *     tables rather than of any branch in the spawner;
  *   - killing one leaves a Cyber Chest, which crosses three systems (damage writes the flavour
  *     into the kill feed, the feed survives the body being reaped, pickups reads it back);
- *   - the event is actually on the weights table and stays rarer than the ring - the two things
- *     about its frequency that would be BUGS rather than balance opinions. See the note below.
+ *   - the event is actually on the weights table - the ONLY thing about its frequency that would
+ *     be a BUG rather than a balance opinion. See the note below.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,7 +26,6 @@ import {
 } from '../src/core/content/enemyCatalog.js';
 import {
   EVENT_CHEST_ELITE,
-  EVENT_RING_ATTACK,
   SPECIAL_EVENTS,
 } from '../src/core/content/specialEvents.js';
 import { allocEnemy } from '../src/core/entity/enemyPool.js';
@@ -127,7 +126,7 @@ describe('the Chest Elite event', () => {
   const weightOf = (id: number): number =>
     SPECIAL_EVENTS.find((e) => e.id === id)?.weight ?? 0;
 
-  it('is on the table at all, and is rarer than the ring it walks in beside', () => {
+  it('is on the weights table at all', () => {
     // ALL THAT IS LEFT TO PIN, and getting here took three tries. The assertions that used to be
     // in this block were, in order: the ring's absolute share; the swarm's ratio to the ring; and
     // the chest elite being exactly half the ring. Every one of them was deliberately overridden
@@ -139,9 +138,15 @@ describe('the Chest Elite event', () => {
     // frequency in this table is a design opinion, and a test that asserts one is charging rent
     // on a decision rather than protecting an invariant.
     //
-    // What survives is only what would be a BUG: an event with no weight never fires, and a chest
-    // that arrived more often than the hardest set-piece in the game would be a different feature.
+    // AND THEN IT WENT A FOURTH TIME. "Rarer than the ring" survived the three above and was
+    // kept here as the one frequency claim that was structural rather than a preference - a chest
+    // arriving more often than the hardest set-piece would be a different feature, went the
+    // reasoning. The ring's weight was then cut to 1 as a deliberate act, which makes the chest
+    // elite SEVEN TIMES the ring, and the reasoning turned out to rest on the ring being common.
+    //
+    // So the exception is withdrawn and the note above is simply followed: NOTHING about the
+    // relative frequency of two events is pinned here. What is left is the one claim that is not
+    // an opinion - an entry with no weight can never fire, whatever the rest of the table says.
     expect(weightOf(EVENT_CHEST_ELITE)).toBeGreaterThan(0);
-    expect(weightOf(EVENT_CHEST_ELITE)).toBeLessThan(weightOf(EVENT_RING_ATTACK));
   });
 });

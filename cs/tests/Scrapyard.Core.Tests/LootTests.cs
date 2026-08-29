@@ -44,7 +44,6 @@ public class LootTests
         Assert.Equal(Fixture.Bits(t.GetProperty("repairFrac").F64()), Fixture.Bits(p.RepairFrac));
         Assert.Equal(Fixture.Bits(t.GetProperty("creditMin").F64()), Fixture.Bits(p.CreditMin));
         Assert.Equal(Fixture.Bits(t.GetProperty("creditMax").F64()), Fixture.Bits(p.CreditMax));
-        Assert.Equal(Fixture.Bits(t.GetProperty("creditJitter").F64()), Fixture.Bits(p.CreditJitter));
         Assert.Equal(Fixture.Bits(t.GetProperty("barrelEmptyChance").F64()), Fixture.Bits(p.BarrelEmptyChance));
 
         var tiers = t.GetProperty("creditTierValues").EnumerateArray().ToArray();

@@ -192,8 +192,6 @@ export interface PickupTuning {
   /** Credit coin value at t=0 and at the end of the run. Interpolated by run time. */
   readonly creditMin: number;
   readonly creditMax: number;
-  /** +-this fraction of jitter on a coin, so two barrels a minute apart are not the same coin. */
-  readonly creditJitter: number;
   /** Coin `value` at or above which each of the four coin sprites is used. */
   readonly creditTierValues: readonly [number, number, number, number];
   /** Seconds during which a magnet pulls EVERY gem, at any distance. */
@@ -317,7 +315,6 @@ const PICKUPS: PickupTuning = {
   repairFrac: 0.25,
   creditMin: 1,
   creditMax: 50,
-  creditJitter: 0.25,
   // Single coin / small stack / large stack / overflowing bag. The thresholds are spaced so the
   // top sprite stays uncommon early: at t=0 a coin is worth ~1 and can only ever be the single,
   // and the bag needs a value only the last third of a run can produce.

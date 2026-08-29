@@ -17,12 +17,12 @@ public static class SpecialEvents
     public const int ChestElite = 3;
 
     /// <summary>Weights in table order. The index IS the id.</summary>
-    public static readonly int[] Weight = { 15, 10, 30, 7 };
+    public static readonly int[] Weight = { 15, 1, 30, 7 };
 
     public static readonly string[] Name = { "nothing", "ring attack", "the swarm", "chest elite" };
 
     /// <summary>Summed once; the draw is one multiply and a linear walk.</summary>
-    public static readonly int TotalWeight = 62;
+    public static readonly int TotalWeight = 53;
 
     /// <summary>
     /// Picks an event from <paramref name="roll"/>, a number in [0, 1).
