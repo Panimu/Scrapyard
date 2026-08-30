@@ -1175,17 +1175,21 @@ export const MISSILE_SHORT = missile(
   // rungs 0.7 -> 0.77, so T7 curves at 6.82 rad/s against the 6.2 it did. A homing missile's turn
   // rate is the whole of whether it CONNECTS: too slow and it arcs past a body that stepped aside
   // and spends the rest of its fuse coming back round.
-  // DAMAGE UP A TWENTIETH, ACROSS THE LADDER rather than at the base alone - 68 -> 71.4 with the
-  // rung 22 -> 23.1, so tier 7 is 94.5 against 90. Scaling the rung too is what keeps a "+5%" from
-  // shrinking to +3.8% by the tier that matters.
-  2, 15, 3.0, 71.4, 280, 300, 1.15, 5.28, 0, 0, 210, VIS_MISSILE_SHORT,
+  // DAMAGE TRIMMED 3%, ACROSS THE LADDER rather than at the base alone - 71.4 -> 69.3 with the
+  // rung 23.1 -> 22.5, so tier 7 is 91.8 against 94.5. Scaling the rung too is what keeps a cut
+  // from shrinking by the tier that matters; the same reason the +5% that took this to 71.4 moved
+  // both numbers. This gives back rather less than half of that raise, and the measurement it
+  // came from is the full sweep: the rack won 5.9 runs per hundred at tier 7 and 14.0 with
+  // ascensions, against 4.5 and 7.7 for the next weapon down - the one clear outlier at the top
+  // of a field that is otherwise bunched within about one boss kill of the win line.
+  2, 15, 3.0, 69.3, 280, 300, 1.15, 5.28, 0, 0, 210, VIS_MISSILE_SHORT,
   Object.freeze([
     { cooldown: -0.45 }, // T2  3.00 -> 2.55 s
     // THESE TWO USED TO READ 2.4 -> 3.1 AND 3.1 -> 3.8, describing a base this rack has not had
     // for a long time - the C# transcription had the right figures all along. A derived number in
     // a comment is worth nothing the moment the thing it was derived from moves.
     { turnRate: 0.77 }, // T3  5.28 -> 6.05 rad/s
-    { damage: 23.1 }, // T4  71.4 -> 94.5
+    { damage: 22.5 }, // T4  69.3 -> 91.8
     { cooldown: -0.45 }, // T5  2.55 -> 2.10 s
     { turnRate: 0.77 }, // T6  6.05 -> 6.82 rad/s
     { projectileCount: 1 }, // T7  a third missile
@@ -1307,7 +1311,7 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     { ammoCapacity: 80 }, // T4  250 -> 330 rounds
     { range: 25 }, // T5  130 -> 155
     { damage: 3 }, // T6  7.0 -> 10.0
-    { reloadTime: -4.5 }, // T7  14.5 -> 10.0 s
+    { reloadTime: -5 }, // T7  14.5 -> 9.5 s
   ]),
   reengageMul: 1,
   visualId: VIS_SLUG,

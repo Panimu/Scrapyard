@@ -315,7 +315,7 @@
    "behaviour": "homing",
    "requiresTarget": false,
    "base": {
-    "damage": "4051d9999999999a",
+    "damage": "4051533333333333",
     "cooldown": "4008000000000000",
     "range": "4071800000000000",
     "projectileSpeed": "4072c00000000000",
@@ -343,7 +343,7 @@
      "turnRate": "3fe8a3d70a3d70a4"
     },
     {
-     "damage": "403719999999999a"
+     "damage": "4036800000000000"
     },
     {
      "cooldown": "bfdccccccccccccd"
@@ -488,7 +488,7 @@
      "damage": "4008000000000000"
     },
     {
-     "reloadTime": "c012000000000000"
+     "reloadTime": "c014000000000000"
     }
    ],
    "reengageMul": "3ff0000000000000",

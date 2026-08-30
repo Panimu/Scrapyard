@@ -754,7 +754,7 @@ public static class WeaponCatalog
 
     public static readonly WeaponDef MissileShort = Missile(
         WeaponIds.MissileShort, "Short Missiles",
-        volley: 2, spreadAngle: 0.2617993877991494 /* degToRad(15) */, cooldown: 3.0, damage: 71.4, range: 280, speed: 300,
+        volley: 2, spreadAngle: 0.2617993877991494 /* degToRad(15) */, cooldown: 3.0, damage: 69.3, range: 280, speed: 300,
         // Turn rate UP A TENTH across the whole ladder - see the TypeScript for why it is the stat
         // that decides whether a homing missile connects at all.
         flightTime: 1.15, turnRate: 5.28, knockback: 210, visualId: VisualId.MissileShort,
@@ -762,7 +762,7 @@ public static class WeaponCatalog
         {
             new WeaponStatDelta { Cooldown = -0.45 },       // T2  3.00 -> 2.55 s
             new WeaponStatDelta { TurnRate = 0.77 },        // T3  5.28 -> 6.05 rad/s
-            new WeaponStatDelta { Damage = 23.1 },          // T4  71.4 -> 94.5
+            new WeaponStatDelta { Damage = 22.5 },          // T4  69.3 -> 91.8
             new WeaponStatDelta { Cooldown = -0.45 },       // T5  2.55 -> 2.10 s
             new WeaponStatDelta { TurnRate = 0.77 },        // T6  6.05 -> 6.82 rad/s
             new WeaponStatDelta { ProjectileCount = 1 },    // T7  a third missile
@@ -811,7 +811,7 @@ public static class WeaponCatalog
             new WeaponStatDelta { AmmoCapacity = 80 },  // T4  250 -> 330 rounds
             new WeaponStatDelta { Range = 25 },         // T5  130 -> 155
             new WeaponStatDelta { Damage = 3 },         // T6  7.0 -> 10.0
-            new WeaponStatDelta { ReloadTime = -4.5 },  // T7  14.5 -> 10.0 s
+            new WeaponStatDelta { ReloadTime = -5 },    // T7  14.5 -> 9.5 s
         },
         ReengageMul = 1, VisualId = VisualId.Slug, MuzzleOffset = 28, ShellRadius = 5,
         FireAlongFacing = false, DetonateOnExpiry = false,

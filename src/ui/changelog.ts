@@ -65,6 +65,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-30T13:32Z',
+    version: 'v423',
+    title: 'THE MACHINE GUN CHANGES BELTS FASTER',
+    notes: [
+      'A fully upgraded machine gun is back in the fight half a second sooner after it runs dry - nine and a half seconds standing there instead of ten, the same wait the flak cannon has.',
+    ],
+  },
+  {
+    at: '2026-08-30T13:32Z',
+    version: 'v423',
+    title: 'SHORT MISSILES HIT A LITTLE LESS HARD',
+    notes: [
+      'Three percent off the warhead, at every tier. They were winning more runs than anything else in the yard by a clear margin, and this gives back rather less than half of the raise they got yesterday.',
+    ],
+  },
+  {
     at: '2026-08-29T12:20Z',
     version: 'v415',
     title: 'THE PHASE CANNON CHILLS HARDER',
