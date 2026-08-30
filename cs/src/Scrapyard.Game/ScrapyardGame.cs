@@ -76,8 +76,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
     private readonly Camera _camera = new();
     private Terrain _terrain = null!;
     private Effects _fx = null!;
-    private GroundCover _cover = null!;
-    private GroundPaths _paths = null!;
     private BeamLayer _beams = null!;
 
     /// <summary>
@@ -612,8 +610,6 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _sprites = new Sprites(GraphicsDevice, Sprites.FindRoot());
         _terrain = new Terrain(_sprites);
         _fx = new Effects(_sprites);
-        _cover = new GroundCover(_sprites);
-        _paths = new GroundPaths(_sprites);
         _beams = new BeamLayer(_sprites, _fx);
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
@@ -704,8 +700,7 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _savePauseLeft = 0;
         _picksSeen = 0;
         _pickLeft = 0;
-        _cover?.Begin(seed);
-        _paths?.Begin(seed);
+        _terrain?.Begin(seed);
         _camera.SnapTo(_sim.World.Player.X, _sim.World.Player.Y);
         // DROP WHAT THE LAST RUN LEFT IN THE RING, or its explosions play over this one's first
         // second. The read cursor belongs to the renderer, which is exactly why it can be moved
@@ -2242,11 +2237,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _batch.Begin(samplerState: SamplerState.PointClamp);
 
         DrawFloor(w);
-        // OVER THE FLOOR AND UNDER THE TERRAIN: a rock is on the ground, and a scrap pile is on
-        // top of the rock.
-        // A road is painted ON the ground, and a rock sits ON the road.
-        _paths.Draw(_batch, _camera);
-        _cover.Draw(_batch, _camera);
+        // OVER THE FLOOR. What sits between the two - roads, gravel, none of it - is the LEVEL's
+        // answer and is given inside Terrain.Draw, which is the one place that looks at what
+        // level this is. See the note on Terrain._paths for why it is not two places.
         _terrain.Draw(_batch, _camera, _sim.Scenery, w.ArenaHalf, w.Tick);
         // Acid on the ground, under everything that walks through it.
         DrawPuddles(w);

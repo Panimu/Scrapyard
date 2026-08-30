@@ -65,6 +65,14 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-30T19:11Z',
+    version: 'v425',
+    title: 'CITY CHAOS AND MOSSY MAYHEM GET THEIR OWN GROUND BACK',
+    notes: [
+      'On the desktop build, both were being painted with the worn service roads and scattered gravel that belong to the Scrapyard - a concrete road winding across the city streets and over the buildings, and yard rocks lying about in the woods. They stay in the yard now.',
+    ],
+  },
+  {
     at: '2026-08-30T19:02Z',
     version: 'v424',
     title: 'LEVELS COME SLOWER',

@@ -28,16 +28,72 @@ public sealed class Terrain
 {
     private readonly Sprites _sprites;
 
-    public Terrain(Sprites sprites) => _sprites = sprites;
+    /// <summary>
+    /// The Scrapyard's ground layers - service roads and scattered gravel - which belong to THAT
+    /// LEVEL and to no other.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>OWNED HERE BECAUSE THIS IS WHERE THE LEVEL IS DECIDED.</b> Both used to be drawn by
+    /// <c>ScrapyardGame.Draw</c>, unconditionally, one line above the call to this class - which
+    /// put the Scrapyard's worn concrete under City Chaos's streets and its gravel over Mossy
+    /// Mayhem's floor. The bug was not the missing <c>if</c>; it was that the frame had TWO places
+    /// deciding what a level's ground looks like, and only one of them was looking at the level.
+    /// </para>
+    /// <para>
+    /// The TypeScript renderer solved this by giving every level a <c>LevelDressing</c> that owns
+    /// its whole visual identity below the entities, precisely so a level cannot be expressed as
+    /// "this level with parts removed" (see <c>src/render/dressing.ts</c>). This class is the
+    /// port's version of that seam: it already dispatches on the scenery type, so folding the
+    /// ground layers into the branch that has a <see cref="ScrapPiles"/> makes the answer to "what
+    /// does this level's ground look like" live in exactly one switch.
+    /// </para>
+    /// </remarks>
+    private readonly GroundPaths _paths;
+
+    private readonly GroundCover _cover;
+
+    public Terrain(Sprites sprites)
+    {
+        _sprites = sprites;
+        _paths = new GroundPaths(sprites);
+        _cover = new GroundCover(sprites);
+    }
+
+    /// <summary>
+    /// A run is starting. The seed is the only thing that decides where the roads and the gravel
+    /// go, so the same seed lays the same yard on every machine.
+    /// </summary>
+    /// <remarks>
+    /// Seeded for EVERY level, not just the one that draws them. The scatters are derived per cell
+    /// and stored nowhere, so seeding a layer nobody draws costs two integer writes - and the
+    /// alternative, a Begin that had to know the level too, would be a second place to keep the
+    /// same fact.
+    /// </remarks>
+    public void Begin(int seed)
+    {
+        _paths.Begin(seed);
+        _cover.Begin(seed);
+    }
 
     public void Draw(SpriteBatch batch, Camera cam, IScenery scenery, double arenaHalf, int tick)
     {
         switch (scenery)
         {
-            case ScrapPiles p: DrawPiles(batch, cam, p); break;
+            case ScrapPiles p:
+                // Under the piles, and in this order: a road is painted ON the ground, gravel is
+                // scattered on the road, and a scrap pile sits on top of both.
+                _paths.Draw(batch, cam);
+                _cover.Draw(batch, cam);
+                DrawPiles(batch, cam, p);
+                break;
             case MossWalls m: DrawMoss(batch, cam, m, tick); break;
             case CityBlocks c: DrawCity(batch, cam, c); break;
         }
+
+        // NOT GATED ON THE LEVEL, and it does not need to be: the perimeter fence is a function of
+        // a BOUNDED arena, and the two levels that must not draw it declare `arenaHalf: Infinity`.
+        // The guard inside says so directly rather than naming a level.
         DrawFence(batch, cam, arenaHalf);
     }
 
