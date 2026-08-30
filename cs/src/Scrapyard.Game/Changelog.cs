@@ -25,9 +25,53 @@ public static class Changelog
     /// <summary>The build it shipped in ("v388"), or "" for an entry written before the field.</summary>
     public readonly record struct Entry(string At, string Version, string Title, string[] Notes);
 
+    /// <summary>Where to send a bug. Read from the TypeScript, never typed here.</summary>
+    public const string ContactEmail = "scrapyard@panimu.com";
+
+    /// <summary>The words in front of it - short, because the desktop draws one line.</summary>
+    public const string ContactPrompt = "Found a bug?";
+
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-30T22:20Z", "v428", "THERE IS SOMEWHERE TO SEND A BUG",
+            new[]
+            {
+                "An address at the bottom of this screen, under the list and above Back. If something is broken, or a number in here looks wrong, that is where it goes.",
+            }),
+        new("2026-08-30T19:45Z", "v426", "BUILDING SITES ARE NOT ALL THE SAME SHAPE ANY MORE",
+            new[]
+            {
+                "A fenced site used to be a square around the whole block, every time, and the only thing that changed was where the gate was. Now a site might be fenced on three sides with the fourth standing open, or on two sides meeting at a corner, or as two facing runs with a lane between them.",
+                "The sealed square is still the commonest, and it is still the one with a gate cut into it. The others need no gate - the side that was never built is the way in.",
+                "Walled courtyards are unchanged. One way in is what a courtyard is.",
+            }),
+        new("2026-08-30T19:11Z", "v425", "CITY CHAOS AND MOSSY MAYHEM GET THEIR OWN GROUND BACK",
+            new[]
+            {
+                "On the desktop build, both were being painted with the worn service roads and scattered gravel that belong to the Scrapyard - a concrete road winding across the city streets and over the buildings, and yard rocks lying about in the woods. They stay in the yard now.",
+            }),
+        new("2026-08-30T19:02Z", "v424", "LEVELS COME SLOWER",
+            new[]
+            {
+                "Every level costs a fifth more experience than it did, from the first one to the last. A card was never far away before, which is a strange thing to say about a choice - the pick should be worth thinking about because the next one is a while off.",
+            }),
+        new("2026-08-30T19:02Z", "v424", "BLACK MARKET CONTACTS, IN THE WORKSHOP",
+            new[]
+            {
+                "A new permanent upgrade, five tiers and expensive: more of what walks into the yard is a lone elite carrying a Cyber Chest. At full it turns up seventy percent more often than it does now.",
+                "Bought at the cost of the quiet. The waves where nothing happens are what pay for it, so a fully upgraded yard has the same number of set-pieces and fewer of them are a rest.",
+            }),
+        new("2026-08-30T13:32Z", "v423", "THE MACHINE GUN CHANGES BELTS FASTER",
+            new[]
+            {
+                "A fully upgraded machine gun is back in the fight half a second sooner after it runs dry - nine and a half seconds standing there instead of ten. Still a touch longer than the flak cannon, which manages nine.",
+            }),
+        new("2026-08-30T13:32Z", "v423", "SHORT MISSILES HIT A LITTLE LESS HARD",
+            new[]
+            {
+                "Three percent off the warhead, at every tier. They were winning more runs than anything else in the yard by a clear margin, and this gives back rather less than half of the raise they got yesterday.",
+            }),
         new("2026-08-29T12:20Z", "v415", "THE PHASE CANNON CHILLS HARDER",
             new[]
             {

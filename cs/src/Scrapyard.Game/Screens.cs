@@ -1745,7 +1745,21 @@ public static class Screens
         var backBtn = new Rectangle(x0, backY, w, btnH);
         ActionButton(batch, sprites, backBtn, "BACK", "ESC", scale, true);
         outRects?.Add(backBtn);
-        int bottom = backY - 18 * scale - UiFont.GlyphH(small);
+
+        // WHERE TO SEND A BUG, directly above Back, with the page counter moved up a line to make
+        // room. Both strings come from Changelog, which the generator fills from
+        // src/ui/changelog.ts - the web overlay shows the same two, so neither build can drift
+        // into publishing an address the other does not.
+        //
+        // ALWAYS DRAWN, unlike the counter beside it: a screen that only tells you how to report a
+        // bug once the list is long enough to scroll is a screen that hides it from exactly the
+        // player who has just read every entry looking for their problem.
+        int contactY = backY - 8 * scale - UiFont.GlyphH(small);
+        UiDrawCentred(batch, sprites, $"{Changelog.ContactPrompt}  {Changelog.ContactEmail}",
+                      vw / 2, contactY, small, Palette.Faint);
+
+        int countY = contactY - 6 * scale - UiFont.GlyphH(small);
+        int bottom = countY - 8 * scale;
 
         // AS MANY LINES AS THE WINDOW HOLDS, worked out from the window. The port had thirteen, a
         // constant chosen once against one size, and on a 720-tall screen it showed thirteen lines
@@ -1782,7 +1796,7 @@ public static class Screens
         {
             UiDrawCentred(batch, sprites,
                              $"{first + 1} - {System.Math.Min(first + shown, lines.Count)} OF {lines.Count}",
-                             vw / 2, backY - 8 * scale - UiFont.GlyphH(small), small, Palette.Locked);
+                             vw / 2, countY, small, Palette.Locked);
         }
     }
 

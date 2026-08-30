@@ -207,6 +207,30 @@ out.push('    /// <summary>One entry: when, what it was called, and one line per
 out.push('    /// <summary>The build it shipped in ("v388"), or "" for an entry written before the field.</summary>');
 out.push('    public readonly record struct Entry(string At, string Version, string Title, string[] Notes);');
 out.push('');
+/**
+ * THE CONTACT LINE, READ OUT OF THE SAME FILE rather than written here.
+ *
+ * The changelog screen is the only place either build shows an address, and there are two of those
+ * screens. A literal in the C# would be a second copy of a string whose whole job is to be
+ * correct - and the day it is wrong, the game is telling people to write to nobody.
+ *
+ * THROWS RATHER THAN DEFAULTING. An address that silently becomes "" renders as a prompt with
+ * nothing after it, which looks like a layout bug and is not one.
+ */
+function constOf(name: string): string {
+  const m = new RegExp(`export const ${name} = '([^']*)'`).exec(SRC);
+  if (m === null) {
+    throw new Error(`gen_changelog: ${name} not found in src/ui/changelog.ts`);
+  }
+  return m[1];
+}
+
+out.push('    /// <summary>Where to send a bug. Read from the TypeScript, never typed here.</summary>');
+out.push(`    public const string ContactEmail = ${cs(constOf('CONTACT_EMAIL'))};`);
+out.push('');
+out.push('    /// <summary>The words in front of it - short, because the desktop draws one line.</summary>');
+out.push(`    public const string ContactPrompt = ${cs(constOf('CONTACT_PROMPT'))};`);
+out.push('');
 out.push('    /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>');
 out.push('    public static readonly Entry[] All =');
 out.push('    {');

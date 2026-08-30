@@ -2202,6 +2202,29 @@ body {
   color: var(--ink-faint);
 }
 
+/* Between the list and Back: quieter than an entry, and it must not eat the list's height. */
+.changelog__contact {
+  flex: 0 0 auto;
+  margin: 8px 0 6px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.changelog__mail {
+  color: inherit;
+  /* Underlined rather than tinted: the accent is the Back button's, and a second coloured thing
+     on this screen makes the reader choose between two calls to action where there is one. */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.changelog__mail:hover,
+.changelog__mail:focus-visible {
+  color: var(--ink);
+}
+
 .changelog__back {
   flex: 0 0 auto;
   width: 100%;

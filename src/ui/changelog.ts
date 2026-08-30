@@ -35,6 +35,20 @@
  * comparing notes on the same build read different timestamps for the same entry.
  */
 
+/**
+ * THE ONLY ADDRESS THE GAME PUBLISHES. Lives here because the changelog screen is the only place
+ * that shows it, and it is exported so the desktop front-end's generated text table takes the
+ * same string rather than a second copy that can drift - see tools/gen_ui_text.ts.
+ */
+export const CONTACT_EMAIL = 'scrapyard@panimu.com';
+
+/**
+ * The words in front of it, and they are SHORT ON PURPOSE. The desktop front-end draws this as one
+ * centred line in a bitmap font with no wrapping, so a sentence that reads well in a DOM paragraph
+ * runs out of its column there. Twelve characters fits any window either build can open.
+ */
+export const CONTACT_PROMPT = 'Found a bug?';
+
 export interface ChangelogEntry {
   /** ISO 8601, UTC, minute precision: `YYYY-MM-DDTHH:MMZ`. Straight from the commit. */
   readonly at: string;
@@ -64,6 +78,14 @@ export interface ChangelogEntry {
 
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
+  {
+    at: '2026-08-30T22:20Z',
+    version: 'v428',
+    title: 'THERE IS SOMEWHERE TO SEND A BUG',
+    notes: [
+      'An address at the bottom of this screen, under the list and above Back. If something is broken, or a number in here looks wrong, that is where it goes.',
+    ],
+  },
   {
     at: '2026-08-30T19:45Z',
     version: 'v426',
@@ -3003,13 +3025,35 @@ export function buildChangelogOverlay(onBack: () => void): ChangelogOverlay {
     list.appendChild(item);
   }
 
+  /**
+   * WHERE TO SEND A BUG, and the only address the game shows anywhere.
+   *
+   * UNDER THE LIST RATHER THAN IN THE HEAD. The head says what this screen is; the reader who
+   * wants this line has just finished reading the entries and is looking for what to do about
+   * one. It also keeps the address off the screen's first impression, which should be the
+   * changes.
+   *
+   * A REAL `mailto:` LINK rather than text to copy out. On a phone there is no way to select text
+   * from a canvas game's overlay without a fight, and an address a player cannot get at is an
+   * address that does not exist. The href works in the split build and in the SINGLEFILE one -
+   * that host forbids network requests (`connect-src 'none'`), which a mailto is not.
+   */
+  const contact = document.createElement('div');
+  contact.className = 'changelog__contact';
+  contact.append(`${CONTACT_PROMPT} `);
+  const mail = document.createElement('a');
+  mail.className = 'changelog__mail';
+  mail.href = `mailto:${CONTACT_EMAIL}`;
+  mail.textContent = CONTACT_EMAIL;
+  contact.appendChild(mail);
+
   const back = document.createElement('button');
   back.type = 'button';
   back.className = 'btn btn--primary changelog__back';
   back.textContent = 'Back';
   back.addEventListener('click', onBack);
 
-  el.append(head, list, back);
+  el.append(head, list, contact, back);
 
   return {
     element: el,
