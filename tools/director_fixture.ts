@@ -427,7 +427,10 @@ function findEventSeeds(): Array<[number, number]> {
     const w = new Simulation({ seed, heroId: 0, levelId: 'scrapyard' }).world;
     // The roll the cycle-1 rollover would make, without disturbing the world we hand to `build`:
     // the same stream, the same first draw.
-    const id = pickSpecialEvent(w.rng.event.nextFloat());
+    // The bonus is passed even though every world here carries no meta tiers, so the copy cannot
+    // drift from spawning.ts: the day this fixture gains a meta-tier case, it diverges loudly
+    // rather than by omission.
+    const id = pickSpecialEvent(w.rng.event.nextFloat(), w.chestWeight);
     if (!found.has(id)) found.set(id, seed);
   }
   if (found.size < 4) {

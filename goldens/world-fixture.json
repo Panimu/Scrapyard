@@ -494,7 +494,8 @@
    "autoLevel": 1,
    "maxWeapons": 0,
    "maxPassives": 8,
-   "xpBanked": "40d75a2f8da4c000",
+   "chestWeight": 2,
+   "xpBanked": "40d84b4f508b8000",
    "rng": {
     "spawn": [
      "23d7d3df",
@@ -534,21 +535,20 @@
     ]
    },
    "stats": {
-    "kills": "40a6fc0000000000",
+    "kills": "40bc3d0000000000",
     "killsByArchetype": [
-     229,
      178,
      29,
      814,
-     1874
+     1874,
+     11
     ],
     "killsByRank": [
-     11,
      631,
-     439
+     439,
+     1370
     ],
     "killsByCycleRank": [
-     670,
      718,
      8,
      14,
@@ -571,19 +571,19 @@
      349,
      316,
      295,
-     455
+     455,
+     127
     ],
-    "damageDealt": "4118beefdd60dc00",
-    "damageTaken": "40a6360a05b60000",
-    "damagePrevented": "4097cc7387860000",
-    "credits": "40bfa60000000000",
-    "consumables": "4062000000000000",
-    "dice": "4000000000000000",
-    "barrelsBroken": "4041800000000000",
-    "sheepTaken": "401c000000000000",
+    "damageDealt": "412384df9e95b600",
+    "damageTaken": "40a7cbb09ea30000",
+    "damagePrevented": "409a3b0b5c0a0000",
+    "credits": "40a3e00000000000",
+    "consumables": "4041000000000000",
+    "dice": "4008000000000000",
+    "barrelsBroken": "403b000000000000",
+    "sheepTaken": "4030000000000000",
     "chests": "4018000000000000",
     "damageByWeapon": [
-     "40eedfa5ade1a000",
      "410d011e9fa20c00",
      "41095f0fc0fcc800",
      "40fa496fcbf06000",
@@ -596,10 +596,10 @@
      "410d230367c6c800",
      "41083ea837336c00",
      "411067b6a6d4ce00",
-     "40f83cde98207000"
+     "40f83cde98207000",
+     "40f31373412af000"
     ],
     "bossKillsByWeapon": [
-     21,
      6,
      18,
      28,
@@ -612,19 +612,19 @@
      4,
      15,
      22,
-     20
+     20,
+     0
     ],
     "killsByFlavour": [
-     480,
      2,
      120,
      131,
      219,
      650,
-     82
+     82,
+     824
     ],
     "killsByWeapon": [
-     824,
      926,
      156,
      2381,
@@ -637,10 +637,10 @@
      2668,
      1294,
      1118,
-     2148
+     2148,
+     2739
     ],
     "killsByWeaponRank": [
-     339,
      51,
      385,
      230,
@@ -681,30 +681,31 @@
      652,
      480,
      532,
-     396
+     396,
+     130
     ],
-    "contactHits": "406cc00000000000",
-    "fullRepairs": "402e000000000000",
-    "lasersOverheated": "405d000000000000",
-    "splashKills": "40a09e0000000000",
-    "reloads": "4075800000000000",
-    "killedByRank": "3ff0000000000000",
-    "damageByShield": "40e37a3e2115d000",
-    "gemsCollected": "4072b00000000000",
-    "shotsFired": "40cc7f8000000000",
-    "shotsHit": "40d47bc000000000",
-    "peakEnemies": "403e000000000000",
-    "endTick": "40d6af0000000000"
+    "contactHits": "407ef00000000000",
+    "fullRepairs": "4030000000000000",
+    "lasersOverheated": "405fc00000000000",
+    "splashKills": "409e600000000000",
+    "reloads": "4068a00000000000",
+    "killedByRank": "4000000000000000",
+    "damageByShield": "40bc2975d32a8000",
+    "gemsCollected": "40a43e0000000000",
+    "shotsFired": "40d47bc000000000",
+    "shotsHit": "40c90f0000000000",
+    "peakEnemies": "403c000000000000",
+    "endTick": "40dfdf4000000000"
    },
-   "worldHash": "62766792",
-   "statsHash": "b63ee2c7"
+   "worldHash": "9370c224",
+   "statsHash": "65bb4d15"
   },
   {
    "name": "empty-1",
    "entities": null,
-   "tick": 112637,
-   "runTicks": 199082,
-   "phase": 0,
+   "tick": 99082,
+   "runTicks": 216012,
+   "phase": 5,
    "poolCounts": {
     "enemies": 0,
     "enemiesFree": 512,
@@ -716,333 +717,332 @@
     "sheep": 0
    },
    "player": {
-    "x": "4092c1a7fa2c0000",
-    "y": "409192c58df40000",
-    "vx": "4055584e05000000",
-    "vy": "40690476f6c00000",
-    "hp": "4066573001380000",
-    "faceX": "3fe160edc0000000",
-    "faceY": "bfe980b000000000",
-    "level": 17,
-    "xp": "40b2d590bc7f0000",
-    "xpToNext": "40b3f714c7dd8000",
-    "heroId": 0,
+    "x": "409192c58df40000",
+    "y": "407aa78f21400000",
+    "vx": "40690476f6c00000",
+    "vy": "c06e2f562d200000",
+    "hp": "4085b4a3824e0000",
+    "faceX": "bfe980b000000000",
+    "faceY": "bfd4e78a00000000",
+    "level": 41,
+    "xp": "40adf1ddf4950000",
+    "xpToNext": "40b7d134f0d90000",
+    "heroId": 8,
     "shieldLayers": 0,
-    "shieldTimer": "4010e1abda000000",
-    "invulnLeft": "3ff0e02448000000",
-    "magnetSec": "3ff91ae4d0000000",
-    "repairLeft": "403964912b800000",
+    "shieldTimer": "40219425cb000000",
+    "invulnLeft": "3fcfb62e80000000",
+    "magnetSec": "401fa31132000000",
+    "repairLeft": "3fff052b60000000",
     "criticalArmed": 0,
     "insuranceUsed": 0,
     "traitScratch": [
-     "c04803ea60000000",
      "403734cfc0000000",
      "4036faa820000000",
      "c025866700000000",
      "403bd11a40000000",
      "4043f25220000000",
      "4038e45680000000",
-     "4043de4000000000"
+     "4043de4000000000",
+     "c049012e80000000"
     ]
    },
    "weaponCount": 4,
    "weapons": [
     {
      "defId": 7,
-     "level": 0,
-     "cooldownLeft": "40092d1280000000",
-     "turretX": "bfd408d280000000",
-     "turretY": "bfb8089000000000",
-     "targetDense": 251,
-     "heat": "3fd0fecb00000000",
-     "overheated": false,
-     "ammo": 93,
-     "reloadLeft": "40095558fc000000",
-     "droneBanked": true,
+     "level": 6,
+     "cooldownLeft": "3ff33c23e8000000",
+     "turretX": "bfb8089000000000",
+     "turretY": "3febeac100000000",
+     "targetDense": 202,
+     "heat": "3fdd074780000000",
+     "overheated": true,
+     "ammo": 77,
+     "reloadLeft": "40019d600c000000",
+     "droneBanked": false,
      "scratch": [
-      "4050a6aae0000000",
       "4026b6bf20000000",
       "40527d18e0000000",
-      "c041467560000000"
+      "c041467560000000",
+      "c050f61ca0000000"
      ]
     },
     {
-     "defId": 10,
+     "defId": 0,
      "level": 0,
-     "cooldownLeft": "40036cd5d0000000",
-     "turretX": "bfec9ab240000000",
-     "turretY": "bfe5f91f80000000",
-     "targetDense": 193,
-     "heat": "3fb7da5700000000",
-     "overheated": false,
-     "ammo": 189,
-     "reloadLeft": "3fe2877ce0000000",
-     "droneBanked": false,
-     "scratch": [
-      "4007338120000000",
-      "4050134f20000000",
-      "c029073bc0000000",
-      "c05648f800000000"
-     ]
-    },
-    {
-     "defId": 10,
-     "level": 3,
-     "cooldownLeft": "3fe0612d10000000",
-     "turretX": "3fdcf19900000000",
-     "turretY": "3fcbd61100000000",
-     "targetDense": 217,
-     "heat": "3fe0fba240000000",
-     "overheated": false,
-     "ammo": 177,
-     "reloadLeft": "4010d8c344000000",
-     "droneBanked": false,
-     "scratch": [
-      "4047550280000000",
-      "c03de89240000000",
-      "c051698a00000000",
-      "4048ca2640000000"
-     ]
-    },
-    {
-     "defId": 6,
-     "level": 4,
-     "cooldownLeft": "3ff5527bb8000000",
-     "turretX": "bfdbe62700000000",
-     "turretY": "3fed9eb140000000",
-     "targetDense": 87,
-     "heat": "3f95513000000000",
-     "overheated": false,
-     "ammo": 51,
-     "reloadLeft": "4001f3a33c000000",
-     "droneBanked": false,
-     "scratch": [
-      "c052cfa3e0000000",
-      "40224a5900000000",
-      "c0218ff380000000",
-      "c045277240000000"
-     ]
-    },
-    {
-     "defId": 1,
-     "level": 2,
-     "cooldownLeft": "4007404a40000000",
-     "turretX": "bfd9598380000000",
-     "turretY": "3fea9e1e40000000",
-     "targetDense": 197,
-     "heat": "3fefc8a2c0000000",
-     "overheated": false,
-     "ammo": 106,
-     "reloadLeft": "3fb3fd4600000000",
+     "cooldownLeft": "3fc7c52040000000",
+     "turretX": "bfe5f91f80000000",
+     "turretY": "bfd1691580000000",
+     "targetDense": 143,
+     "heat": "3f791c1000000000",
+     "overheated": true,
+     "ammo": 13,
+     "reloadLeft": "3fdfd816a0000000",
      "droneBanked": true,
      "scratch": [
-      "c054e546e0000000",
-      "c04cdd7000000000",
-      "c01d695760000000",
-      "4021a53900000000"
-     ]
-    },
-    {
-     "defId": 13,
-     "level": 4,
-     "cooldownLeft": "3fc3c30800000000",
-     "turretX": "3fd5d36c80000000",
-     "turretY": "3fe715ad00000000",
-     "targetDense": 54,
-     "heat": "3fa1ddf800000000",
-     "overheated": true,
-     "ammo": 196,
-     "reloadLeft": "40108c7fce000000",
-     "droneBanked": false,
-     "scratch": [
-      "c04def03c0000000",
-      "c035168260000000",
-      "c045ee74e0000000",
-      "4010052dc0000000"
+      "4050134f20000000",
+      "c029073bc0000000",
+      "c05648f800000000",
+      "404feafd20000000"
      ]
     },
     {
      "defId": 9,
-     "level": 5,
-     "cooldownLeft": "3ffcd43230000000",
-     "turretX": "bfef3125c0000000",
-     "turretY": "bfd60b4580000000",
-     "targetDense": 281,
-     "heat": "3fdaab4d00000000",
-     "overheated": false,
-     "ammo": 31,
-     "reloadLeft": "4010ddec82000000",
+     "level": 1,
+     "cooldownLeft": "400454d978000000",
+     "turretX": "3fcbd61100000000",
+     "turretY": "bfe6d50140000000",
+     "targetDense": 24,
+     "heat": "3fee21a3a0000000",
+     "overheated": true,
+     "ammo": 41,
+     "reloadLeft": "4009419960000000",
      "droneBanked": true,
      "scratch": [
-      "c04b698b80000000",
-      "405206a3e0000000",
-      "c0531da9e0000000",
-      "c055efcca0000000"
+      "c03de89240000000",
+      "c051698a00000000",
+      "4048ca2640000000",
+      "c055cd5300000000"
      ]
     },
     {
-     "defId": 0,
-     "level": 5,
-     "cooldownLeft": "3fe2f3bd00000000",
-     "turretX": "3fd2970580000000",
-     "turretY": "bfeb2754c0000000",
-     "targetDense": 116,
-     "heat": "3fe0e99a80000000",
-     "overheated": false,
-     "ammo": 170,
-     "reloadLeft": "4004e80300000000",
-     "droneBanked": false,
-     "scratch": [
-      "c038517ee0000000",
-      "4041d858e0000000",
-      "c013744e60000000",
-      "4054de6500000000"
-     ]
-    },
-    {
-     "defId": 2,
-     "level": 6,
-     "cooldownLeft": "3ff8934ff8000000",
-     "turretX": "bfd62acb80000000",
-     "turretY": "bfe35650c0000000",
-     "targetDense": 16,
-     "heat": "3fe80a1360000000",
+     "defId": 10,
+     "level": 4,
+     "cooldownLeft": "3fef969de0000000",
+     "turretX": "3fed9eb140000000",
+     "turretY": "bfe296af80000000",
+     "targetDense": 151,
+     "heat": "3fe6400100000000",
      "overheated": true,
-     "ammo": 17,
-     "reloadLeft": "40057726a4000000",
-     "droneBanked": false,
-     "scratch": [
-      "c0564314e0000000",
-      "4040610c80000000",
-      "c0342df940000000",
-      "c053473760000000"
-     ]
-    },
-    {
-     "defId": 8,
-     "level": 5,
-     "cooldownLeft": "4003250920000000",
-     "turretX": "bfea4fadc0000000",
-     "turretY": "bfde3d3200000000",
-     "targetDense": 112,
-     "heat": "3fcd480e00000000",
-     "overheated": true,
-     "ammo": 87,
-     "reloadLeft": "40002a0a1c000000",
+     "ammo": 16,
+     "reloadLeft": "401164318c000000",
      "droneBanked": true,
      "scratch": [
-      "c0506f3280000000",
-      "c01f3056a0000000",
-      "c053a6d960000000",
-      "402fbd09a0000000"
+      "40224a5900000000",
+      "c0218ff380000000",
+      "c045277240000000",
+      "c01d78f660000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 3,
+     "cooldownLeft": "3ff0e8d678000000",
+     "turretX": "3fea9e1e40000000",
+     "turretY": "3fd3b6c180000000",
+     "targetDense": 49,
+     "heat": "3fc84c1300000000",
+     "overheated": false,
+     "ammo": 172,
+     "reloadLeft": "3fe1e7a030000000",
+     "droneBanked": false,
+     "scratch": [
+      "c04cdd7000000000",
+      "c01d695760000000",
+      "4021a53900000000",
+      "c055664b00000000"
      ]
     },
     {
      "defId": 7,
-     "level": 2,
-     "cooldownLeft": "400b6e0eb4000000",
-     "turretX": "3fe3b76880000000",
-     "turretY": "bfe3887640000000",
-     "targetDense": 41,
-     "heat": "3feaeeaa60000000",
-     "overheated": true,
-     "ammo": 164,
-     "reloadLeft": "4007d1737c000000",
-     "droneBanked": false,
-     "scratch": [
-      "c0517d7e60000000",
-      "4050df8ec0000000",
-      "4044037ca0000000",
-      "4051685600000000"
-     ]
-    },
-    {
-     "defId": 12,
-     "level": 3,
-     "cooldownLeft": "3ffccd1518000000",
-     "turretX": "3fe2501400000000",
-     "turretY": "3f76a2a000000000",
-     "targetDense": 158,
-     "heat": "3fe53ca860000000",
-     "overheated": true,
-     "ammo": 162,
-     "reloadLeft": "3feb67b3c0000000",
-     "droneBanked": false,
-     "scratch": [
-      "4030f05a40000000",
-      "404c7ffbe0000000",
-      "40501fe300000000",
-      "404a603360000000"
-     ]
-    },
-    {
-     "defId": 0,
-     "level": 7,
-     "cooldownLeft": "3fea333da0000000",
-     "turretX": "bfe99f4740000000",
-     "turretY": "3fed8688c0000000",
-     "targetDense": 276,
-     "heat": "3fd0077b80000000",
+     "level": 1,
+     "cooldownLeft": "4002c63fbc000000",
+     "turretX": "3fe715ad00000000",
+     "turretY": "3fbebc8200000000",
+     "targetDense": 172,
+     "heat": "3feed53580000000",
      "overheated": false,
-     "ammo": 175,
-     "reloadLeft": "400e2ce854000000",
-     "droneBanked": false,
+     "ammo": 172,
+     "reloadLeft": "3fc6a66400000000",
+     "droneBanked": true,
      "scratch": [
-      "401d6a4aa0000000",
-      "40412677c0000000",
-      "4041d5d9c0000000",
-      "403d19e160000000"
+      "c035168260000000",
+      "c045ee74e0000000",
+      "4010052dc0000000",
+      "404388dcc0000000"
      ]
     },
     {
      "defId": 13,
-     "level": 4,
-     "cooldownLeft": "400651baf8000000",
-     "turretX": "3fe3a731c0000000",
-     "turretY": "bf9d6df000000000",
-     "targetDense": 261,
-     "heat": "3fe9d35d20000000",
-     "overheated": false,
-     "ammo": 183,
-     "reloadLeft": "3fd5be12e0000000",
+     "level": 6,
+     "cooldownLeft": "3fa69fdf00000000",
+     "turretX": "bfd60b4580000000",
+     "turretY": "3fd3824c80000000",
+     "targetDense": 251,
+     "heat": "3fee73d3e0000000",
+     "overheated": true,
+     "ammo": 181,
+     "reloadLeft": "40039f6a40000000",
      "droneBanked": true,
      "scratch": [
-      "c0411e5fe0000000",
+      "405206a3e0000000",
+      "c0531da9e0000000",
+      "c055efcca0000000",
+      "4049ac29e0000000"
+     ]
+    },
+    {
+     "defId": 11,
+     "level": 1,
+     "cooldownLeft": "4002110934000000",
+     "turretX": "bfeb2754c0000000",
+     "turretY": "bfe69e0e80000000",
+     "targetDense": 167,
+     "heat": "3fe75d7320000000",
+     "overheated": false,
+     "ammo": 51,
+     "reloadLeft": "3ff42518c0000000",
+     "droneBanked": true,
+     "scratch": [
+      "4041d858e0000000",
+      "c013744e60000000",
+      "4054de6500000000",
+      "c043400e60000000"
+     ]
+    },
+    {
+     "defId": 1,
+     "level": 0,
+     "cooldownLeft": "3ff24d46f8000000",
+     "turretX": "bfe35650c0000000",
+     "turretY": "bfe1eedbc0000000",
+     "targetDense": 252,
+     "heat": "3fe2663860000000",
+     "overheated": true,
+     "ammo": 143,
+     "reloadLeft": "3feeb76ba0000000",
+     "droneBanked": true,
+     "scratch": [
+      "4040610c80000000",
+      "c0342df940000000",
+      "c053473760000000",
+      "c00028a420000000"
+     ]
+    },
+    {
+     "defId": 6,
+     "level": 0,
+     "cooldownLeft": "3fd3e91fe0000000",
+     "turretX": "bfde3d3200000000",
+     "turretY": "3f8ead9000000000",
+     "targetDense": 259,
+     "heat": "3fe2d2dde0000000",
+     "overheated": true,
+     "ammo": 100,
+     "reloadLeft": "3fdc7d2100000000",
+     "droneBanked": false,
+     "scratch": [
+      "c01f3056a0000000",
+      "c053a6d960000000",
+      "402fbd09a0000000",
+      "c0409aa280000000"
+     ]
+    },
+    {
+     "defId": 11,
+     "level": 5,
+     "cooldownLeft": "4006a03db8000000",
+     "turretX": "bfe3887640000000",
+     "turretY": "bfbc49a800000000",
+     "targetDense": 53,
+     "heat": "3fc2833d00000000",
+     "overheated": false,
+     "ammo": 75,
+     "reloadLeft": "3fdbe2e960000000",
+     "droneBanked": false,
+     "scratch": [
+      "4050df8ec0000000",
+      "4044037ca0000000",
+      "4051685600000000",
+      "c039fb8dc0000000"
+     ]
+    },
+    {
+     "defId": 10,
+     "level": 6,
+     "cooldownLeft": "40060308c0000000",
+     "turretX": "3f76a2a000000000",
+     "turretY": "bfdd047c00000000",
+     "targetDense": 184,
+     "heat": "3fd54eda00000000",
+     "overheated": false,
+     "ammo": 97,
+     "reloadLeft": "3ff9a92530000000",
+     "droneBanked": false,
+     "scratch": [
+      "404c7ffbe0000000",
+      "40501fe300000000",
+      "404a603360000000",
+      "c038278be0000000"
+     ]
+    },
+    {
+     "defId": 0,
+     "level": 2,
+     "cooldownLeft": "3fd65286a0000000",
+     "turretX": "3fed8688c0000000",
+     "turretY": "bfe2c93380000000",
+     "targetDense": 273,
+     "heat": "3fdbd4c680000000",
+     "overheated": true,
+     "ammo": 70,
+     "reloadLeft": "3fc43fd540000000",
+     "droneBanked": true,
+     "scratch": [
+      "40412677c0000000",
+      "4041d5d9c0000000",
+      "403d19e160000000",
+      "403d423ca0000000"
+     ]
+    },
+    {
+     "defId": 7,
+     "level": 0,
+     "cooldownLeft": "40069925c4000000",
+     "turretX": "bf9d6df000000000",
+     "turretY": "bfdc902c80000000",
+     "targetDense": 69,
+     "heat": "3fdf9f4340000000",
+     "overheated": true,
+     "ammo": 136,
+     "reloadLeft": "3ff11abac8000000",
+     "droneBanked": true,
+     "scratch": [
       "c0448aaaa0000000",
       "c041a11480000000",
-      "c038feb240000000"
+      "c038feb240000000",
+      "4047a6c020000000"
      ]
     }
    ],
    "director": {
-    "localPressure": "40730eac7a000000",
-    "targetPressure": "407696de6b300000",
-    "liveElites": 16,
-    "spawnAccumulator": "40302f2b70800000",
-    "nextSpawnId": 136,
-    "cycleIndex": 3,
-    "cyclePhase": 3,
-    "eliteTimer": "404d98502d800000",
-    "bossCycle": 10,
-    "eventCycle": 20,
-    "bossSpawned": 0,
-    "bossHandle": 289017791
+    "localPressure": "407696de6b300000",
+    "targetPressure": "405b6ffb02200000",
+    "liveElites": 5,
+    "spawnAccumulator": "403868c647800000",
+    "nextSpawnId": 47667,
+    "cycleIndex": 11,
+    "cyclePhase": 0,
+    "eliteTimer": "4049b66544000000",
+    "bossCycle": 20,
+    "eventCycle": 10,
+    "bossSpawned": 1,
+    "bossHandle": 735141796
    },
    "difficulty": {
-    "hpRamp": "4007bf3e24000000",
-    "speedRamp": "3ff1f98e90000000",
-    "lastWholeSecond": 698
+    "hpRamp": "3ff67d1d90000000",
+    "speedRamp": "4000718c58000000",
+    "lastWholeSecond": 275
    },
    "levelUp": {
-    "pending": 3,
-    "offerCount": 1,
+    "pending": 1,
+    "offerCount": 0,
     "offers": [
-     35,
      42,
-     49
+     49,
+     76
     ],
     "stacks": [
-     8,
      8,
      3,
      8,
@@ -1065,32 +1065,32 @@
      0,
      3,
      0,
+     8,
      8
     ],
-    "picksTaken": 72,
-    "lastTaken": 25,
-    "rerolls": 1,
-    "rerollsUsed": 19
+    "picksTaken": 26,
+    "lastTaken": 84,
+    "rerolls": 3,
+    "rerollsUsed": 8
    },
    "chest": {
     "reels": [
-     87,
      72,
-     29
+     29,
+     48
     ],
     "payout": 1,
     "grants": [
-     78,
      25,
      27,
      95,
-     60
+     60,
+     57
     ],
-    "opened": 4,
-    "ascension": 62
+    "opened": 0,
+    "ascension": 33
    },
    "droneStacks": [
-    7,
     6,
     0,
     1,
@@ -1113,10 +1113,10 @@
     5,
     0,
     5,
-    1
+    1,
+    7
    ],
    "cardUnlocked": [
-    1,
     0,
     1,
     0,
@@ -1139,10 +1139,10 @@
     1,
     1,
     0,
-    1
+    1,
+    0
    ],
    "ascensionSeen": [
-    0,
     1,
     0,
     1,
@@ -1162,15 +1162,17 @@
     1,
     0,
     1,
+    0,
     0,
     0,
     0,
     0
    ],
    "autoLevel": 0,
-   "maxWeapons": 0,
-   "maxPassives": 4,
-   "xpBanked": "40e2caf81b78c000",
+   "maxWeapons": 4,
+   "maxPassives": 2,
+   "chestWeight": 7,
+   "xpBanked": "40badc28a9610000",
    "rng": {
     "spawn": [
      "5c807b70",
@@ -1210,22 +1212,20 @@
     ]
    },
    "stats": {
-    "kills": "40ac9a0000000000",
+    "kills": "40b8860000000000",
     "killsByArchetype": [
-     816,
-     278,
      204,
      1133,
-     878
+     878,
+     1721,
+     789
     ],
     "killsByRank": [
-     1721,
-     789,
-     1582
+     1582,
+     889,
+     1502
     ],
     "killsByCycleRank": [
-     689,
-     602,
      522,
      538,
      869,
@@ -1247,20 +1247,20 @@
      654,
      781,
      515,
-     447
+     447,
+     417,
+     781
     ],
-    "damageDealt": "41214725a2753200",
-    "damageTaken": "40a08dc636020000",
-    "damagePrevented": "409a0dbe96c80000",
-    "credits": "40af840000000000",
-    "consumables": "404e800000000000",
-    "dice": "0000000000000000",
-    "barrelsBroken": "403a000000000000",
-    "sheepTaken": "4000000000000000",
-    "chests": "0000000000000000",
+    "damageDealt": "4126e49e4395e400",
+    "damageTaken": "4095b954e3bc0000",
+    "damagePrevented": "409825c9fdde0000",
+    "credits": "40a6d80000000000",
+    "consumables": "4055800000000000",
+    "dice": "4000000000000000",
+    "barrelsBroken": "4040800000000000",
+    "sheepTaken": "401c000000000000",
+    "chests": "4014000000000000",
     "damageByWeapon": [
-     "4109e9eb73778800",
-     "40e214343e15c000",
      "410aedc8a3c5d800",
      "40e9929560b37000",
      "411082ffd9d1c600",
@@ -1272,11 +1272,11 @@
      "40ff688f457ff800",
      "40f4dee219ef9800",
      "410435e9a6aad800",
-     "410c78f59416bc00"
+     "410c78f59416bc00",
+     "410873ebdfaccc00",
+     "40ffedfb1424b000"
     ],
     "bossKillsByWeapon": [
-     22,
-     17,
      1,
      28,
      10,
@@ -1288,20 +1288,20 @@
      28,
      12,
      22,
-     18
+     18,
+     1,
+     11
     ],
     "killsByFlavour": [
-     841,
-     461,
      866,
      470,
      1,
      645,
-     585
+     585,
+     6,
+     403
     ],
     "killsByWeapon": [
-     2706,
-     1603,
      2998,
      635,
      2539,
@@ -1313,11 +1313,11 @@
      2810,
      2856,
      2581,
-     1010
+     1010,
+     1797,
+     1842
     ],
     "killsByWeaponRank": [
-     297,
-     642,
      26,
      871,
      582,
@@ -1357,30 +1357,32 @@
      51,
      774,
      535,
-     77
+     77,
+     467,
+     58
     ],
-    "contactHits": "4070b00000000000",
-    "fullRepairs": "4032000000000000",
-    "lasersOverheated": "405d800000000000",
-    "splashKills": "40a2b20000000000",
-    "reloads": "406e600000000000",
+    "contactHits": "405d800000000000",
+    "fullRepairs": "402a000000000000",
+    "lasersOverheated": "4045800000000000",
+    "splashKills": "4083c00000000000",
+    "reloads": "4078500000000000",
     "killedByRank": "4000000000000000",
-    "damageByShield": "40db14f05da48000",
-    "gemsCollected": "4092cc0000000000",
-    "shotsFired": "40d2bc8000000000",
-    "shotsHit": "40c0a28000000000",
-    "peakEnemies": "404a000000000000",
-    "endTick": "40e9452000000000"
+    "damageByShield": "40cd31ac4dfb4000",
+    "gemsCollected": "4080280000000000",
+    "shotsFired": "40b9340000000000",
+    "shotsHit": "40c6f48000000000",
+    "peakEnemies": "4077400000000000",
+    "endTick": "40db148000000000"
    },
-   "worldHash": "0c3c175f",
-   "statsHash": "ef01a989"
+   "worldHash": "720551cc",
+   "statsHash": "4cd5d153"
   },
   {
    "name": "empty-2",
    "entities": null,
-   "tick": 390372,
-   "runTicks": 87730,
-   "phase": 5,
+   "tick": 476657,
+   "runTicks": 261007,
+   "phase": 4,
    "poolCounts": {
     "enemies": 0,
     "enemiesFree": 512,
@@ -1392,334 +1394,332 @@
     "sheep": 0
    },
    "player": {
-    "x": "c072dd85d7200000",
-    "y": "4085f8b35e100000",
-    "vx": "4077a8c729d00000",
-    "vy": "4073b6d32fc00000",
-    "hp": "406868c164080000",
-    "faceX": "3fe18037c0000000",
-    "faceY": "bfeb581180000000",
-    "level": 30,
-    "xp": "40a526375ea70000",
-    "xpToNext": "40c40c98fd6e4000",
-    "heroId": 13,
+    "x": "409d8b6934740000",
+    "y": "40989e3b03f00000",
+    "vx": "c06c5826ede00000",
+    "vy": "406b611737e00000",
+    "hp": "40505f8c75a00000",
+    "faceX": "bfd5b47c00000000",
+    "faceY": "bfd9804480000000",
+    "level": 26,
+    "xp": "40793faadb300000",
+    "xpToNext": "409728216e800000",
+    "heroId": 14,
     "shieldLayers": 0,
-    "shieldTimer": "3ffa155288000000",
-    "invulnLeft": "3faa92b900000000",
-    "magnetSec": "401533939c000000",
-    "repairLeft": "401604ffc2000000",
-    "criticalArmed": 0,
+    "shieldTimer": "401be58c54000000",
+    "invulnLeft": "3fd153abe0000000",
+    "magnetSec": "401740c45c000000",
+    "repairLeft": "4029d84da8000000",
+    "criticalArmed": 1,
     "insuranceUsed": 0,
     "traitScratch": [
-     "c04327b1a0000000",
-     "c02f5687e0000000",
      "401c9a01c0000000",
      "40404a2a80000000",
      "c035689e00000000",
      "4043c089c0000000",
      "c00aff1d60000000",
-     "4040323ce0000000"
+     "4040323ce0000000",
+     "c042929f00000000",
+     "403e879060000000"
     ]
    },
-   "weaponCount": 2,
+   "weaponCount": 3,
    "weapons": [
     {
-     "defId": 9,
-     "level": 0,
-     "cooldownLeft": "3fd862ad60000000",
-     "turretX": "3fe7c51380000000",
-     "turretY": "3fdddd2380000000",
-     "targetDense": 266,
-     "heat": "3febfdcf00000000",
-     "overheated": true,
-     "ammo": 67,
-     "reloadLeft": "4009b08340000000",
+     "defId": 1,
+     "level": 2,
+     "cooldownLeft": "4004885fc4000000",
+     "turretX": "3fb9240400000000",
+     "turretY": "3fe7fb9e00000000",
+     "targetDense": 296,
+     "heat": "3fe7a8ddc0000000",
+     "overheated": false,
+     "ammo": 127,
+     "reloadLeft": "4003214178000000",
      "droneBanked": true,
      "scratch": [
-      "4016b94120000000",
-      "c04f7ccc00000000",
       "c05020f580000000",
-      "4050fc87e0000000"
-     ]
-    },
-    {
-     "defId": 6,
-     "level": 8,
-     "cooldownLeft": "3fe042cd60000000",
-     "turretX": "3fc9a94700000000",
-     "turretY": "3fe6ddf980000000",
-     "targetDense": 211,
-     "heat": "3f97710800000000",
-     "overheated": true,
-     "ammo": 63,
-     "reloadLeft": "3ff844cf28000000",
-     "droneBanked": true,
-     "scratch": [
-      "4055860580000000",
-      "4041a39720000000",
-      "c03cb68c60000000",
-      "c04aa4c260000000"
-     ]
-    },
-    {
-     "defId": 8,
-     "level": 6,
-     "cooldownLeft": "3ffcb91b28000000",
-     "turretX": "bfeb3b2440000000",
-     "turretY": "3fc5c18900000000",
-     "targetDense": 163,
-     "heat": "3fc605de80000000",
-     "overheated": true,
-     "ammo": 121,
-     "reloadLeft": "4008e60ea4000000",
-     "droneBanked": true,
-     "scratch": [
-      "402e5a6800000000",
-      "400b31ac40000000",
-      "c040adc3c0000000",
-      "c031852a80000000"
-     ]
-    },
-    {
-     "defId": 6,
-     "level": 4,
-     "cooldownLeft": "3fefa3d5f0000000",
-     "turretX": "3fd78f7780000000",
-     "turretY": "bfd48c8d80000000",
-     "targetDense": 229,
-     "heat": "3fdb5f56c0000000",
-     "overheated": false,
-     "ammo": 76,
-     "reloadLeft": "4000c499c4000000",
-     "droneBanked": false,
-     "scratch": [
-      "40491636a0000000",
-      "4037fb4780000000",
-      "40515fefc0000000",
-      "40429e7440000000"
-     ]
-    },
-    {
-     "defId": 1,
-     "level": 7,
-     "cooldownLeft": "3ffdee1f08000000",
-     "turretX": "bfd28f3800000000",
-     "turretY": "bfd439fc80000000",
-     "targetDense": 19,
-     "heat": "3fde3d3100000000",
-     "overheated": true,
-     "ammo": 163,
-     "reloadLeft": "400a01b9f4000000",
-     "droneBanked": false,
-     "scratch": [
-      "c05556fd40000000",
-      "c04aad5a00000000",
-      "c036f63fe0000000",
-      "404c559360000000"
-     ]
-    },
-    {
-     "defId": 13,
-     "level": 0,
-     "cooldownLeft": "3faa6f0f00000000",
-     "turretX": "bfe9d4ee40000000",
-     "turretY": "bfa528a000000000",
-     "targetDense": 211,
-     "heat": "3f7b949000000000",
-     "overheated": true,
-     "ammo": 173,
-     "reloadLeft": "4009e3a260000000",
-     "droneBanked": false,
-     "scratch": [
-      "4020b0f5c0000000",
-      "405101ece0000000",
-      "40424b34e0000000",
-      "c054b7b5c0000000"
-     ]
-    },
-    {
-     "defId": 1,
-     "level": 4,
-     "cooldownLeft": "4005723620000000",
-     "turretX": "3fccd68600000000",
-     "turretY": "3fe5317b80000000",
-     "targetDense": 176,
-     "heat": "3fed7e71a0000000",
-     "overheated": true,
-     "ammo": 105,
-     "reloadLeft": "3fb7396a00000000",
-     "droneBanked": false,
-     "scratch": [
-      "c018cf8400000000",
-      "c04bf03200000000",
-      "4039f36d00000000",
-      "400fbb0f60000000"
-     ]
-    },
-    {
-     "defId": 11,
-     "level": 6,
-     "cooldownLeft": "3fea950a70000000",
-     "turretX": "3fe8e92c80000000",
-     "turretY": "3fe1f8d700000000",
-     "targetDense": 100,
-     "heat": "3fd1f8b1c0000000",
-     "overheated": false,
-     "ammo": 137,
-     "reloadLeft": "3ff9457640000000",
-     "droneBanked": true,
-     "scratch": [
-      "4035a2b7a0000000",
-      "c0320ab2c0000000",
-      "4020d8da20000000",
-      "40502f33e0000000"
-     ]
-    },
-    {
-     "defId": 3,
-     "level": 5,
-     "cooldownLeft": "3ff8604ec8000000",
-     "turretX": "bfec85d400000000",
-     "turretY": "bfe0928200000000",
-     "targetDense": 83,
-     "heat": "3feb913520000000",
-     "overheated": true,
-     "ammo": 117,
-     "reloadLeft": "3ff9a26fe0000000",
-     "droneBanked": false,
-     "scratch": [
-      "c054dad4c0000000",
-      "4052abd980000000",
-      "c0518f8e60000000",
-      "403f49e900000000"
-     ]
-    },
-    {
-     "defId": 4,
-     "level": 1,
-     "cooldownLeft": "4009bedf7c000000",
-     "turretX": "3fecd09200000000",
-     "turretY": "3fe14c76c0000000",
-     "targetDense": 18,
-     "heat": "3fed413440000000",
-     "overheated": true,
-     "ammo": 154,
-     "reloadLeft": "3fea3fe410000000",
-     "droneBanked": false,
-     "scratch": [
-      "4045187200000000",
-      "4021225840000000",
-      "c010fcd980000000",
-      "c0420e2e00000000"
+      "4050fc87e0000000",
+      "404ced87a0000000",
+      "c03e431fa0000000"
      ]
     },
     {
      "defId": 5,
      "level": 7,
-     "cooldownLeft": "4001b07684000000",
-     "turretX": "3fab33b800000000",
-     "turretY": "3fd3a60900000000",
-     "targetDense": 128,
-     "heat": "3fe4b741e0000000",
-     "overheated": false,
-     "ammo": 31,
-     "reloadLeft": "4004af7200000000",
+     "cooldownLeft": "4008011d28000000",
+     "turretX": "3fef79f8c0000000",
+     "turretY": "bfee88ef80000000",
+     "targetDense": 176,
+     "heat": "3fc2cdd100000000",
+     "overheated": true,
+     "ammo": 25,
+     "reloadLeft": "40118fd4f0000000",
      "droneBanked": false,
      "scratch": [
-      "c03d9acda0000000",
-      "404993a8c0000000",
-      "4055086520000000",
-      "403c864c80000000"
+      "c03cb68c60000000",
+      "c04aa4c260000000",
+      "c026cf8520000000",
+      "4049e79ca0000000"
+     ]
+    },
+    {
+     "defId": 10,
+     "level": 4,
+     "cooldownLeft": "4000612afc000000",
+     "turretX": "bfdaf73000000000",
+     "turretY": "bfe4fd10c0000000",
+     "targetDense": 228,
+     "heat": "3fe3679b80000000",
+     "overheated": false,
+     "ammo": 103,
+     "reloadLeft": "400504bf60000000",
+     "droneBanked": true,
+     "scratch": [
+      "c040adc3c0000000",
+      "c031852a80000000",
+      "c03adba0a0000000",
+      "4054c54080000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 6,
+     "cooldownLeft": "3ff3028218000000",
+     "turretX": "bfe3390400000000",
+     "turretY": "bfc282a500000000",
+     "targetDense": 119,
+     "heat": "3feb7bfe00000000",
+     "overheated": false,
+     "ammo": 178,
+     "reloadLeft": "400bfab150000000",
+     "droneBanked": false,
+     "scratch": [
+      "40515fefc0000000",
+      "40429e7440000000",
+      "c052c21660000000",
+      "c03e25b8a0000000"
+     ]
+    },
+    {
+     "defId": 7,
+     "level": 5,
+     "cooldownLeft": "3ff326a188000000",
+     "turretX": "bfcfab1e00000000",
+     "turretY": "bfac2cf000000000",
+     "targetDense": 40,
+     "heat": "3fe48e09c0000000",
+     "overheated": true,
+     "ammo": 184,
+     "reloadLeft": "3fc05c1140000000",
+     "droneBanked": false,
+     "scratch": [
+      "c036f63fe0000000",
+      "404c559360000000",
+      "c055cf5f40000000",
+      "c0459f5b20000000"
      ]
     },
     {
      "defId": 6,
-     "level": 4,
-     "cooldownLeft": "3fdf609f80000000",
-     "turretX": "3fd0edf600000000",
-     "turretY": "3fe4274e00000000",
-     "targetDense": 193,
-     "heat": "3f834c6800000000",
-     "overheated": false,
-     "ammo": 121,
-     "reloadLeft": "3fd61f2980000000",
+     "level": 5,
+     "cooldownLeft": "3ffad7c740000000",
+     "turretX": "3fdcb7ea80000000",
+     "turretY": "bfef91adc0000000",
+     "targetDense": 258,
+     "heat": "3fe39d2b00000000",
+     "overheated": true,
+     "ammo": 198,
+     "reloadLeft": "4003a8ef6c000000",
      "droneBanked": true,
      "scratch": [
-      "40482ebb80000000",
-      "404da7d0e0000000",
-      "404f2ab6c0000000",
-      "4041a98520000000"
+      "40424b34e0000000",
+      "c054b7b5c0000000",
+      "40496c6360000000",
+      "404f3c3bc0000000"
      ]
     },
     {
-     "defId": 8,
-     "level": 7,
-     "cooldownLeft": "3ffd0fe3a0000000",
-     "turretX": "3fecacca80000000",
-     "turretY": "bfe8127fc0000000",
-     "targetDense": 233,
-     "heat": "3fd6688500000000",
-     "overheated": false,
-     "ammo": 176,
-     "reloadLeft": "3ff3b34fb0000000",
-     "droneBanked": true,
+     "defId": 2,
+     "level": 4,
+     "cooldownLeft": "400745a608000000",
+     "turretX": "bfc8d93900000000",
+     "turretY": "3feafce340000000",
+     "targetDense": 280,
+     "heat": "3fe0242b60000000",
+     "overheated": true,
+     "ammo": 0,
+     "reloadLeft": "4000c42dc4000000",
+     "droneBanked": false,
      "scratch": [
-      "c033495d60000000",
-      "40475526e0000000",
-      "4040d786c0000000",
-      "c052335da0000000"
+      "4039f36d00000000",
+      "400fbb0f60000000",
+      "c0502b8e60000000",
+      "4045931bc0000000"
      ]
     },
     {
      "defId": 3,
-     "level": 7,
-     "cooldownLeft": "3f9afb2400000000",
-     "turretX": "bfe1dcf980000000",
-     "turretY": "bfd5d52700000000",
-     "targetDense": 6,
-     "heat": "3fe21afa00000000",
-     "overheated": false,
-     "ammo": 142,
-     "reloadLeft": "400cdde6c4000000",
+     "level": 4,
+     "cooldownLeft": "4005dcde10000000",
+     "turretX": "bfe8514b00000000",
+     "turretY": "bfdc0e9c80000000",
+     "targetDense": 203,
+     "heat": "3fe146c160000000",
+     "overheated": true,
+     "ammo": 89,
+     "reloadLeft": "40064d9f90000000",
      "droneBanked": true,
      "scratch": [
-      "c04e35c480000000",
-      "4023cf39c0000000",
+      "4020d8da20000000",
+      "40502f33e0000000",
+      "c037efd920000000",
+      "c037e3cae0000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 2,
+     "cooldownLeft": "3feaff9c80000000",
+     "turretX": "3fce1f8700000000",
+     "turretY": "3fe7226a40000000",
+     "targetDense": 16,
+     "heat": "3fe1cbe620000000",
+     "overheated": true,
+     "ammo": 96,
+     "reloadLeft": "3fc6888440000000",
+     "droneBanked": true,
+     "scratch": [
+      "c0518f8e60000000",
+      "403f49e900000000",
+      "4018e1dd80000000",
+      "c02d9e6140000000"
+     ]
+    },
+    {
+     "defId": 6,
+     "level": 6,
+     "cooldownLeft": "40059173f4000000",
+     "turretX": "3fb78adc00000000",
+     "turretY": "3fea826880000000",
+     "targetDense": 72,
+     "heat": "3f5ef10000000000",
+     "overheated": true,
+     "ammo": 194,
+     "reloadLeft": "400a643e58000000",
+     "droneBanked": false,
+     "scratch": [
+      "c010fcd980000000",
+      "c0420e2e00000000",
+      "4052f88020000000",
+      "c04b6ab400000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 6,
+     "cooldownLeft": "40024c51f8000000",
+     "turretX": "3fc0318000000000",
+     "turretY": "3fd2dd0780000000",
+     "targetDense": 107,
+     "heat": "3fed54c580000000",
+     "overheated": true,
+     "ammo": 186,
+     "reloadLeft": "3ff8393a38000000",
+     "droneBanked": true,
+     "scratch": [
+      "4055086520000000",
+      "403c864c80000000",
+      "c048048380000000",
+      "c0456ae120000000"
+     ]
+    },
+    {
+     "defId": 10,
+     "level": 2,
+     "cooldownLeft": "4006d13220000000",
+     "turretX": "3f953a1800000000",
+     "turretY": "bfef659cc0000000",
+     "targetDense": 171,
+     "heat": "3febb2ad20000000",
+     "overheated": true,
+     "ammo": 75,
+     "reloadLeft": "400b9e9ca0000000",
+     "droneBanked": true,
+     "scratch": [
+      "404f2ab6c0000000",
+      "4041a98520000000",
+      "c012508b80000000",
+      "c0530f3520000000"
+     ]
+    },
+    {
+     "defId": 13,
+     "level": 4,
+     "cooldownLeft": "3fdbbf40e0000000",
+     "turretX": "3fc7baa300000000",
+     "turretY": "bfd32ef600000000",
+     "targetDense": 253,
+     "heat": "3fd4b29700000000",
+     "overheated": true,
+     "ammo": 129,
+     "reloadLeft": "3ffc53f720000000",
+     "droneBanked": true,
+     "scratch": [
+      "4040d786c0000000",
+      "c052335da0000000",
+      "c0298d5c00000000",
+      "c03251c140000000"
+     ]
+    },
+    {
+     "defId": 2,
+     "level": 3,
+     "cooldownLeft": "3ff272bef0000000",
+     "turretX": "bfedc1c400000000",
+     "turretY": "3fc0d7d000000000",
+     "targetDense": 137,
+     "heat": "3fdc3db080000000",
+     "overheated": true,
+     "ammo": 141,
+     "reloadLeft": "3fe7ee5640000000",
+     "droneBanked": true,
+     "scratch": [
       "c04d4b22a0000000",
-      "405338a600000000"
+      "405338a600000000",
+      "40123f4180000000",
+      "c04f860480000000"
      ]
     }
    ],
    "director": {
-    "localPressure": "406a4b00f9700000",
-    "targetPressure": "404e5f6a1ec00000",
-    "liveElites": 9,
-    "spawnAccumulator": "402013fd08000000",
-    "nextSpawnId": 87519,
-    "cycleIndex": 13,
-    "cyclePhase": 0,
-    "eliteTimer": "40359e3bb6800000",
-    "bossCycle": 10,
-    "eventCycle": 8,
-    "bossSpawned": 1,
-    "bossHandle": 1727923546
+    "localPressure": "40538dbeeec00000",
+    "targetPressure": "405a63f4d5000000",
+    "liveElites": 19,
+    "spawnAccumulator": "4018bb868e000000",
+    "nextSpawnId": 73552,
+    "cycleIndex": 3,
+    "cyclePhase": 2,
+    "eliteTimer": "402e60a582000000",
+    "bossCycle": 3,
+    "eventCycle": 17,
+    "bossSpawned": 0,
+    "bossHandle": 96027314
    },
    "difficulty": {
-    "hpRamp": "402356aa1c000000",
-    "speedRamp": "4006a04338000000",
-    "lastWholeSecond": 1114
+    "hpRamp": "401877787a000000",
+    "speedRamp": "3fff110150000000",
+    "lastWholeSecond": 1090
    },
    "levelUp": {
     "pending": 1,
-    "offerCount": 2,
+    "offerCount": 1,
     "offers": [
-     4,
-     84,
-     10
+     10,
+     3,
+     54
     ],
     "stacks": [
-     7,
-     1,
      3,
      1,
      3,
@@ -1741,33 +1741,33 @@
      1,
      6,
      0,
-     4
+     4,
+     2,
+     3
     ],
-    "picksTaken": 53,
-    "lastTaken": 98,
-    "rerolls": 0,
-    "rerollsUsed": 9
+    "picksTaken": 54,
+    "lastTaken": 8,
+    "rerolls": 5,
+    "rerollsUsed": 17
    },
    "chest": {
     "reels": [
-     22,
-     16,
-     89
+     89,
+     116,
+     114
     ],
-    "payout": 3,
+    "payout": 0,
     "grants": [
-     114,
-     71,
      19,
      100,
-     24
+     24,
+     58,
+     19
     ],
     "opened": 2,
-    "ascension": 19
+    "ascension": 25
    },
    "droneStacks": [
-    2,
-    5,
     5,
     8,
     8,
@@ -1789,7 +1789,9 @@
     5,
     6,
     0,
-    4
+    4,
+    4,
+    6
    ],
    "cardUnlocked": [
     0,
@@ -1797,8 +1799,6 @@
     0,
     0,
     0,
-    0,
-    0,
     1,
     1,
     1,
@@ -1813,14 +1813,14 @@
     1,
     1,
     0,
+    1,
+    1,
     1,
     1,
     1
    ],
    "ascensionSeen": [
     1,
-    1,
-    1,
     0,
     0,
     0,
@@ -1840,13 +1840,16 @@
     0,
     1,
     0,
+    0,
+    1,
     0,
     1
    ],
-   "autoLevel": 0,
-   "maxWeapons": 3,
-   "maxPassives": 8,
-   "xpBanked": "40cf6139cefc8000",
+   "autoLevel": 1,
+   "maxWeapons": 1,
+   "maxPassives": 0,
+   "chestWeight": 2,
+   "xpBanked": "40d61f6fbf5de000",
    "rng": {
     "spawn": [
      "35808019",
@@ -1886,23 +1889,20 @@
     ]
    },
    "stats": {
-    "kills": "40b2fc0000000000",
+    "kills": "40a5600000000000",
     "killsByArchetype": [
-     277,
-     1111,
-     1736,
      166,
-     1284
-    ],
-    "killsByRank": [
+     1284,
      345,
      342,
      1549
     ],
+    "killsByRank": [
+     1326,
+     864,
+     1806
+    ],
     "killsByCycleRank": [
-     826,
-     364,
-     106,
      634,
      551,
      460,
@@ -1923,21 +1923,21 @@
      620,
      240,
      701,
-     712
+     712,
+     277,
+     865,
+     591
     ],
-    "damageDealt": "41235716c9e97800",
-    "damageTaken": "409d0729e77c0000",
-    "damagePrevented": "40788bdbb1000000",
-    "credits": "40a6dc0000000000",
-    "consumables": "4054800000000000",
+    "damageDealt": "411ad1c397a50600",
+    "damageTaken": "4049a12f0e800000",
+    "damagePrevented": "409435703b2e0000",
+    "credits": "4087c80000000000",
+    "consumables": "405c000000000000",
     "dice": "4000000000000000",
-    "barrelsBroken": "4044800000000000",
-    "sheepTaken": "4040000000000000",
-    "chests": "4000000000000000",
+    "barrelsBroken": "4040000000000000",
+    "sheepTaken": "402a000000000000",
+    "chests": "401c000000000000",
     "damageByWeapon": [
-     "4106c2165aa0f000",
-     "410c227f18301000",
-     "40d3ddafd705e000",
      "410e04ed5d33c800",
      "40ca82e29f9ec000",
      "40ff91a18c606800",
@@ -1948,12 +1948,12 @@
      "410929d2ad162000",
      "40b9db0f247a0000",
      "4103db3e46b68c00",
-     "40f321999a0c9800"
+     "40f321999a0c9800",
+     "4105cdc4919b4800",
+     "410f338afc328400",
+     "410370e39790ac00"
     ],
     "bossKillsByWeapon": [
-     3,
-     19,
-     23,
      27,
      18,
      10,
@@ -1964,21 +1964,21 @@
      11,
      15,
      4,
-     18
+     18,
+     13,
+     5,
+     13
     ],
     "killsByFlavour": [
-     493,
-     335,
-     883,
      594,
      488,
      336,
-     726
+     726,
+     182,
+     791,
+     244
     ],
     "killsByWeapon": [
-     2582,
-     191,
-     2644,
      474,
      736,
      1408,
@@ -1989,12 +1989,12 @@
      1921,
      1528,
      655,
-     1199
+     1199,
+     1659,
+     315,
+     1281
     ],
     "killsByWeaponRank": [
-     759,
-     15,
-     81,
      506,
      78,
      556,
@@ -2033,30 +2033,33 @@
      746,
      491,
      485,
-     437
+     437,
+     234,
+     672,
+     248
     ],
-    "contactHits": "4074e00000000000",
+    "contactHits": "406b200000000000",
     "fullRepairs": "4028000000000000",
-    "lasersOverheated": "4062800000000000",
-    "splashKills": "4086680000000000",
-    "reloads": "4065800000000000",
-    "killedByRank": "0000000000000000",
-    "damageByShield": "40df7dd115586000",
-    "gemsCollected": "406a200000000000",
-    "shotsFired": "40e2ff6000000000",
-    "shotsHit": "40c2a00000000000",
-    "peakEnemies": "406e000000000000",
-    "endTick": "40e4bec000000000"
+    "lasersOverheated": "4060a00000000000",
+    "splashKills": "408ae80000000000",
+    "reloads": "406a200000000000",
+    "killedByRank": "4000000000000000",
+    "damageByShield": "40a8d8124f9b0000",
+    "gemsCollected": "406e000000000000",
+    "shotsFired": "40a36c0000000000",
+    "shotsHit": "40cec68000000000",
+    "peakEnemies": "4058800000000000",
+    "endTick": "40e6cac000000000"
    },
-   "worldHash": "d96edd24",
-   "statsHash": "ff60ab9e"
+   "worldHash": "61ca02e4",
+   "statsHash": "56ca83ce"
   },
   {
    "name": "empty-3",
    "entities": null,
-   "tick": 75757,
-   "runTicks": 267298,
-   "phase": 4,
+   "tick": 283686,
+   "runTicks": 95351,
+   "phase": 3,
    "poolCounts": {
     "enemies": 0,
     "enemiesFree": 512,
@@ -2068,335 +2071,332 @@
     "sheep": 0
    },
    "player": {
-    "x": "c03d87c034000000",
-    "y": "408a5e822ab00000",
-    "vx": "c0603135a3a00000",
-    "vy": "c076f66079700000",
-    "hp": "40647b2b35f80000",
-    "faceX": "3fe0dd5300000000",
-    "faceY": "bfde4c8d80000000",
-    "level": 26,
-    "xp": "40b1b575b1680000",
-    "xpToNext": "40c0f7a063e00000",
-    "heroId": 13,
-    "shieldLayers": 4,
-    "shieldTimer": "3fe94a7fe0000000",
-    "invulnLeft": "3f8d544000000000",
-    "magnetSec": "3fe76a9c80000000",
-    "repairLeft": "4037abd6c2800000",
+    "x": "c09caca1dc5c0000",
+    "y": "c093e13597440000",
+    "vx": "406a624059800000",
+    "vy": "c067b361af600000",
+    "hp": "4084802fa6480000",
+    "faceX": "3f7e3a0000000000",
+    "faceY": "3fdca84000000000",
+    "level": 37,
+    "xp": "40bfbc61996b8000",
+    "xpToNext": "4087bd9723480000",
+    "heroId": 12,
+    "shieldLayers": 2,
+    "shieldTimer": "40236714c1000000",
+    "invulnLeft": "3fdc478d60000000",
+    "magnetSec": "40042f98b0000000",
+    "repairLeft": "4027fc53c6000000",
     "criticalArmed": 0,
-    "insuranceUsed": 0,
+    "insuranceUsed": 1,
     "traitScratch": [
-     "c025927520000000",
-     "403dc04aa0000000",
-     "4031988d80000000",
      "4047786be0000000",
      "c04261c420000000",
      "c043fb5ce0000000",
      "c0429beb60000000",
-     "c043111b80000000"
+     "c043111b80000000",
+     "bfdf358dc0000000",
+     "4029cfed40000000",
+     "c03a9b6860000000"
     ]
    },
    "weaponCount": 2,
    "weapons": [
     {
-     "defId": 11,
+     "defId": 6,
      "level": 5,
-     "cooldownLeft": "4006e7d6c8000000",
-     "turretX": "3fe634e440000000",
-     "turretY": "bfe3a23640000000",
-     "targetDense": 296,
-     "heat": "3fedfedc00000000",
+     "cooldownLeft": "3fef2aea30000000",
+     "turretX": "3febfdb800000000",
+     "turretY": "3fe09b1440000000",
+     "targetDense": 187,
+     "heat": "3fe3799520000000",
      "overheated": true,
-     "ammo": 188,
-     "reloadLeft": "4005e8c7c4000000",
+     "ammo": 182,
+     "reloadLeft": "4010959336000000",
      "droneBanked": true,
      "scratch": [
-      "c045f378e0000000",
-      "405310e760000000",
-      "c052f12680000000",
-      "404afa9400000000"
-     ]
-    },
-    {
-     "defId": 11,
-     "level": 8,
-     "cooldownLeft": "4007bd7514000000",
-     "turretX": "3fee6f57c0000000",
-     "turretY": "3fb1782c00000000",
-     "targetDense": 2,
-     "heat": "3fb6849a00000000",
-     "overheated": false,
-     "ammo": 101,
-     "reloadLeft": "400e964d58000000",
-     "droneBanked": false,
-     "scratch": [
-      "404467f820000000",
-      "c055815180000000",
-      "c0532a3f20000000",
-      "40533a7460000000"
-     ]
-    },
-    {
-     "defId": 13,
-     "level": 0,
-     "cooldownLeft": "3fd6f60f00000000",
-     "turretX": "3fd4ea1180000000",
-     "turretY": "3fe2144c40000000",
-     "targetDense": 87,
-     "heat": "3fecc10f00000000",
-     "overheated": true,
-     "ammo": 93,
-     "reloadLeft": "4009089d14000000",
-     "droneBanked": false,
-     "scratch": [
-      "403f2059a0000000",
-      "403bb2c7c0000000",
-      "4052de5b80000000",
-      "c03996bfe0000000"
-     ]
-    },
-    {
-     "defId": 11,
-     "level": 7,
-     "cooldownLeft": "3fe7731990000000",
-     "turretX": "3fd0892e80000000",
-     "turretY": "3fe314be40000000",
-     "targetDense": 15,
-     "heat": "3fd2178c00000000",
-     "overheated": false,
-     "ammo": 58,
-     "reloadLeft": "400eda26ec000000",
-     "droneBanked": false,
-     "scratch": [
-      "c0385cd980000000",
-      "4036a48900000000",
-      "c0503c0f60000000",
-      "4055c88ce0000000"
-     ]
-    },
-    {
-     "defId": 8,
-     "level": 8,
-     "cooldownLeft": "4002fa6aa4000000",
-     "turretX": "bfdf5d8280000000",
-     "turretY": "3fd2dd0600000000",
-     "targetDense": 252,
-     "heat": "3fd9e7ed80000000",
-     "overheated": true,
-     "ammo": 71,
-     "reloadLeft": "4003a5d88c000000",
-     "droneBanked": false,
-     "scratch": [
-      "405396b7a0000000",
-      "405636de20000000",
-      "4048208420000000",
-      "c05376a620000000"
-     ]
-    },
-    {
-     "defId": 7,
-     "level": 6,
-     "cooldownLeft": "3ff1e5c9f0000000",
-     "turretX": "bfe13fc5c0000000",
-     "turretY": "3f8fc80000000000",
-     "targetDense": 210,
-     "heat": "3fe8e79ca0000000",
-     "overheated": false,
-     "ammo": 102,
-     "reloadLeft": "40104e877a000000",
-     "droneBanked": true,
-     "scratch": [
-      "c02625a680000000",
-      "c0464b7620000000",
-      "c03c151960000000",
-      "c04e14baa0000000"
-     ]
-    },
-    {
-     "defId": 7,
-     "level": 5,
-     "cooldownLeft": "400129edf8000000",
-     "turretX": "3feb951e00000000",
-     "turretY": "3fed1efcc0000000",
-     "targetDense": 117,
-     "heat": "3fe794d120000000",
-     "overheated": true,
-     "ammo": 32,
-     "reloadLeft": "3fb7a92880000000",
-     "droneBanked": true,
-     "scratch": [
-      "4037d45380000000",
-      "c02b5b72c0000000",
-      "c04b88c080000000",
-      "c03beb4b20000000"
+      "404afa9400000000",
+      "405441e8e0000000",
+      "4043b86680000000",
+      "404f7b35e0000000"
      ]
     },
     {
      "defId": 8,
      "level": 4,
-     "cooldownLeft": "4000aca4d8000000",
-     "turretX": "3fd7f13f80000000",
-     "turretY": "3fd5c2d880000000",
-     "targetDense": 183,
-     "heat": "3fcaad7180000000",
+     "cooldownLeft": "3f69ea4000000000",
+     "turretX": "bfea5ed980000000",
+     "turretY": "3fdbe5ac00000000",
+     "targetDense": 0,
+     "heat": "3feb3044c0000000",
      "overheated": false,
-     "ammo": 85,
-     "reloadLeft": "3fe174bde0000000",
+     "ammo": 17,
+     "reloadLeft": "3fbc828200000000",
      "droneBanked": true,
      "scratch": [
-      "c032e30660000000",
-      "c024e4f380000000",
-      "402fc4f120000000",
-      "c0248dd640000000"
+      "40533a7460000000",
+      "40549307e0000000",
+      "402acaed40000000",
+      "c051fc9460000000"
+     ]
+    },
+    {
+     "defId": 10,
+     "level": 0,
+     "cooldownLeft": "3ff9e81348000000",
+     "turretX": "3fe9821e00000000",
+     "turretY": "3fad08f800000000",
+     "targetDense": 192,
+     "heat": "3fe6408ba0000000",
+     "overheated": false,
+     "ammo": 157,
+     "reloadLeft": "400782522c000000",
+     "droneBanked": false,
+     "scratch": [
+      "c03996bfe0000000",
+      "40552fb8a0000000",
+      "bfc876e200000000",
+      "c04a4d47e0000000"
+     ]
+    },
+    {
+     "defId": 7,
+     "level": 3,
+     "cooldownLeft": "3fe08e9b20000000",
+     "turretX": "bfdbd0e800000000",
+     "turretY": "bfa638f800000000",
+     "targetDense": 257,
+     "heat": "3feb6c9460000000",
+     "overheated": false,
+     "ammo": 19,
+     "reloadLeft": "400680e6e8000000",
+     "droneBanked": true,
+     "scratch": [
+      "4055c88ce0000000",
+      "c050ba16e0000000",
+      "c03608bd40000000",
+      "40401718a0000000"
+     ]
+    },
+    {
+     "defId": 0,
+     "level": 8,
+     "cooldownLeft": "3fcbcabf80000000",
+     "turretX": "bfc8604a00000000",
+     "turretY": "bfea94c3c0000000",
+     "targetDense": 270,
+     "heat": "3fe176f960000000",
+     "overheated": false,
+     "ammo": 26,
+     "reloadLeft": "4011d62df0000000",
+     "droneBanked": false,
+     "scratch": [
+      "c05376a620000000",
+      "40550790e0000000",
+      "c0544b3480000000",
+      "c040538080000000"
+     ]
+    },
+    {
+     "defId": 12,
+     "level": 8,
+     "cooldownLeft": "3fd53265e0000000",
+     "turretX": "3fe1cf3940000000",
+     "turretY": "bfe9a0d400000000",
+     "targetDense": 1,
+     "heat": "3fecfd62a0000000",
+     "overheated": true,
+     "ammo": 81,
+     "reloadLeft": "3ff24341d8000000",
+     "droneBanked": true,
+     "scratch": [
+      "c04e14baa0000000",
+      "40421ebae0000000",
+      "40290872c0000000",
+      "4034739dc0000000"
+     ]
+    },
+    {
+     "defId": 11,
+     "level": 6,
+     "cooldownLeft": "3ff94c6f80000000",
+     "turretX": "3fde534480000000",
+     "turretY": "3fd2e41080000000",
+     "targetDense": 231,
+     "heat": "3f95082400000000",
+     "overheated": true,
+     "ammo": 22,
+     "reloadLeft": "3ffe8f0c88000000",
+     "droneBanked": true,
+     "scratch": [
+      "c03beb4b20000000",
+      "402e3c0f20000000",
+      "404aca3c20000000",
+      "403149bbe0000000"
+     ]
+    },
+    {
+     "defId": 11,
+     "level": 6,
+     "cooldownLeft": "4009688100000000",
+     "turretX": "bfe2a94740000000",
+     "turretY": "3fc6839700000000",
+     "targetDense": 284,
+     "heat": "3fbf086e00000000",
+     "overheated": true,
+     "ammo": 152,
+     "reloadLeft": "3fffd81ec8000000",
+     "droneBanked": false,
+     "scratch": [
+      "c0248dd640000000",
+      "4048500a40000000",
+      "c05599fa00000000",
+      "4046e0ddc0000000"
+     ]
+    },
+    {
+     "defId": 5,
+     "level": 0,
+     "cooldownLeft": "3ff8baaf50000000",
+     "turretX": "3fe82cdd00000000",
+     "turretY": "bfeead03c0000000",
+     "targetDense": 211,
+     "heat": "3fedf80cc0000000",
+     "overheated": false,
+     "ammo": 197,
+     "reloadLeft": "4009c3e06c000000",
+     "droneBanked": false,
+     "scratch": [
+      "4042a7f6e0000000",
+      "4046a3cc80000000",
+      "40300a7660000000",
+      "4052ed8fe0000000"
+     ]
+    },
+    {
+     "defId": 5,
+     "level": 8,
+     "cooldownLeft": "4002ec4638000000",
+     "turretX": "bfdc424f00000000",
+     "turretY": "3fea810580000000",
+     "targetDense": 84,
+     "heat": "3fe7328d80000000",
+     "overheated": true,
+     "ammo": 2,
+     "reloadLeft": "3fdaea6b20000000",
+     "droneBanked": true,
+     "scratch": [
+      "402a885c60000000",
+      "4044f5a520000000",
+      "4052d32320000000",
+      "404c6bc300000000"
      ]
     },
     {
      "defId": 3,
-     "level": 3,
-     "cooldownLeft": "40051411ac000000",
-     "turretX": "3feda592c0000000",
-     "turretY": "3fc1ff6b00000000",
-     "targetDense": 172,
-     "heat": "3fec166e80000000",
-     "overheated": false,
-     "ammo": 112,
-     "reloadLeft": "4010db872c000000",
-     "droneBanked": false,
-     "scratch": [
-      "c03aa79400000000",
-      "4043854d00000000",
-      "4051e2f160000000",
-      "4042a7f6e0000000"
-     ]
-    },
-    {
-     "defId": 7,
      "level": 6,
-     "cooldownLeft": "4009b65bdc000000",
-     "turretX": "3fc21a3c00000000",
-     "turretY": "bfda1f8200000000",
-     "targetDense": 178,
-     "heat": "3fd1ded880000000",
+     "cooldownLeft": "3ffee399c0000000",
+     "turretX": "3feb9fc600000000",
+     "turretY": "bfc01e8600000000",
+     "targetDense": 83,
+     "heat": "3fb7c47b00000000",
      "overheated": true,
-     "ammo": 85,
-     "reloadLeft": "400a18df30000000",
-     "droneBanked": true,
-     "scratch": [
-      "4052afd4a0000000",
-      "c052656400000000",
-      "404731d8e0000000",
-      "402a885c60000000"
-     ]
-    },
-    {
-     "defId": 11,
-     "level": 4,
-     "cooldownLeft": "4006cb107c000000",
-     "turretX": "bfe82cfd80000000",
-     "turretY": "bfe761bec0000000",
-     "targetDense": 255,
-     "heat": "3fedcfe300000000",
-     "overheated": false,
-     "ammo": 184,
-     "reloadLeft": "3fdabd0a60000000",
-     "droneBanked": true,
-     "scratch": [
-      "4037f48b20000000",
-      "c037531120000000",
-      "4052c7ff60000000",
-      "c046c672e0000000"
-     ]
-    },
-    {
-     "defId": 1,
-     "level": 5,
-     "cooldownLeft": "3ff8ce1020000000",
-     "turretX": "bfe485b8c0000000",
-     "turretY": "3fc333be00000000",
-     "targetDense": 33,
-     "heat": "3fc2119700000000",
-     "overheated": false,
-     "ammo": 185,
-     "reloadLeft": "3fd51e6cc0000000",
-     "droneBanked": true,
-     "scratch": [
-      "c050b9b1e0000000",
-      "c024198500000000",
-      "4055cf6320000000",
-      "c04ebcb3e0000000"
-     ]
-    },
-    {
-     "defId": 4,
-     "level": 2,
-     "cooldownLeft": "4008ed9ee4000000",
-     "turretX": "bf93acd800000000",
-     "turretY": "3febf781c0000000",
-     "targetDense": 30,
-     "heat": "3fd37f1700000000",
-     "overheated": true,
-     "ammo": 189,
-     "reloadLeft": "3fe4a96330000000",
+     "ammo": 20,
+     "reloadLeft": "3ffab8c4e0000000",
      "droneBanked": false,
      "scratch": [
-      "403c2d9a40000000",
-      "403a528a80000000",
-      "40566aa460000000",
-      "c022301680000000"
+      "c046c672e0000000",
+      "4055d99140000000",
+      "404784d5c0000000",
+      "c024a760e0000000"
      ]
     },
     {
-     "defId": 9,
-     "level": 4,
-     "cooldownLeft": "3ff42fac18000000",
-     "turretX": "3fc590ae00000000",
-     "turretY": "bfd0272280000000",
-     "targetDense": 199,
-     "heat": "3fe7a48600000000",
-     "overheated": false,
-     "ammo": 142,
-     "reloadLeft": "401119bdcc000000",
+     "defId": 6,
+     "level": 6,
+     "cooldownLeft": "40095ef424000000",
+     "turretX": "bfe6f73480000000",
+     "turretY": "bfc116df00000000",
+     "targetDense": 184,
+     "heat": "3fb2c5b600000000",
+     "overheated": true,
+     "ammo": 156,
+     "reloadLeft": "4000004a78000000",
      "droneBanked": false,
      "scratch": [
-      "c021ad9480000000",
-      "c04e168b20000000",
-      "403d202e20000000",
-      "c0517cbf40000000"
+      "c04ebcb3e0000000",
+      "4054de6360000000",
+      "bfd28da8c0000000",
+      "4051a927a0000000"
+     ]
+    },
+    {
+     "defId": 6,
+     "level": 8,
+     "cooldownLeft": "4008d6c808000000",
+     "turretX": "bfd901d200000000",
+     "turretY": "bfdfa29500000000",
+     "targetDense": 288,
+     "heat": "3fc25dad80000000",
+     "overheated": false,
+     "ammo": 108,
+     "reloadLeft": "40073c4324000000",
+     "droneBanked": false,
+     "scratch": [
+      "c022301680000000",
+      "c0201be300000000",
+      "c00b3cc940000000",
+      "c039415860000000"
+     ]
+    },
+    {
+     "defId": 13,
+     "level": 3,
+     "cooldownLeft": "400a879964000000",
+     "turretX": "3fde921800000000",
+     "turretY": "3fe23c8580000000",
+     "targetDense": 41,
+     "heat": "3fee66a6c0000000",
+     "overheated": false,
+     "ammo": 78,
+     "reloadLeft": "3fe82004f0000000",
+     "droneBanked": false,
+     "scratch": [
+      "c0517cbf40000000",
+      "4043f7ef80000000",
+      "4047c4e060000000",
+      "c037608680000000"
      ]
     }
    ],
    "director": {
-    "localPressure": "407209e6ea400000",
-    "targetPressure": "407317019bc00000",
-    "liveElites": 6,
-    "spawnAccumulator": "403a07a336000000",
-    "nextSpawnId": 51444,
-    "cycleIndex": 23,
-    "cyclePhase": 2,
-    "eliteTimer": "4041560f71800000",
-    "bossCycle": 2,
-    "eventCycle": 5,
-    "bossSpawned": 1,
-    "bossHandle": 137542912
+    "localPressure": "40755cd352e00000",
+    "targetPressure": "407635adf1600000",
+    "liveElites": 11,
+    "spawnAccumulator": "4020455008000000",
+    "nextSpawnId": 21377,
+    "cycleIndex": 2,
+    "cyclePhase": 1,
+    "eliteTimer": "404b0a2a2fc00000",
+    "bossCycle": 23,
+    "eventCycle": 19,
+    "bossSpawned": 0,
+    "bossHandle": 402095647
    },
    "difficulty": {
-    "hpRamp": "4027fe2ada000000",
-    "speedRamp": "400b192b20000000",
-    "lastWholeSecond": 847
+    "hpRamp": "4025dd3d06000000",
+    "speedRamp": "4003621550000000",
+    "lastWholeSecond": 1113
    },
    "levelUp": {
-    "pending": 3,
-    "offerCount": 2,
+    "pending": 2,
+    "offerCount": 1,
     "offers": [
-     32,
-     49,
-     0
+     73,
+     12,
+     77
     ],
     "stacks": [
-     5,
-     1,
-     6,
      3,
      0,
      3,
@@ -2417,34 +2417,34 @@
      6,
      5,
      8,
-     0
+     0,
+     5,
+     4,
+     5
     ],
-    "picksTaken": 66,
-    "lastTaken": 72,
-    "rerolls": 5,
-    "rerollsUsed": 10
+    "picksTaken": 50,
+    "lastTaken": 14,
+    "rerolls": 1,
+    "rerollsUsed": 8
    },
    "chest": {
     "reels": [
-     14,
-     30,
-     27
-    ],
-    "payout": 5,
-    "grants": [
+     4,
      71,
-     14,
-     104,
-     104,
-     84
+     14
     ],
-    "opened": 8,
-    "ascension": 5
+    "payout": 3,
+    "grants": [
+     104,
+     84,
+     7,
+     5,
+     1
+    ],
+    "opened": 2,
+    "ascension": 109
    },
    "droneStacks": [
-    8,
-    2,
-    8,
     5,
     6,
     1,
@@ -2465,13 +2465,13 @@
     5,
     7,
     8,
-    8
+    8,
+    2,
+    3,
+    3
    ],
    "cardUnlocked": [
     0,
-    0,
-    0,
-    0,
     1,
     1,
     1,
@@ -2491,12 +2491,12 @@
     0,
     1,
     0,
-    1
+    1,
+    1,
+    1,
+    0
    ],
    "ascensionSeen": [
-    1,
-    1,
-    0,
     0,
     0,
     1,
@@ -2517,12 +2517,16 @@
     0,
     1,
     1,
-    1
+    1,
+    0,
+    0,
+    0
    ],
    "autoLevel": 0,
-   "maxWeapons": 4,
-   "maxPassives": 0,
-   "xpBanked": "40cd4e2d74350000",
+   "maxWeapons": 5,
+   "maxPassives": 5,
+   "chestWeight": 5,
+   "xpBanked": "40cddd71f0120000",
    "rng": {
     "spawn": [
      "7ab1ba11",
@@ -2562,24 +2566,20 @@
     ]
    },
    "stats": {
-    "kills": "40b2e60000000000",
+    "kills": "4084580000000000",
     "killsByArchetype": [
-     939,
-     1275,
-     558,
-     651,
-     779
-    ],
-    "killsByRank": [
+     779,
      275,
      1340,
-     777
+     777,
+     231
+    ],
+    "killsByRank": [
+     758,
+     830,
+     1988
     ],
     "killsByCycleRank": [
-     731,
-     158,
-     530,
-     888,
      720,
      832,
      633,
@@ -2599,22 +2599,22 @@
      599,
      132,
      508,
-     654
+     654,
+     554,
+     379,
+     792,
+     91
     ],
-    "damageDealt": "41222f2fe82c3700",
-    "damageTaken": "4096ea854e880000",
-    "damagePrevented": "409499ee24ba0000",
-    "credits": "40a5ce0000000000",
-    "consumables": "4056c00000000000",
+    "damageDealt": "4109018affb1ac00",
+    "damageTaken": "407f52178c000000",
+    "damagePrevented": "4064ddfbdb300000",
+    "credits": "40bc3a0000000000",
+    "consumables": "4058c00000000000",
     "dice": "4008000000000000",
     "barrelsBroken": "404c000000000000",
-    "sheepTaken": "403a000000000000",
-    "chests": "0000000000000000",
+    "sheepTaken": "403c000000000000",
+    "chests": "4000000000000000",
     "damageByWeapon": [
-     "4110adcc28107e00",
-     "410c1e457ba2ec00",
-     "40f955a9a129f800",
-     "410a54f0f0461000",
      "4108af300bf90000",
      "40fe163f62841800",
      "40fcf5cffa90e000",
@@ -2624,13 +2624,13 @@
      "4109884b83ffc000",
      "40f4d4049c33c800",
      "4104b3307bfad400",
-     "410e474e0250d400"
+     "410e474e0250d400",
+     "40fb87368b7c0800",
+     "40e78585b7c9b000",
+     "40e0d2f801976000",
+     "40e3637f14593000"
     ],
     "bossKillsByWeapon": [
-     1,
-     21,
-     25,
-     8,
      16,
      11,
      4,
@@ -2640,22 +2640,22 @@
      24,
      29,
      21,
-     23
+     23,
+     15,
+     10,
+     18,
+     27
     ],
     "killsByFlavour": [
-     225,
-     70,
-     78,
-     327,
      320,
      28,
-     833
-    ],
-    "killsByWeapon": [
-     560,
+     833,
+     860,
      281,
      273,
-     448,
+     748
+    ],
+    "killsByWeapon": [
      2336,
      523,
      1018,
@@ -2665,13 +2665,13 @@
      1960,
      1677,
      829,
-     2102
+     2102,
+     510,
+     1249,
+     894,
+     2355
     ],
     "killsByWeaponRank": [
-     810,
-     349,
-     294,
-     555,
      748,
      119,
      889,
@@ -2709,43 +2709,39 @@
      623,
      463,
      630,
-     101
+     101,
+     869,
+     73,
+     696,
+     580
     ],
-    "contactHits": "4065200000000000",
-    "fullRepairs": "402a000000000000",
-    "lasersOverheated": "4058000000000000",
-    "splashKills": "4071800000000000",
-    "reloads": "4076d00000000000",
+    "contactHits": "4050400000000000",
+    "fullRepairs": "402e000000000000",
+    "lasersOverheated": "4041800000000000",
+    "splashKills": "4075a00000000000",
+    "reloads": "4075000000000000",
     "killedByRank": "0000000000000000",
-    "damageByShield": "40dbf3cceda56000",
-    "gemsCollected": "4095080000000000",
-    "shotsFired": "40e0920000000000",
-    "shotsHit": "40e290c000000000",
-    "peakEnemies": "406bc00000000000",
-    "endTick": "40e40e6000000000"
+    "damageByShield": "40bdbf9b4ae08000",
+    "gemsCollected": "4090cc0000000000",
+    "shotsFired": "40dfdd0000000000",
+    "shotsHit": "40de94c000000000",
+    "peakEnemies": "4053000000000000",
+    "endTick": "40dd418000000000"
    },
-   "worldHash": "2ee8f3b2",
-   "statsHash": "7692c3f9"
+   "worldHash": "2887d1e0",
+   "statsHash": "2222ba5a"
   },
   {
    "name": "populated",
    "entities": {
     "enemies": [
      {
-      "typeId": 0,
-      "flavourId": 3,
-      "archetype": 3,
-      "x": "4045d6c472800000",
-      "y": "40754dff71200000",
-      "spawnId": 1
-     },
-     {
       "typeId": 4,
       "flavourId": 2,
       "archetype": 2,
       "x": "c0113faa88000000",
       "y": "c078f83602f00000",
-      "spawnId": 2
+      "spawnId": 1
      },
      {
       "typeId": 3,
@@ -2753,27 +2749,35 @@
       "archetype": 0,
       "x": "405d26f118c00000",
       "y": "407ddca450c00000",
+      "spawnId": 2
+     },
+     {
+      "typeId": 2,
+      "flavourId": 0,
+      "archetype": 1,
+      "x": "40795db7eeb00000",
+      "y": "c019980444000000",
       "spawnId": 3
      }
     ],
     "projectiles": [
-     {
-      "x": "406e75a6e7600000",
-      "y": "c00ebba808000000",
-      "vx": "40607cd091c00000",
-      "vy": "40160243f0000000",
-      "lifeSec": "3fffe5fde0000000",
-      "ownerWeapon": 0,
-      "behaviour": 0,
-      "spawnId": 100,
-      "hit": 7
-     },
      {
       "x": "40494c8019800000",
       "y": "4064335913400000",
       "vx": "c03389fb59000000",
       "vy": "c04b874ebf800000",
       "lifeSec": "4002622000000000",
+      "ownerWeapon": 0,
+      "behaviour": 0,
+      "spawnId": 100,
+      "hit": 7
+     },
+     {
+      "x": "c0707270f5400000",
+      "y": "c05814b622800000",
+      "vx": "4034579108000000",
+      "vy": "c0556fef55000000",
+      "lifeSec": "3ff6eb6b80000000",
       "ownerWeapon": 1,
       "behaviour": 1,
       "spawnId": 101,
@@ -2783,26 +2787,26 @@
     "pickups": [
      {
       "kind": 0,
-      "value": 48,
-      "tier": 1,
-      "x": "c065f29796800000",
-      "y": "c050113a0e800000",
-      "spawnId": 200
-     },
-     {
-      "kind": 0,
       "value": 316,
       "tier": 3,
       "x": "403b4743f5000000",
       "y": "40601ead36a00000",
+      "spawnId": 200
+     },
+     {
+      "kind": 0,
+      "value": 406,
+      "tier": 2,
+      "x": "40364862f4000000",
+      "y": "4065b3a7ecc00000",
       "spawnId": 201
      }
     ],
     "drones": [
      {
-      "x": "4026569ca8000000",
-      "y": "4055c182ad800000",
-      "angle": "40030bf150000000",
+      "x": "40533d9237400000",
+      "y": "c04b18fbfa000000",
+      "angle": "4004209f34000000",
       "ammo": 12,
       "weaponSlot": 1,
       "spin": -1
@@ -2810,15 +2814,15 @@
     ],
     "sheep": [
      {
-      "x": "c04d7732ef000000",
-      "y": "c074c98d8e400000",
+      "x": "4080465165080000",
+      "y": "407d227d10800000",
       "spawnId": 42
      }
     ]
    },
-   "tick": 112628,
-   "runTicks": 311315,
-   "phase": 0,
+   "tick": 481288,
+   "runTicks": 196023,
+   "phase": 1,
    "poolCounts": {
     "enemies": 3,
     "enemiesFree": 509,
@@ -2830,336 +2834,332 @@
     "sheep": 1
    },
    "player": {
-    "x": "40985b08f6480000",
-    "y": "409cf72c05d00000",
-    "vx": "c070a8ef09300000",
-    "vy": "4074c6d30a200000",
-    "hp": "40744877dfc00000",
-    "faceX": "3fef989d00000000",
-    "faceY": "bfe4415640000000",
-    "level": 28,
-    "xp": "40b635b162eb8000",
-    "xpToNext": "40ba34bd70428000",
-    "heroId": 0,
+    "x": "c081718088800000",
+    "y": "409edd02dbd00000",
+    "vx": "c06fb0376f200000",
+    "vy": "c053e1aeb2400000",
+    "hp": "4081c590a82e0000",
+    "faceX": "3fbe357600000000",
+    "faceY": "bfd9e55900000000",
+    "level": 26,
+    "xp": "4088d4d85dc80000",
+    "xpToNext": "40bb2653dc498000",
+    "heroId": 12,
     "shieldLayers": 2,
-    "shieldTimer": "3ff1a82c10000000",
-    "invulnLeft": "3febcc6870000000",
-    "magnetSec": "400ccef2a8000000",
-    "repairLeft": "402b397adb000000",
+    "shieldTimer": "40164e7d8c000000",
+    "invulnLeft": "3ff0f09ea8000000",
+    "magnetSec": "4021338837000000",
+    "repairLeft": "4021de0924000000",
     "criticalArmed": 1,
     "insuranceUsed": 1,
     "traitScratch": [
-     "4044782000000000",
-     "c034ea98c0000000",
-     "3fd5c834c0000000",
-     "c03aa64dc0000000",
      "403e6aec60000000",
      "4042155520000000",
      "c02e41fc80000000",
-     "c031876e40000000"
+     "c031876e40000000",
+     "c0483c1520000000",
+     "4034033640000000",
+     "4046b3c8a0000000",
+     "c044e681e0000000"
     ]
    },
-   "weaponCount": 4,
+   "weaponCount": 1,
    "weapons": [
     {
-     "defId": 12,
+     "defId": 5,
      "level": 4,
-     "cooldownLeft": "3fd34b0ea0000000",
-     "turretX": "bfd1ea0a00000000",
-     "turretY": "bfd86f4700000000",
-     "targetDense": 18,
-     "heat": "3fe95ee0a0000000",
-     "overheated": true,
-     "ammo": 120,
-     "reloadLeft": "40115b9d8c000000",
-     "droneBanked": true,
-     "scratch": [
-      "400e933620000000",
-      "4053b88ee0000000",
-      "403e5b80a0000000",
-      "3ffd32ffe0000000"
-     ]
-    },
-    {
-     "defId": 7,
-     "level": 8,
-     "cooldownLeft": "400a8c1e94000000",
-     "turretX": "3fba997800000000",
-     "turretY": "3fe333b100000000",
-     "targetDense": 32,
-     "heat": "3fca6d5980000000",
+     "cooldownLeft": "400633048c000000",
+     "turretX": "bfe91a9a40000000",
+     "turretY": "3fe7bada00000000",
+     "targetDense": 173,
+     "heat": "3fdd094b00000000",
      "overheated": false,
-     "ammo": 199,
-     "reloadLeft": "400d3f5428000000",
-     "droneBanked": false,
-     "scratch": [
-      "c01258e000000000",
-      "c039d8e320000000",
-      "4016abeb80000000",
-      "c026e04780000000"
-     ]
-    },
-    {
-     "defId": 4,
-     "level": 4,
-     "cooldownLeft": "3ff37a1eb8000000",
-     "turretX": "3fc7e07d00000000",
-     "turretY": "3feb7a8fc0000000",
-     "targetDense": 227,
-     "heat": "3fa3463e00000000",
-     "overheated": true,
-     "ammo": 81,
-     "reloadLeft": "4011c444ee000000",
+     "ammo": 42,
+     "reloadLeft": "400809b694000000",
      "droneBanked": true,
      "scratch": [
-      "40068f5ce0000000",
-      "4044c1ab80000000",
-      "405094a9a0000000",
-      "404eaa8680000000"
+      "c043520d60000000",
+      "c0419eaa20000000",
+      "40544703c0000000",
+      "4022ce81e0000000"
      ]
     },
     {
-     "defId": 1,
+     "defId": 8,
      "level": 0,
-     "cooldownLeft": "400293c124000000",
-     "turretX": "bfefa60f00000000",
-     "turretY": "3fda46f080000000",
-     "targetDense": 190,
-     "heat": "3fd58bd4c0000000",
-     "overheated": true,
-     "ammo": 50,
-     "reloadLeft": "3fd5c615c0000000",
+     "cooldownLeft": "3fe71fae50000000",
+     "turretX": "3fc8c3b800000000",
+     "turretY": "3fd4c82680000000",
+     "targetDense": 3,
+     "heat": "3feb7b59e0000000",
+     "overheated": false,
+     "ammo": 121,
+     "reloadLeft": "40032097bc000000",
      "droneBanked": false,
      "scratch": [
-      "403d40d780000000",
-      "c0344b6540000000",
-      "c04538d900000000",
-      "c0365454c0000000"
+      "c040166140000000",
+      "4050e564c0000000",
+      "c03b8c25e0000000",
+      "4030e1b860000000"
      ]
     },
     {
-     "defId": 3,
-     "level": 8,
-     "cooldownLeft": "400963a3e0000000",
-     "turretX": "bfc0fcb000000000",
-     "turretY": "3febf5e700000000",
-     "targetDense": 260,
-     "heat": "3fe70282c0000000",
+     "defId": 0,
+     "level": 0,
+     "cooldownLeft": "3fc0dd7640000000",
+     "turretX": "bfd2d4e680000000",
+     "turretY": "bfd7dd1c80000000",
+     "targetDense": 12,
+     "heat": "3fdfa88200000000",
      "overheated": true,
-     "ammo": 108,
-     "reloadLeft": "400da47e80000000",
+     "ammo": 168,
+     "reloadLeft": "400f30f824000000",
      "droneBanked": false,
      "scratch": [
-      "c04605e020000000",
-      "c051ca61e0000000",
-      "c04bd6ffe0000000",
-      "c0539c7520000000"
-     ]
-    },
-    {
-     "defId": 3,
-     "level": 4,
-     "cooldownLeft": "400add6d84000000",
-     "turretX": "bfe550c540000000",
-     "turretY": "3fec327880000000",
-     "targetDense": 186,
-     "heat": "3fe3539280000000",
-     "overheated": true,
-     "ammo": 172,
-     "reloadLeft": "40118a26aa000000",
-     "droneBanked": false,
-     "scratch": [
-      "405590e580000000",
-      "c036a3c960000000",
-      "c04f62d7c0000000",
-      "c042d4a380000000"
-     ]
-    },
-    {
-     "defId": 1,
-     "level": 2,
-     "cooldownLeft": "4000e7111c000000",
-     "turretX": "3fe32c98c0000000",
-     "turretY": "3fecabc440000000",
-     "targetDense": 140,
-     "heat": "3fe5ff6d20000000",
-     "overheated": true,
-     "ammo": 145,
-     "reloadLeft": "4010a5e98a000000",
-     "droneBanked": false,
-     "scratch": [
-      "40336f9120000000",
-      "40310f38c0000000",
-      "c05053e740000000",
-      "c050102960000000"
-     ]
-    },
-    {
-     "defId": 13,
-     "level": 1,
-     "cooldownLeft": "3ff9792480000000",
-     "turretX": "3fb9fc5c00000000",
-     "turretY": "bfe0c32b00000000",
-     "targetDense": 168,
-     "heat": "3fc2329c80000000",
-     "overheated": true,
-     "ammo": 152,
-     "reloadLeft": "400aaa107c000000",
-     "droneBanked": false,
-     "scratch": [
-      "4032a30380000000",
-      "4053e93cc0000000",
-      "c02866eb60000000",
-      "4035544ac0000000"
-     ]
-    },
-    {
-     "defId": 13,
-     "level": 3,
-     "cooldownLeft": "40074157f8000000",
-     "turretX": "bfea4cc800000000",
-     "turretY": "3febcf6a80000000",
-     "targetDense": 148,
-     "heat": "3fe3e5ab40000000",
-     "overheated": true,
-     "ammo": 47,
-     "reloadLeft": "400b1cd4d8000000",
-     "droneBanked": false,
-     "scratch": [
-      "403fc3af60000000",
-      "c04560f0a0000000",
-      "c0231331c0000000",
-      "c052430560000000"
-     ]
-    },
-    {
-     "defId": 11,
-     "level": 7,
-     "cooldownLeft": "3fdba96fc0000000",
-     "turretX": "bfe2bffe40000000",
-     "turretY": "bfefc40ac0000000",
-     "targetDense": 222,
-     "heat": "3fe47fc7a0000000",
-     "overheated": true,
-     "ammo": 86,
-     "reloadLeft": "3ffb9e7108000000",
-     "droneBanked": true,
-     "scratch": [
-      "404a138fa0000000",
-      "40517ce520000000",
-      "c0419939a0000000",
-      "4053add180000000"
+      "4050661000000000",
+      "c054683f40000000",
+      "403d968e40000000",
+      "c0566068a0000000"
      ]
     },
     {
      "defId": 13,
      "level": 5,
-     "cooldownLeft": "4007e7fee4000000",
-     "turretX": "3fee7e6980000000",
-     "turretY": "bf9d598000000000",
-     "targetDense": 4,
-     "heat": "3fe8c01000000000",
-     "overheated": true,
-     "ammo": 165,
-     "reloadLeft": "3ffc23da58000000",
+     "cooldownLeft": "3ff2da5a28000000",
+     "turretX": "bfec6e3100000000",
+     "turretY": "3fedae2080000000",
+     "targetDense": 290,
+     "heat": "3fed958120000000",
+     "overheated": false,
+     "ammo": 82,
+     "reloadLeft": "3ff31dbc10000000",
      "droneBanked": false,
      "scratch": [
-      "c02d7b2380000000",
-      "c0556c99a0000000",
-      "4025252fa0000000",
-      "c042dac840000000"
+      "4049382ae0000000",
+      "4050c294a0000000",
+      "405267e200000000",
+      "c0280550e0000000"
      ]
     },
     {
-     "defId": 3,
+     "defId": 9,
      "level": 3,
-     "cooldownLeft": "3fe8ec5590000000",
-     "turretX": "bfe8213cc0000000",
-     "turretY": "3fe4116c80000000",
-     "targetDense": 159,
-     "heat": "3fa7d8f400000000",
-     "overheated": true,
-     "ammo": 161,
-     "reloadLeft": "3fff0ca700000000",
+     "cooldownLeft": "4004223268000000",
+     "turretX": "3fc96f7300000000",
+     "turretY": "bfe34e9500000000",
+     "targetDense": 283,
+     "heat": "3fdda4fac0000000",
+     "overheated": false,
+     "ammo": 11,
+     "reloadLeft": "3febb3cd60000000",
+     "droneBanked": false,
+     "scratch": [
+      "c0569b19e0000000",
+      "404395efe0000000",
+      "4054ca6a20000000",
+      "c04e2436e0000000"
+     ]
+    },
+    {
+     "defId": 2,
+     "level": 7,
+     "cooldownLeft": "4000e92030000000",
+     "turretX": "3fe04fb0c0000000",
+     "turretY": "3fd06ae600000000",
+     "targetDense": 106,
+     "heat": "3fc782f880000000",
+     "overheated": false,
+     "ammo": 182,
+     "reloadLeft": "3fe60f4730000000",
      "droneBanked": true,
      "scratch": [
-      "c022ecc2a0000000",
-      "40538dae40000000",
-      "4041057060000000",
-      "c051c29b40000000"
+      "40206e97c0000000",
+      "404efae3c0000000",
+      "4032c36580000000",
+      "404b1d1000000000"
+     ]
+    },
+    {
+     "defId": 8,
+     "level": 6,
+     "cooldownLeft": "40033f7f7c000000",
+     "turretX": "bfec3d83c0000000",
+     "turretY": "3fe89813c0000000",
+     "targetDense": 283,
+     "heat": "3fc6dafb80000000",
+     "overheated": false,
+     "ammo": 42,
+     "reloadLeft": "3fe40a3570000000",
+     "droneBanked": true,
+     "scratch": [
+      "c000c6fe80000000",
+      "c04e973920000000",
+      "c0205578a0000000",
+      "40225f6d00000000"
+     ]
+    },
+    {
+     "defId": 2,
+     "level": 1,
+     "cooldownLeft": "3fdfd891e0000000",
+     "turretX": "bfef349ec0000000",
+     "turretY": "bfe4259780000000",
+     "targetDense": 100,
+     "heat": "3fbaea3000000000",
+     "overheated": false,
+     "ammo": 107,
+     "reloadLeft": "3fff2584d0000000",
+     "droneBanked": false,
+     "scratch": [
+      "403d344e40000000",
+      "3ff140b100000000",
+      "404dea0ea0000000",
+      "c052984960000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 8,
+     "cooldownLeft": "400168f5d8000000",
+     "turretX": "3fed61e4c0000000",
+     "turretY": "bfd745a000000000",
+     "targetDense": 280,
+     "heat": "3fdc630300000000",
+     "overheated": false,
+     "ammo": 61,
+     "reloadLeft": "40001a60e4000000",
+     "droneBanked": false,
+     "scratch": [
+      "400c5bdd00000000",
+      "c053d9b420000000",
+      "c051097ca0000000",
+      "c04a837d80000000"
+     ]
+    },
+    {
+     "defId": 11,
+     "level": 1,
+     "cooldownLeft": "4001efceac000000",
+     "turretX": "3fc429ab00000000",
+     "turretY": "bfd93a8480000000",
+     "targetDense": 137,
+     "heat": "3fec4359e0000000",
+     "overheated": false,
+     "ammo": 153,
+     "reloadLeft": "3ff5ffbb80000000",
+     "droneBanked": false,
+     "scratch": [
+      "4030288660000000",
+      "c03f4d88a0000000",
+      "40500259a0000000",
+      "40558f60a0000000"
+     ]
+    },
+    {
+     "defId": 4,
+     "level": 8,
+     "cooldownLeft": "4005a80e00000000",
+     "turretX": "3fe749d380000000",
+     "turretY": "3fc40eee00000000",
+     "targetDense": 183,
+     "heat": "3fe2016640000000",
+     "overheated": false,
+     "ammo": 169,
+     "reloadLeft": "40041a53f0000000",
+     "droneBanked": false,
+     "scratch": [
+      "c043f177a0000000",
+      "400255e460000000",
+      "c0491c7640000000",
+      "c0510f8000000000"
+     ]
+    },
+    {
+     "defId": 8,
+     "level": 1,
+     "cooldownLeft": "3fc4ddd580000000",
+     "turretX": "3fe8f832c0000000",
+     "turretY": "bfe6d75640000000",
+     "targetDense": 291,
+     "heat": "3fc29e8180000000",
+     "overheated": false,
+     "ammo": 178,
+     "reloadLeft": "4008c55890000000",
+     "droneBanked": false,
+     "scratch": [
+      "c054d7b100000000",
+      "4050f0a3a0000000",
+      "402ebe14c0000000",
+      "40114c6c80000000"
      ]
     },
     {
      "defId": 12,
-     "level": 7,
-     "cooldownLeft": "400060bc4c000000",
-     "turretX": "3fa8776800000000",
-     "turretY": "3fd8a03980000000",
-     "targetDense": 196,
-     "heat": "3fe3da3220000000",
-     "overheated": true,
-     "ammo": 121,
-     "reloadLeft": "400c7c6b2c000000",
+     "level": 8,
+     "cooldownLeft": "40015eebdc000000",
+     "turretX": "bfef50bec0000000",
+     "turretY": "3fec8799c0000000",
+     "targetDense": 131,
+     "heat": "3fc5d67780000000",
+     "overheated": false,
+     "ammo": 197,
+     "reloadLeft": "400bd2b970000000",
      "droneBanked": false,
      "scratch": [
-      "c01667b980000000",
-      "400a02d7a0000000",
-      "4048b1bce0000000",
-      "403bc49060000000"
+      "402b191200000000",
+      "4052553860000000",
+      "404dd465c0000000",
+      "bfe2109a60000000"
      ]
     },
     {
-     "defId": 7,
-     "level": 4,
-     "cooldownLeft": "40073aa46c000000",
-     "turretX": "bf798ce000000000",
-     "turretY": "bfd9f42100000000",
-     "targetDense": 238,
-     "heat": "3fd21c9200000000",
-     "overheated": true,
-     "ammo": 190,
-     "reloadLeft": "4005e5614c000000",
-     "droneBanked": false,
+     "defId": 10,
+     "level": 5,
+     "cooldownLeft": "3fefb1ff80000000",
+     "turretX": "3fe7f73ac0000000",
+     "turretY": "bfdd367480000000",
+     "targetDense": 73,
+     "heat": "3febe4aba0000000",
+     "overheated": false,
+     "ammo": 156,
+     "reloadLeft": "3ff110a410000000",
+     "droneBanked": true,
      "scratch": [
-      "3fefb37b40000000",
-      "40069c8800000000",
-      "c047ccdc80000000",
-      "c02c684940000000"
+      "405684bc60000000",
+      "4051d74a00000000",
+      "404f3f7480000000",
+      "c0535a4bc0000000"
      ]
     }
    ],
    "director": {
-    "localPressure": "4078f8eb07080000",
-    "targetPressure": "40766284ba000000",
-    "liveElites": 5,
-    "spawnAccumulator": "4001a51fac000000",
-    "nextSpawnId": 76303,
-    "cycleIndex": 18,
-    "cyclePhase": 0,
-    "eliteTimer": "4044631168c00000",
-    "bossCycle": 7,
+    "localPressure": "4004deb488000000",
+    "targetPressure": "40528ef945e00000",
+    "liveElites": 16,
+    "spawnAccumulator": "40348e3367800000",
+    "nextSpawnId": 11647,
+    "cycleIndex": 8,
+    "cyclePhase": 2,
+    "eliteTimer": "40400c4779800000",
+    "bossCycle": 1,
     "eventCycle": 8,
-    "bossSpawned": 0,
-    "bossHandle": 131044915
+    "bossSpawned": 1,
+    "bossHandle": 841712088
    },
    "difficulty": {
-    "hpRamp": "4011aabcf6000000",
-    "speedRamp": "4003a05540000000",
-    "lastWholeSecond": 911
+    "hpRamp": "40060e44d4000000",
+    "speedRamp": "4002f54fdc000000",
+    "lastWholeSecond": 1055
    },
    "levelUp": {
-    "pending": 3,
-    "offerCount": 2,
+    "pending": 2,
+    "offerCount": 1,
     "offers": [
-     29,
-     94,
-     97
+     34,
+     114,
+     100
     ],
     "stacks": [
-     8,
-     5,
-     1,
-     8,
      4,
      4,
      0,
@@ -3179,36 +3179,36 @@
      5,
      2,
      5,
-     5
+     5,
+     8,
+     0,
+     5,
+     4
     ],
-    "picksTaken": 15,
-    "lastTaken": 53,
-    "rerolls": 2,
-    "rerollsUsed": 17
+    "picksTaken": 39,
+    "lastTaken": 116,
+    "rerolls": 1,
+    "rerollsUsed": 1
    },
    "chest": {
     "reels": [
-     78,
-     116,
-     30
-    ],
-    "payout": 3,
-    "grants": [
      48,
      91,
-     48,
-     54,
-     69
+     48
     ],
-    "opened": 6,
-    "ascension": 115
+    "payout": 1,
+    "grants": [
+     69,
+     59,
+     115,
+     26,
+     44
+    ],
+    "opened": 7,
+    "ascension": 54
    },
    "droneStacks": [
     6,
-    3,
-    7,
-    4,
-    6,
     0,
     0,
     4,
@@ -3227,13 +3227,13 @@
     7,
     4,
     8,
-    3
+    3,
+    2,
+    8,
+    7,
+    6
    ],
    "cardUnlocked": [
-    1,
-    1,
-    1,
-    0,
     0,
     0,
     1,
@@ -3251,40 +3251,45 @@
     1,
     1,
     1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0
+   ],
+   "ascensionSeen": [
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
     0,
     1,
     1
    ],
-   "ascensionSeen": [
-    1,
-    0,
-    1,
-    0,
-    0,
-    1,
-    0,
-    1,
-    1,
-    0,
-    0,
-    1,
-    1,
-    1,
-    0,
-    1,
-    1,
-    1,
-    1,
-    1,
-    0,
-    1,
-    1,
-    0
-   ],
-   "autoLevel": 0,
-   "maxWeapons": 1,
-   "maxPassives": 3,
-   "xpBanked": "40d374fde3b0a000",
+   "autoLevel": 1,
+   "maxWeapons": 4,
+   "maxPassives": 6,
+   "chestWeight": 6,
+   "xpBanked": "40d1b832a6e1c000",
    "rng": {
     "spawn": [
      "feefeed5",
@@ -3324,25 +3329,20 @@
     ]
    },
    "stats": {
-    "kills": "40c0478000000000",
+    "kills": "40b3280000000000",
     "killsByArchetype": [
-     1367,
-     1695,
-     268,
-     1976,
-     904
-    ],
-    "killsByRank": [
      1111,
      1012,
-     1749
+     1749,
+     224,
+     1686
+    ],
+    "killsByRank": [
+     565,
+     1403,
+     1282
     ],
     "killsByCycleRank": [
-     724,
-     186,
-     65,
-     403,
-     182,
      75,
      504,
      542,
@@ -3361,23 +3361,23 @@
      6,
      326,
      386,
-     403
+     403,
+     274,
+     897,
+     872,
+     536,
+     566
     ],
-    "damageDealt": "41213d4e652c3900",
-    "damageTaken": "40ab3e3883ed0000",
-    "damagePrevented": "40956d11dc6c0000",
-    "credits": "40b0280000000000",
-    "consumables": "4050800000000000",
-    "dice": "4008000000000000",
+    "damageDealt": "40e4d50bbcff9000",
+    "damageTaken": "4082b70fb1780000",
+    "damagePrevented": "40969312c42c0000",
+    "credits": "40a8b20000000000",
+    "consumables": "4053000000000000",
+    "dice": "4000000000000000",
     "barrelsBroken": "4048800000000000",
-    "sheepTaken": "4040000000000000",
-    "chests": "4000000000000000",
+    "sheepTaken": "4031000000000000",
+    "chests": "4020000000000000",
     "damageByWeapon": [
-     "4106cd9ea6056800",
-     "40f26571a00d6000",
-     "40f62db2c5bbb000",
-     "40fe07723d5e3800",
-     "40cfa5501ab0c000",
      "4107a4e8ea0d5800",
      "40fa9e4624e69800",
      "40e36b3e5809d000",
@@ -3386,14 +3386,14 @@
      "40df683e4ded2000",
      "41119228ae25ee00",
      "41057d657ce9f000",
-     "4106abdac4be4400"
+     "4106abdac4be4400",
+     "40fa26a3fca16800",
+     "410dc31f3426bc00",
+     "40f7675d854e7000",
+     "41097b9fd3507400",
+     "410d554e07b50800"
     ],
     "bossKillsByWeapon": [
-     12,
-     21,
-     9,
-     18,
-     3,
      15,
      25,
      5,
@@ -3402,23 +3402,23 @@
      29,
      21,
      17,
-     12
+     12,
+     11,
+     29,
+     2,
+     21,
+     27
     ],
     "killsByFlavour": [
-     671,
-     299,
-     662,
-     171,
-     207,
      888,
-     227
+     227,
+     433,
+     296,
+     107,
+     670,
+     502
     ],
     "killsByWeapon": [
-     433,
-     596,
-     1307,
-     1870,
-     2302,
      2652,
      2473,
      2410,
@@ -3427,14 +3427,14 @@
      1046,
      2110,
      2537,
-     676
+     676,
+     2466,
+     1270,
+     2458,
+     769,
+     285
     ],
     "killsByWeaponRank": [
-     366,
-     70,
-     358,
-     769,
-     885,
      631,
      654,
      848,
@@ -3471,23 +3471,28 @@
      188,
      9,
      834,
-     146
+     146,
+     771,
+     591,
+     696,
+     394,
+     67
     ],
-    "contactHits": "407d700000000000",
-    "fullRepairs": "4026000000000000",
-    "lasersOverheated": "4058000000000000",
-    "splashKills": "4078a00000000000",
-    "reloads": "4064e00000000000",
+    "contactHits": "4040000000000000",
+    "fullRepairs": "4022000000000000",
+    "lasersOverheated": "4054800000000000",
+    "splashKills": "4090c80000000000",
+    "reloads": "4075900000000000",
     "killedByRank": "3ff0000000000000",
-    "damageByShield": "40ba46756dbf0000",
-    "gemsCollected": "407e200000000000",
-    "shotsFired": "40afd40000000000",
-    "shotsHit": "40e15b2000000000",
-    "peakEnemies": "4060400000000000",
-    "endTick": "40e8532000000000"
+    "damageByShield": "40c7f009d966c000",
+    "gemsCollected": "40aa2e0000000000",
+    "shotsFired": "40dae14000000000",
+    "shotsHit": "40de440000000000",
+    "peakEnemies": "4075300000000000",
+    "endTick": "40d120c000000000"
    },
-   "worldHash": "385def68",
-   "statsHash": "42992589"
+   "worldHash": "5a9951e6",
+   "statsHash": "5ea01ae1"
   }
  ]
 }

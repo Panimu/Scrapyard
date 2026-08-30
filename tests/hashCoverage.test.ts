@@ -201,6 +201,17 @@ const CASES: readonly { name: string; mutate: (w: World) => () => void }[] = [
     },
   },
   {
+    // The third of the run-grant family, and it needs a case for the same reason its two siblings
+    // above do: nothing else in a fresh world reflects it, so a hashWorld that stopped mixing it
+    // would pass every other test in the suite.
+    name: 'chestWeight',
+    mutate: (w) => {
+      const old = w.chestWeight;
+      w.chestWeight = old + 1;
+      return () => (w.chestWeight = old);
+    },
+  },
+  {
     name: 'droneStacks',
     mutate: (w) => {
       const old = w.droneStacks[0];

@@ -161,6 +161,9 @@ function scribble(w: World, rng: Rng): void {
   w.autoLevel = rng.nextInt(2);
   w.maxWeapons = rng.nextInt(9);
   w.maxPassives = rng.nextInt(9);
+  // Randomized for the reason its two siblings are: left at zero, a port that mixed the wrong
+  // field into the world hash - or mis-cast this one - would reproduce the fixture anyway.
+  w.chestWeight = rng.nextInt(9);
   w.xpBanked = rng.nextRange(0, 40000.5);
 
   // Advance each stream a different number of draws, so a port that folded them in the wrong order
@@ -273,6 +276,7 @@ function dump(w: World): Record<string, unknown> {
     autoLevel: w.autoLevel,
     maxWeapons: w.maxWeapons,
     maxPassives: w.maxPassives,
+    chestWeight: w.chestWeight,
     xpBanked: f64(w.xpBanked),
     rng: {
       spawn: rngState(w.rng.spawn), loot: rngState(w.rng.loot), upgrade: rngState(w.rng.upgrade),

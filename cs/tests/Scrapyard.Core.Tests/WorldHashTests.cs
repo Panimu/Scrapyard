@@ -212,6 +212,7 @@ public class WorldHashTests
         w.AutoLevel = st.GetProperty("autoLevel").GetInt32();
         w.MaxWeapons = st.GetProperty("maxWeapons").GetInt32();
         w.MaxPassives = st.GetProperty("maxPassives").GetInt32();
+        w.ChestWeight = st.GetProperty("chestWeight").GetInt32();
         w.XpBanked = st.GetProperty("xpBanked").F64();
 
         // RNG state is RESTORED rather than re-advanced. The fixture advanced each stream a

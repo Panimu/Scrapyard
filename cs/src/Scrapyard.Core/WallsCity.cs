@@ -104,9 +104,14 @@ public sealed class CityBlocks : IScenery
     private const int QGate2Side = 5;
     private const int QGate2Along = 6;
     private const int QScatter = 7; // ..and the ten after it, two per possible pile.
+    /// <summary>
+    /// Five piles claim up to question 17 - the fifth pile's ROW is 7 + 2 + 8. QSite was briefly
+    /// given 17, which made a site's silhouette and that pile's row the same roll; see the
+    /// TypeScript for the full note.
+    /// </summary>
     /// <summary>Which silhouette a site's hoarding takes, and which way round it faces.</summary>
-    private const int QSite = 17;
-    private const int QSiteRot = 18;
+    private const int QSite = 18;
+    private const int QSiteRot = 19;
     private const int QBarrel = 24;
 
     private const int ScatterMin = 3;

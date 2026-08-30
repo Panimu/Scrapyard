@@ -104,7 +104,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
     version: 'v423',
     title: 'THE MACHINE GUN CHANGES BELTS FASTER',
     notes: [
-      'A fully upgraded machine gun is back in the fight half a second sooner after it runs dry - nine and a half seconds standing there instead of ten, the same wait the flak cannon has.',
+      'A fully upgraded machine gun is back in the fight half a second sooner after it runs dry - nine and a half seconds standing there instead of ten. Still a touch longer than the flak cannon, which manages nine.',
     ],
   },
   {

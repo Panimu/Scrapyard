@@ -335,10 +335,21 @@ const Q_GATE2 = 4;
 const Q_GATE2_SIDE = 5;
 const Q_GATE2_ALONG = 6;
 const Q_SCATTER = 7; // ..and the ten after it, two per possible pile.
+/**
+ * FIVE PILES CLAIM UP TO QUESTION 17, and this comment used to say 16.
+ *
+ * The loop draws `Q_SCATTER + 1 + k*2` and `Q_SCATTER + 2 + k*2` for k in 0..4, so the fifth
+ * pile's ROW is question 7 + 2 + 8 = 17. The off-by-one here is not a documentation slip: it is
+ * how Q_SITE came to be given 17, which made a site's silhouette and that pile's row THE SAME
+ * ROLL. Every lane site put its fifth pile on row 5, every hoarding put it on row 2 or 3, and
+ * nothing looked wrong enough to notice - which is exactly what the "no two rolls can collide by
+ * accident" rule above exists to prevent, and exactly why the rule needs the arithmetic written
+ * out rather than summarised.
+ */
 /** Which silhouette a construction site's hoarding takes, and which way round it faces. */
-const Q_SITE = 17;
-const Q_SITE_ROT = 18;
-/** Well clear of Q_SCATTER's run: five piles claim up to question 16. */
+const Q_SITE = 18;
+const Q_SITE_ROT = 19;
+/** Well clear of Q_SCATTER's run and of the two above it. */
 const Q_BARREL = 24;
 
 /** Material piles a construction site scatters inside its fence. */
