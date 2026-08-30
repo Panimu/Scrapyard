@@ -166,18 +166,26 @@ function defaultCorpusSpecs(): GoldenRunSpec[] {
   // entry, and note the seeds now run much longer - the inverted bot survives better, so a
   // chest-opening seed is easier to find than it used to be.
   //
-  // 0x1e74f05b is the current one - 740 kills, one chest, dies at tick 17253.
+  // 0x1e74f05b went on the XP curve - every threshold up 20%, which is not a weapon change at
+  // all. It is the first break on this list caused by PACING rather than by content: the bot
+  // reaches a lower level by any given moment, so it holds a smaller loadout, kills more slowly
+  // and stands somewhere else. Expect the whole list to need re-probing after any change to the
+  // curve, the same as after a bot change.
+  //
+  // 0x67133b3c is the current one - 645 kills, one chest, dies at tick 14720.
   //
   // FOUND BY SWEEPING `0x65c9ecb3 + i * 0x9e3779b1` for i in 0..400 and keeping the hits, so the
   // search is reproducible rather than a number somebody remembered. THE SEED MUST FIT IN AN
   // Int32: the C# corpus reader stores it as one, and a larger value fails to parse rather than
   // diverging, so the sweep skips anything over 0x7fffffff. Still opening a chest as of this
-  // commit, if this one stops: 0x6e9b1ab0, 0x494187c3, 0xcd29461. Re-probe the whole list rather than
-  // assuming a past failure is permanent: 0x5ae3e3bd, 0x3afd554b, 0x4016664, 0x71f94432,
-  // 0x5785ba3b have all worked at some point and may again.
+  // commit, if this one stops: 0x5ae3e3bd, 0x38e87a52. Re-probe the whole list rather than
+  // assuming a past failure is permanent: 0x6e9b1ab0, 0x494187c3, 0xcd29461, 0x3afd554b,
+  // 0x4016664, 0x71f94432, 0x5785ba3b have all worked at some point and may again - 0x5ae3e3bd
+  // was on THAT half of the list when the XP curve moved, and was the first seed the re-probe
+  // tried and the first one that worked. The list keeps earning its keep.
   specs.push({
     name: `${playable[0].id}-h${HERO_SLATE}-boss`,
-    seed: 0x1e74f05b,
+    seed: 0x67133b3c,
     heroId: HERO_SLATE,
     levelId: playable[0].id,
     seconds: RUN_LENGTH_SEC + 8,

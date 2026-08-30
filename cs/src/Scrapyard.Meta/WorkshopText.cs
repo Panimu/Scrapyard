@@ -109,6 +109,9 @@ public static class WorkshopText
         new("m-repair", "Repair Bay", "A small repair clock, running from the first second of the run - a trickle next to Field Repair, and no substitute for finding it, but it never has to be found at all.", 3, 30, 1,
             new[] { "", "1 hp per tick", "2 hp per tick", "3 hp per tick" },
             "3 hp per tick at full", "3"),
+        new("m-chest", "Black Market Contacts", "Word gets around the yard. More of what walks in turns out to be a lone elite carrying a Cyber Chest, and worth going out of your way for.", 5, 150, 1,
+            new[] { "", "+14.3% chest elites", "+28.6% chest elites", "+42.9% chest elites", "+57.1% chest elites", "+71.4% chest elites" },
+            "+71.4% chest elites at full", "+71.4%"),
     };
 
     public static WorkshopEntry At(int index) =>

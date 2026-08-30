@@ -25,6 +25,19 @@ public static class SpecialEvents
     public static readonly int TotalWeight = 61;
 
     /// <summary>
+    /// The most weight Black Market Contacts can move, and why moving it is safe.
+    /// </summary>
+    /// <remarks>
+    /// The workshop upgrade shifts weight from <c>nothing</c> onto <c>chest elite</c>, one point a
+    /// tier. It is a TRANSFER rather than an addition, so <see cref="TotalWeight"/> stays 61 with
+    /// any bonus applied - the walk below still needs no per-call sum, and the ladder is exactly
+    /// linear in what the player feels, because frequency is weight over a FIXED denominator.
+    /// Clamped anyway: the catalog sells five and <c>nothing</c> is 15, so the floor is nowhere
+    /// near - but a bonus that outran it would push a negative weight into the walk.
+    /// </remarks>
+    private static readonly int NothingWeight = Weight[Nothing];
+
+    /// <summary>
     /// Picks an event from <paramref name="roll"/>, a number in [0, 1).
     /// </summary>
     /// <remarks>
@@ -35,14 +48,20 @@ public static class SpecialEvents
     /// Walks by INDEX and falls through to the LAST entry rather than to a default, so a float that
     /// lands exactly on the total cannot return -1.
     /// </para>
+    /// <para>
+    /// <paramref name="chestBonus"/> is Black Market Contacts, in weight: ADDED to the chest elite
+    /// and SUBTRACTED from <c>nothing</c>, so a run that bought it trades quiet waves for chests
+    /// rather than getting more set-pieces than a run that did not.
+    /// </para>
     /// </remarks>
-    public static int Pick(double roll)
+    public static int Pick(double roll, int chestBonus = 0)
     {
+        int bonus = chestBonus < 0 ? 0 : chestBonus > NothingWeight ? NothingWeight : chestBonus;
         double acc = 0;
         double target = roll * TotalWeight;
         for (int i = 0; i < Weight.Length; i++)
         {
-            acc += Weight[i];
+            acc += i == ChestElite ? Weight[i] + bonus : i == Nothing ? Weight[i] - bonus : Weight[i];
             if (target < acc) return i;
         }
 

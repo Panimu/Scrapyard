@@ -314,6 +314,7 @@ export function hashWorld(world: World): number {
   h = mixU32(h, world.autoLevel);
   h = mixU32(h, world.maxWeapons);
   h = mixU32(h, world.maxPassives);
+  h = mixU32(h, world.chestWeight);
 
   h = mixF64(h, world.xpBanked);
 

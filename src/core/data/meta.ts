@@ -60,6 +60,12 @@
 
 import type { WeaponId } from '../content/definitions.js';
 import type { PlayerStatKey, WeaponStatKey } from './stats.js';
+// A VALUE IMPORT, and the only one in this file. `oddsPercent` states Black Market Contacts as the
+// increase in how often a chest elite comes up, and the denominator for that is the event's own
+// authored weight. Reading it from the table is the same discipline as MetaDisplay itself: a `7`
+// copied into this file would be a second place to keep true, on a shop screen, where the string
+// IS the offer.
+import { EVENT_CHEST_ELITE, SPECIAL_EVENTS } from '../content/specialEvents.js';
 
 export type MetaId =
   | 'm-damage'
@@ -77,7 +83,8 @@ export type MetaId =
   | 'm-mounts'
   | 'm-passives'
   | 'm-hp'
-  | 'm-repair';
+  | 'm-repair'
+  | 'm-chest';
 
 /**
  * One stat change, per tier owned.
@@ -94,7 +101,7 @@ export type MetaId =
  * because these never reach `resolveOne` - `accumulateMeta` filters on `target` and a `run` effect
  * is invisible to every resolver by construction.
  */
-export type RunGrantKey = 'rerolls' | 'weaponSlots' | 'passiveSlots';
+export type RunGrantKey = 'rerolls' | 'weaponSlots' | 'passiveSlots' | 'chestWeight';
 
 export interface MetaEffect {
   /**
@@ -145,8 +152,14 @@ export interface MetaDisplay {
    *   count           a whole number of named things, `noun` pluralised past one
    *   secondsFaster   a negative `add` in seconds, shown as how much sooner
    *   flag            no magnitude at all - it either happens or it does not, and `noun` says what
+   *   oddsPercent     a WEIGHT added to one entry of a weighted table, shown as the increase in
+   *                   how often that entry comes up. +5 onto a weight of 7 is not "+5" of
+   *                   anything a player owns - it is 12 draws where there were 7, so it is
+   *                   stated as +71.4%. Only meaningful because the table's TOTAL is invariant
+   *                   under the transfer (see specialEvents.ts): with a fixed denominator, a
+   *                   share of weight is a share of frequency, and the ladder stays linear.
    */
-  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'count' | 'secondsFaster' | 'flag';
+  readonly as: 'percent' | 'rateOfFire' | 'flat' | 'count' | 'secondsFaster' | 'flag' | 'oddsPercent';
   /** The thing being bought, as the player would name it. For `flag`, the whole sentence. */
   readonly noun: string;
 }
@@ -215,6 +228,12 @@ function rateLadder(fullRate: number, tiers: number): readonly number[] {
   }
   return Object.freeze(out);
 }
+
+/**
+ * The chest elite's AUTHORED weight - the denominator `oddsPercent` states Black Market Contacts
+ * against. Read from the table rather than written here; see the import at the top of the file.
+ */
+const CHEST_EVENT_BASE_WEIGHT = SPECIAL_EVENTS[EVENT_CHEST_ELITE].weight;
 
 /** The summed contribution of `tiers` tiers of one effect, whichever shape its amount is. */
 function effectTotal(fx: MetaEffect, tiers: number): number {
@@ -625,6 +644,46 @@ export const META_CATALOG: readonly MetaDef[] = Object.freeze([
     ]),
     display: { key: 'repairAmount', as: 'flat', noun: 'hp per tick' },
   },
+  // LAST, WHICH THE POWER ORDER ABOVE DID NOT ASK FOR. This catalog is APPEND ONLY: the dense
+  // `metaTiers` array handed to createWorld is indexed by position, and the C# port pins those
+  // positions as named constants (MetaIds). Inserting by power would renumber every upgrade below
+  // the insertion point in one language and not the other. The save itself is keyed by id and
+  // would survive it; the fixtures and the port would not.
+  {
+    id: 'm-chest',
+    name: 'Black Market Contacts',
+    blurb:
+      'Word gets around the yard. More of what walks in turns out to be a lone elite carrying a Cyber Chest, and worth going out of your way for.',
+    tiers: 5,
+    cost: 150,
+    version: 1,
+    /**
+     * A RUN-START GRANT OF WEIGHT, spent on the special-event table rather than on a stat.
+     *
+     * WHY A GRANT AND NOT A STAT. There is no resolver for "how often does a set-piece happen" -
+     * the event table is content, drawn once a wave from `rng.event`, and nothing about it passes
+     * through `resolveOne`. So this takes the shape Rerolls already has: a number read ONCE by
+     * `world.ts`, carried on World, and handed to the one pure function that needs it.
+     *
+     * IT IS A TRANSFER, AND THE OTHER HALF IS SILENT. Each tier adds one to the chest elite and
+     * takes one off `nothing` - see `pickSpecialEvent`. The blurb says nothing about the second
+     * half deliberately: what the player buys is chests, and "fewer quiet waves" is the price
+     * rather than a second feature. They will feel it either way.
+     *
+     * That transfer is also what makes the ladder honest. The table's total stays 61 whatever is
+     * bought, so weight IS frequency at a fixed denominator: every tier is worth exactly 1/61 of
+     * the draws, and a fifth of the ladder is a fifth of the effect to the last decimal. Almost
+     * nothing else in this shop can say that - see the note on rateLadder for the usual case.
+     *
+     * FIVE TIERS TAKES THE CHEST ELITE FROM 7 TO 12 OF 61, which is one set-piece in five where it
+     * was one in nine. Against a run that already sees roughly six chests off bosses alone, that
+     * is a change of degree rather than of kind, and the price says so.
+     */
+    effects: Object.freeze([
+      { target: 'run' as const, key: 'chestWeight' as const, mode: 'add' as const, amount: 1 },
+    ]),
+    display: { key: 'chestWeight', as: 'oddsPercent', noun: 'chest elites' },
+  },
 ]);
 
 /** Trims a trailing `.0` so a whole number reads as one. 12.857 -> "12.9", 30 -> "30". */
@@ -663,6 +722,10 @@ export function metaEffectValue(def: MetaDef, tiers: number): number {
       return total;
     case 'secondsFaster':
       return -total;
+    // The weight added, over the entry's authored weight: the frequency MULTIPLIER minus one, so
+    // it lands in the same [0..1] shape `percent` uses and the text case can share its formatting.
+    case 'oddsPercent':
+      return total / CHEST_EVENT_BASE_WEIGHT;
   }
 }
 
@@ -680,6 +743,7 @@ export function metaEffectText(def: MetaDef, tiers: number, bare = false): strin
   switch (d.as) {
     case 'percent':
     case 'rateOfFire':
+    case 'oddsPercent':
       return bare ? `+${oneDecimal(v * 100)}%` : `+${oneDecimal(v * 100)}% ${d.noun}`;
     case 'flat':
       return bare ? oneDecimal(v) : `${oneDecimal(v)} ${d.noun}`;

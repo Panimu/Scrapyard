@@ -62,7 +62,7 @@ public class MetaTests
         {
             "m-passives", "m-mounts", "m-damage", "m-blast", "m-range", "m-speed", "m-rate",
             "m-magnet", "m-hp", "m-armour", "m-insurance", "m-drone", "m-laser", "m-heatcap",
-            "m-rerolls", "m-repair",
+            "m-rerolls", "m-repair", "m-chest",
         };
 
         Assert.Equal(order.Length, WorkshopText.All.Length);

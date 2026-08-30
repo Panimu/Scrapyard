@@ -685,6 +685,15 @@ export interface World {
    * it bounds what the deck hands out rather than any array length.
    */
   maxPassives: number;
+  /**
+   * WEIGHT MOVED ONTO THE CHEST ELITE for this run - Black Market Contacts, in points.
+   *
+   * The third member of the `maxWeapons`/`maxPassives` family and read the same way: seeded once
+   * at createWorld from the save's workshop tiers, never recomputed, and handed to exactly one
+   * pure function (`pickSpecialEvent`). It is a TRANSFER - the same points come off `nothing` -
+   * so it changes which set-pieces happen and never how many.
+   */
+  chestWeight: number;
 
   readonly spatial: SpatialHash;
   /**

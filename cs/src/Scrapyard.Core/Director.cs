@@ -357,7 +357,7 @@ public static class Director
     private static void RollAndFire(World w, IScenery scenery, ILevel level, int index, bool mid)
     {
         if (index < 1) return;
-        int id = SpecialEvents.Pick(w.Rng.Event.NextDouble());
+        int id = SpecialEvents.Pick(w.Rng.Event.NextDouble(), w.ChestWeight);
         if (id == SpecialEvents.RingAttack) SpawnSiege(w, level);
         else if (id == SpecialEvents.Swarm) SpawnSwarm(w, level);
         else if (id == SpecialEvents.ChestElite) SpawnRank(w, scenery, level, Ranks.Elite, Flavours.ChestDropper);

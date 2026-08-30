@@ -126,6 +126,7 @@ public static partial class Hash
         h = MixU32(h, (uint)w.AutoLevel);
         h = MixU32(h, (uint)w.MaxWeapons);
         h = MixU32(h, (uint)w.MaxPassives);
+        h = MixU32(h, (uint)w.ChestWeight);
 
         h = MixF64(h, w.XpBanked);
 

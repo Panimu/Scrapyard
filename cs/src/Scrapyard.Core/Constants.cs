@@ -499,14 +499,18 @@ public sealed class PickupTuning
 /// </remarks>
 public sealed class XpTuning
 {
-    public double Tier1Base = 12;
-    public double Tier1Step = 10;
+    // Every threshold RAISED 20%, uniformly - see the TypeScript for why the six numbers are
+    // scaled rather than rounded (Tier3Base is the value the second segment ends on, so rounding
+    // them independently puts a step in the curve at level 26 that nobody chose). The caps do not
+    // move: which levels a segment covers is the curve's shape, not its pace.
+    public double Tier1Base = 14.4;
+    public double Tier1Step = 12;
     public double Tier1Cap = 10;
-    public double Tier2Base = 160;
-    public double Tier2Step = 42;
+    public double Tier2Base = 192;
+    public double Tier2Step = 50.4;
     public double Tier2Cap = 25;
-    public double Tier3Base = 748;
-    public double Tier3Step = 60;
+    public double Tier3Base = 897.6;
+    public double Tier3Step = 72;
 
     /// <summary>
     /// Rerolls the run starts with, spent one per re-dealt card. ONE, on purpose: a reroll you can

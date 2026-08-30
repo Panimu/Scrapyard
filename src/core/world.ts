@@ -288,6 +288,9 @@ export function createWorld(config: WorldConfig, catalogs: Catalogs = DEFAULT_CA
     maxWeapons: MAX_WEAPONS + metaRunGrant(metaTiers, 'weaponSlots'),
     // Its passive-side twin - the base plus whatever Auxiliary Bay was bought at.
     maxPassives: MAX_PASSIVES + metaRunGrant(metaTiers, 'passiveSlots'),
+    // And the third of the same family - Black Market Contacts, as weight onto the chest elite.
+    // No base to add to: the authored weights live in the event table, and this is the delta.
+    chestWeight: metaRunGrant(metaTiers, 'chestWeight'),
 
     spatial: createSpatialHash(SPATIAL_CELL_SIZE, SPATIAL_BUCKET_COUNT, ENEMY_CAP),
     flow: createFlowField(),

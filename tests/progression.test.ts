@@ -262,8 +262,13 @@ describe('XP thresholds and levels', () => {
     expect(w.player.level).toBe(2);
     expect(w.player.xp).toBe(0);
     expect(w.player.xpToNext).toBe(xpToNextLevel(2, DEFAULT_TUNING.xp));
-    // The segment is linear: consecutive tier-1 thresholds differ by exactly tier1Step.
-    expect(w.player.xpToNext - need1).toBe(DEFAULT_TUNING.xp.tier1Step);
+    // The segment is linear: consecutive tier-1 thresholds differ by tier1Step.
+    // toBeCloseTo, NOT toBe, and the thresholds are why: they are no longer whole numbers. The
+    // curve is the old one scaled by 1.2, so tier1Base is 14.4 and 26.4 - 14.4 is
+    // 11.999999999999998 rather than 12. That residue is a property of decimals in binary, not of
+    // the game - and real play never saw the exact case anyway, since xpGain (5.6) has always made
+    // banked XP fractional. Ten decimal places is far tighter than any drift worth catching.
+    expect(w.player.xpToNext - need1).toBeCloseTo(DEFAULT_TUNING.xp.tier1Step, 10);
     expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
   });
 
@@ -284,7 +289,8 @@ describe('XP thresholds and levels', () => {
     const need1 = xpToNextLevel(1, DEFAULT_TUNING.xp);
     bank(w, need1 + 5);
     expect(w.player.level).toBe(2);
-    expect(w.player.xp).toBe(5);
+    // Close, not exact - the threshold is 14.4 now. See the note in the curve test above.
+    expect(w.player.xp).toBeCloseTo(5, 10);
   });
 });
 
@@ -300,7 +306,8 @@ describe('banked multi-level-ups - one card at a time, none lost', () => {
     bank(w, sevenLevels + remainder);
 
     expect(w.player.level).toBe(8);
-    expect(w.player.xp).toBe(remainder);
+    // Close, not exact - the thresholds are no longer whole. See the note in the curve test above.
+    expect(w.player.xp).toBeCloseTo(remainder, 10);
     expect(w.levelUp.pending).toBe(7);
     expect(w.phase).toBe(RUN_PHASE_LEVEL_UP);
 

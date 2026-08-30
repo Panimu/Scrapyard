@@ -65,6 +65,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-30T19:02Z',
+    version: 'v424',
+    title: 'LEVELS COME SLOWER',
+    notes: [
+      'Every level costs a fifth more experience than it did, from the first one to the last. A card was never far away before, which is a strange thing to say about a choice - the pick should be worth thinking about because the next one is a while off.',
+    ],
+  },
+  {
+    at: '2026-08-30T19:02Z',
+    version: 'v424',
+    title: 'BLACK MARKET CONTACTS, IN THE WORKSHOP',
+    notes: [
+      'A new permanent upgrade, five tiers and expensive: more of what walks into the yard is a lone elite carrying a Cyber Chest. At full it turns up seventy percent more often than it does now.',
+      'Bought at the cost of the quiet. The waves where nothing happens are what pay for it, so a fully upgraded yard has the same number of set-pieces and fewer of them are a rest.',
+    ],
+  },
+  {
     at: '2026-08-30T13:32Z',
     version: 'v423',
     title: 'THE MACHINE GUN CHANGES BELTS FASTER',

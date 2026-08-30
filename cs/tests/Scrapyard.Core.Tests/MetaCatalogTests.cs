@@ -236,6 +236,7 @@ public class MetaCatalogTests
         "rerolls" => RunGrant.Rerolls,
         "weaponSlots" => RunGrant.WeaponSlots,
         "passiveSlots" => RunGrant.PassiveSlots,
+        "chestWeight" => RunGrant.ChestWeight,
         _ => throw new System.ArgumentOutOfRangeException(nameof(name), name, "unknown run grant"),
     };
 

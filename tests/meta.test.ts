@@ -159,7 +159,12 @@ describe('what the screen says a tier is worth', () => {
       const v = metaEffectValue(def, def.tiers);
       const text = metaEffectText(def, def.tiers);
       const shown = Number(text.replace(/[^0-9.]/g, ''));
-      const expected = def.display.as === 'percent' || def.display.as === 'rateOfFire' ? v * 100 : v;
+      // The three kinds whose value is a SHARE are printed as a percentage; the rest print bare.
+      const asPercent =
+        def.display.as === 'percent' ||
+        def.display.as === 'rateOfFire' ||
+        def.display.as === 'oddsPercent';
+      const expected = asPercent ? v * 100 : v;
       expect(shown).toBeCloseTo(Number(expected.toFixed(1)), 10);
     }
   });
@@ -256,15 +261,15 @@ describe('mech insurance', () => {
     expect(metaEffectText(def, 0)).toBe('');
   });
 
-  it('costs 100, and the max-everything total is 3150', () => {
-    expect(metaSpent(maxed())).toBe(3150);
+  it('costs 100, and the max-everything total is 3900', () => {
+    expect(metaSpent(maxed())).toBe(3900);
   });
 });
 
 describe('credits', () => {
-  it('spent is the sum of every tier bought, and maxing everything costs 3150', () => {
+  it('spent is the sum of every tier bought, and maxing everything costs 3900', () => {
     expect(metaSpent(new Uint8Array(META_CATALOG.length))).toBe(0);
-    expect(metaSpent(maxed())).toBe(3150);
+    expect(metaSpent(maxed())).toBe(3900);
     expect(metaSpent(tiersOf('m-damage', 3))).toBe(150);
   });
 

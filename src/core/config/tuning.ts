@@ -293,15 +293,31 @@ const DIRECTOR: DirectorTuning = {
   speedRampPerSec: 1.00048569, // 1.06 ** (1/120)
 };
 
+// EVERY THRESHOLD RAISED 20%, AND UNIFORMLY, which is the only way to raise it at all.
+//
+// Levels were arriving too fast: a run handed out cards quickly enough that the choice stopped
+// being one, because the next card was never far away. The five numbers below are the same curve
+// they were, multiplied by 1.2 - 12/10/160/42/748/60 became 14.4/12/192/50.4/897.6/72.
+//
+// UNIFORM RATHER THAN ROUNDED, and the two are not interchangeable. `tier3Base` is not a free
+// parameter: it is the value the SECOND segment ends on (192 + 50.4 x 14 = 897.6), so the third
+// segment picks up exactly where the second left off. Rounding the six numbers independently -
+// 14, 12, 192, 50, 898, 72 - lands the second segment on 892 against a third that starts at 898,
+// and puts a step in the curve at level 26 that nobody chose. The non-integers are the price of
+// the join, and they cost nothing: XP is a double on both sides of the port.
+//
+// The caps do NOT move. Which levels each segment covers is the SHAPE of the curve - five picks
+// by 1:30, then a slower middle, then a late game that decelerates without stopping. Scaling the
+// caps too would have changed that shape rather than the pace.
 const XP: XpTuning = {
-  tier1Base: 12,
-  tier1Step: 10,
+  tier1Base: 14.4,
+  tier1Step: 12,
   tier1Cap: 10,
-  tier2Base: 160,
-  tier2Step: 42,
+  tier2Base: 192,
+  tier2Step: 50.4,
   tier2Cap: 25,
-  tier3Base: 748,
-  tier3Step: 60,
+  tier3Base: 897.6,
+  tier3Step: 72,
   rerollsPerRun: 1,
 };
 

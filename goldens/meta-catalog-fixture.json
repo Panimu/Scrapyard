@@ -1,6 +1,6 @@
 {
  "note": "The workshop: every effect at every tier, and driven probes through accumulateMeta itself, because m-rate's per-tier ladder and every other upgrade's flat amount are two different floating-point operations, not two notations for the same one.",
- "metaCount": 16,
+ "metaCount": 17,
  "catalog": [
   {
    "index": 0,
@@ -246,6 +246,20 @@
      ]
     }
    ]
+  },
+  {
+   "index": 16,
+   "id": "m-chest",
+   "tiers": 5,
+   "effects": [
+    {
+     "target": "run",
+     "key": "chestWeight",
+     "mode": "add",
+     "weapon": null,
+     "amount": "3ff0000000000000"
+    }
+   ]
   }
  ],
  "probes": [
@@ -264,6 +278,7 @@
     0,
     0,
     1,
+    0,
     0,
     0,
     0,
@@ -302,6 +317,7 @@
     0,
     0,
     0,
+    0,
     0
    ],
    "target": "weapon",
@@ -316,6 +332,7 @@
     0,
     0,
     7,
+    0,
     0,
     0,
     0,
@@ -354,6 +371,7 @@
     0,
     0,
     0,
+    0,
     0
    ],
    "target": "weapon",
@@ -372,6 +390,7 @@
     0,
     0,
     1,
+    0,
     0,
     0,
     0,
@@ -406,6 +425,7 @@
     0,
     0,
     0,
+    0,
     0
    ],
    "target": "weapon",
@@ -424,6 +444,7 @@
     0,
     0,
     3,
+    0,
     0,
     0,
     0,
@@ -458,7 +479,8 @@
     0,
     0,
     0,
-    1
+    1,
+    0
    ],
    "target": "player",
    "key": "repairInterval",
@@ -484,7 +506,8 @@
     0,
     0,
     0,
-    3
+    3,
+    0
    ],
    "target": "player",
    "key": "repairInterval",
@@ -510,7 +533,8 @@
     0,
     0,
     0,
-    3
+    3,
+    0
    ],
    "target": "player",
    "key": "repairAmount",
@@ -533,6 +557,7 @@
     0,
     0,
     2,
+    0,
     0,
     0,
     0,
@@ -562,6 +587,7 @@
     0,
     0,
     0,
+    0,
     0
    ],
    "target": "weapon",
@@ -588,6 +614,7 @@
     0,
     0,
     0,
+    0,
     0
    ],
    "target": "player",
@@ -602,6 +629,7 @@
     0,
     0,
     7,
+    0,
     0,
     0,
     0,

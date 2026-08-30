@@ -5,7 +5,7 @@ namespace Scrapyard.Core;
 /// <c>RunGrantKey</c>. Never reaches a resolver: <c>AccumulateMeta</c> filters on
 /// <see cref="EffectTarget"/> first, and a <c>Run</c> effect is invisible to it by construction.
 /// </summary>
-public enum RunGrant { Rerolls, WeaponSlots, PassiveSlots }
+public enum RunGrant { Rerolls, WeaponSlots, PassiveSlots, ChestWeight }
 
 /// <summary>
 /// One stat change, per tier owned. Port of <c>MetaEffect</c> in <c>data/meta.ts</c>.
@@ -96,7 +96,8 @@ public static class MetaIds
     public const int MHeatcap = 13;
     public const int MRerolls = 14;
     public const int MRepair = 15;
-    public const int Count = 16;
+    public const int MChest = 16;
+    public const int Count = 17;
 }
 
 public static class MetaCatalog
@@ -270,11 +271,23 @@ public static class MetaCatalog
         },
     };
 
+    public static readonly MetaDef MChest = new()
+    {
+        Id = MetaIds.MChest, Tiers = 5,
+        // A RUN-START GRANT OF WEIGHT, spent on the special-event table rather than on a stat -
+        // there is no resolver for "how often does a set-piece happen". Each tier adds one to the
+        // chest elite and takes one off `nothing`; see SpecialEvents.Pick, which owns the other
+        // half of the transfer. Cost, blurb and display are TypeScript's - this catalog carries
+        // only what the simulation reads.
+        Effects = new[] { MetaEffect.Run(RunGrant.ChestWeight, EffectMode.Add, 1) },
+    };
+
     /// <summary>Catalog order, index == <see cref="MetaIds"/>. APPEND ONLY.</summary>
     public static readonly MetaDef[] All =
     {
         MPassives, MMounts, MDamage, MBlast, MRange, MSpeed, MRate, MMagnet,
         MHp, MArmour, MInsurance, MDrone, MLaser, MHeatcap, MRerolls, MRepair,
+        MChest,
     };
 
     /// <summary>

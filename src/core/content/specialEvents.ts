@@ -153,21 +153,52 @@ export const SPECIAL_EVENTS: readonly SpecialEventDef[] = Object.freeze([
 export const SPECIAL_EVENT_TOTAL_WEIGHT = SPECIAL_EVENTS.reduce((n, e) => n + e.weight, 0);
 
 /**
+ * THE MOST WEIGHT BLACK MARKET CONTACTS CAN MOVE, and the reason it is safe to move it.
+ *
+ * The workshop upgrade shifts weight from `nothing` onto `chest elite`, one point per tier. It is
+ * a TRANSFER, not an addition, and that single property is what makes the whole thing cheap:
+ *
+ *   - THE TOTAL NEVER MOVES. `SPECIAL_EVENT_TOTAL_WEIGHT` stays 61 with any bonus applied, so the
+ *     walk below still needs no per-call sum and the constant beside it stays true.
+ *   - THE LADDER IS EXACTLY LINEAR IN WHAT THE PLAYER FEELS. Frequency is weight/total against a
+ *     FIXED total, so +1 weight is +1/61 of the draws every single time. The workshop's promise
+ *     that a third of the tiers is a third of the effect holds here exactly rather than nearly -
+ *     which is not true of any percentage in that shop.
+ *
+ * Clamped anyway. Five is what the catalog sells and `nothing` is 15, so the floor is nowhere
+ * near - but a bonus that outran `nothing` would push a NEGATIVE weight into the walk, and the
+ * walk would then return whatever the accumulator happened to pass first. A rule that holds by
+ * arithmetic today and by nobody's decision tomorrow gets a clamp.
+ */
+const NOTHING_WEIGHT = SPECIAL_EVENTS[EVENT_NOTHING].weight;
+
+/**
  * Picks an event from `roll`, a number in [0, 1).
  *
  * A PURE FUNCTION OF THE ROLL rather than something that reaches for an Rng itself: the caller
  * owns which stream this comes out of, and a content table that could draw from a stream on its
  * own would make the draw order depend on when this file happened to be called.
  *
+ * `chestBonus` is Black Market Contacts, in weight: it is ADDED to the chest elite and SUBTRACTED
+ * from `nothing`, so a run that bought it trades quiet waves for chests rather than getting more
+ * events than a run that did not. See NOTHING_WEIGHT above for why the transfer shape matters.
+ *
  * Walks by INDEX and never by key order, and falls through to the last entry rather than to a
  * default, so a float that lands exactly on the total cannot return -1.
  */
-export function pickSpecialEvent(roll: number): SpecialEventId {
+export function pickSpecialEvent(roll: number, chestBonus = 0): SpecialEventId {
+  const bonus = chestBonus < 0 ? 0 : chestBonus > NOTHING_WEIGHT ? NOTHING_WEIGHT : chestBonus;
   let acc = 0;
   const target = roll * SPECIAL_EVENT_TOTAL_WEIGHT;
   for (let i = 0; i < SPECIAL_EVENTS.length; i++) {
-    acc += SPECIAL_EVENTS[i].weight;
-    if (target < acc) return SPECIAL_EVENTS[i].id;
+    const e = SPECIAL_EVENTS[i];
+    acc +=
+      e.id === EVENT_CHEST_ELITE
+        ? e.weight + bonus
+        : e.id === EVENT_NOTHING
+          ? e.weight - bonus
+          : e.weight;
+    if (target < acc) return e.id;
   }
   return SPECIAL_EVENTS[SPECIAL_EVENTS.length - 1].id;
 }

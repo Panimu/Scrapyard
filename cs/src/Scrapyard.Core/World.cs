@@ -213,6 +213,20 @@ public sealed class World
     /// whatever Auxiliary Bay was bought at. Same rules apply.
     /// </summary>
     public int MaxPassives = Constants.MaxPassives;
+
+    /// <summary>
+    /// Weight moved onto the chest elite for this run - Black Market Contacts, in points.
+    /// </summary>
+    /// <remarks>
+    /// The third member of the <see cref="MaxWeapons"/>/<see cref="MaxPassives"/> family, read the
+    /// same way: seeded once by <see cref="SeedRunGrants"/>, never recomputed, and handed to one
+    /// pure function (<see cref="SpecialEvents.Pick"/>). It is a TRANSFER - the same points come
+    /// off <c>nothing</c> - so it changes WHICH set-pieces happen and never how many.
+    ///
+    /// Defaults to zero, which is the authored table unchanged.
+    /// </remarks>
+    public int ChestWeight;
+
     public double XpBanked;
 
     public readonly RngStreams Rng;
@@ -233,6 +247,8 @@ public sealed class World
         var tiers = Meta is null ? System.ReadOnlySpan<int>.Empty : Meta.Value.Tiers;
         MaxWeapons = Constants.MaxWeapons + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.WeaponSlots);
         MaxPassives = Constants.MaxPassives + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.PassiveSlots);
+        // No base to add to: the authored weights live in the event table, and this is the delta.
+        ChestWeight = (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.ChestWeight);
         LevelUp.Rerolls = Tuning.Xp.RerollsPerRun + (int)MetaCatalog.MetaRunGrant(tiers, RunGrant.Rerolls);
     }
 

@@ -430,7 +430,7 @@ export function rollRingPosition(
  */
 function rollAndFire(world: World, t: DirectorTuning, index: number, mid: boolean): void {
   if (index < 1) return;
-  const id = pickSpecialEvent(world.rng.event.nextFloat());
+  const id = pickSpecialEvent(world.rng.event.nextFloat(), world.chestWeight);
   if (id === EVENT_RING_ATTACK) spawnSiege(world, t);
   else if (id === EVENT_SWARM) spawnSwarm(world);
   else if (id === EVENT_CHEST_ELITE) spawnChestElite(world, t);
