@@ -278,6 +278,18 @@ public sealed class WeaponDef
     /// </remarks>
     public double? AcquireFrac { get; init; }
 
+    /// <summary>
+    /// World units between adjacent rounds of a volley that does NOT fan.
+    /// </summary>
+    /// <remarks>
+    /// Present, and <c>SpreadAngle</c> stops meaning anything for this weapon: every round leaves
+    /// along the same heading and the volley is spaced ACROSS it, so a pair reads as two parallel
+    /// tracers rather than a V that opens with distance. Nullable for the reason AcquireFrac is:
+    /// the presence of the field is the flag. A fan of zero degrees would not do instead - that is
+    /// every round on one heading from one point, which is one bullet drawn twice.
+    /// </remarks>
+    public double? ParallelSpacing { get; init; }
+
     // ---- fused weapons (missiles) ----
     /// <summary>Fires along the player's last movement direction rather than at a target.</summary>
     public required bool FireAlongFacing { get; init; }
@@ -800,7 +812,10 @@ public static class WeaponCatalog
             TurretTraverse = 13.430308594096365, // degToRad(769.5) - was 810, -5%
             FireArc = 0.3490658503988659,        // degToRad(20)
             HeatCapacity = HeatCapacityBase,
-            SpreadAngle = 0.08726646259971647,   // degToRad(5) - "close together", a pair, not a shotgun
+            // ZERO - this gun no longer fans, see ParallelSpacing below. Five degrees put the two
+            // rounds on top of each other at the muzzle and eleven units apart at the end of their
+            // reach: a belt gun that got less precise the further it shot.
+            SpreadAngle = 0,
             AmmoCapacity = 250,
             ReloadTime = 14.5,
         },
@@ -813,7 +828,11 @@ public static class WeaponCatalog
             new WeaponStatDelta { Damage = 3 },         // T6  7.0 -> 10.0
             new WeaponStatDelta { ReloadTime = -5 },    // T7  14.5 -> 9.5 s
         },
-        ReengageMul = 1, VisualId = VisualId.Slug, MuzzleOffset = 28, ShellRadius = 5,
+        ReengageMul = 1, VisualId = VisualId.Slug,
+        // Twelve units apart at every distance. The slugs are 5 in radius, so twelve leaves a
+        // clear two-unit lane between them: two tracers, legibly two, and never a V.
+        ParallelSpacing = 12,
+        MuzzleOffset = 28, ShellRadius = 5,
         FireAlongFacing = false, DetonateOnExpiry = false,
     };
 

@@ -3053,11 +3053,33 @@ body {
  * FIVE SLOTS WHETHER OR NOT FIVE ARE FILLED. The HUD's chip row shows what you are holding; this
  * shows the shape of the whole loadout, which is the question you paused to ask. An empty slot is
  * drawn as an empty slot rather than omitted, or "three of five" would have to be counted. */
+/* WEAPONS AND PASSIVES SIDE BY SIDE, which is what the desktop front-end has always done - see
+   Screens.DrawPause. Two reasons, and the second is the one that matters:
+
+   HEIGHT. Stacked, the two lists are as tall as their SUM - five weapon slots over seven passive
+   ones, 403px of it - and that sits above five full-width buttons. Beside each other the block is
+   as tall as the LONGER list, 227px, and a short window stops having to choose between showing
+   the loadout and showing the buttons.
+
+   AND THEY ARE ONE QUESTION. "What is on the mech" is not two things a player asks in sequence;
+   reading them as a pair is what they are doing while stopped.
+
+   THE WIDTH IS MEASURED, NOT GUESSED. The longest card name in the catalog is "Targeting Optics",
+   which sets 101px at this weight and size; a slot spends about 44px on padding, gap and the tier
+   badge. So a column needs ~145px and the narrowest this panel ever gets - 88vw on a 360px phone
+   - gives it 153px. Checked at 302, 340, 380, 420 and 460px total: no name is ellipsised and none
+   collides with its tier at any of them. */
 .pause__loadout {
   display: flex;
-  flex-direction: column;
   gap: 10px;
-  width: min(340px, 84vw);
+  width: min(420px, 88vw);
+}
+
+/* `min-width: 0` is load-bearing: without it a flex column refuses to shrink below its widest
+   child and the two would push each other out of the panel instead of sharing it. */
+.pause__group {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .pause__group-title {

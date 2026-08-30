@@ -1335,6 +1335,21 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const baseY = def.fireAlongFacing ? player.faceY : inst.turretY;
   const half = (count - 1) * 0.5;
 
+  /**
+   * A VOLLEY THAT DOES NOT FAN - see WeaponDef.parallelSpacing.
+   *
+   * Every round keeps the base heading and the volley is laid out ACROSS it instead, along the
+   * left-hand perpendicular (-baseY, baseX). Unit in, unit out, so nothing needs renormalising:
+   * the base is already a unit vector and the perpendicular of a unit vector is one too.
+   *
+   * A BRANCH ON A DECLARED PROPERTY, not on a weapon - the same shape `fireAlongFacing`,
+   * `splitsFrom` and `detonateOnExpiry` already take in this very function. Nothing here knows
+   * what a machine gun is.
+   */
+  const spacing = def.parallelSpacing ?? 0;
+  const perpX = -baseY;
+  const perpY = baseX;
+
   // THE GTM HORNET. At tier 8 the long rack's warheads come apart, and the only two things that
   // changes here are the FUSE and a flag: the fuse is cut to the split time so they break up
   // mid-flight rather than at the end of their reach, and the flag tells `expireProjectile` to
@@ -1344,12 +1359,20 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
   const life = splits ? SPLIT_SEC : stats.projectileLifetime;
 
   for (let i = 0; i < count; i++) {
-    const a = (i - half) * stats.spreadAngle;
-    const c = dcos(a);
-    const sn = dsin(a);
-    // Rotate the facing by the fan offset. Unit in, unit out - no renormalisation needed.
-    const dirX = baseX * c - baseY * sn;
-    const dirY = baseX * sn + baseY * c;
+    const off = i - half;
+    // How far across the heading this round starts. Zero for a fan, which leaves the muzzle
+    // arithmetic below exactly what it was.
+    const lateral = off * spacing;
+    let dirX = baseX;
+    let dirY = baseY;
+    if (spacing === 0) {
+      const a = off * stats.spreadAngle;
+      const c = dcos(a);
+      const sn = dsin(a);
+      // Rotate the facing by the fan offset. Unit in, unit out - no renormalisation needed.
+      dirX = baseX * c - baseY * sn;
+      dirY = baseX * sn + baseY * c;
+    }
 
     // A magazine is spent per ROUND, not per burst, so a two-round weapon empties twice as fast
     // as its shot count suggests. Running dry mid-burst simply ends the burst - the reload is
@@ -1363,8 +1386,8 @@ export const fireSpread: FirePattern = (world, weaponIdx, inst, _targets, _targe
     const spawnId = ++world.stats.shotsFired;
     const handle = allocProjectile(
       projectiles,
-      player.x + dirX * def.muzzleOffset,
-      player.y + dirY * def.muzzleOffset,
+      player.x + dirX * def.muzzleOffset + perpX * lateral,
+      player.y + dirY * def.muzzleOffset + perpY * lateral,
       dirX * stats.projectileSpeed,
       dirY * stats.projectileSpeed,
       life,

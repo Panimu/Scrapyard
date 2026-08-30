@@ -170,6 +170,9 @@ public class WeaponCatalogTests
                 Assert.True(want.SequenceEqual(d.Excludes!), $"{where}: excludes");
             }
 
+            AssertNullableBits(e, "acquireFrac", d.AcquireFrac, where);
+            AssertNullableBits(e, "parallelSpacing", d.ParallelSpacing, where);
+
             Assert.True(e.GetProperty("fireAlongFacing").GetBoolean() == d.FireAlongFacing, $"{where}: fireAlongFacing");
             Assert.True(e.GetProperty("detonateOnExpiry").GetBoolean() == d.DetonateOnExpiry, $"{where}: detonateOnExpiry");
         }
@@ -374,6 +377,26 @@ public class WeaponCatalogTests
                     Assert.True(got is null, $"{where}.perLevel[{t}].{name}: expected absent, got {got}");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// An optional double, bit-exact when present. The null case is the point: absent and
+    /// present-and-zero mean different things for both fields that use this.
+    /// </summary>
+    private static void AssertNullableBits(JsonElement e, string key, double? actual, string where)
+    {
+        var v = e.GetProperty(key);
+        if (v.ValueKind == JsonValueKind.Null)
+        {
+            Assert.True(actual is null, $"{where}: {key} expected null, got {actual}");
+        }
+        else
+        {
+            Assert.True(actual is not null, $"{where}: {key} expected a value, got null");
+            ulong want = ulong.Parse(v.GetString()!, System.Globalization.NumberStyles.HexNumber);
+            ulong got = unchecked((ulong)System.BitConverter.DoubleToInt64Bits(actual!.Value));
+            Assert.True(want == got, $"{where}: {key} expected {want:x16}, got {got:x16}");
         }
     }
 

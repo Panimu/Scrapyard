@@ -82,6 +82,8 @@
    "excludes": [
     "mortar"
    ],
+   "acquireFrac": "3fe6666666666666",
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -153,6 +155,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": 8,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -224,6 +228,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -299,6 +305,8 @@
    "gigaFrom": 8,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -367,6 +375,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": true,
    "detonateOnExpiry": false
   },
@@ -435,6 +445,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": true,
    "detonateOnExpiry": false
   },
@@ -466,7 +478,7 @@
     "heatCapacity": "4059000000000000",
     "heatDispersion": "0000000000000000",
     "turnRate": "0000000000000000",
-    "spreadAngle": "3fb657184ae74487",
+    "spreadAngle": "0000000000000000",
     "flightTime": "0000000000000000",
     "ammoCapacity": "406f400000000000",
     "reloadTime": "402d000000000000"
@@ -503,6 +515,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": "4028000000000000",
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -571,6 +585,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -639,6 +655,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": true
   },
@@ -708,6 +726,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": true
   },
@@ -781,6 +801,8 @@
    "excludes": [
     "plasma"
    ],
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": true
   },
@@ -850,6 +872,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -922,6 +946,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": false,
    "detonateOnExpiry": false
   },
@@ -994,6 +1020,8 @@
    "gigaFrom": null,
    "fillsMountsFrom": null,
    "excludes": null,
+   "acquireFrac": null,
+   "parallelSpacing": null,
    "fireAlongFacing": true,
    "detonateOnExpiry": false
   }

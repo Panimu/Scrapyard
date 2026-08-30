@@ -100,6 +100,14 @@ function dumpDef(d: WeaponDef) {
     gigaFrom: d.gigaFrom ?? null,
     fillsMountsFrom: d.fillsMountsFrom ?? null,
     excludes: d.excludes ?? null,
+    // THE TWO OPTIONAL DOUBLES. As exact bit patterns when present and null when not, because
+    // "absent" and "present and zero" are DIFFERENT WEAPONS here: an absent acquireFrac means the
+    // turret takes a target anywhere in range, and an absent parallelSpacing means the volley
+    // fans. A port that dropped either field would resolve both to 0 and this fixture would have
+    // said nothing - which is precisely what it said about acquireFrac until now, despite the
+    // note at the top of this file claiming every field of every weapon.
+    acquireFrac: d.acquireFrac === undefined ? null : bits(d.acquireFrac),
+    parallelSpacing: d.parallelSpacing === undefined ? null : bits(d.parallelSpacing),
     fireAlongFacing: d.fireAlongFacing,
     detonateOnExpiry: d.detonateOnExpiry,
   };

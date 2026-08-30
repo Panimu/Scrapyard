@@ -34,6 +34,16 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-30T22:33Z", "v429", "THE MACHINE GUN FIRES A STRAIGHT PAIR",
+            new[]
+            {
+                "Its two rounds now run parallel instead of opening apart as they fly. They leave the barrel side by side and stay that way, so what you are aiming at is what the belt hits - at the far end of its reach as much as up close.",
+            }),
+        new("2026-08-30T22:33Z", "v429", "THE PAUSE SCREEN READS ACROSS, NOT DOWN",
+            new[]
+            {
+                "Weapons and passives sit side by side now instead of one list above the other. It is the same two lists - they just take up half the height, so on a short screen the buttons underneath are still where you left them.",
+            }),
         new("2026-08-30T22:20Z", "v428", "THERE IS SOMEWHERE TO SEND A BUG",
             new[]
             {

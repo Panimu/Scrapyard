@@ -800,6 +800,14 @@ public static class Weapons
         double baseY = def.FireAlongFacing ? player.FaceY : inst.TurretY;
         double half = (count - 1) * 0.5;
 
+        // A VOLLEY THAT DOES NOT FAN - see WeaponDef.ParallelSpacing. Every round keeps the base
+        // heading and the volley is laid out across it, along the left-hand perpendicular. Unit in,
+        // unit out: the perpendicular of a unit vector is one too. A branch on a declared property
+        // rather than on a weapon, the same shape FireAlongFacing and SplitsFrom already take here.
+        double spacing = def.ParallelSpacing ?? 0;
+        double perpX = -baseY;
+        double perpY = baseX;
+
         // THE HORNET. At its split tier the long rack's warheads come apart, and the only two things
         // that changes here are the FUSE and a flag: the fuse is cut to the split time so they break
         // up mid-flight rather than at the end of their reach, and the flag tells the expiry path to
@@ -809,12 +817,21 @@ public static class Weapons
 
         for (int i = 0; i < count; i++)
         {
-            double a = (i - half) * stats.SpreadAngle;
-            double c = Trig.Cos(a);
-            double sn = Trig.Sin(a);
-            // Rotate the centre line by the fan offset. Unit in, unit out - no renormalisation.
-            double dirX = baseX * c - baseY * sn;
-            double dirY = baseX * sn + baseY * c;
+            double off = i - half;
+            // How far across the heading this round starts. Zero for a fan, which leaves the muzzle
+            // arithmetic below exactly what it was.
+            double lateral = off * spacing;
+            double dirX = baseX;
+            double dirY = baseY;
+            if (spacing == 0)
+            {
+                double a = off * stats.SpreadAngle;
+                double c = Trig.Cos(a);
+                double sn = Trig.Sin(a);
+                // Rotate the centre line by the fan offset. Unit in, unit out - no renormalisation.
+                dirX = baseX * c - baseY * sn;
+                dirY = baseX * sn + baseY * c;
+            }
 
             // A magazine is spent per ROUND, not per burst, so a two-round weapon empties twice as
             // fast as its shot count suggests. Running dry mid-burst simply ends the burst - the
@@ -827,8 +844,8 @@ public static class Weapons
 
             world.Stats.ShotsFired++;
             uint handle = projectiles.Alloc(
-                player.X + dirX * def.MuzzleOffset,
-                player.Y + dirY * def.MuzzleOffset,
+                player.X + dirX * def.MuzzleOffset + perpX * lateral,
+                player.Y + dirY * def.MuzzleOffset + perpY * lateral,
                 dirX * stats.ProjectileSpeed, dirY * stats.ProjectileSpeed,
                 life, weaponIdx, def.Behaviour, unchecked((uint)world.Stats.ShotsFired));
             if (handle == Handle.Null) break;

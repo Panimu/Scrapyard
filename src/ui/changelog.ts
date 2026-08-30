@@ -79,6 +79,22 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-30T22:33Z',
+    version: 'v429',
+    title: 'THE MACHINE GUN FIRES A STRAIGHT PAIR',
+    notes: [
+      'Its two rounds now run parallel instead of opening apart as they fly. They leave the barrel side by side and stay that way, so what you are aiming at is what the belt hits - at the far end of its reach as much as up close.',
+    ],
+  },
+  {
+    at: '2026-08-30T22:33Z',
+    version: 'v429',
+    title: 'THE PAUSE SCREEN READS ACROSS, NOT DOWN',
+    notes: [
+      'Weapons and passives sit side by side now instead of one list above the other. It is the same two lists - they just take up half the height, so on a short screen the buttons underneath are still where you left them.',
+    ],
+  },
+  {
     at: '2026-08-30T22:20Z',
     version: 'v428',
     title: 'THERE IS SOMEWHERE TO SEND A BUG',

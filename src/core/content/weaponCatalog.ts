@@ -376,6 +376,23 @@ export interface WeaponDef {
    * nothing is how a field starts drifting from the weapons it describes.
    */
   readonly acquireFrac?: number;
+
+  /**
+   * WORLD UNITS BETWEEN ADJACENT ROUNDS OF A VOLLEY THAT DOES NOT FAN.
+   *
+   * Present, and `spreadAngle` stops meaning anything for this weapon: the rounds all leave along
+   * the SAME direction and are spaced across it instead, so a pair reads as two parallel tracers
+   * rather than a V that opens with distance.
+   *
+   * OPTIONAL, LIKE `burn`, `puddle` AND `acquireFrac`: the presence of the field IS the flag, and
+   * writing `parallelSpacing: 0` into thirteen definitions to say "this one fans" would be
+   * thirteen chances to say it wrong.
+   *
+   * WHY A SPACING AND NOT AN ANGLE OF ZERO. A fan of zero degrees is not a parallel volley, it is
+   * every round spawning at the same point on the same heading - one bullet drawn twice. The
+   * lateral offset is the whole of what makes the pair visible, so it is the thing the data says.
+   */
+  readonly parallelSpacing?: number;
   // ---- fused weapons (missiles) ----
   /**
    * Fire along the player's LAST MOVEMENT DIRECTION rather than at a target.
@@ -1300,7 +1317,11 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
     heatCapacity: HEAT_CAPACITY_BASE,
     heatDispersion: 0,
     turnRate: 0,
-    spreadAngle: degToRad(5), // "close together" - a tight pair, not a shotgun
+    // ZERO, because this gun no longer fans - see `parallelSpacing` below. It used to open its
+    // pair by five degrees, which put the two rounds on top of each other at the muzzle and
+    // eleven units apart at the end of their reach: a belt gun that got LESS precise the further
+    // it shot, which is the opposite of the stream you are meant to stand inside.
+    spreadAngle: 0,
     flightTime: 0,
     ammoCapacity: 250, // 200 -> 250: a quarter more belt between changes
     reloadTime: 14.5, // 15 -> 14.5: half a second less standing there doing nothing
@@ -1315,6 +1336,9 @@ export const MACHINE_GUN: WeaponDef = Object.freeze({
   ]),
   reengageMul: 1,
   visualId: VIS_SLUG,
+  // TWELVE UNITS APART, AT EVERY DISTANCE. The slugs are 5 units in radius, so twelve leaves a
+  // clear two-unit lane between them: two tracers, legibly two, and never a V.
+  parallelSpacing: 12,
   muzzleOffset: 28,
   shellRadius: 5,
   beamColour: 0,
