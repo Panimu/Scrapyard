@@ -335,12 +335,114 @@ const Q_GATE2 = 4;
 const Q_GATE2_SIDE = 5;
 const Q_GATE2_ALONG = 6;
 const Q_SCATTER = 7; // ..and the ten after it, two per possible pile.
+/** Which silhouette a construction site's hoarding takes, and which way round it faces. */
+const Q_SITE = 17;
+const Q_SITE_ROT = 18;
 /** Well clear of Q_SCATTER's run: five piles claim up to question 16. */
 const Q_BARREL = 24;
 
 /** Material piles a construction site scatters inside its fence. */
 const SCATTER_MIN = 3;
 const SCATTER_SPAN = 3;
+
+/**
+ * WHICH SIDES OF ITS BLOCK A CONSTRUCTION SITE FENCES OFF - the city's answer to Mossy's
+ * SHAPE_CDF, and it exists for the same reason.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY THIS IS NOT ONE SHAPE
+ * ---------------------------------------------------------------------------------------------
+ * Every site used to be the SAME square: a complete ring around the whole block, with a gap cut
+ * in it. Only the gap moved. So the map's one breakable read as a single repeated object, and a
+ * player who had seen one site had seen all of them - while Mossy Mayhem, whose breakables are
+ * dealt a line, an L, a T or a room with rolled dimensions, gets a dozen distinct pieces out of
+ * the same budget.
+ *
+ * A SIDE MASK RATHER THAN A SHAPE STAMPER, because a block is only 8 cells across and its wall
+ * ring is one cell thick: there is no room in it for the free shapes Mossy draws across an
+ * unbounded plane. What there IS room for is which of the four runs get built, and that turns out
+ * to be the whole of it - four silhouettes that read completely differently from the street:
+ *
+ *   HOARDING  all four sides. The site as it was: sealed, and entered through a cut gateway.
+ *   OPEN      three sides. The missing run IS the way in, so the site needs no gateway at all -
+ *             and it faces a different street on every block that deals it.
+ *   ELL       two adjacent sides. A corner to fight around rather than a box to break into.
+ *   LANE      two opposite sides. Two parallel runs with open ends: a corridor, which is the one
+ *             silhouette that channels a chase rather than blocking it.
+ *
+ * CORNERS BELONG TO BOTH THEIR SIDES, which is what keeps an ELL an L: the cell where the two
+ * runs meet is drawn if EITHER of them is built, so the shape turns a corner instead of coming
+ * apart into two loose lines a cell short of each other.
+ *
+ * THE HOARDING STAYS DOMINANT. It is the silhouette that says "construction site" without any
+ * help, and the other three read as variations on it rather than as three new things - which is
+ * only true while it is the one you see most.
+ */
+const SITE_HOARDING = 0;
+const SITE_OPEN = 1;
+const SITE_ELL = 2;
+const SITE_LANE = 3;
+const SITE_CDF: readonly number[] = Object.freeze([
+  0.4, // hoarding  40%
+  0.66, // open     26%
+  0.86, // ell      20%
+  1.0, //  lane     14%
+]);
+
+/**
+ * Side bits, in the SAME ORDER `inGateway` numbers its sides (0 top, 1 bottom, 2 left, 3 right).
+ * Shared deliberately: a gateway is cut into a run, so the two have to agree about which run is
+ * which or a gap lands on a side that was never built.
+ */
+const SIDE_TOP = 1;
+const SIDE_BOTTOM = 2;
+const SIDE_LEFT = 4;
+const SIDE_RIGHT = 8;
+const SIDES_ALL = SIDE_TOP | SIDE_BOTTOM | SIDE_LEFT | SIDE_RIGHT;
+
+/** The four ways two ADJACENT runs can meet, indexed by the rotation roll. */
+const ELL_PAIRS: readonly number[] = Object.freeze([
+  SIDE_TOP | SIDE_LEFT,
+  SIDE_TOP | SIDE_RIGHT,
+  SIDE_BOTTOM | SIDE_LEFT,
+  SIDE_BOTTOM | SIDE_RIGHT,
+]);
+
+/** Which runs of its ring this construction site builds. */
+function siteSides(h: number): number {
+  const roll = blockFrac(h, Q_SITE);
+  let kind = SITE_LANE;
+  for (let i = 0; i < SITE_CDF.length; i++) {
+    if (roll < SITE_CDF[i]) {
+      kind = i;
+      break;
+    }
+  }
+  if (kind === SITE_HOARDING) return SIDES_ALL;
+
+  const r = blockInt(h, Q_SITE_ROT, 4);
+  if (kind === SITE_OPEN) return SIDES_ALL & ~(1 << r);
+  if (kind === SITE_ELL) return ELL_PAIRS[r];
+  // A lane runs one way or the other; the four-way roll is halved rather than re-rolled so the
+  // orientation stays independent of nothing else - one question, one fact.
+  return r < 2 ? SIDE_TOP | SIDE_BOTTOM : SIDE_LEFT | SIDE_RIGHT;
+}
+
+/**
+ * Which of the four runs a ring cell sits on - two of them, on a corner.
+ *
+ * Read against a side mask: the cell is built if ANY run it belongs to is. See SITE_CDF for why
+ * that is the rule rather than "the run this cell is most on".
+ */
+function ringSides(thick: number, lx: number, ly: number): number {
+  const n = CITY_BLOCK_CELLS;
+  let m = 0;
+  if (ly <= thick) m |= SIDE_TOP;
+  if (ly >= n - 1 - thick) m |= SIDE_BOTTOM;
+  if (lx <= thick) m |= SIDE_LEFT;
+  if (lx >= n - 1 - thick) m |= SIDE_RIGHT;
+  return m;
+}
 
 /**
  * WHAT THE BLOCK PUTS IN LOCAL CELL (lx, ly), 0..CITY_BLOCK_CELLS-1 on both axes, before the
@@ -406,17 +508,34 @@ function blockCellBase(h: number, lx: number, ly: number): number {
   const onRing = ring >= 1 && ring <= thick;
 
   if (onRing) {
-    if (inGateway(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly)) return CITY_EMPTY;
-    // Construction sites sometimes get a second way in; courtyards never do - one door is what
-    // makes a courtyard a commitment.
-    if (
-      type === BLOCK_CONSTRUCTION &&
-      blockFrac(h, Q_GATE2) < 0.5 &&
-      inGateway(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly)
-    ) {
-      return CITY_EMPTY;
+    // A COURTYARD IS ALWAYS THE COMPLETE RING, and always with exactly one way in. That is the
+    // whole of what a courtyard is - see SITE_CDF, which deliberately does not apply here: the
+    // silhouettes there are a site's, and a courtyard opened up on two sides is a plaza with
+    // extra steps.
+    if (type === BLOCK_COURTYARD) {
+      if (inGateway(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly)) return CITY_EMPTY;
+      return CITY_BUILDING;
     }
-    return type === BLOCK_COURTYARD ? CITY_BUILDING : CITY_FENCE;
+
+    // A construction site builds only the runs its silhouette calls for.
+    const sides = siteSides(h);
+    if ((ringSides(thick, lx, ly) & sides) === 0) return CITY_EMPTY;
+
+    // GATEWAYS ONLY WHERE THERE IS SOMETHING TO CUT THROUGH. A site missing a whole run is
+    // already open, and cutting a gap into one of the runs it DID build would spend the site's
+    // one readable feature on a second door nobody needed - two ways in through a three-sided
+    // hoarding reads as a fence that fell down rather than as a site with a gate.
+    if (sides === SIDES_ALL) {
+      if (inGateway(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly)) return CITY_EMPTY;
+      // Sealed sites sometimes get a second way in; courtyards never do.
+      if (
+        blockFrac(h, Q_GATE2) < 0.5 &&
+        inGateway(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly)
+      ) {
+        return CITY_EMPTY;
+      }
+    }
+    return CITY_FENCE;
   }
 
   // Inside a construction site: a few material piles, at hashed cells strictly inside the fence.
@@ -427,10 +546,16 @@ function blockCellBase(h: number, lx: number, ly: number): number {
   // two lanes clear, at every depth, means a doorway is always a doorway: you can drive in, and
   // what you break once inside is a choice rather than the price of entry.
   if (type === BLOCK_CONSTRUCTION && ring > thick) {
+    // ONLY A SEALED SITE HAS AN AISLE TO KEEP CLEAR. The guard below exists because a pile dealt
+    // behind a gateway turns the gap into a wall you have to shoot; a site with a whole run
+    // missing has no gap to block, so reserving a lane through it would be protecting a doorway
+    // that is not there - and costing the site two cells of scatter for nothing.
+    const sealed = siteSides(h) === SIDES_ALL;
     const secondGate = blockFrac(h, Q_GATE2) < 0.5;
     const inAisle =
-      inGatewayLane(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly) ||
-      (secondGate && inGatewayLane(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly));
+      sealed &&
+      (inGatewayLane(h, Q_GATE_SIDE, Q_GATE_ALONG, thick, lx, ly) ||
+        (secondGate && inGatewayLane(h, Q_GATE2_SIDE, Q_GATE2_ALONG, thick, lx, ly)));
     if (!inAisle) {
       const piles = SCATTER_MIN + blockInt(h, Q_SCATTER, SCATTER_SPAN);
       const lo = thick + 1;

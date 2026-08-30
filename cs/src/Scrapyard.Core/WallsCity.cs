@@ -104,10 +104,72 @@ public sealed class CityBlocks : IScenery
     private const int QGate2Side = 5;
     private const int QGate2Along = 6;
     private const int QScatter = 7; // ..and the ten after it, two per possible pile.
+    /// <summary>Which silhouette a site's hoarding takes, and which way round it faces.</summary>
+    private const int QSite = 17;
+    private const int QSiteRot = 18;
     private const int QBarrel = 24;
 
     private const int ScatterMin = 3;
     private const int ScatterSpan = 3;
+
+    /// <summary>
+    /// Which sides of its block a construction site fences off - the city's answer to Mossy's
+    /// SHAPE_CDF. See the TypeScript for why this is a SIDE MASK rather than a shape stamper: a
+    /// block is eight cells across and its wall ring is one cell thick, so what varies is which of
+    /// the four runs get built, not where a free shape lands.
+    /// </summary>
+    /// <remarks>
+    /// Hoarding is all four sides and is entered through a cut gateway; open is three, and the
+    /// missing run IS the way in; ell is two adjacent runs meeting at a corner; lane is two
+    /// opposite runs with open ends. A corner cell is built if EITHER of its runs is, which is
+    /// what keeps an ell turning a corner instead of coming apart into two loose lines.
+    /// </remarks>
+    private const int SiteHoarding = 0;
+    private const int SiteOpen = 1;
+    private const int SiteEll = 2;
+
+    private static readonly double[] SiteCdf = { 0.4, 0.66, 0.86, 1.0 };
+
+    /// <summary>Side bits, in the same order <see cref="InGateway"/> numbers its sides.</summary>
+    private const int SideTop = 1;
+    private const int SideBottom = 2;
+    private const int SideLeft = 4;
+    private const int SideRight = 8;
+    private const int SidesAll = SideTop | SideBottom | SideLeft | SideRight;
+
+    private static readonly int[] EllPairs =
+    {
+        SideTop | SideLeft, SideTop | SideRight, SideBottom | SideLeft, SideBottom | SideRight,
+    };
+
+    /// <summary>Which runs of its ring this construction site builds.</summary>
+    private static int SiteSides(int h)
+    {
+        double roll = BlockFrac(h, QSite);
+        int kind = SiteCdf.Length - 1;
+        for (int i = 0; i < SiteCdf.Length; i++)
+        {
+            if (roll < SiteCdf[i]) { kind = i; break; }
+        }
+        if (kind == SiteHoarding) return SidesAll;
+
+        int r = BlockInt(h, QSiteRot, 4);
+        if (kind == SiteOpen) return SidesAll & ~(1 << r);
+        if (kind == SiteEll) return EllPairs[r];
+        return r < 2 ? SideTop | SideBottom : SideLeft | SideRight;
+    }
+
+    /// <summary>Which of the four runs a ring cell sits on - two of them, on a corner.</summary>
+    private static int RingSides(int thick, int lx, int ly)
+    {
+        int n = CityBlockCells;
+        int m = 0;
+        if (ly <= thick) m |= SideTop;
+        if (ly >= n - 1 - thick) m |= SideBottom;
+        if (lx <= thick) m |= SideLeft;
+        if (lx >= n - 1 - thick) m |= SideRight;
+        return m;
+    }
 
     /// <summary>Width of every gateway, cells.</summary>
     private const int GateWidth = 2;
@@ -308,25 +370,46 @@ public sealed class CityBlocks : IScenery
 
         if (onRing)
         {
-            if (InGateway(h, QGateSide, QGateAlong, thick, lx, ly)) return CityEmpty;
-            // Construction sites sometimes get a second way in; courtyards never do.
-            if (type == BlockConstruction &&
-                BlockFrac(h, QGate2) < 0.5 &&
-                InGateway(h, QGate2Side, QGate2Along, thick, lx, ly))
+            // A courtyard is ALWAYS the complete ring with exactly one way in - the silhouettes in
+            // SiteCdf are a construction site's, and a courtyard opened up on two sides is a plaza
+            // with extra steps.
+            if (type == BlockCourtyard)
             {
-                return CityEmpty;
+                if (InGateway(h, QGateSide, QGateAlong, thick, lx, ly)) return CityEmpty;
+                return CityBuilding;
             }
-            return type == BlockCourtyard ? CityBuilding : CityFence;
+
+            int sides = SiteSides(h);
+            if ((RingSides(thick, lx, ly) & sides) == 0) return CityEmpty;
+
+            // Gateways only where there is something to cut through: a site missing a whole run is
+            // already open, and a second door through a three-sided hoarding reads as a fence that
+            // fell down rather than as a site with a gate.
+            if (sides == SidesAll)
+            {
+                if (InGateway(h, QGateSide, QGateAlong, thick, lx, ly)) return CityEmpty;
+                if (BlockFrac(h, QGate2) < 0.5 &&
+                    InGateway(h, QGate2Side, QGate2Along, thick, lx, ly))
+                {
+                    return CityEmpty;
+                }
+            }
+            return CityFence;
         }
 
         // Inside a construction site: a few material piles, at hashed cells strictly inside the
         // fence, except in a gateway's own aisle at any depth.
         if (type == BlockConstruction && ring > thick)
         {
+            // Only a SEALED site has an aisle to keep clear: a site with a whole run missing has
+            // no gap to block, so reserving a lane through it would protect a doorway that is not
+            // there and cost the site two cells of scatter for nothing.
+            bool isSealed = SiteSides(h) == SidesAll;
             bool secondGate = BlockFrac(h, QGate2) < 0.5;
             bool inAisle =
-                InGatewayLane(h, QGateSide, QGateAlong, thick, lx, ly) ||
-                (secondGate && InGatewayLane(h, QGate2Side, QGate2Along, thick, lx, ly));
+                isSealed &&
+                (InGatewayLane(h, QGateSide, QGateAlong, thick, lx, ly) ||
+                 (secondGate && InGatewayLane(h, QGate2Side, QGate2Along, thick, lx, ly)));
             if (!inAisle)
             {
                 int piles = ScatterMin + BlockInt(h, QScatter, ScatterSpan);

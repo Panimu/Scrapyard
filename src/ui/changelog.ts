@@ -65,6 +65,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-30T19:45Z',
+    version: 'v426',
+    title: 'BUILDING SITES ARE NOT ALL THE SAME SHAPE ANY MORE',
+    notes: [
+      'A fenced site used to be a square around the whole block, every time, and the only thing that changed was where the gate was. Now a site might be fenced on three sides with the fourth standing open, or on two sides meeting at a corner, or as two facing runs with a lane between them.',
+      'The sealed square is still the commonest, and it is still the one with a gate cut into it. The others need no gate - the side that was never built is the way in.',
+      'Walled courtyards are unchanged. One way in is what a courtyard is.',
+    ],
+  },
+  {
     at: '2026-08-30T19:11Z',
     version: 'v425',
     title: 'CITY CHAOS AND MOSSY MAYHEM GET THEIR OWN GROUND BACK',
