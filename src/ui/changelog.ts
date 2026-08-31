@@ -79,6 +79,23 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-31T08:52Z',
+    version: 'v430',
+    title: 'ELITES AND BOSSES ARE WORTH CREDITS NOW',
+    notes: [
+      'Killing an elite pays a credit and killing a boss pays five, banked the moment it goes down. Nothing drops and there is nothing to walk back for - a boss killed across the yard is worth what one killed at your feet is.',
+    ],
+  },
+  {
+    at: '2026-08-31T08:52Z',
+    version: 'v430',
+    title: 'THE CITY GETS ITS DRUMS BACK',
+    notes: [
+      'City Chaos now stands a broken drum back up every so often, the way the Scrapyard always has, somewhere well out of sight. Its second half of the map stops being empty of anything worth shooting.',
+      'Site fences are not restored. A hoarding you opened stays open - the shortcut is yours.',
+    ],
+  },
+  {
     at: '2026-08-30T22:33Z',
     version: 'v429',
     title: 'THE MACHINE GUN FIRES A STRAIGHT PAIR',

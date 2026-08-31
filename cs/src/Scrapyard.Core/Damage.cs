@@ -584,6 +584,13 @@ public static class Damage
                  : (kf & EnemyPool.FlagElite) != 0 ? Ranks.Elite
                  : Ranks.Regular;
         stats.KillsByRank[rank]++;
+
+        // THE BOUNTY. Paid at the one place that has already worked out the rank - nothing is
+        // dropped and nothing is walked over, so a boss killed across the yard pays what one
+        // killed at your feet does.
+        var bounty = world.Tuning.Pickups;
+        if (rank == Ranks.Boss) stats.Credits += bounty.CreditPerBoss;
+        else if (rank == Ranks.Elite) stats.Credits += bounty.CreditPerElite;
         // WHICH CREATURE, AT WHICH RANK - what the bestiary is gated on. The rung was stamped at
         // spawn precisely so this line can exist: by now the director has moved on and only the body
         // itself still knows what it is.

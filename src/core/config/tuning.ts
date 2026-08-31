@@ -194,6 +194,17 @@ export interface PickupTuning {
   /** Credit coin value at t=0 and at the end of the run. Interpolated by run time. */
   readonly creditMin: number;
   readonly creditMax: number;
+  /**
+   * CREDITS PAID FOR A KILL, by rank - a BOUNTY rather than a pickup, and the only credits in the
+   * game that are not walked over.
+   *
+   * Here beside the coin values rather than in `combat`, because what this file answers about a
+   * credit is "how many is a thing worth" and that is the same question whichever way it arrives.
+   * A regular pays nothing: the horde is the background, and a per-body trickle would drown both
+   * of these in noise from the one rank there are thousands of.
+   */
+  readonly creditPerElite: number;
+  readonly creditPerBoss: number;
   /** Coin `value` at or above which each of the four coin sprites is used. */
   readonly creditTierValues: readonly [number, number, number, number];
   /** Seconds during which a magnet pulls EVERY gem, at any distance. */
@@ -336,6 +347,10 @@ const PICKUPS: PickupTuning = {
   repairFracCross: 0.25,
   creditMin: 1,
   creditMax: 50,
+  // An elite is worth a coin and a boss a small handful. Deliberately small next to a gold coin's
+  // 50: this is a steady drip that rewards fighting the hard things rather than a second economy.
+  creditPerElite: 1,
+  creditPerBoss: 5,
   // Single coin / small stack / large stack / overflowing bag. The thresholds are spaced so the
   // top sprite stays uncommon early: at t=0 a coin is worth ~1 and can only ever be the single,
   // and the bag needs a value only the last third of a run can produce.

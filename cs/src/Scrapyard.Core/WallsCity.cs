@@ -856,6 +856,50 @@ public sealed class CityBlocks : IScenery
     public double PieceY(long i) => CityCentre(CityCellY(i));
     public double PieceRadius(long i) => CellHalf(CityKindAt(CityCellX(i), CityCellY(i)));
 
-    /// <summary>NOTHING COMES BACK HERE. A construction site the player opened stays open.</summary>
-    public long RegrowBarrel(Rng rng, double px, double py) => -1;
+    /// <summary>
+    /// Puts one broken DRUM back and returns its cell key - which is also the index the Piece*
+    /// accessors decode. Fences stay down: a site the player opened stays open, and the shortcut
+    /// is the reward.
+    /// </summary>
+    /// <remarks>
+    /// SORTED BEFORE PICKING, and that is not tidiness. The candidates come out of a hash set:
+    /// JavaScript's Set iterates in insertion order and <see cref="HashSet{T}"/> iterates in
+    /// whatever order it likes, so "the nth candidate" would name two different cells in the two
+    /// languages and the replay would diverge the first time a drum came back. Sorting imposes a
+    /// total order neither container gets a say in - the same reasoning ReadyAscension gives for
+    /// taking the lowest catalog index rather than the first one it reaches.
+    ///
+    /// The kind is recomputed from the hash rather than read back through CityKindAt, which would
+    /// answer Empty for every key in the set by definition.
+    /// </remarks>
+    public long RegrowBarrel(Rng rng, double px, double py)
+    {
+        double min2 = ScrapPiles.BarrelRegrowMinDist * ScrapPiles.BarrelRegrowMinDist;
+        var eligible = new List<long>();
+
+        foreach (long key in _broken)
+        {
+            int cx = CityCellX(key);
+            int cy = CityCellY(key);
+            int bx = BlockIndexOf(cx);
+            int by = BlockIndexOf(cy);
+            int lx = LocalOf(cx) - CityRoadCells;
+            int ly = LocalOf(cy) - CityRoadCells;
+            if (BlockCellKind(HashBlock(Seed, bx, by), lx, ly) != CityBarrel) continue;
+
+            double dx = CityCentre(cx) - px;
+            double dy = CityCentre(cy) - py;
+            if (dx * dx + dy * dy < min2) continue;
+            eligible.Add(key);
+        }
+        if (eligible.Count == 0) return -1;
+
+        eligible.Sort();
+        long chosen = eligible[rng.NextInt(eligible.Count)];
+        _broken.Remove(chosen);
+        // The half-damaged tally too, or the drum comes back already hurt by the shots that killed it.
+        _hurt.Remove(chosen);
+        Version++;
+        return chosen;
+    }
 }

@@ -450,6 +450,15 @@ public sealed class PickupTuning
 
     public double CreditMax = 50;
 
+    /// <summary>
+    /// Credits paid for a kill, by rank - a BOUNTY rather than a pickup, and the only credits in
+    /// the game that are not walked over. A regular pays nothing: a per-body trickle from the one
+    /// rank there are thousands of would drown both of these in noise.
+    /// </summary>
+    public double CreditPerElite = 1;
+
+    public double CreditPerBoss = 5;
+
     /// <summary>+/- this fraction of jitter on a coin, so two barrels a minute apart are not the same coin.</summary>
 
     /// <summary>Coin <c>value</c> at or above which each of the four coin sprites is used.</summary>

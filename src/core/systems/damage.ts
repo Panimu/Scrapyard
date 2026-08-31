@@ -655,6 +655,17 @@ function killEnemy(world: World, ed: number, killerSlot: number): void {
   const rank =
     (kf & ENEMY_FLAG_BOSS) !== 0 ? RANK_BOSS : (kf & ENEMY_FLAG_ELITE) !== 0 ? RANK_ELITE : RANK_REGULAR;
   stats.killsByRank[rank]++;
+
+  // THE BOUNTY. Paid here, at the one place that has already worked out the rank, rather than
+  // anywhere a coin is handled: nothing is dropped, nothing is walked over, and a boss killed on
+  // the far side of the yard pays exactly what one killed at your feet does. See PickupTuning.
+  //
+  // `rank` IS THE GUARD against a body flagged both ways. It is one value off a ladder that puts
+  // boss above elite, so the two arms below cannot both run - the else is readability, not the
+  // thing keeping a boss from being paid twice.
+  const bounty = world.config.tuning.pickups;
+  if (rank === RANK_BOSS) stats.credits += bounty.creditPerBoss;
+  else if (rank === RANK_ELITE) stats.credits += bounty.creditPerElite;
   // WHICH CREATURE, AT WHICH RANK - what the bestiary is gated on. The rung was stamped at spawn
   // (spawning.ts) precisely so this line can exist: by now the director has moved on and only the
   // body itself still knows what it is.

@@ -34,6 +34,17 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-31T08:52Z", "v430", "ELITES AND BOSSES ARE WORTH CREDITS NOW",
+            new[]
+            {
+                "Killing an elite pays a credit and killing a boss pays five, banked the moment it goes down. Nothing drops and there is nothing to walk back for - a boss killed across the yard is worth what one killed at your feet is.",
+            }),
+        new("2026-08-31T08:52Z", "v430", "THE CITY GETS ITS DRUMS BACK",
+            new[]
+            {
+                "City Chaos now stands a broken drum back up every so often, the way the Scrapyard always has, somewhere well out of sight. Its second half of the map stops being empty of anything worth shooting.",
+                "Site fences are not restored. A hoarding you opened stays open - the shortcut is yours.",
+            }),
         new("2026-08-30T22:33Z", "v429", "THE MACHINE GUN FIRES A STRAIGHT PAIR",
             new[]
             {

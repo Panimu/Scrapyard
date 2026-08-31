@@ -68,6 +68,7 @@ import {
   cityCellY,
   cityCentre,
   cityDestructibleOverlap,
+  regrowCityBarrel,
   cityDestructibleRayHit,
   cityKindAt,
   cityLastRayT,
@@ -630,8 +631,11 @@ export const BARREL_REGROW_MIN_DIST = 560;
  */
 export function regrowBarrel(s: Scenery, rng: Rng, px: number, py: number): number {
   // Walls do not come back. See wallsMossy.ts: a wood the player cut through stays cut.
-  // Nor do fences: a construction site the player opened stays open.
-  if (s.kind === 'walls' || s.kind === 'city') return -1;
+  if (s.kind === 'walls') return -1;
+  // THE CITY REGROWS ITS DRUMS AND ONLY ITS DRUMS - `regrowCityBarrel` recomputes each broken
+  // cell's kind to tell them from fences, because a site the player opened stays open. The key it
+  // returns is a city cell index, which is what every `scenery*` accessor already decodes.
+  if (s.kind === 'city') return regrowCityBarrel(s, rng, px, py, BARREL_REGROW_MIN_DIST);
   const n = s.radius.length;
   const min2 = BARREL_REGROW_MIN_DIST * BARREL_REGROW_MIN_DIST;
 

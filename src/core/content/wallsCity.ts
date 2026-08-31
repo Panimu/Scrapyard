@@ -52,6 +52,10 @@
  */
 
 import type { SceneryPush } from './scenery.js';
+// TYPE-ONLY, BOTH OF THEM. scenery.ts value-imports this file, so a value import back would be a
+// cycle - which is also why `regrowCityBarrel` takes its minimum distance as an argument rather
+// than reaching for BARREL_REGROW_MIN_DIST where that constant is declared.
+import type { Rng } from '../rng.js';
 
 /**
  * Edge of one lattice cell, world units. Same figure Mossy landed on and for the same measured
@@ -718,6 +722,69 @@ function inGatewayLane(
  * WHAT IS IN CELL (cx, cy): one of the CITY_* values. The broken set is applied here, so every
  * query in the file - collision, rays, the dressing - sees one world.
  */
+/**
+ * PUTS ONE BROKEN DRUM BACK, and returns its cell key - which is also the index every generic
+ * `scenery*` accessor decodes, so the caller reads its position and radius the same way it does
+ * for the Scrapyard's.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * DRUMS ONLY. FENCES STAY DOWN.
+ * ---------------------------------------------------------------------------------------------
+ * `broken` holds both breakables under one key with no kind beside it, so the kind is recomputed
+ * from the hash - which is cheap and, more to the point, is the only thing that can tell them
+ * apart. A site you opened stays open: the shortcut is the reward, and a fence that grew back
+ * would take it away from a player who had already paid for it in ammunition.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * SORTED BEFORE PICKING, AND THAT IS NOT TIDINESS
+ * ---------------------------------------------------------------------------------------------
+ * The candidates come out of a hash set. A JavaScript `Set` iterates in INSERTION order and a C#
+ * `HashSet` iterates in whatever order it likes, so "the nth candidate" means two different cells
+ * in the two languages and the replay diverges the first time a drum comes back. Sorting the keys
+ * imposes a TOTAL order that neither container gets a say in - the same reasoning `readyAscension`
+ * gives for taking the lowest catalog index rather than the first one it happens to reach.
+ *
+ * It costs an allocation and a sort once every `barrelRegrowSec`, against a set holding only what
+ * this run has actually broken.
+ */
+export function regrowCityBarrel(
+  c: CityBlocks,
+  rng: Rng,
+  px: number,
+  py: number,
+  minDist: number,
+): number {
+  const min2 = minDist * minDist;
+  const eligible: number[] = [];
+
+  for (const key of c.broken) {
+    const cx = cityCellX(key);
+    const cy = cityCellY(key);
+    // The kind the GENERATOR gives this cell, with `broken` deliberately not consulted: every key
+    // in here is broken by definition, so asking `cityKindAt` would answer CITY_EMPTY for all of
+    // them and nothing would ever come back.
+    const bx = blockIndexOf(cx);
+    const by = blockIndexOf(cy);
+    const lx = localOf(cx) - CITY_ROAD_CELLS;
+    const ly = localOf(cy) - CITY_ROAD_CELLS;
+    if (blockCellKind(hashBlock(c.seed, bx, by), lx, ly) !== CITY_BARREL) continue;
+
+    const dx = cityCentre(cx) - px;
+    const dy = cityCentre(cy) - py;
+    if (dx * dx + dy * dy < min2) continue;
+    eligible.push(key);
+  }
+  if (eligible.length === 0) return -1;
+
+  eligible.sort((a, b) => a - b);
+  const key = eligible[rng.nextInt(eligible.length)];
+  c.broken.delete(key);
+  // The half-damaged tally too, or the drum comes back already hurt by the shots that killed it.
+  c.hurt.delete(key);
+  c.version++;
+  return key;
+}
+
 export function cityKindAt(c: CityBlocks, cx: number, cy: number): number {
   if (cityIsRoad(cx, cy)) return CITY_EMPTY;
   const bx = blockIndexOf(cx);
