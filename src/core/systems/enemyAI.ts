@@ -512,6 +512,12 @@ function integrate(world: World, dt: number): void {
   const eps2 = tune.pushEpsilon * tune.pushEpsilon;
 
   const radius = p.radius;
+  // For the pattern-break below: a body that walks into terrain stops doing whatever clever thing
+  // it was doing and joins the ordinary horde.
+  const chargeLeft = p.chargeLeft;
+  const fixateLeft = p.fixateLeft;
+  const speed = p.speed;
+  const flavourId = p.flavourId;
 
   for (let d = 0; d < n; d++) {
     if ((flags[d] & ENEMY_FLAG_DEAD) !== 0) continue;
@@ -543,6 +549,43 @@ function integrate(world: World, dt: number): void {
       if (into < 0) {
         vx[d] -= push.nx * into;
         vy[d] -= push.ny * into;
+      }
+
+      // -----------------------------------------------------------------------------------
+      // TERRAIN ENDS A SPECIAL MOVEMENT PATTERN
+      // -----------------------------------------------------------------------------------
+      // A charging swarmer walks a fixed heading and ignores the player; a fixated Heavy walks
+      // at a mark and declines the flow field (see the two branches in `steer`). Both are the
+      // right behaviour in the open and both are nonsense against a wreck: neither will steer
+      // round it, so the body grinds along the side of the obstacle for the rest of its timer,
+      // sliding on the tangent because that is the only thing moving it at all. Fifty Heavies
+      // doing that against one girder heap is a queue, not a siege.
+      //
+      // So contact IS the end of the pattern. It rejoins the horde mid-stride with no transition
+      // state, exactly as it would have when its clock ran out.
+      //
+      // EITHER KIND OF SCENERY, and that falls out rather than being decided here: `push.hit` is
+      // the generic push, which resolves against breakables and permanent terrain alike - a drum,
+      // a girder heap, a tree, a site fence and a building all end a charge.
+      //
+      // THE TRANSITION IS THE TIMER'S, NOT A NEW ONE. Each pattern applies a one-time speed
+      // change when it expires - a charge slows by SWARM_SLOW_FRAC, a fixation multiplies by the
+      // flavour's `fixateSpeedMul` - and ending early has to pay exactly that or the body is left
+      // in a state neither branch describes: a swarmer sprinting for the rest of the run, or a
+      // Heavy in ordinary pursuit still crawling at its siege speed. Both timers are cleared
+      // BEFORE the multiply for the same reason the expiry paths do it: it must happen once.
+      //
+      // NO FLAVOUR CHECK, because these two timers ARE the two flavours. `chargeLeft` is set in
+      // exactly one place (the swarm event) and `fixateSec` is non-zero on exactly one flavour
+      // (the Heavy), so asking about the timer asks about the body without naming it - and a
+      // third flavour that one day wants either pattern gets this for free.
+      if (chargeLeft[d] > 0) {
+        chargeLeft[d] = 0;
+        speed[d] *= SWARM_SLOW_FRAC;
+      }
+      if (fixateLeft[d] > 0) {
+        fixateLeft[d] = 0;
+        speed[d] *= FLAVOURS[flavourId[d]].fixateSpeedMul;
       }
     }
 

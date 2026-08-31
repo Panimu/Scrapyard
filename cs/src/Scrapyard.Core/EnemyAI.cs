@@ -385,6 +385,32 @@ public static class EnemyAI
                     p.Vx[d] = (float)((double)p.Vx[d] - push.Nx * into);
                     p.Vy[d] = (float)((double)p.Vy[d] - push.Ny * into);
                 }
+
+                // TERRAIN ENDS A SPECIAL MOVEMENT PATTERN. A charging swarmer walks a fixed
+                // heading and ignores the player; a fixated Heavy walks at a mark and declines the
+                // flow field. Neither will steer round a wreck, so both used to grind along the
+                // side of one for the rest of their timer. Contact is the end of the pattern.
+                //
+                // Either kind of scenery, and that falls out rather than being decided: PushOut
+                // resolves against breakables and permanent terrain alike.
+                //
+                // THE TRANSITION IS THE TIMER'S, NOT A NEW ONE - each pattern pays a one-time
+                // speed change when it expires, and ending early has to pay exactly that or the
+                // body is left in a state neither branch describes. Cleared BEFORE the multiply,
+                // for the same reason the expiry paths do it: it must happen once.
+                //
+                // No flavour check: these two timers ARE the two flavours. ChargeLeft is set in
+                // one place (the swarm event) and FixateSec is non-zero on one flavour.
+                if (p.ChargeLeft[d] > 0)
+                {
+                    p.ChargeLeft[d] = 0;
+                    p.Speed[d] = (float)((double)p.Speed[d] * SwarmSlowFrac);
+                }
+                if (p.FixateLeft[d] > 0)
+                {
+                    p.FixateLeft[d] = 0;
+                    p.Speed[d] = (float)((double)p.Speed[d] * Flavours.All[p.FlavourId[d]].FixateSpeedMul);
+                }
             }
 
             p.X[d] = (float)nx;

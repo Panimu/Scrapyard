@@ -34,6 +34,12 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-08-31T15:01Z", "v431", "SWARMERS AND HEAVIES GIVE UP WHEN THEY HIT SOMETHING",
+            new[]
+            {
+                "A charging swarmer that runs into a wreck, a tree, a fence or a drum stops charging and joins the rest of the horde. It used to scrape along the side of whatever it hit until its charge ran out.",
+                "A heavy that walks into something on its way to the mark does the same - it drops the siege and comes for you at its ordinary pace instead. Fifty of them against one girder heap was a queue, not a siege.",
+            }),
         new("2026-08-31T08:52Z", "v430", "ELITES AND BOSSES ARE WORTH CREDITS NOW",
             new[]
             {

@@ -79,6 +79,15 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-08-31T15:01Z',
+    version: 'v431',
+    title: 'SWARMERS AND HEAVIES GIVE UP WHEN THEY HIT SOMETHING',
+    notes: [
+      'A charging swarmer that runs into a wreck, a tree, a fence or a drum stops charging and joins the rest of the horde. It used to scrape along the side of whatever it hit until its charge ran out.',
+      'A heavy that walks into something on its way to the mark does the same - it drops the siege and comes for you at its ordinary pace instead. Fifty of them against one girder heap was a queue, not a siege.',
+    ],
+  },
+  {
     at: '2026-08-31T08:52Z',
     version: 'v430',
     title: 'ELITES AND BOSSES ARE WORTH CREDITS NOW',
