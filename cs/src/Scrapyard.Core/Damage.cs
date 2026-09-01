@@ -61,6 +61,14 @@ namespace Scrapyard.Core;
 public static class Damage
 {
     /// <summary>
+    /// Impact classes, carried on ProjectileHit's fifth payload. Render-facing only - nothing in
+    /// the simulation branches on them.
+    /// </summary>
+    public const int HitSolid = 0;
+    public const int HitEnergy = 1;
+    public const int HitIncendiary = 2;
+
+    /// <summary>
     /// Seconds of total immunity Mech Insurance opens when it pays out. Long enough to walk out of
     /// the crowd that just killed you and no longer - the upgrade is a second chance at the run, not
     /// a window to fight in.
@@ -387,7 +395,19 @@ public static class Damage
             // "shells that connected" - the harness divides by ShotsFired knowing that.
             stats.ShotsHit++;
 
-            world.Events.Push(EventKind.ProjectileHit, world.Tick, hits.X[i], hits.Y[i], raw, pd);
+            // The impact CLASS rides in the fifth payload so the renderer can pick a sound - the
+            // projectile is gone by the time the ring is drained, so there is nowhere else to ask.
+            // Derived from data the catalog already carries rather than declared on it: a gun that
+            // leaves a burn is incendiary, one that chills is energy. Beams take their own path and
+            // push no hit event, which is right - their sound is the loop while they are held.
+            int hitSlot = proj.OwnerWeapon[pd];
+            int hitDefId = hitSlot >= 0 && hitSlot < world.Weapons.Length ? world.Weapons[hitSlot].DefId : -1;
+            var hitDef = hitDefId >= 0 && hitDefId < world.WeaponDefs.Length ? world.WeaponDefs[hitDefId] : null;
+            double hitKind = hitDef?.Burn is not null ? HitIncendiary
+                           : hitDef?.Slow is not null ? HitEnergy
+                           : HitSolid;
+            world.Events.Push(EventKind.ProjectileHit, world.Tick, hits.X[i], hits.Y[i], raw, pd,
+                              hitKind);
             world.Events.Push(EventKind.EnemyDamaged, world.Tick,
                               enemies.X[ed], enemies.Y[ed], raw, enemies.Slot[ed]);
 
@@ -625,8 +645,13 @@ public static class Damage
 
         // reason 0 = KILLED (play the death FX, a gem is coming). EnemyAI emits reason 1 for a
         // despawn, which pays nothing - a kill you did not make must not drop loot.
+        // The RANK rides in the spare fifth payload - the renderer drains the ring after the body
+        // has been reaped, so there is no pool row left to ask what it was, and without this the
+        // audio layer can only ever play the regular death. The ring is not in the world hash, so
+        // this moves no replay and no fixture.
         world.Events.Push(EventKind.EnemyKilled, world.Tick,
-                          enemies.X[ed], enemies.Y[ed], enemies.Slot[ed], EnemyAI.KillReasonKilled);
+                          enemies.X[ed], enemies.Y[ed], enemies.Slot[ed], EnemyAI.KillReasonKilled,
+                          rank);
     }
 
     /// <summary>

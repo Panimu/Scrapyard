@@ -22,6 +22,9 @@
  */
 
 import { Application } from 'pixi.js';
+
+/** The keys that move a menu selection. See the keydown handler in `boot`. */
+const NAV_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab']);
 import {
   HERO_CATALOG,
   MAX_FRAME_MS,
@@ -186,6 +189,66 @@ async function boot(): Promise<void> {
   setBootProgress(0.96);
 
   const renderer = new GameRenderer(app, textures);
+
+  /**
+   * UNLOCK THE AUDIO ON THE FIRST REAL GESTURE, and start loading there.
+   *
+   * A browser refuses to start audio until the user has interacted, and - worse - a context
+   * created before that is created SUSPENDED and never recovers on its own, so the game runs
+   * silent for the whole session with nothing logged anywhere. Hence: no context until a press,
+   * and the whole library is fetched from that moment rather than at boot, so a player who never
+   * touches anything downloads no audio at all.
+   *
+   * THREE EVENTS, NOT ONE. A phone only ever sends `pointerdown`, a keyboard-only player only
+   * ever sends `keydown`, and a gamepad sends neither - `click` is the one that follows a pad
+   * button through the browser's own focus handling. `once` on each, and they are cheap.
+   */
+  /**
+   * So the ascension sting fires ONCE per chest rather than every frame the overlay is up.
+   * `RUN_PHASE_CHEST` persists for as long as the player takes to press collect, and the phase is
+   * the only thing that says the chest is open - so the edge has to be remembered here.
+   */
+  let ascendSounded = false;
+  /**
+   * MENU SOUNDS, DELEGATED FROM THE DOCUMENT rather than hooked into each screen.
+   *
+   * There are eight screens and every one of them has buttons, tiles and a primary action. Wiring
+   * three sounds into each would be twenty-four call sites that a ninth screen would silently not
+   * have - and the sound a menu makes is a property of BEING a menu, not of which menu it is.
+   *
+   * REFUSAL IS DECIDED BY THE ELEMENT, and the two ways the UI already says it: `aria-disabled`
+   * on an inert tile (a locked chassis stays focusable on purpose - see heroSelect) and the plain
+   * `disabled` property on a button that cannot be pressed. Both mean the same thing to a player,
+   * so both make the same noise.
+   *
+   * IN CAPTURE, so a handler that stops propagation - the level-up cards do - cannot silence the
+   * click that reached it.
+   */
+  const uiSound = (target: EventTarget | null): void => {
+    if (!(target instanceof Element)) return;
+    const hit = target.closest('button, [role="button"], .hero, .level, .card');
+    if (hit === null) return;
+    const refused =
+      hit.getAttribute('aria-disabled') === 'true' ||
+      (hit instanceof HTMLButtonElement && hit.disabled);
+    renderer.sfx.play(refused ? 'ui_deny' : 'ui_confirm');
+  };
+  document.addEventListener('click', (ev) => uiSound(ev.target), true);
+  /**
+   * SELECTION MOVING, which on this game means the arrow keys and the pad's d-pad - both of which
+   * arrive as key events. Filtered to the navigation keys so typing a seed into a field does not
+   * tick, and only while something is actually open.
+   */
+  document.addEventListener('keydown', (ev) => {
+    if (!NAV_KEYS.has(ev.key)) return;
+    if (document.querySelector('.overlay:not([hidden])') === null) return;
+    renderer.sfx.play('ui_move');
+  });
+
+  const unlockAudio = (): void => renderer.sfx.unlock();
+  for (const ev of ['pointerdown', 'keydown', 'click'] as const) {
+    window.addEventListener(ev, unlockAudio, { once: true, passive: true });
+  }
 
   // The upgrade icons are DOM images rather than atlas textures, so nothing above has fetched
   // them. Warmed here, once, so the first level-up card and the first chest of a run are not the
@@ -525,7 +588,11 @@ async function boot(): Promise<void> {
     // must already include this poll's kills, or the card completing on this very poll would
     // not be seen until the next one.
     state.recordCareerKills(record);
-    toast.push(state.recordAchievements(record).map(achievementItem));
+    // ONE SOUND FOR THE BATCH, not one per achievement: three unlocking on the same boss kill is
+    // one moment, and three overlapping stings is a mess rather than three rewards.
+    const earned = state.recordAchievements(record).map(achievementItem);
+    if (earned.length > 0) renderer.sfx.play('achievement');
+    toast.push(earned);
     state.recordKills(
       world.stats.killsByFlavour,
       world.stats.killsByRank,
@@ -882,8 +949,20 @@ async function boot(): Promise<void> {
     if (state.phase === 'running') {
       // `show` is a no-op while already visible, so these fire once per card or chest even though
       // the phase persists for however many frames the overlay is up.
-      if (world.phase === RUN_PHASE_CHEST) chest.show(world);
-      else if (chest.visible) {
+      if (world.phase === RUN_PHASE_CHEST) {
+        // AN ASCENSION IS NOT A CHEST OPENING, and gets the rarer sound. `chest.ascension` is set
+        // only when the run has earned a tier 8 (progression.ts supersedes the spin entirely), so
+        // this fires on the one thing in the game that is meant to be found rather than on every
+        // payout. `chest_open` still plays from the ring for the chest itself.
+        if (world.chest.ascension >= 0 && !ascendSounded) {
+          ascendSounded = true;
+          renderer.sfx.play('ascend');
+        }
+        chest.show(world);
+      } else if (chest.visible) {
+        // Reset where the chest actually CLOSES, which is the edge the latch is about - and it
+        // keeps the existing else-if chain intact rather than splitting it in two.
+        ascendSounded = false;
         chest.hide();
         state.recordHeldUpgrades(world.levelUp.stacks);
       }
@@ -948,6 +1027,10 @@ async function boot(): Promise<void> {
         // showing it over the summary costs nothing.
         toast.clear();
         bankProgress(world);
+        // THE RUN'S LAST WORD. Once per run by construction - this branch runs on the single tick
+        // that leaves the running phase, which is the same reason the banking above is safe here.
+        renderer.sfx.play(world.phase === RUN_PHASE_VICTORY ? 'run_won' : 'run_lost');
+        renderer.sfx.stopAll();
         summary.show(
           world,
           state.seed,

@@ -84,6 +84,7 @@ import { cityCellX, cityCellY, cityIsBarrel, citySectionsStanding } from '../con
 import { FLAVOURS } from '../content/enemyCatalog.js';
 import {
   PICKUP_FLAG_AUTO,
+  PICKUP_FLAG_CHASING,
   PICKUP_FLAG_DEAD,
   PICKUP_KIND_CHEST,
   PICKUP_KIND_CREDIT,
@@ -714,8 +715,14 @@ function magnetAndCollect(world: World, dt: number): void {
       // you, and a magnet that hoovered the XP off the floor while leaving the money and the
       // repairs lying there reads as broken rather than as restraint.
       //
-      // NOT the dice and not a chest. A chest is a set-piece you walk to and it stops the run to
-      // open; dragging either would be the magnet reaching past what it is for.
+      // NOT A SPANNER, AND NOT A CHEST. A chest is a set-piece you walk to and it stops the run to
+      // open. A spanner is the one pickup whose whole proposition is the QUESTION it poses - "is
+      // that worth crossing the field for, right now, at this much hull" - and a magnet that
+      // delivered it answered the question on the player's behalf. It stays where it fell.
+      //
+      // THE DICE DOES COME. One a run is the point of it (see RunStats.dice), it expires nowhere
+      // and is never the wrong thing to be handed, so there is no decision for the magnet to take
+      // away - only a walk across the yard that adds nothing.
       //
       // `d2 === 0` IS FOLDED IN, and it is not theoretical here the way it is for a gem. A gem at
       // zero distance was collected two lines above and never reaches the normalise. A spanner is
@@ -726,17 +733,15 @@ function magnetAndCollect(world: World, dt: number): void {
       const dragged =
         magnetAll &&
         d2 !== 0 &&
-        (pool.kind[d] === PICKUP_KIND_CREDIT ||
-          pool.kind[d] === PICKUP_KIND_REPAIR ||
-          pool.kind[d] === PICKUP_KIND_REPAIR_CROSS);
+        (pool.kind[d] === PICKUP_KIND_CREDIT || pool.kind[d] === PICKUP_KIND_DICE);
       if (!dragged) {
         pool.vx[d] = 0;
         pool.vy[d] = 0;
         continue;
       }
-      // A SPANNER AT FULL HULL IS STILL NOT TAKEN - it falls through to the same magnet terms as
-      // everything else and simply arrives, then waits at the mech's feet for the hit that makes
-      // it worth something. `wouldBeWasted` above is what refuses it, and it keeps refusing.
+      // `wouldBeWasted` above still refuses a spanner at full hull, and now nothing can carry one
+      // to the mech's feet either - so the two rules say the same thing rather than one undoing
+      // the other.
     } else {
       // `d2 === 0` is folded in here so the normalise below can never divide by zero: a gem
       // sitting exactly on the player is, by any reading, collected.
@@ -745,13 +750,24 @@ function magnetAndCollect(world: World, dt: number): void {
         continue;
       }
 
-      if (!magnetAll && d2 > pickupR2 && pool.tier[d] < bossTier) {
-        // Outside the field. The magnet is a field, not a launcher - a gem that leaves it stops
-        // rather than coasting on a drag constant that does not exist in Tuning.
+      // ONCE ACQUIRED, ALWAYS COMING. The test is only ever asked of a gem that has never been
+      // pulled: the first tick one is inside the field it is latched (see PICKUP_FLAG_CHASING)
+      // and from then on it closes from any distance.
+      //
+      // It used to be asked every tick, which meant a gem dragged halfway and then abandoned -
+      // the player walks on, the radius moves off it, and it stops dead in open ground with no
+      // velocity. Nothing on screen explains that; it reads as gems the game lost track of. The
+      // field is an ACQUISITION, not a leash.
+      const chasing = (pool.flags[d] & PICKUP_FLAG_CHASING) !== 0;
+      if (!chasing && !magnetAll && d2 > pickupR2 && pool.tier[d] < bossTier) {
+        // Never yet acquired, and out of reach. The magnet is a field, not a launcher - a gem it
+        // has not taken hold of sits still rather than coasting on a drag constant that does not
+        // exist in Tuning.
         pool.vx[d] = 0;
         pool.vy[d] = 0;
         continue;
       }
+      pool.flags[d] |= PICKUP_FLAG_CHASING;
     }
 
     const inv = 1 / Math.sqrt(d2);

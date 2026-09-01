@@ -26,3 +26,7 @@ artifacts/
 # invalidated. Re-run `sweep --fresh` instead - `sweep --mini` for a few minutes, the full `sweep`
 # for the real thing (user-initiated only, see CLAUDE.md).
 sweep/
+
+# Generated SFX takes - four per sound, regenerable and not small.
+sfx/takes/
+sfx/sfx-picks.json

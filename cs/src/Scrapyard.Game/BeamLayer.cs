@@ -61,6 +61,58 @@ public sealed class BeamLayer
     private readonly double[] _len = new double[MaxSlots * MaxLinks];
     private readonly bool[] _hit = new bool[MaxSlots * MaxLinks];
 
+    /// <summary>
+    /// The cross-width falloff every soft beam layer is drawn with: transparent at both edges,
+    /// opaque down the middle.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// EVERY LAYER USED TO BE A SOLID RECTANGLE - <c>sprites.Blank</c> stretched - so the sheath,
+    /// the halo, the body and the pulses all had hard parallel edges, and stacking four of them
+    /// produced a bar with visible steps between the layers rather than a falloff. On a thin laser
+    /// that reads as a plastic tube; on the Giga Laser's swath, where the body IS the hitbox and
+    /// is tens of units across, it reads as a flat slab with a square end sticking out of the
+    /// chassis. The web renderer hit exactly this and fixed it by baking a linear gradient into
+    /// the quad's own geometry - see the `soft` GraphicsContext in src/render/beams.ts, whose
+    /// comment records that flat quads were "hard-edged whatever the layer count".
+    /// </para>
+    /// <para>
+    /// THE SAME FIVE STOPS as that gradient, so the two renderers have the same cross-section.
+    /// A texture rather than geometry because that is the cheap way to say it here: one column of
+    /// pixels, sampled across the quad's height, built once.
+    /// </para>
+    /// <para>
+    /// PREMULTIPLIED, because every caller already passes <c>tint * alpha</c> and the sheath is
+    /// drawn in the normal (premultiplied) batch while the rest are additive. Storing colour and
+    /// alpha already multiplied is what makes one texture correct in both.
+    /// </para>
+    /// </remarks>
+    private Texture2D? _soft;
+
+    private Texture2D Soft(GraphicsDevice gd)
+    {
+        if (_soft is not null) return _soft;
+
+        const int n = 64;
+        var px = new Color[n];
+        for (int i = 0; i < n; i++)
+        {
+            double t = (i + 0.5) / n;
+            // 0 -> 0, 0.32 -> 0.55, 0.5 -> 1, 0.68 -> 0.55, 1 -> 0, linear between.
+            double a = t <= 0.32 ? t / 0.32 * 0.55
+                     : t <= 0.5 ? 0.55 + (t - 0.32) / 0.18 * 0.45
+                     : t <= 0.68 ? 1 - (t - 0.5) / 0.18 * 0.45
+                     : 0.55 - (t - 0.68) / 0.32 * 0.55;
+            byte v = (byte)System.Math.Round(System.Math.Clamp(a, 0, 1) * 255);
+            px[i] = new Color(v, v, v, v);
+        }
+        // One pixel WIDE and n TALL: the quad's height is the beam's width, which is the axis the
+        // falloff runs across. The width stretches, so a beam of any length costs the same.
+        _soft = new Texture2D(gd, 1, n);
+        _soft.SetData(px);
+        return _soft;
+    }
+
     public BeamLayer(Sprites sprites, Effects fx)
     {
         _sprites = sprites;
@@ -223,10 +275,12 @@ public sealed class BeamLayer
     /// </remarks>
     public void DrawSheaths(SpriteBatch batch, Camera cam)
     {
-        var blank = _sprites.Blank;
+        // SOFT: the sheath is an outline around the burn channel, and a hard-edged one draws a
+        // second visible bar rather than a shadow under the first.
+        var soft = Soft(batch.GraphicsDevice);
         foreach (var l in _live)
         {
-            Quad(batch, cam, blank, _x0[l.At], _y0[l.At], _ang[l.At], _len[l.At],
+            Quad(batch, cam, soft, _x0[l.At], _y0[l.At], _ang[l.At], _len[l.At],
                  l.Widths.Sheath * l.Shape.WidthMul, FromHex(BeamLayout.SheathTint),
                  BeamLayout.SheathAlpha * l.Env * l.Env);
         }
@@ -245,7 +299,10 @@ public sealed class BeamLayer
             Flare(batch, cam, flash, ph.X, ph.Y, ph.H.Units, FromHex(ph.H.Tint), ph.H.Alpha);
         }
 
-        var blank = _sprites.Blank;
+        // SOFT for the three light layers below. Only the core - drawn in its own pass further
+        // down - stays a hard quad, exactly as the web keeps one `hard` context for it: the core
+        // is the filament, and a filament with soft edges is not a filament.
+        var soft = Soft(batch.GraphicsDevice);
         foreach (var l in _live)
         {
             int slot = l.Slot, at = l.At;
@@ -256,7 +313,7 @@ public sealed class BeamLayer
             int colour = _colour[slot];
             int s = at - slot * MaxLinks;
 
-            Quad(batch, cam, blank, x0, y0, angle, len, lw.Outer * shape.WidthMul,
+            Quad(batch, cam, soft, x0, y0, angle, len, lw.Outer * shape.WidthMul,
                  FromHex(BeamLayout.Purify(colour, BeamLayout.OuterPurity)),
                  BeamLayout.OuterAlpha * shape.AlphaMul);
 
@@ -264,7 +321,7 @@ public sealed class BeamLayer
             int pure = BeamLayout.Purify(colour, BeamLayout.InnerPurity);
             double bodyAlpha = BeamLayout.InnerAlpha
                              * (1 + (BeamLayout.WideBodyAlpha - 1) * lw.Wide);
-            Quad(batch, cam, blank, x0, y0, angle, len, lw.Inner * shape.WidthMul,
+            Quad(batch, cam, soft, x0, y0, angle, len, lw.Inner * shape.WidthMul,
                  FromHex(BeamLayout.Whiten(pure, BeamLayout.InnerWhiten)),
                  bodyAlpha * shape.AlphaMul);
 
@@ -272,7 +329,7 @@ public sealed class BeamLayer
             for (int k = 0; k < np; k++)
             {
                 var p = pulses[k];
-                Quad(batch, cam, blank, x0 + ux * p.From, y0 + uy * p.From, angle, p.Length,
+                Quad(batch, cam, soft, x0 + ux * p.From, y0 + uy * p.From, angle, p.Length,
                      lw.Pulse * shape.WidthMul,
                      FromHex(BeamLayout.Whiten(pure, BeamLayout.PulseWhiten)),
                      BeamLayout.PulseAlpha * shape.AlphaMul * p.Rise);
@@ -400,13 +457,23 @@ public sealed class BeamLayer
     /// idea already: the origin at the strip's left edge and half its height puts the quad's start
     /// on the hardpoint and centres its width on the beam's axis.
     /// </remarks>
-    private static void Quad(SpriteBatch batch, Camera cam, Texture2D blank, double x, double y,
+    /// <summary>
+    /// One beam layer. <paramref name="tex"/> is the 1x1 blank for the hard core and the falloff
+    /// strip for everything else - see <see cref="Soft"/>.
+    /// </summary>
+    /// <remarks>
+    /// Scaled by the TEXTURE'S OWN SIZE rather than by 1, which the blank made it easy not to
+    /// notice: with a 1x64 strip the height must be divided by 64 or the beam is drawn sixty-four
+    /// times too wide.
+    /// </remarks>
+    private static void Quad(SpriteBatch batch, Camera cam, Texture2D tex, double x, double y,
                              double angle, double length, double width, Color tint, double alpha)
     {
         if (alpha <= 0.004 || width <= 0 || length <= 0) return;
-        var scale = new Vector2((float)(length * cam.Scale), (float)(width * cam.Scale));
-        batch.Draw(blank, cam.ToScreen(x, y), null, tint * (float)alpha, (float)angle,
-                   new Vector2(0, 0.5f), scale, SpriteEffects.None, 0f);
+        var scale = new Vector2((float)(length * cam.Scale / tex.Width),
+                                (float)(width * cam.Scale / tex.Height));
+        batch.Draw(tex, cam.ToScreen(x, y), null, tint * (float)alpha, (float)angle,
+                   new Vector2(0, tex.Height / 2f), scale, SpriteEffects.None, 0f);
     }
 
     private static void Flare(SpriteBatch batch, Camera cam, Texture2D tex, double x, double y,

@@ -116,7 +116,12 @@ export default defineConfig({
           // public/manifest.webmanifest is hand-written and linked from index.html (Agent 7).
           manifest: false,
           workbox: {
-            globPatterns: ['**/*.{js,css,html,png,webp,json,woff2}'],
+            // mp3 IS IN HERE FOR THE SOUND, and it has to be: the game is installable and is
+            // meant to play offline, and a precache that skips the audio gives an offline player a
+            // silent game rather than a missing one - which looks like a broken build, not a
+            // missing network. The whole library is 1.2 MB, smaller than the sprite atlas already
+            // in this list.
+            globPatterns: ['**/*.{js,css,html,png,webp,json,woff2,mp3}'],
             // The atlas is ~1-2 MB; the default 2 MiB cap would silently skip it.
             maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
             cleanupOutdatedCaches: true,

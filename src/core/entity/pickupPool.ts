@@ -22,6 +22,21 @@ export const PICKUP_FLAG_DEAD = 1 << 0;
 /** Set on drops that skip the magnet and are collected on contact only (boss gem excepted). */
 export const PICKUP_FLAG_AUTO = 1 << 1;
 
+/**
+ * ONCE THE MAGNET HAS IT, IT KEEPS IT - set the first tick a pickup is drawn toward the player and
+ * never cleared while it lives.
+ *
+ * The field used to be tested EVERY tick, so a gem that had been pulled halfway stopped dead the
+ * moment the player walked far enough away, and sat there with a velocity of zero looking like a
+ * gem the game had forgotten. Worse, it read as a bug in the magnet rather than as a rule: nothing
+ * on screen says "you left the radius", only that some of the gems that were coming to you are now
+ * not. A latch is what makes the field an ACQUISITION rather than a leash.
+ *
+ * ON THE FLAGS COLUMN rather than a new array, so it costs no memory, is already in the world hash
+ * and is already cleared by `allocPickup` writing the whole field.
+ */
+export const PICKUP_FLAG_CHASING = 1 << 2;
+
 export const PICKUP_KIND_GEM = 0;
 /**
  * CONSUMABLES - what a fuel barrel leaves behind. Everything above 0 is one, which is the only

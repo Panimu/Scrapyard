@@ -1,0 +1,324 @@
+<title>Scrapyard SFX Picker</title>
+<script src="sfx-set.js"></script>
+<script src="takes/index.js" onerror="window.SFX_TAKES=null"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#14100e; --panel:#1e1815; --panel-2:#262019; --line:#3a2f26;
+    --ink:#f2e9df; --dim:#b3a596; --faint:#7d7064; --rust:#d1642f; --amber:#e8b23c;
+    --good:#7fbf5a;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); margin:0; padding:0 20px 90px;
+         font:15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width:1000px; margin:0 auto; }
+
+  header { padding:34px 0 18px; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 6px; font-size:27px; font-weight:800; }
+  .sub { color:var(--dim); margin:0; max-width:70ch; }
+
+  .bar { position:sticky; top:0; z-index:5; background:rgba(20,16,14,.94);
+         backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
+         margin:0 -20px 20px; padding:11px 20px; display:flex; gap:12px; align-items:center;
+         flex-wrap:wrap; }
+  .prog { font-variant-numeric:tabular-nums; color:var(--dim); font-size:13px; }
+  .prog b { color:var(--ink); }
+  button.act { font:inherit; font-size:13px; cursor:pointer; background:var(--panel-2);
+               color:var(--dim); border:1px solid var(--line); border-radius:6px; padding:5px 12px; }
+  button.act:hover { color:var(--ink); border-color:var(--rust); }
+  button.act:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+  button.act.primary { background:var(--rust); color:#fff; border-color:var(--rust); }
+
+  h2 { margin:34px 0 12px; font-size:12px; font-weight:700; letter-spacing:.16em;
+       text-transform:uppercase; color:var(--rust); }
+
+  .row { border:1px solid var(--line); border-radius:9px; background:var(--panel);
+         margin-bottom:10px; padding:12px 14px; }
+  .row.chosen { border-color:#3f5c2c; background:#1b1f16; }
+  .row.missing { opacity:.45; }
+  .row.redo { border-color:#7a5418; background:#221b10; }
+  .redo-bar { display:flex; gap:8px; align-items:flex-start; margin-top:9px; }
+  .redo-note { flex:1 1 auto; min-width:0; font:inherit; font-size:12.5px; resize:vertical;
+               background:var(--bg); color:var(--ink); border:1px solid var(--line);
+               border-radius:6px; padding:6px 9px; min-height:32px; }
+  .redo-note:focus-visible { outline:2px solid var(--amber); outline-offset:-1px; }
+  .redo-note::placeholder { color:#5d5348; }
+  button.flag { flex:0 0 auto; font:inherit; font-size:12px; cursor:pointer;
+                background:var(--panel-2); color:var(--dim); border:1px solid var(--line);
+                border-radius:6px; padding:5px 11px; white-space:nowrap; }
+  button.flag:hover { color:var(--ink); border-color:var(--amber); }
+  button.flag.on { background:var(--amber); color:#241a06; border-color:var(--amber); font-weight:700; }
+  .head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .fname { font-family:ui-monospace, Consolas, monospace; font-size:13px; color:var(--amber); }
+  .nm { font-weight:700; }
+  .when { color:var(--faint); font-size:12.5px; }
+  .tick { margin-left:auto; color:var(--good); font-size:13px; font-weight:700;
+          background:none; border:1px solid transparent; border-radius:6px; padding:2px 8px;
+          font-family:inherit; }
+  .tick[hidden] { display:none !important; }
+  .tick:not([hidden]) { cursor:pointer; }
+  .tick:hover { border-color:var(--good); }
+  .tick:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+  .prompt { color:var(--faint); font-size:12.5px; margin-top:6px;
+            font-family:ui-monospace, Consolas, monospace; }
+  .takes { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px;
+           margin-top:10px; }
+  .take { border:1px solid var(--line); border-radius:7px; background:var(--bg); padding:8px 9px; }
+  .take.on { border-color:var(--good); background:#1a2114; }
+  .take label { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--dim);
+                cursor:pointer; user-select:none; }
+  .take.on label { color:var(--ink); }
+  audio { width:100%; margin-top:7px; height:32px; }
+  .gone { color:var(--faint); font-size:12px; font-style:italic; }
+
+  footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--line);
+           color:var(--faint); font-size:13px; max-width:74ch; }
+  code { background:var(--panel-2); padding:1px 5px; border-radius:4px; color:var(--amber);
+         font-family:ui-monospace, Consolas, monospace; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Scrapyard SFX Picker</h1>
+  <p class="sub">Four takes of each sound. Play them, keep one. Choices are remembered in this
+  browser — export at the end and I will rename the winners into <code>public/sfx/</code>.</p>
+</header>
+
+<div class="bar">
+  <span class="prog" id="prog">—</span>
+  <button class="act" id="undecided" type="button">Jump to next undecided</button>
+  <button class="act primary" id="export" type="button">Export picks</button>
+  <button class="act" id="clear" type="button">Clear all</button>
+</div>
+
+<div id="list"></div>
+
+<footer id="foot"></footer>
+</div>
+
+<script>
+const KEY = 'scrapyard-sfx-picks';
+let picks = {};
+try { picks = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { picks = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(picks)); } catch {} };
+
+/**
+ * SOUNDS FLAGGED FOR ANOTHER GO, and the note saying why.
+ *
+ * A REJECT THAT CARRIES NO REASON IS JUST ANOTHER ROLL OF THE DICE. Four takes come from one
+ * prompt, so if all four are wrong the prompt is wrong - regenerating it unchanged buys four more
+ * of the same. The note is appended to the prompt on the next pass (see generate.mjs --redo), so
+ * "less reverb, shorter tail" actually changes what is asked for.
+ *
+ * Kept separately from `picks` because they are different facts: a sound can be flagged while a
+ * take is provisionally chosen, which is the normal state of "this will do, but try once more".
+ */
+const RKEY = 'scrapyard-sfx-redo';
+let redo = {};
+try { redo = JSON.parse(localStorage.getItem(RKEY) || '{}') || {}; } catch { redo = {}; }
+const saveRedo = () => { try { localStorage.setItem(RKEY, JSON.stringify(redo)); } catch {} };
+
+/**
+ * WHAT EXISTS COMES FROM THE MANIFEST, not from probing.
+ *
+ * `takes/index.js` is written by generate.mjs and lists the files it actually put on disk. The
+ * first version of this page guessed instead - handing candidate filenames to an <audio> element
+ * and keeping the ones that loaded - and it found nothing: a detached <audio> never fires
+ * loadedmetadata in Chrome, and a file:// page cannot fetch to ask instead. A classic script is
+ * the one thing that loads from both file:// and a server.
+ */
+const TAKES = window.SFX_TAKES || {};
+
+const bySection = new Map();
+for (const e of SFX_SET) {
+  if (!bySection.has(e.s)) bySection.set(e.s, []);
+  bySection.get(e.s).push(e);
+}
+
+const list = document.getElementById('list');
+const rows = new Map();
+
+for (const [sid, title, tag] of SFX_SECTIONS) {
+  const entries = bySection.get(sid) || [];
+  if (entries.length === 0) continue;
+  const h = document.createElement('h2');
+  h.textContent = tag ? title + ' \u2014 ' + tag : title;
+  list.appendChild(h);
+
+  for (const e of entries) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.id = 'row-' + e.id;
+
+    const head = document.createElement('div');
+    head.className = 'head';
+    const fn = document.createElement('span'); fn.className = 'fname'; fn.textContent = e.id;
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = e.name;
+    const wh = document.createElement('span'); wh.className = 'when'; wh.textContent = e.when;
+    // A BUTTON, NOT A LABEL. A radio group has no "none" state once one is checked, so without
+    // something to press there is no way back to undecided after a mis-click - see the toggle in
+    // addTake for the other half of the same fix.
+    const tk = document.createElement('button');
+    tk.type = 'button';
+    tk.className = 'tick';
+    tk.title = 'Clear this choice';
+    tk.hidden = true;
+    tk.addEventListener('click', () => { delete picks[e.id]; save(); paint(e.id); });
+    head.append(fn, nm, wh, tk);
+
+    const pr = document.createElement('div'); pr.className = 'prompt'; pr.textContent = e.prompt;
+    const takes = document.createElement('div'); takes.className = 'takes';
+
+    const have = TAKES[e.id] || [];
+    rows.set(e.id, { row, takes, tick: tk, found: have.length });
+
+    if (have.length === 0) {
+      const gone = document.createElement('div');
+      gone.className = 'gone';
+      gone.textContent = 'not generated yet';
+      takes.appendChild(gone);
+    }
+    for (const t of have) addTake(e, t.take, 'takes/' + t.file, takes);
+
+    const bar = document.createElement('div');
+    bar.className = 'redo-bar';
+    const flag = document.createElement('button');
+    flag.type = 'button';
+    flag.className = 'flag';
+    flag.textContent = 'Regenerate';
+    const note = document.createElement('textarea');
+    note.className = 'redo-note';
+    note.rows = 1;
+    note.placeholder = 'What to change next time - appended to the prompt. e.g. "drier, no reverb tail, shorter"';
+    note.value = redo[e.id] || '';
+    flag.addEventListener('click', () => {
+      if (e.id in redo) delete redo[e.id];
+      else redo[e.id] = note.value.trim();
+      saveRedo();
+      paint(e.id);
+    });
+    note.addEventListener('input', () => {
+      if (e.id in redo) { redo[e.id] = note.value.trim(); saveRedo(); }
+    });
+    bar.append(flag, note);
+    rows.get(e.id).flag = flag;
+    rows.get(e.id).note = note;
+
+    row.append(head, pr, takes, bar);
+    list.appendChild(row);
+    paint(e.id);
+  }
+}
+
+function addTake(entry, take, src, host) {
+  const box = document.createElement('div');
+  box.className = 'take';
+  box.dataset.take = String(take);
+
+  const lab = document.createElement('label');
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = 'pick-' + entry.id;
+  radio.value = String(take);
+  radio.checked = picks[entry.id] === take;
+  // CLICK, NOT CHANGE, because clicking an ALREADY-CHECKED radio fires no `change` at all - which
+  // is exactly the event needed to release it. Comparing against the pick as it was before this
+  // click is what tells the two apart: same take means "unpick", any other means "move".
+  radio.addEventListener('click', () => {
+    if (picks[entry.id] === take) delete picks[entry.id];
+    else picks[entry.id] = take;
+    save();
+    paint(entry.id);
+  });
+  (rows.get(entry.id).radios ??= []).push(radio);
+  lab.append(radio, document.createTextNode('Take ' + take));
+
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.preload = 'none';
+  audio.src = src;
+  // One at a time, so working down a row compares rather than layers.
+  audio.addEventListener('play', () => {
+    for (const other of document.querySelectorAll('audio')) if (other !== audio) other.pause();
+  });
+
+  box.append(lab, audio);
+  host.appendChild(box);
+}
+
+function paint(id) {
+  const r = rows.get(id);
+  if (!r) return;
+  const chosen = picks[id];
+  const flagged = id in redo;
+  r.row.classList.toggle('chosen', chosen !== undefined && !flagged);
+  r.row.classList.toggle('redo', flagged);
+  if (r.flag) r.flag.classList.toggle('on', flagged);
+  r.tick.hidden = chosen === undefined;
+  r.tick.textContent = chosen !== undefined ? '✓ take ' + chosen + '  ×' : '';
+  // The radios are painted FROM the state rather than trusting the DOM, so clearing from the tick
+  // or from Clear all visibly releases them too.
+  for (const radio of r.radios ?? []) radio.checked = Number(radio.value) === chosen;
+  for (const box of r.takes.children) {
+    box.classList.toggle('on', Number(box.dataset.take) === chosen);
+  }
+  progress();
+}
+
+function progress() {
+  let withTakes = 0, decided = 0, empty = 0;
+  for (const e of SFX_SET) {
+    const r = rows.get(e.id);
+    if (!r) continue;
+    if (r.found === 0) { empty++; r.row.classList.add('missing'); continue; }
+    r.row.classList.remove('missing');
+    withTakes++;
+    if (picks[e.id] !== undefined) decided++;
+  }
+  const flagged = Object.keys(redo).length;
+  document.getElementById('prog').innerHTML =
+    `<b>${decided}</b> / ${withTakes} chosen`
+    + (flagged > 0 ? ` &nbsp;·&nbsp; <b>${flagged}</b> flagged to redo` : '')
+    + (empty > 0 ? ` &nbsp;·&nbsp; ${empty} not generated yet` : '');
+}
+
+document.getElementById('undecided').addEventListener('click', () => {
+  for (const e of SFX_SET) {
+    const r = rows.get(e.id);
+    if (r && r.found > 0 && picks[e.id] === undefined) {
+      r.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  }
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  picks = {};
+  redo = {};
+  save();
+  saveRedo();
+  for (const e of SFX_SET) {
+    const r = rows.get(e.id);
+    if (r && r.note) r.note.value = '';
+    paint(e.id);
+  }
+});
+
+document.getElementById('export').addEventListener('click', () => {
+  const out = JSON.stringify({ picks, redo }, null, 2);
+  const blob = new Blob([out], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sfx-picks.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  if (navigator.clipboard) navigator.clipboard.writeText(out).catch(() => {});
+});
+
+document.getElementById('foot').innerHTML =
+  'Takes are probed from <code>sfx/takes/</code> — a row that shows nothing has not been ' +
+  'generated yet. Export writes <code>sfx-picks.json</code> and copies it to the clipboard; give ' +
+  'me that and I will copy each winner to <code>public/sfx/&lt;id&gt;.mp3</code> and wire the catalog.';
+
+progress();
+</script>

@@ -734,6 +734,13 @@ body {
 
 /* Deliberately quieter than the cards and full width beneath them: it is the way OUT of this card,
    not one of the things on it. */
+/* Same rule, same reason: `.btn` sets `display: inline-flex`, so the reroll button's own
+   `hidden = rerolls <= 0` was doing nothing and the button stayed on screen with nothing to
+   spend. See CLAUDE.md. */
+.levelup__reroll[hidden] {
+  display: none !important;
+}
+
 .levelup__reroll {
   pointer-events: auto;
   align-self: stretch;
@@ -3106,6 +3113,15 @@ body {
   background: var(--panel-2);
   border-left: 3px solid var(--accent);
   min-height: 26px;
+}
+
+/* MANDATORY, NOT DECORATIVE. This class sets `display`, and the UA sheet's `[hidden]` rule is the
+   weakest there is - so without this line `slots[i].hidden = i >= n` in `slotGroup.show` does
+   nothing at all, and every save draws the CEILING of five weapon and seven passive mounts however
+   few it has actually earned. Which is what it did: the row is built at the ceiling on purpose and
+   trimmed per run, and the trim was silently a no-op. See CLAUDE.md - this is the third time. */
+.pause__slot[hidden] {
+  display: none !important;
 }
 
 /* An empty slot recedes rather than disappears: it is still a fact about the run. */

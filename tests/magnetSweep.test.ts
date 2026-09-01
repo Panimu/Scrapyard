@@ -3,11 +3,16 @@
  *
  * Two small promises that are easy to get wrong in opposite directions.
  *
- * THE MAGNET. Consumables deliberately do not chase and are not chased - a spanner that flew to
- * you answers the question the barrel asked by posing it. But the magnet is the one pickup whose
- * entire proposition is that it collects for you, and it used to hoover the XP off the floor while
- * leaving the money and the repairs lying exactly where they fell. The default stands; the magnet
- * is the exception, and only for coins and spanners.
+ * THE MAGNET. Consumables deliberately do not chase and are not chased, and the magnet is the one
+ * exception - it is the pickup whose entire proposition is that it collects for you, and one that
+ * hoovered the XP off the floor while leaving everything else lying there reads as broken.
+ *
+ * THE EXCEPTION IS COINS AND THE DICE, AND POINTEDLY NOT SPANNERS. It used to be coins and
+ * spanners. A spanner is the one pickup whose whole value is the QUESTION it poses - is that worth
+ * crossing the field for, right now, at this much hull - and a magnet that delivered it answered
+ * the question on the player's behalf, which is the one thing the barrel exists to make them do.
+ * The dice is the opposite: one a run is the point of it, there is no decision to take away, and
+ * only a walk across the yard that adds nothing.
  *
  * THE DRUM. Fences and drums share one broken set, so after the fact "was something here" is true
  * of both and `cityKindAt` says EMPTY for both. With nothing else to ask, a drum that went up left
@@ -30,6 +35,7 @@ import {
 import { breakLootIn } from '../src/core/systems/pickups.js';
 import {
   PICKUP_KIND_CREDIT,
+  PICKUP_KIND_GEM,
   PICKUP_KIND_DICE,
   PICKUP_KIND_REPAIR,
   allocPickup,
@@ -60,12 +66,13 @@ function range(w: World, d: number): number {
 }
 
 describe('a running magnet', () => {
-  it('drags coins and spanners in, and leaves the dice where it lies', () => {
+  it('drags coins and the dice in, and leaves the spanner where it lies', () => {
     const w = world();
     const coin = drop(w, PICKUP_KIND_CREDIT, 200);
     const spanner = drop(w, PICKUP_KIND_REPAIR, 240);
     const dice = drop(w, PICKUP_KIND_DICE, 280);
-    // The mech has taken a knock, so the spanner is worth something and is not refused.
+    // The mech has taken a knock, so the spanner is worth something and is not refused on VALUE -
+    // which is what makes this a test of the magnet rule rather than of `wouldBeWasted`.
     w.player.hp = w.player.stats.maxHp - 50;
 
     const before = [range(w, coin), range(w, spanner), range(w, dice)];
@@ -73,9 +80,41 @@ describe('a running magnet', () => {
     for (let t = 0; t < 30; t++) updatePickups(w, DT);
 
     expect(range(w, coin), 'coin should have closed on the mech').toBeLessThan(before[0] - 20);
-    expect(range(w, spanner), 'spanner should have closed on the mech').toBeLessThan(before[1] - 20);
-    // The dice is not what a magnet is for, and nothing should have moved it.
-    expect(range(w, dice)).toBeCloseTo(before[2], 6);
+    expect(range(w, dice), 'dice should have closed on the mech').toBeLessThan(before[2] - 20);
+    // The spanner keeps its distance, and the decision it poses stays the player's.
+    expect(range(w, spanner)).toBeCloseTo(before[1], 6);
+  });
+
+  it('keeps pulling a gem that has left the field - the field acquires, it does not leash', () => {
+    // THE BUG THIS PINS: the radius used to be tested every tick, so a gem dragged halfway and
+    // then walked away from stopped dead in open ground with no velocity. Nothing on screen
+    // explains that - it reads as gems the game lost track of.
+    const w = world();
+    const gem = drop(w, PICKUP_KIND_GEM, 0);
+    w.pickups.x[gem] = w.player.stats.pickupRadius - 10; // just inside: acquired on tick one
+    w.pickups.y[gem] = 0;
+
+    updatePickups(w, DT);
+    const acquired = range(w, gem);
+
+    // Now the mech leaves, putting the gem far outside any reading of the field.
+    w.player.x = -4000;
+    const before = range(w, gem);
+    for (let t = 0; t < 30; t++) updatePickups(w, DT);
+
+    expect(acquired).toBeGreaterThan(0);
+    expect(range(w, gem), 'the gem should still be closing').toBeLessThan(before);
+  });
+
+  it('never starts on a gem that was always out of reach', () => {
+    // The other half of the same rule: acquisition is what latches, so a gem the field has never
+    // held is still left exactly where it fell.
+    const w = world();
+    const gem = drop(w, PICKUP_KIND_GEM, w.player.stats.pickupRadius + 400);
+    const before = range(w, gem);
+
+    for (let t = 0; t < 30; t++) updatePickups(w, DT);
+    expect(range(w, gem)).toBeCloseTo(before, 6);
   });
 
   it('moves neither of them with no magnet running', () => {
@@ -93,11 +132,14 @@ describe('a running magnet', () => {
     expect(range(w, spanner)).toBeCloseTo(before[1], 6);
   });
 
-  it('does not produce a NaN when a refused spanner is dragged onto the mech exactly', () => {
-    // `1 / sqrt(0)` is Infinity and `0 * Infinity` is NaN, and a spanner is the one pickup that
-    // can sit at EXACTLY zero distance and stay there: magnetised to the mech at full hull, then
-    // refused rather than taken. A NaN position is a pickup that can never be collected and never
-    // draws again.
+  it('does not produce a NaN when a refused pickup sits on the mech exactly', () => {
+    // `1 / sqrt(0)` is Infinity and `0 * Infinity` is NaN, and a NaN position is a pickup that can
+    // never be collected and never draws again.
+    //
+    // A SPANNER IS STILL THE CASE TO TEST even though the magnet no longer drags one: it is the
+    // pickup that can sit at exactly zero distance and STAY there, because `wouldBeWasted` refuses
+    // it at full hull rather than taking it. The zero-distance guard is what keeps that safe, and
+    // it has to keep holding whether or not anything is pulling.
     const w = world();
     const spanner = drop(w, PICKUP_KIND_REPAIR, 0);
     w.pickups.y[spanner] = 0;

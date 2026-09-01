@@ -73,6 +73,37 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     private SpriteBatch _batch = null!;
     private Sprites _sprites = null!;
+
+    /// <summary>
+    /// THE SOUND, and the one part of the front-end that is allowed to do nothing at all.
+    ///
+    /// Constructed after the graphics device, because MonoGame's audio subsystem comes up with it.
+    /// A machine with no sound card leaves every clip null and every call below a no-op - see the
+    /// class remarks. Nothing here reaches the simulation: a muted run and a loud one are the same
+    /// run, which is why none of it is in the world hash.
+    /// </summary>
+    private Sfx _sfx = null!;
+
+    /// <summary>
+    /// Set by a handler that REFUSED the press it was just given - an upgrade nothing can pay for,
+    /// a reroll with none left. Read once, immediately after the dispatch, and cleared before it.
+    /// </summary>
+    private bool _uiDenied;
+
+    /// <summary>Marks the press being handled as a refusal, so it clicks back rather than through.</summary>
+    private void Deny() => _uiDenied = true;
+
+    /// <summary>
+    /// LATCHES for the two sounds that have no event of their own, both reset by <c>StartRun</c>.
+    /// </summary>
+    /// <remarks>
+    /// An ascension and a run ending are STATES the world settles into and then stays in, not
+    /// events it pushes - so they are read by watching the world rather than by draining the ring,
+    /// and a latch is what turns "it is true again this frame" into "it just became true". Without
+    /// one the victory fanfare restarts sixty times a second for as long as the end screen is up.
+    /// </remarks>
+    private bool _ascendHeard;
+    private bool _endHeard;
     private readonly Camera _camera = new();
     private Terrain _terrain = null!;
     private Effects _fx = null!;
@@ -331,6 +362,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
     /// <summary>The bubbles' caps, and the rings they leave when they pop.</summary>
     private static readonly Color SludgeLightTint = new(0xea, 0xff, 0xb4);
+
+    /// <summary>How many times a second the immunity flicker turns over, and how white it goes.</summary>
+    /// <remarks>
+    /// Twelve is fast enough to read as "something is wrong with this mech" at a glance and slow
+    /// enough not to strobe; the alpha stops short of full white so the chassis stays recognisable
+    /// underneath rather than becoming a silhouette.
+    /// </remarks>
+    private const double ImmuneFlickerHz = 12;
+
+    private const double ImmuneFlickerAlpha = 0.55;
 
     private static readonly Color PlayerHitTint = new(0xff, 0xb0, 0xa8);
     private static readonly Color PlayerHealTint = new(0xb6, 0xf5, 0xc4);
@@ -611,6 +652,10 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _terrain = new Terrain(_sprites);
         _fx = new Effects(_sprites);
         _beams = new BeamLayer(_sprites, _fx);
+        // AFTER the graphics device: MonoGame brings the audio device up alongside it, and a Sfx
+        // built in the constructor finds no hardware and silences the whole run.
+        _sfx = new Sfx();
+        _sfx.SetVolume(1f);
         // The generated tables are checked against the ported catalogs here, once, so a table left
         // behind by a card added upstream fails loudly instead of mislabelling three cards.
         CardTexts.Verify(UpgradeCatalog.All.Length);
@@ -706,6 +751,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // second. The read cursor belongs to the renderer, which is exactly why it can be moved
         // here without the simulation noticing.
         _sim.World.Events.ReadCursor = _sim.World.Events.WriteCursor;
+
+        // AND EVERYTHING THE LAST RUN LEFT MAKING A NOISE. A beam loop belongs to a weapon slot,
+        // and the new run's slot 2 is not the old run's slot 2 - so a laser held at the moment the
+        // last run ended would otherwise play under this one until something happened to stop it.
+        _sfx?.StopAll();
+        _ascendHeard = false;
+        _endHeard = false;
     }
 
     // -----------------------------------------------------------------------------------------
@@ -822,11 +874,26 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         Exit();
     }
 
+    protected override void UnloadContent()
+    {
+        // The clips hold unmanaged buffers and the loops hold live voices. A process on its way out
+        // would free both anyway; doing it here keeps --shot runs, which start and stop the game
+        // repeatedly in one session, from stacking them up.
+        _sfx?.Dispose();
+        base.UnloadContent();
+    }
+
     protected override void Update(GameTime gameTime)
     {
         var keys = Keyboard.GetState();
         var pad = GamePad.GetState(PlayerIndex.One);
         double dt = gameTime.ElapsedGameTime.TotalMilliseconds / 1000.0;
+
+        // THE THROTTLE CLOCK, ADVANCED ON EVERY SCREEN AND NOT JUST IN A RUN. The floors in the
+        // sound table are wall-clock milliseconds measured against this; parked inside
+        // UpdatePlaying, as it first was, it stops moving the moment a menu opens - so the first
+        // ui_move plays and every one after it is thrown away as too soon, forever.
+        _sfx.Update(gameTime.ElapsedGameTime.TotalMilliseconds);
 
         if (_shotScreen != "")
         {
@@ -957,6 +1024,28 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         _menu.Sample(keys, pad);
         _mouse.Sample(_surfaceDivisor);
 
+        // -------------------------------------------------------------------------------------
+        // THE INTERFACE'S OWN SOUNDS, hooked HERE and not in the nine screen handlers below.
+        // -------------------------------------------------------------------------------------
+        // A menu is not simulation: none of this reaches the event ring, so there is no table to
+        // drive it from. Sampling is already centralised for the reason MenuInput explains - the
+        // pad has no events for axes - and the same argument applies to the sound: nine handlers
+        // each remembering to click would be nine chances to forget, and a new screen would arrive
+        // silent. So a screen that must NOT click opts OUT, rather than every other screen opting
+        // in. Playing is the one that does, because there WASD walks the mech and Space is a gun.
+        //
+        // THE CHOICE SOUND IS DECIDED AFTER THE HANDLER RUNS, not before it. Whether a press was a
+        // confirm or a refusal is not knowable at this point - an unaffordable upgrade and a bought
+        // one are the same keystroke - so the press is only NOTED here, the handler marks a refusal
+        // with Deny(), and the sound is played below once the answer exists. Playing UiConfirm up
+        // front and UiDeny in the handler would sound both, which is worse than sounding neither.
+        bool uiChose = _screen != Screen.Playing && (_menu.Confirm || _menu.Back);
+        _uiDenied = false;
+        if (_screen != Screen.Playing && (_menu.Vertical != 0 || _menu.Horizontal != 0))
+        {
+            _sfx.Play(SfxId.UiMove);
+        }
+
         switch (_screen)
         {
             case Screen.Title: UpdateTitle(keys); break;
@@ -969,6 +1058,9 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             case Screen.Paused: UpdatePaused(keys); break;
             case Screen.Playing: UpdatePlaying(keys, pad, gameTime); break;
         }
+
+        // The answer now exists - see the note above the dispatch.
+        if (uiChose) _sfx.Play(_uiDenied ? SfxId.UiDeny : SfxId.UiConfirm);
 
         // THE BANNER'S OWN CLOCK. It runs down, then spends a beat empty before the next one, so
         // two unlocks read as two events rather than as one banner whose text changed.
@@ -1607,7 +1699,13 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
         else if (hover == n + 1 && _mouse.LeftClicked) { _save.Save(); ToTitle(); return; } // BACK
 
-        if ((_menu.Confirm || buyClicked) && _save.Buy(_shopCursor)) _save.Save();
+        // Buy() returns false for a tier already owned and for one the credits do not cover. Both
+        // are the same answer to the player - "not that one" - and both must sound like it.
+        if (_menu.Confirm || buyClicked)
+        {
+            if (_save.Buy(_shopCursor)) _save.Save();
+            else Deny();
+        }
 
         if (Pressed(keys, Keys.R) && _save.RefundAll() > 0) _save.Save();
     }
@@ -1731,6 +1829,30 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
 
         // DRAINED AFTER THE STEPS, so a frame that took three ticks plays all three ticks' effects.
         DrainEvents();
+
+        // A BEAM IS A STATE, NOT AN EVENT. It is held down, so there is no single moment to hang a
+        // one-shot on; the published beam list is the state, and a slot that stops appearing in it
+        // has stopped firing. Read after the drain so it sees this frame's ticks.
+        _sfx.SoundBeams(_sim.World);
+
+        // THE TWO SOUNDS WITH NO EVENT BEHIND THEM - see the latches' remark. A chest that paid
+        // out a tier 8 and a run that has stopped are both world STATE, so they are watched here
+        // rather than drained.
+        if (!_ascendHeard && _sim.World.Chest.Ascension >= 0)
+        {
+            _ascendHeard = true;
+            _sfx.Play(SfxId.Ascend);
+        }
+        if (!_endHeard && _sim.World.Phase is RunPhase.Dead or RunPhase.Victory)
+        {
+            _endHeard = true;
+            // EVERY BEAM OFF FIRST. A run that ends with a laser held down leaves its loop running
+            // under the end screen forever - the beam stops being published, but a world that has
+            // stopped ticking never publishes anything again, so SoundBeams is not reached to
+            // notice. Stopping here is what makes the silence behind the fanfare.
+            _sfx.StopAll();
+            _sfx.Play(_sim.World.Phase == RunPhase.Victory ? SfxId.RunWon : SfxId.RunLost);
+        }
 
         double dt = frameMs / 1000.0;
         _clockSec += dt;
@@ -1940,6 +2062,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
                 break;
             }
         }
+
+        // ONCE FOR THE BATCH, not once per trophy. Finishing a run can earn four at a time, and
+        // four overlapping fanfares is a noise rather than four pieces of good news. The toasts
+        // stack up the screen and say which ones; the sound only has to say that some arrived.
+        if (earned.Achievements.Count > 0) _sfx.Play(SfxId.Achievement);
     }
 
     /// <summary>
@@ -2108,7 +2235,11 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             else if (hover == rerollIndex && _mouse.LeftClicked)
             {
                 bool canReroll = _sim.World.LevelUp.Rerolls > 0 || _sim.World.InfiniteRerolls;
+                // The level-up card lives inside Screen.Playing, which opts out of the central UI
+                // click - so this one says no for itself. A taken card is voiced by the ring
+                // instead, as UpgradeTaken.
                 if (canReroll) _pendingChoice = Constants.ChooseReroll;
+                else _sfx.Play(SfxId.UiDeny);
             }
             else if (hover == autoIndex && _mouse.LeftClicked)
             {
@@ -3703,10 +3834,34 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         // swapping only the leg texture, so the paint and the guns are stored once rather than
         // baked into all six walk frames. Picking body OR the current leg frame, instead of drawing
         // both, is exactly why a moving mech once had no torso.
+        // -----------------------------------------------------------------------------------
+        // IMMUNE: THE MECH FLICKERS WHITE
+        // -----------------------------------------------------------------------------------
+        // Read straight off `Player.InvulnLeft`, which is the ONE field both sources write - a
+        // shield rim breaking and Mech Insurance firing - so "you cannot be hurt right now" has a
+        // single picture however it was earned. The gold insurance pulse above still says which
+        // one it was; this says the state.
+        //
+        // A SECOND WHITE PASS, NOT A TINT. A tint multiplies, so it can only ever darken a sprite:
+        // setting it to white is the same as setting it to nothing, and there is no whiter-than-
+        // white to reach for. Drawing the mech again in white over itself is what actually
+        // lightens it, and because it is the same sprite it whitens the SILHOUETTE - the flicker
+        // is mech-shaped rather than a square over the chassis.
+        //
+        // ON A RENDER CLOCK, and it must be: the flicker is presentation, it never reaches the
+        // world, and driving it from tick count would tie its rate to the simulation's.
+        bool immune = p.InvulnLeft > 0;
+        double flickerA = immune && (int)(_clockSec * ImmuneFlickerHz) % 2 == 0 ? ImmuneFlickerAlpha : 0;
+
         var body = _sprites.Get($"mech_{stem}");
         if (body is not null)
         {
             Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face, tint);
+            if (flickerA > 0)
+            {
+                Blit(body, px, py, bw * ((double)body.Width / body.Height), bw, face,
+                     Color.White * (float)flickerA);
+            }
         }
 
         // THE TURRETS, aimed independently of the chassis - the difference between where the mech
@@ -3946,6 +4101,16 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             double b = r.B[i];
             double c = r.C[i];
             double d = r.D[i];
+
+            // -------------------------------------------------------------------------------
+            // SOUND FIRST, IN ONE PLACE
+            // -------------------------------------------------------------------------------
+            // Table-driven off the generated tables rather than a Play() call scattered into each
+            // case below. Two reasons, and the second is the one that matters: the visual switch
+            // does not handle every kind that makes a noise (a level-up, a chest, a reload), so
+            // per-case calls would silently miss exactly those - and a table cannot drift from the
+            // TypeScript the generator reads.
+            _sfx.PlayFor(_sim.World, r.Kind[i], a, c, d, r.E[i]);
 
             switch (r.Kind[i])
             {

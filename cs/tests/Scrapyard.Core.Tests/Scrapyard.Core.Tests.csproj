@@ -62,6 +62,10 @@
     <Compile Include="..\..\src\Scrapyard.Game\WheelCounter.cs" Link="Linked\WheelCounter.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\PediaState.cs" Link="Linked\PediaState.cs" />
     <Compile Include="..\..\src\Scrapyard.Game\CreatureArtTable.cs" Link="Linked\CreatureArtTable.cs" />
+    <!-- The sound MIX and its ROUTING, both MonoGame-free on purpose. Sfx.cs, which owns the
+         speaker, is the one piece that cannot be linked here - see its own remark. -->
+    <Compile Include="..\..\src\Scrapyard.Game\SfxTable.cs" Link="Linked\SfxTable.cs" />
+    <Compile Include="..\..\src\Scrapyard.Game\SfxTriggers.cs" Link="Linked\SfxTriggers.cs" />
   </ItemGroup>
 
 </Project>

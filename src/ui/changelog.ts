@@ -79,6 +79,19 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-09-01T13:52Z',
+    version: 'v432',
+    title: 'THE GAME HAS SOUND',
+    notes: [
+      'Every gun has its own voice. The Cannon and the Mortar are not the same event any more, and neither are the two missile racks — fourteen weapons, fourteen sounds, and you can tell which of your mounts just fired without looking at it.',
+      'The three lasers hold a note for as long as the beam is on you, and stop when it drops.',
+      'A round landing sounds like what it does rather than what threw it: solid, energy, or incendiary. An explosion is graded by how big the blast actually is, so a flak shell and an artillery round are not the same bang.',
+      'A regular, an elite and a boss die differently, and the one you hear a hundred times a minute is the quietest of the three.',
+      'Gems, credits, spanners, magnets, dice and sheep each say what they were. A chest opening, a level gained, a card taken, a shield going down, a boss walking in, and a run ending all have their own moment.',
+      'Menus click, and refuse audibly — a tier you cannot afford and a reroll you have not got sound different from one that worked.',
+    ],
+  },
+  {
     at: '2026-08-31T15:01Z',
     version: 'v431',
     title: 'SWARMERS AND HEAVIES GIVE UP WHEN THEY HIT SOMETHING',

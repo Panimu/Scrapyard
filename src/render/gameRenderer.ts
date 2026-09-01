@@ -37,6 +37,7 @@ import {
   EV_BOSS_SPAWNED,
   EV_ENEMY_DAMAGED,
   EV_ENEMY_KILLED,
+  EV_SPECIAL_EVENT,
   EV_GEM_COLLECTED,
   EV_LEVEL_UP,
   EV_PLAYER_DAMAGED,
@@ -76,6 +77,18 @@ import {
 } from '../core/index.js';
 import { BURN_FLAMES, BURN_SECONDS } from '../core/content/weaponCatalog.js';
 import { BeamLayer } from './beams.js';
+import { SfxPlayer } from './audio/sfxPlayer.js';
+import {
+  EVENT_SFX,
+  fireSfxFor,
+  FIRE_SFX,
+  blastSfxFor,
+  consumableSfxFor,
+  deathSfxFor,
+  hitSfxFor,
+  specialEventSfxFor,
+} from './audio/sfxTriggers.js';
+import { SFX_BY_ID, type SfxId } from './audio/sfxCatalog.js';
 import { Camera } from './camera.js';
 import { Effects } from './effects.js';
 import { SpritePool } from './spritePool.js';
@@ -758,6 +771,16 @@ function puddleOutline(
   return pts;
 }
 
+/**
+ * How many times a second the immunity flicker turns over, and how white it goes.
+ *
+ * Twelve reads as "something is wrong with this mech" at a glance without strobing, and the alpha
+ * stops short of white so the chassis stays recognisable underneath rather than becoming a
+ * silhouette. Both mirrored in the desktop front-end.
+ */
+const IMMUNE_FLICKER_HZ = 12;
+const IMMUNE_FLICKER_ALPHA = 0.55;
+
 export class GameRenderer {
   readonly camera = new Camera();
   readonly stats: RenderStats = {
@@ -808,6 +831,8 @@ export class GameRenderer {
   /** One sprite per TURRET_ART row, in stack order. Hidden unless its weapon is held. */
   private readonly barrels: Sprite[];
   private readonly mech: Sprite;
+  /** The additive white pass drawn over the body while immune. See its construction. */
+  private readonly mechFlicker: Sprite;
   private readonly legs: Sprite;
   /** The ground shadow. Positioned with the chassis but NEVER rotated with it - see drawPlayer. */
   private readonly shadow: Sprite;
@@ -849,6 +874,16 @@ export class GameRenderer {
    */
   private readonly sludgeShells: SpritePool;
   private readonly beams: BeamLayer;
+  /**
+   * THE SOUND. Public so the shell can unlock it from the first real gesture and mute it from the
+   * settings screen - a browser refuses audio until then, and a context made any earlier is made
+   * suspended and stays silent for the whole session.
+   */
+  readonly sfx = new SfxPlayer();
+  /** Scratch for `soundBeams`, reused so a per-frame check allocates nothing. */
+  private readonly beamSlots = new Set<number>();
+  /** Which slots had a loop running last frame, so a beam that stopped can be stopped. */
+  private readonly loopingSlots = new Set<number>();
   private readonly effects: Effects;
 
   /** Wall-clock seconds since boot, for cosmetic cycles (gem bob). Never touches the sim. */
@@ -944,6 +979,22 @@ export class GameRenderer {
     this.legs = new Sprite({ texture: tex.mechLegs[0][0], roundPixels: true });
     this.legs.anchor.set(0.5, 0.5);
     this.legs.scale.set(MECH_SCALE);
+    /**
+     * THE IMMUNITY FLICKER, worn by the mech itself.
+     *
+     * A SECOND WHITE PASS, NOT A TINT, and it has to be: `tint` multiplies, so it can only ever
+     * darken a sprite - white is the same as no tint at all, and there is no whiter-than-white to
+     * reach for. Drawing the body again in additive white over itself is what actually lightens
+     * it, and because it is the same texture the flash is MECH-SHAPED rather than a square.
+     *
+     * Its texture and transform are copied from `this.mech` every frame it is visible, so it can
+     * never drift from the chassis it is flashing.
+     */
+    this.mechFlicker = new Sprite({ texture: tex.mechs[0], roundPixels: true });
+    this.mechFlicker.anchor.set(0.5, 0.5);
+    this.mechFlicker.scale.set(MECH_SCALE);
+    this.mechFlicker.blendMode = 'add';
+    this.mechFlicker.visible = false;
     // Bottom of the whole stack, and on its OWN sprite rather than baked into the legs: a shadow
     // is cast by something that is not the chassis, so unlike the body and legs it must never
     // rotate with `facing` - see drawPlayer. Same canvas and anchor as the other two layers.
@@ -988,6 +1039,7 @@ export class GameRenderer {
       this.legs,
       this.sludgeShells.container,
       this.mech,
+      this.mechFlicker,
       ...this.barrels,
       // The field's body UNDER its rims, so the arcs read as the edge of the thing the body fills.
       this.shieldBody.container,
@@ -1205,6 +1257,7 @@ export class GameRenderer {
     }
 
     this.drainEvents(world);
+    this.soundBeams(world);
     this.effects.update(dtSec);
     this.camera.update(dtSec);
 
@@ -1258,6 +1311,83 @@ export class GameRenderer {
    * why it is a ring with a read cursor and not a per-tick buffer - a frame that ran five steps
    * must still see step one's muzzle flash.
    */
+  /**
+   * STARTS AND STOPS THE BEAM LOOPS from what the simulation published this tick.
+   *
+   * A HELD BEAM PUSHES NO FIRE EVENT, so there is nothing in the ring to hang a one-shot on -
+   * and a one-shot would be wrong anyway: a beam is a sustained sound that begins when the trigger
+   * goes down and ends when it comes up. `world.beams` is republished from scratch every tick
+   * (see systems/weapons.ts, which zeroes the count first), so what is in it IS what is firing.
+   *
+   * KEYED BY WEAPON SLOT, so three beams on one chassis are three independent loops that start
+   * and stop on their own - which is the whole point of a mech that can hold a short, a medium and
+   * a long laser at once.
+   */
+  private soundBeams(world: World): void {
+    const live = this.beamSlots;
+    live.clear();
+    const beams = world.beams;
+    for (let i = 0; i < beams.count; i++) {
+      const slot = beams.weaponIdx[i];
+      if (slot < 0 || slot >= world.weaponCount) continue;
+      const def = world.weaponCatalog[world.weapons[slot].defId];
+      if (def === undefined) continue;
+      const id = FIRE_SFX[def.id];
+      if (SFX_BY_ID.get(id)?.loop !== true) continue;
+      live.add(slot);
+      this.sfx.startLoop(slot, id);
+    }
+    // Anything that was looping and is no longer published has stopped firing.
+    for (const slot of this.loopingSlots) if (!live.has(slot)) this.sfx.stopLoop(slot);
+    this.loopingSlots.clear();
+    for (const slot of live) this.loopingSlots.add(slot);
+  }
+
+  /**
+   * Which noise an event makes, if any.
+   *
+   * ROUTED KINDS ARE DECIDED HERE because the discriminator lives on the payload and a static
+   * table cannot see it: a kill is a grunt, an elite or a boss; a blast is graded by its radius;
+   * a consumable is four different pickups. Everything else is a straight lookup.
+   */
+  private playFor(world: World, kind: number, a: number, c: number, d: number, e: number): void {
+    let id: SfxId | null;
+    switch (kind) {
+      case EV_ENEMY_KILLED:
+        // `d` is the reason - a recycled body is not a death. `e` carries the rank.
+        if (d === KILL_REASON_DESPAWNED) return;
+        id = deathSfxFor(e === RANK_BOSS ? 'boss' : e === RANK_ELITE ? 'elite' : 'regular');
+        break;
+      case EV_PROJECTILE_DETONATED:
+        id = blastSfxFor(c); // payload c is the splash RADIUS
+        break;
+      case EV_CONSUMABLE_TAKEN:
+        id = consumableSfxFor(d); // payload d is the pickup KIND
+        break;
+      case EV_SPECIAL_EVENT:
+        id = specialEventSfxFor(a); // payload a is the event id
+        break;
+      case EV_PROJECTILE_HIT:
+        // `e` is the impact class the simulation decided at the moment of the hit - the
+        // projectile is gone by now, so there is nowhere else to ask. See HIT_SOLID in damage.ts.
+        id = hitSfxFor(e);
+        break;
+      case EV_WEAPON_FIRED: {
+        // WHICH GUN, from the fifth payload's weapon slot. Ten of the fourteen firing clips are
+        // reachable ONLY through here - the drone has its own event kind and the three beams are
+        // loops - so an early return on this kind (which is what this used to be) silences most
+        // of the library while leaving every test green, because the tables it asserts against
+        // are all still correct. `tests/sfx.test.ts` now walks this router instead.
+        id = fireSfxFor(world.weaponCatalog[world.weapons[e]?.defId ?? -1]?.id);
+        break;
+      }
+      default:
+        id = EVENT_SFX[kind] ?? null;
+        break;
+    }
+    if (id !== null) this.sfx.play(id);
+  }
+
   private drainEvents(world: World): void {
     const r = world.events;
     const px = world.player.x;
@@ -1269,8 +1399,19 @@ export class GameRenderer {
       const b = r.b[i];
       const c = r.c[i];
       const d = r.d[i];
+      const kind = r.kind[i];
 
-      switch (r.kind[i]) {
+      // -----------------------------------------------------------------------------------
+      // SOUND FIRST, IN ONE PLACE
+      // -----------------------------------------------------------------------------------
+      // Table-driven off the same trigger tables the tests pin, rather than a `play()` call
+      // scattered into each case below. Two reasons, and the second is the one that matters:
+      // the visual switch does not handle every kind that makes a noise (a level-up, a chest,
+      // a reload), so per-case calls would silently miss them - and a table cannot drift from
+      // the tables `sfx.test.ts` asserts against.
+      this.playFor(world, kind, a, c, d, r.e[i]);
+
+      switch (kind) {
         case EV_LEVEL_UP:
           this.healFlash = HEAL_FLASH_SEC;
           break;
@@ -2256,6 +2397,29 @@ export class GameRenderer {
     this.mech.position.set(px, py);
     this.mech.rotation = facing + yaw;
     this.mech.tint = tint;
+
+    /**
+     * IMMUNE: THE MECH FLICKERS WHITE.
+     *
+     * Driven straight off `player.invulnLeft`, which is the ONE field both sources write - a
+     * shield rim breaking and Mech Insurance firing - so "you cannot be hurt right now" has a
+     * single picture however it was earned. The gold insurance pulse above still says WHICH; this
+     * says the state, and it is the state that decides whether to walk into the crowd.
+     *
+     * ON THE RENDER CLOCK. The flicker is presentation, never reaches the world, and driving it
+     * from tick count would tie its rate to the simulation's.
+     */
+    this.mechFlicker.visible =
+      pl.invulnLeft > 0 && Math.floor(this.clock * IMMUNE_FLICKER_HZ) % 2 === 0;
+    if (this.mechFlicker.visible) {
+      // Copied, never assumed: the body's texture changes with the chassis and its rotation with
+      // the walk, and a flash that kept its own copy would drift off the mech it belongs to.
+      this.mechFlicker.texture = this.mech.texture;
+      this.mechFlicker.position.set(px, py);
+      this.mechFlicker.rotation = facing + yaw;
+      this.mechFlicker.scale.set(MECH_SCALE, MECH_SCALE * flip);
+      this.mechFlicker.alpha = IMMUNE_FLICKER_ALPHA;
+    }
 
     // --- turrets ---------------------------------------------------------------------------
     // Each of the three drawn mounts is visible only while its weapon is HELD, and tracks its own

@@ -164,10 +164,18 @@ public static class MenuRows
     /// there is nowhere for a heading and its rows to disagree about how many there are.
     /// </para>
     /// <para>
-    /// THIS LIST HAS NO SFX OR AUDIO SECTION, because the game has no audio system - not in this
-    /// port, not in the web build it mirrors. A volume slider that controls nothing is worse than
-    /// no slider: it tells a player something is broken when nothing is there to break. Add the
-    /// section when a sound actually plays, not before.
+    /// THIS LIST STILL HAS NO AUDIO SECTION, and that is now a GAP rather than a decision. It used
+    /// to say the game had no audio system, which was true and is not any more: <see cref="Sfx"/>
+    /// plays forty-eight clips on this build and the web plays the same library. The rule the old
+    /// note set - "add the section when a sound actually plays, not before" - has therefore been
+    /// met, and what is missing is the work, not the justification.
+    /// <para>
+    /// What it needs is a volume and a mute, both persisted in Settings and pushed to
+    /// <c>Sfx.SetVolume</c> / <c>SetMuted</c> (which already exist and already do the right thing),
+    /// mirrored by the same two fields on the web side. Until then a player who wants the game
+    /// quiet has to turn their system volume down, which is the thing a settings screen exists to
+    /// prevent.
+    /// </para>
     /// </para>
     /// </remarks>
     public static readonly SettingsRow[] SettingsRows =

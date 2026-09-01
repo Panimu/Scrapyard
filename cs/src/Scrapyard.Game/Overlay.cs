@@ -1411,12 +1411,44 @@ public static class Overlay
 
         int fy = y + thick;
         int fh = h - thick * 2;
+
+        // THE FILL TAKES THE TRACK'S ROUNDED ENDS.
+        //
+        // The track is a pill - `radius` is half its height - and the fill used to be a plain
+        // rectangle drawn inside it, so a full hull bar was a square-cornered block sitting in a
+        // round-ended slot with the track's own colour showing through in four little wedges. The
+        // web has never had this: `.bar` is `border-radius: 6px` with `overflow: hidden`, so the
+        // fill is clipped to the pill and the corners simply cannot happen.
+        //
+        // There is no clip here, so the shape is computed instead. Each column is drawn at the
+        // height the pill allows at that x: full height down the middle, and inside either cap
+        // `2 * sqrt(r^2 - dx^2)` - a circle, one column at a time.
+        //
+        // BOTH CAPS, AND THE RIGHT ONE ONLY WHEN THE FILL REACHES IT. That falls out of testing
+        // the column's own position rather than the fill's: a half-empty bar ends in a straight
+        // vertical cut, exactly as a clipped rectangle would, and only a nearly-full one rounds
+        // off. Which is the behaviour the CSS gives for free.
+        //
+        // Still one draw per column, as before: the loop was already this shape and the gradient
+        // below needs a colour per column, so the only thing that changed is each column's height.
+        double r = fh * 0.5;
         for (int i = 0; i < fill; i++)
         {
             // Graded across the WHOLE track rather than across the part that is filled, so the
             // colour at a given point on the bar does not move as the bar drains.
             float t = inner > 1 ? i / (float)(inner - 1) : 1f;
-            batch.Draw(sprites.Blank, new Rectangle(x + thick + i, fy, 1, fh),
+
+            double mid = i + 0.5;
+            double dx = mid < r ? r - mid
+                      : mid > inner - r ? mid - (inner - r)
+                      : 0;
+            double k = r * r - dx * dx;
+            double halfH = k > 0 ? System.Math.Sqrt(k) : 0;
+            int ch = (int)System.Math.Round(halfH * 2);
+            if (ch < 1) continue;
+            int cy = fy + (int)System.Math.Round(r - halfH);
+
+            batch.Draw(sprites.Blank, new Rectangle(x + thick + i, cy, 1, ch),
                        Color.Lerp(head, tail, t));
         }
     }

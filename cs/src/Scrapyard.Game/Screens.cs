@@ -1896,21 +1896,28 @@ public static class Screens
             UiDraw(batch, sprites, Spaced(title), cx + 2 * scale, cy, small, Palette.Faint);
             cy += UiFont.LineHeight(small) + 4 * scale;
 
-            // EMPTY IS SAID RATHER THAN LEFT BLANK. A heading with nothing under it reads as a panel
-            // that failed to load; a hollow slot with "EMPTY" in it reads as a mount you have not
-            // filled - which is the thing the player is actually deciding about.
-            if (slots.Count == 0)
-            {
-                var r = new Rectangle(cx, cy, colW, slotH);
-                RoundOutline(batch, sprites, r, 4 * scale, thick, Palette.Button);
-                UiDraw(batch, sprites, "EMPTY", r.X + 6 * scale,
-                          r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
-                cy += slotH + 2 * scale;
-            }
-
+            // EMPTY IS SAID RATHER THAN LEFT BLANK, and now for every unfilled mount rather than
+            // only for a column with nothing in it at all. `Loadout` pads each column out to the
+            // run's own cap, so the "no slots" special case this used to need cannot arise: a
+            // column is always exactly as long as the number of mounts the run actually has.
+            //
+            // AN EMPTY SLOT RECEDES RATHER THAN DISAPPEARS - hollow instead of filled, no accent
+            // stripe, no tier, and the word in the faint ink. It is still a fact about the run,
+            // and the same treatment `.pause__slot--empty` gives it on the web.
             foreach (var (name, tier) in slots)
             {
                 var r = new Rectangle(cx, cy, colW, slotH);
+                bool empty = tier <= 0;
+
+                if (empty)
+                {
+                    RoundOutline(batch, sprites, r, 4 * scale, thick, Palette.Button);
+                    UiDraw(batch, sprites, "EMPTY", r.X + 6 * scale,
+                              r.Y + (slotH - UiFont.GlyphH(small)) / 2, small, Palette.Faint);
+                    cy += slotH + 2 * scale;
+                    continue;
+                }
+
                 RoundRect(batch, sprites, r, 4 * scale, Palette.Button);
                 batch.Draw(sprites.Blank,
                            new Rectangle(r.X, r.Y + 2 * scale, 2 * scale, r.Height - 4 * scale),
@@ -1990,6 +1997,20 @@ public static class Screens
                     : card.Name;
                 held.Add((name.ToUpperInvariant(), stacks));
             }
+            // PAD OUT TO THE RUN'S OWN CAP, so an unfilled mount is a row that says EMPTY rather
+            // than a row that is not there.
+            //
+            // "Three of five guns" is the thing a player pauses to work out, and a list of only
+            // what is held cannot say it: two weapons and two weapons-with-three-mounts-spare look
+            // identical. The web overlay has always drawn the empty slots for exactly this reason;
+            // this is the desktop catching up.
+            //
+            // THE RUN'S CAP, NOT THE CEILING. `MaxWeapons`/`MaxPassives` already carry the base
+            // plus whatever Reinforced Mounts and Auxiliary Bay were bought at, so a save that
+            // never bought either shows three and five - drawing the ceiling instead would offer
+            // slots this run cannot fill.
+            int cap = kind == 0 ? w.MaxWeapons : w.MaxPassives;
+            while (held.Count < cap) held.Add(("EMPTY", 0));
             outv.Add((kind == 0 ? "WEAPONS" : "SYSTEMS", held));
         }
         return outv;

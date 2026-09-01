@@ -14,6 +14,18 @@ public sealed class PickupPool
     /// <summary>Already inside the magnet radius and flying at the player.</summary>
     public const byte FlagAuto = 1 << 1;
 
+    /// <summary>
+    /// Once the magnet has a pickup it keeps it - set the first tick one is drawn toward the
+    /// player and never cleared while it lives.
+    /// </summary>
+    /// <remarks>
+    /// The field used to be tested every tick, so a gem pulled halfway stopped dead the moment the
+    /// player walked far enough away and sat in open ground with no velocity. A latch makes the
+    /// field an ACQUISITION rather than a leash. On the flags column so it costs no memory, is
+    /// already in the world hash, and is already cleared when a slot is allocated.
+    /// </remarks>
+    public const byte FlagChasing = 1 << 2;
+
     public const byte KindGem = 0;
     public const byte KindRepair = 1;
 

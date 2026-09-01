@@ -105,6 +105,13 @@ import {
   NO_DIRECT_HIT,
 } from '../events/ring.js';
 import { SLOW_FRAC_MAX, SPLASH_RIM_FRAC } from '../constants.js';
+/**
+ * Impact classes, carried on EV_PROJECTILE_HIT's fifth payload. Render-facing only - nothing in
+ * the simulation branches on them.
+ */
+export const HIT_SOLID = 0;
+export const HIT_ENERGY = 1;
+export const HIT_INCENDIARY = 2;
 import { breakLootIn } from './pickups.js';
 import { queryCircleLiveInto } from '../spatial/hashGrid.js';
 import { RUN_PHASE_DEAD, type World } from '../types.js';
@@ -449,7 +456,21 @@ function applyHits(world: World): void {
     // "shells that connected" - the harness divides by shotsFired knowing that.
     stats.shotsHit++;
 
-    pushEvent(world.events, EV_PROJECTILE_HIT, world.tick, hits.x[i], hits.y[i], raw, pd);
+    // THE DAMAGE TYPE RIDES IN THE FIFTH PAYLOAD, so the renderer can pick an impact sound.
+    //
+    // DERIVED FROM THE WEAPON'S OWN DATA rather than declared on it: a gun that leaves a burn is
+    // incendiary and a gun that chills is energy, and both of those are already fields the
+    // catalog has to carry for the simulation's sake. A `damageKind` column would be the better
+    // shape if a fourth type ever appears - three cases do not earn fourteen new literals.
+    //
+    // BEAMS ARE NOT HERE AT ALL: they take their own path (see applyBeams) and push no hit event,
+    // which is right - a beam's sound is the loop that runs while it is held, and a per-tick
+    // impact on top of it would be layering on a sound that is already playing.
+    const hitDef = world.weaponCatalog[world.weapons[proj.ownerWeapon[pd]]?.defId ?? -1];
+    const hitKind = hitDef?.burn !== undefined ? HIT_INCENDIARY
+                  : hitDef?.slow !== undefined ? HIT_ENERGY
+                  : HIT_SOLID;
+    pushEvent(world.events, EV_PROJECTILE_HIT, world.tick, hits.x[i], hits.y[i], raw, pd, hitKind);
     pushEvent(
       world.events,
       EV_ENEMY_DAMAGED,
@@ -709,6 +730,13 @@ function killEnemy(world: World, ed: number, killerSlot: number): void {
     enemies.y[ed],
     enemies.slot[ed],
     KILL_REASON_KILLED,
+    // THE RANK, in the spare fifth payload - see EventRing.e, which exists for exactly this.
+    //
+    // The renderer drains the ring at the END of a frame, by which point the body has been
+    // reaped: there is no pool row left to ask what it was. Without this the audio layer can only
+    // ever play the regular death, and two of its three clips are unreachable. Costs nothing -
+    // the ring is not in the world hash, so no replay and no fixture moves.
+    rank,
   );
 }
 

@@ -595,22 +595,23 @@ public static class Pickups
                 // stay there: dragged to the mech at full hull, refused by WouldBeWasted, and parked
                 // on the pixel. 1 / sqrt(0) is Infinity, 0 * Infinity is NaN, and a NaN position is
                 // a pickup that can never be collected again and never draws.
+                // NOT A SPANNER, AND NOT A CHEST. A spanner is the one pickup whose whole
+                // proposition is the question it poses - is that worth crossing the field for,
+                // right now, at this much hull - and a magnet that delivered it answered the
+                // question on the player's behalf. THE DICE DOES COME: one a run is the point of
+                // it, and being handed it takes no decision away.
                 bool dragged =
                     magnetAll &&
                     d2 != 0 &&
-                    (pool.Kind[d] == PickupPool.KindCredit ||
-                     pool.Kind[d] == PickupPool.KindRepair ||
-                     pool.Kind[d] == PickupPool.KindRepairCross);
+                    (pool.Kind[d] == PickupPool.KindCredit || pool.Kind[d] == PickupPool.KindDice);
                 if (!dragged)
                 {
                     pool.Vx[d] = 0;
                     pool.Vy[d] = 0;
                     continue;
                 }
-                // A SPANNER AT FULL HULL IS STILL NOT TAKEN - it falls through to the same magnet
-                // terms as everything else and simply arrives, then waits at the mech's feet for the
-                // hit that makes it worth something. WouldBeWasted above is what refuses it, and it
-                // keeps refusing.
+                // WouldBeWasted above still refuses a spanner at full hull, and now nothing can
+                // carry one to the mech's feet either - so the two rules say the same thing.
             }
             else
             {
@@ -622,15 +623,17 @@ public static class Pickups
                     continue;
                 }
 
-                if (!magnetAll && d2 > pickupR2 && pool.Tier[d] < bossTier)
+                // ONCE ACQUIRED, ALWAYS COMING - the test is only ever asked of a gem that has
+                // never been pulled. See PickupPool.FlagChasing for what it used to do instead.
+                bool chasing = (pool.Flags[d] & PickupPool.FlagChasing) != 0;
+                if (!chasing && !magnetAll && d2 > pickupR2 && pool.Tier[d] < bossTier)
                 {
-                    // Outside the field. The magnet is a field, not a launcher - a gem that leaves
-                    // it stops rather than coasting on a drag constant that does not exist in
-                    // Tuning.
+                    // Never yet acquired, and out of reach. The magnet is a field, not a launcher.
                     pool.Vx[d] = 0;
                     pool.Vy[d] = 0;
                     continue;
                 }
+                pool.Flags[d] |= PickupPool.FlagChasing;
             }
 
             double inv = 1 / Math.Sqrt(d2);
