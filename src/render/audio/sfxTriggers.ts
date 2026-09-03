@@ -229,6 +229,23 @@ export function deathSfxFor(rank: 'regular' | 'elite' | 'boss'): SfxId {
 }
 
 /**
+ * WHICH ENDING THE REEL MACHINE REACHES. One recording, two tails - see the catalog.
+ *
+ * IT CANNOT BE READ OFF THE PAYOUT ALONE, which is the whole reason this is a function. An
+ * ASCENSION is `payout === 1` (openChest sets exactly one grant and supersedes the spin entirely)
+ * and is the best outcome the game has; a plain miss is also 1. Judging by the number would give
+ * the rarest thing in the game the consolation tone.
+ *
+ * Otherwise it is the payout table: 5 three of a kind, 4 a pair of the same type, 3 a pair, 2 all
+ * different but all one type, 1 anything else. Three and up means the reels MATCHED something, and
+ * that is the line the ear is being told about - a player can already read it off the icons before
+ * the number lands, so the tone confirms what they just saw rather than announcing something new.
+ */
+export function chestSfxFor(ascension: number, payout: number): SfxId {
+  return ascension >= 0 || payout >= 3 ? 'chest_reels_good' : 'chest_reels_bad';
+}
+
+/**
  * WHICH PICKUP WAS WALKED OVER. Both spanner grades share a clip: they are one item at two
  * strengths, and a player who can hear the difference would learn to want the loud one.
  */

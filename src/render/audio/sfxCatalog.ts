@@ -62,6 +62,8 @@ export type SfxId =
   | 'level_up'
   | 'card_taken'
   | 'chest_open'
+  | 'chest_reels_good'
+  | 'chest_reels_bad'
   | 'ascend'
   | 'achievement'
   | 'die_grunt'
@@ -242,6 +244,20 @@ export const SFX_CATALOG: readonly SfxDef[] = Object.freeze([
   {
     id: 'chest_open', clip: 'chest_open', bus: 'pickup', throttleMs: 0, gain: 0.75,
     brief: 'A chest opening - the run stops for it',
+  },
+  // THE TWO REEL CLIPS ARE ONE RECORDING WITH TWO ENDINGS, and they run SIX SECONDS - far longer
+  // than anything else here, because they cover a whole animation rather than a moment. They are
+  // one-shots but they must be STOPPABLE: the player can skip the spin at any point, and a sound
+  // that carried on over the payout would be describing a machine that had already stopped. That
+  // is why they are started under a voice key (see sfxPlayer.startVoice) rather than fired and
+  // forgotten. `throttleMs` is 0 because a chest cannot overlap a chest - the world is frozen.
+  {
+    id: 'chest_reels_good', clip: 'chest_reels_good', bus: 'pickup', throttleMs: 0, gain: 0.6,
+    brief: 'The reels spinning, ending on a match or a tier 8',
+  },
+  {
+    id: 'chest_reels_bad', clip: 'chest_reels_bad', bus: 'pickup', throttleMs: 0, gain: 0.6,
+    brief: 'The same spin, landing on nothing - the end tone bends down',
   },
   {
     id: 'ascend', clip: 'ascend', bus: 'pickup', throttleMs: 0, gain: 0.8,

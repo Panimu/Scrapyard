@@ -69,6 +69,24 @@ public static class SfxTriggers
         : SfxId.DieGrunt;
 
     /// <summary>
+    /// Which ending the reel machine reaches. One recording, two tails - see the table.
+    /// </summary>
+    /// <remarks>
+    /// IT CANNOT BE READ OFF THE PAYOUT ALONE, which is the whole reason this is a function. An
+    /// ASCENSION is <c>Payout == 1</c> - OpenChest sets exactly one grant and supersedes the spin
+    /// entirely - and is the best outcome the game has; a plain miss is also 1. Judging by the
+    /// number would give the rarest thing in the game the consolation tone.
+    /// <para>
+    /// Otherwise it is the payout table: 5 three of a kind, 4 a pair of the same type, 3 a pair,
+    /// 2 all different but all one type, 1 anything else. Three and up means the reels MATCHED
+    /// something, which the player can already read off the icons before the number lands - so the
+    /// tone confirms what they just saw rather than announcing something new.
+    /// </para>
+    /// </remarks>
+    public static SfxId ChestSfxFor(int ascension, int payout) =>
+        ascension >= 0 || payout >= 3 ? SfxId.ChestReelsGood : SfxId.ChestReelsBad;
+
+    /// <summary>
     /// Which pickup was walked over. Both spanner grades share a clip: they are one item at two
     /// strengths, and a player who could hear the difference would learn to want the loud one.
     /// </summary>

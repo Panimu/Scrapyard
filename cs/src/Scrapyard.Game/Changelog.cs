@@ -34,6 +34,13 @@ public static class Changelog
     /// <summary>NEWEST FIRST. The generator refuses to emit a list that is not.</summary>
     public static readonly Entry[] All =
     {
+        new("2026-09-02T22:20Z", "v433", "THE CHEST REELS MAKE A NOISE, AND THE LAST NOTE TELLS YOU",
+            new[]
+            {
+                "The Cyber Chest spins with sound now, for the whole six seconds of it.",
+                "The note it lands on is the result. Matching symbols or a tier 8 and the machine finishes bright; a spin that matched nothing bends down at the end. You will know what you got before the number appears - which you could always read off the icons, and now you can hear.",
+                "Skipping the spin silences it, so an impatient press no longer leaves the machine audibly running over its own payout.",
+            }),
         new("2026-09-01T13:52Z", "v432", "THE GAME HAS SOUND",
             new[]
             {

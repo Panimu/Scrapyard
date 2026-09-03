@@ -25,6 +25,20 @@ over each other and exactly right for a backing track.
 It lives under `public/` because the web build serves it; Vite copies the directory verbatim into
 `dist/`, and the desktop reads the same files off disk by walking up to the repository root.
 
+## Masters do NOT live here
+
+Drop the lossless original in `music/` at the repository root, not in this directory. Vite copies
+this one into `dist/` verbatim, so a four-minute FLAC master kept here is about 17 MB added to every
+page load to serve a file the web build never uses - against a whole site of 13 MB.
+
+What belongs here is the CONDITIONED, SHIPPED file, written by `sfx/loop.mjs` from a master:
+
+```
+node sfx/loop.mjs music/title/whatever.flac --out title --bpm 140
+```
+
+That is the same split `sfx/` and `public/sfx/` already keep. See `music/README.md`.
+
 ## What to put here
 
 - **MP3, 44.1 kHz.** Stereo, unlike the effects: an effect is panned by the game from world
@@ -41,3 +55,26 @@ It lives under `public/` because the web build serves it; Vite copies the direct
 
 There is no music playback in either build as of this writing - these directories are the place it
 will read from when there is. Adding a file here changes nothing on its own.
+
+## Two requirements already decided, for whoever wires it
+
+**MUSIC PAUSES DURING A CHEST.** Not ducks - stops, with a short fade, and resumes when the overlay
+closes. The chest is the one screen whose whole job is to show you something: the reels have their
+own six-second sound (`chest_reels_good` / `chest_reels_bad`, and the tone at the end is the
+payout), and a backing track playing over it is two pieces of music arguing. The world is frozen
+behind it anyway - `RUN_PHASE_CHEST` shares the level-up branch at `src/core/world.ts` - so there is
+nothing for a track to be scoring.
+
+The level-up card freezes the world the same way and is the obvious next question, but it has NOT
+been decided. A card is up for a couple of seconds many times a run, where a chest is six seconds
+eight times; stopping the music that often may well be worse than leaving it.
+
+**THE PLAYHEAD FOLLOWS GAME TIME, NOT WALL CLOCK.** `DirectorTuning.cycleSeconds` is 120 and the
+whole schedule is offsets into it - elites at 60, the boss at 90 - so a 120-second track played with
+its position pinned to `cycleSec` stays in phase with the fight for the entire run, with no resync
+and no drift, and its loop point lands on the cycle rollover.
+
+Free-running it does NOT work, and the reason is the paragraph above: `runSec` does not advance
+during a chest or a level-up card. Across a run that is minutes of wall-clock time in which game
+time does not move, so a track left to run is permanently out of phase by mid-run - which is worse
+than never having been aligned, because it opens by promising a relationship and then breaks it.

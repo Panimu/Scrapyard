@@ -119,6 +119,15 @@ const SFX_SET = [
     prompt: 'Equipment being installed and locking home. Solid mechanical latch, a short servo whirr, then a bright two-note confirmation. Satisfying and final.' },
   { s: 'pickups', id: 'chest_open', name: 'Cyber Chest', when: 'A chest opening - the run stops for it', secs: 3, influence: 0.7, repeats: false,
     prompt: 'Heavy armoured container unlocking and opening. Deep mechanical clunk, servo-driven lid rising, pressurised hiss, ending on a bright electronic reward tone.' },
+  // HAND-MADE, NOT GENERATED, and the only pair in the set that is one recording twice. The spin
+  // plays identically either way; the note it LANDS on is what says whether it was worth anything,
+  // so `_bad` is `_good` with its last half-second bent down five semitones by sfx/bend.mjs. Two
+  // separate takes would drift in level and character, and the whole point is that the player
+  // hears the same machine reach a different conclusion. No prompt: the API never saw these.
+  { s: 'pickups', id: 'chest_reels_good', name: 'Reels, paying out', when: 'The chest reels spinning, ending on a match or a tier 8', secs: 6, influence: 0, repeats: false,
+    prompt: '' },
+  { s: 'pickups', id: 'chest_reels_bad', name: 'Reels, no match', when: 'The same spin, landing on nothing - the end tone bends down', secs: 6, influence: 0, repeats: false,
+    prompt: '' },
   { s: 'pickups', id: 'ascend', name: 'Ascension', when: 'A weapon reaching tier 8 - the one secret in the game', secs: 2.5, influence: 0.6, repeats: false,
     prompt: 'Rare and significant power-up transformation. Deep charging swell rising into a bright resonant chime, with a hard energised snap at the peak. Grander than an ordinary upgrade, no fanfare.' },
   { s: 'pickups', id: 'achievement', name: 'Achievement', when: 'An achievement unlocking, over whatever is happening', secs: 1.5, influence: 0.7, repeats: false,

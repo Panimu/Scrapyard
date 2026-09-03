@@ -1901,7 +1901,24 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
         }
 
         bool chestUp = _sim.World.Phase == RunPhase.Chest;
-        if (chestUp && !_chestWasUp) _chestOpenedSec = _clockSec;
+        if (chestUp && !_chestWasUp)
+        {
+            _chestOpenedSec = _clockSec;
+            // THE SPIN'S OWN SOUND, on the same edge that starts its clock, so the two cannot
+            // disagree about when the machine began. It runs about six seconds - the whole
+            // animation rather than a moment - so it is held under a voice key and can be cut
+            // short when the player skips; see the skip in ReadChoice.
+            //
+            // WHICH ending is SfxTriggers.ChestSfxFor's decision, shared with the web build and
+            // pinned by tests on both sides - an ascension is payout 1, so the obvious reading of
+            // the number is wrong.
+            var c = _sim.World.Chest;
+            _sfx.StartVoice(Sfx.VoiceChest, SfxTriggers.ChestSfxFor(c.Ascension, c.Payout));
+        }
+        // AND SILENCED WHEN IT GOES, whatever took it away - collected, or a run that ended under
+        // it. Six seconds of reels playing over the fight that resumed behind them is the failure
+        // this edge exists to prevent.
+        if (!chestUp && _chestWasUp) _sfx.StopVoice(Sfx.VoiceChest);
         _chestWasUp = chestUp;
         _fx.Update(dt);
         _camera.Update(dt);
@@ -2178,6 +2195,12 @@ public sealed class ScrapyardGame : Microsoft.Xna.Framework.Game
             if ((_clockSec - _chestOpenedSec) * 1000 < totalMs)
             {
                 _chestOpenedSec = _clockSec - totalMs / 1000;
+                // SILENCED WITH THE SNAP. The clip outlives an early skip by whole seconds, and a
+                // machine still audibly spinning over its own settled payout is describing
+                // something that has stopped. Not stopped on the natural path: the clip and the
+                // animation end within a few hundred milliseconds of each other, and cutting the
+                // last note would remove the point of the sound.
+                _sfx.StopVoice(Sfx.VoiceChest);
                 return;
             }
 

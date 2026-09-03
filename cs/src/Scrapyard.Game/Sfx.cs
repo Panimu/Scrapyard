@@ -44,8 +44,23 @@ public sealed class Sfx : IDisposable
     /// <summary>One fader per bus, so a mixer can exist later without touching a call site.</summary>
     private readonly float[] _busGain;
 
-    /// <summary>Running loops, keyed by the weapon slot holding the beam.</summary>
-    private readonly Dictionary<int, (SfxId Id, SoundEffectInstance Inst)> _loops = new();
+    /// <summary>
+    /// HELD VOICES, keyed by whatever the caller identifies them with - a weapon slot, the chest.
+    /// </summary>
+    /// <remarks>
+    /// A voice is in here because someone needs to be able to STOP it. That is obvious for a beam,
+    /// which runs until the trigger is released; it is equally true of the chest reels, which are a
+    /// plain one-shot the player can cut short by skipping the spin. Whether the clip LOOPS is the
+    /// table's business, not this dictionary's - the two questions are unrelated.
+    /// </remarks>
+    private readonly Dictionary<int, (SfxId Id, SoundEffectInstance Inst)> _held = new();
+
+    /// <summary>
+    /// The chest's voice key. Beams key by weapon slot - 0..MaxWeapons - so a second caller
+    /// choosing by hand would eventually collide with one, and the symptom would be a chest that
+    /// silences a laser. One constant well clear of any slot cannot.
+    /// </summary>
+    public const int VoiceChest = 1000;
 
     /// <summary>Scratch for <see cref="SoundBeams"/>, reused so a per-frame check allocates nothing.</summary>
     private readonly HashSet<int> _liveSlots = new();
@@ -151,17 +166,21 @@ public sealed class Sfx : IDisposable
     }
 
     /// <summary>
-    /// Starts a looping clip under <paramref name="key"/>, or leaves it alone if that key is
-    /// already running the same sound. A beam is held down for whole seconds; restarting it every
-    /// frame would be a machine gun made of laser.
+    /// Starts a clip under <paramref name="key"/> that can be stopped later, or leaves it alone if
+    /// that key is already running the same sound.
     /// </summary>
-    public void StartLoop(int key, SfxId id)
+    /// <remarks>
+    /// That second half is what makes it safe to call every frame, which the beams do: they are
+    /// held for whole seconds and restarting one each frame would be a machine gun made of laser.
+    /// The chest calls it once, and wants the key only so a skip can cut the spin short.
+    /// </remarks>
+    public void StartVoice(int key, SfxId id)
     {
         if (!_ok || _muted) return;
-        if (_loops.TryGetValue(key, out var live))
+        if (_held.TryGetValue(key, out var live))
         {
             if (live.Id == id) return;
-            StopLoop(key);
+            StopVoice(key);
         }
         int i = (int)id;
         if ((uint)i >= (uint)_clips.Length) return;
@@ -172,11 +191,12 @@ public sealed class Sfx : IDisposable
         try
         {
             var inst = clip.CreateInstance();
-            inst.IsLooped = true;
+            // FROM THE TABLE, not from the fact that it is held. A beam loops; the reels do not.
+            inst.IsLooped = def.Loop;
             float vol = def.Gain * _busGain[(int)def.Bus] * _volume;
             inst.Volume = vol > 1f ? 1f : vol < 0f ? 0f : vol;
             inst.Play();
-            _loops[key] = (id, inst);
+            _held[key] = (id, inst);
         }
         catch
         {
@@ -184,10 +204,10 @@ public sealed class Sfx : IDisposable
         }
     }
 
-    /// <summary>Stops the loop under <paramref name="key"/>. Safe for a key that never started one.</summary>
-    public void StopLoop(int key)
+    /// <summary>Stops the voice under <paramref name="key"/>. Safe for a key that never started one.</summary>
+    public void StopVoice(int key)
     {
-        if (!_loops.Remove(key, out var live)) return;
+        if (!_held.Remove(key, out var live)) return;
         try
         {
             live.Inst.Stop();
@@ -203,8 +223,8 @@ public sealed class Sfx : IDisposable
     public void StopAll()
     {
         _endedSlots.Clear();
-        foreach (int key in _loops.Keys) _endedSlots.Add(key);
-        foreach (int key in _endedSlots) StopLoop(key);
+        foreach (int key in _held.Keys) _endedSlots.Add(key);
+        foreach (int key in _endedSlots) StopVoice(key);
         _endedSlots.Clear();
     }
 
@@ -294,14 +314,14 @@ public sealed class Sfx : IDisposable
             var id = SfxTable.FireByWeapon[defId];
             if (!SfxTable.All[(int)id].Loop) continue;
             _liveSlots.Add(slot);
-            StartLoop(slot, id);
+            StartVoice(slot, id);
         }
 
         // Anything that was looping and is no longer published has stopped firing. Collected first
         // rather than removed inside the walk, which would invalidate the enumerator.
         _endedSlots.Clear();
-        foreach (int key in _loops.Keys) if (!_liveSlots.Contains(key)) _endedSlots.Add(key);
-        foreach (int key in _endedSlots) StopLoop(key);
+        foreach (int key in _held.Keys) if (!_liveSlots.Contains(key)) _endedSlots.Add(key);
+        foreach (int key in _endedSlots) StopVoice(key);
         _endedSlots.Clear();
     }
 }

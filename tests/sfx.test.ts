@@ -39,6 +39,7 @@ import {
   UI_TRIGGERS,
   blastSfxFor,
   consumableSfxFor,
+  chestSfxFor,
   deathSfxFor,
   fireSfxFor,
   hitSfxFor,
@@ -194,6 +195,29 @@ describe('the trigger tables', () => {
     }
     expect([...produced].sort()).toEqual([HIT_SOLID, HIT_ENERGY, HIT_INCENDIARY].sort());
     for (const k of produced) expect(SFX_BY_ID.has(hitSfxFor(k))).toBe(true);
+  });
+
+  it('gives an ascension the good tone even though its payout is 1', () => {
+    // THE ONE THAT MATTERS. openChest sets payout = 1 for a tier 8 because it grants exactly one
+    // thing, and 1 is also the table's floor for a spin that matched nothing - so a router written
+    // against the number alone hands the rarest outcome in the game the consolation sound.
+    expect(chestSfxFor(3, 1)).toBe('chest_reels_good');
+    expect(chestSfxFor(-1, 1)).toBe('chest_reels_bad');
+  });
+
+  it('bends the tone down for a spin that matched nothing', () => {
+    // The payout table: 5 three of a kind, 4 pair + same type, 3 a pair, 2 all different one type,
+    // 1 anything else. A match is 3 and up.
+    for (const p of [3, 4, 5]) expect(chestSfxFor(-1, p), `payout ${p}`).toBe('chest_reels_good');
+    for (const p of [1, 2]) expect(chestSfxFor(-1, p), `payout ${p}`).toBe('chest_reels_bad');
+  });
+
+  it('keeps the reels out of the loop set - they are stoppable one-shots', () => {
+    // A six-second clip marked `loop` would run under the fight for the rest of the run. It is
+    // held under a voice key so a skip can cut it, which is a different thing from looping.
+    for (const id of ['chest_reels_good', 'chest_reels_bad'] as SfxId[]) {
+      expect(SFX_BY_ID.get(id)!.loop, id).toBeUndefined();
+    }
   });
 
   it('separates a death by rank', () => {

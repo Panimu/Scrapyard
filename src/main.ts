@@ -60,6 +60,8 @@ import { SAVE_PAUSE_SEC, SavedOverlay } from './ui/savedOverlay.js';
 import { PickToast } from './ui/pickToast.js';
 import { LevelUpOverlay } from './ui/levelUpOverlay.js';
 import { ChestOverlay } from './ui/chestOverlay.js';
+import { VOICE_CHEST } from './render/audio/sfxPlayer.js';
+import { chestSfxFor } from './render/audio/sfxTriggers.js';
 import { GameOverOverlay, type Earned } from './ui/gameOverOverlay.js';
 import { buildChangelogOverlay } from './ui/changelog.js';
 import { buildPauseOverlay } from './ui/pauseOverlay.js';
@@ -296,9 +298,17 @@ async function boot(): Promise<void> {
 
   // The chest's Collect button becomes ordinary player intent on the next tick, exactly as a
   // level-up pick does. There is still no out-of-band event anywhere in this loop.
-  const chest = new ChestOverlay(() => {
-    pendingChoice = 0;
-  });
+  const chest = new ChestOverlay(
+    () => {
+      pendingChoice = 0;
+    },
+    // The overlay owns the animation; the mixer owns the sound. This is the whole of the seam
+    // between them - see ChestSound.
+    {
+      start: (ascension, payout) => renderer.sfx.startVoice(VOICE_CHEST, chestSfxFor(ascension, payout)),
+      stop: () => renderer.sfx.stopVoice(VOICE_CHEST),
+    },
+  );
 
   const summary = new GameOverOverlay({
     onTryAgain: () => showScreen('heroSelect'),

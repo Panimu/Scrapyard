@@ -38,6 +38,17 @@ import { SFX_BY_ID, type SfxBus, type SfxId } from './sfxCatalog.js';
  */
 const MAX_VOICES = 16;
 
+/**
+ * VOICE KEYS ARE ONE NAMESPACE and this is the far end of it.
+ *
+ * Beams key their voice by WEAPON SLOT, which is 0..MAX_WEAPONS - a handful of small integers. A
+ * second caller picking its own key by hand would eventually pick one of those, and the symptom
+ * would be a chest that silences a laser (or worse, a laser that silences itself the moment a
+ * chest opens). One constant, well clear of any slot, costs nothing and cannot collide.
+ */
+export const VOICE_CHEST = 1000;
+
+
 /** Where the files live. One flat folder, keyed by clip name - see the catalog. */
 const DIR = 'sfx';
 
@@ -51,8 +62,16 @@ export class SfxPlayer {
   private readonly lastPlayed = new Map<SfxId, number>();
   /** Live one-shot sources, so the voice cap can count them. */
   private voices = 0;
-  /** Running loops, keyed by whatever the caller uses to identify them - a weapon slot. */
-  private readonly loops = new Map<number, { id: SfxId; src: AudioBufferSourceNode }>();
+  /**
+   * HELD VOICES, keyed by whatever the caller uses to identify them - a weapon slot, the chest.
+   *
+   * A voice is here because someone needs to be able to STOP it. That is obvious for a beam, which
+   * runs until the trigger is released; it is equally true of the chest reels, which are a plain
+   * one-shot that the player can cut short by skipping the spin. Whether the clip loops is the
+   * CATALOG's business (see `loop`), not this map's - the two questions are unrelated, and
+   * conflating them is what made this `loops` and hardcoded `src.loop = true`.
+   */
+  private readonly held = new Map<number, { id: SfxId; src: AudioBufferSourceNode }>();
   private muted = false;
   private volume = 1;
 
@@ -170,19 +189,22 @@ export class SfxPlayer {
   }
 
   /**
-   * Starts a looping clip under `key`, or leaves it alone if that key is already running the same
-   * sound. Beams are held down for whole seconds; restarting one every tick would be a machine gun
-   * made of laser.
+   * Starts a clip under `key` that can be stopped later, or leaves it alone if that key is already
+   * running the same sound.
+   *
+   * That second half is what makes it safe to call every frame, which the beams do: they are held
+   * down for whole seconds, and restarting one every tick would be a machine gun made of laser.
+   * The chest calls it once, and only wants the key so it can stop the spin on a skip.
    */
-  startLoop(key: number, id: SfxId): void {
+  startVoice(key: number, id: SfxId): void {
     const ctx = this.ctx;
     const def = SFX_BY_ID.get(id);
     if (ctx === null || def === undefined || this.muted) return;
 
-    const live = this.loops.get(key);
+    const live = this.held.get(key);
     if (live !== undefined) {
       if (live.id === id) return;
-      this.stopLoop(key);
+      this.stopVoice(key);
     }
     const buf = this.buffers.get(id);
     if (buf === undefined) return;
@@ -195,18 +217,24 @@ export class SfxPlayer {
 
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.loop = true;
+    // FROM THE CATALOG, not from the fact that it is held. A beam loops; the reels do not.
+    src.loop = def.loop === true;
     src.connect(gain);
-    src.onended = () => gain.disconnect();
+    src.onended = () => {
+      gain.disconnect();
+      // A one-shot that ran to its end is no longer stoppable and must not be left in the map,
+      // or the next chest finds a stale entry under its key and declines to start.
+      if (this.held.get(key)?.src === src) this.held.delete(key);
+    };
     src.start();
-    this.loops.set(key, { id, src });
+    this.held.set(key, { id, src });
   }
 
-  /** Stops the loop under `key`, if any. Safe to call for a key that never started one. */
-  stopLoop(key: number): void {
-    const live = this.loops.get(key);
+  /** Stops the voice under `key`, if any. Safe to call for a key that never started one. */
+  stopVoice(key: number): void {
+    const live = this.held.get(key);
     if (live === undefined) return;
-    this.loops.delete(key);
+    this.held.delete(key);
     try {
       live.src.stop();
     } catch {
@@ -216,6 +244,6 @@ export class SfxPlayer {
 
   /** Everything off - a run ending, or the tab going away. */
   stopAll(): void {
-    for (const key of [...this.loops.keys()]) this.stopLoop(key);
+    for (const key of [...this.held.keys()]) this.stopVoice(key);
   }
 }

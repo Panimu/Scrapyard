@@ -185,6 +185,24 @@ const PAYOUT_NAME: readonly string[] = [
   'MOTHERLODE',
 ];
 
+/**
+ * HOW THE MACHINE MAKES ITS NOISE, narrowed to the two things this overlay actually needs.
+ *
+ * A reference to the whole SfxPlayer would work and would be wrong: this module is a DOM widget
+ * that happens to be driven by a slot machine, and handing it the mixer invites it to grow opinions
+ * about the rest of the game's audio. Two functions is the entire contract.
+ *
+ * `start` is handed the chest's own numbers rather than a verdict. Deciding which tone they mean
+ * is `chestSfxFor`'s job (sfxTriggers.ts), shared with the desktop build and pinned by tests -
+ * this widget should not hold a second opinion about what a good chest is.
+ */
+export interface ChestSound {
+  /** Begins the spin, for a chest with this `ascension` and `payout` - see `chestSfxFor`. */
+  readonly start: (ascension: number, payout: number) => void;
+  /** Cuts it short. Called when the player skips, and when the overlay is torn down. */
+  readonly stop: () => void;
+}
+
 export class ChestOverlay {
   readonly element: HTMLDivElement;
 
@@ -216,7 +234,8 @@ export class ChestOverlay {
       }
     | undefined;
 
-  constructor(private readonly onCollect: () => void) {
+  constructor(private readonly onCollect: () => void,
+              private readonly sound?: ChestSound) {
     const el = document.createElement('div');
     el.className = 'overlay chest';
     el.hidden = true;
@@ -382,6 +401,18 @@ export class ChestOverlay {
       (REEL_SPIN_MS + REEL_STAGGER_MS * 2) * REEL_STRETCH[2] + crawl,
     ];
 
+    // THE SPIN'S OWN SOUND, started here because this is where the outcome is already known and
+    // the reels have not moved yet. It runs about six seconds - the whole animation, not a moment -
+    // so it is held under a voice key and can be cut short; see `skip`.
+    //
+    // NOT UNDER REDUCED MOTION. There is no spin to accompany: `settleIn` is 0 below and the
+    // machine simply shows its answer, so six seconds of reels would be describing an animation
+    // that never played. `chest_open` still fires from the ring either way.
+    //
+    // WHICH ending is `chestSfxFor`'s decision, not this widget's - it is shared with the desktop
+    // front-end and pinned by tests, and an ascension is payout 1 so the obvious reading is wrong.
+    if (!reduced) this.sound?.start(chest.ascension, chest.payout);
+
     // SHOWN BEFORE THE STRIPS ARE ARMED, AND THIS ORDERING IS THE WHOLE ANIMATION.
     //
     // `.overlay[hidden]` is `display: none`. An element with no box has no layout to force, so the
@@ -479,6 +510,11 @@ export class ChestOverlay {
     if (p === undefined || this.settled) return;
 
     this.clearTimers();
+    // SILENCED FIRST. The spin sound outlives an early skip by whole seconds, and a machine that
+    // is still audibly spinning over its own settled payout is describing something that stopped.
+    // Not stopped on the natural path: the clip and the animation end within a few hundred
+    // milliseconds of each other, and cutting the last note would remove the point of the sound.
+    this.sound?.stop();
     for (const strip of this.reelEls) strip.style.transition = 'none';
     for (let r = 0; r < this.reelEls.length; r++) {
       this.land(r, p.heat[r], p.payout, p.ascending);
@@ -488,6 +524,9 @@ export class ChestOverlay {
 
   hide(): void {
     this.clearTimers();
+    // AND HERE, not only in `skip`. A chest torn down before it settled - the run ending under it,
+    // or a quit to the title - would otherwise leave six seconds of reels playing over a menu.
+    this.sound?.stop();
     this.clearEffects();
     // DROPPED HERE TOO, not only in `settle`. A chest closed before it settled - the run ending
     // under it, say - would otherwise leave this overlay holding a reference to a finished World

@@ -1335,10 +1335,10 @@ export class GameRenderer {
       const id = FIRE_SFX[def.id];
       if (SFX_BY_ID.get(id)?.loop !== true) continue;
       live.add(slot);
-      this.sfx.startLoop(slot, id);
+      this.sfx.startVoice(slot, id);
     }
     // Anything that was looping and is no longer published has stopped firing.
-    for (const slot of this.loopingSlots) if (!live.has(slot)) this.sfx.stopLoop(slot);
+    for (const slot of this.loopingSlots) if (!live.has(slot)) this.sfx.stopVoice(slot);
     this.loopingSlots.clear();
     for (const slot of live) this.loopingSlots.add(slot);
   }

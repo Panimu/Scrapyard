@@ -19,7 +19,7 @@ public enum SfxBus
     World,
 }
 
-/// <summary>Every sound the game is allowed to make. 48 of them.</summary>
+/// <summary>Every sound the game is allowed to make. 50 of them.</summary>
 public enum SfxId
 {
     FireCannon,
@@ -52,6 +52,8 @@ public enum SfxId
     LevelUp,
     CardTaken,
     ChestOpen,
+    ChestReelsGood,
+    ChestReelsBad,
     Ascend,
     Achievement,
     DieGrunt,
@@ -115,6 +117,8 @@ public static class SfxTable
         new(SfxId.LevelUp, "level_up", SfxBus.Pickup, 0, 0.65f, false, "A level gained, the card about to open"),
         new(SfxId.CardTaken, "card_taken", SfxBus.Ui, 0, 0.55f, false, "A card chosen from the level-up screen"),
         new(SfxId.ChestOpen, "chest_open", SfxBus.Pickup, 0, 0.75f, false, "A chest opening - the run stops for it"),
+        new(SfxId.ChestReelsGood, "chest_reels_good", SfxBus.Pickup, 0, 0.6f, false, "The reels spinning, ending on a match or a tier 8"),
+        new(SfxId.ChestReelsBad, "chest_reels_bad", SfxBus.Pickup, 0, 0.6f, false, "The same spin, landing on nothing - the end tone bends down"),
         new(SfxId.Ascend, "ascend", SfxBus.Pickup, 0, 0.8f, false, "A weapon reaching tier 8 - the one secret in the game"),
         new(SfxId.Achievement, "achievement", SfxBus.Ui, 0, 0.55f, false, "An achievement unlocking, over whatever is happening"),
         new(SfxId.DieGrunt, "die_grunt", SfxBus.Body, 80, 0.26f, false, "Any regular enemy dying - plays constantly"),

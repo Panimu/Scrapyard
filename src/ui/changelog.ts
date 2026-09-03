@@ -79,6 +79,16 @@ export interface ChangelogEntry {
 /** NEWEST FIRST. See the header before adding to this. */
 export const CHANGELOG: readonly ChangelogEntry[] = Object.freeze([
   {
+    at: '2026-09-02T22:20Z',
+    version: 'v433',
+    title: 'THE CHEST REELS MAKE A NOISE, AND THE LAST NOTE TELLS YOU',
+    notes: [
+      'The Cyber Chest spins with sound now, for the whole six seconds of it.',
+      'The note it lands on is the result. Matching symbols or a tier 8 and the machine finishes bright; a spin that matched nothing bends down at the end. You will know what you got before the number appears — which you could always read off the icons, and now you can hear.',
+      'Skipping the spin silences it, so an impatient press no longer leaves the machine audibly running over its own payout.',
+    ],
+  },
+  {
     at: '2026-09-01T13:52Z',
     version: 'v432',
     title: 'THE GAME HAS SOUND',

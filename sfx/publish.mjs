@@ -24,9 +24,13 @@
  * ---------------------------------------------------------------------------------------------
  * WHERE A FILE COMES FROM, IN ORDER
  * ---------------------------------------------------------------------------------------------
- *   1. sfx/<id>.mp3        a hand-made file dropped in beside this script. It WINS, whatever the
- *                          picks say, because a file somebody made by hand is a decision that
- *                          outranks a generated take.
+ *   1. sfx/<id>.wav        a hand-made file dropped in beside this script - WAV FIRST, then mp3.
+ *      sfx/<id>.mp3        It WINS, whatever the picks say, because a file somebody made by hand
+ *                          is a decision that outranks a generated take.
+ *
+ *                          WAV is preferred and not merely permitted: everything below re-encodes,
+ *                          so a lossy source is two generations of compression to deliver one.
+ *                          The extra disk is on a file that is never shipped.
  *   2. sfx/takes/<id>_<n>  the take named in sfx-picks.json.
  *
  * Anything the set names and neither source can supply is reported and skipped - a missing sound
@@ -93,9 +97,11 @@ const handmade = [];
 
 console.log('');
 for (const entry of SFX_SET) {
-  const hand = resolve(HERE, `${entry.id}.mp3`);
+  // WAV first - see the note above on why it is preferred rather than merely allowed.
+  const hand = [resolve(HERE, `${entry.id}.wav`), resolve(HERE, `${entry.id}.mp3`)]
+    .find((f) => existsSync(f));
   let from = null;
-  if (existsSync(hand)) {
+  if (hand !== undefined) {
     from = hand;
     handmade.push(entry.id);
   } else {

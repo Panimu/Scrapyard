@@ -167,6 +167,36 @@ public class SfxTests
     }
 
     [Fact]
+    public void GivesAnAscensionTheGoodToneEvenThoughItsPayoutIsOne()
+    {
+        // THE ONE THAT MATTERS. OpenChest sets Payout = 1 for a tier 8 because it grants exactly
+        // one thing, and 1 is also the table's floor for a spin that matched nothing - so a router
+        // written against the number alone hands the rarest outcome in the game the consolation
+        // sound. Both languages are checked because both front-ends decide this separately.
+        Assert.Equal(SfxId.ChestReelsGood, SfxTriggers.ChestSfxFor(3, 1));
+        Assert.Equal(SfxId.ChestReelsBad, SfxTriggers.ChestSfxFor(-1, 1));
+    }
+
+    [Fact]
+    public void BendsTheToneDownForASpinThatMatchedNothing()
+    {
+        // 5 three of a kind, 4 pair + same type, 3 a pair, 2 all different one type, 1 otherwise.
+        foreach (int p in new[] { 3, 4, 5 })
+            Assert.Equal(SfxId.ChestReelsGood, SfxTriggers.ChestSfxFor(-1, p));
+        foreach (int p in new[] { 1, 2 })
+            Assert.Equal(SfxId.ChestReelsBad, SfxTriggers.ChestSfxFor(-1, p));
+    }
+
+    [Fact]
+    public void KeepsTheReelsOutOfTheLoopSet()
+    {
+        // A six-second clip marked Loop would run under the fight for the rest of the run. It is
+        // held under a voice key so a skip can cut it, which is a different thing from looping.
+        foreach (var id in new[] { SfxId.ChestReelsGood, SfxId.ChestReelsBad })
+            Assert.False(SfxTable.All[(int)id].Loop, $"{id} must not loop");
+    }
+
+    [Fact]
     public void SeparatesADeathByRank()
     {
         Assert.Equal(SfxId.DieGrunt, SfxTriggers.DeathSfxFor(Ranks.Regular));
