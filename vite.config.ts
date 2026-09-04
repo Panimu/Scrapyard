@@ -72,8 +72,22 @@ export default defineConfig({
 
   build: {
     target: 'es2022',
-    // Sourcemaps are 2.8 MB of the 4.2 MB build and are pure overhead in a single file.
-    sourcemap: !isSingleFile,
+    // -------------------------------------------------------------------------------------
+    // SOURCEMAPS ARE OFF BY DEFAULT, AND THIS IS A REVERSAL
+    // -------------------------------------------------------------------------------------
+    // They used to be on for every build but the single-file one, on the grounds that they are
+    // 2.8 MB of a 4.2 MB build and pure overhead when inlined. That reasoning was about SIZE and
+    // missed the larger point: a deployed map is the whole of `src/` in readable form, comments
+    // and filenames included, served to anyone who opens devtools. The live site was handing out
+    // 100 source files - 60 of them the deterministic core - to anyone who asked for one URL.
+    //
+    // That is independent of whether the repository is public. A repository can be made private
+    // in an afternoon; a map already published stays published until the next deploy replaces it.
+    //
+    // SOURCEMAP=1 turns them back on for a local build, which is what to do when a production
+    // stack trace needs to be legible. The default is the safe one because the deploy workflow
+    // takes the default, and a setting that protects you only when someone remembers it does not.
+    sourcemap: !isSingleFile && process.env.SOURCEMAP === '1',
     // Safari's parser is fine with modern syntax; keep names readable in the on-device HUD.
     minify: 'esbuild',
     rollupOptions: {

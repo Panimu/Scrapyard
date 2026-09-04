@@ -1,0 +1,61 @@
+Copyright (c) 2026 Panimu. All rights reserved.
+
+SOURCE-AVAILABLE, NOT OPEN SOURCE
+=================================
+
+This repository is readable. That is not the same as being free to use, and this file exists
+because the absence of one is ambiguous: a repository with no licence is already "all rights
+reserved" by default under copyright law, but silence reads as an oversight rather than as a
+decision. It is a decision.
+
+No permission is granted to use, copy, modify, merge, publish, distribute, sublicense, sell, or
+create derivative works from any part of this repository, except as set out below.
+
+In particular, and without limiting the above: you may not compile and distribute this game or any
+part of it, publish it to any storefront or hosting service, or incorporate its code, data,
+artwork, audio or design into another work.
+
+
+WHAT YOU MAY DO
+===============
+
+1. READ IT. Anything published here is published deliberately.
+
+2. FORK IT ON GITHUB. Making a repository public on GitHub grants every GitHub user the right to
+   view and fork it under GitHub's Terms of Service, and that grant is not withdrawn here. It
+   extends to forking within GitHub and to nothing further.
+
+3. ASK. Permission for anything else is available and may well be given. Contact
+   scrapyard@panimu.com and say what you want to do.
+
+
+THIRD-PARTY CONTENT, WHICH THIS LICENCE DOES NOT COVER
+======================================================
+
+Nothing above claims rights over work that is not mine. Two categories:
+
+VENDORED ARTWORK, in `assets/`
+    Every pack in that directory is public domain (CC0 1.0 Universal) and is vendored whole and
+    unmodified, from Kenney, Dungeon Crawl Stone Soup, Pixel Frog and Quaternius. It is CC0 whether
+    or not it sits in this repository, and my copyright does not attach to it. Each source
+    directory carries its own README naming the exact upstream page, the exact file and the date;
+    `assets/README.md` indexes them. If you want that art, take it from its source, where it is
+    free and where you will get the whole pack.
+
+    The sprites in `public/sprites/` are generated FROM those packs by the build tools in `tools/`.
+    They are derivative works of public-domain material, which places no obligation on you, but the
+    composition, palette and arrangement are mine and are covered by this licence.
+
+DEPENDENCIES
+    Everything installed by `npm` or NuGet - PixiJS, MonoGame and the rest - is governed by its own
+    licence and is not redistributed here.
+
+
+NO WARRANTY
+===========
+
+This software is provided "as is", without warranty of any kind, express or implied, including but
+not limited to the warranties of merchantability, fitness for a particular purpose and
+non-infringement. In no event shall the author be liable for any claim, damages or other liability,
+whether in an action of contract, tort or otherwise, arising from, out of or in connection with the
+software or the use or other dealings in the software.
